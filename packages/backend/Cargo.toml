@@ -9,6 +9,7 @@ members = [
   "server-mail",
   "server-blob",
   "server-sync",
+  "server-search",
   "server-http",
   "server-worker",
   "affine-server",
@@ -44,6 +45,7 @@ image              = { version = "0.25", default-features = false, features = ["
 lettre             = { version = "0.11", default-features = false, features = ["builder", "hostname", "smtp-transport", "tokio1-rustls-tls"] }
 lru                = "0.12"
 mailparse          = "0.16"
+memory-indexer     = "0.4.1"
 p256               = { version = "0.13", features = ["ecdsa", "pem"] }
 postgres           = "0.19"
 rand               = "0.9"
@@ -65,6 +67,7 @@ unicode-normalization = "0.1"
 unicode_skeleton   = "0.1.1"
 url                = "2.5"
 uuid               = { version = "1", features = ["v4", "serde"] }
+v_htmlescape       = "0.15"
 y-octo             = { version = "0.4.0", features = ["large_refs"] }
 zeroize            = "1"
 
@@ -75,6 +78,7 @@ server-db       = { path = "server-db" }
 server-domain   = { path = "server-domain" }
 server-http     = { path = "server-http" }
 server-mail     = { path = "server-mail" }
+server-search   = { path = "server-search" }
 server-spi      = { path = "server-spi" }
 server-sync     = { path = "server-sync" }
 server-types    = { path = "server-types" }

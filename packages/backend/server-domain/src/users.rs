@@ -91,12 +91,41 @@ pub struct UpdateUserSettingsInput {
   pub receive_comment_email: Option<bool>,
 }
 
-#[derive(Clone, Debug, Default)]
+const MAX_DELETE_USER_PASSES: usize = 4;
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct DeletedUserCleanup {
   pub deleted_workspace_ids: Vec<String>,
   pub blob_keys: Vec<(String, String)>,
   pub comment_attachment_keys: Vec<(String, String, String)>,
   pub avatar_url: Option<String>,
+}
+
+impl DeletedUserCleanup {
+  pub fn is_empty(&self) -> bool {
+    self.deleted_workspace_ids.is_empty()
+      && self.blob_keys.is_empty()
+      && self.comment_attachment_keys.is_empty()
+      && self.avatar_url.is_none()
+  }
+}
+
+#[derive(Clone, Debug)]
+pub struct DeleteUserError {
+  pub error: DomainError,
+  pub partial_cleanup: DeletedUserCleanup,
+}
+
+impl std::fmt::Display for DeleteUserError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.error)
+  }
+}
+
+impl std::error::Error for DeleteUserError {
+  fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+    Some(&self.error)
+  }
 }
 
 #[derive(Clone)]
@@ -337,7 +366,27 @@ impl UserService {
     target_user_id: &str,
     quota_gate: &dyn server_spi::QuotaGate,
     billing_spi: &dyn server_spi::BillingSpi,
-  ) -> Result<DeletedUserCleanup, DomainError> {
+  ) -> Result<DeletedUserCleanup, DeleteUserError> {
+    let mut cleanup = DeletedUserCleanup::default();
+    match self
+      .delete_user_inner(target_user_id, quota_gate, billing_spi, &mut cleanup)
+      .await
+    {
+      Ok(()) => Ok(cleanup),
+      Err(error) => Err(DeleteUserError {
+        error,
+        partial_cleanup: cleanup,
+      }),
+    }
+  }
+
+  async fn delete_user_inner(
+    &self,
+    target_user_id: &str,
+    quota_gate: &dyn server_spi::QuotaGate,
+    billing_spi: &dyn server_spi::BillingSpi,
+    cleanup: &mut DeletedUserCleanup,
+  ) -> Result<(), DomainError> {
     // Phase 1: short read transaction (released before external billing I/O).
     {
       let mut tx = self
@@ -355,6 +404,7 @@ impl UserService {
         .await
         .map_err(|e| DomainError::Internal(format!("check user exists for delete: {e}")))?;
       if !exists {
+        let _ = tx.rollback().await;
         return Err(DomainError::NotFound("user not found".to_owned()));
       }
       assert_no_owned_team_workspace_in_tx(tx.tx_mut(), target_user_id, quota_gate, now).await?;
@@ -364,134 +414,227 @@ impl UserService {
     // Phase 2: external billing hook with no DB connection/transaction held.
     billing_spi.on_pre_delete_user(target_user_id).await?;
 
-    // Phase 3: short write transaction with FOR UPDATE lock, TOCTOU re-check,
-    // and full cascade cleanup of personal workspaces, userspace docs, sessions,
-    // pending mail deliveries, and invitations.
-    let mut tx = self
-      .db
-      .begin_tiered(WorkloadTier::InteractiveWrite)
-      .await
-      .map_err(|e| DomainError::Internal(format!("begin delete_user: {e}")))?;
-    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
-      .fetch_one(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| DomainError::Internal(format!("delete_user clock: {e}")))?;
-    let user_row = sqlx::query("SELECT id, email, avatar_url FROM users WHERE id = $1 FOR UPDATE")
-      .bind(target_user_id)
-      .fetch_optional(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| DomainError::Internal(format!("lock user for delete: {e}")))?
-      .ok_or_else(|| DomainError::NotFound("user not found".to_owned()))?;
-    let user_email: String = user_row.get("email");
-    let avatar_url: Option<String> = user_row.get("avatar_url");
-
-    let owned_ws_ids = assert_no_owned_team_workspace_in_tx(tx.tx_mut(), target_user_id, quota_gate, now).await?;
-
-    let mut cleanup = DeletedUserCleanup {
-      deleted_workspace_ids: Vec::with_capacity(owned_ws_ids.len()),
-      blob_keys: Vec::new(),
-      comment_attachment_keys: Vec::new(),
-      avatar_url,
-    };
-
-    for ws_id in owned_ws_ids {
-      sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
-        .bind(format!("storage-workspace:{ws_id}"))
-        .execute(&mut **tx.tx_mut())
+    // Phase 3: bounded convergence loop matching v0.27.5 behavior. Delete each owned
+    // personal workspace in its own short write transaction (re-checking Team status
+    // with a fresh post-lock clock), then lock the user row only after no owned
+    // workspaces remain.
+    for _pass in 0..MAX_DELETE_USER_PASSES {
+      let owned_ws_ids = {
+        let mut conn = self
+          .db
+          .acquire_tiered(WorkloadTier::InteractiveRead)
+          .await
+          .map_err(|e| DomainError::Internal(format!("acquire delete_user workspace list: {e}")))?;
+        sqlx::query_scalar::<_, String>(
+          "SELECT workspace_id FROM workspace_members WHERE user_id = $1 AND role = 'owner' AND state = 'active' ORDER BY workspace_id ASC",
+        )
+        .bind(target_user_id)
+        .fetch_all(&mut *conn)
         .await
-        .map_err(|e| DomainError::Internal(format!("lock owned workspace storage for delete: {e}")))?;
-      let ws_locked: Option<String> = sqlx::query_scalar("SELECT id FROM workspaces WHERE id = $1 FOR UPDATE")
-        .bind(&ws_id)
+        .map_err(|e| DomainError::Internal(format!("list owned workspaces for delete: {e}")))?
+      };
+
+      for ws_id in owned_ws_ids {
+        let mut ws_tx = self
+          .db
+          .begin_tiered(WorkloadTier::InteractiveWrite)
+          .await
+          .map_err(|e| DomainError::Internal(format!("begin delete_user workspace tx: {e}")))?;
+
+        let deleted =
+          match delete_owned_personal_workspace_in_tx(ws_tx.tx_mut(), target_user_id, &ws_id, quota_gate).await {
+            Ok(res) => res,
+            Err(err) => {
+              let _ = ws_tx.rollback().await;
+              return Err(err);
+            }
+          };
+        if let Some((ws_blobs, ws_attachments)) = deleted {
+          ws_tx
+            .commit()
+            .await
+            .map_err(|e| DomainError::Internal(format!("commit delete_user workspace: {e}")))?;
+
+          cleanup.deleted_workspace_ids.push(ws_id.clone());
+          cleanup
+            .blob_keys
+            .extend(ws_blobs.into_iter().map(|key| (ws_id.clone(), key)));
+          cleanup.comment_attachment_keys.extend(
+            ws_attachments
+              .into_iter()
+              .map(|(doc_id, key)| (ws_id.clone(), doc_id, key)),
+          );
+        } else {
+          let _ = ws_tx.rollback().await;
+        }
+      }
+
+      // Final short write transaction for the user row. Never acquire workspace locks
+      // while holding `users FOR UPDATE`; roll back and retry in the next pass if any
+      // residual workspace appeared.
+      let mut tx = self
+        .db
+        .begin_tiered(WorkloadTier::InteractiveWrite)
+        .await
+        .map_err(|e| DomainError::Internal(format!("begin delete_user: {e}")))?;
+      let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+        .fetch_one(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("delete_user clock: {e}")))?;
+      let user_row = sqlx::query("SELECT id, email, avatar_url FROM users WHERE id = $1 FOR UPDATE")
+        .bind(target_user_id)
         .fetch_optional(&mut **tx.tx_mut())
         .await
-        .map_err(|e| DomainError::Internal(format!("lock owned workspace for delete: {e}")))?;
-      if ws_locked.is_none() {
+        .map_err(|e| DomainError::Internal(format!("lock user for delete: {e}")))?;
+      let Some(user_row) = user_row else {
+        let _ = tx.rollback().await;
+        return Err(DomainError::NotFound("user not found".to_owned()));
+      };
+      let user_email: String = user_row.get("email");
+      let avatar_url: Option<String> = user_row.get("avatar_url");
+
+      let residual_ws_ids: Vec<String> = sqlx::query_scalar(
+        "SELECT workspace_id FROM workspace_members WHERE user_id = $1 AND role = 'owner' AND state = 'active' ORDER BY workspace_id ASC",
+      )
+      .bind(target_user_id)
+      .fetch_all(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("recheck owned workspaces for delete: {e}")))?;
+      if !residual_ws_ids.is_empty() {
+        let _ = tx.rollback().await;
         continue;
       }
 
-      let ws_blobs: Vec<String> = sqlx::query_scalar("SELECT key FROM blobs WHERE workspace_id = $1")
-        .bind(&ws_id)
-        .fetch_all(&mut **tx.tx_mut())
-        .await
-        .map_err(|e| DomainError::Internal(format!("list owned workspace blobs for delete: {e}")))?;
-      for k in ws_blobs {
-        cleanup.blob_keys.push((ws_id.clone(), k));
-      }
-      let ws_attachments: Vec<(String, String)> =
-        sqlx::query_as("SELECT doc_id, key FROM comment_attachments WHERE workspace_id = $1")
-          .bind(&ws_id)
-          .fetch_all(&mut **tx.tx_mut())
-          .await
-          .map_err(|e| DomainError::Internal(format!("list owned workspace comment attachments for delete: {e}")))?;
-      for (doc_id, k) in ws_attachments {
-        cleanup.comment_attachment_keys.push((ws_id.clone(), doc_id, k));
-      }
-
-      sqlx::query("DELETE FROM snapshot_histories WHERE workspace_id = $1")
-        .bind(&ws_id)
+      sqlx::query("DELETE FROM user_snapshots WHERE user_id = $1")
+        .bind(target_user_id)
         .execute(&mut **tx.tx_mut())
         .await
-        .map_err(|e| DomainError::Internal(format!("delete owned workspace snapshot_histories: {e}")))?;
-      sqlx::query("DELETE FROM updates WHERE workspace_id = $1")
-        .bind(&ws_id)
-        .execute(&mut **tx.tx_mut())
-        .await
-        .map_err(|e| DomainError::Internal(format!("delete owned workspace updates: {e}")))?;
-      sqlx::query("DELETE FROM snapshots WHERE workspace_id = $1")
-        .bind(&ws_id)
-        .execute(&mut **tx.tx_mut())
-        .await
-        .map_err(|e| DomainError::Internal(format!("delete owned workspace snapshots: {e}")))?;
-      sqlx::query("DELETE FROM workspaces WHERE id = $1")
-        .bind(&ws_id)
-        .execute(&mut **tx.tx_mut())
-        .await
-        .map_err(|e| DomainError::Internal(format!("delete owned workspace: {e}")))?;
-      cleanup.deleted_workspace_ids.push(ws_id);
-    }
-
-    sqlx::query("DELETE FROM user_snapshots WHERE user_id = $1")
-      .bind(target_user_id)
-      .execute(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| DomainError::Internal(format!("delete user_snapshots: {e}")))?;
-    sqlx::query("DELETE FROM auth_sessions WHERE user_session_id IN (SELECT id FROM user_sessions WHERE user_id = $1)")
+        .map_err(|e| DomainError::Internal(format!("delete user_snapshots: {e}")))?;
+      sqlx::query(
+        "DELETE FROM auth_sessions WHERE user_session_id IN (SELECT id FROM user_sessions WHERE user_id = $1)",
+      )
       .bind(target_user_id)
       .execute(&mut **tx.tx_mut())
       .await
       .map_err(|e| DomainError::Internal(format!("delete auth_sessions: {e}")))?;
-    sqlx::query("DELETE FROM user_sessions WHERE user_id = $1")
+      sqlx::query("DELETE FROM user_sessions WHERE user_id = $1")
+        .bind(target_user_id)
+        .execute(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("delete user_sessions: {e}")))?;
+      sqlx::query(
+        r#"UPDATE mail_deliveries
+           SET status = 'canceled', canceled_at = $3, updated_at = $3
+           WHERE status = 'queued'
+             AND (recipient_user_id = $1 OR actor_user_id = $1 OR lower(recipient_email) = lower($2))"#,
+      )
       .bind(target_user_id)
+      .bind(&user_email)
+      .bind(now)
       .execute(&mut **tx.tx_mut())
       .await
-      .map_err(|e| DomainError::Internal(format!("delete user_sessions: {e}")))?;
-    sqlx::query(
-      r#"UPDATE mail_deliveries
-         SET status = 'canceled', canceled_at = $3, updated_at = $3
-         WHERE status = 'queued'
-           AND (recipient_user_id = $1 OR actor_user_id = $1 OR lower(recipient_email) = lower($2))"#,
-    )
-    .bind(target_user_id)
-    .bind(&user_email)
-    .bind(now)
-    .execute(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| DomainError::Internal(format!("cancel pending user mail_deliveries: {e}")))?;
-    sqlx::query("DELETE FROM workspace_invitations WHERE invitee_user_id = $1 OR inviter_user_id = $1")
-      .bind(target_user_id)
-      .execute(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| DomainError::Internal(format!("delete user workspace invitations: {e}")))?;
-    sqlx::query("DELETE FROM users WHERE id = $1")
-      .bind(target_user_id)
-      .execute(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| DomainError::Internal(format!("delete user: {e}")))?;
-    tx.commit()
-      .await
-      .map_err(|e| DomainError::Internal(format!("commit delete_user: {e}")))?;
-    Ok(cleanup)
+      .map_err(|e| DomainError::Internal(format!("cancel pending user mail_deliveries: {e}")))?;
+      sqlx::query("DELETE FROM workspace_invitations WHERE invitee_user_id = $1 OR inviter_user_id = $1")
+        .bind(target_user_id)
+        .execute(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("delete user workspace invitations: {e}")))?;
+      sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(target_user_id)
+        .execute(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("delete user: {e}")))?;
+
+      tx.commit()
+        .await
+        .map_err(|e| DomainError::Internal(format!("commit delete_user: {e}")))?;
+      cleanup.avatar_url = avatar_url;
+      return Ok(());
+    }
+
+    Err(DomainError::Conflict(
+      "user_workspaces_changed_during_delete".to_owned(),
+    ))
   }
+}
+
+async fn delete_owned_personal_workspace_in_tx(
+  tx: &mut Transaction<'_, Postgres>,
+  target_user_id: &str,
+  ws_id: &str,
+  quota_gate: &dyn server_spi::QuotaGate,
+) -> Result<Option<(Vec<String>, Vec<(String, String)>)>, DomainError> {
+  sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+    .bind(format!("storage-workspace:{ws_id}"))
+    .execute(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("lock owned workspace storage for delete: {e}")))?;
+  let ws_locked: Option<String> = sqlx::query_scalar("SELECT id FROM workspaces WHERE id = $1 FOR UPDATE")
+    .bind(ws_id)
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("lock owned workspace for delete: {e}")))?;
+  if ws_locked.is_none() {
+    return Ok(None);
+  }
+
+  let still_owned: bool = sqlx::query_scalar(
+    "SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND role = 'owner' AND state = 'active')",
+  )
+  .bind(ws_id)
+  .bind(target_user_id)
+  .fetch_one(&mut **tx)
+  .await
+  .map_err(|e| DomainError::Internal(format!("verify workspace ownership for delete: {e}")))?;
+  if !still_owned {
+    return Ok(None);
+  }
+
+  let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+    .fetch_one(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("delete_user workspace clock: {e}")))?;
+  let grant = quota_gate.resolve_workspace_grant(tx, ws_id, now).await?;
+  if grant.billing_subject == server_spi::BillingSubject::Workspace {
+    return Err(DomainError::Validation(
+      "cannot_delete_account_with_owned_team_workspace".to_owned(),
+    ));
+  }
+
+  let ws_blobs: Vec<String> = sqlx::query_scalar("SELECT key FROM blobs WHERE workspace_id = $1")
+    .bind(ws_id)
+    .fetch_all(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("list owned workspace blobs for delete: {e}")))?;
+  let ws_attachments: Vec<(String, String)> =
+    sqlx::query_as("SELECT doc_id, key FROM comment_attachments WHERE workspace_id = $1")
+      .bind(ws_id)
+      .fetch_all(&mut **tx)
+      .await
+      .map_err(|e| DomainError::Internal(format!("list owned workspace comment attachments for delete: {e}")))?;
+
+  sqlx::query("DELETE FROM snapshot_histories WHERE workspace_id = $1")
+    .bind(ws_id)
+    .execute(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("delete owned workspace snapshot_histories: {e}")))?;
+  sqlx::query("DELETE FROM updates WHERE workspace_id = $1")
+    .bind(ws_id)
+    .execute(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("delete owned workspace updates: {e}")))?;
+  sqlx::query("DELETE FROM snapshots WHERE workspace_id = $1")
+    .bind(ws_id)
+    .execute(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("delete owned workspace snapshots: {e}")))?;
+  sqlx::query("DELETE FROM workspaces WHERE id = $1")
+    .bind(ws_id)
+    .execute(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("delete owned workspace: {e}")))?;
+
+  Ok(Some((ws_blobs, ws_attachments)))
 }
 
 async fn assert_no_owned_team_workspace_in_tx(

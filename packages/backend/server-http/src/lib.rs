@@ -29,6 +29,7 @@ use server_domain::notifications::NotificationService;
 use server_domain::selfhost_license::SelfhostLicenseService;
 use server_domain::users::UserService;
 use server_domain::workspaces::WorkspaceService;
+use server_search::{SearchConfig, SearchRuntime};
 use server_spi::ServerExtension;
 use server_types::{DeploymentMode, ServerRole};
 use tower_http::trace::TraceLayer;
@@ -106,6 +107,7 @@ pub struct AppState {
   pub licenses: SelfhostLicenseService,
   pub app_config: AppConfigService,
   pub blobs: BlobService,
+  pub search: Arc<SearchRuntime>,
   pub avatars: Arc<dyn BlobStorageBackend>,
   pub comment_attachments: Arc<dyn BlobStorageBackend>,
   pub invalidation: Arc<dyn InvalidationPublisher>,
@@ -125,6 +127,7 @@ pub struct AppServices {
   pub licenses: SelfhostLicenseService,
   pub app_config: AppConfigService,
   pub blobs: BlobService,
+  pub search: Arc<SearchRuntime>,
   pub avatars: Arc<dyn BlobStorageBackend>,
   pub comment_attachments: Arc<dyn BlobStorageBackend>,
   pub invalidation: Arc<dyn InvalidationPublisher>,
@@ -189,6 +192,10 @@ impl AppState {
       LocalFsBlobStorage::new(&blob_root_str, "comment-attachments").expect("valid temp comment-attachments storage"),
     );
     let blobs = BlobService::new(db.clone(), storage, extension.quota_gate());
+    let search = Arc::new(
+      SearchRuntime::new(db.pool().clone(), extension.quota_gate(), SearchConfig::default())
+        .expect("default embedded search config must be valid"),
+    );
 
     Self::with_services(
       db,
@@ -206,6 +213,7 @@ impl AppState {
         licenses,
         app_config,
         blobs,
+        search,
         avatars,
         comment_attachments,
         invalidation,
@@ -236,6 +244,7 @@ impl AppState {
       licenses: services.licenses,
       app_config: services.app_config,
       blobs: services.blobs,
+      search: services.search,
       avatars: services.avatars,
       comment_attachments: services.comment_attachments,
       invalidation: services.invalidation,

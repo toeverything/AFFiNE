@@ -107,7 +107,7 @@ pub(crate) async fn resolve_server_config(ctx: &Context<'_>) -> Result<ServerCon
     DeploymentMode::Cloud => ServerDeploymentType::Affine,
   };
 
-  let features = match cfg.deployment_mode {
+  let mut features = match cfg.deployment_mode {
     DeploymentMode::Selfhosted => vec![
       ServerFeature::Comment,
       ServerFeature::LocalWorkspace,
@@ -121,6 +121,9 @@ pub(crate) async fn resolve_server_config(ctx: &Context<'_>) -> Result<ServerCon
       ServerFeature::OAuth,
     ],
   };
+  if state.search.enabled() {
+    features.push(ServerFeature::Indexer);
+  }
 
   Ok(ServerConfigType {
     version: cfg.server_version.clone(),

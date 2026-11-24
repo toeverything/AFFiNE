@@ -894,10 +894,16 @@ impl WorkspaceService {
 
     if !candidates.is_empty() {
       let candidate_refs: Vec<&str> = candidates.iter().map(|(_, e, _)| e.as_str()).collect();
-      self
+      if let Err(rejection) = self
         .rate_limit_policy
         .check_workspace_invite(tx.tx_mut(), workspace_id, actor_user_id, &candidate_refs, source, now)
-        .await?;
+        .await
+      {
+        tx.rollback()
+          .await
+          .map_err(|e| DomainError::Internal(format!("rollback rejected workspace invite: {e}")))?;
+        return Err(rejection.apply_post_rollback().await?);
+      }
 
       let current_charged_seats = count_charged_seats_in_tx(tx.tx_mut(), workspace_id).await?;
       self
@@ -2107,10 +2113,16 @@ impl WorkspaceService {
         "Workspace names containing links or domains cannot be used to invite members.".to_owned(),
       ));
     }
-    self
+    if let Err(rejection) = self
       .rate_limit_policy
       .check_workspace_invite_link(tx.tx_mut(), workspace_id, actor_user_id, source, now)
-      .await?;
+      .await
+    {
+      tx.rollback()
+        .await
+        .map_err(|e| DomainError::Internal(format!("rollback rejected workspace invite: {e}")))?;
+      return Err(rejection.apply_post_rollback().await?);
+    }
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit create_invite_link rate limit: {e}")))?;

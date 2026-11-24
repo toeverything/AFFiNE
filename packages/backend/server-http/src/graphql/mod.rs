@@ -6,6 +6,7 @@ pub mod comment;
 pub mod doc;
 pub mod license;
 pub mod notification;
+pub mod search;
 pub mod user;
 pub mod workspace;
 
@@ -874,7 +875,7 @@ mod tests {
         _target_emails: &[&str],
         _source: Option<&server_spi::RequestSource>,
         _now: chrono::DateTime<chrono::Utc>,
-      ) -> std::result::Result<(), server_types::DomainError> {
+      ) -> std::result::Result<(), server_spi::RateLimitRejection> {
         self.calls.fetch_add(1, Ordering::SeqCst);
         Ok(())
       }

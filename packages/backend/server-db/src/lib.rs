@@ -86,6 +86,7 @@ impl DbConfig {
 struct ServerDbInner {
   pool: PgPool,
   connect_options: PgConnectOptions,
+  statement_timeout_ms: u64,
   tier_semaphores: [Arc<Semaphore>; 4],
   role: ServerRole,
   selfhosted: bool,
@@ -286,6 +287,7 @@ impl ServerDb {
       inner: Arc::new(ServerDbInner {
         pool,
         connect_options,
+        statement_timeout_ms,
         tier_semaphores,
         role: config.role,
         selfhosted: config.selfhosted,
@@ -367,9 +369,16 @@ impl ServerDb {
   }
 
   /// Opens an unpooled PostgreSQL connection suitable for session-level
-  /// advisory locks or `LISTEN`/`NOTIFY`.
+  /// advisory locks or `LISTEN`/`NOTIFY`, with default statement and idle
+  /// transaction timeouts applied.
   pub async fn dedicated_session_conn(&self) -> Result<PgConnection, DbError> {
-    let conn = PgConnection::connect_with(&self.inner.connect_options).await?;
+    let mut conn = PgConnection::connect_with(&self.inner.connect_options).await?;
+    let setup = format!(
+      "SET statement_timeout = '{}ms'; \
+       SET idle_in_transaction_session_timeout = '{IDLE_IN_TRANSACTION_SESSION_TIMEOUT}';",
+      self.inner.statement_timeout_ms
+    );
+    conn.execute(setup.as_str()).await?;
     Ok(conn)
   }
 

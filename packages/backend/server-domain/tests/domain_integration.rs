@@ -858,7 +858,7 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
         _target_emails: &[&str],
         _source: Option<&AuthRequestSource>,
         _now: DateTime<Utc>,
-      ) -> Result<(), DomainError> {
+      ) -> Result<(), server_spi::RateLimitRejection> {
         Ok(())
       }
     }
@@ -1230,8 +1230,10 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
     db.pool().close().await;
   });
 }
-
-struct RejectingRateLimitPolicy;
+struct RejectingRateLimitPolicy {
+  db: ServerDb,
+  post_rollback_verified: Arc<std::sync::atomic::AtomicBool>,
+}
 
 #[async_trait::async_trait]
 impl RateLimitPolicy for RejectingRateLimitPolicy {
@@ -1255,19 +1257,44 @@ impl RateLimitPolicy for RejectingRateLimitPolicy {
 
   async fn check_workspace_invite(
     &self,
-    _tx: &mut Transaction<'_, Postgres>,
+    tx: &mut Transaction<'_, Postgres>,
     _workspace_id: &str,
     _inviter_id: &str,
     target_emails: &[&str],
     source: Option<&AuthRequestSource>,
     _now: DateTime<Utc>,
-  ) -> Result<(), DomainError> {
+  ) -> Result<(), server_spi::RateLimitRejection> {
     assert_eq!(target_emails, &["invitee-rl@affine.test"]);
     let src = source.expect("workspace invite request source must be forwarded");
     assert!(src.trusted);
     assert_eq!(src.ip.as_deref(), Some("198.51.100.42"));
     assert_eq!(src.asn, Some(13335));
-    Err(DomainError::RateLimited("workspace invite rate limited".into()))
+    sqlx::query("SELECT pg_advisory_xact_lock(987654321)")
+      .execute(&mut **tx)
+      .await
+      .expect("acquire xact sentinel lock inside invite tx");
+
+    let db = self.db.clone();
+    let verified = Arc::clone(&self.post_rollback_verified);
+    Err(server_spi::RateLimitRejection::with_post_rollback(
+      DomainError::RateLimited("workspace invite rate limited".into()),
+      Box::pin(async move {
+        let remaining_sentinel_locks: i64 = sqlx::query_scalar(
+          "SELECT COUNT(*) FROM pg_locks \
+           WHERE database = (SELECT oid FROM pg_database WHERE datname = current_database()) \
+             AND locktype = 'advisory' AND objid = 987654321 AND granted",
+        )
+        .fetch_one(db.pool())
+        .await
+        .expect("inspect sentinel lock after rollback");
+        assert_eq!(
+          remaining_sentinel_locks, 0,
+          "post_rollback effect must run strictly after outer invite tx releases locks"
+        );
+        verified.store(true, Ordering::SeqCst);
+        Ok(())
+      }),
+    ))
   }
 }
 
@@ -1281,7 +1308,11 @@ fn rate_limit_policy_rejects_and_rolls_back_auth_mail_and_workspace_invite() {
     let db = ServerDb::connect(DbConfig::new(&empty.url)).await.unwrap();
     db.ensure_schema_ready().await.unwrap();
 
-    let policy = Arc::new(RejectingRateLimitPolicy);
+    let post_rollback_verified = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let policy = Arc::new(RejectingRateLimitPolicy {
+      db: db.clone(),
+      post_rollback_verified: Arc::clone(&post_rollback_verified),
+    });
     let auth = AuthService::new(
       db.clone(),
       Arc::new(TestSqlSessionRepo),
@@ -1361,6 +1392,10 @@ fn rate_limit_policy_rejects_and_rolls_back_auth_mail_and_workspace_invite() {
       .await
       .expect_err("rate limit policy must reject workspace invite");
     assert!(matches!(invite_err, DomainError::RateLimited(_)));
+    assert!(
+      post_rollback_verified.load(Ordering::SeqCst),
+      "post_rollback effect must execute after invite rollback"
+    );
 
     let inv_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM workspace_invitations WHERE workspace_id = $1")
       .bind(&ws.id)
@@ -1402,7 +1437,7 @@ fn rate_limit_policy_rejects_and_rolls_back_auth_mail_and_workspace_invite() {
         target_emails: &[&str],
         source: Option<&AuthRequestSource>,
         _now: DateTime<Utc>,
-      ) -> Result<(), DomainError> {
+      ) -> Result<(), server_spi::RateLimitRejection> {
         assert_eq!(source.and_then(|s| s.ip.as_deref()), Some("198.51.100.42"));
         self
           .invite_batches
@@ -1451,6 +1486,114 @@ fn rate_limit_policy_rejects_and_rolls_back_auth_mail_and_workspace_invite() {
         "target_emails must contain all 3 valid candidates"
       );
     }
+
+    db.pool().close().await;
+  });
+}
+
+#[test]
+fn workspace_invite_rollback_error_skips_post_rollback_effect() {
+  let cluster = PgCluster::from_env_or_docker().expect("PG16 cluster");
+  let empty = EmptyDbGuard::create(&cluster, "rlrollback");
+
+  let rt = test_runtime();
+  rt.block_on(async {
+    let db = ServerDb::connect(DbConfig::new(&empty.url)).await.unwrap();
+    db.ensure_schema_ready().await.unwrap();
+
+    let auth = AuthService::new(
+      db.clone(),
+      Arc::new(TestSqlSessionRepo),
+      Arc::new(CommunitySessionPolicyHook),
+      AuthConfig {
+        private_key: "rate-limit-rollback-key".to_owned(),
+        ..AuthConfig::default()
+      },
+    );
+    let admin = auth
+      .create_first_admin_user(CreateAdminUserInput {
+        name: Some("Owner".to_owned()),
+        email: "owner-rb@affine.test".to_owned(),
+        password: "Password123!".to_owned(),
+        client_version: None,
+      })
+      .await
+      .expect("create owner");
+
+    struct TerminatingRateLimitPolicy {
+      post_rollback_called: Arc<std::sync::atomic::AtomicBool>,
+    }
+
+    #[async_trait::async_trait]
+    impl RateLimitPolicy for TerminatingRateLimitPolicy {
+      async fn check_auth_mail(
+        &self,
+        _tx: &mut Transaction<'_, Postgres>,
+        _mail_name: &str,
+        _normalized_email: &str,
+        _recipient_user_id: Option<&str>,
+        _source: Option<&AuthRequestSource>,
+        _now: DateTime<Utc>,
+      ) -> Result<(), DomainError> {
+        Ok(())
+      }
+
+      async fn check_workspace_invite(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        _workspace_id: &str,
+        _inviter_id: &str,
+        _target_emails: &[&str],
+        _source: Option<&AuthRequestSource>,
+        _now: DateTime<Utc>,
+      ) -> Result<(), server_spi::RateLimitRejection> {
+        let _ = sqlx::query("SELECT pg_terminate_backend(pg_backend_pid())")
+          .execute(&mut **tx)
+          .await;
+        let called = Arc::clone(&self.post_rollback_called);
+        Err(server_spi::RateLimitRejection::with_post_rollback(
+          DomainError::RateLimited("workspace invite rate limited".into()),
+          Box::pin(async move {
+            called.store(true, Ordering::SeqCst);
+            Ok(())
+          }),
+        ))
+      }
+    }
+
+    let post_rollback_called = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let policy = Arc::new(TerminatingRateLimitPolicy {
+      post_rollback_called: Arc::clone(&post_rollback_called),
+    });
+    let workspaces = WorkspaceService::new(
+      db.clone(),
+      Arc::new(CommunityQuotaGate::new()),
+      Arc::new(NoopEventPublisher::default()),
+    )
+    .with_rate_limit_policy(policy);
+    let ws = workspaces
+      .create_workspace(&admin.user.id, Some("Rollback Workspace"))
+      .await
+      .expect("create workspace");
+
+    let err = workspaces
+      .invite_member_with_source(
+        &admin.user.id,
+        &ws.id,
+        "invitee-rb@affine.test",
+        WorkspaceRole::Member,
+        None,
+      )
+      .await
+      .expect_err("terminated tx rollback must fail");
+    assert!(
+      matches!(err, DomainError::Internal(_)),
+      "expected Internal rollback error, got {err:?}"
+    );
+    assert!(
+      !post_rollback_called.load(Ordering::SeqCst),
+      "post_rollback must not run when tx.rollback() fails"
+    );
 
     db.pool().close().await;
   });

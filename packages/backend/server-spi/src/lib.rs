@@ -66,6 +66,57 @@ pub struct RequestSource {
   pub asn: Option<u32>,
 }
 
+/// Deferred side effect executed after the caller rolls back a rejected
+/// rate-limited transaction and releases its pooled database connection.
+pub type PostRollbackEffect = Pin<Box<dyn Future<Output = Result<(), DomainError>> + Send>>;
+
+/// Structured rate-limit rejection carrying an optional post-rollback side
+/// effect (such as out-of-transaction invite abuse quarantine persistence).
+pub struct RateLimitRejection {
+  pub error: DomainError,
+  pub post_rollback: Option<PostRollbackEffect>,
+}
+
+impl std::fmt::Debug for RateLimitRejection {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("RateLimitRejection")
+      .field("error", &self.error)
+      .field("has_post_rollback", &self.post_rollback.is_some())
+      .finish()
+  }
+}
+
+impl RateLimitRejection {
+  pub fn new(error: DomainError) -> Self {
+    Self {
+      error,
+      post_rollback: None,
+    }
+  }
+
+  pub fn with_post_rollback(error: DomainError, post_rollback: PostRollbackEffect) -> Self {
+    Self {
+      error,
+      post_rollback: Some(post_rollback),
+    }
+  }
+
+  /// Runs any deferred side effect after the caller has rolled back its outer
+  /// transaction, then returns the original [`DomainError`].
+  pub async fn apply_post_rollback(self) -> Result<DomainError, DomainError> {
+    if let Some(effect) = self.post_rollback {
+      effect.await?;
+    }
+    Ok(self.error)
+  }
+}
+
+impl From<DomainError> for RateLimitRejection {
+  fn from(error: DomainError) -> Self {
+    Self::new(error)
+  }
+}
+
 #[async_trait::async_trait]
 pub trait RateLimitPolicy: Send + Sync + 'static {
   async fn check_auth_mail(
@@ -86,7 +137,7 @@ pub trait RateLimitPolicy: Send + Sync + 'static {
     target_emails: &[&str],
     source: Option<&RequestSource>,
     now: DateTime<Utc>,
-  ) -> Result<(), DomainError>;
+  ) -> Result<(), RateLimitRejection>;
 
   async fn check_workspace_invite_link(
     &self,
@@ -95,7 +146,7 @@ pub trait RateLimitPolicy: Send + Sync + 'static {
     _inviter_id: &str,
     _source: Option<&RequestSource>,
     _now: DateTime<Utc>,
-  ) -> Result<(), DomainError> {
+  ) -> Result<(), RateLimitRejection> {
     Ok(())
   }
 }
@@ -431,7 +482,7 @@ impl RateLimitPolicy for CommunityRateLimitPolicy {
     _target_emails: &[&str],
     _source: Option<&RequestSource>,
     _now: DateTime<Utc>,
-  ) -> Result<(), DomainError> {
+  ) -> Result<(), RateLimitRejection> {
     Ok(())
   }
 }

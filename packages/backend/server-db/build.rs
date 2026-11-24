@@ -18,6 +18,7 @@ fn main() {
     "search_projection_v3.sql",
     "search_projection_v4.sql",
     "search_projection_v5.sql",
+    "search_projection_v6.sql",
   ];
 
   println!("cargo:rerun-if-changed={}", migrations_dir.display());

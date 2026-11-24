@@ -351,14 +351,6 @@ async fn apply_native_migrations_in_tx(
   .fetch_all(&mut **tx)
   .await?;
 
-  if recorded.len() > migrations.len() {
-    return Err(DbError::SchemaCheck(format!(
-      "native_schema_migrations for {component} has {} entries, more than bundled {}",
-      recorded.len(),
-      migrations.len()
-    )));
-  }
-
   for ((actual_version, actual_checksum), expected) in recorded.iter().zip(migrations.iter()) {
     if *actual_version != expected.version {
       return Err(DbError::SchemaCheck(format!(
@@ -372,6 +364,10 @@ async fn apply_native_migrations_in_tx(
         expected.version, expected.checksum
       )));
     }
+  }
+
+  if recorded.len() >= migrations.len() {
+    return Ok(0);
   }
 
   let mut applied_now = 0usize;

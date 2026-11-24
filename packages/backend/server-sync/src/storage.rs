@@ -2058,6 +2058,20 @@ async fn invalidate_workspace_inventory_in(
   if !exists {
     return Ok(());
   }
+  let has_lock_fn: bool =
+    sqlx::query_scalar("SELECT to_regprocedure('search_projection.acquire_workspace_write_lock(text)') IS NOT NULL")
+      .fetch_one(&mut **tx)
+      .await?;
+  if has_lock_fn {
+    sqlx::query("SELECT search_projection.acquire_workspace_write_lock($1)")
+      .bind(workspace_id)
+      .execute(&mut **tx)
+      .await?;
+  } else {
+    sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('search-projection-generation', 0))")
+      .execute(&mut **tx)
+      .await?;
+  }
   sqlx::query(
     "UPDATE search_projection.workspace_states SET \
      target_root_revision = nextval('search_projection.source_mutation_version'), \

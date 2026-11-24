@@ -1,13 +1,17 @@
 //! Document snapshot history listing, binary retrieval, collision-safe
 //! recovery, background doc update compaction, and expired record housekeeping.
 
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::future::Future;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use chrono::{DateTime, Duration, Utc};
 use server_db::{ServerDb, WorkloadTier};
 use server_spi::QuotaGate;
 use server_types::DomainError;
+use sha2::{Digest as _, Sha256};
 use sqlx::{Postgres, Row, Transaction};
+use tokio::sync::Semaphore;
 
 use crate::acl::load_workspace_docs_access_in;
 use crate::doc_sharing::{DocSharingService, is_empty_doc_bin};
@@ -356,9 +360,57 @@ impl DocHistoryService {
 }
 
 // ---------------------------------------------------------------------------
-// Background doc compaction & housekeeping (ported 1:1 from doc_compactor.rs
-// and housekeeping.rs).
+// Background doc compaction (lock-free read, bounded blocking CRDT merge, and
+// short strict-CAS commit) and expired record housekeeping.
 // ---------------------------------------------------------------------------
+
+const MAX_COMPACTION_CAS_RETRIES: usize = 2;
+
+static COMPACTION_SCAN_CURSOR: OnceLock<Mutex<(String, String)>> = OnceLock::new();
+
+fn compaction_scan_cursor() -> &'static Mutex<(String, String)> {
+  COMPACTION_SCAN_CURSOR.get_or_init(|| Mutex::new((String::new(), String::new())))
+}
+
+fn compaction_merge_semaphore() -> &'static Arc<Semaphore> {
+  static SEM: OnceLock<Arc<Semaphore>> = OnceLock::new();
+  SEM.get_or_init(|| {
+    let permits = std::thread::available_parallelism()
+      .map(|n| n.get())
+      .unwrap_or(2)
+      .clamp(2, 8);
+    Arc::new(Semaphore::new(permits))
+  })
+}
+
+#[doc(hidden)]
+pub async fn run_blocking_with_merge_permit<T, F>(semaphore: &Arc<Semaphore>, work: F) -> Result<T, DomainError>
+where
+  T: Send + 'static,
+  F: FnOnce() -> Result<T, DomainError> + Send + 'static,
+{
+  let cpu_permit = Arc::clone(semaphore)
+    .acquire_owned()
+    .await
+    .map_err(|_| DomainError::Unavailable("compaction merge semaphore closed".to_owned()))?;
+  tokio::task::spawn_blocking(move || {
+    let _permit = cpu_permit;
+    work()
+  })
+  .await
+  .map_err(|e| DomainError::Internal(format!("join compaction merge task: {e}")))?
+}
+
+fn sha256_bytes(data: &[u8]) -> [u8; 32] {
+  Sha256::digest(data).into()
+}
+
+fn is_pg_deadlock(err: &sqlx::Error) -> bool {
+  err
+    .as_database_error()
+    .and_then(|db_err| db_err.code())
+    .is_some_and(|code| code == "40P01")
+}
 
 struct SnapshotRow {
   blob: Vec<u8>,
@@ -372,6 +424,41 @@ struct UpdateRow {
   created_by: Option<String>,
 }
 
+struct Phase1Read {
+  snapshot: Option<SnapshotRow>,
+  snapshot_fp: Option<(DateTime<Utc>, [u8; 32], Option<String>)>,
+  updates: Vec<UpdateRow>,
+  batch_fingerprints: Vec<(DateTime<Utc>, [u8; 32])>,
+}
+
+struct Phase2Merged {
+  final_blob: Vec<u8>,
+  prev_snapshot_is_empty: bool,
+  blob_changed: bool,
+}
+
+enum Phase3Outcome {
+  LockNotAcquired,
+  Skipped,
+  Committed(DocCompactionOutcome),
+}
+
+enum Phase3Error {
+  CasMismatch,
+  Deadlock,
+  Fatal(DomainError),
+}
+
+fn map_phase3_sqlx(context: &'static str) -> impl FnOnce(sqlx::Error) -> Phase3Error {
+  move |err| {
+    if is_pg_deadlock(&err) {
+      Phase3Error::Deadlock
+    } else {
+      Phase3Error::Fatal(DomainError::Internal(format!("{context}: {err}")))
+    }
+  }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct DocCompactionOutcome {
   pub lock_acquired: bool,
@@ -379,9 +466,8 @@ pub struct DocCompactionOutcome {
   pub history_created: bool,
 }
 
-/// Compacts pending rows in `updates` into `snapshots` (and optionally archives
-/// the previous snapshot into `snapshot_histories`) under the per-doc advisory
-/// lock `workspace-doc-update:<workspace_id>/<doc_id>`.
+/// Compacts pending rows in `updates` into `snapshots` using a lock-free
+/// read and blocking CRDT merge followed by a short strict-CAS write transaction.
 pub async fn compact_pending_doc_updates(
   db: &ServerDb,
   workspace_id: &str,
@@ -390,66 +476,176 @@ pub async fn compact_pending_doc_updates(
   history_min_interval_ms: i64,
   history_max_age_seconds: i64,
 ) -> Result<DocCompactionOutcome, DomainError> {
+  compact_pending_doc_updates_with_merge_hook(
+    db,
+    workspace_id,
+    doc_id,
+    batch_limit,
+    history_min_interval_ms,
+    history_max_age_seconds,
+    |_| async {},
+  )
+  .await
+}
+
+#[doc(hidden)]
+pub async fn compact_pending_doc_updates_with_merge_hook<F, Fut>(
+  db: &ServerDb,
+  workspace_id: &str,
+  doc_id: &str,
+  batch_limit: i64,
+  history_min_interval_ms: i64,
+  history_max_age_seconds: i64,
+  mut on_phase2_merge: F,
+) -> Result<DocCompactionOutcome, DomainError>
+where
+  F: FnMut(usize) -> Fut,
+  Fut: Future<Output = ()>,
+{
   if batch_limit <= 0 {
     return Err(DomainError::Validation("batch_limit must be positive".to_owned()));
   }
-  let mut tx = db
-    .begin_tiered(WorkloadTier::LongQuery)
-    .await
-    .map_err(|e| DomainError::Internal(format!("begin doc compaction: {e}")))?;
 
-  let ws_locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock_shared(hashtextextended($1, 0))")
-    .bind(format!("storage-workspace:{workspace_id}"))
-    .fetch_one(&mut **tx.tx_mut())
+  for attempt in 0..=MAX_COMPACTION_CAS_RETRIES {
+    // Phase 1: short lock-free read; release the connection before CPU merge work.
+    let Some(phase1) = load_compaction_phase1(db, workspace_id, doc_id, batch_limit).await? else {
+      return Ok(DocCompactionOutcome {
+        lock_acquired: true,
+        updates_merged: 0,
+        history_created: false,
+      });
+    };
+
+    // Phase 2: bounded CPU semaphore + spawn_blocking CRDT merge with zero DB locks held.
+    // Move the owned permit into the blocking closure so cancelling the outer future
+    // never frees a CPU slot while the merge is still running.
+    let phase2 = {
+      on_phase2_merge(attempt).await;
+      let mut merge_inputs = Vec::with_capacity(phase1.updates.len() + usize::from(phase1.snapshot.is_some()));
+      if let Some(snap) = &phase1.snapshot {
+        merge_inputs.push(snap.blob.clone());
+      }
+      merge_inputs.extend(phase1.updates.iter().map(|u| u.blob.clone()));
+      let prev_blob = phase1.snapshot.as_ref().map(|s| s.blob.clone());
+      run_blocking_with_merge_permit(compaction_merge_semaphore(), move || {
+        let final_blob = if merge_inputs.len() == 1 {
+          merge_inputs.remove(0)
+        } else {
+          y_octo::merge_updates_v1(merge_inputs)
+            .and_then(|u| u.encode_v1())
+            .map_err(|e| DomainError::Internal(format!("merge compaction updates: {e}")))?
+        };
+        let prev_snapshot_is_empty = prev_blob.as_deref().is_none_or(is_empty_doc_bin);
+        let blob_changed = prev_blob.as_deref().is_none_or(|prev| prev != final_blob.as_slice());
+        Ok(Phase2Merged {
+          final_blob,
+          prev_snapshot_is_empty,
+          blob_changed,
+        })
+      })
+      .await?
+    };
+
+    // Phase 3: millisecond-level strict CAS write transaction.
+    let mut tx = db
+      .begin_tiered(WorkloadTier::LongQuery)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin doc compaction commit: {e}")))?;
+
+    match commit_compaction_phase3(
+      tx.tx_mut(),
+      workspace_id,
+      doc_id,
+      &phase1,
+      &phase2,
+      history_min_interval_ms,
+      history_max_age_seconds,
+    )
     .await
-    .map_err(|e| DomainError::Internal(format!("try lock workspace storage for compaction: {e}")))?;
-  if !ws_locked {
-    let _ = tx.rollback().await;
-    return Ok(DocCompactionOutcome {
-      lock_acquired: false,
-      updates_merged: 0,
-      history_created: false,
-    });
+    {
+      Ok(Phase3Outcome::Committed(outcome)) => {
+        if let Err(err) = tx.commit().await {
+          if let server_db::DbError::Sqlx(sqlx_err) = &err
+            && is_pg_deadlock(sqlx_err)
+            && attempt < MAX_COMPACTION_CAS_RETRIES
+          {
+            continue;
+          }
+          return Err(DomainError::Internal(format!("commit doc compaction: {err}")));
+        }
+        return Ok(outcome);
+      }
+      Ok(Phase3Outcome::LockNotAcquired) => {
+        let _ = tx.rollback().await;
+        return Ok(DocCompactionOutcome {
+          lock_acquired: false,
+          updates_merged: 0,
+          history_created: false,
+        });
+      }
+      Ok(Phase3Outcome::Skipped) => {
+        let _ = tx.rollback().await;
+        return Ok(DocCompactionOutcome {
+          lock_acquired: true,
+          updates_merged: 0,
+          history_created: false,
+        });
+      }
+      Err(Phase3Error::CasMismatch | Phase3Error::Deadlock) => {
+        let _ = tx.rollback().await;
+        if attempt < MAX_COMPACTION_CAS_RETRIES {
+          continue;
+        }
+        return Ok(DocCompactionOutcome {
+          lock_acquired: false,
+          updates_merged: 0,
+          history_created: false,
+        });
+      }
+      Err(Phase3Error::Fatal(err)) => {
+        let _ = tx.rollback().await;
+        return Err(err);
+      }
+    }
   }
 
-  let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0))")
-    .bind(format!("workspace-doc-update:{workspace_id}/{doc_id}"))
-    .fetch_one(&mut **tx.tx_mut())
+  Ok(DocCompactionOutcome {
+    lock_acquired: false,
+    updates_merged: 0,
+    history_created: false,
+  })
+}
+
+async fn load_compaction_phase1(
+  db: &ServerDb,
+  workspace_id: &str,
+  doc_id: &str,
+  batch_limit: i64,
+) -> Result<Option<Phase1Read>, DomainError> {
+  let mut conn = db
+    .acquire_tiered(WorkloadTier::LongQuery)
     .await
-    .map_err(|e| DomainError::Internal(format!("try lock doc compaction: {e}")))?;
-  if !locked {
-    let _ = tx.rollback().await;
-    return Ok(DocCompactionOutcome {
-      lock_acquired: false,
-      updates_merged: 0,
-      history_created: false,
-    });
-  }
+    .map_err(|e| DomainError::Internal(format!("acquire doc compaction read: {e}")))?;
 
   let deleted_doc: bool = sqlx::query_scalar(
     "SELECT COALESCE(lifecycle_state::text = 'deleted', false) FROM workspace_pages WHERE workspace_id = $1 AND page_id = $2",
   )
   .bind(workspace_id)
   .bind(doc_id)
-  .fetch_optional(&mut **tx.tx_mut())
+  .fetch_optional(&mut *conn)
   .await
   .map_err(|e| DomainError::Internal(format!("check deleted doc before compaction: {e}")))?
   .unwrap_or(false);
   if deleted_doc {
-    let _ = tx.rollback().await;
-    return Ok(DocCompactionOutcome {
-      lock_acquired: true,
-      updates_merged: 0,
-      history_created: false,
-    });
+    return Ok(None);
   }
 
   let snapshot = sqlx::query_as::<_, (Vec<u8>, DateTime<Utc>, Option<String>)>(
-    "SELECT blob, updated_at, updated_by FROM snapshots WHERE workspace_id = $1 AND guid = $2 FOR UPDATE",
+    "SELECT blob, updated_at, updated_by FROM snapshots WHERE workspace_id = $1 AND guid = $2",
   )
   .bind(workspace_id)
   .bind(doc_id)
-  .fetch_optional(&mut **tx.tx_mut())
+  .fetch_optional(&mut *conn)
   .await
   .map_err(|e| DomainError::Internal(format!("load snapshot for compaction: {e}")))?
   .map(|(blob, updated_at, updated_by)| SnapshotRow {
@@ -459,12 +655,12 @@ pub async fn compact_pending_doc_updates(
   });
 
   let updates: Vec<UpdateRow> = sqlx::query_as::<_, (Vec<u8>, DateTime<Utc>, Option<String>)>(
-    "SELECT blob, created_at, created_by FROM updates WHERE workspace_id = $1 AND guid = $2 ORDER BY created_at ASC LIMIT $3 FOR UPDATE",
+    "SELECT blob, created_at, created_by FROM updates WHERE workspace_id = $1 AND guid = $2 ORDER BY created_at ASC LIMIT $3",
   )
   .bind(workspace_id)
   .bind(doc_id)
   .bind(batch_limit)
-  .fetch_all(&mut **tx.tx_mut())
+  .fetch_all(&mut *conn)
   .await
   .map_err(|e| DomainError::Internal(format!("load updates for compaction: {e}")))?
   .into_iter()
@@ -475,15 +671,216 @@ pub async fn compact_pending_doc_updates(
   })
   .collect();
 
+  drop(conn);
+
   if updates.is_empty() {
-    tx.commit()
+    return Ok(None);
+  }
+
+  let snapshot_fp = snapshot
+    .as_ref()
+    .map(|s| (s.updated_at, sha256_bytes(&s.blob), s.updated_by.clone()));
+  let batch_fingerprints = updates.iter().map(|u| (u.created_at, sha256_bytes(&u.blob))).collect();
+
+  Ok(Some(Phase1Read {
+    snapshot,
+    snapshot_fp,
+    updates,
+    batch_fingerprints,
+  }))
+}
+
+async fn commit_compaction_phase3(
+  tx: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+  phase1: &Phase1Read,
+  phase2: &Phase2Merged,
+  history_min_interval_ms: i64,
+  history_max_age_seconds: i64,
+) -> Result<Phase3Outcome, Phase3Error> {
+  // Strict lock order: workspace shared lock before per-doc exclusive lock.
+  let ws_locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock_shared(hashtextextended($1, 0))")
+    .bind(format!("storage-workspace:{workspace_id}"))
+    .fetch_one(&mut **tx)
+    .await
+    .map_err(map_phase3_sqlx("try lock workspace storage for compaction"))?;
+  if !ws_locked {
+    return Ok(Phase3Outcome::LockNotAcquired);
+  }
+
+  let doc_locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0))")
+    .bind(format!("workspace-doc-update:{workspace_id}/{doc_id}"))
+    .fetch_one(&mut **tx)
+    .await
+    .map_err(map_phase3_sqlx("try lock doc compaction"))?;
+  if !doc_locked {
+    return Ok(Phase3Outcome::LockNotAcquired);
+  }
+
+  let ws_exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1)")
+    .bind(workspace_id)
+    .fetch_one(&mut **tx)
+    .await
+    .map_err(map_phase3_sqlx("check workspace exists before compaction"))?;
+  if !ws_exists {
+    return Ok(Phase3Outcome::Skipped);
+  }
+
+  let deleted_doc: bool = sqlx::query_scalar(
+    "SELECT COALESCE(lifecycle_state::text = 'deleted', false) FROM workspace_pages WHERE workspace_id = $1 AND page_id = $2",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .fetch_optional(&mut **tx)
+  .await
+  .map_err(map_phase3_sqlx("recheck deleted doc before compaction"))?
+  .unwrap_or(false);
+  if deleted_doc {
+    return Ok(Phase3Outcome::Skipped);
+  }
+
+  let first = phase1.updates.first().expect("updates non-empty");
+  let last = phase1.updates.last().expect("updates non-empty");
+
+  match &phase1.snapshot_fp {
+    None => {
+      sqlx::query(
+        r#"INSERT INTO runtime_doc_creators (workspace_id, doc_id, created_by, created_at)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (workspace_id, doc_id) DO NOTHING"#,
+      )
+      .bind(workspace_id)
+      .bind(doc_id)
+      .bind(first.created_by.as_deref())
+      .bind(first.created_at)
+      .execute(&mut **tx)
       .await
-      .map_err(|e| DomainError::Internal(format!("commit empty compaction: {e}")))?;
-    return Ok(DocCompactionOutcome {
-      lock_acquired: true,
-      updates_merged: 0,
-      history_created: false,
-    });
+      .map_err(map_phase3_sqlx("insert runtime_doc_creators"))?;
+
+      let creator: Option<String> =
+        sqlx::query_scalar("SELECT created_by FROM runtime_doc_creators WHERE workspace_id = $1 AND doc_id = $2")
+          .bind(workspace_id)
+          .bind(doc_id)
+          .fetch_optional(&mut **tx)
+          .await
+          .map_err(map_phase3_sqlx("load runtime_doc_creators"))?
+          .flatten();
+
+      let inserted: Option<DateTime<Utc>> = sqlx::query_scalar(
+        r#"INSERT INTO snapshots
+             (workspace_id, guid, blob, size, created_at, updated_at, created_by, updated_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT (workspace_id, guid) DO NOTHING
+           RETURNING updated_at"#,
+      )
+      .bind(workspace_id)
+      .bind(doc_id)
+      .bind(&phase2.final_blob)
+      .bind(phase2.final_blob.len() as i64)
+      .bind(first.created_at)
+      .bind(last.created_at)
+      .bind(creator.as_deref())
+      .bind(last.created_by.as_deref())
+      .fetch_optional(&mut **tx)
+      .await
+      .map_err(map_phase3_sqlx("insert compacted snapshot"))?;
+      if inserted.is_none() {
+        return Err(Phase3Error::CasMismatch);
+      }
+    }
+    Some((base_updated_at, base_hash, base_updated_by)) => {
+      let current = sqlx::query_as::<_, (Vec<u8>, DateTime<Utc>, Option<String>)>(
+        "SELECT blob, updated_at, updated_by FROM snapshots WHERE workspace_id = $1 AND guid = $2 FOR UPDATE",
+      )
+      .bind(workspace_id)
+      .bind(doc_id)
+      .fetch_optional(&mut **tx)
+      .await
+      .map_err(map_phase3_sqlx("lock snapshot for compaction cas"))?;
+
+      let Some((cur_blob, cur_updated_at, cur_updated_by)) = current else {
+        return Err(Phase3Error::CasMismatch);
+      };
+      if cur_updated_at != *base_updated_at
+        || sha256_bytes(&cur_blob) != *base_hash
+        || cur_updated_by != *base_updated_by
+      {
+        return Err(Phase3Error::CasMismatch);
+      }
+
+      let mut timestamp = (*base_updated_at).max(last.created_at);
+      if *base_updated_at >= last.created_at && phase2.blob_changed {
+        timestamp = next_doc_timestamp_in(tx, workspace_id, doc_id)
+          .await
+          .map_err(Phase3Error::Fatal)?;
+      }
+      let editor = if *base_updated_at > last.created_at {
+        base_updated_by.as_deref().or(last.created_by.as_deref())
+      } else {
+        last.created_by.as_deref()
+      };
+
+      let updated: Option<DateTime<Utc>> = sqlx::query_scalar(
+        r#"UPDATE snapshots
+           SET blob = $3,
+               size = $4,
+               updated_at = $5,
+               updated_by = $6
+           WHERE workspace_id = $1
+             AND guid = $2
+           RETURNING updated_at"#,
+      )
+      .bind(workspace_id)
+      .bind(doc_id)
+      .bind(&phase2.final_blob)
+      .bind(phase2.final_blob.len() as i64)
+      .bind(timestamp)
+      .bind(editor)
+      .fetch_optional(&mut **tx)
+      .await
+      .map_err(map_phase3_sqlx("update compacted snapshot"))?;
+      if updated.is_none() {
+        return Err(Phase3Error::CasMismatch);
+      }
+    }
+  }
+
+  // Verify exact update fingerprints before deleting only the merged batch.
+  let timestamps: Vec<DateTime<Utc>> = phase1.batch_fingerprints.iter().map(|(ts, _)| *ts).collect();
+  let locked_updates: Vec<(DateTime<Utc>, Vec<u8>)> = sqlx::query_as(
+    r#"SELECT created_at, blob
+       FROM updates
+       WHERE workspace_id = $1 AND guid = $2 AND created_at = ANY($3)
+       ORDER BY created_at ASC
+       FOR UPDATE"#,
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .bind(&timestamps)
+  .fetch_all(&mut **tx)
+  .await
+  .map_err(map_phase3_sqlx("lock updates for compaction cas"))?;
+
+  if locked_updates.len() != phase1.batch_fingerprints.len() {
+    return Err(Phase3Error::CasMismatch);
+  }
+  for ((cur_ts, cur_blob), (exp_ts, exp_hash)) in locked_updates.iter().zip(&phase1.batch_fingerprints) {
+    if cur_ts != exp_ts || sha256_bytes(cur_blob) != *exp_hash {
+      return Err(Phase3Error::CasMismatch);
+    }
+  }
+
+  let deleted = sqlx::query("DELETE FROM updates WHERE workspace_id = $1 AND guid = $2 AND created_at = ANY($3)")
+    .bind(workspace_id)
+    .bind(doc_id)
+    .bind(&timestamps)
+    .execute(&mut **tx)
+    .await
+    .map_err(map_phase3_sqlx("delete compacted updates"))?
+    .rows_affected();
+  if deleted as usize != phase1.batch_fingerprints.len() {
+    return Err(Phase3Error::CasMismatch);
   }
 
   sqlx::query(
@@ -497,14 +894,14 @@ pub async fn compact_pending_doc_updates(
   )
   .bind(workspace_id)
   .bind(doc_id)
-  .execute(&mut **tx.tx_mut())
+  .execute(&mut **tx)
   .await
-  .map_err(|e| DomainError::Internal(format!("mark doc_blob_ref_projections pending: {e}")))?;
+  .map_err(map_phase3_sqlx("mark doc_blob_ref_projections pending"))?;
 
   let has_embedding_sources: bool = sqlx::query_scalar("SELECT to_regclass('public.embedding_sources') IS NOT NULL")
-    .fetch_one(&mut **tx.tx_mut())
+    .fetch_one(&mut **tx)
     .await
-    .map_err(|e| DomainError::Internal(format!("check embedding_sources table: {e}")))?;
+    .map_err(map_phase3_sqlx("check embedding_sources table"))?;
   if has_embedding_sources {
     sqlx::query(
       r#"UPDATE embedding_sources
@@ -516,127 +913,26 @@ pub async fn compact_pending_doc_updates(
     )
     .bind(workspace_id)
     .bind(doc_id)
-    .execute(&mut **tx.tx_mut())
+    .execute(&mut **tx)
     .await
-    .map_err(|e| DomainError::Internal(format!("invalidate embedding_sources: {e}")))?;
+    .map_err(map_phase3_sqlx("invalidate embedding_sources"))?;
   }
 
   if workspace_id == doc_id {
     sqlx::query("UPDATE workspaces SET last_check_embeddings = '1970-01-01T00:00:00Z' WHERE id = $1")
       .bind(workspace_id)
-      .execute(&mut **tx.tx_mut())
+      .execute(&mut **tx)
       .await
-      .map_err(|e| DomainError::Internal(format!("reset workspace last_check_embeddings: {e}")))?;
-  }
-
-  let last = updates.last().expect("updates non-empty");
-  let mut merge_inputs = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
-  if let Some(snap) = &snapshot {
-    merge_inputs.push(snap.blob.clone());
-  }
-  merge_inputs.extend(updates.iter().map(|u| u.blob.clone()));
-
-  let final_blob = if merge_inputs.len() == 1 {
-    merge_inputs.remove(0)
-  } else {
-    y_octo::merge_updates_v1(merge_inputs)
-      .and_then(|u| u.encode_v1())
-      .map_err(|e| DomainError::Internal(format!("merge compaction updates: {e}")))?
-  };
-
-  let mut timestamp = snapshot
-    .as_ref()
-    .map_or(last.created_at, |s| s.updated_at.max(last.created_at));
-  if snapshot
-    .as_ref()
-    .is_some_and(|s| s.updated_at >= last.created_at && s.blob != final_blob)
-  {
-    timestamp = next_doc_timestamp_in(tx.tx_mut(), workspace_id, doc_id).await?;
-  }
-  let editor = snapshot
-    .as_ref()
-    .filter(|s| s.updated_at > last.created_at)
-    .and_then(|s| s.updated_by.as_deref())
-    .or(last.created_by.as_deref());
-
-  let persisted_at: Option<DateTime<Utc>> = if snapshot.is_none() {
-    let first = updates.first().expect("updates non-empty");
-    sqlx::query(
-      r#"INSERT INTO runtime_doc_creators (workspace_id, doc_id, created_by, created_at)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (workspace_id, doc_id) DO NOTHING"#,
-    )
-    .bind(workspace_id)
-    .bind(doc_id)
-    .bind(first.created_by.as_deref())
-    .bind(first.created_at)
-    .execute(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| DomainError::Internal(format!("insert runtime_doc_creators: {e}")))?;
-
-    let creator: Option<String> =
-      sqlx::query_scalar("SELECT created_by FROM runtime_doc_creators WHERE workspace_id = $1 AND doc_id = $2")
-        .bind(workspace_id)
-        .bind(doc_id)
-        .fetch_optional(&mut **tx.tx_mut())
-        .await
-        .map_err(|e| DomainError::Internal(format!("load runtime_doc_creators: {e}")))?
-        .flatten();
-
-    sqlx::query_scalar(
-      r#"INSERT INTO snapshots
-           (workspace_id, guid, blob, size, created_at, updated_at, created_by, updated_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (workspace_id, guid) DO NOTHING
-         RETURNING updated_at"#,
-    )
-    .bind(workspace_id)
-    .bind(doc_id)
-    .bind(&final_blob)
-    .bind(final_blob.len() as i64)
-    .bind(first.created_at)
-    .bind(timestamp)
-    .bind(creator.as_deref())
-    .bind(editor)
-    .fetch_optional(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| DomainError::Internal(format!("insert compacted snapshot: {e}")))?
-  } else {
-    sqlx::query_scalar(
-      r#"UPDATE snapshots
-         SET blob = $3,
-             size = $4,
-             updated_at = $5,
-             updated_by = $6
-         WHERE workspace_id = $1
-           AND guid = $2
-           AND snapshots.updated_at <= $5
-         RETURNING updated_at"#,
-    )
-    .bind(workspace_id)
-    .bind(doc_id)
-    .bind(&final_blob)
-    .bind(final_blob.len() as i64)
-    .bind(timestamp)
-    .bind(editor)
-    .fetch_optional(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| DomainError::Internal(format!("update compacted snapshot: {e}")))?
-  };
-
-  if persisted_at.is_none() {
-    let _ = tx.rollback().await;
-    return Ok(DocCompactionOutcome {
-      lock_acquired: false,
-      updates_merged: 0,
-      history_created: false,
-    });
+      .map_err(map_phase3_sqlx("reset workspace last_check_embeddings"))?;
   }
 
   let mut history_created = false;
-  if let Some(snap) = &snapshot
+  if let Some(snap) = &phase1.snapshot
     && history_max_age_seconds > 0
-    && should_create_history_in(tx.tx_mut(), snap, workspace_id, doc_id, history_min_interval_ms).await?
+    && !phase2.prev_snapshot_is_empty
+    && should_create_history_in(tx, snap.updated_at, workspace_id, doc_id, history_min_interval_ms)
+      .await
+      .map_err(Phase3Error::Fatal)?
   {
     let expired_at = Utc::now() + Duration::seconds(history_max_age_seconds);
     sqlx::query(
@@ -652,31 +948,17 @@ pub async fn compact_pending_doc_updates(
     .bind(&snap.blob)
     .bind(expired_at)
     .bind(snap.updated_by.as_deref())
-    .execute(&mut **tx.tx_mut())
+    .execute(&mut **tx)
     .await
-    .map_err(|e| DomainError::Internal(format!("insert compacted snapshot history: {e}")))?;
+    .map_err(map_phase3_sqlx("insert compacted snapshot history"))?;
     history_created = true;
   }
 
-  let timestamps: Vec<DateTime<Utc>> = updates.iter().map(|u| u.created_at).collect();
-  let deleted = sqlx::query("DELETE FROM updates WHERE workspace_id = $1 AND guid = $2 AND created_at = ANY($3)")
-    .bind(workspace_id)
-    .bind(doc_id)
-    .bind(&timestamps)
-    .execute(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| DomainError::Internal(format!("delete compacted updates: {e}")))?
-    .rows_affected() as i64;
-
-  tx.commit()
-    .await
-    .map_err(|e| DomainError::Internal(format!("commit doc compaction: {e}")))?;
-
-  Ok(DocCompactionOutcome {
+  Ok(Phase3Outcome::Committed(DocCompactionOutcome {
     lock_acquired: true,
-    updates_merged: deleted,
+    updates_merged: deleted as i64,
     history_created,
-  })
+  }))
 }
 
 async fn next_doc_timestamp_in(
@@ -700,14 +982,11 @@ async fn next_doc_timestamp_in(
 
 async fn should_create_history_in(
   tx: &mut Transaction<'_, Postgres>,
-  snapshot: &SnapshotRow,
+  snapshot_updated_at: DateTime<Utc>,
   workspace_id: &str,
   doc_id: &str,
   history_min_interval_ms: i64,
 ) -> Result<bool, DomainError> {
-  if is_empty_doc_bin(&snapshot.blob) {
-    return Ok(false);
-  }
   let latest: Option<DateTime<Utc>> = sqlx::query_scalar(
     "SELECT timestamp FROM snapshot_histories WHERE workspace_id = $1 AND guid = $2 ORDER BY timestamp DESC LIMIT 1",
   )
@@ -719,16 +998,100 @@ async fn should_create_history_in(
   let Some(last_ts) = latest else {
     return Ok(true);
   };
-  if last_ts == snapshot.updated_at {
+  if last_ts == snapshot_updated_at {
     return Ok(false);
   }
-  let threshold = snapshot.updated_at - Duration::milliseconds(history_min_interval_ms.max(0));
+  let threshold = snapshot_updated_at - Duration::milliseconds(history_min_interval_ms.max(0));
   Ok(last_ts < threshold)
 }
 
-/// Scans pending `(workspace_id, guid)` pairs in `updates` and compacts up to
-/// `max_docs` documents while respecting each workspace's `history_period_seconds`
-/// quota and checking `is_cancelled` between documents.
+async fn loose_index_scan_pending_docs(
+  db: &ServerDb,
+  after_ws: &str,
+  after_guid: &str,
+  upper_bound: Option<(&str, &str)>,
+  limit: i64,
+) -> Result<Vec<(String, String)>, DomainError> {
+  if limit <= 0 {
+    return Ok(Vec::new());
+  }
+  let mut conn = db
+    .acquire_tiered(WorkloadTier::LongQuery)
+    .await
+    .map_err(|e| DomainError::Unavailable(format!("acquire pending update docs: {e}")))?;
+  let rows = match upper_bound {
+    None => {
+      sqlx::query_as(
+        r#"WITH RECURSIVE pending(workspace_id, guid, depth) AS (
+             (
+               SELECT workspace_id, guid, 1
+               FROM updates
+               WHERE (workspace_id, guid) > ($1, $2)
+               ORDER BY workspace_id ASC, guid ASC
+               LIMIT 1
+             )
+             UNION ALL
+             SELECT next_pair.workspace_id, next_pair.guid, p.depth + 1
+             FROM pending p
+             CROSS JOIN LATERAL (
+               SELECT u.workspace_id, u.guid
+               FROM updates u
+               WHERE (u.workspace_id, u.guid) > (p.workspace_id, p.guid)
+               ORDER BY u.workspace_id ASC, u.guid ASC
+               LIMIT 1
+             ) AS next_pair
+             WHERE p.depth < $3
+           )
+           SELECT workspace_id, guid FROM pending"#,
+      )
+      .bind(after_ws)
+      .bind(after_guid)
+      .bind(limit)
+      .fetch_all(&mut *conn)
+      .await
+    }
+    Some((max_ws, max_guid)) => {
+      sqlx::query_as(
+        r#"WITH RECURSIVE pending(workspace_id, guid, depth) AS (
+             (
+               SELECT workspace_id, guid, 1
+               FROM updates
+               WHERE (workspace_id, guid) > ($1, $2)
+                 AND (workspace_id, guid) <= ($4, $5)
+               ORDER BY workspace_id ASC, guid ASC
+               LIMIT 1
+             )
+             UNION ALL
+             SELECT next_pair.workspace_id, next_pair.guid, p.depth + 1
+             FROM pending p
+             CROSS JOIN LATERAL (
+               SELECT u.workspace_id, u.guid
+               FROM updates u
+               WHERE (u.workspace_id, u.guid) > (p.workspace_id, p.guid)
+                 AND (u.workspace_id, u.guid) <= ($4, $5)
+               ORDER BY u.workspace_id ASC, u.guid ASC
+               LIMIT 1
+             ) AS next_pair
+             WHERE p.depth < $3
+           )
+           SELECT workspace_id, guid FROM pending"#,
+      )
+      .bind(after_ws)
+      .bind(after_guid)
+      .bind(limit)
+      .bind(max_ws)
+      .bind(max_guid)
+      .fetch_all(&mut *conn)
+      .await
+    }
+  }
+  .map_err(|e| DomainError::Internal(format!("list pending update docs: {e}")))?;
+  Ok(rows)
+}
+
+/// Scans pending `(workspace_id, guid)` pairs in `updates` via a rotating
+/// loose index scan and compacts up to `max_docs` documents while caching each
+/// workspace's `history_period_seconds` quota per batch.
 pub async fn compact_pending_docs_batch(
   db: &ServerDb,
   quota_gate: &dyn QuotaGate,
@@ -737,50 +1100,62 @@ pub async fn compact_pending_docs_batch(
   history_min_interval_ms: i64,
   is_cancelled: impl Fn() -> bool,
 ) -> Result<usize, DomainError> {
-  let pairs: Vec<(String, String)> = {
-    let mut conn = db
-      .acquire_tiered(WorkloadTier::LongQuery)
-      .await
-      .map_err(|e| DomainError::Unavailable(format!("acquire pending update docs: {e}")))?;
-    sqlx::query_as(
-      r#"SELECT workspace_id, guid
-         FROM updates
-         GROUP BY workspace_id, guid
-         ORDER BY MIN(created_at) ASC, workspace_id ASC, guid ASC
-         LIMIT $1"#,
-    )
-    .bind(max_docs.clamp(1, 500))
-    .fetch_all(&mut *conn)
-    .await
-    .map_err(|e| DomainError::Internal(format!("list pending update docs: {e}")))?
+  let limit = max_docs.clamp(1, 500);
+  let (cursor_ws, cursor_guid) = {
+    let guard = compaction_scan_cursor().lock().unwrap_or_else(|e| e.into_inner());
+    guard.clone()
   };
 
+  let mut pairs = loose_index_scan_pending_docs(db, &cursor_ws, &cursor_guid, None, limit).await?;
+  if (pairs.len() as i64) < limit && (!cursor_ws.is_empty() || !cursor_guid.is_empty()) {
+    let remaining = limit - pairs.len() as i64;
+    let wrapped = loose_index_scan_pending_docs(db, "", "", Some((&cursor_ws, &cursor_guid)), remaining).await?;
+    pairs.extend(wrapped);
+  }
+
+  if pairs.is_empty() {
+    let mut guard = compaction_scan_cursor().lock().unwrap_or_else(|e| e.into_inner());
+    *guard = (String::new(), String::new());
+    return Ok(0);
+  }
+
+  let mut quota_cache: HashMap<String, i64> = HashMap::new();
   let mut compacted = 0usize;
+  let mut last_visited: Option<(String, String)> = None;
+
   for (workspace_id, doc_id) in pairs {
     if is_cancelled() {
       break;
     }
-    let mut tx = db
-      .begin_tiered(WorkloadTier::LongQuery)
-      .await
-      .map_err(|e| DomainError::Unavailable(format!("begin quota lookup for compaction: {e}")))?;
-    let history_secs = match quota_gate
-      .resolve_workspace_grant(tx.tx_mut(), &workspace_id, Utc::now())
-      .await
-    {
-      Ok(grant) => grant.limits.history_period_seconds,
-      Err(err) => {
-        let _ = tx.rollback().await;
-        tracing::warn!(
-          workspace_id = %workspace_id,
-          doc_id = %doc_id,
-          error = %err,
-          "skipping doc compaction because workspace quota lookup failed"
-        );
-        continue;
-      }
+    last_visited = Some((workspace_id.clone(), doc_id.clone()));
+
+    let history_secs = if let Some(&cached) = quota_cache.get(&workspace_id) {
+      cached
+    } else {
+      let mut tx = db
+        .begin_tiered(WorkloadTier::LongQuery)
+        .await
+        .map_err(|e| DomainError::Unavailable(format!("begin quota lookup for compaction: {e}")))?;
+      let resolved = match quota_gate
+        .resolve_workspace_grant(tx.tx_mut(), &workspace_id, Utc::now())
+        .await
+      {
+        Ok(grant) => grant.limits.history_period_seconds,
+        Err(err) => {
+          let _ = tx.rollback().await;
+          tracing::warn!(
+            workspace_id = %workspace_id,
+            doc_id = %doc_id,
+            error = %err,
+            "skipping doc compaction because workspace quota lookup failed"
+          );
+          continue;
+        }
+      };
+      let _ = tx.rollback().await;
+      quota_cache.insert(workspace_id.clone(), resolved);
+      resolved
     };
-    let _ = tx.rollback().await;
 
     match compact_pending_doc_updates(
       db,
@@ -807,6 +1182,12 @@ pub async fn compact_pending_docs_batch(
       }
     }
   }
+
+  if let Some(last) = last_visited {
+    let mut guard = compaction_scan_cursor().lock().unwrap_or_else(|e| e.into_inner());
+    *guard = last;
+  }
+
   Ok(compacted)
 }
 
@@ -1016,16 +1397,8 @@ mod tests {
       .expect("fetch projection status");
       assert_eq!(proj_status, "pending");
 
-      // 2. Stale snapshot guard: simulate concurrent snapshot row with newer updated_at
-      //    arriving after snapshot load; compaction must roll back and preserve all updates.
-      sqlx::query(
-        "INSERT INTO doc_blob_ref_projections (workspace_id, doc_id, source_revision, parser_version, status, indexed_at) VALUES ($1, $2, clock_timestamp(), 1, 'fresh', clock_timestamp())",
-      )
-      .bind(&ws_id)
-      .bind(doc2)
-      .execute(db.pool())
-      .await
-      .expect("insert doc2 projection");
+      // 2. Stale snapshot guard: if concurrent snapshot writes keep racing ahead of
+      //    every CAS attempt, compaction rolls back and preserves all updates.
       sqlx::query(
         "INSERT INTO updates (workspace_id, guid, blob, created_at, created_by) VALUES ($1, $2, $3, $4, $5)",
       )
@@ -1037,28 +1410,30 @@ mod tests {
       .execute(db.pool())
       .await
       .expect("insert doc2 update");
-      sqlx::raw_sql(&format!(
-        r#"CREATE OR REPLACE FUNCTION inject_concurrent_snapshot() RETURNS trigger AS $$
-           BEGIN
-             IF NEW.doc_id = '{doc2}' THEN
-               INSERT INTO snapshots (workspace_id, guid, blob, size, created_at, updated_at)
-               VALUES (NEW.workspace_id, NEW.doc_id, E'\\x0000', 2, now(), now() + interval '10 minutes')
-               ON CONFLICT (workspace_id, guid) DO UPDATE SET updated_at = EXCLUDED.updated_at;
-             END IF;
-             RETURN NEW;
-           END;
-           $$ LANGUAGE plpgsql;
-           CREATE TRIGGER trg_inject_concurrent_snapshot
-             AFTER UPDATE ON doc_blob_ref_projections
-             FOR EACH ROW EXECUTE FUNCTION inject_concurrent_snapshot();"#
-      ))
-      .execute(db.pool())
-      .await
-      .expect("create fault trigger");
 
-      let stale_outcome = compact_pending_doc_updates(&db, &ws_id, doc2, 100, 0, 0)
-        .await
-        .expect("stale compaction");
+      let db_hook = db.clone();
+      let ws_hook = ws_id.clone();
+      let stale_outcome = compact_pending_doc_updates_with_merge_hook(&db, &ws_id, doc2, 100, 0, 0, move |attempt| {
+        let db_hook = db_hook.clone();
+        let ws_hook = ws_hook.clone();
+        async move {
+          let bumped = Utc::now() + Duration::minutes(10 + attempt as i64);
+          sqlx::query(
+            r#"INSERT INTO snapshots (workspace_id, guid, blob, size, created_at, updated_at)
+               VALUES ($1, $2, $3, 2, now(), $4)
+               ON CONFLICT (workspace_id, guid) DO UPDATE SET updated_at = EXCLUDED.updated_at"#,
+          )
+          .bind(&ws_hook)
+          .bind(doc2)
+          .bind(&[0u8, 0u8][..])
+          .bind(bumped)
+          .execute(db_hook.pool())
+          .await
+          .expect("inject concurrent snapshot");
+        }
+      })
+      .await
+      .expect("stale compaction");
       assert!(!stale_outcome.lock_acquired);
       assert_eq!(stale_outcome.updates_merged, 0);
 

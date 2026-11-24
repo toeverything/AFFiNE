@@ -44,15 +44,29 @@ pub async fn run_with_snapshots<S: SnapshotSource>(
     scenario: &Scenario,
     source: &S,
 ) -> Result<Report> {
+    run_with_snapshots_and_smtp(scenario, source, (None, None)).await
+}
+pub async fn run_with_snapshots_and_smtp<S: SnapshotSource>(
+    scenario: &Scenario,
+    source: &S,
+    smtp_sinks: (Option<SmtpSink>, Option<SmtpSink>),
+) -> Result<Report> {
     // Bound setup, streams, snapshot queries and final collection as well as each
     // step. A dead database or SMTP peer must not leave an unattended run hung.
     let phases = u64::try_from(scenario.steps.len())?.saturating_add(3);
     let budget = scenario.timeout_ms.saturating_mul(phases);
-    tokio::time::timeout(Duration::from_millis(budget), run_inner(scenario, source))
-        .await
-        .context("scenario deadline exceeded")?
+    tokio::time::timeout(
+        Duration::from_millis(budget),
+        run_inner(scenario, source, smtp_sinks),
+    )
+    .await
+    .context("scenario deadline exceeded")?
 }
-async fn run_inner<S: SnapshotSource>(scenario: &Scenario, source: &S) -> Result<Report> {
+async fn run_inner<S: SnapshotSource>(
+    scenario: &Scenario,
+    source: &S,
+    smtp_sinks: (Option<SmtpSink>, Option<SmtpSink>),
+) -> Result<Report> {
     ensure!(
         !scenario.steps.is_empty(),
         "scenario must contain at least one step"
@@ -67,7 +81,12 @@ async fn run_inner<S: SnapshotSource>(scenario: &Scenario, source: &S) -> Result
         "configure Redis for both targets"
     );
     ensure!(
-        scenario.left_target.smtp_bind.is_some() == scenario.right_target.smtp_bind.is_some(),
+        smtp_sinks.0.is_some() == smtp_sinks.1.is_some(),
+        "provide prebound SMTP sinks for both targets or neither"
+    );
+    ensure!(
+        (smtp_sinks.0.is_some() || scenario.left_target.smtp_bind.is_some())
+            == (smtp_sinks.1.is_some() || scenario.right_target.smtp_bind.is_some()),
         "configure SMTP sinks for both targets"
     );
     if let (Some(l), Some(r)) = (&scenario.left_target.redis, &scenario.right_target.redis) {
@@ -99,10 +118,14 @@ async fn run_inner<S: SnapshotSource>(scenario: &Scenario, source: &S) -> Result
         );
     }
     let mut normalizer = Normalizer::new(&scenario.dynamic)?;
-    let (ls, rs) = tokio::try_join!(
-        start_smtp(&scenario.left_target.smtp_bind),
-        start_smtp(&scenario.right_target.smtp_bind)
-    )?;
+    let (ls, rs) = match smtp_sinks {
+        (Some(l), Some(r)) => (Some(l), Some(r)),
+        (None, None) => tokio::try_join!(
+            start_smtp(&scenario.left_target.smtp_bind),
+            start_smtp(&scenario.right_target.smtp_bind)
+        )?,
+        _ => unreachable!("prebound SMTP sink parity already checked"),
+    };
     let (lr, rr) = tokio::try_join!(
         start_redis(&scenario.left_target.redis),
         start_redis(&scenario.right_target.redis)

@@ -483,6 +483,30 @@ impl WorkspaceType {
     super::doc::resolve_workspace_doc(ctx, &self.record.id, &doc_id).await
   }
 
+  async fn search(
+    &self,
+    ctx: &Context<'_>,
+    input: super::search::SearchInput,
+  ) -> Result<super::search::SearchResultObjectType> {
+    super::search::resolve_workspace_search(ctx, &self.record.id, input).await
+  }
+
+  async fn aggregate(
+    &self,
+    ctx: &Context<'_>,
+    input: super::search::AggregateInput,
+  ) -> Result<super::search::AggregateResultObjectType> {
+    super::search::resolve_workspace_aggregate(ctx, &self.record.id, input).await
+  }
+
+  async fn search_docs(
+    &self,
+    ctx: &Context<'_>,
+    input: super::search::SearchDocsInput,
+  ) -> Result<Vec<super::search::SearchDocObjectType>> {
+    super::search::resolve_workspace_search_docs(ctx, &self.record.id, input).await
+  }
+
   async fn public_docs(&self, ctx: &Context<'_>) -> Result<Vec<super::doc::DocType>> {
     let state = ctx.data_unchecked::<Arc<AppState>>();
     let actor = ctx.data_opt::<AuthenticatedUser>().map(|a| a.user_id.as_str());

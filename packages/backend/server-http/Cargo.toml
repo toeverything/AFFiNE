@@ -26,6 +26,7 @@ server-blob.workspace        = true
 server-db.workspace          = true
 server-domain.workspace      = true
 server-mail.workspace        = true
+server-search.workspace      = true
 server-spi.workspace         = true
 server-types.workspace       = true
 sqlx.workspace               = true

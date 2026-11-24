@@ -11,7 +11,7 @@ use axum::{
 };
 use parity_harness::{
     model::Scenario,
-    sinks::{CHANNELS, RedisSink},
+    sinks::{CHANNELS, RedisSink, SmtpSink},
 };
 use serde_json::{Value, json};
 use std::{collections::BTreeSet, sync::Arc};
@@ -286,10 +286,6 @@ async fn broker(delay_ms: u64, burst_after_fence: bool) -> Service {
         task,
     }
 }
-fn smtp_port() -> String {
-    let socket = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
-    socket.local_addr().unwrap().to_string()
-}
 async fn fixture(side: &str, fault: Fault, redis: &str, smtp: &str) -> Service {
     let state = Fixture {
         side: side.into(),
@@ -320,13 +316,15 @@ async fn replay(fault: Fault) -> parity_harness::model::Report {
 async fn replay_with_delivery_delay(fault: Fault, delay_ms: u64) -> parity_harness::model::Report {
     let lredis = broker(delay_ms, false).await;
     let rredis = broker(delay_ms, false).await;
-    let lsmtp = smtp_port();
-    let rsmtp = smtp_port();
-    let left = fixture("left", Fault::None, &lredis.url, &lsmtp).await;
-    let right = fixture("right", fault, &rredis.url, &rsmtp).await;
+    let lsmtp = SmtpSink::bind("127.0.0.1:0").await.unwrap();
+    let rsmtp = SmtpSink::bind("127.0.0.1:0").await.unwrap();
+    let lsmtp_addr = lsmtp.address.to_string();
+    let rsmtp_addr = rsmtp.address.to_string();
+    let left = fixture("left", Fault::None, &lredis.url, &lsmtp_addr).await;
+    let right = fixture("right", fault, &rredis.url, &rsmtp_addr).await;
     let scenario:Scenario=serde_json::from_value(json!({
-        "left_target":{"base_url":left.url,"redis":lredis.url,"smtp_bind":lsmtp},
-        "right_target":{"base_url":right.url,"redis":rredis.url,"smtp_bind":rsmtp},
+        "left_target":{"base_url":left.url,"redis":lredis.url,"smtp_bind":lsmtp_addr},
+        "right_target":{"base_url":right.url,"redis":rredis.url,"smtp_bind":rsmtp_addr},
         "timeout_ms":3000,"table_keys":{"public.docs":["id"]},
         "dynamic":[{"path":"/(id|workspaceId|docId|originId)$","kind":"id"},{"path":"/timestamp$","kind":"ts"},{"path":"/accessToken$","kind":"token"}],
         "steps":[
@@ -343,7 +341,7 @@ async fn replay_with_delivery_delay(fault: Fault, delay_ms: u64) -> parity_harne
         left: left.rows.as_ref().unwrap().clone(),
         right: right.rows.as_ref().unwrap().clone(),
     };
-    parity_harness::run_with_snapshots(&scenario, &snapshots)
+    parity_harness::run_with_snapshots_and_smtp(&scenario, &snapshots, (Some(lsmtp), Some(rsmtp)))
         .await
         .unwrap()
 }
@@ -544,14 +542,22 @@ impl parity_harness::SnapshotSource for FixtureSnapshots {
 #[tokio::test]
 async fn expected_smtp_count_prevents_equal_missing_mail_from_being_green() {
     let target = fixture("same", Fault::None, "unused", "unused").await;
+    let lsmtp = SmtpSink::bind("127.0.0.1:0").await.unwrap();
+    let rsmtp = SmtpSink::bind("127.0.0.1:0").await.unwrap();
     let scenario: Scenario = serde_json::from_value(json!({
-        "left_target":{"base_url":target.url,"smtp_bind":smtp_port()},
-        "right_target":{"base_url":target.url,"smtp_bind":smtp_port()},
+        "left_target":{"base_url":target.url,"smtp_bind":lsmtp.address.to_string()},
+        "right_target":{"base_url":target.url,"smtp_bind":rsmtp.address.to_string()},
         "timeout_ms":80,"expected_smtp_count":1,
         "steps":[{"name":"no_mail","kind":"http","method":"POST","path":"/login"}]
     }))
     .unwrap();
-    let report = parity_harness::run(&scenario).await.unwrap();
+    let report = parity_harness::run_with_snapshots_and_smtp(
+        &scenario,
+        &parity_harness::PostgresSnapshots,
+        (Some(lsmtp), Some(rsmtp)),
+    )
+    .await
+    .unwrap();
     assert_eq!(report.differences.len(), 2);
     assert!(
         report

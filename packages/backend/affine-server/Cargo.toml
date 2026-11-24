@@ -23,6 +23,7 @@ server-db.workspace          = true
 server-domain.workspace      = true
 server-http.workspace        = true
 server-mail.workspace        = true
+server-search.workspace      = true
 server-spi.workspace         = true
 server-sync.workspace        = true
 server-types.workspace       = true

@@ -1011,3 +1011,330 @@ fn blob_contract_authz_app_config_rollback_smtp_isolation_and_magic_link_e2e() {
     running.state.db.pool().close().await;
   });
 }
+
+#[test]
+fn search_config_defaults_and_split_role_validation() {
+  assert!(!ServerCli::default().search_enabled);
+
+  let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+  let migrations_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+  let migrations = MigrationSet::load(&migrations_dir).expect("load prisma migrations");
+  let template = cluster.ensure_template(&migrations).expect("ensure migrated template");
+  let lease = cluster
+    .lease(&template, DEFAULT_LEASE_TTL)
+    .expect("lease test database");
+  let db_url = lease.url().to_owned();
+  let redis = TestRedis::from_env_or_docker().expect("test redis");
+  let redis_url = redis.url().to_owned();
+
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .worker_threads(4)
+    .enable_all()
+    .build()
+    .expect("build tokio runtime");
+
+  rt.block_on(async {
+    // 1. Embedded search on split roles (Graphql / Worker) MUST fail fast with InvalidConfig.
+    for role in [RoleArg::Graphql, RoleArg::Worker] {
+      let cli = ServerCli {
+        role: Some(role),
+        host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+        port: 0,
+        database_url: db_url.clone(),
+        redis_url: Some(redis_url.clone()),
+        skip_schema_check: true,
+        search_enabled: true,
+        search_provider: "embedded".to_owned(),
+        ..ServerCli::default()
+      };
+      let err = serve_with_extension(cli, Arc::new(CommunityExtension::new()), CancellationToken::new())
+        .await
+        .err()
+        .expect("embedded search on split role must fail");
+      assert!(
+        matches!(err, ServerError::InvalidConfig(ref msg) if msg.contains("--role allinone")),
+        "unexpected error for {role:?}: {err}"
+      );
+    }
+
+    // 2. Split Graphql + Worker with default search_enabled = false boot and serve cleanly,
+    //    and ServerConfig.features does not expose Indexer.
+    let gql_cli = ServerCli {
+      role: Some(RoleArg::Graphql),
+      host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+      port: 0,
+      database_url: db_url.clone(),
+      redis_url: Some(redis_url.clone()),
+      skip_schema_check: true,
+      ..ServerCli::default()
+    };
+
+    let worker_cli = ServerCli {
+      role: Some(RoleArg::Worker),
+      host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+      port: 0,
+      database_url: db_url.clone(),
+      redis_url: Some(redis_url.clone()),
+      skip_schema_check: true,
+      ..ServerCli::default()
+    };
+
+    let gql_running = serve_with_extension(gql_cli, Arc::new(CommunityExtension::new()), CancellationToken::new())
+      .await
+      .expect("start graphql role with search disabled");
+    let worker_running =
+      serve_with_extension(worker_cli, Arc::new(CommunityExtension::new()), CancellationToken::new())
+        .await
+        .expect("start worker role with search disabled");
+
+    let (ready_status, _) = http_request(gql_running.addr, "GET", "/readyz", None).await;
+    assert_eq!(ready_status, 200);
+    let (w_ready, _) = http_request(worker_running.addr, "GET", "/readyz", None).await;
+    assert_eq!(w_ready, 200);
+
+    let (gql_status, gql_body) = http_request(
+      gql_running.addr,
+      "POST",
+      "/graphql",
+      Some(r#"{"query":"{ serverConfig { features } }"}"#),
+    )
+    .await;
+    assert_eq!(gql_status, 200);
+    let features = gql_body["data"]["serverConfig"]["features"]
+      .as_array()
+      .expect("features array");
+    assert!(
+      !features.iter().any(|f| f.as_str() == Some("Indexer")),
+      "default search_enabled=false must not expose Indexer: {features:?}"
+    );
+
+    worker_running.shutdown.cancel();
+    worker_running.join_handle.await.unwrap().unwrap();
+    gql_running.shutdown.cancel();
+    gql_running.join_handle.await.unwrap().unwrap();
+    worker_running.state.db.pool().close().await;
+    gql_running.state.db.pool().close().await;
+
+    // 3. Split Graphql + Worker with remote Elasticsearch mock HTTP endpoint boot and serve cleanly,
+    //    and ServerConfig.features exposes Indexer.
+    let mock_listener = TcpListener::bind("127.0.0.1:0").await.expect("bind mock es");
+    let mock_addr = mock_listener.local_addr().expect("mock es addr");
+    let mock_shutdown = CancellationToken::new();
+    let mock_cancel = mock_shutdown.clone();
+    let mock_handle = tokio::spawn(async move {
+      loop {
+        tokio::select! {
+          () = mock_cancel.cancelled() => break,
+          accepted = mock_listener.accept() => {
+            if let Ok((mut stream, _)) = accepted {
+              tokio::spawn(async move {
+                let mut buf = [0u8; 4096];
+                let _ = stream.read(&mut buf).await;
+                let body = r#"{"acknowledged":true,"hits":{"total":{"value":0},"hits":[]}}"#;
+                let resp = format!(
+                  "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                  body.len()
+                );
+                let _ = stream.write_all(resp.as_bytes()).await;
+              });
+            }
+          }
+        }
+      }
+    });
+
+    let gql_remote = ServerCli {
+      role: Some(RoleArg::Graphql),
+      host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+      port: 0,
+      database_url: db_url.clone(),
+      redis_url: Some(redis_url.clone()),
+      skip_schema_check: true,
+      search_enabled: true,
+      search_provider: "elasticsearch".to_owned(),
+      search_endpoint: format!("http://{mock_addr}"),
+      ..ServerCli::default()
+    };
+
+    let worker_remote = ServerCli {
+      role: Some(RoleArg::Worker),
+      host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+      port: 0,
+      database_url: db_url.clone(),
+      redis_url: Some(redis_url.clone()),
+      skip_schema_check: true,
+      search_enabled: true,
+      search_provider: "elasticsearch".to_owned(),
+      search_endpoint: format!("http://{mock_addr}"),
+      ..ServerCli::default()
+    };
+
+    let gql_r = serve_with_extension(gql_remote, Arc::new(CommunityExtension::new()), CancellationToken::new())
+      .await
+      .expect("start graphql role with remote search provider");
+    let worker_r = serve_with_extension(worker_remote, Arc::new(CommunityExtension::new()), CancellationToken::new())
+      .await
+      .expect("start worker role with remote search provider");
+
+    let (gql_status2, gql_body2) = http_request(
+      gql_r.addr,
+      "POST",
+      "/graphql",
+      Some(r#"{"query":"{ serverConfig { features } }"}"#),
+    )
+    .await;
+    assert_eq!(gql_status2, 200);
+    let features2 = gql_body2["data"]["serverConfig"]["features"]
+      .as_array()
+      .expect("features array");
+    assert!(
+      features2.iter().any(|f| f.as_str() == Some("Indexer")),
+      "enabled search must expose Indexer: {features2:?}"
+    );
+
+    worker_r.shutdown.cancel();
+    worker_r.join_handle.await.unwrap().unwrap();
+    gql_r.shutdown.cancel();
+    gql_r.join_handle.await.unwrap().unwrap();
+    worker_r.state.db.pool().close().await;
+    gql_r.state.db.pool().close().await;
+
+    // 4. Verify with two independent OS processes (`CARGO_BIN_EXE_affine-server`):
+    //    (a) `--role graphql --search-enabled=true --search-provider=embedded` exits non-zero;
+    //    (b) separate `--role worker` and `--role graphql` processes boot against the shared
+    //        Elasticsearch HTTP endpoint and serve `/readyz` + `/graphql` independently.
+    let bin = env!("CARGO_BIN_EXE_affine-server");
+    let bad_out = std::process::Command::new(bin)
+      .args([
+        "--role",
+        "graphql",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "0",
+        "--database-url",
+        &db_url,
+        "--redis-url",
+        &redis_url,
+        "--private-key",
+        "split-proc-test-key",
+        "--skip-schema-check",
+        "--search-enabled=true",
+        "--search-provider",
+        "embedded",
+      ])
+      .output()
+      .expect("spawn bad graphql process");
+    assert!(
+      !bad_out.status.success(),
+      "standalone graphql process with embedded search must fail fast"
+    );
+    let combined_bad_log = format!(
+      "{}{}",
+      String::from_utf8_lossy(&bad_out.stdout),
+      String::from_utf8_lossy(&bad_out.stderr)
+    );
+    assert!(
+      combined_bad_log.contains("--role allinone"),
+      "expected split-role InvalidConfig message, got: {combined_bad_log}"
+    );
+
+    struct ChildReaper(std::process::Child);
+
+    impl Drop for ChildReaper {
+      fn drop(&mut self) {
+        let _ = self.0.kill();
+        let _ = self.0.wait();
+      }
+    }
+
+    struct RoleProcessGuard {
+      _reaper: ChildReaper,
+      _stdout: std::io::BufReader<std::process::ChildStdout>,
+      addr: std::net::SocketAddr,
+    }
+
+    #[allow(clippy::zombie_processes)]
+    fn spawn_role_process(
+      bin: &str,
+      role: &str,
+      db_url: &str,
+      redis_url: &str,
+      es_endpoint: &str,
+    ) -> RoleProcessGuard {
+      use std::io::{BufRead, BufReader};
+      let mut child = std::process::Command::new(bin)
+        .args([
+          "--role",
+          role,
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "0",
+          "--database-url",
+          db_url,
+          "--redis-url",
+          redis_url,
+          "--private-key",
+          "split-proc-test-key",
+          "--skip-schema-check",
+          "--search-enabled=true",
+          "--search-provider",
+          "elasticsearch",
+          "--search-endpoint",
+          es_endpoint,
+        ])
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("spawn affine-server role process");
+      let stdout = child.stdout.take().expect("child stdout");
+      let reaper = ChildReaper(child);
+      let mut reader = BufReader::new(stdout);
+      let mut line = String::new();
+      loop {
+        line.clear();
+        let n = reader.read_line(&mut line).expect("read child stdout");
+        assert!(n > 0, "{role} process exited before AFFINE_SERVER_LISTENING");
+        if let Some(addr_str) = line.trim().strip_prefix("AFFINE_SERVER_LISTENING=") {
+          let addr: std::net::SocketAddr = addr_str.parse().expect("parse listening addr");
+          return RoleProcessGuard {
+            _reaper: reaper,
+            _stdout: reader,
+            addr,
+          };
+        }
+      }
+    }
+
+    let es_url = format!("http://{mock_addr}");
+    let worker_proc = spawn_role_process(bin, "worker", &db_url, &redis_url, &es_url);
+    let gql_proc = spawn_role_process(bin, "graphql", &db_url, &redis_url, &es_url);
+
+    let (wp_ready, _) = http_request(worker_proc.addr, "GET", "/readyz", None).await;
+    let (gp_ready, _) = http_request(gql_proc.addr, "GET", "/readyz", None).await;
+    assert_eq!(wp_ready, 200);
+    assert_eq!(gp_ready, 200);
+
+    let (gp_gql_status, gp_gql_body) = http_request(
+      gql_proc.addr,
+      "POST",
+      "/graphql",
+      Some(r#"{"query":"{ serverConfig { features } }"}"#),
+    )
+    .await;
+    assert_eq!(gp_gql_status, 200);
+    assert!(
+      gp_gql_body["data"]["serverConfig"]["features"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|f| f.as_str() == Some("Indexer"))
+    );
+
+    drop(worker_proc);
+    drop(gql_proc);
+    mock_shutdown.cancel();
+    let _ = mock_handle.await;
+  });
+}

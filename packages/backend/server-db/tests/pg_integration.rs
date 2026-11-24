@@ -170,6 +170,7 @@ fn fresh_empty_db_initializes_0275_baseline_and_is_idempotent() {
         ("search_projection", 3),
         ("search_projection", 4),
         ("search_projection", 5),
+        ("search_projection", 6),
         ("server_db_runtime", 1),
       ]
     );
@@ -204,6 +205,30 @@ fn fresh_empty_db_initializes_0275_baseline_and_is_idempotent() {
         .unwrap();
     assert_eq!(before_rerun, after_rerun);
     drop(conn);
+
+    // Forward-compatibility check: when the database already contains a newer
+    // migration version (simulating an N-1 binary booting against an N+1 DB),
+    // `ensure_schema_ready` verifies the contiguous prefix and returns Ok.
+    {
+      let mut conn = db.acquire_tiered(WorkloadTier::InteractiveWrite).await.unwrap();
+      sqlx::query(
+        "INSERT INTO native_schema_migrations (component, version, checksum)
+         VALUES ('search_projection', 7, '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef')",
+      )
+      .execute(conn.as_conn())
+      .await
+      .unwrap();
+    }
+    let forward_ok = db
+      .ensure_schema_ready()
+      .await
+      .expect("N-1 node must accept newer native_schema_migrations version after prefix check");
+    assert_eq!(
+      forward_ok,
+      SchemaReadiness::ReadyExisting0275 {
+        verified_migrations: expected_manifest.len()
+      }
+    );
 
     // Tampering a recorded native_schema_migrations checksum must fail verification.
     {

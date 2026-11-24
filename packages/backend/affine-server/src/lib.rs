@@ -29,6 +29,7 @@ use server_domain::users::UserService;
 use server_domain::workspaces::WorkspaceService;
 use server_http::{AppServices, AppState, RuntimeConfig, build_router};
 use server_mail::{MailWorkerError, SmtpConfig, SmtpMailer, process_ready_mail_deliveries};
+use server_search::{SearchConfig, SearchError, SearchRuntime};
 use server_spi::ServerExtension;
 use server_sync::auth::{SESSION_COOKIE_NAME, SyncSessionAuthenticator, SyncUser, USER_ID_COOKIE_NAME, parse_cookies};
 use server_sync::{SyncConfig, SyncServer};
@@ -161,6 +162,32 @@ pub struct ServerCli {
 
   #[arg(long, env = "AFFINE_SKIP_SCHEMA_CHECK", default_value_t = false)]
   pub skip_schema_check: bool,
+
+  #[arg(
+    long,
+    env = "AFFINE_INDEXER_ENABLED",
+    default_value_t = false,
+    num_args = 0..=1,
+    default_missing_value = "true",
+    require_equals = true,
+    action = clap::ArgAction::Set
+  )]
+  pub search_enabled: bool,
+
+  #[arg(long, env = "AFFINE_INDEXER_PROVIDER", default_value = "embedded")]
+  pub search_provider: String,
+
+  #[arg(long, env = "AFFINE_INDEXER_ENDPOINT", default_value = "")]
+  pub search_endpoint: String,
+
+  #[arg(long, env = "AFFINE_INDEXER_API_KEY", default_value = "", hide_env_values = true)]
+  pub search_api_key: String,
+
+  #[arg(long, env = "AFFINE_INDEXER_USERNAME", default_value = "")]
+  pub search_username: String,
+
+  #[arg(long, env = "AFFINE_INDEXER_PASSWORD", default_value = "", hide_env_values = true)]
+  pub search_password: String,
 }
 
 impl Default for ServerCli {
@@ -194,6 +221,12 @@ impl Default for ServerCli {
       graphql_playground: false,
       redis_key_prefix: String::new(),
       skip_schema_check: false,
+      search_enabled: false,
+      search_provider: "embedded".to_owned(),
+      search_endpoint: String::new(),
+      search_api_key: String::new(),
+      search_username: String::new(),
+      search_password: String::new(),
     }
   }
 }
@@ -210,6 +243,8 @@ pub enum ServerError {
   Worker(#[from] WorkerError),
   #[error("mail worker error: {0}")]
   MailWorker(#[from] MailWorkerError),
+  #[error("search error: {0}")]
+  Search(#[from] SearchError),
   #[error("redis error: {0}")]
   Redis(#[from] redis::RedisError),
   #[error("io error: {0}")]
@@ -244,6 +279,26 @@ impl std::fmt::Debug for ServerCli {
       .field("graphql_playground", &self.graphql_playground)
       .field("redis_key_prefix", &self.redis_key_prefix)
       .field("skip_schema_check", &self.skip_schema_check)
+      .field("search_enabled", &self.search_enabled)
+      .field("search_provider", &self.search_provider)
+      .field("search_endpoint", &self.search_endpoint)
+      .field(
+        "search_api_key",
+        &if self.search_api_key.is_empty() {
+          ""
+        } else {
+          "[REDACTED]"
+        },
+      )
+      .field("search_username", &self.search_username)
+      .field(
+        "search_password",
+        &if self.search_password.is_empty() {
+          ""
+        } else {
+          "[REDACTED]"
+        },
+      )
       .finish()
   }
 }
@@ -683,6 +738,21 @@ async fn build_server_with_bound_port(
       .map_err(|e| ServerError::InvalidConfig(format!("invalid comment-attachments storage config: {e}")))?,
   );
   let blobs = BlobService::new(db.clone(), Arc::new(storage), ext.quota_gate());
+  if cli.search_enabled && cli.search_provider == "embedded" && role != ServerRole::Allinone {
+    return Err(ServerError::InvalidConfig(
+      "embedded search provider is in-process and only supported with --role allinone; use elasticsearch/manticoresearch or --search-enabled=false for split roles".to_owned(),
+    ));
+  }
+  let search_cfg = SearchConfig {
+    enabled: cli.search_enabled,
+    provider: cli.search_provider.clone(),
+    endpoint: cli.search_endpoint.clone(),
+    api_key: cli.search_api_key.clone(),
+    username: cli.search_username.clone(),
+    password: cli.search_password.clone(),
+    ..SearchConfig::default()
+  };
+  let search = Arc::new(SearchRuntime::new(db.pool().clone(), ext.quota_gate(), search_cfg)?);
 
   let state = AppState::with_services(
     db.clone(),
@@ -700,6 +770,7 @@ async fn build_server_with_bound_port(
       licenses,
       app_config,
       blobs,
+      search,
       avatars,
       comment_attachments,
       invalidation,
@@ -806,11 +877,15 @@ where
     ) {
       built.state.auth.ensure_signing_keys().await?;
     }
+    if matches!(built.role, ServerRole::Allinone | ServerRole::Worker) {
+      built.state.search.initialize().await?;
+    }
   }
 
   before_serve(&built).await?;
 
   if matches!(built.role, ServerRole::Allinone | ServerRole::Worker) {
+    built.state.search.spawn_worker_loop(&built.supervisor).await;
     let cleanup_auth = built.state.auth.clone();
     let cleanup_state = Arc::clone(&built.state);
     server_worker::spawn_locked_periodic_task(
@@ -920,7 +995,6 @@ where
           }
         })
         .await;
-
       let health_licenses = built.state.licenses.clone();
       server_worker::spawn_locked_periodic_task(
         &built.supervisor,
