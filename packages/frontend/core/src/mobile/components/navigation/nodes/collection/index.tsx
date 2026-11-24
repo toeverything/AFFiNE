@@ -4,7 +4,6 @@ import {
   type Collection,
   CollectionService,
 } from '@affine/core/modules/collection';
-import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { ShareDocsListService } from '@affine/core/modules/share-doc';
@@ -34,12 +33,10 @@ export const NavigationPanelCollectionNode = ({
   parentPath: string[];
 }) => {
   const t = useI18n();
-  const { globalContextService, collectionService, workspaceDialogService } =
-    useServices({
-      GlobalContextService,
-      CollectionService,
-      WorkspaceDialogService,
-    });
+  const { globalContextService, collectionService } = useServices({
+    GlobalContextService,
+    CollectionService,
+  });
   const navigationPanelService = useService(NavigationPanelService);
   const active =
     useLiveData(globalContextService.globalContext.collectionId.$) ===
@@ -63,15 +60,6 @@ export const NavigationPanelCollectionNode = ({
     setCollapsed(false);
   }, [setCollapsed]);
 
-  const handleEditCollection = useCallback(() => {
-    if (!collection) {
-      return;
-    }
-    workspaceDialogService.open('collection-editor', {
-      collectionId: collection.id,
-    });
-  }, [collection, workspaceDialogService]);
-
   const handleAddDocToCollection = useNavigationPanelCollectionAddDoc(
     collectionId,
     handleOpenCollapsed
@@ -81,16 +69,10 @@ export const NavigationPanelCollectionNode = ({
       <NavigationPanelCollectionNodeMenu
         collectionId={collectionId}
         handleAddDocToCollection={handleAddDocToCollection}
-        onOpenEdit={handleEditCollection}
         additionalOperations={additionalOperations}
       />
     ),
-    [
-      additionalOperations,
-      collectionId,
-      handleAddDocToCollection,
-      handleEditCollection,
-    ]
+    [additionalOperations, collectionId, handleAddDocToCollection]
   );
 
   if (!collection) {
