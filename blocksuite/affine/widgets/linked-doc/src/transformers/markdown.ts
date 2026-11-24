@@ -836,6 +836,7 @@ async function planMarkdownZipInternal({
       applySnapshotTitle(snapshot, preferredTitle);
       docs.push({
         id: pageId,
+        sourcePath: fullPath,
         snapshot,
         meta: {
           ...meta,

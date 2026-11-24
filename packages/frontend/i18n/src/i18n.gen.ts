@@ -2808,6 +2808,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.status.success.title"](): string;
     /**
+      * `Some items were skipped or only partly imported:`
+      */
+    ["com.affine.import.status.warning.message"](): string;
+    /**
+      * `Import completed with warnings`
+      */
+    ["com.affine.import.status.warning.title"](): string;
+    /**
       * `Cancel`
       */
     ["com.affine.inviteModal.button.cancel"](): string;
