@@ -209,6 +209,18 @@ pub enum DocRole {
 }
 
 impl DocRole {
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::None => "none",
+      Self::External => "external",
+      Self::Reader => "reader",
+      Self::Commenter => "commenter",
+      Self::Editor => "editor",
+      Self::Manager => "manager",
+      Self::Owner => "owner",
+    }
+  }
+
   pub fn parse(s: &str) -> Self {
     match s.to_ascii_lowercase().as_str() {
       "owner" => Self::Owner,

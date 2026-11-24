@@ -153,15 +153,6 @@ pub struct DocPermissions {
   pub doc_users_read: bool,
 }
 
-#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
-#[graphql(name = "DocType")]
-pub struct DocType {
-  pub id: String,
-  pub workspace_id: String,
-  pub public: bool,
-  pub permissions: DocPermissions,
-}
-
 #[derive(SimpleObject, Clone, Copy, Debug, Eq, PartialEq)]
 #[graphql(name = "WorkspacePermissions")]
 pub struct WorkspacePermissions {
@@ -488,43 +479,187 @@ impl WorkspaceType {
     )
   }
 
-  async fn doc(&self, ctx: &Context<'_>, doc_id: String) -> Result<DocType> {
+  async fn doc(&self, ctx: &Context<'_>, doc_id: String) -> Result<super::doc::DocType> {
+    super::doc::resolve_workspace_doc(ctx, &self.record.id, &doc_id).await
+  }
+
+  async fn public_docs(&self, ctx: &Context<'_>) -> Result<Vec<super::doc::DocType>> {
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let actor_user_id = ctx.data_opt::<AuthenticatedUser>().map(|a| a.user_id.as_str());
-    let entry = state
-      .workspaces
-      .resolve_doc_access(&self.record.id, actor_user_id, &doc_id)
+    let actor = ctx.data_opt::<AuthenticatedUser>().map(|a| a.user_id.as_str());
+    let docs = state
+      .doc_sharing
+      .list_public_docs(&self.record.id, actor)
       .await
       .map_err(|e| domain_error_to_graphql(&e))?;
-    let p = entry.permissions;
-    Ok(DocType {
-      id: doc_id,
-      workspace_id: self.record.id.clone(),
-      public: entry.public,
-      permissions: DocPermissions {
-        doc_analytics_read: p.doc_analytics_read,
-        doc_analytics_viewers_read: p.doc_analytics_viewers_read,
-        doc_comments_create: p.doc_comments_create,
-        doc_comments_moderate: p.doc_comments_moderate,
-        doc_comments_read: p.doc_comments_read,
-        doc_copy: p.doc_copy,
-        doc_delete: p.doc_delete,
-        doc_duplicate: p.doc_duplicate,
-        doc_history_read: p.doc_history_read,
-        doc_preview: p.doc_preview,
-        doc_properties_read: p.doc_properties_read,
-        doc_properties_update: p.doc_properties_update,
-        doc_publish: p.doc_publish,
-        doc_read: p.doc_read,
-        doc_restore: p.doc_restore,
-        doc_transfer_owner: p.doc_transfer_owner,
-        doc_trash: p.doc_trash,
-        doc_unpublish: p.doc_unpublish,
-        doc_update: p.doc_update,
-        doc_users_manage: p.doc_users_manage,
-        doc_users_read: p.doc_users_read,
+    Ok(docs.into_iter().map(super::doc::DocType::from_info).collect())
+  }
+
+  async fn docs(
+    &self,
+    ctx: &Context<'_>,
+    pagination: super::doc::PaginationInput,
+  ) -> Result<super::doc::PaginatedDocType> {
+    let user = require_authenticated_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let first = pagination.resolved_first(20);
+    let offset = pagination.resolved_offset();
+    let after_doc = pagination.after.as_deref().and_then(super::doc::decode_cursor);
+    let (total, docs, has_next_page) = state
+      .doc_sharing
+      .list_docs(
+        &self.record.id,
+        &user.id,
+        i64::from(first),
+        i64::from(offset),
+        after_doc.as_deref(),
+        true,
+      )
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    let edges: Vec<super::doc::DocTypeEdge> = docs
+      .into_iter()
+      .map(|info| {
+        let cursor = super::doc::encode_cursor(&info.doc_id);
+        super::doc::DocTypeEdge {
+          cursor,
+          node: super::doc::DocType::from_info(info),
+        }
+      })
+      .collect();
+    let has_previous_page = pagination.after.is_some() || offset > 0;
+    let start_cursor = edges.first().map(|e| e.cursor.clone());
+    let end_cursor = edges.last().map(|e| e.cursor.clone());
+    Ok(super::doc::PaginatedDocType {
+      total_count: i32::try_from(total).unwrap_or(i32::MAX),
+      edges,
+      page_info: super::doc::PageInfo {
+        start_cursor,
+        end_cursor,
+        has_next_page,
+        has_previous_page,
       },
     })
+  }
+
+  async fn recently_updated_docs(
+    &self,
+    ctx: &Context<'_>,
+    pagination: super::doc::PaginationInput,
+  ) -> Result<super::doc::PaginatedDocType> {
+    let user = require_authenticated_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let first = pagination.resolved_first(20);
+    let offset = pagination.resolved_offset();
+    let after_doc = pagination.after.as_deref().and_then(super::doc::decode_cursor);
+    let (total, docs, has_next_page) = state
+      .doc_sharing
+      .list_docs(
+        &self.record.id,
+        &user.id,
+        i64::from(first),
+        i64::from(offset),
+        after_doc.as_deref(),
+        false,
+      )
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    let edges: Vec<super::doc::DocTypeEdge> = docs
+      .into_iter()
+      .map(|info| {
+        let cursor = super::doc::encode_cursor(&info.doc_id);
+        super::doc::DocTypeEdge {
+          cursor,
+          node: super::doc::DocType::from_info(info),
+        }
+      })
+      .collect();
+    let has_previous_page = pagination.after.is_some() || offset > 0;
+    let start_cursor = edges.first().map(|e| e.cursor.clone());
+    let end_cursor = edges.last().map(|e| e.cursor.clone());
+    Ok(super::doc::PaginatedDocType {
+      total_count: i32::try_from(total).unwrap_or(i32::MAX),
+      edges,
+      page_info: super::doc::PageInfo {
+        start_cursor,
+        end_cursor,
+        has_next_page,
+        has_previous_page,
+      },
+    })
+  }
+
+  async fn page_meta(&self, ctx: &Context<'_>, page_id: String) -> Result<super::doc::WorkspaceDocMeta> {
+    let user = require_authenticated_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let meta = state
+      .doc_sharing
+      .get_doc_meta(&self.record.id, &user.id, &page_id)
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    Ok(super::doc::WorkspaceDocMeta {
+      created_at: meta.created_at,
+      updated_at: meta.updated_at,
+      created_by: meta.created_by.map(|u| super::doc::EditorType {
+        name: u.name,
+        avatar_url: u.avatar_url,
+      }),
+      updated_by: meta.updated_by.map(|u| super::doc::EditorType {
+        name: u.name,
+        avatar_url: u.avatar_url,
+      }),
+    })
+  }
+
+  async fn histories(
+    &self,
+    ctx: &Context<'_>,
+    guid: String,
+    before: Option<DateTime<Utc>>,
+    take: Option<i32>,
+  ) -> Result<Vec<super::doc::DocHistoryType>> {
+    let user = require_authenticated_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let rows = state
+      .histories
+      .list_histories(&user.id, &self.record.id, &guid, before.unwrap_or_else(Utc::now), take)
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    Ok(
+      rows
+        .into_iter()
+        .map(|h| super::doc::DocHistoryType {
+          workspace_id: h.workspace_id,
+          id: h.id,
+          timestamp: h.timestamp,
+          editor: h.editor_name.map(|name| super::doc::EditorType {
+            name,
+            avatar_url: h.editor_avatar_url,
+          }),
+        })
+        .collect(),
+    )
+  }
+
+  async fn comments(
+    &self,
+    ctx: &Context<'_>,
+    doc_id: String,
+    pagination: Option<super::doc::PaginationInput>,
+  ) -> Result<super::comment::PaginatedCommentObjectType> {
+    super::comment::resolve_workspace_comments(ctx, &self.record.id, &doc_id, pagination).await
+  }
+
+  async fn comment_changes(
+    &self,
+    ctx: &Context<'_>,
+    doc_id: String,
+    pagination: super::doc::PaginationInput,
+  ) -> Result<super::comment::PaginatedCommentChangeObjectType> {
+    super::comment::resolve_workspace_comment_changes(ctx, &self.record.id, &doc_id, pagination).await
+  }
+
+  async fn license(&self, ctx: &Context<'_>) -> Result<Option<super::license::License>> {
+    super::license::resolve_workspace_license(ctx, &self.record.id).await
   }
 }
 

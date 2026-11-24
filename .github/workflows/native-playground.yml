@@ -567,10 +567,15 @@ jobs:
       - name: Generate Prisma client for test helpers
         run: yarn affine @affine/server prisma generate
 
-      - name: Run core affine-cloud Playwright E2E against Rust affine-server
+      - name: Run deterministic affine-cloud Playwright E2E against Rust affine-server
         run: |
           yarn --cwd tests/affine-cloud playwright test \
             e2e/login.spec.ts \
             e2e/workspace.spec.ts \
             e2e/storage.spec.ts \
-            e2e/collaboration.spec.ts
+            e2e/collaboration.spec.ts \
+            e2e/share-page-1.spec.ts \
+            e2e/share-page-2.spec.ts \
+            e2e/page-history.spec.ts \
+            e2e/comments.spec.ts \
+            e2e/open-in-app.spec.ts

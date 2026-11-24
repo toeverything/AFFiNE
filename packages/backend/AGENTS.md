@@ -38,9 +38,9 @@ It excludes `native/` and `server/` and does not join the root `Cargo.toml` work
 - `server-db` (library `server_db`): single `PgPool` with `min_connections = 0`, `statement_timeout`, `idle_in_transaction_session_timeout = '10s'`, and `application_name = "affine:<channel>:<role>:v2"`.
   It exports `WorkloadTier` admission, `with_long_query_timeout`, `dedicated_session_conn`, `with_query_scope`, `ensure_schema_ready`, `SessionRepository`, and `phase_a_compat::sessions::PhaseASessionRepository`.
 
-- `server-spi` (library `server_spi`): SPI traits (`QuotaGate`, `SessionPolicyHook`, `CopilotPolicySpi`, `RateLimitPolicy`, `ServerExtension`), `RequestSource`, `CommunityRateLimitPolicy`, and `CommunityExtension`.
+- `server-spi` (library `server_spi`): SPI traits (`QuotaGate`, `SessionPolicyHook`, `CopilotPolicySpi`, `RateLimitPolicy`, `BillingSpi`, `ServerExtension`), `RequestSource`, `CommunityRateLimitPolicy`, `CommunityBillingSpi`, and `CommunityExtension`.
 
-- `server-domain` (library `server_domain`): pure domain services (`AuthService`, `UserService`, `WorkspaceService`, `AppConfigService`, and `acl`) plus `EventBusPublisher`, `InvalidationPublisher`, and `InvalidationHintV1`.
+- `server-domain` (library `server_domain`): pure domain services (`AuthService`, `UserService`, `WorkspaceService`, `DocSharingService`, `DocHistoryService`, `CommentService`, `NotificationService`, `SelfhostLicenseService`, `AppConfigService`, and `acl`) plus `EventBusPublisher`, `InvalidationPublisher`, and `InvalidationHintV1`.
   `AuthService` handles HS256 access tokens, `aff_rt_v1` refresh rotation, recovery, grace, preflight, and session cleanup.
   `acl` defines workspace and document permissions and classifies reserved documents.
   `server-domain` has no `legacy_compat`, `phase_a_compat`, `axum`, or `async-graphql` dependencies.
@@ -55,13 +55,15 @@ It excludes `native/` and `server/` and does not join the root `Cargo.toml` work
   Storage failures surface only as `Unavailable("blob storage unavailable")`.
 
 - `server-sync` (library `server_sync`): pure-Rust Engine.IO v4 / Socket.IO v4 sync gateway mounted at `/socket.io/`.
-  It validates, merges, and diffs `y-octo` CRDTs over PostgreSQL under `pg_advisory_xact_lock`, delegates reserved-doc classification and doc-role resolution to `server_domain::acl`, and serves realtime rooms.
+  It validates, merges, and diffs `y-octo` CRDTs over PostgreSQL under `pg_advisory_xact_lock`, delegates reserved-doc classification and doc-role resolution to `server_domain::acl`, and serves realtime rooms (`workspace.access`, `workspace.config`, `doc.share-state`, `doc.grants`, `comment.changed`, `comment.changes`, `user.settings`, `notification.count`).
   With `SessionRedis` active, userspace writes hold `MutexLock:userspace:<user_id>:<doc_id>` across the PostgreSQL transaction and release it via Lua.
   Empty-table creates use `ON CONFLICT DO NOTHING` with a merge fallback, and commits check the `SessionRedis` lease fence.
   Unmodified `v0.27.5` instances skip pre-commit lock checks after a 60s stall, so patch `canary` separately for legacy fencing.
   It isolates `legacy_compat::errors` and bridges Redis `affine:eventbus:v1` and invalidation events.
 
-- `server-http` (library `server_http`): `axum 0.8` and `async-graphql 7` transport layer with `/healthz`, `/readyz`, `/info`, auth/preflight/bearer and native `/api/auth/session*` REST routes (`/api/auth/session/exchange`, `/api/auth/session/refresh`, `/api/auth/session/revoke`, `/api/auth/sessions`, `/api/auth/sessions/revoke-all`, `/api/auth/sessions/:id`), avatar and source-scoped blob REST routes (`/api/avatars/:id`, `/api/workspaces/:id/blobs/v1/:name`, `blob-manifest/v1`, `readable-blob-manifest/v1`, doc snapshot read), and `/graphql`.
+- `server-http` (library `server_http`): `axum 0.8` and `async-graphql 7` transport layer with `/healthz`, `/readyz`, `/info`, and `/graphql`.
+  Auth REST routes cover cookie/bearer sign-in, Open-App (`/api/auth/open-app/sign-in-code`, `/api/auth/open-app/sign-in`), and native sessions (`/api/auth/session/exchange`, `/api/auth/session/refresh`, `/api/auth/session/revoke`, `/api/auth/sessions`, `/api/auth/sessions/revoke-all`, `/api/auth/sessions/:id`).
+  Storage REST routes cover avatars (`/api/avatars/:id`), public docs (`/api/workspaces/:id/public-docs/:docId`, `/root-doc`), doc histories (`/api/workspaces/:id/docs/:guid/histories/:timestamp`), comment attachments (`/api/workspaces/:id/docs/:docId/comment-attachments/:key`), and source-scoped blobs (`/api/workspaces/:id/blobs/v1/:name`, `blob-manifest/v1`, `readable-blob-manifest/v1`, doc snapshot read).
   Blob management mutations require `Owner` or commercial-grant `Admin`.
   `legacy_compat::{quota, errors}` isolates external GraphQL quota labels and Apollo error extensions.
 

@@ -87,7 +87,7 @@ impl SyncServer {
   /// [`CommunityQuotaGate`].
   pub async fn start(db: ServerDb, config: SyncConfig) -> Self {
     let auth = Arc::new(PgCookieSessionAuthenticator::new(db.clone()));
-    Self::start_with_dependencies(db, auth, Arc::new(CommunityQuotaGate), config).await
+    Self::start_with_dependencies(db, auth, Arc::new(CommunityQuotaGate::new()), config).await
   }
 
   /// Starts a `SyncServer` with a custom [`SyncSessionAuthenticator`] and
@@ -97,7 +97,7 @@ impl SyncServer {
     authenticator: Arc<dyn SyncSessionAuthenticator>,
     config: SyncConfig,
   ) -> Self {
-    Self::start_with_dependencies(db, authenticator, Arc::new(CommunityQuotaGate), config).await
+    Self::start_with_dependencies(db, authenticator, Arc::new(CommunityQuotaGate::new()), config).await
   }
 
   /// Starts a `SyncServer` with custom [`SyncSessionAuthenticator`] and

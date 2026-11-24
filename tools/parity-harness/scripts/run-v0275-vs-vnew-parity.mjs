@@ -1475,6 +1475,624 @@ async function runCoexistencePhase(newBin, privateKey, migrations) {
   }
 }
 
+async function runCollaborationParityPhase(left, right) {
+  const assertEqual = (label, a, b) => {
+    const sa = JSON.stringify(a);
+    const sb = JSON.stringify(b);
+    if (sa !== sb) {
+      throw new Error(
+        `Phase 1C collaboration parity diff at ${label}: left=${sa} right=${sb}`
+      );
+    }
+  };
+
+  async function signInSide(side) {
+    const res = await fetch(`http://127.0.0.1:${side.port}/api/auth/sign-in`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        email: 'parity-admin@affine.test',
+        password: 'Parity-Admin-Passw0rd',
+      }),
+    });
+    if (res.status !== 200) {
+      throw new Error(`Phase 1C sign-in failed on ${side.name}: ${res.status}`);
+    }
+    const setCookies = res.headers.getSetCookie?.() ?? [];
+    const cookie = setCookies.map(c => c.split(';')[0]).join('; ');
+    const data = await res.json();
+    return { cookie, userId: data.id };
+  }
+
+  async function gqlSide(side, cookie, query, variables = {}) {
+    const res = await fetch(`http://127.0.0.1:${side.port}/graphql`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(cookie ? { cookie } : {}),
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+    return { status: res.status, json: await res.json() };
+  }
+
+  const [authL, authR] = await Promise.all([
+    signInSide(left),
+    signInSide(right),
+  ]);
+  const [wsL, wsR] = await Promise.all([
+    gqlSide(left, authL.cookie, 'query { workspaces { id } }'),
+    gqlSide(right, authR.cookie, 'query { workspaces { id } }'),
+  ]);
+  const wsIdL = wsL.json.data.workspaces[0].id;
+  const wsIdR = wsR.json.data.workspaces[0].id;
+
+  // 0. Seed real root-doc page entry and `parity-self-doc` binary via Socket.IO
+  //    on BOTH servers so Phase 1C verifies positive 200 paths (never 404/404).
+  const nodeModulesRoot = existsSync(
+    join(SERVER_ROOT, 'node_modules/socket.io-client')
+  )
+    ? SERVER_ROOT
+    : ROOT;
+  const req = createRequire(join(nodeModulesRoot, 'package.json'));
+  const { io } = req('socket.io-client');
+  const Y = req('yjs');
+
+  const connectSide = (port, cookie) =>
+    new Promise((resolveConn, rejectConn) => {
+      const socket = io(`http://127.0.0.1:${port}`, {
+        transports: ['polling', 'websocket'],
+        extraHeaders: { cookie },
+        reconnection: false,
+        timeout: 15_000,
+      });
+      socket.once('connect', () => resolveConn(socket));
+      socket.once('connect_error', err => rejectConn(err));
+    });
+  const emitAck = (socket, event, payload) =>
+    new Promise((resolveAck, rejectAck) => {
+      const timer = setTimeout(
+        () => rejectAck(new Error(`Phase 1C timeout waiting ack for ${event}`)),
+        15_000
+      );
+      socket.emit(event, payload, ack => {
+        clearTimeout(timer);
+        if (ack?.error) {
+          rejectAck(
+            new Error(`Phase 1C ${event} error: ${JSON.stringify(ack.error)}`)
+          );
+        } else {
+          resolveAck(ack);
+        }
+      });
+    });
+
+  const rootDocY = new Y.Doc();
+  const metaMap = rootDocY.getMap('meta');
+  const pagesArr = new Y.Array();
+  const pageEntry = new Y.Map();
+  pageEntry.set('id', 'parity-self-doc');
+  pageEntry.set('title', 'Parity Doc');
+  pagesArr.insert(0, [pageEntry]);
+  metaMap.set('pages', pagesArr);
+  const rootUpdateB64 = Buffer.from(Y.encodeStateAsUpdate(rootDocY)).toString(
+    'base64'
+  );
+
+  const selfDocY = new Y.Doc();
+  selfDocY.getText('content').insert(0, 'Hello W4B Parity Doc');
+  const selfDocUpdateB64 = Buffer.from(
+    Y.encodeStateAsUpdate(selfDocY)
+  ).toString('base64');
+
+  const [sockL, sockR] = await Promise.all([
+    connectSide(left.port, authL.cookie),
+    connectSide(right.port, authR.cookie),
+  ]);
+
+  try {
+    await Promise.all([
+      emitAck(sockL, 'space:join-batch', {
+        spaces: [
+          { spaceType: 'workspace', spaceId: wsIdL, docId: wsIdL },
+          { spaceType: 'workspace', spaceId: wsIdL, docId: 'parity-self-doc' },
+        ],
+        clientVersion: '0.27.5',
+        protocolVersion: 2,
+      }),
+      emitAck(sockR, 'space:join-batch', {
+        spaces: [
+          { spaceType: 'workspace', spaceId: wsIdR, docId: wsIdR },
+          { spaceType: 'workspace', spaceId: wsIdR, docId: 'parity-self-doc' },
+        ],
+        clientVersion: '0.27.5',
+        protocolVersion: 2,
+      }),
+    ]);
+
+    await Promise.all([
+      emitAck(sockL, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: wsIdL,
+        docId: wsIdL,
+        update: rootUpdateB64,
+        intent: 'create',
+      }),
+      emitAck(sockR, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: wsIdR,
+        docId: wsIdR,
+        update: rootUpdateB64,
+        intent: 'create',
+      }),
+    ]);
+    await Promise.all([
+      emitAck(sockL, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: wsIdL,
+        docId: 'parity-self-doc',
+        update: selfDocUpdateB64,
+        intent: 'create',
+      }),
+      emitAck(sockR, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: wsIdR,
+        docId: 'parity-self-doc',
+        update: selfDocUpdateB64,
+        intent: 'create',
+      }),
+    ]);
+
+    // 1. Positive doc publish / public-docs HEAD & GET & root-doc
+    const pubQuery =
+      'mutation ($ws: String!, $doc: String!) { publishDoc(workspaceId: $ws, docId: $doc, mode: Edgeless) { public mode defaultRole } }';
+    const [pubL, pubR] = await Promise.all([
+      gqlSide(left, authL.cookie, pubQuery, {
+        ws: wsIdL,
+        doc: 'parity-self-doc',
+      }),
+      gqlSide(right, authR.cookie, pubQuery, {
+        ws: wsIdR,
+        doc: 'parity-self-doc',
+      }),
+    ]);
+    assertEqual(
+      'publishDoc.public.left',
+      pubL.json.data?.publishDoc?.public,
+      true
+    );
+    assertEqual(
+      'publishDoc.public.right',
+      pubR.json.data?.publishDoc?.public,
+      true
+    );
+    assertEqual('publishDoc', pubL.json.data, pubR.json.data);
+
+    const [headL, headR] = await Promise.all([
+      fetch(
+        `http://127.0.0.1:${left.port}/api/workspaces/${wsIdL}/public-docs/parity-self-doc`,
+        {
+          method: 'HEAD',
+        }
+      ),
+      fetch(
+        `http://127.0.0.1:${right.port}/api/workspaces/${wsIdR}/public-docs/parity-self-doc`,
+        {
+          method: 'HEAD',
+        }
+      ),
+    ]);
+    assertEqual('headPublicDoc.status.left', headL.status, 200);
+    assertEqual('headPublicDoc.status.right', headR.status, 200);
+    assertEqual(
+      'headPublicDoc.publish-mode.left',
+      headL.headers.get('publish-mode'),
+      'edgeless'
+    );
+    assertEqual(
+      'headPublicDoc.publish-mode.right',
+      headR.headers.get('publish-mode'),
+      'edgeless'
+    );
+
+    const [getPubL, getPubR] = await Promise.all([
+      fetch(
+        `http://127.0.0.1:${left.port}/api/workspaces/${wsIdL}/public-docs/parity-self-doc`
+      ),
+      fetch(
+        `http://127.0.0.1:${right.port}/api/workspaces/${wsIdR}/public-docs/parity-self-doc`
+      ),
+    ]);
+    const [pubBytesL, pubBytesR] = await Promise.all([
+      getPubL.arrayBuffer(),
+      getPubR.arrayBuffer(),
+    ]);
+    assertEqual('getPublicDoc.status.left', getPubL.status, 200);
+    assertEqual('getPublicDoc.status.right', getPubR.status, 200);
+    assertEqual(
+      'getPublicDoc.publish-mode.left',
+      getPubL.headers.get('publish-mode'),
+      'edgeless'
+    );
+    assertEqual(
+      'getPublicDoc.publish-mode.right',
+      getPubR.headers.get('publish-mode'),
+      'edgeless'
+    );
+    if (pubBytesL.byteLength === 0 || pubBytesR.byteLength === 0) {
+      throw new Error(
+        `Phase 1C getPublicDoc returned empty bytes: left=${pubBytesL.byteLength} right=${pubBytesR.byteLength}`
+      );
+    }
+
+    const [rootL, rootR] = await Promise.all([
+      fetch(
+        `http://127.0.0.1:${left.port}/api/workspaces/${wsIdL}/public-docs/parity-self-doc/root-doc`
+      ),
+      fetch(
+        `http://127.0.0.1:${right.port}/api/workspaces/${wsIdR}/public-docs/parity-self-doc/root-doc`
+      ),
+    ]);
+    const [rootBytesL, rootBytesR] = await Promise.all([
+      rootL.arrayBuffer(),
+      rootR.arrayBuffer(),
+    ]);
+    assertEqual('publicRootDoc.status.left', rootL.status, 200);
+    assertEqual('publicRootDoc.status.right', rootR.status, 200);
+    if (rootBytesL.byteLength === 0 || rootBytesR.byteLength === 0) {
+      throw new Error(
+        `Phase 1C publicRootDoc returned empty bytes: left=${rootBytesL.byteLength} right=${rootBytesR.byteLength}`
+      );
+    }
+
+    // 2. Positive doc grants + doc.grants.get cursor pagination + Owner defaultRole rejection
+    const [grantPageL, grantPageR] = await Promise.all([
+      emitAck(sockL, 'realtime:request', {
+        op: 'doc.grants.get',
+        clientVersion: '0.27.5',
+        input: {
+          workspaceId: wsIdL,
+          docId: 'parity-self-doc',
+          pagination: { first: 8 },
+        },
+      }),
+      emitAck(sockR, 'realtime:request', {
+        op: 'doc.grants.get',
+        clientVersion: '0.27.5',
+        input: {
+          workspaceId: wsIdR,
+          docId: 'parity-self-doc',
+          pagination: { first: 8 },
+        },
+      }),
+    ]);
+    assertEqual(
+      'doc.grants.get.totalCount',
+      grantPageL.data?.totalCount,
+      grantPageR.data?.totalCount
+    );
+    assertEqual(
+      'doc.grants.get.hasNextPage',
+      grantPageL.data?.pageInfo?.hasNextPage,
+      grantPageR.data?.pageInfo?.hasNextPage
+    );
+
+    const defRoleQ =
+      'mutation ($input: UpdateDocDefaultRoleInput!) { updateDocDefaultRole(input: $input) }';
+    const [badRoleL, badRoleR] = await Promise.all([
+      gqlSide(left, authL.cookie, defRoleQ, {
+        input: { workspaceId: wsIdL, docId: 'parity-self-doc', role: 'Owner' },
+      }),
+      gqlSide(right, authR.cookie, defRoleQ, {
+        input: { workspaceId: wsIdR, docId: 'parity-self-doc', role: 'Owner' },
+      }),
+    ]);
+    assertEqual(
+      'updateDocDefaultRole.owner.errorName',
+      badRoleL.json.errors?.[0]?.extensions?.name,
+      badRoleR.json.errors?.[0]?.extensions?.name
+    );
+
+    // 3. Revoke public doc + anonymous 403 DOC_ACTION_DENIED
+    const revQuery =
+      'mutation ($ws: String!, $doc: String!) { revokePublicDoc(workspaceId: $ws, docId: $doc) { public } }';
+    const [revL, revR] = await Promise.all([
+      gqlSide(left, authL.cookie, revQuery, {
+        ws: wsIdL,
+        doc: 'parity-self-doc',
+      }),
+      gqlSide(right, authR.cookie, revQuery, {
+        ws: wsIdR,
+        doc: 'parity-self-doc',
+      }),
+    ]);
+    assertEqual(
+      'revokePublicDoc.public.left',
+      revL.json.data?.revokePublicDoc?.public,
+      false
+    );
+    assertEqual(
+      'revokePublicDoc.public.right',
+      revR.json.data?.revokePublicDoc?.public,
+      false
+    );
+    assertEqual('revokePublicDoc', revL.json.data, revR.json.data);
+
+    const [deniedL, deniedR] = await Promise.all([
+      fetch(
+        `http://127.0.0.1:${left.port}/api/workspaces/${wsIdL}/public-docs/parity-self-doc`,
+        {
+          method: 'GET',
+        }
+      ),
+      fetch(
+        `http://127.0.0.1:${right.port}/api/workspaces/${wsIdR}/public-docs/parity-self-doc`,
+        {
+          method: 'GET',
+        }
+      ),
+    ]);
+    assertEqual('revokedPublicDoc.status.left', deniedL.status, 403);
+    assertEqual('revokedPublicDoc.status.right', deniedR.status, 403);
+    assertEqual(
+      'revokedPublicDoc.name',
+      (await deniedL.json()).name,
+      (await deniedR.json()).name
+    );
+
+    // 4. Positive histories query + recoverDoc + invalid timestamp 400
+    const { PrismaClient } = req('@prisma/client');
+    const prismaL = new PrismaClient({
+      datasources: { db: { url: left.database } },
+    });
+    const prismaR = new PrismaClient({
+      datasources: { db: { url: right.database } },
+    });
+    const histTs = new Date(Date.now() - 60_000);
+    const histBlob = Buffer.from(Y.encodeStateAsUpdate(selfDocY));
+    try {
+      await Promise.all([
+        prismaL.$executeRaw`
+          INSERT INTO snapshot_histories (workspace_id, guid, timestamp, blob, expired_at, created_by)
+          VALUES (${wsIdL}, 'parity-self-doc', ${histTs}, ${histBlob}, clock_timestamp() + interval '7 days', ${authL.userId})
+        `,
+        prismaR.$executeRaw`
+          INSERT INTO snapshot_histories (workspace_id, guid, timestamp, blob, expired_at, created_by)
+          VALUES (${wsIdR}, 'parity-self-doc', ${histTs}, ${histBlob}, clock_timestamp() + interval '7 days', ${authR.userId})
+        `,
+      ]);
+    } finally {
+      await Promise.all([prismaL.$disconnect(), prismaR.$disconnect()]);
+    }
+
+    const histQ =
+      'query ($ws: String!) { workspace(id: $ws) { histories(guid: "parity-self-doc", take: 5) { id timestamp } } }';
+    const [hL, hR] = await Promise.all([
+      gqlSide(left, authL.cookie, histQ, { ws: wsIdL }),
+      gqlSide(right, authR.cookie, histQ, { ws: wsIdR }),
+    ]);
+    assertEqual(
+      'histories.count.left',
+      hL.json.data?.workspace?.histories?.length,
+      1
+    );
+    assertEqual(
+      'histories.count.right',
+      hR.json.data?.workspace?.histories?.length,
+      1
+    );
+    const normalizeHistories = data =>
+      (data?.workspace?.histories ?? []).map(h => ({
+        id: h.id,
+        timestamp: new Date(h.timestamp).toISOString(),
+      }));
+    assertEqual(
+      'histories',
+      normalizeHistories(hL.json.data),
+      normalizeHistories(hR.json.data)
+    );
+
+    const recoverQ =
+      'mutation ($ws: String!, $ts: DateTime!) { recoverDoc(workspaceId: $ws, guid: "parity-self-doc", timestamp: $ts) }';
+    const [recL, recR] = await Promise.all([
+      gqlSide(left, authL.cookie, recoverQ, {
+        ws: wsIdL,
+        ts: histTs.toISOString(),
+      }),
+      gqlSide(right, authR.cookie, recoverQ, {
+        ws: wsIdR,
+        ts: histTs.toISOString(),
+      }),
+    ]);
+    const recTsL = Date.parse(recL.json.data?.recoverDoc ?? '');
+    const recTsR = Date.parse(recR.json.data?.recoverDoc ?? '');
+    assertEqual('recoverDoc.valid.left', Number.isFinite(recTsL), true);
+    assertEqual('recoverDoc.valid.right', Number.isFinite(recTsR), true);
+
+    const [badTsL, badTsR] = await Promise.all([
+      fetch(
+        `http://127.0.0.1:${left.port}/api/workspaces/${wsIdL}/docs/parity-self-doc/histories/invalid-ts`,
+        {
+          headers: { cookie: authL.cookie },
+        }
+      ),
+      fetch(
+        `http://127.0.0.1:${right.port}/api/workspaces/${wsIdR}/docs/parity-self-doc/histories/invalid-ts`,
+        {
+          headers: { cookie: authR.cookie },
+        }
+      ),
+    ]);
+    assertEqual('historyInvalidTs.status', badTsL.status, badTsR.status);
+    assertEqual(
+      'historyInvalidTs.name',
+      (await badTsL.json()).name,
+      (await badTsR.json()).name
+    );
+  } finally {
+    sockL.disconnect();
+    sockR.disconnect();
+  }
+
+  // 5. Comments, replies, notifications, settings
+  const createCommentQ =
+    'mutation ($input: CommentCreateInput!) { createComment(input: $input) { id resolved content } }';
+  const [ccL, ccR] = await Promise.all([
+    gqlSide(left, authL.cookie, createCommentQ, {
+      input: {
+        workspaceId: wsIdL,
+        docId: 'parity-self-doc',
+        docTitle: 'Parity Doc',
+        docMode: 'page',
+        content: { text: 'Parity comment' },
+      },
+    }),
+    gqlSide(right, authR.cookie, createCommentQ, {
+      input: {
+        workspaceId: wsIdR,
+        docId: 'parity-self-doc',
+        docTitle: 'Parity Doc',
+        docMode: 'page',
+        content: { text: 'Parity comment' },
+      },
+    }),
+  ]);
+  assertEqual(
+    'createComment.resolved',
+    ccL.json.data.createComment.resolved,
+    ccR.json.data.createComment.resolved
+  );
+  assertEqual(
+    'createComment.content',
+    ccL.json.data.createComment.content,
+    ccR.json.data.createComment.content
+  );
+
+  const listCommentsQ =
+    'query ($ws: String!) { workspace(id: $ws) { comments(docId: "parity-self-doc") { totalCount edges { node { resolved content } } } } }';
+  const [lcL, lcR] = await Promise.all([
+    gqlSide(left, authL.cookie, listCommentsQ, { ws: wsIdL }),
+    gqlSide(right, authR.cookie, listCommentsQ, { ws: wsIdR }),
+  ]);
+  assertEqual('listComments', lcL.json.data, lcR.json.data);
+
+  const [updSetL, updSetR] = await Promise.all([
+    gqlSide(
+      left,
+      authL.cookie,
+      'mutation { updateSettings(input: { receiveCommentEmail: false }) }'
+    ),
+    gqlSide(
+      right,
+      authR.cookie,
+      'mutation { updateSettings(input: { receiveCommentEmail: false }) }'
+    ),
+  ]);
+  assertEqual('updateSettings', updSetL.json.data, updSetR.json.data);
+  const [getSetL, getSetR] = await Promise.all([
+    gqlSide(
+      left,
+      authL.cookie,
+      'query { currentUser { settings { receiveInvitationEmail receiveMentionEmail receiveCommentEmail } notifications(pagination: { first: 5 }) { totalCount } } }'
+    ),
+    gqlSide(
+      right,
+      authR.cookie,
+      'query { currentUser { settings { receiveInvitationEmail receiveMentionEmail receiveCommentEmail } notifications(pagination: { first: 5 }) { totalCount } } }'
+    ),
+  ]);
+  assertEqual('settingsAndNotifications', getSetL.json.data, getSetR.json.data);
+
+  // 6. Open-App sign-in code issuance, positive single-use redemption & replay rejection
+  const [oaCodeL, oaCodeR] = await Promise.all([
+    fetch(`http://127.0.0.1:${left.port}/api/auth/open-app/sign-in-code`, {
+      method: 'POST',
+      headers: { cookie: authL.cookie },
+    }),
+    fetch(`http://127.0.0.1:${right.port}/api/auth/open-app/sign-in-code`, {
+      method: 'POST',
+      headers: { cookie: authR.cookie },
+    }),
+  ]);
+  assertEqual('openAppCode.status.left', oaCodeL.status, 201);
+  assertEqual('openAppCode.status.right', oaCodeR.status, 201);
+  const codeL = (await oaCodeL.json()).code;
+  const codeR = (await oaCodeR.json()).code;
+  assertEqual(
+    'openAppCode.nonEmpty.left',
+    typeof codeL === 'string' && codeL.length > 0,
+    true
+  );
+  assertEqual(
+    'openAppCode.nonEmpty.right',
+    typeof codeR === 'string' && codeR.length > 0,
+    true
+  );
+
+  const [oaRedeemL, oaRedeemR] = await Promise.all([
+    fetch(`http://127.0.0.1:${left.port}/api/auth/open-app/sign-in`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code: codeL }),
+    }),
+    fetch(`http://127.0.0.1:${right.port}/api/auth/open-app/sign-in`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code: codeR }),
+    }),
+  ]);
+  assertEqual('openAppSignIn.status.left', oaRedeemL.status, 201);
+  assertEqual('openAppSignIn.status.right', oaRedeemR.status, 201);
+  const oaCookieL = (oaRedeemL.headers.getSetCookie?.() ?? [])
+    .map(c => c.split(';')[0])
+    .join('; ');
+  const oaCookieR = (oaRedeemR.headers.getSetCookie?.() ?? [])
+    .map(c => c.split(';')[0])
+    .join('; ');
+  assertEqual('openAppSignIn.cookie.left', oaCookieL.length > 0, true);
+  assertEqual('openAppSignIn.cookie.right', oaCookieR.length > 0, true);
+
+  const [oaMeL, oaMeR] = await Promise.all([
+    gqlSide(left, oaCookieL, 'query { currentUser { id } }'),
+    gqlSide(right, oaCookieR, 'query { currentUser { id } }'),
+  ]);
+  assertEqual(
+    'openAppSignIn.userId.left',
+    oaMeL.json.data?.currentUser?.id,
+    authL.userId
+  );
+  assertEqual(
+    'openAppSignIn.userId.right',
+    oaMeR.json.data?.currentUser?.id,
+    authR.userId
+  );
+
+  const [oaReplayL, oaReplayR] = await Promise.all([
+    fetch(`http://127.0.0.1:${left.port}/api/auth/open-app/sign-in`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code: codeL }),
+    }),
+    fetch(`http://127.0.0.1:${right.port}/api/auth/open-app/sign-in`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code: codeR }),
+    }),
+  ]);
+  assertEqual('openAppReplay.rejected.left', oaReplayL.status >= 400, true);
+  assertEqual('openAppReplay.status', oaReplayL.status, oaReplayR.status);
+  assertEqual(
+    'openAppReplay.name',
+    (await oaReplayL.json()).name,
+    (await oaReplayR.json()).name
+  );
+
+  log(
+    'Phase 1C collaboration parity (doc sharing, public-docs, grants, histories, comments, settings, open-app): PASS'
+  );
+  return { passed: true };
+}
+
 async function main() {
   await verifyFrozenServerRoot();
   const newBin = await ensureNewServerBinary();
@@ -1700,6 +2318,13 @@ async function main() {
     scenario
   );
 
+  // Phase 1C: Live dual-side public collaboration parity (doc sharing, public-docs,
+  // doc grants, histories/recoverDoc, comments/replies/notifications, settings, open-app).
+  summary.phase1c_collaboration = await runCollaborationParityPhase(
+    left,
+    right
+  );
+
   if (!args['skip-coexistence']) {
     summary.coexistence = await runCoexistencePhase(
       newBin,
@@ -1717,6 +2342,7 @@ async function main() {
     summary.equal.differences === 0 &&
     originChannelsOk &&
     summary.phase1b_magic_link?.passed === true &&
+    summary.phase1c_collaboration?.passed === true &&
     summary.faults.every(f => f.detected && f.exit === 1) &&
     (args['skip-coexistence'] || summary.coexistence?.passed === true);
   const coexMsg = args['skip-coexistence']

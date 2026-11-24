@@ -3353,9 +3353,11 @@ dependencies = [
  "hickory-resolver",
  "hkdf",
  "hmac 0.12.1",
+ "p256",
  "postgres",
  "rand 0.9.5",
  "redis",
+ "reqwest",
  "serde",
  "serde_json",
  "server-db",
@@ -3391,6 +3393,7 @@ dependencies = [
  "crc32fast",
  "http",
  "image",
+ "p256",
  "redis",
  "serde",
  "serde_json",
@@ -3433,8 +3436,12 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "axum",
+ "base64 0.22.1",
  "chrono",
+ "p256",
+ "serde_json",
  "server-types",
+ "sha2 0.10.9",
  "sqlx",
  "test-db-harness",
  "tokio",
@@ -3477,11 +3484,14 @@ dependencies = [
 name = "server-types"
 version = "0.1.0"
 dependencies = [
+ "aes-gcm",
  "base64 0.22.1",
  "chrono",
+ "hex",
  "p256",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "thiserror 2.0.21",
 ]
 

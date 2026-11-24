@@ -3,13 +3,15 @@
 //! Defines the exact trait boundaries between the open-source community core
 //! and commercial extensions, along with [`CommunityExtension`].
 
+use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use chrono::{DateTime, Utc};
 pub use server_types::BillingSubject;
 use server_types::{AccessGrant, DomainError};
+use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Transaction};
 
 #[async_trait::async_trait]
@@ -98,6 +100,30 @@ pub trait RateLimitPolicy: Send + Sync + 'static {
   }
 }
 
+#[async_trait::async_trait]
+pub trait BillingSpi: Send + Sync + 'static {
+  async fn on_pre_delete_user(&self, _user_id: &str) -> Result<(), DomainError> {
+    Ok(())
+  }
+
+  async fn on_workspace_members_changed(&self, _workspace_id: &str) -> Result<(), DomainError> {
+    Ok(())
+  }
+
+  async fn create_selfhost_customer_portal(&self, _workspace_id: &str) -> Result<String, DomainError> {
+    Err(DomainError::Unavailable(
+      "Self-hosted customer portal is not configured.".to_owned(),
+    ))
+  }
+}
+
+/// Default community billing SPI (no-op hooks).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct CommunityBillingSpi;
+
+#[async_trait::async_trait]
+impl BillingSpi for CommunityBillingSpi {}
+
 pub trait ServerExtension: Send + Sync + 'static {
   fn edition_name(&self) -> &'static str;
   fn quota_gate(&self) -> Arc<dyn QuotaGate>;
@@ -106,24 +132,195 @@ pub trait ServerExtension: Send + Sync + 'static {
   fn rate_limit_policy(&self) -> Arc<dyn RateLimitPolicy> {
     Arc::new(CommunityRateLimitPolicy)
   }
+  fn billing_spi(&self) -> Arc<dyn BillingSpi> {
+    Arc::new(CommunityBillingSpi)
+  }
   fn extra_router(&self) -> Option<axum::Router> {
     None
   }
 }
 
 /// Default community quota gate backed by the bundled 10-seat / 100 GiB
-/// signed `selfhost_default` license.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct CommunityQuotaGate;
+/// signed `selfhost_default` license and active self-hosted workspace licenses.
+#[derive(Clone, Debug, Default)]
+pub struct CommunityQuotaGate {
+  keyring: server_types::license::Keyring,
+}
+
+impl CommunityQuotaGate {
+  pub fn new() -> Self {
+    Self::default()
+  }
+
+  pub fn with_keyring(keyring: server_types::license::Keyring) -> Self {
+    Self { keyring }
+  }
+
+  fn verify_cached_commercial_grant(
+    &self,
+    workspace_id: &str,
+    license_bytes: &[u8],
+    now: DateTime<Utc>,
+    require_workspace_scoped: bool,
+  ) -> Option<(u8, u8, AccessGrant)> {
+    let digest: [u8; 32] = Sha256::digest(license_bytes).into();
+    let keyring_digest: [u8; 32] = Sha256::digest(
+      self
+        .keyring
+        .get(server_types::license::PRO_KID)
+        .unwrap_or("")
+        .as_bytes(),
+    )
+    .into();
+    let cache_key = (workspace_id.to_owned(), digest, keyring_digest);
+    if let Ok(guard) = verified_license_cache().lock()
+      && let Some(cached) = guard.get(&cache_key)
+    {
+      if now >= cached.not_before()
+        && cached.expires_at().is_none_or(|exp| now < exp)
+        && cached.is_commercial()
+        && (!require_workspace_scoped || cached.is_workspace_scoped())
+      {
+        let scope_priority = u8::from(cached.is_workspace_scoped());
+        let grant = cached.to_access_grant();
+        let tier_rank = match grant.tier {
+          server_types::LicenseTier::SelfhostEnterprise => 4,
+          server_types::LicenseTier::SelfhostTeam => 3,
+          _ => 0,
+        };
+        return Some((scope_priority, tier_rank, grant));
+      }
+      return None;
+    }
+    let normalized = server_types::license::normalize_license(license_bytes).ok()?;
+    let verified =
+      server_types::license::verify_any_license(normalized.as_ref(), &self.keyring, Some(workspace_id), now).ok()?;
+    if !verified.is_commercial() || (require_workspace_scoped && !verified.is_workspace_scoped()) {
+      return None;
+    }
+    let scope_priority = u8::from(verified.is_workspace_scoped());
+    let grant = verified.to_access_grant();
+    let tier_rank = match grant.tier {
+      server_types::LicenseTier::SelfhostEnterprise => 4,
+      server_types::LicenseTier::SelfhostTeam => 3,
+      _ => 0,
+    };
+    if let Ok(mut guard) = verified_license_cache().lock() {
+      if guard.len() >= 1024 {
+        guard.clear();
+      }
+      guard.insert(cache_key, verified);
+    }
+    Some((scope_priority, tier_rank, grant))
+  }
+}
+
+type VerifiedLicenseCacheMap = HashMap<(String, [u8; 32], [u8; 32]), server_types::license::VerifiedAnyLicense>;
+
+static VERIFIED_LICENSE_CACHE: OnceLock<Mutex<VerifiedLicenseCacheMap>> = OnceLock::new();
+
+fn verified_license_cache() -> &'static Mutex<VerifiedLicenseCacheMap> {
+  VERIFIED_LICENSE_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+type EntitlementCandidateRow = (
+  String,
+  String,
+  Option<DateTime<Utc>>,
+  Option<DateTime<Utc>>,
+  Option<DateTime<Utc>>,
+  Option<Vec<u8>>,
+);
 
 #[async_trait::async_trait]
 impl QuotaGate for CommunityQuotaGate {
   async fn resolve_workspace_grant(
     &self,
-    _tx: &mut Transaction<'_, Postgres>,
-    _workspace_id: &str,
-    _now: DateTime<Utc>,
+    tx: &mut Transaction<'_, Postgres>,
+    workspace_id: &str,
+    now: DateTime<Utc>,
   ) -> Result<AccessGrant, DomainError> {
+    let entitlement_rows: Vec<EntitlementCandidateRow> = sqlx::query_as(
+      "SELECT id, status, starts_at, expires_at, grace_until, signed_payload
+       FROM entitlements
+       WHERE source = 'selfhost_license'
+         AND target_type = 'workspace'
+         AND target_id = $1
+       ORDER BY updated_at DESC, id DESC",
+    )
+    .bind(workspace_id)
+    .fetch_all(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("load selfhost entitlements for workspace {workspace_id}: {e}")))?;
+
+    if !entitlement_rows.is_empty() {
+      let fallback = server_types::license::default_selfhost_access_grant();
+      let mut best_priority: (u8, u8, bool, u8, i32, i64) = (
+        0,
+        0,
+        false,
+        0,
+        fallback.limits.seat_limit,
+        fallback.limits.storage_quota_bytes,
+      );
+      let mut best_payload: Vec<u8> = Vec::new();
+      let mut best = fallback;
+
+      for (_id, status, starts_at, expires_at, grace_until, signed_payload) in entitlement_rows {
+        let status_priority: u8 = match status.as_str() {
+          "active" => 2,
+          "grace" => 1,
+          _ => continue,
+        };
+        if starts_at.is_some_and(|starts| now < starts) {
+          continue;
+        }
+        if status == "grace" {
+          if grace_until.is_none_or(|grace| now >= grace) {
+            continue;
+          }
+        } else if expires_at.is_some_and(|exp| now >= exp) {
+          continue;
+        }
+        let Some(payload) = signed_payload else {
+          continue;
+        };
+        let Some((scope_priority, tier_rank, grant)) =
+          self.verify_cached_commercial_grant(workspace_id, &payload, now, false)
+        else {
+          continue;
+        };
+        let priority = (
+          scope_priority,
+          status_priority,
+          grant.rights.commercial,
+          tier_rank,
+          grant.limits.seat_limit,
+          grant.limits.storage_quota_bytes,
+        );
+        if (priority, payload.as_slice()) > (best_priority, best_payload.as_slice()) {
+          best_priority = priority;
+          best_payload = payload;
+          best = grant;
+        }
+      }
+      return Ok(best);
+    }
+
+    let installed_bytes: Option<Vec<u8>> = sqlx::query_scalar::<_, Option<Vec<u8>>>(
+      "SELECT license FROM installed_licenses WHERE workspace_id = $1 LIMIT 1",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("load installed license for workspace {workspace_id}: {e}")))?
+    .flatten();
+
+    if let Some(license_bytes) = installed_bytes
+      && let Some((_, _, grant)) = self.verify_cached_commercial_grant(workspace_id, &license_bytes, now, true)
+    {
+      return Ok(grant);
+    }
     Ok(server_types::license::default_selfhost_access_grant())
   }
 
@@ -265,7 +462,7 @@ impl Default for CommunityExtension {
 impl CommunityExtension {
   pub fn new() -> Self {
     Self {
-      quota_gate: Arc::new(CommunityQuotaGate),
+      quota_gate: Arc::new(CommunityQuotaGate::new()),
       session_policy: Arc::new(CommunitySessionPolicyHook),
       copilot_policy: Arc::new(CommunityCopilotPolicySpi),
       rate_limit_policy: Arc::new(CommunityRateLimitPolicy),

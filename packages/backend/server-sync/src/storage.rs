@@ -255,25 +255,67 @@ enum UserspaceRedisLockBackend {
   InvalidConfig(String),
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DocRealtimeTopic {
+  ShareState,
+  Grants,
+  Comment,
+}
+
+impl DocRealtimeTopic {
+  pub fn from_room_scope(scope: &str) -> Option<Self> {
+    match scope {
+      "share-state" => Some(Self::ShareState),
+      "grants" => Some(Self::Grants),
+      "comment" => Some(Self::Comment),
+      _ => None,
+    }
+  }
+}
+
 #[derive(Clone)]
 pub struct SyncStorage {
   db: ServerDb,
   quota_gate: Arc<dyn QuotaGate>,
   session_redis: UserspaceRedisLockBackend,
   userspace_lock_ttl_ms: u64,
+  doc_sharing: server_domain::doc_sharing::DocSharingService,
+  users: server_domain::users::UserService,
+  notifications: server_domain::notifications::NotificationService,
+  comments: server_domain::comments::CommentService,
 }
 
 impl SyncStorage {
   pub fn new(db: ServerDb) -> Self {
-    Self::with_quota_gate(db, Arc::new(CommunityQuotaGate))
+    Self::with_quota_gate(db, Arc::new(CommunityQuotaGate::new()))
   }
 
   pub fn with_quota_gate(db: ServerDb, quota_gate: Arc<dyn QuotaGate>) -> Self {
+    let noop = Arc::new(server_domain::events::NoopEventPublisher::default());
+    let doc_sharing = server_domain::doc_sharing::DocSharingService::new(
+      db.clone(),
+      Arc::clone(&quota_gate),
+      noop.clone(),
+      noop.clone(),
+    );
+    let users = server_domain::users::UserService::new(db.clone());
+    let notifications = server_domain::notifications::NotificationService::new(
+      db.clone(),
+      Arc::clone(&quota_gate),
+      doc_sharing.clone(),
+      noop.clone(),
+    );
+    let comments =
+      server_domain::comments::CommentService::new(db.clone(), Arc::clone(&quota_gate), doc_sharing.clone(), noop);
     Self {
       db,
       quota_gate,
       session_redis: UserspaceRedisLockBackend::Disabled,
       userspace_lock_ttl_ms: DEFAULT_LOCK_TTL_SECS * 1_000,
+      doc_sharing,
+      users,
+      notifications,
+      comments,
     }
   }
 
@@ -1528,6 +1570,213 @@ impl SyncStorage {
     }))
   }
 
+  /// Resolves the `doc.share-state.get` realtime snapshot (`public`, `mode`, `defaultRole`).
+  /// Enforces `Doc.Read` via `DocSharingService::get_doc_info`.
+  pub async fn get_doc_share_state_snapshot(
+    &self,
+    workspace_id: &str,
+    doc_id: &str,
+    user_id: &str,
+  ) -> Result<serde_json::Value, SyncError> {
+    let info = self
+      .doc_sharing
+      .get_doc_info(workspace_id, Some(user_id), doc_id)
+      .await
+      .map_err(|e| map_domain_error(e, workspace_id, doc_id))?;
+    Ok(match info {
+      Some(doc) => serde_json::json!({
+        "public": doc.public,
+        "mode": if doc.mode == 1 { "Edgeless" } else { "Page" },
+        "defaultRole": domain_doc_role_graphql_name(doc.default_role),
+      }),
+      None => serde_json::Value::Null,
+    })
+  }
+
+  /// Resolves the `doc.grants.get` realtime snapshot with `after` cursor support.
+  pub async fn get_doc_grants_snapshot(
+    &self,
+    workspace_id: &str,
+    doc_id: &str,
+    user_id: &str,
+    first: i64,
+    offset: i64,
+    after: Option<&str>,
+  ) -> Result<serde_json::Value, SyncError> {
+    use base64::Engine as _;
+    let decoded_after = after
+      .and_then(|c| base64::engine::general_purpose::STANDARD.decode(c).ok())
+      .and_then(|b| String::from_utf8(b).ok());
+    let (total_count, items, has_next_page) = self
+      .doc_sharing
+      .paginate_granted_users(workspace_id, doc_id, user_id, first, offset, decoded_after.as_deref())
+      .await
+      .map_err(|e| map_domain_error(e, workspace_id, doc_id))?;
+    let end_cursor = items.last().map(|g| {
+      let raw = format!("{}|{}", g.created_at.to_rfc3339(), g.user_id);
+      base64::engine::general_purpose::STANDARD.encode(raw.as_bytes())
+    });
+    let edges: Vec<serde_json::Value> = items
+      .into_iter()
+      .map(|g| {
+        serde_json::json!({
+          "node": {
+            "role": domain_doc_role_graphql_name(g.role),
+            "user": {
+              "id": g.user_id,
+              "name": g.name,
+              "email": g.email,
+              "avatarUrl": g.avatar_url,
+            }
+          }
+        })
+      })
+      .collect();
+    Ok(serde_json::json!({
+      "totalCount": total_count,
+      "pageInfo": {
+        "endCursor": end_cursor,
+        "hasNextPage": has_next_page,
+      },
+      "edges": edges,
+    }))
+  }
+
+  /// Resolves the `user.settings.get` realtime snapshot from `user_settings.payload` JSONB.
+  pub async fn get_user_settings_snapshot(&self, user_id: &str) -> Result<serde_json::Value, SyncError> {
+    let settings = self
+      .users
+      .get_settings(user_id)
+      .await
+      .map_err(|e| map_domain_error(e, "", ""))?;
+    Ok(serde_json::json!({
+      "receiveInvitationEmail": settings.receive_invitation_email,
+      "receiveMentionEmail": settings.receive_mention_email,
+      "receiveCommentEmail": settings.receive_comment_email,
+    }))
+  }
+
+  /// Authorizes subscription to doc-scoped realtime topics (`doc.share-state.changed`,
+  /// `doc.grants.changed`, `comment.changed`), resolving logical-to-physical doc ID aliases.
+  pub async fn assert_doc_realtime_topic_access(
+    &self,
+    workspace_id: &str,
+    doc_id: &str,
+    user_id: &str,
+    topic: DocRealtimeTopic,
+  ) -> Result<(), SyncError> {
+    let perms = self
+      .doc_sharing
+      .get_doc_permissions(workspace_id, Some(user_id), doc_id)
+      .await
+      .map_err(|e| map_domain_error(e, workspace_id, doc_id))?;
+    let (allowed, action) = match topic {
+      DocRealtimeTopic::ShareState => (perms.is_some_and(|p| p.doc_read), "Doc.Read"),
+      DocRealtimeTopic::Grants => (perms.is_some_and(|p| p.doc_users_read), "Doc.Users.Read"),
+      DocRealtimeTopic::Comment => (perms.is_some_and(|p| p.doc_comments_read), "Doc.Comments.Read"),
+    };
+    if !allowed {
+      return Err(SyncError::DocActionDenied {
+        action: action.to_owned(),
+        doc_id: doc_id.to_owned(),
+        space_id: workspace_id.to_owned(),
+      });
+    }
+    Ok(())
+  }
+
+  /// Resolves the `notification.count.get` realtime snapshot.
+  pub async fn get_notification_count_snapshot(&self, user_id: &str) -> Result<i64, SyncError> {
+    self
+      .notifications
+      .count_by_user(user_id)
+      .await
+      .map_err(|e| map_domain_error(e, "", ""))
+  }
+
+  /// Resolves the `comment.changes.get` realtime snapshot.
+  pub async fn get_comment_changes_snapshot(
+    &self,
+    workspace_id: &str,
+    doc_id: &str,
+    user_id: &str,
+    after: Option<&str>,
+    first: Option<i64>,
+  ) -> Result<serde_json::Value, SyncError> {
+    use base64::Engine as _;
+    let svc = &self.comments;
+    let mut cursor = after
+      .and_then(|c| base64::engine::general_purpose::STANDARD.decode(c).ok())
+      .and_then(|b| String::from_utf8(b).ok())
+      .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+      .unwrap_or_else(|| serde_json::json!({}));
+    let comment_updated_at = cursor
+      .get("commentUpdatedAt")
+      .and_then(|v| v.as_str())
+      .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
+      .map(|dt| dt.with_timezone(&Utc));
+    let reply_updated_at = cursor
+      .get("replyUpdatedAt")
+      .and_then(|v| v.as_str())
+      .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
+      .map(|dt| dt.with_timezone(&Utc));
+
+    let take = first.map(|n| n.saturating_add(1)).unwrap_or(1001);
+    let mut changes = svc
+      .list_comment_changes(
+        user_id,
+        workspace_id,
+        doc_id,
+        comment_updated_at,
+        reply_updated_at,
+        take,
+      )
+      .await
+      .map_err(|e| map_domain_error(e, workspace_id, doc_id))?;
+    let has_next_page = first.is_some_and(|n| (changes.len() as i64) > n);
+    if let Some(n) = first {
+      changes.truncate(n.max(0) as usize);
+    }
+    if let Some(obj) = cursor.as_object_mut() {
+      for change in &changes {
+        let ts = change.item.get("updatedAt").and_then(|v| v.as_str()).map(str::to_owned);
+        if let Some(ts) = ts {
+          if change.comment_id.is_some() {
+            obj.insert("replyUpdatedAt".to_owned(), serde_json::Value::String(ts));
+          } else {
+            obj.insert("commentUpdatedAt".to_owned(), serde_json::Value::String(ts));
+          }
+        }
+      }
+    }
+    let end_cursor = base64::engine::general_purpose::STANDARD.encode(
+      serde_json::to_string(&cursor)
+        .unwrap_or_else(|_| "{}".to_owned())
+        .as_bytes(),
+    );
+    let serialized: Vec<serde_json::Value> = changes
+      .into_iter()
+      .map(|c| {
+        let action = match c.action {
+          server_domain::comments::CommentChangeAction::Update => "update",
+          server_domain::comments::CommentChangeAction::Delete => "delete",
+        };
+        serde_json::json!({
+          "id": c.id,
+          "action": action,
+          "item": c.item,
+          "commentId": c.comment_id,
+        })
+      })
+      .collect();
+    Ok(serde_json::json!({
+      "changes": serialized,
+      "startCursor": "",
+      "endCursor": end_cursor,
+      "hasNextPage": has_next_page,
+    }))
+  }
+
   /// Upserts `public.sync_active_users_minutely` truncated to the current UTC minute.
   pub async fn upsert_sync_active_users_minutely(&self, active_users: usize) -> Result<(), SyncError> {
     let now = Utc::now();
@@ -1556,6 +1805,53 @@ fn lifecycle_action_name(action: DocLifecycleAction) -> &'static str {
     DocLifecycleAction::Trash => "Doc.Trash",
     DocLifecycleAction::Restore => "Doc.Restore",
     DocLifecycleAction::Delete => "Doc.Delete",
+  }
+}
+
+fn domain_doc_role_graphql_name(role: server_domain::acl::DocRole) -> &'static str {
+  match role {
+    server_domain::acl::DocRole::None => "None",
+    server_domain::acl::DocRole::External => "External",
+    server_domain::acl::DocRole::Reader => "Reader",
+    server_domain::acl::DocRole::Commenter => "Commenter",
+    server_domain::acl::DocRole::Editor => "Editor",
+    server_domain::acl::DocRole::Manager => "Manager",
+    server_domain::acl::DocRole::Owner => "Owner",
+  }
+}
+
+fn map_domain_error(err: server_types::DomainError, space_id: &str, doc_id: &str) -> SyncError {
+  match err {
+    server_types::DomainError::Unauthorized(msg) => SyncError::AuthenticationRequired(msg),
+    server_types::DomainError::Forbidden(msg) => {
+      if let Some(rest) = msg.strip_prefix("doc_action_denied:") {
+        let (parsed_space, parsed_doc, action) = match rest.split_once(':') {
+          Some((sp, rem)) => match rem.split_once(':') {
+            Some((dc, act)) if !sp.is_empty() && !dc.is_empty() && !act.is_empty() => (sp, dc, act),
+            _ => (space_id, doc_id, rest),
+          },
+          None => (space_id, doc_id, rest),
+        };
+        SyncError::DocActionDenied {
+          action: action.to_owned(),
+          doc_id: parsed_doc.to_owned(),
+          space_id: parsed_space.to_owned(),
+        }
+      } else {
+        SyncError::AccessDenied(msg)
+      }
+    }
+    server_types::DomainError::NotFound(_) => SyncError::DocNotFound {
+      space_id: space_id.to_owned(),
+      doc_id: doc_id.to_owned(),
+    },
+    server_types::DomainError::Validation(msg)
+    | server_types::DomainError::Conflict(msg)
+    | server_types::DomainError::PreconditionFailed(msg) => SyncError::BadRequest(msg),
+    server_types::DomainError::QuotaExceeded { message, .. } => SyncError::QuotaExceeded(message),
+    server_types::DomainError::Internal(msg)
+    | server_types::DomainError::Unavailable(msg)
+    | server_types::DomainError::RateLimited(msg) => SyncError::Internal(msg),
   }
 }
 
@@ -1934,4 +2230,172 @@ async fn delete_workspace_doc_rows(
     .await?;
   }
   Ok(())
+}
+
+#[cfg(test)]
+mod realtime_snapshot_tests {
+  use super::*;
+  use server_db::DbConfig;
+  use server_domain::users::{UpdateUserSettingsInput, UserService};
+  use server_types::ServerRole;
+
+  #[test]
+  fn user_settings_snapshot_reads_jsonb_payload_and_updates() {
+    let cluster = test_db_harness::pg::PgCluster::from_env_or_docker().expect("test postgres cluster");
+    let migrations_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+    let migrations = test_db_harness::migrations::MigrationSet::load(&migrations_dir).expect("load migrations");
+    let template = cluster.ensure_template(&migrations).expect("ensure template");
+    let lease = cluster
+      .lease(&template, test_db_harness::pg::DEFAULT_LEASE_TTL)
+      .expect("lease test db");
+    let db_url = lease.url().to_owned();
+
+    let rt = tokio::runtime::Builder::new_multi_thread()
+      .enable_all()
+      .build()
+      .unwrap();
+
+    rt.block_on(async move {
+      let db = ServerDb::connect(DbConfig {
+        database_url: db_url,
+        channel: "canary".into(),
+        role: ServerRole::Allinone,
+        selfhosted: true,
+        max_connections: 4,
+        statement_timeout_ms: 5_000,
+        tier_permits: [8, 4, 2, 2],
+      })
+      .await
+      .expect("connect test db");
+      sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+        .execute(db.pool())
+        .await
+        .expect("reset schema");
+      db.ensure_schema_ready().await.expect("ensure schema ready");
+
+      let user_id = "user-settings-sync-test";
+      sqlx::query("INSERT INTO users (id, name, email, registered) VALUES ($1, 'Settings User', 'settings-sync@example.com', true)")
+        .bind(user_id)
+        .execute(db.pool())
+        .await
+        .expect("insert user");
+
+      let storage = SyncStorage::new(db.clone());
+      let defaults = storage.get_user_settings_snapshot(user_id).await.expect("default settings");
+      assert_eq!(defaults["receiveInvitationEmail"], true);
+      assert_eq!(defaults["receiveMentionEmail"], true);
+      assert_eq!(defaults["receiveCommentEmail"], true);
+
+      let users = UserService::new(db.clone());
+      users
+        .update_settings(
+          user_id,
+          UpdateUserSettingsInput {
+            receive_invitation_email: Some(false),
+            receive_mention_email: Some(true),
+            receive_comment_email: Some(false),
+          },
+        )
+        .await
+        .expect("update settings");
+
+      let updated = storage.get_user_settings_snapshot(user_id).await.expect("updated settings");
+      assert_eq!(updated["receiveInvitationEmail"], false);
+      assert_eq!(updated["receiveMentionEmail"], true);
+      assert_eq!(updated["receiveCommentEmail"], false);
+
+      // Verify doc realtime topic authorization (`doc.share-state.changed` -> Doc.Read,
+      // `doc.grants.changed` -> Doc.Users.Read) and `doc.share-state.get` unauthorized denial.
+      let ws_id = uuid::Uuid::new_v4().to_string();
+      let reader_id = uuid::Uuid::new_v4().to_string();
+      sqlx::query("INSERT INTO users (id, name, email) VALUES ($1, 'Reader', 'rt-reader@example.com')")
+        .bind(&reader_id)
+        .execute(db.pool())
+        .await
+        .unwrap();
+      sqlx::query("INSERT INTO workspaces (id) VALUES ($1)")
+        .bind(&ws_id)
+        .execute(db.pool())
+        .await
+        .unwrap();
+      sqlx::query(
+        "INSERT INTO workspace_members (id, workspace_id, user_id, role, state, source) VALUES ($1, $2, $3, 'owner', 'active', 'legacy'), ($4, $2, $5, 'member', 'active', 'legacy')",
+      )
+      .bind(uuid::Uuid::new_v4().to_string())
+      .bind(&ws_id)
+      .bind(user_id)
+      .bind(uuid::Uuid::new_v4().to_string())
+      .bind(&reader_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+      sqlx::query(
+        "INSERT INTO doc_access_policies (workspace_id, doc_id, member_default_role, visibility) VALUES ($1, 'rt-doc', 'none', 'private')",
+      )
+      .bind(&ws_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+      sqlx::query(
+        "INSERT INTO doc_grants (workspace_id, doc_id, principal_type, principal_id, role, granted_by) VALUES ($1, 'rt-doc', 'user', $2, 'reader', $3)",
+      )
+      .bind(&ws_id)
+      .bind(&reader_id)
+      .bind(user_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+
+      // Private doc: non-member denied `doc.share-state.get` with Doc.Read and `comment.changed` with Doc.Comments.Read.
+      let outsider_id = uuid::Uuid::new_v4().to_string();
+      let share_err = storage
+        .get_doc_share_state_snapshot(&ws_id, "rt-doc", &outsider_id)
+        .await
+        .unwrap_err();
+      assert!(matches!(
+        share_err,
+        SyncError::DocActionDenied { ref action, .. } if action == "Doc.Read"
+      ));
+      let comment_err = storage
+        .assert_doc_realtime_topic_access(&ws_id, "rt-doc", &outsider_id, DocRealtimeTopic::Comment)
+        .await
+        .unwrap_err();
+      assert!(matches!(
+        comment_err,
+        SyncError::DocActionDenied { ref action, .. } if action == "Doc.Comments.Read"
+      ));
+
+      // Public doc: external non-member has Doc.Read (ShareState OK) but NOT Doc.Users.Read (Grants denied).
+      sqlx::query(
+        "INSERT INTO workspace_pages (workspace_id, page_id, mode, published_at) VALUES ($1, 'rt-doc', 0, now())",
+      )
+      .bind(&ws_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+      sqlx::query(
+        "UPDATE doc_access_policies SET visibility = 'public', public_role = 'external', published_at = now() WHERE workspace_id = $1 AND doc_id = 'rt-doc'",
+      )
+      .bind(&ws_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+      assert!(
+        storage
+          .assert_doc_realtime_topic_access(&ws_id, "rt-doc", &outsider_id, DocRealtimeTopic::ShareState)
+          .await
+          .is_ok()
+      );
+      let grants_err = storage
+        .assert_doc_realtime_topic_access(&ws_id, "rt-doc", &outsider_id, DocRealtimeTopic::Grants)
+        .await
+        .unwrap_err();
+      assert!(matches!(
+        grants_err,
+        SyncError::DocActionDenied { ref action, .. } if action == "Doc.Users.Read"
+      ));
+
+      db.pool().close().await;
+    });
+  }
 }

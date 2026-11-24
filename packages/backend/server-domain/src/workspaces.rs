@@ -5,7 +5,9 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use server_db::{ServerDb, WorkloadTier};
-use server_spi::{CommunityRateLimitPolicy, QuotaGate, RateLimitPolicy, RequestSource};
+use server_spi::{
+  BillingSpi, CommunityBillingSpi, CommunityRateLimitPolicy, QuotaGate, RateLimitPolicy, RequestSource,
+};
 use server_types::DomainError;
 use sqlx::{Postgres, Row, Transaction};
 use uuid::Uuid;
@@ -208,6 +210,7 @@ pub struct WorkspaceService {
   quota_gate: Arc<dyn QuotaGate>,
   invalidation: Arc<dyn InvalidationPublisher>,
   rate_limit_policy: Arc<dyn RateLimitPolicy>,
+  billing_spi: Arc<dyn BillingSpi>,
   redis: Option<redis::Client>,
   fallback_invite_links: Arc<tokio::sync::RwLock<std::collections::HashMap<String, WorkspaceInviteLink>>>,
 }
@@ -219,6 +222,7 @@ impl WorkspaceService {
       quota_gate,
       invalidation,
       rate_limit_policy: Arc::new(CommunityRateLimitPolicy),
+      billing_spi: Arc::new(CommunityBillingSpi),
       redis: None,
       fallback_invite_links: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
     }
@@ -227,6 +231,17 @@ impl WorkspaceService {
   pub fn with_rate_limit_policy(mut self, rate_limit_policy: Arc<dyn RateLimitPolicy>) -> Self {
     self.rate_limit_policy = rate_limit_policy;
     self
+  }
+
+  pub fn with_billing_spi(mut self, billing_spi: Arc<dyn BillingSpi>) -> Self {
+    self.billing_spi = billing_spi;
+    self
+  }
+
+  async fn notify_billing_members_changed(&self, workspace_id: &str) {
+    if let Err(err) = self.billing_spi.on_workspace_members_changed(workspace_id).await {
+      tracing::warn!(workspace_id, error = %err, "billing_spi on_workspace_members_changed failed");
+    }
   }
 
   pub fn with_redis(mut self, redis: Option<redis::Client>) -> Self {
@@ -952,6 +967,7 @@ impl WorkspaceService {
           workspace_id: workspace_id.to_owned(),
         })
         .await;
+      self.notify_billing_members_changed(workspace_id).await;
     }
 
     Ok(
@@ -1140,6 +1156,7 @@ impl WorkspaceService {
         workspace_id: inv_workspace_id.clone(),
       })
       .await;
+    self.notify_billing_members_changed(&inv_workspace_id).await;
 
     Ok(WorkspaceMemberRecord {
       id: invitation_id.to_owned(),
@@ -1329,6 +1346,7 @@ impl WorkspaceService {
         workspace_id: workspace_id.to_owned(),
       })
       .await;
+    self.notify_billing_members_changed(workspace_id).await;
 
     Ok(())
   }
@@ -1783,6 +1801,7 @@ impl WorkspaceService {
         doc_id: None,
       })
       .await;
+    self.notify_billing_members_changed(workspace_id).await;
     Ok(())
   }
 
@@ -1803,6 +1822,27 @@ impl WorkspaceService {
       .begin_tiered(WorkloadTier::InteractiveWrite)
       .await
       .map_err(|e| DomainError::Internal(format!("begin transfer_workspace_ownership: {e}")))?;
+    // Lock involved user rows in deterministic ascending ID order BEFORE locking
+    // the workspace row so concurrent `UserService::delete_user` on `target_user_id`
+    // is strictly serialized and can never leave a Team workspace ownerless.
+    let mut user_ids = vec![actor_user_id, target_user_id];
+    user_ids.sort_unstable();
+    user_ids.dedup();
+    for uid in user_ids {
+      let row = sqlx::query("SELECT id, disabled FROM users WHERE id = $1 FOR UPDATE")
+        .bind(uid)
+        .fetch_optional(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("lock user for ownership transfer: {e}")))?;
+      match row {
+        Some(r) if !r.get::<bool, _>("disabled") => {}
+        _ => {
+          return Err(DomainError::Validation(
+            "new workspace owner must be an active member".to_owned(),
+          ));
+        }
+      }
+    }
     lock_workspace_row(tx.tx_mut(), workspace_id).await?;
     let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
       .fetch_one(&mut **tx.tx_mut())
@@ -2015,6 +2055,7 @@ impl WorkspaceService {
         workspace_id: workspace_id.to_owned(),
       })
       .await;
+    self.notify_billing_members_changed(workspace_id).await;
     Ok(())
   }
 
@@ -2368,6 +2409,7 @@ impl WorkspaceService {
             workspace_id: ws_id.clone(),
           })
           .await;
+        self.notify_billing_members_changed(&ws_id).await;
         return Ok(WorkspaceMemberRecord {
           id: inv_id,
           workspace_id: ws_id,
@@ -2424,6 +2466,7 @@ impl WorkspaceService {
         workspace_id: ws_id.clone(),
       })
       .await;
+    self.notify_billing_members_changed(&ws_id).await;
 
     Ok(WorkspaceMemberRecord {
       id: review_id,

@@ -21,7 +21,12 @@ use server_db::ServerDb;
 use server_db::phase_a_compat::sessions::PhaseASessionRepository;
 use server_domain::app_config::{AppConfigService, RuntimeAppConfigBaseline};
 use server_domain::auth::{AuthConfig, AuthService};
+use server_domain::comments::CommentService;
+use server_domain::doc_sharing::DocSharingService;
 use server_domain::events::{EventBusPublisher, InvalidationPublisher, NoopEventPublisher};
+use server_domain::histories::DocHistoryService;
+use server_domain::notifications::NotificationService;
+use server_domain::selfhost_license::SelfhostLicenseService;
 use server_domain::users::UserService;
 use server_domain::workspaces::WorkspaceService;
 use server_spi::ServerExtension;
@@ -94,9 +99,15 @@ pub struct AppState {
   pub auth: AuthService,
   pub users: UserService,
   pub workspaces: WorkspaceService,
+  pub doc_sharing: DocSharingService,
+  pub histories: DocHistoryService,
+  pub comments: CommentService,
+  pub notifications: NotificationService,
+  pub licenses: SelfhostLicenseService,
   pub app_config: AppConfigService,
   pub blobs: BlobService,
   pub avatars: Arc<dyn BlobStorageBackend>,
+  pub comment_attachments: Arc<dyn BlobStorageBackend>,
   pub invalidation: Arc<dyn InvalidationPublisher>,
   pub event_bus: Arc<dyn EventBusPublisher>,
   pub avatar_transcode_sem: Arc<tokio::sync::Semaphore>,
@@ -107,9 +118,15 @@ pub struct AppServices {
   pub auth: AuthService,
   pub users: UserService,
   pub workspaces: WorkspaceService,
+  pub doc_sharing: DocSharingService,
+  pub histories: DocHistoryService,
+  pub comments: CommentService,
+  pub notifications: NotificationService,
+  pub licenses: SelfhostLicenseService,
   pub app_config: AppConfigService,
   pub blobs: BlobService,
   pub avatars: Arc<dyn BlobStorageBackend>,
+  pub comment_attachments: Arc<dyn BlobStorageBackend>,
   pub invalidation: Arc<dyn InvalidationPublisher>,
   pub event_bus: Arc<dyn EventBusPublisher>,
 }
@@ -139,13 +156,38 @@ impl AppState {
     let event_bus: Arc<dyn EventBusPublisher> = noop;
     let workspaces = WorkspaceService::new(db.clone(), extension.quota_gate(), Arc::clone(&invalidation))
       .with_rate_limit_policy(extension.rate_limit_policy())
+      .with_billing_spi(extension.billing_spi())
       .with_redis(redis.clone());
+    let doc_sharing = DocSharingService::new(
+      db.clone(),
+      extension.quota_gate(),
+      Arc::clone(&invalidation),
+      Arc::clone(&event_bus),
+    );
+    let histories = DocHistoryService::new(db.clone(), extension.quota_gate(), doc_sharing.clone());
+    let comments = CommentService::new(
+      db.clone(),
+      extension.quota_gate(),
+      doc_sharing.clone(),
+      Arc::clone(&event_bus),
+    )
+    .with_invalidation(Arc::clone(&invalidation));
+    let notifications = NotificationService::new(
+      db.clone(),
+      extension.quota_gate(),
+      doc_sharing.clone(),
+      Arc::clone(&event_bus),
+    );
+    let licenses = SelfhostLicenseService::new(db.clone(), extension.quota_gate(), Arc::clone(&invalidation));
     let app_config = AppConfigService::new(db.clone(), config.app_config_baseline.clone(), Arc::clone(&event_bus));
     let blob_root = std::env::temp_dir().join(format!("affine-server-blobs-{}", uuid::Uuid::new_v4()));
     let blob_root_str = blob_root.to_string_lossy();
     let storage = Arc::new(LocalFsBlobStorage::new(&blob_root_str, "blobs").expect("valid temp blob storage"));
     let avatars: Arc<dyn BlobStorageBackend> =
       Arc::new(LocalFsBlobStorage::new(&blob_root_str, "avatars").expect("valid temp avatar storage"));
+    let comment_attachments: Arc<dyn BlobStorageBackend> = Arc::new(
+      LocalFsBlobStorage::new(&blob_root_str, "comment-attachments").expect("valid temp comment-attachments storage"),
+    );
     let blobs = BlobService::new(db.clone(), storage, extension.quota_gate());
 
     Self::with_services(
@@ -157,9 +199,15 @@ impl AppState {
         auth,
         users,
         workspaces,
+        doc_sharing,
+        histories,
+        comments,
+        notifications,
+        licenses,
         app_config,
         blobs,
         avatars,
+        comment_attachments,
         invalidation,
         event_bus,
       },
@@ -181,9 +229,15 @@ impl AppState {
       auth: services.auth,
       users: services.users,
       workspaces: services.workspaces,
+      doc_sharing: services.doc_sharing,
+      histories: services.histories,
+      comments: services.comments,
+      notifications: services.notifications,
+      licenses: services.licenses,
       app_config: services.app_config,
       blobs: services.blobs,
       avatars: services.avatars,
+      comment_attachments: services.comment_attachments,
       invalidation: services.invalidation,
       event_bus: services.event_bus,
       avatar_transcode_sem: Arc::new(tokio::sync::Semaphore::new(4)),
@@ -436,6 +490,11 @@ pub fn build_router(app: Arc<AppState>) -> Router {
       .route("/api/auth/sign-in", post(rest::auth::handle_sign_in))
       .route("/api/auth/sign-out", post(rest::auth::handle_sign_out))
       .route("/api/auth/magic-link", post(rest::auth::handle_complete_magic_link))
+      .route(
+        "/api/auth/open-app/sign-in-code",
+        post(rest::auth::handle_open_app_sign_in_code),
+      )
+      .route("/api/auth/open-app/sign-in", post(rest::auth::handle_open_app_sign_in))
       .route("/api/avatars/{id}", get(rest::blobs::handle_get_avatar))
       .route(
         "/api/workspaces/{workspace_id}/blobs/v1/{name}",
@@ -456,6 +515,22 @@ pub fn build_router(app: Arc<AppState>) -> Router {
       .route(
         "/api/workspaces/{workspace_id}/docs/{doc_id}",
         get(rest::blobs::handle_get_doc_snapshot),
+      )
+      .route(
+        "/api/workspaces/{workspace_id}/public-docs/{doc_id}",
+        get(rest::blobs::handle_get_public_doc).head(rest::blobs::handle_head_public_doc),
+      )
+      .route(
+        "/api/workspaces/{workspace_id}/public-docs/{doc_id}/root-doc",
+        get(rest::blobs::handle_get_public_root_doc),
+      )
+      .route(
+        "/api/workspaces/{workspace_id}/docs/{guid}/histories/{timestamp}",
+        get(rest::blobs::handle_get_doc_history),
+      )
+      .route(
+        "/api/workspaces/{workspace_id}/docs/{doc_id}/comment-attachments/{key}",
+        get(rest::blobs::handle_get_comment_attachment),
       );
   }
 

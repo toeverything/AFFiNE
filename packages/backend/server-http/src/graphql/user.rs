@@ -52,6 +52,28 @@ pub struct RemoveAvatar {
   pub success: bool,
 }
 
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "DeleteAccount")]
+pub struct DeleteAccount {
+  pub success: bool,
+}
+
+#[derive(SimpleObject, Clone, Copy, Debug, Eq, PartialEq)]
+#[graphql(name = "UserSettingsType")]
+pub struct UserSettingsType {
+  pub receive_invitation_email: bool,
+  pub receive_mention_email: bool,
+  pub receive_comment_email: bool,
+}
+
+#[derive(InputObject, Clone, Copy, Debug)]
+#[graphql(name = "UpdateUserSettingsInput")]
+pub struct UpdateUserSettingsInput {
+  pub receive_invitation_email: Option<bool>,
+  pub receive_mention_email: Option<bool>,
+  pub receive_comment_email: Option<bool>,
+}
+
 #[derive(InputObject, Clone, Debug)]
 #[graphql(name = "UpdateUserInput")]
 pub struct UpdateUserInput {
@@ -170,6 +192,29 @@ impl UserType {
     let _ = tx.rollback().await;
     Ok(user_quota_from_grant(&grant, used_storage_quota))
   }
+
+  async fn settings(&self, ctx: &Context<'_>) -> Result<UserSettingsType> {
+    let caller = require_authenticated_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let s = state
+      .users
+      .get_settings(&caller.id)
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    Ok(UserSettingsType {
+      receive_invitation_email: s.receive_invitation_email,
+      receive_mention_email: s.receive_mention_email,
+      receive_comment_email: s.receive_comment_email,
+    })
+  }
+
+  async fn notifications(
+    &self,
+    ctx: &Context<'_>,
+    pagination: super::doc::PaginationInput,
+  ) -> Result<super::notification::PaginatedNotificationObjectType> {
+    super::notification::resolve_user_notifications(ctx, pagination).await
+  }
 }
 
 pub(crate) fn resolve_current_user(ctx: &Context<'_>) -> Option<UserType> {
@@ -250,51 +295,55 @@ pub(crate) async fn mutate_update_profile(ctx: &Context<'_>, input: UpdateUserIn
       Some(req_id.as_str()),
     )
     .await;
-  if let Ok(ws_ids) = sqlx::query_scalar::<_, String>(
-    "SELECT workspace_id FROM workspace_members WHERE user_id = $1 AND state = 'active' ORDER BY workspace_id ASC",
-  )
-  .bind(&updated.id)
-  .fetch_all(state.db.pool())
-  .await
-  {
-    for ws_id in ws_ids {
-      let _ = state
-        .event_bus
-        .publish_event(
-          "realtime.topic.changed",
-          serde_json::json!({
-            "topic": "workspace.members.changed",
-            "room": format!("workspace:{ws_id}:members"),
-            "input": { "workspaceId": ws_id },
-            "event": { "changed": true, "reason": "user-updated" },
-          }),
-          Some(req_id.as_str()),
-        )
-        .await;
-    }
+  let ws_ids = match state.db.acquire_tiered(server_db::WorkloadTier::InteractiveRead).await {
+    Ok(mut conn) => sqlx::query_scalar::<_, String>(
+      "SELECT workspace_id FROM workspace_members WHERE user_id = $1 AND state = 'active' ORDER BY workspace_id ASC",
+    )
+    .bind(&updated.id)
+    .fetch_all(&mut *conn)
+    .await
+    .unwrap_or_default(),
+    Err(_) => Vec::new(),
+  };
+  for ws_id in ws_ids {
+    let _ = state
+      .event_bus
+      .publish_event(
+        "realtime.topic.changed",
+        serde_json::json!({
+          "topic": "workspace.members.changed",
+          "room": format!("workspace:{ws_id}:members"),
+          "input": { "workspaceId": ws_id },
+          "event": { "changed": true, "reason": "user-updated" },
+        }),
+        Some(req_id.as_str()),
+      )
+      .await;
   }
-  if let Ok(doc_rows) = sqlx::query_as::<_, (String, String)>(
-    "SELECT workspace_id, doc_id FROM doc_grants WHERE principal_type = 'user' AND principal_id = $1 ORDER BY workspace_id ASC, doc_id ASC",
-  )
-  .bind(&updated.id)
-  .fetch_all(state.db.pool())
-  .await
-  {
-    for (ws_id, doc_id) in doc_rows {
-      let _ = state
-        .event_bus
-        .publish_event(
-          "realtime.topic.changed",
-          serde_json::json!({
-            "topic": "doc.grants.changed",
-            "room": format!("workspace:{ws_id}:doc:{doc_id}:grants"),
-            "input": { "workspaceId": ws_id, "docId": doc_id },
-            "event": { "changed": true, "reason": "user-updated" },
-          }),
-          Some(req_id.as_str()),
-        )
-        .await;
-    }
+  let doc_rows = match state.db.acquire_tiered(server_db::WorkloadTier::InteractiveRead).await {
+    Ok(mut conn) => sqlx::query_as::<_, (String, String)>(
+      "SELECT workspace_id, doc_id FROM doc_grants WHERE principal_type = 'user' AND principal_id = $1 ORDER BY workspace_id ASC, doc_id ASC",
+    )
+    .bind(&updated.id)
+    .fetch_all(&mut *conn)
+    .await
+    .unwrap_or_default(),
+    Err(_) => Vec::new(),
+  };
+  for (ws_id, doc_id) in doc_rows {
+    let _ = state
+      .event_bus
+      .publish_event(
+        "realtime.topic.changed",
+        serde_json::json!({
+          "topic": "doc.grants.changed",
+          "room": format!("workspace:{ws_id}:doc:{doc_id}:grants"),
+          "input": { "workspaceId": ws_id, "docId": doc_id },
+          "event": { "changed": true, "reason": "user-updated" },
+        }),
+        Some(req_id.as_str()),
+      )
+      .await;
   }
   Ok(UserType { view: updated })
 }
@@ -452,6 +501,96 @@ pub(crate) async fn mutate_remove_avatar(ctx: &Context<'_>) -> Result<RemoveAvat
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
   Ok(RemoveAvatar { success: true })
+}
+
+pub(crate) async fn mutate_update_settings(ctx: &Context<'_>, input: UpdateUserSettingsInput) -> Result<bool> {
+  let user = require_authenticated_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  state
+    .users
+    .update_settings(
+      &user.id,
+      server_domain::users::UpdateUserSettingsInput {
+        receive_invitation_email: input.receive_invitation_email,
+        receive_mention_email: input.receive_mention_email,
+        receive_comment_email: input.receive_comment_email,
+      },
+    )
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  let req_id = super::graphql_request_id(state);
+  let _ = state
+    .event_bus
+    .publish_event(
+      "realtime.topic.changed",
+      serde_json::json!({
+        "topic": "user.settings.changed",
+        "room": format!("user:{}:settings", user.id),
+        "input": {},
+        "event": { "changed": true, "reason": "settings-updated" },
+      }),
+      Some(req_id.as_str()),
+    )
+    .await;
+  Ok(true)
+}
+
+async fn finish_deleted_user_cleanup(state: &AppState, cleanup: server_domain::users::DeletedUserCleanup) {
+  for ws_id in cleanup.deleted_workspace_ids {
+    let _ = state
+      .invalidation
+      .publish_invalidation(&server_domain::events::InvalidationHintV1::WorkspaceInventoryChanged {
+        workspace_id: ws_id,
+        doc_id: None,
+      })
+      .await;
+  }
+  for (ws_id, key) in cleanup.blob_keys {
+    let object_key = format!("{ws_id}/{key}");
+    let _ = state.blobs.storage().delete(&object_key).await;
+  }
+  for (ws_id, doc_id, key) in cleanup.comment_attachment_keys {
+    let object_key = format!("{ws_id}/{doc_id}/{key}");
+    let _ = state.comment_attachments.delete(&object_key).await;
+  }
+  if let Some(avatar_url) = cleanup.avatar_url
+    && let Some(key) = avatar_url.rsplit('/').next().filter(|k| !k.is_empty())
+  {
+    let _ = state.avatars.delete(key).await;
+  }
+}
+
+pub(crate) async fn mutate_delete_account(ctx: &Context<'_>) -> Result<DeleteAccount> {
+  let user = require_authenticated_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let quota_gate = state.extension.quota_gate();
+  let billing = state.extension.billing_spi();
+  let cleanup = state
+    .users
+    .delete_user(&user.id, quota_gate.as_ref(), billing.as_ref())
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  finish_deleted_user_cleanup(state, cleanup).await;
+  Ok(DeleteAccount { success: true })
+}
+
+pub(crate) async fn mutate_delete_user(ctx: &Context<'_>, id: String) -> Result<DeleteAccount> {
+  let admin = super::require_admin_user(ctx).await?;
+  if admin.id == id {
+    return Err(domain_error_to_graphql(&DomainError::Validation(
+      "cannot_delete_own_account".into(),
+    )));
+  }
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let quota_gate = state.extension.quota_gate();
+  let billing = state.extension.billing_spi();
+  let cleanup = state
+    .users
+    .delete_user(&id, quota_gate.as_ref(), billing.as_ref())
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  finish_deleted_user_cleanup(state, cleanup).await;
+  Ok(DeleteAccount { success: true })
 }
 
 #[cfg(test)]

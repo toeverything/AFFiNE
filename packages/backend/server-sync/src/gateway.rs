@@ -325,14 +325,19 @@ impl SpaceSyncGateway {
             }
           }
           Ok(ClusterSyncEvent::RealtimeTopicChanged(payload)) => {
-            let recipients = {
+            let recipients_with_users: Vec<(String, Option<String>)> = {
               let rooms = gateway.rooms.read().await;
               rooms
                 .room_sockets
                 .get(&payload.room)
-                .map(|s| s.iter().cloned().collect::<Vec<_>>())
+                .map(|s| {
+                  s.iter()
+                    .map(|sid| (sid.clone(), rooms.socket_users.get(sid).cloned()))
+                    .collect()
+                })
                 .unwrap_or_default()
             };
+            let doc_room_check = parse_doc_realtime_room(&payload.room);
             let event_val = if payload.event.is_null() {
               payload.payload
             } else {
@@ -345,7 +350,25 @@ impl SpaceSyncGateway {
               "sentAt": chrono::Utc::now().timestamp_millis(),
               "event": event_val,
             });
-            for sid in recipients {
+            for (sid, user_id_opt) in recipients_with_users {
+              if let Some((ws_id, doc_id, topic)) = doc_room_check {
+                let allowed = match user_id_opt.as_deref() {
+                  Some(uid) => gateway
+                    .storage
+                    .assert_doc_realtime_topic_access(ws_id, doc_id, uid, topic)
+                    .await
+                    .is_ok(),
+                  None => false,
+                };
+                if !allowed {
+                  let mut rooms = gateway.rooms.write().await;
+                  rooms
+                    .realtime_subscriptions
+                    .retain(|_, (other_sid, other_room)| !(other_sid == &sid && other_room == &payload.room));
+                  rooms.leave_room(&sid, &payload.room);
+                  continue;
+                }
+              }
               engine.emit_to_socket(&sid, "realtime:event", &body).await;
             }
           }
@@ -576,19 +599,25 @@ impl SpaceSyncGateway {
         .await;
     }
 
-    // Revalidate realtime room subscriptions (`workspace:<ws>:config` and `workspace:<ws>:access`)
-    // and evict sockets that lost workspace membership or read access.
+    // Revalidate realtime room subscriptions (`workspace:<ws>:config`,
+    // `workspace:<ws>:access`, and doc-scoped `workspace:<ws>:doc:<doc>:<scope>`)
+    // and evict sockets that lost workspace or document-level permissions.
     let rt_candidates: Vec<(String, String, String, String)> = {
       let rooms = self.rooms.read().await;
       rooms
         .realtime_subscriptions
         .iter()
         .filter_map(|(sub_id, (sid, room))| {
-          let rest = room.strip_prefix("workspace:")?;
-          let (ws_id, kind) = rest.rsplit_once(':')?;
-          if !matches!(kind, "config" | "access") {
-            return None;
-          }
+          let ws_id = if let Some((ws, _doc, _topic)) = parse_doc_realtime_room(room) {
+            ws
+          } else {
+            let rest = room.strip_prefix("workspace:")?;
+            let (ws, kind) = rest.rsplit_once(':')?;
+            if !matches!(kind, "config" | "access") {
+              return None;
+            }
+            ws
+          };
           if let Some((filter_ws, _)) = filter
             && filter_ws != ws_id
           {
@@ -601,17 +630,24 @@ impl SpaceSyncGateway {
     };
 
     for (sub_id, sid, user_id, room) in rt_candidates {
-      let Some((ws_id, kind)) = room.strip_prefix("workspace:").and_then(|r| r.rsplit_once(':')) else {
-        continue;
-      };
-      let still_allowed = match kind {
-        "config" => self
+      let still_allowed = if let Some((ws_id, doc_id, topic)) = parse_doc_realtime_room(&room) {
+        self
           .storage
-          .assert_space_accessible(SpaceType::Workspace, ws_id, &user_id)
+          .assert_doc_realtime_topic_access(ws_id, doc_id, &user_id, topic)
           .await
-          .is_ok(),
-        "access" => self.storage.assert_workspace_readable(ws_id, &user_id).await.is_ok(),
-        _ => true,
+          .is_ok()
+      } else if let Some((ws_id, kind)) = room.strip_prefix("workspace:").and_then(|r| r.rsplit_once(':')) {
+        match kind {
+          "config" => self
+            .storage
+            .assert_space_accessible(SpaceType::Workspace, ws_id, &user_id)
+            .await
+            .is_ok(),
+          "access" => self.storage.assert_workspace_readable(ws_id, &user_id).await.is_ok(),
+          _ => true,
+        }
+      } else {
+        true
       };
       if !still_allowed {
         let mut rooms = self.rooms.write().await;
@@ -1252,6 +1288,77 @@ impl SpaceSyncGateway {
           .await?;
         Ok(json!({ "data": { "config": config } }))
       }
+      "doc.share-state.get" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let doc_id = input
+          .get("docId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing docId".into()))?;
+        let state = self
+          .storage
+          .get_doc_share_state_snapshot(workspace_id, doc_id, &user.id)
+          .await?;
+        Ok(json!({ "data": { "state": state } }))
+      }
+      "doc.grants.get" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let doc_id = input
+          .get("docId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing docId".into()))?;
+        let pagination = input.get("pagination");
+        let first = pagination
+          .and_then(|p| p.get("first"))
+          .and_then(Value::as_i64)
+          .unwrap_or(10);
+        let offset = pagination
+          .and_then(|p| p.get("offset"))
+          .and_then(Value::as_i64)
+          .unwrap_or(0);
+        let after = pagination.and_then(|p| p.get("after")).and_then(Value::as_str);
+        let grants = self
+          .storage
+          .get_doc_grants_snapshot(workspace_id, doc_id, &user.id, first, offset, after)
+          .await?;
+        Ok(json!({ "data": grants }))
+      }
+      "user.settings.get" => {
+        let settings = self.storage.get_user_settings_snapshot(&user.id).await?;
+        Ok(json!({ "data": { "settings": settings } }))
+      }
+      "notification.count.get" => {
+        let count = self.storage.get_notification_count_snapshot(&user.id).await?;
+        Ok(json!({ "data": { "count": count } }))
+      }
+      "comment.changes.get" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let doc_id = input
+          .get("docId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing docId".into()))?;
+        let after = input.get("after").and_then(Value::as_str);
+        let first = input.get("first").and_then(Value::as_i64);
+        let changes = self
+          .storage
+          .get_comment_changes_snapshot(workspace_id, doc_id, &user.id, after, first)
+          .await?;
+        Ok(json!({ "data": changes }))
+      }
       other => Err(SyncError::BadRequest(format!("Unsupported realtime op: {other}"))),
     }
   }
@@ -1263,24 +1370,54 @@ impl SpaceSyncGateway {
       .and_then(Value::as_str)
       .ok_or_else(|| SyncError::BadRequest("Missing realtime topic".into()))?;
     let input = payload.get("input").cloned().unwrap_or_else(|| json!({}));
-    let workspace_id = input
-      .get("workspaceId")
-      .and_then(Value::as_str)
-      .filter(|s| !s.is_empty())
-      .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
 
     let room = match topic {
       "workspace.access.changed" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
         self.storage.assert_workspace_readable(workspace_id, &user.id).await?;
         format!("workspace:{workspace_id}:access")
       }
       "workspace.config.changed" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
         self
           .storage
           .assert_space_accessible(SpaceType::Workspace, workspace_id, &user.id)
           .await?;
         format!("workspace:{workspace_id}:config")
       }
+      "doc.share-state.changed" | "doc.grants.changed" | "comment.changed" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let doc_id = input
+          .get("docId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing docId".into()))?;
+        let (rt_topic, scope) = match topic {
+          "doc.share-state.changed" => (crate::storage::DocRealtimeTopic::ShareState, "share-state"),
+          "doc.grants.changed" => (crate::storage::DocRealtimeTopic::Grants, "grants"),
+          _ => (crate::storage::DocRealtimeTopic::Comment, "comment"),
+        };
+        self
+          .storage
+          .assert_doc_realtime_topic_access(workspace_id, doc_id, &user.id, rt_topic)
+          .await?;
+        format!("workspace:{workspace_id}:doc:{doc_id}:{scope}")
+      }
+      "notification.count.changed" => format!("user:{}:notification", user.id),
+      "user.settings.changed" => format!("user:{}:settings", user.id),
+      "user.profile.changed" => format!("user:{}:profile", user.id),
       other => return Err(SyncError::BadRequest(format!("Unsupported realtime topic: {other}"))),
     };
 
@@ -1613,6 +1750,18 @@ impl SpaceSyncGateway {
       _ => Err(SyncError::BadRequest("Sync protocol upgrade required.".into())),
     }
   }
+}
+
+/// Parses `workspace:<ws>:doc:<doc>:<scope>` into `(workspace_id, doc_id, topic)`.
+fn parse_doc_realtime_room(room: &str) -> Option<(&str, &str, crate::storage::DocRealtimeTopic)> {
+  let rest = room.strip_prefix("workspace:")?;
+  let (ws_id, after_ws) = rest.split_once(":doc:")?;
+  let (doc_id, scope) = after_ws.rsplit_once(':')?;
+  if ws_id.is_empty() || doc_id.is_empty() {
+    return None;
+  }
+  let topic = crate::storage::DocRealtimeTopic::from_room_scope(scope)?;
+  Some((ws_id, doc_id, topic))
 }
 
 /// Deterministic JSON serialization matching `getRealtimeInputKey` in

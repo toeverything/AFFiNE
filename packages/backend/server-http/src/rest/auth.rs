@@ -517,6 +517,79 @@ pub(crate) async fn handle_complete_magic_link(
   }
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OpenAppSignInBody {
+  pub code: String,
+}
+
+fn invalid_auth_state_response() -> Response {
+  envelope_to_http_response(LegacyErrorEnvelope {
+    status: StatusCode::BAD_REQUEST.as_u16(),
+    code: "Bad Request".into(),
+    error_type: "BAD_REQUEST".into(),
+    name: "INVALID_AUTH_STATE".into(),
+    message: "Invalid auth state.".into(),
+    data: None,
+  })
+}
+
+/// Issues a one-time Open-App sign-in code (`POST /api/auth/open-app/sign-in-code`).
+pub(crate) async fn handle_open_app_sign_in_code(State(state): State<RouterState>, headers: HeaderMap) -> Response {
+  let user = match resolve_request_principal(&state, &headers).await {
+    Ok(Some(principal)) => principal.into_user(),
+    Ok(None) => return domain_error_to_http_response(&DomainError::Forbidden("Action forbidden.".into())),
+    Err(err) => return err.into_http_response(),
+  };
+  match state.app.auth.create_open_app_code(&user.id).await {
+    Ok(code) => json_utf8_response(StatusCode::CREATED, serde_json::json!({ "code": code }), true),
+    Err(DomainError::Unauthorized(_)) => invalid_auth_state_response(),
+    Err(err) => domain_error_to_http_response(&err),
+  }
+}
+
+/// Redeems a one-time Open-App sign-in code (`POST /api/auth/open-app/sign-in`).
+pub(crate) async fn handle_open_app_sign_in(
+  State(state): State<RouterState>,
+  headers: HeaderMap,
+  body_bytes: Bytes,
+) -> Response {
+  let body: OpenAppSignInBody = match serde_json::from_slice::<OpenAppSignInBody>(&body_bytes) {
+    Ok(b) if !b.code.trim().is_empty() => b,
+    _ => return invalid_auth_state_response(),
+  };
+  let cookies = parse_cookies(&headers);
+  let existing_session_id = extract_cookie(&cookies, SESSION_COOKIE_NAME);
+  let client_version = extract_client_version(&headers);
+  let target = if is_native_client_request(&headers) {
+    server_domain::auth::OpenAppIssueTarget::Native {
+      client_version: client_version.as_deref(),
+    }
+  } else {
+    server_domain::auth::OpenAppIssueTarget::Cookie {
+      existing_session_id,
+      client_version: client_version.as_deref(),
+    }
+  };
+  match state.app.auth.complete_open_app(&body.code, target).await {
+    Ok(server_domain::auth::OpenAppSignInResult::Native { user, exchange_code }) => {
+      let payload = serde_json::json!({ "id": user.id, "exchangeCode": exchange_code });
+      let mut resp = json_utf8_response(StatusCode::CREATED, payload, false);
+      append_clear_auth_cookies(resp.headers_mut());
+      resp
+    }
+    Ok(server_domain::auth::OpenAppSignInResult::Cookie(sign_in)) => {
+      let cfg = state.app.config.load();
+      let payload = serde_json::json!({ "id": sign_in.user.id });
+      let mut resp = json_utf8_response(StatusCode::CREATED, payload, false);
+      append_auth_cookies(resp.headers_mut(), &sign_in, cfg.https);
+      resp
+    }
+    Err(DomainError::Unauthorized(_)) => invalid_auth_state_response(),
+    Err(err) => domain_error_to_http_response(&err),
+  }
+}
+
 fn is_native_client_request(headers: &HeaderMap) -> bool {
   let kind = headers
     .get("x-affine-client-kind")
