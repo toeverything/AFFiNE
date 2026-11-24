@@ -9,6 +9,7 @@ pub mod acl;
 pub mod admin;
 pub mod app_config;
 pub mod auth;
+pub mod calendar;
 pub mod comments;
 pub mod content_policy;
 pub mod doc_sharing;

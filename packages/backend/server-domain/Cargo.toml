@@ -16,6 +16,7 @@ hex.workspace              = true
 hickory-resolver.workspace = true
 hkdf.workspace             = true
 hmac.workspace             = true
+jiff.workspace             = true
 p256.workspace             = true
 rand.workspace         = true
 redis.workspace        = true
@@ -36,6 +37,7 @@ unicode-normalization.workspace = true
 unicode_skeleton.workspace      = true
 url.workspace                   = true
 uuid.workspace                  = true
+xmlparser.workspace             = true
 y-octo.workspace                = true
 zeroize.workspace               = true
 

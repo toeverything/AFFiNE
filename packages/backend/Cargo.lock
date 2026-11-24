@@ -3603,6 +3603,7 @@ dependencies = [
  "hickory-resolver",
  "hkdf",
  "hmac 0.12.1",
+ "jiff",
  "p256",
  "postgres",
  "rand 0.9.5",
@@ -3625,6 +3626,7 @@ dependencies = [
  "unicode_skeleton",
  "url",
  "uuid",
+ "xmlparser",
  "y-octo",
  "zeroize",
 ]
