@@ -399,6 +399,17 @@ fn is_valid_build_metadata(build: &str) -> bool {
     })
 }
 
+pub(crate) fn is_newer_semver(current: &str, candidate: &str) -> bool {
+  let (c, n) = (current.trim(), candidate.trim());
+  if n.is_empty() {
+    return false;
+  }
+  match (parse_semver(c), parse_semver(n)) {
+    (Some(cv), Some(nv)) => nv.compare_semver(&cv) == std::cmp::Ordering::Greater,
+    _ => c != n,
+  }
+}
+
 fn parse_semver(input: &str) -> Option<Semver> {
   if input.encode_utf16().count() > MAX_SEMVER_LENGTH {
     return None;
@@ -1492,5 +1503,16 @@ mod tests {
         );
       }
     }
+  }
+
+  #[test]
+  fn is_newer_semver_compares_versions_and_falls_back_on_non_semver() {
+    assert!(is_newer_semver("0.26.0", "0.27.5"));
+    assert!(!is_newer_semver("0.27.5", "0.27.5"));
+    assert!(!is_newer_semver("0.27.5", "0.26.0"));
+    assert!(is_newer_semver("0.27.5-beta.1", "0.27.5"));
+    assert!(!is_newer_semver("0.27.5", ""));
+    assert!(is_newer_semver("custom-a", "custom-b"));
+    assert!(!is_newer_semver("custom-a", "custom-a"));
   }
 }

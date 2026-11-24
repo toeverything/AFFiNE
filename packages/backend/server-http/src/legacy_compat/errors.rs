@@ -78,6 +78,16 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           })),
         };
       }
+      if let Some(space_id) = msg.strip_prefix("space_access_denied:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::FORBIDDEN.as_u16(),
+          code: "Forbidden".into(),
+          error_type: "NO_PERMISSION".into(),
+          name: "SPACE_ACCESS_DENIED".into(),
+          message: format!("You do not have permission to access space {space_id}."),
+          data: Some(serde_json::json!({ "spaceId": space_id })),
+        };
+      }
       if let Some(doc_id) = msg.strip_prefix("mention_user_doc_access_denied:") {
         return LegacyErrorEnvelope {
           status: StatusCode::FORBIDDEN.as_u16(),
@@ -154,14 +164,26 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
         data: None,
       }
     }
-    DomainError::Conflict(msg) => LegacyErrorEnvelope {
-      status: StatusCode::BAD_REQUEST.as_u16(),
-      code: "Bad Request".into(),
-      error_type: "RESOURCE_ALREADY_EXISTS".into(),
-      name: "RESOURCE_ALREADY_EXISTS".into(),
-      message: msg.clone(),
-      data: None,
-    },
+    DomainError::Conflict(msg) => {
+      if msg == "email_already_used" || msg.starts_with("email_already_used:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "RESOURCE_ALREADY_EXISTS".into(),
+          name: "EMAIL_ALREADY_USED".into(),
+          message: "This email has already been registered.".into(),
+          data: None,
+        };
+      }
+      LegacyErrorEnvelope {
+        status: StatusCode::BAD_REQUEST.as_u16(),
+        code: "Bad Request".into(),
+        error_type: "RESOURCE_ALREADY_EXISTS".into(),
+        name: "RESOURCE_ALREADY_EXISTS".into(),
+        message: msg.clone(),
+        data: None,
+      }
+    }
     DomainError::QuotaExceeded { kind, message } => LegacyErrorEnvelope {
       status: StatusCode::PAYMENT_REQUIRED.as_u16(),
       code: "Payment Required".into(),
@@ -199,6 +221,17 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           name: "MENTION_USER_ONESELF_DENIED".into(),
           message: "You can not mention yourself.".into(),
           data: None,
+        };
+      }
+      if let Some(max_raw) = msg.strip_prefix("query_too_long:") {
+        let max_num = max_raw.parse::<i64>().unwrap_or(255);
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "INVALID_INPUT".into(),
+          name: "QUERY_TOO_LONG".into(),
+          message: format!("Query is too long, max length is {max_num}."),
+          data: Some(serde_json::json!({ "max": max_num })),
         };
       }
       if msg == "doc_is_not_public" {

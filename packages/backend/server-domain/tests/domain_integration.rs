@@ -756,6 +756,7 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
           ignore_tls: false,
         },
         fallback_smtp: SmtpRuntimeConfig::default(),
+        ..Default::default()
       },
       Arc::new(NoopEventPublisher::default()),
     );

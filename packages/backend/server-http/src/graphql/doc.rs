@@ -110,6 +110,41 @@ pub struct PaginationInput {
   pub after: Option<String>,
 }
 
+fn decode_node_base64_utf8(raw: &str) -> String {
+  let mut sextets = Vec::with_capacity(raw.len());
+  for u in raw.encode_utf16() {
+    let b = (u & 0xFF) as u8;
+    if b == b'=' {
+      break;
+    }
+    let s = match b {
+      b'A'..=b'Z' => b - b'A',
+      b'a'..=b'z' => b - b'a' + 26,
+      b'0'..=b'9' => b - b'0' + 52,
+      b'+' | b'-' => 62,
+      b'/' | b'_' => 63,
+      _ => continue,
+    };
+    sextets.push(s);
+  }
+  let mut out = Vec::with_capacity(sextets.len() * 3 / 4);
+  let (chunks, rem) = sextets.as_chunks::<4>();
+  for c in chunks {
+    out.push((c[0] << 2) | (c[1] >> 4));
+    out.push((c[1] << 4) | (c[2] >> 2));
+    out.push((c[2] << 6) | c[3]);
+  }
+  match rem {
+    [a, b] => out.push((a << 2) | (b >> 4)),
+    [a, b, c] => {
+      out.push((a << 2) | (b >> 4));
+      out.push((b << 4) | (c >> 2));
+    }
+    _ => {}
+  }
+  String::from_utf8_lossy(&out).into_owned()
+}
+
 impl PaginationInput {
   pub fn resolved_first(&self, default: i32) -> i32 {
     self.first.unwrap_or(default).clamp(1, 100)
@@ -117,6 +152,24 @@ impl PaginationInput {
 
   pub fn resolved_offset(&self) -> i32 {
     self.offset.unwrap_or(0).max(0)
+  }
+
+  /// Loose Base64 decode matching `v0.27.5` `Buffer.from(after, 'base64').toString('utf8')`.
+  pub fn validate_and_resolve_after(&self) -> Result<Option<String>> {
+    let decoded = self.after.as_deref().map(decode_node_base64_utf8).unwrap_or_default();
+    if !decoded.is_empty() && self.offset.unwrap_or(0) > 0 {
+      return Err(crate::legacy_compat::errors::envelope_to_graphql(
+        crate::legacy_compat::errors::LegacyErrorEnvelope {
+          status: 400,
+          code: "Bad Request".into(),
+          error_type: "BAD_REQUEST".into(),
+          name: "BAD_REQUEST".into(),
+          message: "pagination.after and pagination.offset cannot be used together".into(),
+          data: None,
+        },
+      ));
+    }
+    Ok(if decoded.is_empty() { None } else { Some(decoded) })
   }
 }
 
@@ -242,6 +295,65 @@ pub struct UpdateDocDefaultRoleInput {
   pub doc_id: String,
   pub workspace_id: String,
   pub role: DocRole,
+}
+
+#[derive(InputObject, Clone, Debug, Default)]
+#[graphql(name = "DocPageAnalyticsInput")]
+pub struct DocPageAnalyticsInput {
+  #[graphql(default_with = "Some(28)")]
+  pub window_days: Option<i32>,
+  #[graphql(default_with = "Some(\"UTC\".to_owned())")]
+  pub timezone: Option<String>,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "DocPageAnalyticsPoint")]
+pub struct DocPageAnalyticsPoint {
+  pub date: DateTime<Utc>,
+  pub total_views: crate::legacy_compat::quota::SafeInt,
+  pub unique_views: crate::legacy_compat::quota::SafeInt,
+  pub guest_views: crate::legacy_compat::quota::SafeInt,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "DocPageAnalyticsSummary")]
+pub struct DocPageAnalyticsSummary {
+  pub total_views: crate::legacy_compat::quota::SafeInt,
+  pub unique_views: crate::legacy_compat::quota::SafeInt,
+  pub guest_views: crate::legacy_compat::quota::SafeInt,
+  pub last_accessed_at: Option<DateTime<Utc>>,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "DocPageAnalytics")]
+pub struct DocPageAnalytics {
+  pub window: super::admin::TimeWindow,
+  pub series: Vec<DocPageAnalyticsPoint>,
+  pub summary: DocPageAnalyticsSummary,
+  pub generated_at: DateTime<Utc>,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "DocMemberLastAccess")]
+pub struct DocMemberLastAccess {
+  pub user: PublicUserType,
+  pub last_accessed_at: DateTime<Utc>,
+  pub last_doc_id: Option<String>,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "DocMemberLastAccessEdge")]
+pub struct DocMemberLastAccessEdge {
+  pub cursor: String,
+  pub node: DocMemberLastAccess,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "PaginatedDocMemberLastAccess")]
+pub struct PaginatedDocMemberLastAccess {
+  pub edges: Vec<DocMemberLastAccessEdge>,
+  pub page_info: PageInfo,
+  pub total_count: Option<i32>,
 }
 
 #[derive(Clone, Debug)]
@@ -436,6 +548,95 @@ impl DocType {
         has_next_page,
         has_previous_page,
       },
+    })
+  }
+
+  async fn analytics(&self, ctx: &Context<'_>, input: Option<DocPageAnalyticsInput>) -> Result<DocPageAnalytics> {
+    let user = require_authenticated_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let inp = input.unwrap_or_default();
+    let data = state
+      .doc_sharing
+      .get_doc_page_analytics(
+        &self.info.workspace_id,
+        &self.info.doc_id,
+        &user.id,
+        inp.window_days,
+        inp.timezone.as_deref(),
+      )
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    Ok(DocPageAnalytics {
+      window: data.window.into(),
+      series: data
+        .series
+        .into_iter()
+        .map(|p| DocPageAnalyticsPoint {
+          date: p.date,
+          total_views: crate::legacy_compat::quota::SafeInt(p.total_views),
+          unique_views: crate::legacy_compat::quota::SafeInt(p.unique_views),
+          guest_views: crate::legacy_compat::quota::SafeInt(p.guest_views),
+        })
+        .collect(),
+      summary: DocPageAnalyticsSummary {
+        total_views: crate::legacy_compat::quota::SafeInt(data.summary.total_views),
+        unique_views: crate::legacy_compat::quota::SafeInt(data.summary.unique_views),
+        guest_views: crate::legacy_compat::quota::SafeInt(data.summary.guest_views),
+        last_accessed_at: data.summary.last_accessed_at,
+      },
+      generated_at: data.generated_at,
+    })
+  }
+
+  async fn last_accessed_members(
+    &self,
+    ctx: &Context<'_>,
+    #[graphql(default_with = "Some(false)")] include_total: Option<bool>,
+    pagination: PaginationInput,
+    query: Option<String>,
+  ) -> Result<PaginatedDocMemberLastAccess> {
+    let user = require_authenticated_user(ctx).await?;
+    let after = pagination.validate_and_resolve_after()?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let page = state
+      .doc_sharing
+      .paginate_doc_last_accessed_members(
+        &self.info.workspace_id,
+        &self.info.doc_id,
+        &user.id,
+        pagination.resolved_first(10),
+        pagination.resolved_offset(),
+        after.as_deref(),
+        query.as_deref(),
+        include_total.unwrap_or(false),
+      )
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    let edges = page
+      .items
+      .into_iter()
+      .map(|item| DocMemberLastAccessEdge {
+        cursor: item.cursor,
+        node: DocMemberLastAccess {
+          user: PublicUserType {
+            id: item.user.id,
+            name: item.user.name,
+            avatar_url: item.user.avatar_url,
+          },
+          last_accessed_at: item.last_accessed_at,
+          last_doc_id: item.last_doc_id,
+        },
+      })
+      .collect();
+    Ok(PaginatedDocMemberLastAccess {
+      edges,
+      page_info: PageInfo {
+        start_cursor: page.start_cursor,
+        end_cursor: page.end_cursor,
+        has_next_page: page.has_next_page,
+        has_previous_page: page.has_previous_page,
+      },
+      total_count: page.total_count,
     })
   }
 }

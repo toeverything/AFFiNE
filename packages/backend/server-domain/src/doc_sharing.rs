@@ -49,6 +49,65 @@ pub struct GrantedDocUserView {
   pub created_at: DateTime<Utc>,
 }
 
+#[derive(Clone, Debug)]
+pub struct DocPageAnalyticsPointData {
+  pub date: DateTime<Utc>,
+  pub total_views: i64,
+  pub unique_views: i64,
+  pub guest_views: i64,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct DocPageAnalyticsSummaryData {
+  pub total_views: i64,
+  pub unique_views: i64,
+  pub guest_views: i64,
+  pub last_accessed_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AdminTimeBucket {
+  Day,
+  Hour,
+  Minute,
+}
+
+#[derive(Clone, Debug)]
+pub struct AdminTimeWindow {
+  pub from: DateTime<Utc>,
+  pub to: DateTime<Utc>,
+  pub timezone: String,
+  pub bucket: AdminTimeBucket,
+  pub requested_size: i32,
+  pub effective_size: i32,
+}
+
+#[derive(Clone, Debug)]
+pub struct DocPageAnalyticsData {
+  pub window: AdminTimeWindow,
+  pub series: Vec<DocPageAnalyticsPointData>,
+  pub summary: DocPageAnalyticsSummaryData,
+  pub generated_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug)]
+pub struct DocMemberLastAccessItem {
+  pub user: PublicUserView,
+  pub last_accessed_at: DateTime<Utc>,
+  pub last_doc_id: Option<String>,
+  pub cursor: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct DocMemberLastAccessPage {
+  pub items: Vec<DocMemberLastAccessItem>,
+  pub has_next_page: bool,
+  pub has_previous_page: bool,
+  pub start_cursor: Option<String>,
+  pub end_cursor: Option<String>,
+  pub total_count: Option<i32>,
+}
+
 pub fn is_empty_doc_bin(bin: &[u8]) -> bool {
   bin.is_empty() || (bin.len() == 1 && bin[0] == 0) || (bin.len() == 2 && bin[0] == 0 && bin[1] == 0)
 }
@@ -1812,6 +1871,296 @@ impl DocSharingService {
         )
         .await;
     }
+  }
+  /// Returns daily page-view analytics for a document after enforcing both
+  /// `Doc.Read` and `Doc.Analytics.Read`.
+  pub async fn get_doc_page_analytics(
+    &self,
+    workspace_id: &str,
+    doc_id: &str,
+    actor_user_id: &str,
+    window_days: Option<i32>,
+    timezone: Option<&str>,
+  ) -> Result<DocPageAnalyticsData, DomainError> {
+    let storage_doc_id = self.resolve_storage_doc_id(workspace_id, doc_id).await?;
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Unavailable(format!("begin get_doc_page_analytics: {e}")))?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("get_doc_page_analytics clock: {e}")))?;
+    let access = load_workspace_docs_access_in(
+      tx.tx_mut(),
+      self.quota_gate.as_ref(),
+      workspace_id,
+      Some(actor_user_id),
+      std::slice::from_ref(&storage_doc_id),
+      now,
+    )
+    .await?;
+    let perms = access.docs.get(&storage_doc_id).map(|e| e.permissions);
+    if !perms.is_some_and(|p| p.doc_read && p.doc_analytics_read) {
+      let _ = tx.rollback().await;
+      return Err(DomainError::Forbidden(format!(
+        "doc_action_denied:{workspace_id}:{storage_doc_id}:Doc.Analytics.Read"
+      )));
+    }
+    let is_team = access.is_team;
+    let default_days = if is_team { 28 } else { 7 };
+    let max_days = if is_team { 90 } else { 7 };
+    let requested = window_days.unwrap_or(default_days);
+    let effective = requested.clamp(1, max_days);
+    let tz = timezone
+      .map(str::trim)
+      .filter(|s| !s.is_empty())
+      .unwrap_or("UTC")
+      .to_owned();
+    let current_day = now.date_naive();
+    let from_day = current_day - chrono::Duration::days(i64::from(effective - 1));
+    let rows = sqlx::query(
+      r#"WITH days AS (
+           SELECT generate_series($1::date, $2::date, interval '1 day')::date AS day
+         )
+         SELECT days.day AS date,
+                COALESCE(v.total_views, 0)::bigint AS total_views,
+                COALESCE(v.unique_views, 0)::bigint AS unique_views,
+                COALESCE(v.guest_views, 0)::bigint AS guest_views,
+                v.last_accessed_at
+         FROM days
+         LEFT JOIN workspace_doc_view_daily v
+           ON v.workspace_id = $3 AND v.doc_id = $4 AND v.date = days.day
+         ORDER BY days.day ASC"#,
+    )
+    .bind(from_day)
+    .bind(current_day)
+    .bind(workspace_id)
+    .bind(&storage_doc_id)
+    .fetch_all(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("query doc page analytics: {e}")))?;
+    let _ = tx.rollback().await;
+    let mut series = Vec::with_capacity(rows.len());
+    let mut summary = DocPageAnalyticsSummaryData::default();
+    for r in rows {
+      let d: chrono::NaiveDate = r.get("date");
+      let total_views: i64 = r.get("total_views");
+      let unique_views: i64 = r.get("unique_views");
+      let guest_views: i64 = r.get("guest_views");
+      let last_accessed_at: Option<DateTime<Utc>> = r.get("last_accessed_at");
+      summary.total_views += total_views;
+      summary.unique_views += unique_views;
+      summary.guest_views += guest_views;
+      if let Some(ts) = last_accessed_at
+        && summary.last_accessed_at.is_none_or(|cur| ts > cur)
+      {
+        summary.last_accessed_at = Some(ts);
+      }
+      series.push(DocPageAnalyticsPointData {
+        date: d.and_hms_opt(0, 0, 0).expect("midnight valid").and_utc(),
+        total_views,
+        unique_views,
+        guest_views,
+      });
+    }
+    Ok(DocPageAnalyticsData {
+      window: AdminTimeWindow {
+        from: from_day.and_hms_opt(0, 0, 0).expect("midnight valid").and_utc(),
+        to: current_day.and_hms_opt(0, 0, 0).expect("midnight valid").and_utc(),
+        timezone: tz,
+        bucket: AdminTimeBucket::Day,
+        requested_size: requested,
+        effective_size: effective,
+      },
+      series,
+      summary,
+      generated_at: now,
+    })
+  }
+  /// Returns paginated last-accessed members for a document after enforcing both
+  /// `Doc.Read` and `Doc.Analytics.Viewers.Read`.
+  #[allow(clippy::too_many_arguments)]
+  pub async fn paginate_doc_last_accessed_members(
+    &self,
+    workspace_id: &str,
+    doc_id: &str,
+    actor_user_id: &str,
+    first: i32,
+    offset: i32,
+    after: Option<&str>,
+    query: Option<&str>,
+    include_total: bool,
+  ) -> Result<DocMemberLastAccessPage, DomainError> {
+    use base64::Engine as _;
+    let storage_doc_id = self.resolve_storage_doc_id(workspace_id, doc_id).await?;
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Unavailable(format!("begin paginate_doc_last_accessed_members: {e}")))?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("paginate_doc_last_accessed_members clock: {e}")))?;
+    let access = load_workspace_docs_access_in(
+      tx.tx_mut(),
+      self.quota_gate.as_ref(),
+      workspace_id,
+      Some(actor_user_id),
+      std::slice::from_ref(&storage_doc_id),
+      now,
+    )
+    .await?;
+    let perms = access.docs.get(&storage_doc_id).map(|e| e.permissions);
+    if !perms.is_some_and(|p| p.doc_read && p.doc_analytics_viewers_read) {
+      let _ = tx.rollback().await;
+      return Err(DomainError::Forbidden(format!(
+        "doc_action_denied:{workspace_id}:{storage_doc_id}:Doc.Analytics.Viewers.Read"
+      )));
+    }
+    let keyword = query.map(str::trim).filter(|s| !s.is_empty());
+    if let Some(kw) = keyword
+      && kw.encode_utf16().count() > 255
+    {
+      let _ = tx.rollback().await;
+      return Err(DomainError::Validation("query_too_long:255".to_owned()));
+    }
+    if after.is_some_and(|a| !a.trim().is_empty()) && offset > 0 {
+      let _ = tx.rollback().await;
+      return Err(DomainError::Validation(
+        "Cannot use both `after` cursor and positive `offset`".to_owned(),
+      ));
+    }
+    let non_team_from = if access.is_team {
+      None
+    } else {
+      let d = now.date_naive() - chrono::Duration::days(6);
+      Some(d.and_hms_opt(0, 0, 0).expect("midnight valid").and_utc())
+    };
+    let clamped_first = first.clamp(1, 50);
+    let clamped_offset = offset.max(0);
+    let kw_pat = keyword.map(|k| format!("%{k}%"));
+    let cursor_pair: Option<(DateTime<Utc>, String)> = match after.filter(|s| !s.trim().is_empty()) {
+      Some(raw) => {
+        let decoded = base64::engine::general_purpose::STANDARD
+          .decode(raw.trim())
+          .ok()
+          .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+          .or_else(|| serde_json::from_str::<serde_json::Value>(raw.trim()).ok())
+          .ok_or_else(|| DomainError::Validation("Invalid pagination cursor".to_owned()))?;
+        let ts = decoded
+          .get("lastAccessedAt")
+          .and_then(|v| v.as_str())
+          .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
+          .map(|d| d.with_timezone(&Utc))
+          .ok_or_else(|| DomainError::Validation("Invalid pagination cursor".to_owned()))?;
+        let uid = decoded
+          .get("userId")
+          .and_then(|v| v.as_str())
+          .filter(|s| !s.is_empty())
+          .map(ToOwned::to_owned)
+          .ok_or_else(|| DomainError::Validation("Invalid pagination cursor".to_owned()))?;
+        Some((ts, uid))
+      }
+      None => None,
+    };
+    let cursor_ts = cursor_pair.as_ref().map(|(ts, _)| *ts);
+    let cursor_uid = cursor_pair.as_ref().map(|(_, uid)| uid.as_str());
+    let rows = sqlx::query(
+      r#"SELECT mla.user_id, u.name, u.avatar_url, mla.last_accessed_at, mla.last_doc_id
+         FROM workspace_member_last_access mla
+         JOIN users u ON u.id = mla.user_id
+         JOIN workspace_members wm
+           ON wm.workspace_id = mla.workspace_id
+          AND wm.user_id = mla.user_id
+          AND wm.state = 'active'
+         WHERE mla.workspace_id = $1
+           AND mla.last_doc_id = $2
+           AND ($3::timestamptz IS NULL OR mla.last_accessed_at >= $3)
+           AND ($4::text IS NULL OR u.name ILIKE $4 OR u.email ILIKE $4)
+           AND (
+             $5::timestamptz IS NULL
+             OR mla.last_accessed_at < $5
+             OR (mla.last_accessed_at = $5 AND mla.user_id > $6)
+           )
+         ORDER BY mla.last_accessed_at DESC, mla.user_id ASC
+         LIMIT $7 OFFSET $8"#,
+    )
+    .bind(workspace_id)
+    .bind(&storage_doc_id)
+    .bind(non_team_from)
+    .bind(&kw_pat)
+    .bind(cursor_ts)
+    .bind(cursor_uid)
+    .bind(i64::from(clamped_first + 1))
+    .bind(i64::from(clamped_offset))
+    .fetch_all(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("query doc last accessed members: {e}")))?;
+    let total_count = if include_total {
+      let total: i64 = sqlx::query_scalar(
+        r#"SELECT COUNT(*)::bigint
+           FROM workspace_member_last_access mla
+           JOIN users u ON u.id = mla.user_id
+           JOIN workspace_members wm
+             ON wm.workspace_id = mla.workspace_id
+            AND wm.user_id = mla.user_id
+            AND wm.state = 'active'
+           WHERE mla.workspace_id = $1
+             AND mla.last_doc_id = $2
+             AND ($3::timestamptz IS NULL OR mla.last_accessed_at >= $3)
+             AND ($4::text IS NULL OR u.name ILIKE $4 OR u.email ILIKE $4)"#,
+      )
+      .bind(workspace_id)
+      .bind(&storage_doc_id)
+      .bind(non_team_from)
+      .bind(&kw_pat)
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("count doc last accessed members: {e}")))?;
+      Some(i32::try_from(total).unwrap_or(i32::MAX))
+    } else {
+      None
+    };
+    let _ = tx.rollback().await;
+    let first_usize = usize::try_from(clamped_first).unwrap_or(10);
+    let has_next_page = rows.len() > first_usize;
+    let items: Vec<DocMemberLastAccessItem> = rows
+      .into_iter()
+      .take(first_usize)
+      .map(|r| {
+        let user_id: String = r.get("user_id");
+        let last_accessed_at: DateTime<Utc> = r.get("last_accessed_at");
+        let cursor_json = json!({
+          "lastAccessedAt": last_accessed_at.to_rfc3339(),
+          "userId": user_id,
+        });
+        let cursor =
+          base64::engine::general_purpose::STANDARD.encode(serde_json::to_string(&cursor_json).unwrap_or_default());
+        DocMemberLastAccessItem {
+          user: PublicUserView {
+            id: user_id,
+            name: r.get("name"),
+            avatar_url: r.get("avatar_url"),
+          },
+          last_accessed_at,
+          last_doc_id: r.get("last_doc_id"),
+          cursor,
+        }
+      })
+      .collect();
+    let start_cursor = items.first().map(|i| i.cursor.clone());
+    let end_cursor = items.last().map(|i| i.cursor.clone());
+    Ok(DocMemberLastAccessPage {
+      items,
+      has_next_page,
+      has_previous_page: after.is_some() || clamped_offset > 0,
+      start_cursor,
+      end_cursor,
+      total_count,
+    })
   }
 }
 

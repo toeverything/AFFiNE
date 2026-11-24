@@ -1477,6 +1477,28 @@ impl SyncStorage {
     Ok(())
   }
 
+  pub async fn assert_workspace_members_readable(&self, workspace_id: &str, user_id: &str) -> Result<(), SyncError> {
+    let mut conn = self.db.acquire_tiered(WorkloadTier::InteractiveRead).await?;
+    let is_member: bool = sqlx::query_scalar(
+      "SELECT EXISTS(
+         SELECT 1
+         FROM workspace_members wm
+         JOIN workspaces w ON w.id = wm.workspace_id
+         WHERE wm.workspace_id = $1 AND wm.user_id = $2 AND wm.state = 'active'
+       )",
+    )
+    .bind(workspace_id)
+    .bind(user_id)
+    .fetch_one(conn.as_conn())
+    .await?;
+    if !is_member {
+      return Err(SyncError::SpaceAccessDenied {
+        space_id: workspace_id.to_owned(),
+      });
+    }
+    Ok(())
+  }
+
   /// Resolves the `workspace.access.get` realtime snapshot (`role`, `permissions`, `team`).
   pub async fn get_workspace_access_snapshot(
     &self,

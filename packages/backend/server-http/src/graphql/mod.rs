@@ -1165,7 +1165,9 @@ mod tests {
             .next()
             .unwrap_or_default();
           let key = format!("{kw} {name}");
-          defs.entry(key).or_default().insert(line.to_owned());
+          if key != "directive @deprecated" {
+            defs.entry(key).or_default().insert(line.to_owned());
+          }
         }
       }
 

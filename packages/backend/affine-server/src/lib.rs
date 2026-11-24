@@ -325,15 +325,47 @@ struct AffineConfigFileDeployment {
   deployment_type: Option<String>,
 }
 
-fn load_home_config_file() -> AffineConfigFile {
-  let Some(home) = std::env::var_os("HOME") else {
-    return AffineConfigFile::default();
+fn insert_dotted_path(target: &mut serde_json::Map<String, serde_json::Value>, path: &str, val: serde_json::Value) {
+  if let Some((head, tail)) = path.split_once('.') {
+    let entry = target
+      .entry(head.to_owned())
+      .or_insert_with(|| serde_json::Value::Object(serde_json::Map::new()));
+    if !entry.is_object() {
+      *entry = serde_json::Value::Object(serde_json::Map::new());
+    }
+    if let Some(map) = entry.as_object_mut() {
+      insert_dotted_path(map, tail, val);
+    }
+  } else {
+    target.insert(path.to_owned(), val);
+  }
+}
+
+pub fn expand_module_config_paths(mut value: serde_json::Value) -> serde_json::Value {
+  if let Some(root) = value.as_object_mut() {
+    for module in root.values_mut().filter_map(serde_json::Value::as_object_mut) {
+      let entries = std::mem::take(module);
+      for (path, val) in entries {
+        insert_dotted_path(module, &path, val);
+      }
+    }
+  }
+  value
+}
+
+fn load_home_config_file() -> (AffineConfigFile, serde_json::Value) {
+  let path = std::env::var_os("AFFINE_CONFIG_PATH")
+    .filter(|p| !p.is_empty())
+    .map(PathBuf::from)
+    .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".affine/config/config.json")));
+  let Some(raw_val) = path
+    .and_then(|p| std::fs::read_to_string(p).ok())
+    .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
+  else {
+    return (AffineConfigFile::default(), serde_json::Value::Null);
   };
-  let path = PathBuf::from(home).join(".affine/config/config.json");
-  let Ok(raw) = std::fs::read_to_string(&path) else {
-    return AffineConfigFile::default();
-  };
-  serde_json::from_str(&raw).unwrap_or_default()
+  let val = expand_module_config_paths(raw_val);
+  (serde_json::from_value(val.clone()).unwrap_or_default(), val)
 }
 
 fn generate_ephemeral_private_key() -> String {
@@ -536,7 +568,7 @@ async fn build_server_with_bound_port(
     None => generate_ephemeral_private_key(),
   };
 
-  let file_cfg = load_home_config_file();
+  let (file_cfg, file_json) = load_home_config_file();
   let server_name = file_cfg
     .server
     .as_ref()
@@ -637,6 +669,15 @@ async fn build_server_with_bound_port(
     ignore_tls: cli.mailer_ignore_tls,
   };
 
+  let env_redis_url_raw = std::env::var("REDIS_URL")
+    .ok()
+    .filter(|v| !v.trim().is_empty())
+    .or_else(|| std::env::var("REDIS_SERVER_URL").ok().filter(|v| !v.trim().is_empty()));
+  let redis_url_has_password = env_redis_url_raw
+    .as_deref()
+    .and_then(|u| url::Url::parse(u).ok())
+    .and_then(|u| u.password().map(|p| !p.is_empty()))
+    .unwrap_or(false);
   let app_config_baseline = RuntimeAppConfigBaseline {
     server: ServerRuntimeConfig {
       name: server_name.clone(),
@@ -651,6 +692,10 @@ async fn build_server_with_bound_port(
     redis: redis_runtime_cfg,
     smtp: smtp_runtime_cfg,
     fallback_smtp: SmtpRuntimeConfig::default(),
+    file_json,
+    redis_url_env_set: env_redis_url_raw.is_some(),
+    redis_url_has_password,
+    ..RuntimeAppConfigBaseline::default()
   };
 
   let config = RuntimeConfig {
@@ -710,6 +755,8 @@ async fn build_server_with_bound_port(
       ext.billing_spi()
     };
   let workspaces = WorkspaceService::new(db.clone(), ext.quota_gate(), Arc::clone(&invalidation))
+    .with_event_bus(Arc::clone(&event_bus))
+    .with_base_url(external_url.clone())
     .with_rate_limit_policy(ext.rate_limit_policy())
     .with_billing_spi(effective_billing)
     .with_redis(redis_client.clone());

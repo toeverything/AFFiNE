@@ -221,12 +221,37 @@ impl Default for ServerRuntimeConfig {
   }
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Default)]
 pub struct RuntimeAppConfigBaseline {
   pub server: ServerRuntimeConfig,
   pub redis: RedisRuntimeConfig,
   pub smtp: SmtpRuntimeConfig,
   pub fallback_smtp: SmtpRuntimeConfig,
+  pub file_json: Value,
+  pub env_keys: std::collections::BTreeSet<String>,
+  pub redis_url_env_set: bool,
+  pub redis_url_has_password: bool,
+}
+
+impl RuntimeAppConfigBaseline {
+  pub fn lookup_file_config_value(&self, key: &str) -> Option<&Value> {
+    key.split('.').try_fold(&self.file_json, |v, seg| v.get(seg))
+  }
+}
+
+impl std::fmt::Debug for RuntimeAppConfigBaseline {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("RuntimeAppConfigBaseline")
+      .field("server", &self.server)
+      .field("redis", &self.redis)
+      .field("smtp", &self.smtp)
+      .field("fallback_smtp", &self.fallback_smtp)
+      .field("file_json", &"<redacted>")
+      .field("env_keys", &self.env_keys)
+      .field("redis_url_env_set", &self.redis_url_env_set)
+      .field("redis_url_has_password", &self.redis_url_has_password)
+      .finish()
+  }
 }
 
 #[derive(Clone, Debug)]
@@ -235,9 +260,25 @@ pub struct AppConfigUpdate {
   pub value: Option<Value>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AppConfigValidationItem {
+  pub module: String,
+  pub key: String,
+  pub value: Option<Value>,
+  pub valid: bool,
+  pub error: Option<String>,
+}
+
+pub fn is_env_only_config_key(key: &str) -> bool {
+  is_boot_only_config_key(key) || key == "indexer" || key.starts_with("indexer.")
+}
+
 const APP_CONFIG_CACHE_TTL: Duration = Duration::from_secs(2);
+const OIDC_DISCOVERY_CACHE_TTL: Duration = Duration::from_secs(60);
+const OIDC_DISCOVERY_CACHE_MAX_ENTRIES: usize = 64;
 
 type CachedAppConfig = Option<(Instant, Arc<Value>)>;
+type OidcDiscoveryCache = std::collections::HashMap<(String, bool), (Instant, bool)>;
 
 #[derive(Clone)]
 pub struct AppConfigService {
@@ -246,6 +287,7 @@ pub struct AppConfigService {
   event_bus: Arc<dyn EventBusPublisher>,
   cache: Arc<RwLock<CachedAppConfig>>,
   generation: Arc<AtomicU64>,
+  oidc_discovery_cache: Arc<RwLock<OidcDiscoveryCache>>,
 }
 
 impl AppConfigService {
@@ -256,6 +298,7 @@ impl AppConfigService {
       event_bus,
       cache: Arc::new(RwLock::new(None)),
       generation: Arc::new(AtomicU64::new(0)),
+      oidc_discovery_cache: Arc::new(RwLock::new(std::collections::HashMap::new())),
     }
   }
 
@@ -363,10 +406,59 @@ impl AppConfigService {
       .await
       .map_err(|e| DomainError::Internal(format!("begin app_configs update: {e}")))?;
 
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('app-config-paths', 0))")
+      .execute(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("lock app-config-paths: {e}")))?;
+    let mut seen_keys: Vec<String> = Vec::with_capacity(updates.len());
+    for update in updates {
+      let key = update.key.trim();
+      if seen_keys.iter().any(|existing| existing == key) {
+        let _ = tx.rollback().await;
+        return Err(DomainError::Validation(format!(
+          "duplicate app config key in batch: {key:?}"
+        )));
+      }
+      if seen_keys.iter().any(|existing| paths_overlap(existing, key)) {
+        let _ = tx.rollback().await;
+        return Err(DomainError::Validation(format!(
+          "conflicting parent/child app config path in batch: {key:?}"
+        )));
+      }
+      seen_keys.push(key.to_owned());
+    }
+    let existing_db_keys: Vec<String> = sqlx::query_scalar("SELECT id FROM app_configs")
+      .fetch_all(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load existing app_config keys: {e}")))?;
+    let clearing_keys: std::collections::HashSet<&str> = updates
+      .iter()
+      .filter(|u| u.value.is_none())
+      .map(|u| u.key.trim())
+      .collect();
     let mut keys = Vec::with_capacity(updates.len());
     for update in updates {
       let key = update.key.trim();
-      validate_mutable_config_key(key)?;
+      if update.value.is_some() {
+        if is_env_only_config_key(key) {
+          let _ = tx.rollback().await;
+          return Err(DomainError::Validation(format!(
+            "This setting is read at startup and cannot be saved as a database override: {key:?}"
+          )));
+        }
+        validate_mutable_config_key(key)?;
+        if existing_db_keys
+          .iter()
+          .any(|ex| ex != key && !clearing_keys.contains(ex.as_str()) && paths_overlap(ex, key))
+        {
+          let _ = tx.rollback().await;
+          return Err(DomainError::Validation(format!(
+            "conflicting parent/child app config path with existing override: {key:?}"
+          )));
+        }
+      } else if key != "indexer" && !key.starts_with("indexer.") {
+        validate_mutable_config_key(key)?;
+      }
       if let Some(value) = &update.value {
         validate_config_value(key, value, &defaults)?;
       }
@@ -413,6 +505,351 @@ impl AppConfigService {
     let snapshot = self.load_effective_app_config_uncached().await?;
     self.store_snapshot_if_generation_matches(gen_before, &snapshot);
     Ok((*snapshot).clone())
+  }
+  /// Returns nested metadata `{ source, settable, configured? }` for every known
+  /// configuration key without ever echoing secret values.
+  pub async fn get_app_config_metadata(&self) -> Result<Value, DomainError> {
+    let baseline_defaults = default_app_config_json(&self.baseline);
+    let mut conn = self
+      .db
+      .acquire_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("acquire app_configs metadata read: {e}")))?;
+    let rows = sqlx::query("SELECT id, value FROM app_configs ORDER BY id ASC")
+      .fetch_all(&mut *conn)
+      .await
+      .map_err(|e| DomainError::Internal(format!("load app_configs metadata: {e}")))?;
+    drop(conn);
+    let mut db_map: std::collections::BTreeMap<String, Value> = std::collections::BTreeMap::new();
+    for row in rows {
+      let id: String = row.get("id");
+      let value: Value = row.get("value");
+      db_map.insert(id, value);
+    }
+    let mut all_keys: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    collect_leaf_paths(&baseline_defaults, "", &mut all_keys);
+    for &k in SECRET_CONFIG_KEYS {
+      all_keys.insert(k.to_owned());
+    }
+    for &k in NATIVE_MANAGED_CONFIG_KEYS {
+      all_keys.insert(k.to_owned());
+    }
+    for k in db_map.keys() {
+      if is_allowed_config_key(k) {
+        all_keys.insert(k.clone());
+      }
+    }
+    let env_redis_url_val = std::env::var("REDIS_URL")
+      .ok()
+      .filter(|v| !v.trim().is_empty())
+      .or_else(|| std::env::var("REDIS_SERVER_URL").ok().filter(|v| !v.trim().is_empty()));
+    let env_redis_url = self.baseline.redis_url_env_set || env_redis_url_val.is_some();
+    let env_redis_url_has_pw = self.baseline.redis_url_has_password
+      || env_redis_url_val
+        .as_deref()
+        .and_then(|u| url::Url::parse(u).ok())
+        .and_then(|u| u.password().map(|p| !p.is_empty()))
+        .unwrap_or(false);
+    let env_non_empty = |var: &str| std::env::var(var).is_ok_and(|v| !v.trim().is_empty());
+    let env_private_key = env_non_empty("AFFINE_PRIVATE_KEY");
+    let env_db = env_non_empty("DATABASE_URL");
+    let mut metadata = Value::Object(Map::new());
+    for key in all_keys {
+      let redis_subkey_env = match key.as_str() {
+        "redis.host" => env_non_empty("REDIS_SERVER_HOST"),
+        "redis.port" => env_non_empty("REDIS_SERVER_PORT"),
+        "redis.username" => env_non_empty("REDIS_SERVER_USERNAME"),
+        "redis.password" => env_non_empty("REDIS_SERVER_PASSWORD"),
+        "redis.db" => env_non_empty("REDIS_SERVER_DATABASE"),
+        _ => false,
+      };
+      let is_redis_env = key.starts_with("redis.") && key != "redis.ioredis" && (env_redis_url || redis_subkey_env);
+      let is_other_env = self.baseline.env_keys.contains(&key)
+        || (env_private_key && key == "crypto.privateKey")
+        || (env_db && key == "db.datasourceUrl");
+      let in_db = db_map.contains_key(&key);
+      let file_entry = self.baseline.lookup_file_config_value(&key);
+      let file_val = file_entry.or_else(|| lookup_nested_path(&baseline_defaults, &key));
+      let from_file = file_entry.is_some();
+      let file_configured = file_entry.is_some_and(is_value_configured);
+      let (source, secret_configured) = if is_redis_env {
+        let cfg = if key == "redis.password" {
+          if env_redis_url {
+            env_redis_url_has_pw
+          } else {
+            env_non_empty("REDIS_SERVER_PASSWORD")
+          }
+        } else {
+          true
+        };
+        ("environment", cfg)
+      } else if in_db {
+        ("database", db_map.get(&key).is_some_and(is_value_configured))
+      } else if key == "crypto.privateKey" {
+        if file_configured {
+          ("file", true)
+        } else if is_other_env {
+          ("environment", true)
+        } else if from_file {
+          ("file", false)
+        } else {
+          ("default", false)
+        }
+      } else if from_file {
+        ("file", file_val.is_some_and(is_value_configured))
+      } else if is_other_env {
+        ("environment", true)
+      } else {
+        ("default", file_val.is_some_and(is_value_configured))
+      };
+      let settable = !is_env_only_config_key(&key)
+        && key != INTERNAL_LOCKED_CONFIG_PREFIX
+        && !key.starts_with(&format!("{INTERNAL_LOCKED_CONFIG_PREFIX}."));
+      let mut entry = Map::new();
+      entry.insert("source".to_owned(), Value::String(source.to_owned()));
+      entry.insert("settable".to_owned(), Value::Bool(settable));
+      if is_secret_config_key(&key) {
+        entry.insert("configured".to_owned(), Value::Bool(secret_configured));
+      }
+      set_nested_path(&mut metadata, &key, Value::Object(entry));
+    }
+    Ok(metadata)
+  }
+  /// Dry-run validation for a batch of app config updates. Performs zero DB writes,
+  /// rejects environment-only (`indexer.*`, boot-only) keys, and redacts secret
+  /// values and secret error hints.
+  pub fn validate_app_config(&self, updates: &[(String, String, Option<Value>, bool)]) -> Vec<AppConfigValidationItem> {
+    let defaults = default_app_config_json(&self.baseline);
+    let mut known_keys: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    collect_leaf_paths(&defaults, "", &mut known_keys);
+    for &k in SECRET_CONFIG_KEYS {
+      known_keys.insert(k.to_owned());
+    }
+    for &k in NATIVE_MANAGED_CONFIG_KEYS {
+      known_keys.insert(k.to_owned());
+    }
+    updates
+      .iter()
+      .map(|(module, key, value, clear)| {
+        let m = module.trim();
+        let k = key.trim();
+        let full_key = format!("{m}.{k}");
+        let is_secret = is_secret_config_key(&full_key);
+        let returned_value = if is_secret { None } else { value.clone() };
+        let is_known = known_keys.contains(&full_key)
+          || lookup_nested_path(&defaults, &full_key).is_some()
+          || is_secret
+          || NATIVE_MANAGED_CONFIG_KEYS.contains(&full_key.as_str());
+        let validation_err = if !is_known {
+          Some(format!("Unknown config [{full_key}]"))
+        } else if !clear && is_env_only_config_key(&full_key) {
+          Some("This setting is read at startup and cannot be saved as a database override".to_owned())
+        } else if !clear && value.is_none() {
+          Some("A value is required when setting config".to_owned())
+        } else if let Err(err) = validate_mutable_config_key(&full_key) {
+          Some(err.to_string())
+        } else if !clear {
+          match value {
+            Some(v) => validate_config_value(&full_key, v, &defaults)
+              .err()
+              .map(|e| e.to_string()),
+            None => Some("A value is required when setting config".to_owned()),
+          }
+        } else {
+          None
+        };
+        let error = validation_err.map(|msg| if is_secret { "Invalid value".to_owned() } else { msg });
+        AppConfigValidationItem {
+          module: module.clone(),
+          key: key.clone(),
+          value: returned_value,
+          valid: error.is_none(),
+          error,
+        }
+      })
+      .collect()
+  }
+  async fn probe_oidc_discovery(&self, issuer: &str, allow_private_network: bool) -> bool {
+    let normalized = issuer.trim().trim_end_matches('/').to_owned();
+    let cache_key = (normalized.clone(), allow_private_network);
+    if let Ok(guard) = self.oidc_discovery_cache.read()
+      && let Some((ts, ok)) = guard.get(&cache_key)
+      && ts.elapsed() < OIDC_DISCOVERY_CACHE_TTL
+    {
+      return *ok;
+    }
+    let discovery_url = format!("{normalized}/.well-known/openid-configuration");
+    let allow_private_origins = allow_private_network
+      .then(|| url::Url::parse(&normalized).ok().map(|u| u.origin()))
+      .flatten()
+      .into_iter()
+      .collect();
+    let policy = crate::safe_fetch::SafeFetchPolicy {
+      allow_http: allow_private_network,
+      allow_private_origins,
+      timeout: Duration::from_secs(3),
+      connect_timeout: Duration::from_secs(3),
+      max_redirects: 2,
+      max_response_bytes: 64 * 1024,
+      ..crate::safe_fetch::SafeFetchPolicy::default()
+    };
+    let req = crate::safe_fetch::SafeFetchRequest::get(discovery_url).with_policy(policy);
+    let is_valid_endpoint = |v: &Value, f: &str| {
+      v.get(f)
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .is_some_and(|s| !s.is_empty() && validate_http_url_field(f, s).is_ok())
+    };
+    let ok = match crate::safe_fetch::safe_fetch(req).await {
+      Ok(resp) if resp.status.is_success() => serde_json::from_slice::<Value>(&resp.body).ok().is_some_and(|v| {
+        v.get("issuer")
+          .and_then(Value::as_str)
+          .map(|s| s.trim().trim_end_matches('/'))
+          == Some(normalized.as_str())
+          && is_valid_endpoint(&v, "authorization_endpoint")
+          && is_valid_endpoint(&v, "token_endpoint")
+          && is_valid_endpoint(&v, "jwks_uri")
+          && is_valid_endpoint(&v, "userinfo_endpoint")
+      }),
+      _ => false,
+    };
+    if let Ok(mut guard) = self.oidc_discovery_cache.write() {
+      guard.retain(|_, (ts, _)| ts.elapsed() < OIDC_DISCOVERY_CACHE_TTL);
+      while guard.len() >= OIDC_DISCOVERY_CACHE_MAX_ENTRIES {
+        let Some(oldest) = guard.iter().min_by_key(|(_, (ts, _))| *ts).map(|(k, _)| k.clone()) else {
+          break;
+        };
+        guard.remove(&oldest);
+      }
+      guard.insert(cache_key, (Instant::now(), ok));
+    }
+    ok
+  }
+  /// Reads raw OAuth provider and Turnstile captcha flags from `app_configs`
+  /// (falling back to `RuntimeAppConfigBaseline` defaults) without exposing secrets.
+  pub async fn get_configured_auth_capabilities(&self) -> Result<ConfiguredAuthCapabilities, DomainError> {
+    const KEYS: &[&str] = &[
+      "oauth.providers.google",
+      "oauth.providers.github",
+      "oauth.providers.apple",
+      "oauth.providers.oidc",
+      "captcha.enabled",
+      "captcha.config",
+    ];
+    let baseline_defaults = default_app_config_json(&self.baseline);
+    let mut conn = self
+      .db
+      .acquire_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("acquire app_configs auth capabilities read: {e}")))?;
+    let rows = sqlx::query("SELECT id, value FROM app_configs WHERE id = ANY($1)")
+      .bind(KEYS)
+      .fetch_all(&mut *conn)
+      .await
+      .map_err(|e| DomainError::Internal(format!("load app_configs auth capabilities: {e}")))?;
+    drop(conn);
+    let mut db_map: std::collections::BTreeMap<String, Value> = std::collections::BTreeMap::new();
+    for row in rows {
+      let id: String = row.get("id");
+      let value: Value = row.get("value");
+      db_map.insert(id, value);
+    }
+    let get_val = |k: &str| {
+      db_map
+        .get(k)
+        .or_else(|| self.baseline.lookup_file_config_value(k))
+        .or_else(|| lookup_nested_path(&baseline_defaults, k))
+    };
+    let mut caps = ConfiguredAuthCapabilities::default();
+    if let Some(value) = get_val("oauth.providers.google") {
+      caps.oauth_google = has_non_empty_str(value.get("clientId")) && has_non_empty_str(value.get("clientSecret"));
+    }
+    if let Some(value) = get_val("oauth.providers.github") {
+      caps.oauth_github = has_non_empty_str(value.get("clientId")) && has_non_empty_str(value.get("clientSecret"));
+    }
+    if let Some(value) = get_val("oauth.providers.apple") {
+      let has_client = has_non_empty_str(value.get("clientId"));
+      let has_secret = has_non_empty_str(value.get("clientSecret"));
+      let has_private_key =
+        has_non_empty_str(value.pointer("/args/privateKey")) || has_non_empty_str(value.get("applePrivateKey"));
+      let has_key_id = has_non_empty_str(value.pointer("/args/keyId")) || has_non_empty_str(value.get("appleKeyId"));
+      let has_team_id = has_non_empty_str(value.pointer("/args/teamId")) || has_non_empty_str(value.get("appleTeamId"));
+      caps.oauth_apple = has_client && (has_secret || (has_private_key && has_key_id && has_team_id));
+    }
+    if let Some(value) = get_val("oauth.providers.oidc") {
+      let has_client = has_non_empty_str(value.get("clientId"));
+      let has_secret = has_non_empty_str(value.get("clientSecret"));
+      let allow_private_network = value
+        .get("allowPrivateNetwork")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+      let issuer = value
+        .get("issuer")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|iss| !iss.is_empty() && validate_http_url_field("oauth.providers.oidc.issuer", iss).is_ok());
+      if has_client
+        && has_secret
+        && let Some(iss) = issuer
+      {
+        caps.oauth_oidc = self.probe_oidc_discovery(iss, allow_private_network).await;
+      }
+    }
+    let captcha_flag = get_val("captcha.enabled").and_then(Value::as_bool).unwrap_or(false);
+    let turnstile_configured = get_val("captcha.config").is_some_and(|value| {
+      has_non_empty_str(value.pointer("/turnstile/secret")) && has_non_empty_str(value.pointer("/turnstile/siteKey"))
+    });
+    caps.captcha_enabled = captcha_flag && turnstile_configured;
+    Ok(caps)
+  }
+}
+
+fn paths_overlap(a: &str, b: &str) -> bool {
+  a == b
+    || (a.len() > b.len() && a.starts_with(b) && a.as_bytes()[b.len()] == b'.')
+    || (b.len() > a.len() && b.starts_with(a) && b.as_bytes()[a.len()] == b'.')
+}
+
+/// Non-secret auth capabilities derived from `app_configs`.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct ConfiguredAuthCapabilities {
+  pub oauth_google: bool,
+  pub oauth_github: bool,
+  pub oauth_apple: bool,
+  pub oauth_oidc: bool,
+  pub captcha_enabled: bool,
+}
+
+fn has_non_empty_str(val: Option<&Value>) -> bool {
+  val.and_then(Value::as_str).is_some_and(|s| !s.trim().is_empty())
+}
+
+fn collect_leaf_paths(val: &Value, prefix: &str, out: &mut std::collections::BTreeSet<String>) {
+  if let Some(obj) = val.as_object() {
+    if obj.is_empty() && !prefix.is_empty() {
+      out.insert(prefix.to_owned());
+      return;
+    }
+    for (k, v) in obj {
+      let next = if prefix.is_empty() {
+        k.clone()
+      } else {
+        format!("{prefix}.{k}")
+      };
+      collect_leaf_paths(v, &next, out);
+    }
+  } else if !prefix.is_empty() {
+    out.insert(prefix.to_owned());
+  }
+}
+
+fn is_value_configured(val: &Value) -> bool {
+  match val {
+    Value::Null => false,
+    Value::String(s) => !s.is_empty(),
+    Value::Array(arr) => !arr.is_empty(),
+    Value::Object(map) => map.values().any(is_value_configured),
+    Value::Bool(_) | Value::Number(_) => true,
   }
 }
 
@@ -1002,6 +1439,7 @@ mod tests {
         ignore_tls: false,
       },
       fallback_smtp: SmtpRuntimeConfig::default(),
+      ..Default::default()
     });
     set_nested_path(&mut cfg, "mailer.SMTP.password", Value::String("secret".to_owned()));
     set_nested_path(&mut cfg, "redis.password", Value::String("secret".to_owned()));

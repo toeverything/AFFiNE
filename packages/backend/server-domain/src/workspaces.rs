@@ -209,9 +209,11 @@ pub struct WorkspaceService {
   db: ServerDb,
   quota_gate: Arc<dyn QuotaGate>,
   invalidation: Arc<dyn InvalidationPublisher>,
+  event_bus: Arc<dyn crate::events::EventBusPublisher>,
   rate_limit_policy: Arc<dyn RateLimitPolicy>,
   billing_spi: Arc<dyn BillingSpi>,
   redis: Option<redis::Client>,
+  base_url: String,
   fallback_invite_links: Arc<tokio::sync::RwLock<std::collections::HashMap<String, WorkspaceInviteLink>>>,
 }
 
@@ -221,11 +223,23 @@ impl WorkspaceService {
       db,
       quota_gate,
       invalidation,
+      event_bus: Arc::new(crate::events::NoopEventPublisher::default()),
       rate_limit_policy: Arc::new(CommunityRateLimitPolicy),
       billing_spi: Arc::new(CommunityBillingSpi),
       redis: None,
+      base_url: "http://localhost:3010".to_owned(),
       fallback_invite_links: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
     }
+  }
+
+  pub fn with_base_url(mut self, base_url: impl Into<String>) -> Self {
+    self.base_url = base_url.into();
+    self
+  }
+
+  pub fn with_event_bus(mut self, event_bus: Arc<dyn crate::events::EventBusPublisher>) -> Self {
+    self.event_bus = event_bus;
+    self
   }
 
   pub fn with_rate_limit_policy(mut self, rate_limit_policy: Arc<dyn RateLimitPolicy>) -> Self {
@@ -238,7 +252,26 @@ impl WorkspaceService {
     self
   }
 
+  async fn publish_workspace_members_changed(&self, workspace_id: &str, reason: &str) {
+    let _ = self
+      .event_bus
+      .publish_event(
+        "realtime.topic.changed",
+        serde_json::json!({
+          "topic": "workspace.members.changed",
+          "room": format!("workspace:{workspace_id}:members"),
+          "input": { "workspaceId": workspace_id },
+          "event": { "changed": true, "reason": reason },
+        }),
+        None,
+      )
+      .await;
+  }
+
   async fn notify_billing_members_changed(&self, workspace_id: &str) {
+    self
+      .publish_workspace_members_changed(workspace_id, "members-updated")
+      .await;
     if let Err(err) = self.billing_spi.on_workspace_members_changed(workspace_id).await {
       tracing::warn!(workspace_id, error = %err, "billing_spi on_workspace_members_changed failed");
     }
@@ -751,10 +784,18 @@ impl WorkspaceService {
       .await
       .map_err(|e| DomainError::Internal(format!("begin invite_members: {e}")))?;
 
-    // Deadlock-free lock order matching `accept_invitation` & `v0.27.5` `strict_quota/seat.rs`:
-    // 1) lock sorted `users` (`owner_id`, `actor_user_id`, all matched `invitee_user_id`s)
-    // 2) lock `workspaces`
-    // 3) re-verify `owner_id`, workspace name, & `invitee_user_id` stability under locks.
+    // Deadlock-free lock order matching `accept_invitation`, `users.rs`, & `v0.27.5` `strict_quota/seat.rs`:
+    // 1) lock sorted normalized invitee emails via advisory lock
+    // 2) lock sorted `users` (`owner_id`, `actor_user_id`, all matched `invitee_user_id`s)
+    // 3) lock `workspaces`
+    // 4) re-verify `owner_id`, workspace name, & `invitee_user_id` stability under locks.
+    let mut sorted_emails: Vec<&str> = valid_inputs.iter().map(|(_, e)| e.as_str()).collect();
+    sorted_emails.sort_unstable();
+    sorted_emails.dedup();
+    for email in sorted_emails {
+      crate::users::lock_email_in_tx(tx.tx_mut(), email).await?;
+    }
+
     let owner_id: String = sqlx::query_scalar(
       "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
     )
@@ -917,7 +958,29 @@ impl WorkspaceService {
         )
         .await?;
 
-      for (idx, email, invitee_user_id) in candidates {
+      let mut notified_invitees: Vec<String> = Vec::new();
+      for (idx, email, mut invitee_user_id) in candidates {
+        if invitee_user_id.is_none() {
+          let placeholder_id = Uuid::new_v4().to_string();
+          let placeholder_name = email
+            .split('@')
+            .next()
+            .filter(|s| !s.is_empty())
+            .unwrap_or("Invited user");
+          let created_id: String = sqlx::query_scalar(
+            r#"INSERT INTO users (id, name, email, registered, created_at)
+               VALUES ($1, $2, $3, false, clock_timestamp())
+               RETURNING id"#,
+          )
+          .bind(&placeholder_id)
+          .bind(placeholder_name)
+          .bind(&email)
+          .fetch_one(&mut **tx.tx_mut())
+          .await
+          .map_err(|e| DomainError::Internal(format!("create placeholder invitee user: {e}")))?;
+          invitee_user_id = Some(created_id);
+        }
+
         // Clear any stale non-chargeable invitations for this target so the
         // `(workspace_id, invitee_user_id)` unique constraint never collides on re-invite.
         sqlx::query(
@@ -951,6 +1014,20 @@ impl WorkspaceService {
         .await
         .map_err(|e| DomainError::Internal(format!("insert workspace invitation: {e}")))?;
 
+        if let Some(ref uid) = invitee_user_id {
+          crate::notifications::insert_invitation_notification_in_tx(
+            tx.tx_mut(),
+            uid,
+            actor_user_id,
+            workspace_id,
+            &invitation_id,
+            "Invitation",
+            &self.base_url,
+          )
+          .await?;
+          notified_invitees.push(uid.clone());
+        }
+
         slots[idx] = Some(Ok(WorkspaceInvitationRecord {
           id: invitation_id,
           workspace_id: workspace_id.to_owned(),
@@ -966,6 +1043,11 @@ impl WorkspaceService {
       tx.commit()
         .await
         .map_err(|e| DomainError::Internal(format!("commit invite_members: {e}")))?;
+
+      for uid in notified_invitees {
+        crate::notifications::publish_notification_count_changed(&self.db, self.event_bus.as_ref(), &uid, "created")
+          .await;
+      }
 
       let _ = self
         .invalidation
@@ -1048,7 +1130,7 @@ impl WorkspaceService {
     }
 
     let inv_row = sqlx::query(
-      r#"SELECT id, workspace_id, invitee_user_id, normalized_email,
+      r#"SELECT id, workspace_id, invitee_user_id, inviter_user_id, normalized_email,
                 requested_role::text AS requested_role,
                 kind::text AS kind,
                 status::text AS status,
@@ -1152,9 +1234,37 @@ impl WorkspaceService {
       return Err(DomainError::Conflict("workspace_invitation_changed".to_owned()));
     }
 
+    let inviter_user_id: Option<String> = inv_row.get("inviter_user_id");
+    if let Some(ref inviter_id) = inviter_user_id
+      && inviter_id != invitee_user_id
+    {
+      crate::notifications::insert_invitation_notification_in_tx(
+        tx.tx_mut(),
+        inviter_id,
+        invitee_user_id,
+        &inv_workspace_id,
+        invitation_id,
+        "InvitationAccepted",
+        &self.base_url,
+      )
+      .await?;
+    }
+
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit accept_invitation: {e}")))?;
+
+    if let Some(ref inviter_id) = inviter_user_id
+      && inviter_id != invitee_user_id
+    {
+      crate::notifications::publish_notification_count_changed(
+        &self.db,
+        self.event_bus.as_ref(),
+        inviter_id,
+        "created",
+      )
+      .await;
+    }
 
     let _ = self
       .invalidation
@@ -1240,6 +1350,9 @@ impl WorkspaceService {
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit update_member_role: {e}")))?;
+    self
+      .publish_workspace_members_changed(workspace_id, "member-role-changed")
+      .await;
 
     Ok(WorkspaceMemberRecord {
       id: row.get("id"),
@@ -1346,12 +1459,17 @@ impl WorkspaceService {
       .await
       .map_err(|e| DomainError::Internal(format!("commit revoke_member: {e}")))?;
 
-    let _ = self
-      .invalidation
-      .publish_invalidation(&InvalidationHintV1::QuotaSeatUsage {
+    for hint in [
+      InvalidationHintV1::QuotaSeatUsage {
         workspace_id: workspace_id.to_owned(),
-      })
-      .await;
+      },
+      InvalidationHintV1::WorkspaceInventoryChanged {
+        workspace_id: workspace_id.to_owned(),
+        doc_id: None,
+      },
+    ] {
+      let _ = self.invalidation.publish_invalidation(&hint).await;
+    }
     self.notify_billing_members_changed(workspace_id).await;
 
     Ok(())
@@ -1944,6 +2062,9 @@ impl WorkspaceService {
     ] {
       let _ = self.invalidation.publish_invalidation(&hint).await;
     }
+    self
+      .publish_workspace_members_changed(workspace_id, "owner-changed")
+      .await;
 
     Ok(WorkspaceMemberRecord {
       id: row.get("id"),
@@ -2051,16 +2172,40 @@ impl WorkspaceService {
       .await
       .map_err(|e| DomainError::Internal(format!("delete approved invitation: {e}")))?;
 
+    crate::notifications::insert_invitation_notification_in_tx(
+      tx.tx_mut(),
+      target_user_id,
+      actor_user_id,
+      workspace_id,
+      &inv_id,
+      "InvitationReviewApproved",
+      &self.base_url,
+    )
+    .await?;
+
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit approve_member: {e}")))?;
 
-    let _ = self
-      .invalidation
-      .publish_invalidation(&InvalidationHintV1::QuotaSeatUsage {
+    crate::notifications::publish_notification_count_changed(
+      &self.db,
+      self.event_bus.as_ref(),
+      target_user_id,
+      "created",
+    )
+    .await;
+
+    for hint in [
+      InvalidationHintV1::QuotaSeatUsage {
         workspace_id: workspace_id.to_owned(),
-      })
-      .await;
+      },
+      InvalidationHintV1::WorkspaceInventoryChanged {
+        workspace_id: workspace_id.to_owned(),
+        doc_id: None,
+      },
+    ] {
+      let _ = self.invalidation.publish_invalidation(&hint).await;
+    }
     self.notify_billing_members_changed(workspace_id).await;
     Ok(())
   }

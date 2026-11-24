@@ -274,7 +274,7 @@ pub async fn process_ready_mail_deliveries(
            AND mail_name IN (
              'TestMail', 'SignIn', 'SignUp', 'SetPassword', 'ChangePassword',
              'VerifyEmail', 'ChangeEmail', 'VerifyChangeEmail', 'EmailChanged',
-             'TeamLicense'
+             'TeamLicense', 'MemberInvitation', 'MemberAccepted', 'LinkInvitationApprove'
            )
            AND (payload IS NULL OR payload::text NOT LIKE '%"$$%')
            AND send_after <= now()

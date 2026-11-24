@@ -613,7 +613,7 @@ impl SpaceSyncGateway {
           } else {
             let rest = room.strip_prefix("workspace:")?;
             let (ws, kind) = rest.rsplit_once(':')?;
-            if !matches!(kind, "config" | "access") {
+            if !matches!(kind, "config" | "access" | "members") {
               return None;
             }
             ws
@@ -644,6 +644,11 @@ impl SpaceSyncGateway {
             .await
             .is_ok(),
           "access" => self.storage.assert_workspace_readable(ws_id, &user_id).await.is_ok(),
+          "members" => self
+            .storage
+            .assert_workspace_members_readable(ws_id, &user_id)
+            .await
+            .is_ok(),
           _ => true,
         }
       } else {
@@ -1380,6 +1385,18 @@ impl SpaceSyncGateway {
           .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
         self.storage.assert_workspace_readable(workspace_id, &user.id).await?;
         format!("workspace:{workspace_id}:access")
+      }
+      "workspace.members.changed" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        self
+          .storage
+          .assert_workspace_members_readable(workspace_id, &user.id)
+          .await?;
+        format!("workspace:{workspace_id}:members")
       }
       "workspace.config.changed" => {
         let workspace_id = input

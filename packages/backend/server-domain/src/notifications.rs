@@ -279,7 +279,7 @@ impl NotificationService {
       .await
       .map_err(|e| DomainError::Internal(format!("commit mention_user: {e}")))?;
 
-    self.publish_count_changed(target_user_id).await;
+    self.publish_count_changed(target_user_id, "created").await;
     Ok(id)
   }
 
@@ -298,7 +298,7 @@ impl NotificationService {
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit mark_as_read: {e}")))?;
-    self.publish_count_changed(user_id).await;
+    self.publish_count_changed(user_id, "read").await;
     Ok(())
   }
 
@@ -316,23 +316,235 @@ impl NotificationService {
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit mark_all_as_read: {e}")))?;
-    self.publish_count_changed(user_id).await;
+    self.publish_count_changed(user_id, "read-all").await;
     Ok(())
   }
 
-  async fn publish_count_changed(&self, user_id: &str) {
-    let _ = self
-      .event_bus
-      .publish_event(
-        "realtime.topic.changed",
-        json!({
-          "topic": "notification.count.changed",
-          "room": format!("user:{user_id}:notification"),
-          "input": {},
-          "event": { "changed": true },
-        }),
-        None,
-      )
-      .await;
+  async fn publish_count_changed(&self, user_id: &str, reason: &str) {
+    publish_notification_count_changed(&self.db, self.event_bus.as_ref(), user_id, reason).await;
   }
+}
+
+async fn load_workspace_display_name_in_tx(
+  tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+  workspace_id: &str,
+) -> Result<String, DomainError> {
+  let db_name: Option<String> = sqlx::query_scalar("SELECT NULLIF(trim(name), '') FROM workspaces WHERE id = $1")
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("load invitation mail workspace name: {e}")))?
+    .flatten();
+  if let Some(name) = db_name {
+    return Ok(name);
+  }
+  let mut parts: Vec<Vec<u8>> = Vec::new();
+  if let Some(snap) =
+    sqlx::query_scalar::<_, Vec<u8>>("SELECT blob FROM snapshots WHERE workspace_id = $1 AND guid = $1")
+      .bind(workspace_id)
+      .fetch_optional(&mut **tx)
+      .await
+      .map_err(|e| DomainError::Internal(format!("load workspace root snapshot for name: {e}")))?
+    && !snap.is_empty()
+  {
+    parts.push(snap);
+  }
+  let updates: Vec<Vec<u8>> =
+    sqlx::query_scalar("SELECT blob FROM updates WHERE workspace_id = $1 AND guid = $1 ORDER BY created_at ASC")
+      .bind(workspace_id)
+      .fetch_all(&mut **tx)
+      .await
+      .map_err(|e| DomainError::Internal(format!("load workspace root updates for name: {e}")))?;
+  parts.extend(updates.into_iter().filter(|b| !b.is_empty()));
+  if !parts.is_empty() {
+    let merged = if parts.len() == 1 {
+      Some(parts.remove(0))
+    } else {
+      y_octo::merge_updates_v1(&parts).and_then(|u| u.encode_v1()).ok()
+    };
+    if let Some(bin) = merged
+      && let Ok(doc) = y_octo::Doc::try_from_binary_v1(&bin)
+      && let Ok(meta) = doc.get_or_create_map("meta")
+      && let Some(y_octo::Value::Any(y_octo::Any::String(raw))) = meta.get("name")
+    {
+      let trimmed = raw.trim();
+      if !trimmed.is_empty() {
+        return Ok(trimmed.to_owned());
+      }
+    }
+  }
+  Ok("Untitled".to_owned())
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn insert_invitation_notification_in_tx(
+  tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+  recipient_user_id: &str,
+  created_by_user_id: &str,
+  workspace_id: &str,
+  invite_id: &str,
+  notification_type: &str,
+  base_url: &str,
+) -> Result<String, DomainError> {
+  use sha2::{Digest as _, Sha256};
+
+  let body = json!({
+    "workspaceId": workspace_id,
+    "createdByUserId": created_by_user_id,
+    "inviteId": invite_id,
+  });
+  let notif_id: String = sqlx::query_scalar(
+    r#"INSERT INTO notifications (id, user_id, level, type, body)
+       VALUES (gen_random_uuid()::text, $1, 'Default', $2::"NotificationType", $3)
+       RETURNING id"#,
+  )
+  .bind(recipient_user_id)
+  .bind(notification_type)
+  .bind(Json(body))
+  .fetch_one(&mut **tx)
+  .await
+  .map_err(|e| DomainError::Internal(format!("insert invitation notification: {e}")))?;
+
+  let base = base_url.trim_end_matches('/');
+  let (mail_name, mail_class, url, has_user, respects_pref) = match notification_type {
+    "Invitation" => (
+      "MemberInvitation",
+      "workspace_invitation",
+      format!("{base}/invite/{invite_id}"),
+      true,
+      true,
+    ),
+    "InvitationAccepted" => (
+      "MemberAccepted",
+      "workspace_lifecycle",
+      format!("{base}/workspace/{workspace_id}/settings?tab=workspace%3Amembers"),
+      true,
+      true,
+    ),
+    "InvitationReviewApproved" => (
+      "LinkInvitationApprove",
+      "workspace_invitation",
+      format!("{base}/workspace/{workspace_id}"),
+      false,
+      false,
+    ),
+    _ => return Ok(notif_id),
+  };
+
+  let recipient_row = sqlx::query(
+    r#"SELECT u.email, COALESCE((s.payload->>'receiveInvitationEmail')::boolean, true) AS receive_invitation_email
+       FROM users u
+       LEFT JOIN user_settings s ON s.user_id = u.id
+       WHERE u.id = $1"#,
+  )
+  .bind(recipient_user_id)
+  .fetch_optional(&mut **tx)
+  .await
+  .map_err(|e| DomainError::Internal(format!("load invitation mail recipient settings: {e}")))?;
+
+  if let Some(row) = recipient_row {
+    let recipient_email: String = row.get("email");
+    let receive_invitation_email: bool = row.get("receive_invitation_email");
+    let workspace_name = load_workspace_display_name_in_tx(tx, workspace_id).await?;
+    let normalized = recipient_email.trim().to_ascii_lowercase();
+    let mut hasher = Sha256::new();
+    hasher.update(normalized.as_bytes());
+    let recipient_hash = format!("{:x}", hasher.finalize());
+    let recipient_domain = normalized.rsplit_once('@').map(|(_, d)| d).unwrap_or("");
+    let dedupe_key = format!("notification:{notif_id}:mail:{mail_name}");
+    let skip_reason = if matches!(mail_name, "MemberInvitation" | "LinkInvitationApprove")
+      && crate::content_policy::contains_url_or_domain(&workspace_name)
+    {
+      Some("workspace_name_contains_domain")
+    } else if respects_pref && !receive_invitation_email {
+      Some("recipient_notification_disabled")
+    } else {
+      None
+    };
+
+    let (status, retention_state, stored_email, mail_payload) = if skip_reason.is_some() {
+      ("skipped", "anonymized", None, None)
+    } else {
+      let props = if has_user {
+        let actor_email: String = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+          .bind(created_by_user_id)
+          .fetch_optional(&mut **tx)
+          .await
+          .map_err(|e| DomainError::Internal(format!("load invitation mail actor email: {e}")))?
+          .unwrap_or_default();
+        json!({ "user": { "email": actor_email }, "workspace": { "name": workspace_name }, "url": url })
+      } else {
+        json!({ "workspace": { "name": workspace_name }, "url": url })
+      };
+      (
+        "queued",
+        "full",
+        Some(recipient_email.as_str()),
+        Some(json!({ "name": mail_name, "to": recipient_email, "props": props })),
+      )
+    };
+    sqlx::query(
+      r#"INSERT INTO mail_deliveries
+           (mail_name, mail_class, priority, status, retention_state, dedupe_key, recipient_email,
+            recipient_hash, recipient_domain, recipient_user_id, actor_user_id,
+            workspace_id, notification_id, payload, send_after, expires_at,
+            settled_at, anonymized_at, max_attempts, last_error_code)
+         VALUES ($1, $2, 'normal', $3, $4, $5, $6,
+                 $7, $8, $9, $10,
+                 $11, $12, $13, clock_timestamp(), clock_timestamp() + interval '24 hours',
+                 CASE WHEN $3 = 'skipped' THEN clock_timestamp() ELSE NULL END,
+                 CASE WHEN $3 = 'skipped' THEN clock_timestamp() ELSE NULL END, 3, $14)
+         ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING"#,
+    )
+    .bind(mail_name)
+    .bind(mail_class)
+    .bind(status)
+    .bind(retention_state)
+    .bind(&dedupe_key)
+    .bind(stored_email)
+    .bind(&recipient_hash)
+    .bind(recipient_domain)
+    .bind(recipient_user_id)
+    .bind(created_by_user_id)
+    .bind(workspace_id)
+    .bind(&notif_id)
+    .bind(mail_payload)
+    .bind(skip_reason)
+    .execute(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("enqueue invitation mail delivery: {e}")))?;
+  }
+
+  Ok(notif_id)
+}
+
+pub async fn publish_notification_count_changed(
+  db: &ServerDb,
+  event_bus: &dyn EventBusPublisher,
+  user_id: &str,
+  reason: &str,
+) {
+  let Ok(mut conn) = db.acquire_tiered(WorkloadTier::InteractiveRead).await else {
+    return;
+  };
+  let Ok(count) =
+    sqlx::query_scalar::<_, i64>("SELECT COUNT(*)::bigint FROM notifications WHERE user_id = $1 AND read = false")
+      .bind(user_id)
+      .fetch_one(&mut *conn)
+      .await
+  else {
+    return;
+  };
+  let _ = event_bus
+    .publish_event(
+      "realtime.topic.changed",
+      json!({
+        "topic": "notification.count.changed",
+        "room": format!("user:{user_id}:notification"),
+        "input": {},
+        "event": { "count": count, "reason": reason },
+      }),
+      None,
+    )
+    .await;
 }

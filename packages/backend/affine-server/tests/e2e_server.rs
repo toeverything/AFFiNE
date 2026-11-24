@@ -1338,3 +1338,280 @@ fn search_config_defaults_and_split_role_validation() {
     let _ = mock_handle.await;
   });
 }
+
+#[test]
+fn config_file_dotted_keys_oauth_and_private_key_source_priority_e2e() {
+  let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+  let migrations = MigrationSet {
+    migrations: vec![],
+    digest: "e2e0000000000009".into(),
+  };
+  let template = cluster.ensure_template(&migrations).expect("ensure empty template");
+  let lease = cluster.lease(&template, DEFAULT_LEASE_TTL).expect("lease db");
+  let db_url = lease.url().to_owned();
+
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .enable_all()
+    .build()
+    .expect("build tokio runtime");
+
+  rt.block_on(async move {
+    drop_empty_prisma_table(&db_url).await;
+    let db = server_db::ServerDb::connect(server_db::DbConfig {
+      database_url: db_url.clone(),
+      channel: "canary".into(),
+      role: server_types::ServerRole::Allinone,
+      selfhosted: true,
+      max_connections: 4,
+      statement_timeout_ms: 5_000,
+      tier_permits: [4, 2, 2, 1],
+    })
+    .await
+    .expect("connect server db");
+    db.ensure_schema_ready().await.expect("ensure schema ready");
+    let pool = db.pool().clone();
+    let admin_id = uuid::Uuid::new_v4().to_string();
+    let session_id = uuid::Uuid::new_v4().to_string();
+    let user_sess_id = uuid::Uuid::new_v4().to_string();
+    sqlx::query(
+      "INSERT INTO users (id, name, email, registered, disabled) VALUES ($1, 'CfgAdmin', 'cfg-admin@affine.test', true, false)",
+    )
+    .bind(&admin_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO user_features (user_id, name, type, reason, activated) VALUES ($1, 'administrator', 0, 'test', true)",
+    )
+    .bind(&admin_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("INSERT INTO multiple_users_sessions (id) VALUES ($1)")
+      .bind(&session_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO user_sessions (id, session_id, user_id, expires_at) VALUES ($1, $2, $3, now() + interval '1 day')",
+    )
+    .bind(&user_sess_id)
+    .bind(&session_id)
+    .bind(&admin_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let cookie = format!("affine_session={session_id}; affine_user_id={admin_id}");
+
+    struct ChildReaper(std::process::Child);
+    impl Drop for ChildReaper {
+      fn drop(&mut self) {
+        let _ = self.0.kill();
+        let _ = self.0.wait();
+      }
+    }
+    struct ProcGuard {
+      _reaper: ChildReaper,
+      _stdout: std::io::BufReader<std::process::ChildStdout>,
+      addr: SocketAddr,
+    }
+    #[allow(clippy::zombie_processes)]
+    fn spawn_cfg_server(db_url: &str, cfg_path: &std::path::Path, env_private_key: Option<&str>) -> ProcGuard {
+      use std::io::{BufRead, BufReader};
+      let mut cmd = std::process::Command::new(env!("CARGO_BIN_EXE_affine-server"));
+      cmd
+        .args([
+          "--role",
+          "graphql",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "0",
+          "--database-url",
+          db_url,
+          "--skip-schema-check",
+        ])
+        .env("AFFINE_CONFIG_PATH", cfg_path)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null());
+      match env_private_key {
+        Some(pk) => {
+          cmd.env("AFFINE_PRIVATE_KEY", pk);
+        }
+        None => {
+          cmd.env_remove("AFFINE_PRIVATE_KEY");
+        }
+      }
+      let mut child = cmd.spawn().expect("spawn affine-server");
+      let stdout = child.stdout.take().expect("child stdout");
+      let reaper = ChildReaper(child);
+      let mut reader = BufReader::new(stdout);
+      let mut line = String::new();
+      loop {
+        line.clear();
+        let n = reader.read_line(&mut line).expect("read stdout");
+        assert!(n > 0, "affine-server exited before AFFINE_SERVER_LISTENING");
+        if let Some(addr_str) = line.trim().strip_prefix("AFFINE_SERVER_LISTENING=") {
+          return ProcGuard {
+            _reaper: reaper,
+            _stdout: reader,
+            addr: addr_str.parse().expect("parse addr"),
+          };
+        }
+      }
+    }
+
+    async fn gql_authed(addr: SocketAddr, cookie: &str, query: &str) -> Value {
+      let body = serde_json::json!({ "query": query }).to_string();
+      let (status, _head, raw) = raw_http_request(
+        addr,
+        "POST",
+        "/graphql",
+        &[
+          ("Content-Type", "application/json"),
+          ("Cookie", cookie),
+          ("x-affine-version", "0.27.5"),
+        ],
+        body.as_bytes(),
+      )
+      .await;
+      assert_eq!(status, 200, "graphql status {status}: {}", String::from_utf8_lossy(&raw));
+      serde_json::from_slice(&raw).expect("parse graphql json")
+    }
+
+    let tmp_dir = std::env::temp_dir().join(format!("affine-cfg-e2e-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&tmp_dir).unwrap();
+    let cfg1 = tmp_dir.join("config1.json");
+    std::fs::write(
+      &cfg1,
+      serde_json::json!({
+        "server": { "name": "AFFiNE" },
+        "client": { "versionControl": {} },
+        "oauth": { "providers.github": { "clientId": "gh-file-id", "clientSecret": "gh-file-sec" } },
+        "crypto": { "privateKey": "file-private-key" }
+      })
+      .to_string(),
+    )
+    .unwrap();
+
+    // 1. File config with dotted oauth.providers.github + non-empty crypto.privateKey alongside AFFINE_PRIVATE_KEY env.
+    let p1 = spawn_cfg_server(&db_url, &cfg1, Some("env-private-key"));
+    let sc = gql_authed(p1.addr, &cookie, "{ serverConfig { oauthProviders } }").await;
+    assert!(sc["errors"].is_null(), "serverConfig err: {sc}");
+    assert!(
+      sc["data"]["serverConfig"]["oauthProviders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|v| v == "GitHub"),
+      "expected GitHub in oauthProviders: {sc}"
+    );
+    let m1 = gql_authed(p1.addr, &cookie, "{ appConfigMetadata }").await;
+    assert!(m1["errors"].is_null(), "metadata err: {m1}");
+    let gh_meta = &m1["data"]["appConfigMetadata"]["oauth"]["providers"]["github"];
+    assert_eq!(gh_meta["source"], "file");
+    assert_eq!(gh_meta["configured"], true);
+    assert!(
+      gh_meta.get("clientId").is_none(),
+      "secret subkeys must not pollute metadata: {gh_meta}"
+    );
+    let vc_meta = m1["data"]["appConfigMetadata"]["client"]["versionControl"]
+      .as_object()
+      .expect("client.versionControl metadata object");
+    let mut vc_keys: Vec<&str> = vc_meta.keys().map(String::as_str).collect();
+    vc_keys.sort_unstable();
+    assert_eq!(
+      vc_keys,
+      vec!["enabled", "requiredVersion"],
+      "empty group object in config file must not add source/settable on parent: {vc_meta:?}"
+    );
+    let pk_meta = &m1["data"]["appConfigMetadata"]["crypto"]["privateKey"];
+    assert_eq!(pk_meta["source"], "file");
+    assert_eq!(pk_meta["configured"], true);
+
+    // 2. PG override switches both to database; clearing PG override falls back to file.
+    let upd = gql_authed(
+      p1.addr,
+      &cookie,
+      r#"mutation { updateAppConfig(updates: [
+        { module: "oauth", key: "providers.github", value: { clientId: "db-id", clientSecret: "db-sec" } },
+        { module: "crypto", key: "privateKey", value: "db-private-key" }
+      ]) }"#,
+    )
+    .await;
+    assert!(upd["errors"].is_null(), "updateAppConfig err: {upd}");
+    let m2 = gql_authed(p1.addr, &cookie, "{ appConfigMetadata }").await;
+    assert_eq!(m2["data"]["appConfigMetadata"]["oauth"]["providers"]["github"]["source"], "database");
+    assert_eq!(m2["data"]["appConfigMetadata"]["crypto"]["privateKey"]["source"], "database");
+
+    let clr = gql_authed(
+      p1.addr,
+      &cookie,
+      r#"mutation { updateAppConfig(updates: [
+        { module: "oauth", key: "providers.github", value: null },
+        { module: "crypto", key: "privateKey", value: null }
+      ]) }"#,
+    )
+    .await;
+    assert!(clr["errors"].is_null(), "clear updateAppConfig err: {clr}");
+    let m3 = gql_authed(p1.addr, &cookie, "{ appConfigMetadata }").await;
+    assert_eq!(m3["data"]["appConfigMetadata"]["oauth"]["providers"]["github"]["source"], "file");
+    assert_eq!(m3["data"]["appConfigMetadata"]["oauth"]["providers"]["github"]["configured"], true);
+    assert_eq!(m3["data"]["appConfigMetadata"]["crypto"]["privateKey"]["source"], "file");
+    assert_eq!(m3["data"]["appConfigMetadata"]["crypto"]["privateKey"]["configured"], true);
+    drop(p1);
+
+    // 3. Empty file crypto.privateKey: falls back to AFFINE_PRIVATE_KEY env (environment/true),
+    // and without env reports file/false.
+    let cfg2 = tmp_dir.join("config2.json");
+    std::fs::write(&cfg2, serde_json::json!({ "crypto": { "privateKey": "" } }).to_string()).unwrap();
+    let p2 = spawn_cfg_server(&db_url, &cfg2, Some("env-private-key"));
+    let m4 = gql_authed(p2.addr, &cookie, "{ appConfigMetadata }").await;
+    assert_eq!(m4["data"]["appConfigMetadata"]["crypto"]["privateKey"]["source"], "environment");
+    assert_eq!(m4["data"]["appConfigMetadata"]["crypto"]["privateKey"]["configured"], true);
+    drop(p2);
+
+    let p3 = spawn_cfg_server(&db_url, &cfg2, None);
+    let m5 = gql_authed(p3.addr, &cookie, "{ appConfigMetadata }").await;
+    assert_eq!(m5["data"]["appConfigMetadata"]["crypto"]["privateKey"]["source"], "file");
+    assert_eq!(m5["data"]["appConfigMetadata"]["crypto"]["privateKey"]["configured"], false);
+    drop(p3);
+
+    // 4. Root literal dotted key must NOT be expanded into oauth.providers.github, and nested dotted keys
+    // inside entry values (e.g. args["custom.claim"]) must remain intact.
+    let cfg3 = tmp_dir.join("config3.json");
+    let root_dotted = serde_json::json!({
+      "oauth.providers.github": { "clientId": "root-id", "clientSecret": "root-sec" },
+      "oauth": { "providers.oidc": { "args": { "custom.claim": "sub" } } }
+    });
+    std::fs::write(&cfg3, root_dotted.to_string()).unwrap();
+    let expanded = affine_server::expand_module_config_paths(root_dotted);
+    assert!(expanded.get("oauth.providers.github").is_some());
+    assert!(expanded.pointer("/oauth/providers/github").is_none());
+    assert_eq!(
+      expanded
+        .pointer("/oauth/providers/oidc/args")
+        .and_then(|v| v.get("custom.claim")),
+      Some(&serde_json::json!("sub"))
+    );
+    let p4 = spawn_cfg_server(&db_url, &cfg3, None);
+    let sc4 = gql_authed(p4.addr, &cookie, "{ serverConfig { oauthProviders } }").await;
+    assert!(
+      !sc4["data"]["serverConfig"]["oauthProviders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|v| v == "GitHub"),
+      "root literal dotted key must not activate GitHub OAuth: {sc4}"
+    );
+    let m6 = gql_authed(p4.addr, &cookie, "{ appConfigMetadata }").await;
+    assert_eq!(
+      m6["data"]["appConfigMetadata"]["oauth"]["providers"]["github"]["source"],
+      "default"
+    );
+    drop(p4);
+
+    let _ = std::fs::remove_dir_all(&tmp_dir);
+    pool.close().await;
+  });
+}

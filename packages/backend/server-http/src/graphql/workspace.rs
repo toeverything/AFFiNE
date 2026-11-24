@@ -198,6 +198,13 @@ pub struct WorkspacePermissions {
   pub workspace_users_read: bool,
 }
 
+#[derive(SimpleObject, Clone, Copy, Debug, Eq, PartialEq)]
+#[graphql(name = "WorkspaceRolePermissions")]
+pub struct WorkspaceRolePermissions {
+  pub role: Permission,
+  pub permissions: WorkspacePermissions,
+}
+
 #[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
 #[graphql(name = "InviteUserType")]
 pub struct InviteUserType {
@@ -1033,26 +1040,27 @@ pub(crate) async fn mutate_invite_members(
     )
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
-  Ok(
-    batch
-      .into_iter()
-      .map(|(email, outcome)| match outcome {
-        Ok(inv) => InviteResult {
+  let mut out = Vec::with_capacity(batch.len());
+  for (email, outcome) in batch {
+    match outcome {
+      Ok(inv) => {
+        out.push(InviteResult {
           email,
           invite_id: Some(inv.id),
           error: None,
-        },
-        Err(err) => {
-          let env = crate::legacy_compat::errors::domain_error_to_envelope(&err);
-          InviteResult {
-            email,
-            invite_id: None,
-            error: Some(JsonObjectScalar(serde_json::to_value(env).unwrap_or_default())),
-          }
-        }
-      })
-      .collect(),
-  )
+        });
+      }
+      Err(err) => {
+        let env = crate::legacy_compat::errors::domain_error_to_envelope(&err);
+        out.push(InviteResult {
+          email,
+          invite_id: None,
+          error: Some(JsonObjectScalar(serde_json::to_value(env).unwrap_or_default())),
+        });
+      }
+    }
+  }
+  Ok(out)
 }
 
 pub(crate) async fn mutate_revoke_member(ctx: &Context<'_>, workspace_id: String, user_id: String) -> Result<bool> {
@@ -1139,6 +1147,49 @@ pub(crate) async fn mutate_revoke_invite_link(ctx: &Context<'_>, workspace_id: S
     .map_err(|e| domain_error_to_graphql(&e))
 }
 
+pub(crate) async fn resolve_workspace_role_permissions(
+  ctx: &Context<'_>,
+  id: String,
+) -> Result<WorkspaceRolePermissions> {
+  let user = require_authenticated_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let p = state
+    .workspaces
+    .resolve_workspace_permissions(&user.id, &id)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  if !p.read {
+    return Err(domain_error_to_graphql(&DomainError::Forbidden(format!(
+      "space_access_denied:{id}"
+    ))));
+  }
+  Ok(WorkspaceRolePermissions {
+    role: p.role.into(),
+    permissions: WorkspacePermissions {
+      workspace_administrators_manage: p.administrators_manage,
+      workspace_blobs_manage: p.blobs_manage,
+      workspace_blobs_upload: p.blobs_upload,
+      workspace_copilot: p.copilot,
+      workspace_create_doc: p.create_doc,
+      workspace_delete: p.delete,
+      workspace_organize_read: p.organize_read,
+      workspace_payment_manage: p.payment_manage,
+      workspace_preview: p.preview,
+      workspace_properties_create: p.properties_create,
+      workspace_properties_delete: p.properties_delete,
+      workspace_properties_read: p.properties_read,
+      workspace_properties_update: p.properties_update,
+      workspace_read: p.read,
+      workspace_settings_read: p.settings_read,
+      workspace_settings_update: p.settings_update,
+      workspace_sync: p.sync,
+      workspace_transfer_owner: p.transfer_owner,
+      workspace_users_manage: p.users_manage,
+      workspace_users_read: p.users_read,
+    },
+  })
+}
+
 #[derive(Default)]
 pub struct WorkspaceQuery;
 
@@ -1150,6 +1201,11 @@ impl WorkspaceQuery {
 
   async fn workspace(&self, ctx: &Context<'_>, id: String) -> Result<WorkspaceType> {
     resolve_workspace(ctx, id).await
+  }
+
+  #[graphql(deprecation = "use WorkspaceType[permissions] instead")]
+  async fn workspace_role_permissions(&self, ctx: &Context<'_>, id: String) -> Result<WorkspaceRolePermissions> {
+    resolve_workspace_role_permissions(ctx, id).await
   }
 
   async fn get_invite_info(&self, ctx: &Context<'_>, invite_id: String) -> Result<InvitationType> {

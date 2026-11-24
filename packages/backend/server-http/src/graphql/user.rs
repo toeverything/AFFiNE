@@ -80,6 +80,52 @@ pub struct UpdateUserInput {
   pub name: Option<String>,
 }
 
+#[derive(InputObject, Clone, Debug, Default)]
+#[graphql(name = "ListUserInput")]
+pub struct ListUserInput {
+  #[graphql(default_with = "Some(0)")]
+  pub skip: Option<i32>,
+  #[graphql(default_with = "Some(20)")]
+  pub first: Option<i32>,
+  pub keyword: Option<String>,
+  pub features: Option<Vec<FeatureType>>,
+}
+
+#[derive(InputObject, Clone, Debug)]
+#[graphql(name = "CreateUserInput")]
+pub struct CreateUserInput {
+  pub email: String,
+  pub name: Option<String>,
+  pub password: Option<String>,
+}
+
+#[derive(InputObject, Clone, Debug)]
+#[graphql(name = "ImportUsersInput")]
+pub struct ImportUsersInput {
+  pub users: Vec<CreateUserInput>,
+}
+
+#[derive(InputObject, Clone, Debug)]
+#[graphql(name = "ManageUserInput")]
+pub struct ManageUserInput {
+  pub email: Option<String>,
+  pub name: Option<String>,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "UserImportFailedType")]
+pub struct UserImportFailedType {
+  pub email: String,
+  pub error: String,
+}
+
+#[derive(Union)]
+#[graphql(name = "UserImportResultType")]
+pub enum UserImportResultType {
+  Failed(UserImportFailedType),
+  User(Box<UserType>),
+}
+
 pub struct UserType {
   pub(crate) view: CurrentUserView,
 }
@@ -281,6 +327,11 @@ pub(crate) async fn mutate_update_profile(ctx: &Context<'_>, input: UpdateUserIn
     )
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
+  publish_user_profile_updated_events(state, &updated.id).await;
+  Ok(UserType { view: updated })
+}
+
+async fn publish_user_profile_updated_events(state: &AppState, user_id: &str) {
   let req_id = super::graphql_request_id(state);
   let _ = state
     .event_bus
@@ -288,7 +339,7 @@ pub(crate) async fn mutate_update_profile(ctx: &Context<'_>, input: UpdateUserIn
       "realtime.topic.changed",
       serde_json::json!({
         "topic": "user.profile.changed",
-        "room": format!("user:{}:profile", updated.id),
+        "room": format!("user:{user_id}:profile"),
         "input": {},
         "event": { "changed": true, "reason": "user-updated" },
       }),
@@ -299,7 +350,7 @@ pub(crate) async fn mutate_update_profile(ctx: &Context<'_>, input: UpdateUserIn
     Ok(mut conn) => sqlx::query_scalar::<_, String>(
       "SELECT workspace_id FROM workspace_members WHERE user_id = $1 AND state = 'active' ORDER BY workspace_id ASC",
     )
-    .bind(&updated.id)
+    .bind(user_id)
     .fetch_all(&mut *conn)
     .await
     .unwrap_or_default(),
@@ -324,7 +375,7 @@ pub(crate) async fn mutate_update_profile(ctx: &Context<'_>, input: UpdateUserIn
     Ok(mut conn) => sqlx::query_as::<_, (String, String)>(
       "SELECT workspace_id, doc_id FROM doc_grants WHERE principal_type = 'user' AND principal_id = $1 ORDER BY workspace_id ASC, doc_id ASC",
     )
-    .bind(&updated.id)
+    .bind(user_id)
     .fetch_all(&mut *conn)
     .await
     .unwrap_or_default(),
@@ -345,7 +396,6 @@ pub(crate) async fn mutate_update_profile(ctx: &Context<'_>, input: UpdateUserIn
       )
       .await;
   }
-  Ok(UserType { view: updated })
 }
 
 fn image_format_not_supported_error() -> async_graphql::Error {
@@ -666,6 +716,218 @@ pub(crate) async fn mutate_delete_user(ctx: &Context<'_>, id: String) -> Result<
   }
 }
 
+fn feature_to_domain_name(f: FeatureType) -> String {
+  match f {
+    FeatureType::Admin => server_domain::users::ADMIN_FEATURE_NAME.to_owned(),
+  }
+}
+
+fn to_domain_user_filter(f: ListUserInput) -> server_domain::users::ListUsersFilter {
+  server_domain::users::ListUsersFilter {
+    skip: f.skip.unwrap_or(0),
+    first: f.first.unwrap_or(20),
+    keyword: f.keyword,
+    features: f
+      .features
+      .unwrap_or_default()
+      .into_iter()
+      .map(feature_to_domain_name)
+      .collect(),
+  }
+}
+
+pub(crate) async fn resolve_admin_users(ctx: &Context<'_>, filter: ListUserInput) -> Result<Vec<UserType>> {
+  let _admin = super::require_admin_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let rows = state
+    .users
+    .list_users(&to_domain_user_filter(filter))
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  Ok(rows.into_iter().map(|view| UserType { view }).collect())
+}
+
+pub(crate) async fn resolve_admin_users_count(ctx: &Context<'_>, filter: Option<ListUserInput>) -> Result<i32> {
+  let _admin = super::require_admin_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let count = state
+    .users
+    .count_users(&to_domain_user_filter(filter.unwrap_or_default()))
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  Ok(i32::try_from(count).unwrap_or(i32::MAX))
+}
+
+pub(crate) async fn resolve_admin_user_by_id(ctx: &Context<'_>, id: String) -> Result<UserType> {
+  let _admin = super::require_admin_user(ctx).await?;
+  let view = ctx
+    .data_unchecked::<Arc<AppState>>()
+    .users
+    .get_user_by_id_admin(&id)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?
+    .ok_or_else(|| async_graphql::Error::new("Cannot return null for non-nullable field Query.userById."))?;
+  Ok(UserType { view })
+}
+
+pub(crate) async fn resolve_admin_user_by_email(ctx: &Context<'_>, email: String) -> Result<Option<UserType>> {
+  let _admin = super::require_admin_user(ctx).await?;
+  let view = ctx
+    .data_unchecked::<Arc<AppState>>()
+    .users
+    .get_user_by_email_admin(&email)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  Ok(view.map(|view| UserType { view }))
+}
+
+pub(crate) async fn mutate_admin_create_user(ctx: &Context<'_>, input: CreateUserInput) -> Result<UserType> {
+  let _admin = super::require_admin_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let cfg = state.auth.config();
+  let inp = server_domain::users::AdminCreateUserInput {
+    email: input.email,
+    name: input.name,
+    password: input.password,
+  };
+  let view = state
+    .users
+    .create_user(&inp, cfg.password_min_length, cfg.password_max_length)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  Ok(UserType { view })
+}
+
+pub(crate) async fn mutate_admin_import_users(
+  ctx: &Context<'_>,
+  input: ImportUsersInput,
+) -> Result<Vec<UserImportResultType>> {
+  let _admin = super::require_admin_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let cfg = state.auth.config();
+  let domain_inputs: Vec<_> = input
+    .users
+    .into_iter()
+    .map(|u| server_domain::users::AdminCreateUserInput {
+      email: u.email,
+      name: u.name,
+      password: u.password,
+    })
+    .collect();
+  Ok(
+    state
+      .users
+      .import_users(&domain_inputs, cfg.password_min_length, cfg.password_max_length)
+      .await
+      .into_iter()
+      .map(|res| match res {
+        Ok(view) => UserImportResultType::User(Box::new(UserType { view })),
+        Err((email, err)) => UserImportResultType::Failed(UserImportFailedType {
+          email,
+          error: crate::legacy_compat::errors::domain_error_to_envelope(&err).message,
+        }),
+      })
+      .collect(),
+  )
+}
+
+pub(crate) async fn mutate_admin_update_user(
+  ctx: &Context<'_>,
+  id: String,
+  input: ManageUserInput,
+) -> Result<UserType> {
+  let _admin = super::require_admin_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let view = state
+    .users
+    .admin_update_user(&id, input.email.as_deref(), input.name.as_deref())
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  publish_user_profile_updated_events(state, &view.id).await;
+  Ok(UserType { view })
+}
+
+pub(crate) async fn mutate_admin_ban_user(ctx: &Context<'_>, id: String) -> Result<UserType> {
+  let _admin = super::require_admin_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let quota_gate = state.extension.quota_gate();
+  let billing = state.extension.billing_spi();
+  match state.users.ban_user(&id, quota_gate.as_ref(), billing.as_ref()).await {
+    Ok(result) => {
+      finish_deleted_user_cleanup(state, result.cleanup).await;
+      let req_id = super::graphql_request_id(state);
+      let _ = state
+        .event_bus
+        .publish_event(
+          "realtime.topic.changed",
+          serde_json::json!({
+            "topic": "user.profile.changed",
+            "room": format!("user:{}:profile", result.old_user_id),
+            "input": {},
+            "event": { "changed": true, "reason": "user-banned" },
+          }),
+          Some(req_id.as_str()),
+        )
+        .await;
+      let _ = state
+        .event_bus
+        .publish_event(
+          "sync.permissions.changed",
+          serde_json::json!({
+            "spaceType": "userspace",
+            "spaceId": result.old_user_id,
+          }),
+          Some(req_id.as_str()),
+        )
+        .await;
+      Ok(UserType { view: result.new_user })
+    }
+    Err(del_err) => {
+      if !del_err.partial_cleanup.is_empty() {
+        finish_deleted_user_cleanup(state, *del_err.partial_cleanup).await;
+      }
+      Err(domain_error_to_graphql(&del_err.error))
+    }
+  }
+}
+
+pub(crate) async fn mutate_admin_enable_user(ctx: &Context<'_>, id: String) -> Result<UserType> {
+  let _admin = super::require_admin_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let view = state
+    .users
+    .enable_user(&id)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  Ok(UserType { view })
+}
+
+pub(crate) async fn mutate_admin_update_user_features(
+  ctx: &Context<'_>,
+  id: String,
+  features: Vec<FeatureType>,
+) -> Result<Vec<FeatureType>> {
+  let _admin = super::require_admin_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let names: Vec<String> = features.iter().copied().map(feature_to_domain_name).collect();
+  let updated = state
+    .users
+    .update_user_features(&id, &names)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  let out = updated
+    .into_iter()
+    .filter_map(|name| {
+      if name == server_domain::users::ADMIN_FEATURE_NAME || name == "Admin" {
+        Some(FeatureType::Admin)
+      } else {
+        None
+      }
+    })
+    .collect();
+  Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
   use std::sync::{Arc, Barrier};
@@ -867,7 +1129,8 @@ mod tests {
         auth_cfg,
       );
       let users = UserService::new(db.clone());
-      let workspaces = WorkspaceService::new(db.clone(), extension.quota_gate(), Arc::clone(&invalidation));
+      let workspaces = WorkspaceService::new(db.clone(), extension.quota_gate(), Arc::clone(&invalidation))
+        .with_event_bus(Arc::clone(&event_bus));
       let histories = DocHistoryService::new(db.clone(), extension.quota_gate(), doc_sharing.clone());
       let comments = CommentService::new(
         db.clone(),

@@ -304,7 +304,8 @@ mod tests {
       if in_block_comment || line.is_empty() || line.starts_with('#') || line.starts_with('"') {
         continue;
       }
-      if let Some((sig, ty)) = line.rsplit_once(':') {
+      let without_deprecation = line.split(" @deprecated").next().unwrap_or(line).trim();
+      if let Some((sig, ty)) = without_deprecation.rsplit_once(':') {
         map.insert(sig.trim().to_owned(), ty.trim().to_owned());
       }
     }

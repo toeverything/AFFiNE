@@ -164,6 +164,8 @@ impl AppState {
     let invalidation: Arc<dyn InvalidationPublisher> = noop.clone();
     let event_bus: Arc<dyn EventBusPublisher> = noop;
     let workspaces = WorkspaceService::new(db.clone(), extension.quota_gate(), Arc::clone(&invalidation))
+      .with_event_bus(Arc::clone(&event_bus))
+      .with_base_url(config.external_url.clone())
       .with_rate_limit_policy(extension.rate_limit_policy())
       .with_billing_spi(extension.billing_spi())
       .with_redis(redis.clone());
