@@ -5,7 +5,7 @@ It uses `resolver = "3"`, edition 2024, and its own `rust-toolchain.toml` (`1.98
 
 ## Workspace boundaries and four-domain guards
 
-- `packages/frontend/Cargo.toml` lists every client member crate explicitly (`../ui/tokens`, `../ui/ui`, `../ui/kit`, `../common/store`, `../../blocksuite/crates/doc`, `../../blocksuite/crates/editor`, `../../blocksuite/crates/playground`, and `../../blocksuite/crates/preview`).
+- `packages/frontend/Cargo.toml` lists every client member crate explicitly (`../ui/tokens`, `../ui/ui`, `../ui/kit`, `../common/store`, `../../blocksuite/crates/doc`, `../../blocksuite/crates/editor`, `../../blocksuite/crates/playground`, `../../blocksuite/crates/preview`, `hosts/android`, and `hosts/ios`).
   Never use directory wildcards that can scan asset directories.
 - `packages/frontend/Cargo.toml` excludes `native` and `mobile-native`.
   Those legacy crates remain members of the root `Cargo.toml` workspace.

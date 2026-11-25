@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' ws: wss:; worker-src 'self' blob:; frame-src blob: about:; base-uri 'none'; object-src 'none'"
+    />
+    <title>AFFiNE</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #ffffff;
+        color: #141414;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background: #141414;
+          color: #f4f4f5;
+        }
+      }
+
+      #app-canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+      }
+
+      #ime {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        border: 0;
+        padding: 0;
+        margin: 0;
+        resize: none;
+        font-size: 16px;
+        line-height: 16px;
+        background: transparent;
+        color: transparent;
+        caret-color: transparent;
+      }
+
+      #safe-area-probe {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 0;
+        height: 0;
+        border: 0;
+        margin: 0;
+        visibility: hidden;
+        pointer-events: none;
+        box-sizing: content-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-left: env(safe-area-inset-left, 0px);
+        transition:
+          padding-top 0.001ms step-start,
+          padding-right 0.001ms step-start,
+          padding-bottom 0.001ms step-start,
+          padding-left 0.001ms step-start;
+      }
+
+      #embed-layer {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      #a11y-tree {
+        position: fixed;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        pointer-events: none;
+      }
+
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 24px;
+        background: inherit;
+        color: inherit;
+      }
+
+      #boot[data-state='fatal'] .boot-skeleton {
+        display: none;
+      }
+
+      #boot-message {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.5;
+        text-align: center;
+      }
+
+      .boot-skeleton {
+        width: min(320px, 80vw);
+        height: 14px;
+        border-radius: 7px;
+        background: rgba(128, 128, 128, 0.22);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="app-canvas" aria-hidden="true"></canvas>
+    <textarea
+      id="ime"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="sentences"
+      spellcheck="false"
+      aria-label="Document input"
+    ></textarea>
+    <div id="safe-area-probe" aria-hidden="true"></div>
+    <div id="embed-layer"></div>
+    <div id="a11y-tree" role="application" aria-label="AFFiNE workspace"></div>
+    <div id="boot" data-state="loading" role="status" aria-live="polite">
+      <div class="boot-skeleton" aria-hidden="true"></div>
+      <div class="boot-skeleton" aria-hidden="true"></div>
+      <p id="boot-message">Loading AFFiNE...</p>
+    </div>
+    <script id="affine-build-manifest" type="application/json">
+      {
+        "shellVersion": "mobile-v1",
+        "buildHash": "dev-local",
+        "appEntryJs": "/src/default-app-entry.js",
+        "workers": {
+          "mermaid": {
+            "script": "/src/workers/mermaid-worker.js",
+            "wasm": "/assets/mermaid-worker.dev-local.wasm"
+          },
+          "math": {
+            "script": "/src/workers/math-worker.js",
+            "wasm": "/assets/math-worker.dev-local.wasm"
+          },
+          "typst": {
+            "script": "/src/workers/typst-worker.js",
+            "wasm": "/assets/typst-worker.dev-local.wasm"
+          },
+          "pdf": {
+            "script": "/src/workers/pdf-worker.js",
+            "wasm": "/assets/pdf-worker.dev-local.wasm"
+          }
+        },
+        "fonts": {
+          "latin": "/assets/fonts/inter-latin.dev-local.ttf",
+          "mono": "/assets/fonts/ibm-plex-mono.dev-local.ttf"
+        }
+      }
+    </script>
+    <script type="module" src="/src/host.js"></script>
+  </body>
+</html>

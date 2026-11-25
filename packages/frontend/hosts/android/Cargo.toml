@@ -1,0 +1,20 @@
+[package]
+name = "affine-android-host"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+workspace = "../.."
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[features]
+host-jni = []
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

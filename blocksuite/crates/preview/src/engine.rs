@@ -170,14 +170,14 @@ impl PreviewEngine {
         Ok(())
     }
 
-    /// Renders a Mermaid diagram to `resvg`-safe SVG.
+    /// Renders a Mermaid diagram to `resvg`-safe SVG using registered font metrics.
     #[cfg(feature = "mermaid")]
     pub fn render_mermaid_svg(
         &self,
         source: &str,
         options: &MermaidOptions,
     ) -> Result<String, PreviewError> {
-        MermaidRenderer::new().render_svg(source, options)
+        MermaidRenderer::new().render_svg_with_fonts(source, options, &self.font_pool)
     }
 
     /// Renders a Mermaid diagram to RGBA8 pixels using registered fonts and pixel cache.
@@ -223,8 +223,13 @@ impl PreviewEngine {
         } else {
             "strict"
         };
+        let theme_tag = match options.theme {
+            None => "none",
+            Some(crate::mermaid::MermaidTheme::Light) => "light",
+            Some(crate::mermaid::MermaidTheme::Dark) => "dark",
+        };
         let key = format!(
-            "mermaid:{mode_tag}:fg={}:date={:04}-{:02}-{:02}:tz={}:pad={:016x}:id={diagram_id_tag}:scale={:08x}:src={source}",
+            "mermaid:{mode_tag}:theme={theme_tag}:fg={}:date={:04}-{:02}-{:02}:tz={}:pad={:016x}:id={diagram_id_tag}:scale={:08x}:src={source}",
             self.font_generation,
             options.today.year,
             options.today.month,
@@ -236,7 +241,7 @@ impl PreviewEngine {
         if let Some(cached) = self.cache.get(&key) {
             return Ok(cached);
         }
-        let svg = MermaidRenderer::new().render_svg(source, options)?;
+        let svg = MermaidRenderer::new().render_svg_with_fonts(source, options, &self.font_pool)?;
         let raster_opts = RasterOptions {
             allow_missing_glyphs,
             ..RasterOptions::with_scale(scale_factor)

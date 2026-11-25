@@ -1,0 +1,13 @@
+[package]
+name = "affine-ios-host"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+workspace = "../.."
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[lints]
+workspace = true

@@ -8,7 +8,7 @@ use crate::PreviewDate;
 #[cfg(feature = "math")]
 use crate::math::{MathDisplayMode, MathRenderOptions};
 #[cfg(feature = "mermaid")]
-use crate::mermaid::MermaidOptions;
+use crate::mermaid::{MermaidOptions, MermaidTheme};
 #[cfg(feature = "pdf")]
 use crate::pdf::PdfRenderRequest;
 
@@ -218,10 +218,14 @@ impl WasmPreviewEngine {
         month: u8,
         day: u8,
         tz_offset_minutes: i16,
+        theme: Option<String>,
     ) -> Result<WasmSvgOutput, JsValue> {
+        let parsed_theme =
+            parse_mermaid_theme(theme.as_deref()).map_err(|err| JsValue::from_str(&err))?;
         let opts = MermaidOptions {
             today: PreviewDate::new(year, month, day),
             timezone_offset_minutes: tz_offset_minutes,
+            theme: parsed_theme,
             ..MermaidOptions::default()
         };
         let svg = self
@@ -246,6 +250,7 @@ impl WasmPreviewEngine {
         day: u8,
         tz_offset_minutes: i16,
         scale: f32,
+        theme: Option<String>,
     ) -> Result<WasmRgbaOutput, JsValue> {
         self.render_mermaid_rgba_with_policy(
             source,
@@ -254,6 +259,7 @@ impl WasmPreviewEngine {
             day,
             tz_offset_minutes,
             scale,
+            theme,
             false,
         )
     }
@@ -269,6 +275,7 @@ impl WasmPreviewEngine {
         day: u8,
         tz_offset_minutes: i16,
         scale: f32,
+        theme: Option<String>,
     ) -> Result<WasmRgbaOutput, JsValue> {
         self.render_mermaid_rgba_with_policy(
             source,
@@ -277,6 +284,7 @@ impl WasmPreviewEngine {
             day,
             tz_offset_minutes,
             scale,
+            theme,
             true,
         )
     }
@@ -290,11 +298,15 @@ impl WasmPreviewEngine {
         day: u8,
         tz_offset_minutes: i16,
         scale: f32,
+        theme: Option<String>,
         lenient: bool,
     ) -> Result<WasmRgbaOutput, JsValue> {
+        let parsed_theme =
+            parse_mermaid_theme(theme.as_deref()).map_err(|err| JsValue::from_str(&err))?;
         let opts = MermaidOptions {
             today: PreviewDate::new(year, month, day),
             timezone_offset_minutes: tz_offset_minutes,
+            theme: parsed_theme,
             ..MermaidOptions::default()
         };
         let buf = if lenient {
@@ -493,6 +505,22 @@ impl WasmPreviewEngine {
 }
 
 #[cfg(feature = "mermaid")]
+fn parse_mermaid_theme(theme: Option<&str>) -> Result<Option<MermaidTheme>, String> {
+    let Some(raw) = theme.map(str::trim).filter(|s| !s.is_empty()) else {
+        return Ok(None);
+    };
+    if raw.eq_ignore_ascii_case("light") {
+        Ok(Some(MermaidTheme::Light))
+    } else if raw.eq_ignore_ascii_case("dark") {
+        Ok(Some(MermaidTheme::Dark))
+    } else {
+        Err(format!(
+            "unsupported Mermaid theme '{raw}' (expected 'light' or 'dark')"
+        ))
+    }
+}
+
+#[cfg(feature = "mermaid")]
 fn parse_svg_dimensions(svg: &str) -> (f32, f32) {
     if let Some(vb_pos) = svg.find("viewBox=\"") {
         let after = &svg[vb_pos + 9..];
@@ -507,4 +535,57 @@ fn parse_svg_dimensions(svg: &str) -> (f32, f32) {
         }
     }
     (0.0, 0.0)
+}
+
+pub use crate::wasm_worker::{
+    affine_worker_invoke, affine_worker_output_u32, affine_worker_push_input_u32,
+    affine_worker_reset_input,
+};
+
+#[cfg(all(test, feature = "mermaid"))]
+mod tests {
+    use super::*;
+    use crate::test_support::build_test_font_pool;
+
+    #[test]
+    fn wasm_mermaid_theme_parser_and_distinct_light_dark_pixels() {
+        assert_eq!(parse_mermaid_theme(None), Ok(None));
+        assert_eq!(parse_mermaid_theme(Some("  ")), Ok(None));
+        assert_eq!(
+            parse_mermaid_theme(Some("light")),
+            Ok(Some(MermaidTheme::Light))
+        );
+        assert_eq!(
+            parse_mermaid_theme(Some("DARK")),
+            Ok(Some(MermaidTheme::Dark))
+        );
+        assert!(parse_mermaid_theme(Some("neon")).is_err());
+
+        let mut engine = PreviewEngine::default();
+        for blob in build_test_font_pool().font_blobs() {
+            engine.register_font(blob.to_vec()).unwrap();
+        }
+        let src = "flowchart TD\n  A[Start] --> B[End]";
+        let light = engine
+            .render_mermaid_rgba(
+                src,
+                &MermaidOptions {
+                    theme: parse_mermaid_theme(Some("light")).unwrap(),
+                    ..MermaidOptions::default()
+                },
+                2.0,
+            )
+            .unwrap();
+        let dark = engine
+            .render_mermaid_rgba(
+                src,
+                &MermaidOptions {
+                    theme: parse_mermaid_theme(Some("dark")).unwrap(),
+                    ..MermaidOptions::default()
+                },
+                2.0,
+            )
+            .unwrap();
+        assert_ne!(light.sha256(), dark.sha256());
+    }
 }

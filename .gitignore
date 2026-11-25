@@ -106,4 +106,6 @@ storageState.json
 /blocksuite/framework/std/src/__tests__/gfx/__screenshots__/
 /packages/frontend/target/
 /packages/frontend/artifacts/
+/packages/frontend/hosts/web/assets/*.wasm
+/packages/frontend/hosts/web/assets/fonts/*.ttf
 /blocksuite/crates/playground/web/pkg/

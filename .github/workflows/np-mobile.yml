@@ -1,0 +1,250 @@
+name: Native Playground Mobile CI
+
+on:
+  push:
+    branches:
+      - 'darksky/np/mobile'
+      - 'darksky/np/mobile-**'
+  workflow_dispatch:
+
+concurrency:
+  group: np-mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_ENCODED_RUSTFLAGS: ''
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+  CARGO_TERM_COLOR: always
+
+jobs:
+  mobile-gates-and-web:
+    name: L0, Invariants, Web Host & Preview Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: L0 Tier A static gates
+        run: node scripts/ci/check-l0-tier-a.mjs
+
+      - name: Web mobile thin host and perf comparator tests
+        working-directory: packages/frontend
+        run: |
+          node --test hosts/web/tests/*.test.mjs
+          node --test perf/compare-n3.test.mjs
+
+      - name: Install Linux fontconfig headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfontconfig1-dev libfreetype-dev
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/frontend -> target
+          key: np-mobile-gates
+
+      - name: Format, clippy, invariants, and host/preview unit tests
+        working-directory: packages/frontend
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --locked --workspace --all-targets --features harness -- -D warnings
+          cargo test --locked -p affine-android-host -p affine-ios-host -p blocksuite-preview --all-features
+          ./scripts/check-invariants.sh
+
+  s1-probes-bench:
+    name: S1 Release Probes (SQLite, Mermaid, RaTeX, Hayro PDF)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.98.1
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/frontend -> target
+          key: np-mobile-s1-probes
+
+      - name: Install Noto CJK font for 24-case Mermaid visual probes
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk
+
+      - name: Run S1 release probes and validate artifacts
+        working-directory: packages/frontend
+        env:
+          AFFINE_S1_OUT_DIR: /tmp/s1-artifacts
+          AFFINE_CJK_FONT: /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
+        run: |
+          rm -rf /tmp/s1-artifacts
+          mkdir -p /tmp/s1-artifacts
+          cargo test --locked --release -p affine-store --test s1_sqlite_probe -- --nocapture
+          cargo test --locked --release -p blocksuite-preview --all-features --test s1_probes -- --nocapture
+          test -s /tmp/s1-artifacts/s1-sqlite-report.json
+          test -s /tmp/s1-artifacts/s1-probes-report.json
+          PNG_COUNT=$(find /tmp/s1-artifacts -maxdepth 1 -name 'mermaid-*.png' | wc -l | tr -d ' ')
+          echo "Generated Mermaid PNG count: $PNG_COUNT"
+          test "$PNG_COUNT" -eq 24
+          for theme in light dark; do
+            for name in flowchart sequence state class pie er gantt gitgraph wrapped-latin wrapped-cjk generic-class frontmatter; do
+              test -s "/tmp/s1-artifacts/mermaid-${theme}-${name}.png"
+            done
+          done
+
+      - name: Upload S1 probes report and rendered PNG artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: s1-probes-artifacts
+          path: /tmp/s1-artifacts
+          if-no-files-found: error
+
+  preview-wasm-workers:
+    name: Preview Wasm Workers (4 Independent Targets)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: packages/frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/frontend -> target
+          key: np-mobile-preview-wasm
+
+      - name: Build and verify all four independent blocksuite-preview Wasm workers
+        run: |
+          mkdir -p /tmp/preview-wasm
+          for kind in mermaid math typst pdf; do
+            cargo build --locked --release -p blocksuite-preview --no-default-features --features "${kind},wasm-worker" --target wasm32-unknown-unknown
+            cp target/wasm32-unknown-unknown/release/blocksuite_preview.wasm "/tmp/preview-wasm/${kind}.wasm"
+            test -s "/tmp/preview-wasm/${kind}.wasm"
+          done
+          node hosts/web/scripts/stage-preview-workers.mjs /tmp/preview-wasm dev-local
+          node hosts/web/scripts/verify-preview-workers-e2e.mjs
+
+  android-host:
+    name: Android Thin Host (NDK .so Link & kotlinc)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain with Android targets
+        uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: aarch64-linux-android, x86_64-linux-android
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/frontend -> target
+          key: np-mobile-android-host
+
+      - name: Test host logic and link Android NDK .so binaries
+        working-directory: packages/frontend
+        run: |
+          cargo test --locked -p affine-android-host
+          NDK_BIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDK_BIN/aarch64-linux-android24-clang"
+          export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER="$NDK_BIN/x86_64-linux-android24-clang"
+          cargo build --locked -p affine-android-host --target aarch64-linux-android
+          cargo build --locked -p affine-android-host --target x86_64-linux-android
+          test -s target/aarch64-linux-android/debug/libaffine_android_host.so
+          test -s target/x86_64-linux-android/debug/libaffine_android_host.so
+
+      - name: Compile Android thin host Kotlin sources with kotlinc and run real JNI parity check
+        run: |
+          ANDROID_JAR=$(ls -1 "$ANDROID_HOME"/platforms/android-*/android.jar | sort -V | tail -n 1)
+          echo "Using Android SDK jar: $ANDROID_JAR"
+          CARGO_ENCODED_RUSTFLAGS="" cargo build --locked --manifest-path packages/frontend/Cargo.toml -p affine-android-host --features host-jni
+          test -s packages/frontend/target/debug/libaffine_android_host.so
+          mkdir -p /tmp/affine-android-kotlin
+          kotlinc -classpath "$ANDROID_JAR" \
+            -d /tmp/affine-android-kotlin \
+            packages/frontend/hosts/android/kotlin/app/affine/pro/host/MainActivity.kt \
+            packages/frontend/hosts/android/kotlin/app/affine/pro/host/LegacyLocalStorageProbe.kt \
+            packages/frontend/hosts/android/tests/ImeHostParityCheck.kt
+          test -s /tmp/affine-android-kotlin/app/affine/pro/host/MainActivity.class
+          test -s /tmp/affine-android-kotlin/app/affine/pro/host/AffineImeController.class
+          test -s /tmp/affine-android-kotlin/app/affine/pro/host/AffineInputConnection.class
+          test -s /tmp/affine-android-kotlin/app/affine/pro/host/LegacyLocalStorageProbe.class
+          kotlin -J-Djava.library.path="$PWD/packages/frontend/target/debug" \
+            -cp "/tmp/affine-android-kotlin:$ANDROID_JAR" \
+            ImeHostParityCheckKt
+
+  ios-host:
+    name: iOS Thin Host (Rust staticlib & Swift Simulator Link)
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain with iOS targets
+        uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: aarch64-apple-ios, aarch64-apple-ios-sim
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/frontend -> target
+          key: np-mobile-ios-host
+
+      - name: Build affine-ios-host staticlib and check device targets
+        working-directory: packages/frontend
+        run: |
+          cargo test --locked -p affine-ios-host
+          cargo check --locked -p ui -p affine-ios-host --target aarch64-apple-ios
+          cargo build --locked -p affine-ios-host --target aarch64-apple-ios-sim
+          test -s target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a
+
+      - name: Link zero-CocoaPods Swift iOS host against libaffine_ios_host.a
+        run: |
+          SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
+          swiftc -emit-executable \
+            -sdk "$SDK" \
+            -target arm64-apple-ios16.0-simulator \
+            -import-objc-header packages/frontend/hosts/ios/include/affine_mobile_host.h \
+            -L packages/frontend/target/aarch64-apple-ios-sim/debug \
+            -laffine_ios_host \
+            -framework UIKit \
+            -framework QuartzCore \
+            -framework Metal \
+            -framework WebKit \
+            -o /tmp/AffineIosHost \
+            packages/frontend/hosts/ios/Sources/*.swift
+          test -s /tmp/AffineIosHost

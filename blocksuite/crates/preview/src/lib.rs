@@ -29,6 +29,8 @@ pub mod pdf;
 
 #[cfg(feature = "wasm-worker")]
 pub mod wasm;
+#[cfg(feature = "wasm-worker")]
+pub mod wasm_worker;
 
 #[cfg(test)]
 pub(crate) mod test_support;

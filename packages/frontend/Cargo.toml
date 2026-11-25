@@ -9,6 +9,8 @@ members = [
     "../../blocksuite/crates/editor",
     "../../blocksuite/crates/playground",
     "../../blocksuite/crates/preview",
+    "hosts/android",
+    "hosts/ios",
 ]
 default-members = [
     "../ui/tokens",

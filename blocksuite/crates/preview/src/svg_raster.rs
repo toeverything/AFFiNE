@@ -20,7 +20,8 @@ pub struct RgbaImageBuffer {
     pub logical_width: f32,
     /// Logical height in CSS pixels or points.
     pub logical_height: f32,
-    /// Tightly packed RGBA8 pixel bytes (`width_px * height_px * 4`).
+    /// Tightly packed `tiny-skia` premultiplied RGBA8 pixel bytes (`width_px * height_px * 4`,
+    /// where `R, G, B <= A` for every pixel).
     pub pixels: Vec<u8>,
 }
 
@@ -28,6 +29,37 @@ impl RgbaImageBuffer {
     /// Returns the total byte size of the pixel buffer.
     pub fn byte_len(&self) -> usize {
         self.pixels.len()
+    }
+
+    /// Composites this premultiplied RGBA8 buffer over an opaque sRGB background
+    /// using source-over blending, returning tightly packed RGB8 bytes (`width_px * height_px * 3`).
+    pub fn composite_over_rgb(&self, bg: [u8; 3]) -> Vec<u8> {
+        let mut out = Vec::with_capacity((self.pixels.len() / 4) * 3);
+        for px in self.pixels.chunks_exact(4) {
+            let inv_a = 255_u32.saturating_sub(u32::from(px[3]));
+            for c in 0..3 {
+                let v = u32::from(px[c]) + (inv_a * u32::from(bg[c]) + 127) / 255;
+                out.push(v.min(255) as u8);
+            }
+        }
+        out
+    }
+
+    /// Composites this premultiplied RGBA8 buffer over an opaque sRGB background
+    /// and encodes the resulting opaque image as PNG bytes.
+    pub fn encode_png_over_rgb(&self, bg: [u8; 3]) -> Result<Vec<u8>, PreviewError> {
+        let rgb = self.composite_over_rgb(bg);
+        let mut rgba = Vec::with_capacity(self.pixels.len());
+        for px in rgb.chunks_exact(3) {
+            rgba.extend_from_slice(&[px[0], px[1], px[2], 255]);
+        }
+        let size = resvg::tiny_skia::IntSize::from_wh(self.width_px, self.height_px)
+            .ok_or_else(|| PreviewError::InvalidSize("invalid image dimensions for PNG".into()))?;
+        let pixmap = Pixmap::from_vec(rgba, size)
+            .ok_or_else(|| PreviewError::InvalidSize("failed to build pixmap for PNG".into()))?;
+        pixmap
+            .encode_png()
+            .map_err(|err| PreviewError::InvalidSize(format!("PNG encode failed: {err}")))
     }
 
     /// Computes a deterministic SHA-256 digest over dimensions and pixel bytes.
@@ -175,6 +207,11 @@ impl SvgRasterizer {
             options: Arc::new(usvg_options),
             font_pool: font_pool.clone(),
         }
+    }
+
+    /// Returns the explicit [`FontPool`] bound to this rasterizer.
+    pub fn font_pool(&self) -> &FontPool {
+        &self.font_pool
     }
 
     /// Rasterizes an SVG string at the given scale factor.

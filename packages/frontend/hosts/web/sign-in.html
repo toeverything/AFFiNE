@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src https://challenges.cloudflare.com; base-uri 'none'; object-src 'none'"
+    />
+    <title>Sign in to AFFiNE</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: #ffffff;
+        color: #141414;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background: #141414;
+          color: #f4f4f5;
+        }
+      }
+
+      main {
+        max-width: 380px;
+        margin: 0 auto;
+        padding: calc(32px + env(safe-area-inset-top, 0px)) 20px
+          calc(32px + env(safe-area-inset-bottom, 0px));
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 14px;
+      }
+
+      input,
+      button {
+        font-size: 16px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(128, 128, 128, 0.35);
+      }
+
+      button {
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      #auth-status {
+        min-height: 20px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1 id="auth-heading">Sign in to AFFiNE</h1>
+      <p id="auth-status" role="status" aria-live="polite"></p>
+      <form id="sign-in-form" method="post" action="/api/auth/sign-in">
+        <label>
+          Email
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="username"
+            required
+          />
+        </label>
+        <label>
+          Password
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+          />
+        </label>
+        <label>
+          Verification code
+          <input
+            id="otp"
+            name="otp"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+          />
+        </label>
+        <div id="turnstile-container"></div>
+        <button id="submit-button" type="submit">Continue</button>
+      </form>
+    </main>
+    <script type="module" src="/src/sign-in.js"></script>
+  </body>
+</html>
