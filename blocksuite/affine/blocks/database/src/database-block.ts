@@ -36,7 +36,7 @@ import {
 } from '@blocksuite/data-view';
 import { CalendarExternalSourceProvider } from '@blocksuite/data-view/view-presets';
 import { widgetPresets } from '@blocksuite/data-view/widget-presets';
-import { IS_MOBILE } from '@blocksuite/global/env';
+import { IS_MAC, IS_MOBILE } from '@blocksuite/global/env';
 import { Rect } from '@blocksuite/global/gfx';
 import {
   CommentIcon,
@@ -185,6 +185,32 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
     return createRecordDetail({
       ...data,
       openDoc,
+      onKeyDown: event => {
+        if (
+          event.defaultPrevented ||
+          event.isComposing ||
+          event.altKey ||
+          this.store.readonly ||
+          event.composedPath().some(
+            target =>
+              target instanceof HTMLInputElement ||
+              target instanceof HTMLTextAreaElement
+          )
+        ) {
+          return;
+        }
+        const key = event.key.toLowerCase();
+        const modifier = IS_MAC ? event.metaKey : event.ctrlKey;
+        const undo = modifier && key === 'z' && !event.shiftKey;
+        const redo =
+          (modifier && key === 'z' && event.shiftKey) ||
+          (!IS_MAC && event.ctrlKey && key === 'y' && !event.shiftKey);
+        if (!undo && !redo) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (undo && this.store.canUndo) this.store.undo();
+        if (redo && this.store.canRedo) this.store.redo();
+      },
       detail: {
         header: uniMap(
           createUniComponentFromWebComponent(BlockRenderer),

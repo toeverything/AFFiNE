@@ -296,8 +296,10 @@ export const createRecordDetail = (ops: {
   rowId: string;
   detail: DetailSlots;
   openDoc: (docId: string) => void;
+  onKeyDown?: (event: KeyboardEvent) => void;
 }) => {
   return html` <affine-data-view-record-detail
+    @keydown=${ops.onKeyDown}
     .view=${ops.view}
     .rowId=${ops.rowId}
     .detailSlots=${ops.detail}
