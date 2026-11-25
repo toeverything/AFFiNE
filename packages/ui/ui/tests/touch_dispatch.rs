@@ -1,3 +1,5 @@
+#![cfg(feature = "harness")]
+
 use std::{cell::RefCell, rc::Rc};
 
 use ui::{

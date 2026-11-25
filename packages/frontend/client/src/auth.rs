@@ -71,11 +71,57 @@ struct IosKeychainTokenPairWire {
 }
 
 impl StoredAuthTokenPair {
+    /// Maximum `expires_in` accepted from a native token endpoint (`24h`, matching `0.27.5`
+    /// `AuthPlugin.swift` / `AuthPlugin.kt`).
+    pub const MAX_EXPIRES_IN_SECS: u64 = 86_400;
+
+    fn validate_invariant_fields(&self) -> ClientResult<()> {
+        if self.version != 1 {
+            return Err(ClientError::InvalidAuthPayload(format!(
+                "unsupported StoredAuthTokenPair version: {}",
+                self.version
+            )));
+        }
+        if !self.token_type.eq_ignore_ascii_case("Bearer") {
+            return Err(ClientError::InvalidAuthPayload(format!(
+                "expected Bearer tokenType, got {:?}",
+                self.token_type
+            )));
+        }
+        if self.access_token.trim().is_empty() || self.refresh_token.trim().is_empty() {
+            return Err(ClientError::InvalidAuthPayload(
+                "accessToken and refreshToken must be non-empty".into(),
+            ));
+        }
+        if let Some(ref ts) = self.refresh_expires_at
+            && !is_valid_rfc3339(ts)
+        {
+            return Err(ClientError::InvalidAuthPayload(format!(
+                "invalid RFC3339 refreshExpiresAt: `{ts}`"
+            )));
+        }
+        if let Some(ref meta) = self.session {
+            if meta.id.trim().is_empty() {
+                return Err(ClientError::InvalidAuthPayload(
+                    "session.id must be non-empty when session is present".into(),
+                ));
+            }
+            if let Some(ref abs_ts) = meta.absolute_expires_at
+                && !is_valid_rfc3339(abs_ts)
+            {
+                return Err(ClientError::InvalidAuthPayload(format!(
+                    "invalid RFC3339 session.absoluteExpiresAt: `{abs_ts}`"
+                )));
+            }
+        }
+        Ok(())
+    }
+
     /// Validate and convert a server [`AuthTokenPairResponse`] into a [`StoredAuthTokenPair`]
     /// using an explicit deterministic `now_ms`.
     ///
-    /// Rejects non-`Bearer` `token_type`, missing or zero `expires_in`, and malformed RFC 3339
-    /// `refresh_expires_at` / `session.absolute_expires_at` timestamps.
+    /// Rejects non-`Bearer` `token_type`, empty tokens, out-of-range `expires_in`
+    /// (`1..=86_400`), and malformed RFC 3339 timestamps.
     pub fn from_wire(parsed: AuthTokenPairResponse, now_ms: i64) -> ClientResult<Self> {
         let token_type = parsed
             .token_type
@@ -87,37 +133,25 @@ impl StoredAuthTokenPair {
                     parsed.token_type
                 ))
             })?;
-        let expires_in = parsed.expires_in.filter(|&secs| secs > 0).ok_or_else(|| {
-            ClientError::InvalidAuthPayload("expiresIn must be a positive integer".into())
-        })?;
-        if let Some(ref ts) = parsed.refresh_expires_at
-            && !is_valid_rfc3339(ts)
-        {
-            return Err(ClientError::InvalidAuthPayload(format!(
-                "invalid RFC3339 refreshExpiresAt: `{ts}`"
-            )));
-        }
+        let expires_in = parsed
+            .expires_in
+            .filter(|&secs| (1..=Self::MAX_EXPIRES_IN_SECS).contains(&secs))
+            .ok_or_else(|| {
+                ClientError::InvalidAuthPayload("expiresIn must be within 1..=86400 seconds".into())
+            })?;
         let session = parsed.session.or_else(|| {
             parsed.session_id.map(|id| AuthSessionMeta {
                 id,
                 absolute_expires_at: None,
             })
         });
-        if let Some(ref meta) = session
-            && let Some(ref abs_ts) = meta.absolute_expires_at
-            && !is_valid_rfc3339(abs_ts)
-        {
-            return Err(ClientError::InvalidAuthPayload(format!(
-                "invalid RFC3339 session.absoluteExpiresAt: `{abs_ts}`"
-            )));
-        }
 
         let expires_ms = expires_in
             .checked_mul(1_000)
             .and_then(|ms| i64::try_from(ms).ok())
             .ok_or_else(|| ClientError::InvalidAuthPayload("expiresIn overflow".into()))?;
 
-        Ok(Self {
+        let pair = Self {
             version: 1,
             token_type: token_type.to_string(),
             access_token: parsed.access_token,
@@ -125,7 +159,9 @@ impl StoredAuthTokenPair {
             refresh_token: parsed.refresh_token,
             refresh_expires_at: parsed.refresh_expires_at,
             session,
-        })
+        };
+        pair.validate_invariant_fields()?;
+        Ok(pair)
     }
 
     pub fn session_id(&self) -> Option<&str> {
@@ -153,7 +189,9 @@ impl StoredAuthTokenPair {
 
     /// Deserialize from the exact `0.27.5` Android DataStore JSON format.
     pub fn from_android_datastore_json(raw: &str) -> ClientResult<Self> {
-        Ok(serde_json::from_str(raw)?)
+        let pair: Self = serde_json::from_str(raw)?;
+        pair.validate_invariant_fields()?;
+        Ok(pair)
     }
 
     /// Serialize to the exact `0.27.5` iOS Keychain JSON format (2001 CF epoch seconds `accessExpiresAt`).
@@ -173,7 +211,12 @@ impl StoredAuthTokenPair {
     /// Deserialize from the exact `0.27.5` iOS Keychain JSON format.
     pub fn from_ios_keychain_json(raw: &str) -> ClientResult<Self> {
         let wire: IosKeychainTokenPairWire = serde_json::from_str(raw)?;
-        Ok(Self {
+        if !wire.access_expires_at.is_finite() {
+            return Err(ClientError::InvalidAuthPayload(
+                "iOS accessExpiresAt must be finite".into(),
+            ));
+        }
+        let pair = Self {
             version: wire.version,
             token_type: wire.token_type,
             access_token: wire.access_token,
@@ -181,7 +224,9 @@ impl StoredAuthTokenPair {
             refresh_token: wire.refresh_token,
             refresh_expires_at: wire.refresh_expires_at,
             session: wire.session,
-        })
+        };
+        pair.validate_invariant_fields()?;
+        Ok(pair)
     }
 }
 
@@ -294,6 +339,26 @@ impl AuthController {
         build_get_auth_session_request(&self.api_context())
     }
 
+    /// Build a `GET /api/auth/session` request paired with the current `mutation_epoch` so
+    /// late responses arriving after sign-out or token rotation can be discarded safely.
+    pub fn build_fenced_session_request(&self) -> (u64, ApiHttpRequest) {
+        (self.mutation_epoch, self.build_session_request())
+    }
+
+    /// Apply a fenced `GET /api/auth/session` response only when `request_epoch` still matches
+    /// [`Self::mutation_epoch`]. Returns `Ok(None)` without mutating state on stale epochs.
+    pub fn apply_fenced_session_response(
+        &mut self,
+        request_epoch: u64,
+        status: u16,
+        body: &[u8],
+    ) -> ClientResult<Option<AuthSessionState>> {
+        if request_epoch != self.mutation_epoch {
+            return Ok(None);
+        }
+        self.apply_session_response(status, body).map(Some)
+    }
+
     /// Apply a `GET /api/auth/session` HTTP response to [`AuthSessionState`].
     ///
     /// Transitions to `SignedOut` ONLY on `401`/`403` or `200 { user: null }`. Any other error
@@ -323,13 +388,13 @@ impl AuthController {
     /// Load stored native credentials from [`HostBridge`] using the explicit [`NativeAuthPlatform`]
     /// codec.
     ///
-    /// - When the host vault returns `None` (credential deleted by the host coordinator), clears
-    ///   in-memory `native_tokens` and transitions to `SignedOut` so no stale JWT remains.
-    /// - When the stored JSON is corrupted, deletes it via `host.delete_credential`, clears
-    ///   in-memory state, and returns `Ok(false)`.
+    /// - Performs strictly read-only vault access (`&dyn HostBridge`): platform hosts remain the
+    ///   sole owners of Keychain / DataStore writes and deletes.
+    /// - When the host vault returns `None` or unparseable JSON, clears in-memory `native_tokens`
+    ///   and transitions to `SignedOut` without mutating host storage.
     pub fn load_stored_credentials(
         &mut self,
-        host: &mut dyn HostBridge,
+        host: &dyn HostBridge,
         platform: NativeAuthPlatform,
     ) -> ClientResult<bool> {
         if self.host_kind != HostKind::Native {
@@ -350,7 +415,6 @@ impl AuthController {
                 Ok(true)
             }
             Err(_) => {
-                let _ = host.delete_credential(&key);
                 self.clear_native_session();
                 Ok(false)
             }
@@ -358,8 +422,11 @@ impl AuthController {
     }
 }
 
-/// Pure-Rust RFC 3339 timestamp syntax and range validator (`YYYY-MM-DDTHH:MM:SS(.frac)?(Z|[+-]HH:MM)`).
+/// Pure-Rust RFC 3339 timestamp syntax and calendar-date validator (`YYYY-MM-DDTHH:MM:SS(.frac)?(Z|[+-]HH:MM)`).
 fn is_valid_rfc3339(s: &str) -> bool {
+    if !s.is_ascii() {
+        return false;
+    }
     let bytes = s.as_bytes();
     if bytes.len() < 20 {
         return false;
@@ -372,7 +439,7 @@ fn is_valid_rfc3339(s: &str) -> bool {
     if !date_ok {
         return false;
     }
-    let (Some(_year), Some(month), Some(day), Some(hour), Some(min), Some(sec)) = (
+    let (Some(year), Some(month), Some(day), Some(hour), Some(min), Some(sec)) = (
         parse_digits(&s[0..4]),
         parse_digits(&s[5..7]),
         parse_digits(&s[8..10]),
@@ -382,7 +449,19 @@ fn is_valid_rfc3339(s: &str) -> bool {
     ) else {
         return false;
     };
-    if !(1..=12).contains(&month) || !(1..=31).contains(&day) || hour > 23 || min > 59 || sec > 60 {
+    let max_day = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 => {
+            if (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400) {
+                29
+            } else {
+                28
+            }
+        }
+        _ => return false,
+    };
+    if !(1..=max_day).contains(&day) || hour > 23 || min > 59 || sec > 60 {
         return false;
     }
     let mut idx = 19;
@@ -515,9 +594,55 @@ mod tests {
         bad_refresh_ts.refresh_expires_at = Some("not-a-date".into());
         assert!(StoredAuthTokenPair::from_wire(bad_refresh_ts, 1_000).is_err());
 
-        let mut bad_abs_ts = valid_wire;
+        let mut bad_abs_ts = valid_wire.clone();
         bad_abs_ts.session.as_mut().unwrap().absolute_expires_at = Some("2027-99-99".into());
         assert!(StoredAuthTokenPair::from_wire(bad_abs_ts, 1_000).is_err());
+
+        // Non-ASCII UTF-8 boundary and impossible calendar dates never panic and return Err.
+        let mut non_ascii_ts = valid_wire.clone();
+        non_ascii_ts.refresh_expires_at = Some("2026-12-01T00:00:0é0Z".into());
+        assert!(StoredAuthTokenPair::from_wire(non_ascii_ts, 1_000).is_err());
+
+        let mut feb_31_ts = valid_wire.clone();
+        feb_31_ts.refresh_expires_at = Some("2026-02-31T00:00:00Z".into());
+        assert!(StoredAuthTokenPair::from_wire(feb_31_ts, 1_000).is_err());
+
+        // Excess `expiresIn` (> 86_400) and empty tokens are rejected.
+        let mut huge_exp = valid_wire.clone();
+        huge_exp.expires_in = Some(86_401);
+        assert!(StoredAuthTokenPair::from_wire(huge_exp, 1_000).is_err());
+
+        let mut empty_tok = valid_wire;
+        empty_tok.access_token = String::new();
+        assert!(StoredAuthTokenPair::from_wire(empty_tok, 1_000).is_err());
+
+        // Corrupt JSON in host vault leaves vault untouched while clearing in-memory state.
+        host.seed_credential(auth.credential_key(), "{corrupt");
+        assert!(
+            !auth
+                .load_stored_credentials(&host, NativeAuthPlatform::Android)
+                .unwrap()
+        );
+        assert_eq!(
+            host.read_credential(&auth.credential_key())
+                .unwrap()
+                .as_deref(),
+            Some("{corrupt")
+        );
+
+        // Epoch-fenced session responses ignore stale in-flight completions after sign-out/rotation.
+        let (stale_epoch, _req) = auth.build_fenced_session_request();
+        auth.clear_native_session();
+        assert_eq!(
+            auth.apply_fenced_session_response(
+                stale_epoch,
+                200,
+                br#"{"user":{"id":"u-stale","name":"Stale"}}"#,
+            )
+            .unwrap(),
+            None
+        );
+        assert_eq!(auth.state(), &AuthSessionState::SignedOut);
 
         // Sans-I/O session response: 503/429 preserves cached user; 401/403 signs out.
         auth.set_cached_user(AuthSessionUser {

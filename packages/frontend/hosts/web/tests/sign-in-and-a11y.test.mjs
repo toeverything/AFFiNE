@@ -650,9 +650,97 @@ void test('sign-in 3-step flow, frozen schema.gql OAuth query, Turnstile reset, 
   assert.equal(page2.getStep(), 'email');
   assert.equal(
     els2.get('auth-status').textContent,
-    'No sign-in methods are available for this account.'
+    'Email sign-in is not available for this account.'
   );
   assert.equal(signInPostCount, 0);
+
+  // Returning from password step to email step clears stale password and re-runs preflight for new email B.
+  const seenPreflightEmails = [];
+  const els3 = new Map();
+  for (const id of [
+    'auth-card',
+    'email',
+    'password',
+    'otp',
+    'auth-status',
+    'submit-button',
+    'password-submit-button',
+    'otp-submit-button',
+    'back-from-password-btn',
+    'back-from-otp-btn',
+    'switch-to-otp-btn',
+    'switch-to-password-btn',
+    'resend-otp-btn',
+    'sign-in-form',
+  ]) {
+    els3.set(id, createMockElement(id.endsWith('-form') ? 'form' : 'div'));
+  }
+  els3.get('email').value = 'a@affine.pro';
+  let bSignInPosts = 0;
+  const page3 = await bootSignInPage({
+    win: {
+      location: {
+        href: 'https://app.affine.pro/sign-in',
+        assign() {},
+      },
+    },
+    doc: {
+      head: createMockElement('head'),
+      cookie: '',
+      getElementById: id => els3.get(id) || null,
+      createElement: tag => createMockElement(tag),
+    },
+    fetchImpl: async (url, init) => {
+      if (url === '/api/auth/captcha') {
+        return { ok: false, status: 404 };
+      }
+      if (url === '/api/auth/preflight') {
+        const parsed = JSON.parse(init.body);
+        seenPreflightEmails.push(parsed.email);
+        if (parsed.email === 'a@affine.pro') {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              methods: {
+                password: { available: true },
+                magicLink: { available: true },
+              },
+            }),
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            methods: {
+              password: { available: false },
+              magicLink: { available: false },
+            },
+          }),
+        };
+      }
+      if (url === '/api/auth/sign-in') {
+        bSignInPosts += 1;
+      }
+      return { ok: true, status: 200 };
+    },
+  });
+  await els3.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  assert.equal(page3.getStep(), 'password');
+  els3.get('password').value = 'secret-a';
+  els3.get('back-from-password-btn').listeners.get('click')();
+  assert.equal(page3.getStep(), 'email');
+  assert.equal(els3.get('password').value, '');
+  els3.get('email').value = 'b@affine.pro';
+  await els3.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  assert.deepEqual(seenPreflightEmails, ['a@affine.pro', 'b@affine.pro']);
+  assert.equal(bSignInPosts, 0);
+  assert.equal(page3.getStep(), 'email');
 });
 
 void test('a11y tree enforces inert + tabindex exclusivity and mountSandboxedEmbed does not steal focus until activated', async () => {

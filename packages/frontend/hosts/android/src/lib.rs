@@ -495,7 +495,8 @@ impl AndroidHostState {
         match parse_legacy_local_storage_probe(payload_json, allowed_keys) {
             Ok(snapshot) => {
                 if let Some(raw_ids) = snapshot.entries.get(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) {
-                    self.raw_local_workspace_value = Some(raw_ids.clone());
+                    let is_malformed = serde_json::from_str::<Vec<String>>(raw_ids).is_err();
+                    self.raw_local_workspace_value = is_malformed.then(|| raw_ids.clone());
                     self.workspace_catalog =
                         AndroidWorkspaceCatalog::from_local_storage_json(raw_ids);
                 } else {
@@ -569,18 +570,20 @@ impl AndroidHostState {
         if !self.is_local_workspace_import_ready() || self.has_unresolved_local_workspace_mounts() {
             return None;
         }
-        let local_ws_value = if !self.workspace_catalog.ids().is_empty() {
-            serde_json::to_string(self.workspace_catalog.ids()).ok()?
-        } else if let Some(raw) = &self.raw_local_workspace_value {
-            raw.clone()
-        } else {
-            "[]".to_string()
-        };
         let mut set_entries = BTreeMap::new();
-        set_entries.insert(
-            LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string(),
-            local_ws_value,
-        );
+        if !self.workspace_catalog.ids().is_empty() {
+            set_entries.insert(
+                LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string(),
+                serde_json::to_string(self.workspace_catalog.ids()).ok()?,
+            );
+        } else if let Some(raw) = &self.raw_local_workspace_value {
+            set_entries.insert(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string(), raw.clone());
+        } else if matches!(self.upgrade_import, LegacyUpgradeImportState::Imported(_)) {
+            set_entries.insert(
+                LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string(),
+                "[]".to_string(),
+            );
+        }
         let plan = serde_json::json!({
             "setEntries": set_entries,
             "removeKeys": Vec::<String>::new(),

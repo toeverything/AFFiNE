@@ -294,7 +294,9 @@ impl ImportedLegacyState {
         self.raw_unparsed_entries.remove(LOCAL_WORKSPACE_KEY);
         self.local_workspace_ids
             .retain(|existing| existing != workspace_id);
-        if self.last_workspace_id.as_deref() == Some(workspace_id) {
+        if self.last_workspace_id.as_deref() == Some(workspace_id)
+            && self.last_workspace_flavour.as_deref().unwrap_or("local") == "local"
+        {
             self.last_workspace_id = None;
             self.last_workspace_flavour = None;
         }

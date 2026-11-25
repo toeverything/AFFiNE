@@ -469,7 +469,11 @@ class AuthSessionStore(
     return synchronized(c.lock) {
       c.epoch += 1L
       c.clearPendingRotation()
-      persistence.writeEncryptedSession(filesDir, tokenKey(canonical), encrypted)
+      val written = persistence.writeEncryptedSession(filesDir, tokenKey(canonical), encrypted)
+      if (written) {
+        clearPersistedRefreshAttemptUnlocked(canonical)
+      }
+      written
     }
   }
 
@@ -493,6 +497,7 @@ class AuthSessionStore(
       if (written) {
         c.epoch += 1L
         c.clearPendingRotation()
+        clearPersistedRefreshAttemptUnlocked(canonical)
       }
       written
     }
@@ -552,11 +557,14 @@ class AuthSessionStore(
           val reusedAttempt = if (c.pendingAttemptToken == token && c.pendingAttemptId != null) {
             c.pendingAttemptId!!
           } else {
-            val fresh = UUID.randomUUID().toString().lowercase()
-            c.pendingAttemptToken = token
-            c.pendingAttemptId = fresh
-            fresh
+            readPersistedRefreshAttemptUnlocked(canonical, token) ?: run {
+              val fresh = UUID.randomUUID().toString().lowercase()
+              persistRefreshAttemptUnlocked(canonical, token, fresh)
+              fresh
+            }
           }
+          c.pendingAttemptToken = token
+          c.pendingAttemptId = reusedAttempt
           startEpoch = c.epoch
           refreshToken = token
           attemptId = reusedAttempt
@@ -585,6 +593,7 @@ class AuthSessionStore(
             if (written) {
               c.epoch += 1L
               c.clearPendingRotation()
+              clearPersistedRefreshAttemptUnlocked(canonical)
               ok = true
             }
           }
@@ -601,6 +610,7 @@ class AuthSessionStore(
                 if (written) {
                   c.epoch += 1L
                   c.clearPendingRotation()
+                  clearPersistedRefreshAttemptUnlocked(canonical)
                   ok = true
                 }
               }
@@ -613,6 +623,7 @@ class AuthSessionStore(
                 if (c.epoch == startEpoch) {
                   c.epoch += 1L
                   c.clearPendingRotation()
+                  clearPersistedRefreshAttemptUnlocked(canonical)
                   NativeBridge.nativeDataStoreDeleteKey(filesDir, tokenKey(canonical))
                   clearLegacyCookieKeysUnlocked(canonical)
                   shouldCleanCookies = true
@@ -669,9 +680,10 @@ class AuthSessionStore(
     val deleted = synchronized(c.lock) {
       c.epoch += 1L
       c.clearPendingRotation()
+      clearPersistedRefreshAttemptUnlocked(canonical)
       val removed = NativeBridge.nativeDataStoreDeleteKey(filesDir, tokenKey(canonical))
-      clearLegacyCookieKeysUnlocked(canonical)
-      removed
+      val legacyCleared = clearLegacyCookieKeysUnlocked(canonical)
+      removed && legacyCleared
     }
     cookieCleaner.clearAuthCookies(canonical)
     return deleted
@@ -700,9 +712,10 @@ class AuthSessionStore(
       }
       c.epoch += 1L
       c.clearPendingRotation()
+      clearPersistedRefreshAttemptUnlocked(canonical)
       val removed = NativeBridge.nativeDataStoreDeleteKey(filesDir, tokenKey(canonical))
-      clearLegacyCookieKeysUnlocked(canonical)
-      removed
+      val legacyCleared = clearLegacyCookieKeysUnlocked(canonical)
+      removed && legacyCleared
     }
     if (deleted) {
       cookieCleaner.clearAuthCookies(canonical)
@@ -710,19 +723,68 @@ class AuthSessionStore(
     return deleted
   }
 
-  private fun clearLegacyCookieKeysUnlocked(canonicalEndpoint: String) {
+  private fun clearLegacyCookieKeysUnlocked(canonicalEndpoint: String): Boolean {
     val host = runCatching { URI(canonicalEndpoint).host }.getOrNull()?.takeIf { it.isNotEmpty() }
-      ?: return
-    NativeBridge.nativeLegacyAppDataStoreDeleteKey(filesDir, "${host}affine_user_id")
-    NativeBridge.nativeLegacyAppDataStoreDeleteKey(filesDir, "${host}affine_csrf_token")
-    NativeBridge.nativeDataStoreDeleteKey(filesDir, "${host}affine_user_id")
-    NativeBridge.nativeDataStoreDeleteKey(filesDir, "${host}affine_csrf_token")
+      ?: return true
+    val appUser = NativeBridge.nativeLegacyAppDataStoreDeleteKey(filesDir, "${host}affine_user_id")
+    val appCsrf = NativeBridge.nativeLegacyAppDataStoreDeleteKey(filesDir, "${host}affine_csrf_token")
+    val authUser = NativeBridge.nativeDataStoreDeleteKey(filesDir, "${host}affine_user_id")
+    val authCsrf = NativeBridge.nativeDataStoreDeleteKey(filesDir, "${host}affine_csrf_token")
+    return appUser && appCsrf && authUser && authCsrf
+  }
+
+  private fun attemptKey(canonicalEndpoint: String): String = "$REFRESH_ATTEMPT_KEY_PREFIX$canonicalEndpoint"
+
+  private fun hashTokenDigest(token: String): String {
+    val digest = java.security.MessageDigest.getInstance("SHA-256")
+      .digest(token.toByteArray(StandardCharsets.UTF_8))
+    val sb = StringBuilder(digest.size * 2)
+    for (b in digest) {
+      sb.append(String.format("%02x", b))
+    }
+    return sb.toString()
+  }
+
+  private fun readPersistedRefreshAttemptUnlocked(
+    canonicalEndpoint: String,
+    token: String,
+  ): String? {
+    val raw = NativeBridge.nativeDataStoreGetString(filesDir, attemptKey(canonicalEndpoint))
+      ?: return null
+    val sep = raw.indexOf('|')
+    if (sep <= 0 || sep >= raw.length - 1) {
+      return null
+    }
+    val storedDigest = raw.substring(0, sep)
+    val storedAttempt = raw.substring(sep + 1)
+    return if (storedDigest == hashTokenDigest(token) && storedAttempt.isNotEmpty()) {
+      storedAttempt
+    } else {
+      null
+    }
+  }
+
+  private fun persistRefreshAttemptUnlocked(
+    canonicalEndpoint: String,
+    token: String,
+    attemptId: String,
+  ) {
+    NativeBridge.nativeDataStoreSetString(
+      filesDir,
+      attemptKey(canonicalEndpoint),
+      "${hashTokenDigest(token)}|$attemptId",
+    )
+  }
+
+  private fun clearPersistedRefreshAttemptUnlocked(canonicalEndpoint: String) {
+    NativeBridge.nativeDataStoreDeleteKey(filesDir, attemptKey(canonicalEndpoint))
   }
 
   private fun tokenKey(canonicalEndpoint: String): String = "$TOKEN_KEY_PREFIX$canonicalEndpoint"
 
   companion object {
     const val INSTALLATION_ID_KEY = "auth-installation-id"
+    const val REFRESH_ATTEMPT_KEY_PREFIX = "auth-refresh-attempt:"
     const val TOKEN_KEY_PREFIX = "auth-token:"
     const val CLIENT_KIND_HEADER = "x-affine-client-kind"
     const val CLIENT_KIND_VALUE = "native"

@@ -144,8 +144,6 @@ object NativeBridge {
   external fun nativeDataStoreSetString(filesDir: String, key: String, value: String): Boolean
   external fun nativeDataStoreDeleteKey(filesDir: String, key: String): Boolean
   external fun nativeLegacyAppDataStoreDeleteKey(filesDir: String, key: String): Boolean
-  external fun nativeLegacyAppDataStoreSetString(filesDir: String, key: String, value: String): Boolean
-  external fun nativeLegacyAppDataStoreGetString(filesDir: String, key: String): String?
   external fun nativePrepareAuthSessionJson(responseJson: String, nowMs: Long): String?
   external fun nativeValidateAuthSessionJson(storedJson: String): Boolean
   external fun nativeValidateV1Ciphertext(encoded: String): Boolean

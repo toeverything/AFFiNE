@@ -691,8 +691,27 @@ struct IosHostS2SmokeTest {
     require(planEmpty.set["last_workspace_flavour"] == "affine-cloud", "cloud last_workspace_flavour must stay in set after clearing local allowlist")
     require(!planEmpty.remove.contains("last_workspace_id"), "cloud last_workspace_id must not be removed after clearing local allowlist")
     require(!planEmpty.remove.contains("last_workspace_flavour"), "cloud last_workspace_flavour must not be removed after clearing local allowlist")
+
+    // Same-ID workspace promoted from local ("ws-same") to affine-cloud ("ws-same" / "affine-cloud"):
+    // deleting the local copy must preserve the cloud last_workspace_id & flavour.
+    let sameIdSnap = LegacyLocalStorageSnapshot(
+      origin: "capacitor://localhost",
+      length: 3,
+      keys: ["affine-local-workspace", "last_workspace_id", "last_workspace_flavour"],
+      entries: [
+        "affine-local-workspace": "[\"ws-same\"]",
+        "last_workspace_id": "ws-same",
+        "last_workspace_flavour": "affine-cloud",
+      ],
+      idbAccessCount: 0
+    )
+    _ = try coordinator.applySnapshot(sameIdSnap)
+    try coordinator.applyLocalWorkspaceAllowlist([])
+    let planSameId = try coordinator.buildRollbackWriteBackPlan()
+    require(planSameId.set["last_workspace_id"] == "ws-same", "same-ID affine-cloud workspace must survive local copy removal")
+    require(planSameId.set["last_workspace_flavour"] == "affine-cloud", "same-ID affine-cloud flavour must survive local copy removal")
     coordinator.closeAll()
-    print("PASS [13/14]: cloud last_workspace_id & flavour preserved across local allowlist updates")
+    print("PASS [13/14]: cloud last_workspace_id & flavour preserved across local allowlist updates (including same-ID promotion)")
   }
 
   /// 14. Partial mount failures block buildRollbackWriteBackPlan() until allowlist is reconciled cleanly.

@@ -1484,6 +1484,14 @@ export function extractYjsV1SubdocEntries(rootUpdates) {
             throw new RangeError(`Unknown Yjs struct tag ${tag}`);
         }
         clock += len;
+        const itemKey = `${client}:${itemClock}`;
+        const existing = itemByKey.get(itemKey);
+        if (existing) {
+          if (deleted) {
+            existing.deleted = true;
+          }
+          continue;
+        }
         /** @type {YjsDecodedItem} */
         const item = {
           client,
@@ -1501,44 +1509,73 @@ export function extractYjsV1SubdocEntries(rootUpdates) {
           guid,
         };
         allItems.push(item);
-        itemByKey.set(`${client}:${itemClock}`, item);
+        itemByKey.set(itemKey, item);
         clientList.push(item);
       }
     }
 
-    if (pos < buf.byteLength) {
-      const numDsClients = readVarUint();
-      for (let d = 0; d < numDsClients; d += 1) {
-        const dsClient = readVarUint();
-        const numRanges = readVarUint();
-        let ranges = deleteRangesByClient.get(dsClient);
-        if (!ranges) {
-          ranges = [];
-          deleteRangesByClient.set(dsClient, ranges);
-        }
-        for (let r = 0; r < numRanges; r += 1) {
-          const dsClock = readVarUint();
-          const dsLen = readVarUint();
-          ranges.push([dsClock, dsClock + dsLen]);
-        }
+    const numDsClients = readVarUint();
+    for (let d = 0; d < numDsClients; d += 1) {
+      const dsClient = readVarUint();
+      const numRanges = readVarUint();
+      let ranges = deleteRangesByClient.get(dsClient);
+      if (!ranges) {
+        ranges = [];
+        deleteRangesByClient.set(dsClient, ranges);
+      }
+      for (let r = 0; r < numRanges; r += 1) {
+        const dsClock = readVarUint();
+        const dsLen = readVarUint();
+        ranges.push([dsClock, dsClock + dsLen]);
       }
     }
+  }
+
+  /** @type {Map<number, Array<[number, number]>>} */
+  const mergedDeleteRanges = new Map();
+  for (const [dsClient, rawRanges] of deleteRangesByClient) {
+    rawRanges.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    /** @type {Array<[number, number]>} */
+    const merged = [];
+    for (const [s, e] of rawRanges) {
+      const last = merged[merged.length - 1];
+      if (last && s <= last[1]) {
+        if (e > last[1]) {
+          last[1] = e;
+        }
+      } else {
+        merged.push([s, e]);
+      }
+    }
+    mergedDeleteRanges.set(dsClient, merged);
+  }
+
+  for (const list of itemsByClient.values()) {
+    list.sort((a, b) => a.clock - b.clock);
   }
 
   for (const item of allItems) {
     if (item.deleted) {
       continue;
     }
-    const ranges = deleteRangesByClient.get(item.client);
-    if (!ranges) {
+    const ranges = mergedDeleteRanges.get(item.client);
+    if (!ranges || ranges.length === 0) {
       continue;
     }
-    const itemEnd = item.clock + Math.max(1, item.len);
-    for (const [start, end] of ranges) {
-      if (start <= item.clock && itemEnd <= end) {
-        item.deleted = true;
-        break;
+    let lo = 0;
+    let hi = ranges.length - 1;
+    let idx = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >>> 1;
+      if (ranges[mid][0] <= item.clock) {
+        idx = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
       }
+    }
+    if (idx >= 0 && item.clock + Math.max(1, item.len) <= ranges[idx][1]) {
+      item.deleted = true;
     }
   }
 
@@ -1549,12 +1586,25 @@ export function extractYjsV1SubdocEntries(rootUpdates) {
       return exact;
     }
     const list = itemsByClient.get(id.client);
-    if (!list) {
+    if (!list || list.length === 0) {
       return null;
     }
-    for (const it of list) {
-      if (it.clock <= id.clock && id.clock < it.clock + Math.max(1, it.len)) {
-        return it;
+    let lo = 0;
+    let hi = list.length - 1;
+    let idx = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >>> 1;
+      if (list[mid].clock <= id.clock) {
+        idx = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    if (idx >= 0) {
+      const cand = list[idx];
+      if (id.clock < cand.clock + Math.max(1, cand.len)) {
+        return cand;
       }
     }
     return null;
@@ -1563,49 +1613,200 @@ export function extractYjsV1SubdocEntries(rootUpdates) {
   /** @type {Map<YjsDecodedItem, { parentKey: string | null, parentIdKey: string | null, parentSub: string | null }>} */
   const resolvedParents = new Map();
   /**
-   * @param {YjsDecodedItem} item
-   * @param {Set<YjsDecodedItem>} [visiting]
+   * Iterative parent resolver (zero recursion so 40,000+ page arrays never
+   * overflow the JS call stack).
+   *
+   * @param {YjsDecodedItem} startItem
    * @returns {{ parentKey: string | null, parentIdKey: string | null, parentSub: string | null }}
    */
-  const resolveParent = (item, visiting = new Set()) => {
-    const cached = resolvedParents.get(item);
-    if (cached) {
-      return cached;
+  const resolveParent = startItem => {
+    const cached0 = resolvedParents.get(startItem);
+    if (cached0) {
+      return cached0;
     }
-    if (item.parentKey !== null || item.parentId !== null) {
-      const res = {
-        parentKey: item.parentKey,
-        parentIdKey: item.parentId
-          ? `${item.parentId.client}:${item.parentId.clock}`
-          : null,
-        parentSub: item.parentSub,
-      };
-      resolvedParents.set(item, res);
-      return res;
+    /** @type {YjsDecodedItem[]} */
+    const chain = [];
+    /** @type {Set<YjsDecodedItem>} */
+    const seen = new Set();
+    /** @type {YjsDecodedItem | null} */
+    let cur = startItem;
+    /** @type {{ parentKey: string | null, parentIdKey: string | null, parentSub: string | null } | null} */
+    let res = null;
+    while (cur) {
+      const hit = resolvedParents.get(cur);
+      if (hit) {
+        res = hit;
+        break;
+      }
+      if (cur.parentKey !== null || cur.parentId !== null) {
+        res = {
+          parentKey: cur.parentKey,
+          parentIdKey: cur.parentId
+            ? `${cur.parentId.client}:${cur.parentId.clock}`
+            : null,
+          parentSub: cur.parentSub,
+        };
+        break;
+      }
+      if (seen.has(cur)) {
+        res = { parentKey: null, parentIdKey: null, parentSub: null };
+        break;
+      }
+      seen.add(cur);
+      chain.push(cur);
+      const ref = cur.origin || cur.rightOrigin;
+      cur = ref ? findItem(ref) : null;
     }
-    if (visiting.has(item)) {
-      return { parentKey: null, parentIdKey: null, parentSub: null };
+    const finalRes = res || {
+      parentKey: null,
+      parentIdKey: null,
+      parentSub: null,
+    };
+    for (const node of chain) {
+      resolvedParents.set(node, finalRes);
     }
-    visiting.add(item);
-    const ref = item.origin || item.rightOrigin;
-    const target = ref ? findItem(ref) : null;
-    const res = target
-      ? resolveParent(target, visiting)
-      : { parentKey: null, parentIdKey: null, parentSub: null };
-    resolvedParents.set(item, res);
-    return res;
+    if (cur && !resolvedParents.has(cur)) {
+      resolvedParents.set(cur, finalRes);
+    }
+    return finalRes;
   };
 
-  /** @type {Set<string>} */
-  const pagesArrayIds = new Set();
-  for (const item of allItems) {
-    if (item.deleted || item.tag !== 7) {
-      continue;
+  /**
+   * Resolves the winning live Y.Map entry for a `(parent, parentSub)` bucket
+   * using deterministic YATA sibling integration (arrival-order independent).
+   *
+   * @param {YjsDecodedItem[]} bucket
+   * @returns {YjsDecodedItem | null}
+   */
+  const pickLiveMapEntry = bucket => {
+    if (bucket.length === 0) {
+      return null;
     }
+    if (bucket.length === 1) {
+      return bucket[0].deleted ? null : bucket[0];
+    }
+    /** @type {Map<string, YjsDecodedItem>} */
+    const bucketByKey = new Map();
+    for (const it of bucket) {
+      bucketByKey.set(`${it.client}:${it.clock}`, it);
+    }
+    const sorted = [...bucket].sort(
+      (a, b) => a.client - b.client || a.clock - b.clock
+    );
+    /** @type {YjsDecodedItem[]} */
+    const ordered = [];
+    /** @type {Set<YjsDecodedItem>} */
+    const placed = new Set();
+    /** @type {Set<YjsDecodedItem>} */
+    const active = new Set();
+    for (const root of sorted) {
+      if (placed.has(root)) {
+        continue;
+      }
+      /** @type {Array<[YjsDecodedItem, boolean]>} */
+      const stack = [[root, false]];
+      while (stack.length > 0) {
+        const frame = stack.pop();
+        if (!frame) {
+          break;
+        }
+        const [node, expanded] = frame;
+        if (placed.has(node)) {
+          continue;
+        }
+        if (expanded) {
+          active.delete(node);
+          placed.add(node);
+          ordered.push(node);
+          continue;
+        }
+        if (active.has(node)) {
+          continue;
+        }
+        active.add(node);
+        stack.push([node, true]);
+        if (node.rightOrigin) {
+          const depR = bucketByKey.get(
+            `${node.rightOrigin.client}:${node.rightOrigin.clock}`
+          );
+          if (depR && !placed.has(depR)) {
+            stack.push([depR, false]);
+          }
+        }
+        if (node.origin) {
+          const depL = bucketByKey.get(
+            `${node.origin.client}:${node.origin.clock}`
+          );
+          if (depL && !placed.has(depL)) {
+            stack.push([depL, false]);
+          }
+        }
+      }
+    }
+    /** @type {YjsDecodedItem[]} */
+    const seq = [];
+    /** @param {{ client: number, clock: number } | null} id */
+    const indexOfId = id => {
+      if (!id) {
+        return null;
+      }
+      for (let i = 0; i < seq.length; i += 1) {
+        const cand = seq[i];
+        if (
+          cand.client === id.client &&
+          cand.clock <= id.clock &&
+          id.clock < cand.clock + Math.max(1, cand.len)
+        ) {
+          return i;
+        }
+      }
+      return null;
+    };
+    for (const item of ordered) {
+      const leftFound = indexOfId(item.origin);
+      const rightFound = indexOfId(item.rightOrigin);
+      const leftIdx = leftFound === null ? -1 : leftFound;
+      const rightIdx = rightFound === null ? seq.length : rightFound;
+      let insertAt = leftIdx + 1;
+      let scanning = false;
+      for (let i = leftIdx + 1; i < rightIdx; i += 1) {
+        const o = seq[i];
+        const oLeftFound = indexOfId(o.origin);
+        const oRightFound = indexOfId(o.rightOrigin);
+        const oLeft = oLeftFound === null ? -1 : oLeftFound;
+        const oRight = oRightFound === null ? seq.length : oRightFound;
+        if (oLeft < leftIdx) {
+          scanning = true;
+        } else if (oLeft === leftIdx) {
+          if (item.client < o.client) {
+            scanning = false;
+            break;
+          }
+          scanning = oRight !== rightIdx;
+        }
+        if (!scanning) {
+          insertAt = i + 1;
+        }
+      }
+      seq.splice(insertAt, 0, item);
+    }
+    const tail = seq[seq.length - 1];
+    return tail && !tail.deleted ? tail : null;
+  };
+
+  /** @type {YjsDecodedItem[]} */
+  const metaPagesBucket = [];
+  for (const item of allItems) {
     const parent = resolveParent(item);
     if (parent.parentKey === 'meta' && parent.parentSub === 'pages') {
-      pagesArrayIds.add(`${item.client}:${item.clock}`);
+      metaPagesBucket.push(item);
     }
+  }
+  /** @type {Set<string>} */
+  const pagesArrayIds = new Set();
+  const livePagesArray = pickLiveMapEntry(metaPagesBucket);
+  if (livePagesArray && livePagesArray.tag === 7) {
+    pagesArrayIds.add(`${livePagesArray.client}:${livePagesArray.clock}`);
   }
 
   /** @type {Set<string>} */
@@ -1620,55 +1821,84 @@ export function extractYjsV1SubdocEntries(rootUpdates) {
     }
   }
 
-  /** @type {Set<string>} */
-  const livePageIds = new Set();
+  /** @type {Map<string, YjsDecodedItem[]>} */
+  const pageIdBuckets = new Map();
   for (const item of allItems) {
-    if (item.deleted || !item.values || !item.values.length) {
-      continue;
-    }
     const parent = resolveParent(item);
     if (
       parent.parentIdKey &&
       pageMapIds.has(parent.parentIdKey) &&
       parent.parentSub === 'id'
     ) {
-      const raw = item.values[item.values.length - 1];
-      if (item.tag === 2 && typeof raw === 'string') {
-        try {
-          const parsed = JSON.parse(raw);
-          if (typeof parsed === 'string' && parsed) {
-            livePageIds.add(parsed);
-          }
-        } catch {
-          // Ignore non-JSON string entry.
-        }
-      } else if (typeof raw === 'string' && raw) {
-        livePageIds.add(raw);
+      let bucket = pageIdBuckets.get(parent.parentIdKey);
+      if (!bucket) {
+        bucket = [];
+        pageIdBuckets.set(parent.parentIdKey, bucket);
       }
+      bucket.push(item);
     }
   }
 
   /** @type {Set<string>} */
-  const guids = new Set();
-  /** @type {Map<string, string>} */
-  const pageIdToGuid = new Map();
-  for (const item of allItems) {
-    if (item.deleted || item.tag !== 9 || !item.guid) {
+  const livePageIds = new Set();
+  for (const bucket of pageIdBuckets.values()) {
+    const winner = pickLiveMapEntry(bucket);
+    if (!winner || !winner.values || !winner.values.length) {
       continue;
     }
+    const raw = winner.values[winner.values.length - 1];
+    if (winner.tag === 2 && typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed === 'string' && parsed) {
+          livePageIds.add(parsed);
+        }
+      } catch {
+        // Ignore non-JSON string entry.
+      }
+    } else if (typeof raw === 'string' && raw) {
+      livePageIds.add(raw);
+    }
+  }
+
+  /** @type {Map<string, YjsDecodedItem[]>} */
+  const spaceBuckets = new Map();
+  /** @type {string[]} */
+  const unkeyedSpaceGuids = [];
+  for (const item of allItems) {
     const parent = resolveParent(item);
     if (parent.parentKey !== 'spaces') {
       continue;
     }
-    if (
-      pagesArrayIds.size > 0 &&
-      (!parent.parentSub || !livePageIds.has(parent.parentSub))
+    if (parent.parentSub !== null) {
+      let bucket = spaceBuckets.get(parent.parentSub);
+      if (!bucket) {
+        bucket = [];
+        spaceBuckets.set(parent.parentSub, bucket);
+      }
+      bucket.push(item);
+    } else if (
+      pagesArrayIds.size === 0 &&
+      !item.deleted &&
+      item.tag === 9 &&
+      item.guid
     ) {
+      unkeyedSpaceGuids.push(item.guid);
+    }
+  }
+
+  /** @type {Set<string>} */
+  const guids = new Set(unkeyedSpaceGuids);
+  /** @type {Map<string, string>} */
+  const pageIdToGuid = new Map();
+  for (const [spaceSub, bucket] of spaceBuckets) {
+    if (pagesArrayIds.size > 0 && !livePageIds.has(spaceSub)) {
       continue;
     }
-    guids.add(item.guid);
-    if (parent.parentSub) {
-      pageIdToGuid.set(parent.parentSub, item.guid);
+    const winner = pickLiveMapEntry(bucket);
+    if (winner && winner.tag === 9 && winner.guid) {
+      guids.add(winner.guid);
+      pageIdToGuid.set(spaceSub, winner.guid);
     }
   }
 

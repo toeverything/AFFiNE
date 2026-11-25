@@ -184,7 +184,11 @@ final class HostBootstrapCoordinator {
       rawEntries.removeValue(forKey: LegacyLocalStorageProbe.localWorkspaceKey)
       stateObj["rawUnparsedEntries"] = rawEntries
     }
-    if let lastId = stateObj["lastWorkspaceId"] as? String, removedLocalIds.contains(lastId) {
+    let currentFlavour = (stateObj["lastWorkspaceFlavour"] as? String) ?? "local"
+    if let lastId = stateObj["lastWorkspaceId"] as? String,
+      removedLocalIds.contains(lastId),
+      currentFlavour == "local"
+    {
       stateObj["lastWorkspaceId"] = NSNull()
       stateObj["lastWorkspaceFlavour"] = NSNull()
     }

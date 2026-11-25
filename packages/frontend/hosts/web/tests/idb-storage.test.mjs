@@ -1052,6 +1052,7 @@ void test('single-flight overlapping flush, compactDocWithMerged CAS, built-in Y
     ...encStr('page-1'),
     ...encStr('guid-page-1'),
     126, // lib0 null opts
+    0, // empty DeleteSet (numDsClients = 0)
   ]);
   const v1Db = await new Promise((resolve, reject) => {
     const req = idb.open('affine-local', 1);
@@ -1252,11 +1253,62 @@ void test('real Yjs v1 binary fixtures decode overwrites, Y.XmlFragment, DeleteS
     extractYjsV1SubdocIds([REAL_YJS_FIXTURES.emptyPagesWithOrphanSpace]),
     []
   );
-  // Malformed/truncated frames must throw instead of silently returning partial lists.
+  // Malformed/truncated frames (including missing trailing DeleteSet) must throw RangeError.
   assert.throws(
     () => extractYjsV1SubdocIds([new Uint8Array([1, 1, 1, 0, 0x20 | 9, 1])]),
     RangeError
   );
+  assert.throws(
+    () =>
+      extractYjsV1SubdocIds([
+        REAL_YJS_FIXTURES.overwrittenAndForeignSnapshot.subarray(
+          0,
+          REAL_YJS_FIXTURES.overwrittenAndForeignSnapshot.byteLength - 5
+        ),
+      ]),
+    RangeError
+  );
+
+  // Concurrent Y.Map overwrite (client 21 -> g21 vs client 42 -> g42): both arrival orders yield ONLY g42.
+  const { extractYjsV1SubdocEntries } = await import('../src/idb-storage.js');
+  const encStr = str => {
+    const b = new TextEncoder().encode(str);
+    return [b.byteLength, ...b];
+  };
+  const concurrent21 = new Uint8Array([
+    1,
+    1,
+    21,
+    0,
+    0x20 | 9,
+    1,
+    ...encStr('spaces'),
+    ...encStr('p'),
+    ...encStr('g21'),
+    126,
+    0,
+  ]);
+  const concurrent42 = new Uint8Array([
+    1,
+    1,
+    42,
+    0,
+    0x20 | 9,
+    1,
+    ...encStr('spaces'),
+    ...encStr('p'),
+    ...encStr('g42'),
+    126,
+    0,
+  ]);
+  for (const pair of [
+    [concurrent21, concurrent42],
+    [concurrent42, concurrent21],
+  ]) {
+    const out = extractYjsV1SubdocEntries(pair);
+    assert.deepEqual(out.guids, ['g42']);
+    assert.equal(out.pageIdToGuid.get('p'), 'g42');
+  }
 
   // Verify listV1DocIds matches both 3-segment (userdata$u$ws) and 4-segment (userdata$u$ws$fav) keys.
   const idb = createMemoryIdbFactory();

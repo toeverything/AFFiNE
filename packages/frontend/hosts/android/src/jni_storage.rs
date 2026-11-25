@@ -596,48 +596,6 @@ pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeLegacyAppDa
 }
 
 /// # Safety
-/// `env` must be null or a valid `JNIEnv*`; string args must be null or valid `jstring`s.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeLegacyAppDataStoreSetString(
-    env: JniEnvPtr,
-    _class: JClass,
-    files_dir: JString,
-    key: JString,
-    value: JString,
-) -> JBoolean {
-    let (Some(dir), Some(k), Some(v)) = (
-        unsafe { read_jstring_utf8(env, files_dir) },
-        unsafe { read_jstring_utf8(env, key) },
-        unsafe { read_jstring_utf8(env, value) },
-    ) else {
-        return 0;
-    };
-    let path = legacy_app_datastore_path(Path::new(&dir));
-    u8::from(update_file_string(&path, &k, &v).is_ok())
-}
-
-/// # Safety
-/// `env` must be null or a valid `JNIEnv*`; string args must be null or valid `jstring`s.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeLegacyAppDataStoreGetString(
-    env: JniEnvPtr,
-    _class: JClass,
-    files_dir: JString,
-    key: JString,
-) -> JString {
-    let (Some(dir), Some(k)) = (unsafe { read_jstring_utf8(env, files_dir) }, unsafe {
-        read_jstring_utf8(env, key)
-    }) else {
-        return core::ptr::null_mut();
-    };
-    let path = legacy_app_datastore_path(Path::new(&dir));
-    match read_file_string(&path, &k) {
-        Ok(Some(val)) => unsafe { new_jstring(env, &val) },
-        _ => core::ptr::null_mut(),
-    }
-}
-
-/// # Safety
 /// `env` must be null or a valid `JNIEnv*`; `code` must be null or a valid `jstring`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeIsPermanentAuthErrorCode(

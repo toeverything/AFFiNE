@@ -1534,15 +1534,37 @@ export async function bootSignInPage(env = {}) {
     });
   }
 
+  const clearStepSecrets = () => {
+    const pwdEl = /** @type {HTMLInputElement | null} */ (
+      doc.getElementById('password')
+    );
+    const codeEl = /** @type {HTMLInputElement | null} */ (
+      doc.getElementById('otp')
+    );
+    if (pwdEl) {
+      pwdEl.value = '';
+    }
+    if (codeEl) {
+      codeEl.value = '';
+    }
+  };
+
   backFromPasswordBtn?.addEventListener?.('click', () => {
+    clearStepSecrets();
     setStep('email');
     setStatus('');
     resetTurnstile?.();
   });
   backFromOtpBtn?.addEventListener?.('click', () => {
+    clearStepSecrets();
     setStep('email');
     setStatus('');
     resetTurnstile?.();
+  });
+  doc.getElementById('email')?.addEventListener?.('input', () => {
+    if (currentStep === 'email') {
+      clearStepSecrets();
+    }
   });
   switchToPasswordBtn?.addEventListener?.('click', () => {
     const emailVal =
@@ -1609,7 +1631,8 @@ export async function bootSignInPage(env = {}) {
       const passwordVal = passwordEl?.value || '';
       const otpVal = (otpEl?.value || '').trim();
 
-      if (authCard && currentStep === 'email' && !passwordVal && !otpVal) {
+      if (authCard && currentStep === 'email') {
+        clearStepSecrets();
         try {
           const preRes = await fetchImpl('/api/auth/preflight', {
             method: 'POST',
@@ -1640,7 +1663,7 @@ export async function bootSignInPage(env = {}) {
               ));
           if (magicLinkUnavailable) {
             setStatus(
-              'No sign-in methods are available for this account.',
+              'Email sign-in is not available for this account.',
               'error'
             );
             return;

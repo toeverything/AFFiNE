@@ -1,9 +1,9 @@
 //! Host boundary port (`HostBridge`) decoupling L3 domain logic from platform shells.
 //!
-//! Native auth I/O (`exchange`/`refresh`/`revoke` and Keychain/Keystore writes) is owned
-//! exclusively by the platform host (`hosts/ios` `LegacyAuthBridge` / `hosts/android`
-//! `AuthSessionStore`). `HostBridge` therefore exposes only read/delete credential access,
-//! WebSocket handles, installation ID, local KV, and accessibility announcements.
+//! Native auth I/O (`exchange`/`refresh`/`revoke` and Keychain/Keystore writes and deletes) is
+//! owned exclusively by the platform host (`hosts/ios` `LegacyAuthBridge` / `hosts/android`
+//! `AuthSessionStore`). `HostBridge` therefore exposes read-only credential access, WebSocket
+//! handles, installation ID, local KV, and accessibility announcements.
 
 use std::collections::BTreeMap;
 
@@ -36,8 +36,6 @@ pub trait HostBridge {
     fn ws_close(&mut self, handle: WsHandle) -> ClientResult<()>;
 
     fn read_credential(&self, key: &str) -> ClientResult<Option<String>>;
-
-    fn delete_credential(&mut self, key: &str) -> ClientResult<()>;
 
     fn installation_id(&self) -> String;
 
@@ -116,11 +114,6 @@ impl HostBridge for MemoryHostBridge {
 
     fn read_credential(&self, key: &str) -> ClientResult<Option<String>> {
         Ok(self.credentials.get(key).cloned())
-    }
-
-    fn delete_credential(&mut self, key: &str) -> ClientResult<()> {
-        self.credentials.remove(key);
-        Ok(())
     }
 
     fn installation_id(&self) -> String {

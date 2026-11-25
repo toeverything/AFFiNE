@@ -411,11 +411,22 @@ fun main() {
         "seq12b onStop passive checkpoint hit mounted DB",
       )
 
-      // Empty list -> zero mounts and evicts previously mounted local DB.
+      // Empty list -> zero mounts, evicts previously mounted local DB, and rollback emits "[]" (canCreateDefault=false).
       val bootEmpty = coordinator.completeWithProbePayload(deletedAllSentinel)
       checkEq(bootEmpty.imported, true, "seq12b empty list imported")
       checkEq(bootEmpty.connectedWorkspaceKeys.isEmpty(), true, "seq12b empty list zero mounts")
       checkEq(NativeBridge.nativeStorageCheckpointAllPassive(bootHandle), 0, "seq12b evicted old local DB")
+      val emptyWriteback = NativeBridge.nativePlanLegacyLocalStorageWriteBack(bootHandle)
+      checkEq(emptyWriteback != null && emptyWriteback.contains("\"affine-local-workspace\":\"[]\""), true, "seq12b empty imported list emits []")
+      checkEq(NativeBridge.nativeCanCreateDefaultWorkspace(bootHandle), false, "seq12b empty imported list canCreateDefault=false")
+
+      // True FreshInstall (missing affine-local-workspace key) -> rollback emits empty setEntries (canCreateDefault=true preserved).
+      val freshEmptySentinel = """{"origin":"https://localhost","length":0,"keys":[],"entries":{},"idbTouchCount":0}"""
+      val bootFresh = coordinator.completeWithProbePayload(freshEmptySentinel)
+      checkEq(bootFresh.imported, true, "seq12b fresh install imported")
+      checkEq(NativeBridge.nativeCanCreateDefaultWorkspace(bootHandle), true, "seq12b fresh install canCreateDefault=true")
+      val freshWriteback = NativeBridge.nativePlanLegacyLocalStorageWriteBack(bootHandle)
+      checkEq(freshWriteback != null && !freshWriteback.contains("affine-local-workspace"), true, "seq12b fresh install writeback omits affine-local-workspace")
 
       // Corrupt affine-local-workspace JSON -> zero mounts & preserves raw "{broken" string.
       val corruptWsSentinel = """{"origin":"https://localhost","length":1,"keys":["affine-local-workspace"],"entries":{"affine-local-workspace":"{broken"},"idbTouchCount":0}"""
@@ -710,15 +721,50 @@ fun main() {
     } finally {
       absentAppDsDir.deleteRecursively()
     }
-    checkEq(NativeBridge.nativeLegacyAppDataStoreSetString(tmpDir.absolutePath, "app.affine.proaffine_user_id", "u1"), true, "seq15 seed legacy affine.preferences_pb user_id")
-    checkEq(NativeBridge.nativeLegacyAppDataStoreSetString(tmpDir.absolutePath, "app.affine.proaffine_csrf_token", "c1"), true, "seq15 seed legacy affine.preferences_pb csrf")
-    checkEq(NativeBridge.nativeLegacyAppDataStoreSetString(tmpDir.absolutePath, "theme", "dark"), true, "seq15 seed legacy affine.preferences_pb theme")
-    checkEq(store.storeServerResponse(ep, serverResp, nowMs), true, "seq15 re-seed auth session before clear")
-    store.clearSession(ep)
-    checkEq(NativeBridge.nativeLegacyAppDataStoreGetString(tmpDir.absolutePath, "app.affine.proaffine_user_id"), null, "seq15 affine.preferences_pb user_id deleted")
-    checkEq(NativeBridge.nativeLegacyAppDataStoreGetString(tmpDir.absolutePath, "app.affine.proaffine_csrf_token"), null, "seq15 affine.preferences_pb csrf deleted")
-    checkEq(NativeBridge.nativeLegacyAppDataStoreGetString(tmpDir.absolutePath, "theme"), "dark", "seq15 affine.preferences_pb theme preserved")
-    checkEq(store.getOrCreateInstallationId("must-still-preserve"), "inst-fixed-0275", "seq15 auth-sessions installationId preserved")
+    val scratchSeedDir = Files.createTempDirectory("affine-s2-seed-legacy-pb").toFile()
+    val scratchInspectDir = Files.createTempDirectory("affine-s2-inspect-legacy-pb").toFile()
+    try {
+      checkEq(NativeBridge.nativeDataStoreSetString(scratchSeedDir.absolutePath, "app.affine.proaffine_user_id", "u1"), true, "seq15 build legacy user_id pb")
+      checkEq(NativeBridge.nativeDataStoreSetString(scratchSeedDir.absolutePath, "app.affine.proaffine_csrf_token", "c1"), true, "seq15 build legacy csrf pb")
+      checkEq(NativeBridge.nativeDataStoreSetString(scratchSeedDir.absolutePath, "theme", "dark"), true, "seq15 build legacy theme pb")
+      val legacyTargetPb = File(tmpDir, "datastore/affine.preferences_pb")
+      legacyTargetPb.parentFile.mkdirs()
+      File(scratchSeedDir, "datastore/auth-sessions.preferences_pb").copyTo(legacyTargetPb, overwrite = true)
+
+      checkEq(store.storeServerResponse(ep, serverResp, nowMs), true, "seq15 re-seed auth session before clear")
+
+      // Simulate transient legacy file failure (corrupt bytes in affine.preferences_pb) -> clearSession returns false while still clearing auth session.
+      val brokenDir = Files.createTempDirectory("affine-s2-broken-legacy-pb").toFile()
+      try {
+        val brokenStore = AuthSessionStore(
+          filesDir = brokenDir.absolutePath,
+          cipher = cipher1,
+          cookieCleaner = recordingCookieCleaner,
+        )
+        checkEq(brokenStore.storeServerResponse(ep, serverResp, nowMs), true, "seq15 seed brokenDir auth")
+        val brokenLegacyPb = File(brokenDir, "datastore/affine.preferences_pb")
+        brokenLegacyPb.parentFile.mkdirs()
+        brokenLegacyPb.writeBytes(byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0x7F))
+        checkEq(brokenStore.clearSession(ep), false, "seq15 clearSession surfaces legacy cleanup failure")
+        checkEq(brokenStore.readSessionJson(ep), null, "seq15 primary auth session still wiped")
+        brokenLegacyPb.delete()
+        checkEq(brokenStore.clearSession(ep), true, "seq15 retry clearSession succeeds after legacy file healthy")
+      } finally {
+        brokenDir.deleteRecursively()
+      }
+
+      checkEq(store.clearSession(ep), true, "seq15 clearSession returns true when healthy")
+      val inspectTargetPb = File(scratchInspectDir, "datastore/auth-sessions.preferences_pb")
+      inspectTargetPb.parentFile.mkdirs()
+      legacyTargetPb.copyTo(inspectTargetPb, overwrite = true)
+      checkEq(NativeBridge.nativeDataStoreGetString(scratchInspectDir.absolutePath, "app.affine.proaffine_user_id"), null, "seq15 affine.preferences_pb user_id deleted")
+      checkEq(NativeBridge.nativeDataStoreGetString(scratchInspectDir.absolutePath, "app.affine.proaffine_csrf_token"), null, "seq15 affine.preferences_pb csrf deleted")
+      checkEq(NativeBridge.nativeDataStoreGetString(scratchInspectDir.absolutePath, "theme"), "dark", "seq15 affine.preferences_pb theme preserved")
+      checkEq(store.getOrCreateInstallationId("must-still-preserve"), "inst-fixed-0275", "seq15 auth-sessions installationId preserved")
+    } finally {
+      scratchSeedDir.deleteRecursively()
+      scratchInspectDir.deleteRecursively()
+    }
 
     // IPv6 canonicalization and serde_json JNI escape fidelity.
     checkEq(NativeBridge.nativeCanonicalEndpoint("https://[::1]:8443/graphql"), "https://[::1]:8443", "seq15 ipv6 non-default port")
@@ -843,6 +889,40 @@ fun main() {
       checkEq(retryStore.refreshSession(epRetry, writeFailTransport), true, "seq16 second refresh flushes cached rotated session")
       checkEq(networkCalls.get(), 1, "seq16 ZERO additional network calls on cached session flush")
       checkEq(retryStore.readSessionJson(epRetry)?.contains("acc-rotated-token"), true, "seq16 flushed rotated token readable from disk")
+      // Part C: Cold process restart recovery — copying only disk DataStore to a brand-new filesDir
+      // (zero shared in-memory EndpointCoordination!) still reuses the persisted x-affine-refresh-attempt UUID.
+      val proc1Dir = Files.createTempDirectory("affine-s2-proc1").toFile()
+      val proc2Dir = Files.createTempDirectory("affine-s2-proc2").toFile()
+      try {
+        val proc1Store = AuthSessionStore(filesDir = proc1Dir.absolutePath, cipher = cipher1, cookieCleaner = recordingCookieCleaner)
+        checkEq(proc1Store.storeServerResponse(epRetry, serverResp, nowMs), true, "seq16 proc1 seed")
+        var proc1Attempt = ""
+        checkEq(
+          proc1Store.refreshSession(epRetry, RefreshTransport { _, _, id ->
+            proc1Attempt = id
+            RefreshResult.Failure(null)
+          }),
+          false,
+          "seq16 proc1 transient failure",
+        )
+        val proc2Pb = File(proc2Dir, "datastore/auth-sessions.preferences_pb")
+        proc2Pb.parentFile.mkdirs()
+        File(proc1Dir, "datastore/auth-sessions.preferences_pb").copyTo(proc2Pb, overwrite = true)
+        val proc2Store = AuthSessionStore(filesDir = proc2Dir.absolutePath, cipher = cipher1, cookieCleaner = recordingCookieCleaner)
+        var proc2Attempt = ""
+        checkEq(
+          proc2Store.refreshSession(epRetry, RefreshTransport { _, _, id ->
+            proc2Attempt = id
+            RefreshResult.Success(rotatedResp, nowMs + 40_000L)
+          }),
+          true,
+          "seq16 proc2 cold-restart recovery succeeds",
+        )
+        checkEq(proc1Attempt.isNotEmpty() && proc1Attempt == proc2Attempt, true, "seq16 cold-restart reused persisted x-affine-refresh-attempt")
+      } finally {
+        proc1Dir.deleteRecursively()
+        proc2Dir.deleteRecursively()
+      }
     } finally {
       retryDir.deleteRecursively()
     }
