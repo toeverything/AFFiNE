@@ -414,6 +414,28 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           data: None,
         };
       }
+      if let Some((name, message)) = match msg.as_str() {
+        "copilot_transcription_audio_not_provided" => Some((
+          "COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED",
+          "Audio file is required for transcription.",
+        )),
+        "copilot_transcription_job_exists" => {
+          Some(("COPILOT_TRANSCRIPTION_JOB_EXISTS", "Transcription job already exists."))
+        }
+        "copilot_transcription_job_not_found" => {
+          Some(("COPILOT_TRANSCRIPTION_JOB_NOT_FOUND", "Transcription job not found."))
+        }
+        _ => None,
+      } {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "BAD_REQUEST".into(),
+          name: name.into(),
+          message: message.into(),
+          data: None,
+        };
+      }
       if let Some(reason) = msg.strip_prefix("invalid_license_to_activate:") {
         return LegacyErrorEnvelope {
           status: StatusCode::BAD_REQUEST.as_u16(),

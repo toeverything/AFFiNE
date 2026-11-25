@@ -692,3 +692,94 @@ fn lock_holders_never_starve_a_tiny_pool() {
     assert_eq!(fx.row_count(&ws).await, 4);
   });
 }
+
+#[test]
+fn reconcile_storage_orphans_exempts_copilot_and_artifact_prefixes() {
+  struct AgedListStorage {
+    inner: LocalFsBlobStorage,
+    age_backdate: chrono::Duration,
+  }
+
+  #[async_trait::async_trait]
+  impl BlobStorageBackend for AgedListStorage {
+    async fn put(&self, key: &str, body: Vec<u8>, content_type: &str) -> Result<ObjectMetadata, StorageError> {
+      self.inner.put(key, body, content_type).await
+    }
+    async fn get(&self, key: &str) -> Result<Option<(Vec<u8>, ObjectMetadata)>, StorageError> {
+      self.inner.get(key).await
+    }
+    async fn head(&self, key: &str) -> Result<Option<ObjectMetadata>, StorageError> {
+      self.inner.head(key).await
+    }
+    async fn delete(&self, key: &str) -> Result<(), StorageError> {
+      self.inner.delete(key).await
+    }
+    async fn list_prefix(
+      &self,
+      prefix: &str,
+      after: Option<&str>,
+      limit: usize,
+    ) -> Result<Vec<(String, Option<DateTime<Utc>>)>, StorageError> {
+      let aged = Utc::now() - self.age_backdate;
+      let items = self.inner.list_prefix(prefix, after, limit).await?;
+      Ok(items.into_iter().map(|(k, _)| (k, Some(aged))).collect())
+    }
+  }
+
+  let lease = leased_0275_database();
+  runtime().block_on(async {
+    let db = ServerDb::connect(DbConfig::new(lease.url())).await.expect("connect db");
+    sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+      .execute(db.pool())
+      .await
+      .expect("reset schema for runtime migrations");
+    db.ensure_schema_ready().await.expect("ensure schema ready");
+    let dir = std::env::temp_dir().join(format!("server-blob-reconcile-{}", uuid::Uuid::new_v4().simple()));
+    let _guard = TempDir(dir.clone());
+    let storage = Arc::new(AgedListStorage {
+      inner: LocalFsBlobStorage::new(dir.to_str().unwrap(), "blobs").unwrap(),
+      age_backdate: chrono::Duration::hours(48),
+    });
+    let exempted = [
+      "copilot/transcript/ws-1/u-1/t-1/0",
+      "copilot/artifacts/ws-1/doc-1/art-1",
+      "copilot-attachments/ws-1/att-1",
+      "artifacts/ws-1/art-2",
+    ];
+    for key in exempted {
+      storage
+        .put(key, b"keep-me".to_vec(), "application/octet-stream")
+        .await
+        .unwrap();
+    }
+    storage
+      .put(
+        "deleted-ws-999/stale-orphan",
+        b"remove-me".to_vec(),
+        "application/octet-stream",
+      )
+      .await
+      .unwrap();
+
+    let service = BlobService::new(
+      db,
+      storage.clone(),
+      Arc::new(FixedQuotaGate {
+        blob_limit: 1 << 20,
+        storage_quota: 1 << 30,
+        seat_limit: 10,
+      }),
+    );
+    let report = service.reconcile_storage_orphans(100, &|| false).await.unwrap();
+    assert!(report.leased);
+    assert_eq!(report.deleted_objects, 1);
+    assert_eq!(report.skipped_unknown_prefix, exempted.len());
+    for key in exempted {
+      assert!(
+        storage.get(key).await.unwrap().is_some(),
+        "exempted key must survive orphan reconciliation: {key}"
+      );
+    }
+    assert!(storage.get("deleted-ws-999/stale-orphan").await.unwrap().is_none());
+  });
+}

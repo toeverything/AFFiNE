@@ -7,6 +7,7 @@ pub mod billing;
 pub mod byok;
 pub mod copilot;
 pub mod disposition;
+pub mod transcript;
 
 use std::collections::HashMap;
 use std::future::Future;
@@ -44,6 +45,13 @@ pub use server_types::BillingSubject;
 use server_types::{AccessGrant, DomainError};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Transaction};
+pub use transcript::{
+  AudioSliceManifestItemRecord, AudioSliceUpload, CommunityCopilotTranscriptSpi, CopilotTranscriptSpi,
+  MAX_TRANSCRIPT_SLICE_BYTES, MAX_TRANSCRIPT_SLICE_COUNT, MAX_TRANSCRIPT_TOTAL_BYTES, MeetingActionItemRecord,
+  MeetingSummaryV2Record, NormalizedTranscriptSegmentRecord, SubmitTranscriptTaskSpiInput, TranscriptItemRecord,
+  TranscriptJobStatus, TranscriptQualityRecord, TranscriptSourceAudioInputRecord, TranscriptSourceAudioRecord,
+  TranscriptTaskRecord,
+};
 
 #[async_trait::async_trait]
 pub trait QuotaGate: Send + Sync + 'static {
@@ -187,6 +195,9 @@ pub trait ServerExtension: Send + Sync + 'static {
   }
   fn byok_spi(&self) -> Arc<dyn ByokSpi> {
     Arc::new(CommunityByokSpi)
+  }
+  fn copilot_transcript_spi(&self) -> Arc<dyn CopilotTranscriptSpi> {
+    Arc::new(CommunityCopilotTranscriptSpi)
   }
   fn rate_limit_policy(&self) -> Arc<dyn RateLimitPolicy> {
     Arc::new(CommunityRateLimitPolicy)

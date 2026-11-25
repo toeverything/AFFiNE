@@ -13,6 +13,7 @@ pub mod license;
 pub mod mcp;
 pub mod notification;
 pub mod search;
+pub mod transcript;
 pub mod user;
 pub mod workspace;
 
@@ -568,6 +569,7 @@ pub struct MutationRoot(
   billing::BillingMutation,
   byok::ByokMutation,
   copilot::CopilotMutation,
+  transcript::TranscriptMutation,
 );
 
 pub fn build_schema(state: Arc<AppState>) -> AppSchema {
@@ -1535,23 +1537,10 @@ mod tests {
           .get(def_key)
           .unwrap_or_else(|| panic!("new GraphQL top-level definition `{def_key}` is not in v0.27.5 oracle"));
         let canonical_actual: BTreeSet<String> = actual_members.iter().map(|m| canonicalize_sdl_member(m)).collect();
-        if def_key == "type Copilot" {
-          // `transcriptTask` belongs to the dedicated transcript slice.
-          let expected: BTreeSet<String> = oracle_canonical
-            .iter()
-            .filter(|m| !m.starts_with("transcriptTask("))
-            .cloned()
-            .collect();
-          assert_eq!(
-            canonical_actual, expected,
-            "new GraphQL definition `{def_key}` does not match v0.27.5 oracle"
-          );
-        } else {
-          assert_eq!(
-            &canonical_actual, oracle_canonical,
-            "new GraphQL definition `{def_key}` does not match v0.27.5 oracle 1:1"
-          );
-        }
+        assert_eq!(
+          &canonical_actual, oracle_canonical,
+          "new GraphQL definition `{def_key}` does not match v0.27.5 oracle 1:1"
+        );
       }
     }
 
@@ -1579,6 +1568,7 @@ mod tests {
       "BillingMutation",
       "ByokMutation",
       "CopilotMutation",
+      "TranscriptMutation",
     ] {
       assert!(
         !actual_defs.contains_key(&format!("type {internal_name}")),

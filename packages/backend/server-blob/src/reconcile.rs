@@ -260,3 +260,17 @@ impl BlobService {
     Ok(())
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::object_key_workspace;
+
+  #[test]
+  fn object_key_workspace_exempts_copilot_and_artifact_prefixes() {
+    assert_eq!(object_key_workspace("copilot/transcript/ws/u/t/0"), None);
+    assert_eq!(object_key_workspace("copilot/artifacts/ws/a/b"), None);
+    assert_eq!(object_key_workspace("copilot-attachments/ws/a/b"), None);
+    assert_eq!(object_key_workspace("artifacts/ws/a/b"), None);
+    assert_eq!(object_key_workspace("ws-1/blob-key"), Some("ws-1"));
+  }
+}

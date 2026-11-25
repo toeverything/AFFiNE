@@ -539,6 +539,16 @@ impl Copilot {
       total_count: i32::try_from(page.total_count).unwrap_or(i32::MAX),
     })
   }
+
+  #[graphql(deprecation = "Use realtime subscription `copilot.transcript.task.changed` instead.")]
+  async fn transcript_task(
+    &self,
+    ctx: &Context<'_>,
+    blob_id: Option<String>,
+    task_id: Option<String>,
+  ) -> Result<Option<super::transcript::TranscriptionResultType>> {
+    super::transcript::resolve_copilot_transcript_task(ctx, self.workspace_id.as_deref(), blob_id, task_id).await
+  }
 }
 
 fn maybe_doc_id(doc_id: MaybeUndefined<String>) -> Option<Option<String>> {
