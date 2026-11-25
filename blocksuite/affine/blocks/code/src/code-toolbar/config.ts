@@ -10,7 +10,10 @@ import {
 } from '@blocksuite/affine-components/icons';
 import type { MenuItemGroup } from '@blocksuite/affine-components/toolbar';
 import { CommentProviderIdentifier } from '@blocksuite/affine-shared/services';
-import { isInsidePageEditor } from '@blocksuite/affine-shared/utils';
+import {
+  isInsidePageEditor,
+  stopPropagation,
+} from '@blocksuite/affine-shared/utils';
 import { noop, sleep } from '@blocksuite/global/utils';
 import { CommentIcon, NumberedListIcon } from '@blocksuite/icons/lit';
 import { BlockSelection } from '@blocksuite/std';
@@ -219,6 +222,7 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
                   style="margin-left: auto;"
                   .on=${wrapped}
                   .onChange=${(on: boolean) => blockComponent.setWrap(on)}
+                  @click=${stopPropagation}
                 ></toggle-switch>
               </editor-menu-action>
             `;
