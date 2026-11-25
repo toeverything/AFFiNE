@@ -632,3 +632,45 @@ describe('ImportCommitService', () => {
     ]);
   });
 });
+
+test('places folders into a tree left by an earlier import run', async () => {
+  const collection = new TestWorkspace({ id: 'test' });
+  collection.meta.initialize();
+  const folderTree = createFolderTree();
+
+  // each import run gets its own service, while the folder tree outlives it
+  const firstRun = createCommitService(collection, {
+    organizeService: folderTree.service,
+  });
+  await firstRun.commitBatch({
+    docs: [],
+    blobs: [],
+    folders: [{ path: 'research', name: 'research' }],
+    done: true,
+  });
+
+  const secondRun = createCommitService(collection, {
+    organizeService: folderTree.service,
+  });
+  const result = await secondRun.commitBatch({
+    docs: [],
+    blobs: [],
+    folders: [
+      {
+        path: 'research/videos',
+        name: 'videos',
+        parentPath: 'research',
+      },
+      {
+        path: 'research/videos/__doc__video',
+        name: '__doc__video',
+        parentPath: 'research/videos',
+        pageId: 'video',
+      },
+    ],
+    done: true,
+  });
+
+  expect(result.warnings).toEqual([]);
+  expect(folderTree.links).toEqual([{ parentId: 'folder-2', docId: 'video' }]);
+});

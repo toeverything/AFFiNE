@@ -145,6 +145,31 @@ export class ImportCommitService {
     };
   }
 
+  /**
+   * Each import run commits through its own service, while the folder tree it
+   * writes to outlives that service. Resolve a path that is missing from the
+   * per-run cache against the tree itself, so a second run can put docs into a
+   * folder the first one created instead of leaving both sides behind.
+   */
+  private resolveFolderId(path: string): string | undefined {
+    const cached = this.folderIdByPath.get(path);
+    if (cached) return cached;
+    const folderTree = this.options.organizeService?.folderTree;
+    if (!folderTree) return undefined;
+    let node = folderTree.rootFolder;
+    for (const segment of path.split('/').filter(Boolean)) {
+      const child = node.children$.value.find(
+        child => child.type$.value === 'folder' && child.name$.value === segment
+      );
+      if (!child) return undefined;
+      node = child;
+    }
+    const nodeId = node.id;
+    if (!nodeId) return undefined;
+    this.folderIdByPath.set(path, nodeId);
+    return nodeId;
+  }
+
   private applyNativeFolders(
     folders: ImportFolder[],
     warnings: ImportCommitResult['warnings'],
@@ -178,12 +203,13 @@ export class ImportCommitService {
         for (const folder of pending) {
           const needsContainer =
             !folder.pageId || childParentPaths.has(folder.path);
-          if (needsContainer && !this.folderIdByPath.has(folder.path)) {
+          if (needsContainer && !this.resolveFolderId(folder.path)) {
+            const parentFolderId = folder.parentPath
+              ? this.resolveFolderId(folder.parentPath)
+              : undefined;
             const parent = folder.parentPath
-              ? this.folderIdByPath.has(folder.parentPath)
-                ? organizeService.folderTree.folderNode$(
-                    this.folderIdByPath.get(folder.parentPath) ?? ''
-                  ).value
+              ? parentFolderId
+                ? organizeService.folderTree.folderNode$(parentFolderId).value
                 : null
               : organizeService.folderTree.rootFolder;
             if (!parent) {
@@ -245,7 +271,7 @@ export class ImportCommitService {
       return true;
     }
     if (!organizeService) return true;
-    const parentFolderId = this.folderIdByPath.get(folder.parentPath);
+    const parentFolderId = this.resolveFolderId(folder.parentPath);
     if (!parentFolderId) return false;
     const parent = organizeService.folderTree.folderNode$(parentFolderId).value;
     if (!parent) return false;
