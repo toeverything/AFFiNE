@@ -197,7 +197,7 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSetHasBackDestinat
     has_destination: JBoolean,
 ) {
     let _ = with_host_mut(handle, |host| {
-        host.has_back_destination = has_destination != 0;
+        host.set_has_back_destination(has_destination != 0);
     });
 }
 
@@ -329,6 +329,7 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceInsetsPx(
     density: JFloat,
 ) {
     let _ = with_host_mut(handle, |host| {
+        host.surface.set_density(density);
         host.insets = physical_insets_to_logical_dp(
             safe_top_px,
             safe_right_px,
@@ -337,6 +338,13 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceInsetsPx(
             ime_bottom_px,
             density,
         );
+        if host.surface.width_px > 0 && host.surface.height_px > 0 {
+            host.selection.set_viewport(
+                host.surface.width_px as f32,
+                host.surface.height_px as f32,
+                host.surface.density,
+            );
+        }
     });
 }
 

@@ -16,16 +16,33 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(target_os = "android")]
 mod android_window;
+pub mod autofill;
 pub mod datastore;
 mod ime;
+pub mod pdf;
+pub mod selection;
 pub mod storage;
 pub mod surface;
+pub mod text_layout;
 
 #[cfg(any(target_os = "android", test, feature = "host-jni"))]
 pub mod jni_bridge;
 #[cfg(any(target_os = "android", test, feature = "host-jni"))]
+pub mod jni_interaction;
+#[cfg(any(target_os = "android", test, feature = "host-jni"))]
 pub mod jni_storage;
 
+pub use autofill::{
+    AutofillEvent, AutofillFieldKind, AutofillFieldNode, AutofillRect, AutofillState,
+};
+pub use pdf::{
+    MAX_PDF_RENDER_DIM_PX, MAX_PDF_RENDER_PIXELS, PdfRenderError, argb8888_i32_to_rgba8,
+    argb8888_to_rgba8, pdf_page_cache_key, validate_pdf_page_request,
+};
+pub use selection::{
+    HandleGeometry, MagnifierState, RectF, SelectionHandleKind, SelectionOverlayState,
+    TeardropOrientation, TextDirection,
+};
 pub use storage::{
     AndroidSqliteBridge, AndroidWorkspaceCatalog, LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
 };
@@ -92,6 +109,37 @@ pub struct LogicalWindowInsets {
     /// Absolute keyboard overlap height from the window bottom edge in logical `dp`.
     /// Does not subtract `safe_bottom`; `ui::WindowInsets::effective()` takes the max.
     pub ime_bottom: f32,
+}
+
+impl LogicalWindowInsets {
+    /// Returns keyboard height strictly above the bottom navigation bar in logical `dp`,
+    /// preventing double-deduction when combining `safe_bottom` and `ime_bottom`.
+    pub fn effective_ime_above_nav_bar(&self) -> f32 {
+        (self.ime_bottom - self.safe_bottom).max(0.0)
+    }
+}
+
+/// Android back navigation dispatch strategy by API level.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum BackDispatchMode {
+    /// API 24-32: legacy `Activity.onBackPressed()` single-step commit.
+    LegacyOnBackPressed = 0,
+    /// API 33: `OnBackInvokedCallback` single-step commit.
+    OnBackInvoked = 1,
+    /// API 34+: `OnBackAnimationCallback` four-phase predictive back.
+    OnBackAnimation = 2,
+}
+
+/// Selects the Android back dispatch strategy for `sdk_int`.
+pub const fn back_dispatch_mode(sdk_int: u32) -> BackDispatchMode {
+    if sdk_int >= 34 {
+        BackDispatchMode::OnBackAnimation
+    } else if sdk_int >= 33 {
+        BackDispatchMode::OnBackInvoked
+    } else {
+        BackDispatchMode::LegacyOnBackPressed
+    }
 }
 
 /// Converts Android `WindowInsets` physical pixel measurements into logical `dp`.
@@ -416,13 +464,83 @@ pub fn verify_legacy_writeback_result(
     Ok(())
 }
 
+/// Default root destination route for the Android host navigation stack.
+pub const DEFAULT_ROOT_DESTINATION: &str = "workspace/home";
+
+/// Destination route stack driving Android back navigation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BackNavigationState {
+    destinations: Vec<String>,
+}
+
+impl Default for BackNavigationState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl BackNavigationState {
+    /// Creates a navigation stack seeded with the root destination (`depth == 0`).
+    pub fn new() -> Self {
+        Self {
+            destinations: vec![DEFAULT_ROOT_DESTINATION.to_string()],
+        }
+    }
+
+    /// Returns the currently active destination route.
+    pub fn current_destination(&self) -> Option<&str> {
+        self.destinations.last().map(String::as_str)
+    }
+
+    /// Pushes a non-empty destination route onto the navigation stack.
+    pub fn push_destination(&mut self, route: impl Into<String>) -> bool {
+        let route = route.into();
+        if route.is_empty() {
+            return false;
+        }
+        if self.destinations.is_empty() {
+            self.destinations.push(DEFAULT_ROOT_DESTINATION.to_string());
+        }
+        self.destinations.push(route);
+        true
+    }
+
+    /// Pops the top non-root destination, returning `None` when already at root.
+    pub fn pop_destination(&mut self) -> Option<String> {
+        if self.destinations.len() > 1 {
+            self.destinations.pop()
+        } else {
+            None
+        }
+    }
+
+    /// Returns the number of poppable non-root destinations.
+    pub fn depth(&self) -> u32 {
+        self.destinations.len().saturating_sub(1) as u32
+    }
+
+    /// Rebuilds synthetic stack entries to match an explicit poppable depth.
+    pub fn set_depth(&mut self, depth: u32) {
+        self.destinations.clear();
+        self.destinations.push(DEFAULT_ROOT_DESTINATION.to_string());
+        for level in 1..=depth {
+            self.destinations.push(format!("route/{level}"));
+        }
+    }
+}
+
 /// Pure safe-Rust state held behind an Android JNI host handle.
 #[derive(Debug)]
 pub struct AndroidHostState {
     pub back_gesture: BackGestureMachine,
-    pub has_back_destination: bool,
+    pub back_navigation: BackNavigationState,
     pub insets: LogicalWindowInsets,
     pub surface: SurfaceLifecycleState,
+    pub selection: SelectionOverlayState,
+    pub text_layout: text_layout::TextLayoutMetrics,
+    pub selection_drag_anchor_utf16: Option<usize>,
+    pub selection_drag_initial_handle: SelectionHandleKind,
+    pub autofill: AutofillState,
     pub upgrade_import: LegacyUpgradeImportState,
     pub workspace_catalog: AndroidWorkspaceCatalog,
     /// Losslessly preserves the raw `affine-local-workspace` value read on upgrade
@@ -443,9 +561,14 @@ impl Default for AndroidHostState {
     fn default() -> Self {
         Self {
             back_gesture: BackGestureMachine::new(),
-            has_back_destination: false,
+            back_navigation: BackNavigationState::new(),
             insets: LogicalWindowInsets::default(),
             surface: SurfaceLifecycleState::new(),
+            selection: SelectionOverlayState::new(),
+            text_layout: text_layout::TextLayoutMetrics::default(),
+            selection_drag_anchor_utf16: None,
+            selection_drag_initial_handle: SelectionHandleKind::None,
+            autofill: AutofillState::default(),
             upgrade_import: LegacyUpgradeImportState::Pending,
             workspace_catalog: AndroidWorkspaceCatalog::default(),
             raw_local_workspace_value: None,
@@ -474,13 +597,44 @@ impl AndroidHostState {
         )
     }
 
+    /// Pushes a destination route onto the host navigation stack.
+    pub fn push_back_destination(&mut self, route: impl Into<String>) -> bool {
+        self.back_navigation.push_destination(route)
+    }
+
+    /// Returns the currently active destination route.
+    pub fn current_back_destination(&self) -> Option<&str> {
+        self.back_navigation.current_destination()
+    }
+
+    /// Sets the number of poppable navigation entries on the back stack.
+    pub fn set_back_stack_depth(&mut self, depth: u32) {
+        self.back_navigation.set_depth(depth);
+    }
+
+    /// Returns the remaining number of poppable navigation entries.
+    pub fn back_stack_depth(&self) -> u32 {
+        self.back_navigation.depth()
+    }
+
+    /// Sets whether at least one back destination exists (`0` or `1` stack depth).
+    pub fn set_has_back_destination(&mut self, has_destination: bool) {
+        self.back_navigation.set_depth(u32::from(has_destination));
+    }
+
+    /// Returns `true` when at least one back destination can be popped.
+    pub fn has_back_destination(&self) -> bool {
+        self.back_navigation.depth() > 0
+    }
+
     /// Handles a back gesture phase; returns `true` only when the host consumed
-    /// the event (an unconsumed `Commit` at the navigation root returns `false`
-    /// so Android delegates to the system back action).
+    /// the event. Each `Commit` atomically pops the top destination from
+    /// `back_navigation` and returns `false` at the root so Android delegates to
+    /// system exit. `Cancel` leaves the active destination unchanged.
     pub fn handle_back_phase(&mut self, phase: BackGesturePhase, progress: f32) -> bool {
-        if phase == BackGesturePhase::Commit && !self.has_back_destination {
+        if phase == BackGesturePhase::Commit {
             let _ = self.back_gesture.transition(phase, progress);
-            return false;
+            return self.back_navigation.pop_destination().is_some();
         }
         self.back_gesture.transition(phase, progress).is_ok()
     }
@@ -595,6 +749,67 @@ impl AndroidHostState {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn back_dispatch_mode_and_effective_ime_insets_follow_api_and_nav_bar_rules() {
+        let mode_cases = [
+            (24_u32, BackDispatchMode::LegacyOnBackPressed),
+            (25, BackDispatchMode::LegacyOnBackPressed),
+            (32, BackDispatchMode::LegacyOnBackPressed),
+            (33, BackDispatchMode::OnBackInvoked),
+            (34, BackDispatchMode::OnBackAnimation),
+            (35, BackDispatchMode::OnBackAnimation),
+        ];
+        for (sdk_int, expected) in mode_cases {
+            assert_eq!(back_dispatch_mode(sdk_int), expected);
+        }
+
+        let inset_cases = [
+            // Keyboard taller than navigation bar -> deducts safe_bottom to avoid double subtraction.
+            ((72, 900, 3.0_f32), 276.0_f32),
+            // Keyboard hidden (ime_bottom == 0) -> clamps to 0.
+            ((72, 0, 3.0_f32), 0.0_f32),
+            // Keyboard inset smaller than nav bar -> clamps to 0.
+            ((72, 48, 3.0_f32), 0.0_f32),
+        ];
+        for ((nav_px, ime_px, density), expected_effective) in inset_cases {
+            let insets = physical_insets_to_logical_dp(0, 0, nav_px, 0, ime_px, density);
+            assert_eq!(insets.effective_ime_above_nav_bar(), expected_effective);
+        }
+
+        // Real destination navigation stack pops route-by-route, preserves route on Cancel,
+        // and returns false at root destination.
+        let mut host = AndroidHostState::new();
+        assert_eq!(
+            host.current_back_destination(),
+            Some(DEFAULT_ROOT_DESTINATION)
+        );
+        assert!(host.push_back_destination("doc/welcome"));
+        assert!(host.push_back_destination("doc/settings"));
+        assert_eq!(host.back_stack_depth(), 2);
+        assert_eq!(host.current_back_destination(), Some("doc/settings"));
+        assert!(host.handle_back_phase(BackGesturePhase::Start, 0.0));
+        assert!(host.handle_back_phase(BackGesturePhase::Progress, 0.4));
+        assert!(host.handle_back_phase(BackGesturePhase::Cancel, 0.0));
+        assert_eq!(host.current_back_destination(), Some("doc/settings"));
+        assert_eq!(host.back_stack_depth(), 2);
+        assert!(host.handle_back_phase(BackGesturePhase::Commit, 1.0));
+        assert_eq!(host.current_back_destination(), Some("doc/welcome"));
+        assert_eq!(host.back_stack_depth(), 1);
+        assert!(host.handle_back_phase(BackGesturePhase::Start, 0.0));
+        assert!(host.handle_back_phase(BackGesturePhase::Progress, 0.6));
+        assert!(host.handle_back_phase(BackGesturePhase::Commit, 1.0));
+        assert_eq!(
+            host.current_back_destination(),
+            Some(DEFAULT_ROOT_DESTINATION)
+        );
+        assert_eq!(host.back_stack_depth(), 0);
+        assert!(!host.handle_back_phase(BackGesturePhase::Commit, 1.0));
+        assert_eq!(
+            host.current_back_destination(),
+            Some(DEFAULT_ROOT_DESTINATION)
+        );
+    }
 
     #[test]
     fn autofill_gate_enforces_api_26_floor() {
@@ -1066,6 +1281,43 @@ mod tests {
 
             jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeDestroyHost(env, null, handle);
             assert_eq!(jni_bridge::snapshot_text(handle), None);
+        }
+    }
+
+    #[test]
+    fn single_line_vertical_drag_beyond_half_line_never_flips_handle_or_loupe() {
+        let mut host = AndroidHostState::new();
+        host.text_layout = crate::text_layout::TextLayoutMetrics::for_viewport(1080.0, 3.0);
+        host.selection.set_viewport(1080.0, 2400.0, 3.0);
+        let text: Vec<u16> = "Hello world".encode_utf16().collect();
+        host.commit_text_utf16(&text, 1);
+        host.set_selection(6, 11);
+
+        let initial_end_x = host.selection.end_handle.tip_x;
+        let end_cx = host.selection.end_handle.center_x;
+        let end_cy = host.selection.end_handle.center_y;
+        assert_eq!(
+            host.begin_selection_handle_drag(end_cx, end_cy),
+            SelectionHandleKind::End
+        );
+
+        for dy in [-43.0_f32, -60.0, -120.0, 0.0, 43.0, 120.0, 0.0] {
+            assert!(host.update_selection_handle_drag(end_cx, end_cy + dy));
+            assert_eq!(
+                host.selection_range(),
+                (6, 11),
+                "selection must remain [6, 11) at dy={dy}"
+            );
+            assert_eq!(
+                host.selection.active_drag,
+                SelectionHandleKind::End,
+                "active_drag must remain End at dy={dy}"
+            );
+            assert!(
+                (host.selection.magnifier.anchor_x - initial_end_x).abs() < 0.01,
+                "magnifier anchor_x ({}) must stay at right end ({initial_end_x}) at dy={dy}",
+                host.selection.magnifier.anchor_x
+            );
         }
     }
 }

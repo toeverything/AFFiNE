@@ -6,9 +6,18 @@ It combines a hand-written JNI Rust crate with a minimal Kotlin `SurfaceView` ac
 ## Hard boundaries
 
 - Keep zero JNA and zero UniFFI bindings.
-  Export hand-written `extern "C"` JNI symbols under `#[cfg(any(target_os = "android", test, feature = "host-jni"))]`.
+  Export hand-written `extern "C"` JNI symbols under `#[cfg(any(target_os = "android", test, feature = "host-jni"))]` across `src/jni_bridge.rs`, `src/jni_interaction.rs`, and `src/jni_storage.rs`.
 - Keep the main app shell free of any persistent `WebView` and free of `SurfaceHolder.lockCanvas` calls.
-- Gate `AutofillManager` integration at API 26 (`should_expose_autofill(sdk_int)` returns `sdk_int >= 26`).
+- Use `ShapedTextLayout` (cached Android `StaticLayout` with UAX #9 first-strong BiDi) as the single authoritative layout engine for `HostTextPreviewView` (the transitional host preview layer before S4 shared editor integration), teardrop handle tips, hit-testing, and `AndroidSelectionOverlayView` (`src/text_layout.rs` is the headless pure-Rust fallback).
+  Compute teardrop handle geometry, line-midpoint grab-offset drag, UTF-16 anchor-authoritative handle ownership (`nativeApplyTextDragEndpoints`), continuous zero-length crossover inversion, off-screen hiding, line-midpoint magnifier focus, and Copy/Cut/Paste/SelectAll actions wired to `ClipboardManager` (`HostClipboard` / `AndroidClipboardAdapter`, checking `primaryClipDescription` metadata without reading `primaryClip` during draw, and writing before deleting on `Cut`) and `InputConnection.performContextMenuAction` in `src/selection.rs`, `src/ime.rs`, and `MainActivity.kt`.
+  `AndroidSelectionOverlayView` fills a pre-allocated 24-float JNI buffer (`nativeFillSelectionOverlayGeometry`) and draws teardrop `Path` handles, `getSelectionPath` loupe highlights with centered focus carets, and `Copy | Cut | Paste` pills with dividers using zero per-frame allocations, zero Binder IPC in `onDraw`, and zero `SurfaceHolder.lockCanvas` calls.
+- Clear the default surface canvas to light `#FAFAFC` (`DEFAULT_CLEAR_COLOR_ARGB = 0xFFFA_FAFC`) and adapt `HostTextPreviewView` text and selection colors to surface luminance.
+  Preserve viewport size, display density, scroll offset, IME state, and texture generation across `surfaceDestroyed -> surfaceCreated -> surfaceChanged` recreation while gating `is_ready()` on per-generation `surfaceChanged` configuration (`configured_for_generation`).
+  `SurfaceLifecycleState` models `Vulkan -> Gles3 -> CpuFallback` downgrade on device loss; the current `android_window` runtime probe returns `(false, true)` and starts on EGL/GLES3 with CPU fallback.
+- Gate `AutofillManager` virtual view structure and per-field isolated value write-back at API 26 (`should_expose_autofill(sdk_int)` returns `sdk_int >= 26`, `IMPORTANT_FOR_AUTOFILL_YES` on `AffineSurfaceView`, implemented in `src/autofill.rs` and `AndroidAutofillController`).
+  Never emit synthetic placeholder asterisks or spaces in `ViewStructure`, update IME only when `autofillId == focusedFieldId`, sync manual `InputConnection` edits back to the focused Autofill field via `onFocusedTextEdited`, isolate form credentials from `HostDocumentStore` and `HostTextPreviewView` via `HostDocumentBufferController`, redact sensitive values in `Debug`, and zero cached plaintext on `commit`, `cancel`, and `clear_fields`.
+- Dispatch four-phase predictive back (`Start`, `Progress`, `Cancel`, `Commit`) on API 34+ (`OnBackAnimationCallback`, including standalone button/key `onBackInvoked` calls) and single-step atomic commit on API 24-33 (`OnBackInvokedCallback` / `onBackPressed`) against a real destination route stack (`BackNavigationState`) and `HostDocumentStore` driven by `MainActivity.navigateTo` and `MainActivity.openDocument`, blocking re-entrant commits and returning `false` at the root route.
+- Render PDF pages in place through `android.graphics.pdf.PdfRenderer` (`AndroidPdfPageRenderer`) with pre-validated Rust bounds, OOM cap (`4096x4096`), clamped `dpi_bucket >= 72` cache keys, and zero-Rust-heap chunked streaming `ARGB_8888 -> RGBA8` conversion with per-call JNI `ExceptionCheck` in `src/pdf.rs` and `src/jni_interaction.rs`.
 - Open in-place SQLite WAL databases only from the ordered `affine-local-workspace` allowlist.
   Never scan disk `*.db` files to discover local workspaces.
 - Store auth sessions in `<filesDir>/datastore/auth-sessions.preferences_pb` using `v1:<base64_iv>:<base64_ct_tag>` AES-GCM envelopes, 1970 Unix millisecond `i64` timestamps, and the persisted `auth-installation-id` key.
@@ -27,7 +36,7 @@ CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p affine-android-host --target 
 CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p affine-android-host --target x86_64-linux-android
 ```
 
-To run the real Kotlin-to-JNI parity harness on a host with `kotlinc` and `ANDROID_HOME`:
+To run the 22-sequence Kotlin-to-JNI parity harness on a host with `kotlinc` and `ANDROID_HOME`:
 
 ```sh
 kotlinc -classpath "$ANDROID_JAR" -d /tmp/affine-android-kotlin \

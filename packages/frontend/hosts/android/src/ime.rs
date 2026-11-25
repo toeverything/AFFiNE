@@ -1,6 +1,111 @@
 use crate::AndroidHostState;
+use crate::selection::SelectionHandleKind;
+use crate::text_layout::{
+    caret_position_for_offset, closest_offset_for_position, detect_direction_at_offset,
+};
 
 impl AndroidHostState {
+    /// Synchronizes native selection handles with the current UTF-16 selection.
+    ///
+    /// Preserves active drag state when passing through zero-length coincidence points.
+    pub fn sync_selection_overlay_from_ime(&mut self) {
+        if self.selection.active_drag != SelectionHandleKind::None {
+            return;
+        }
+        let (start, end) = self.selection_range();
+        if start == end {
+            self.selection.clear();
+            return;
+        }
+        let (sx, sy) = caret_position_for_offset(&self.utf16_text, start, &self.text_layout);
+        let (ex, ey) = caret_position_for_offset(&self.utf16_text, end, &self.text_layout);
+        let dir = detect_direction_at_offset(&self.utf16_text, start, &self.text_layout);
+        self.selection
+            .update_selection(sx, sy, ex, ey, self.text_layout.line_height, dir, true);
+    }
+
+    /// Starts dragging a selection handle and locks the opposite UTF-16 anchor so
+    /// slow drags across zero-length coincidence points smoothly invert selection.
+    pub fn begin_selection_handle_drag(
+        &mut self,
+        touch_x: f32,
+        touch_y: f32,
+    ) -> SelectionHandleKind {
+        let hit = self.selection.begin_drag(touch_x, touch_y);
+        let (sel_start, sel_end) = self.selection_range();
+        self.selection_drag_initial_handle = hit;
+        self.selection_drag_anchor_utf16 = match hit {
+            SelectionHandleKind::Start => Some(sel_end),
+            SelectionHandleKind::End => Some(sel_start),
+            SelectionHandleKind::None => None,
+        };
+        hit
+    }
+
+    /// Continues dragging the active selection handle, using UTF-16 offset comparison
+    /// against the locked anchor as the single authority for handle ownership and
+    /// magnifier placement.
+    pub fn update_selection_handle_drag(&mut self, touch_x: f32, touch_y: f32) -> bool {
+        if let Some(anchor) = self.selection_drag_anchor_utf16 {
+            let Some((probe_x, probe_y)) = self.selection.probe_drag_position(touch_x, touch_y)
+            else {
+                return false;
+            };
+            let offset =
+                closest_offset_for_position(&self.utf16_text, probe_x, probe_y, &self.text_layout);
+            let (lo, hi, active_handle) = if offset < anchor {
+                (offset, anchor, SelectionHandleKind::Start)
+            } else if offset > anchor {
+                (anchor, offset, SelectionHandleKind::End)
+            } else {
+                (anchor, anchor, self.selection_drag_initial_handle)
+            };
+            self.selected_start = lo;
+            self.selected_len = hi - lo;
+            let (sx, sy) = caret_position_for_offset(&self.utf16_text, lo, &self.text_layout);
+            let (ex, ey) = caret_position_for_offset(&self.utf16_text, hi, &self.text_layout);
+            let dir = detect_direction_at_offset(&self.utf16_text, lo, &self.text_layout);
+            self.selection.apply_text_drag_endpoints(
+                sx,
+                sy,
+                ex,
+                ey,
+                self.text_layout.line_height,
+                dir,
+                active_handle,
+            );
+            return true;
+        }
+        self.selection.update_drag(touch_x, touch_y)
+    }
+
+    /// Finishes dragging a selection handle and snaps handles to the final UTF-16 range.
+    pub fn end_selection_handle_drag(&mut self) -> bool {
+        self.selection_drag_anchor_utf16 = None;
+        self.selection_drag_initial_handle = SelectionHandleKind::None;
+        let has_menu = self.selection.end_drag().is_some();
+        if self.selected_len == 0 && self.selection.has_selection {
+            // Keep handles only if text selection is non-empty when synced with text.
+            if !self.utf16_text.is_empty() {
+                self.selection.clear();
+                return false;
+            }
+        } else if self.selected_len > 0 {
+            self.sync_selection_overlay_from_ime();
+        }
+        has_menu
+    }
+
+    /// Cancels an active handle drag (`ACTION_CANCEL`), hiding the magnifier.
+    pub fn cancel_selection_handle_drag(&mut self) {
+        self.selection_drag_anchor_utf16 = None;
+        self.selection_drag_initial_handle = SelectionHandleKind::None;
+        let _ = self.selection.end_drag();
+        if !self.utf16_text.is_empty() {
+            self.sync_selection_overlay_from_ime();
+        }
+    }
+
     pub fn text_string(&self) -> String {
         String::from_utf16_lossy(&self.utf16_text)
     }
@@ -43,6 +148,7 @@ impl AndroidHostState {
         let (lo, hi) = if a <= b { (a, b) } else { (b, a) };
         self.selected_start = lo;
         self.selected_len = hi - lo;
+        self.sync_selection_overlay_from_ime();
     }
 
     fn active_replace_span(&self) -> (usize, usize) {
@@ -85,6 +191,7 @@ impl AndroidHostState {
         self.selected_start =
             Self::cursor_after_edit(start, utf16.len(), new_cursor_pos, self.utf16_text.len());
         self.selected_len = 0;
+        self.sync_selection_overlay_from_ime();
     }
 
     /// Updates the composing text from `InputConnection.setComposingText`.
@@ -101,6 +208,7 @@ impl AndroidHostState {
         self.selected_start =
             Self::cursor_after_edit(start, utf16.len(), new_cursor_pos, self.utf16_text.len());
         self.selected_len = 0;
+        self.sync_selection_overlay_from_ime();
     }
 
     /// Sets or clears the composing span without altering text or selection,
@@ -138,6 +246,7 @@ impl AndroidHostState {
         self.selected_start =
             Self::cursor_after_edit(lo, utf16.len(), new_cursor_pos, self.utf16_text.len());
         self.selected_len = 0;
+        self.sync_selection_overlay_from_ime();
     }
 
     fn is_high_surrogate(u: u16) -> bool {

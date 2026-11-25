@@ -4,8 +4,8 @@
 //! Replaces the S1 one-shot `lockCanvas` placeholder and guarantees that
 //! `pending_frame` is only cleared after a frame successfully presents.
 
-/// Default observable first-frame clear color (opaque `#141414` ARGB).
-pub const DEFAULT_CLEAR_COLOR_ARGB: u32 = 0xFF14_1414;
+/// Default observable first-frame clear color (opaque `#FAFAFC` ARGB, matching iOS light canvas).
+pub const DEFAULT_CLEAR_COLOR_ARGB: u32 = 0xFFFA_FAFC;
 
 /// Active Android presentation backend with deterministic fallback order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,17 +37,24 @@ pub enum SurfacePresentError {
 }
 
 /// Lifecycle state for an Android `SurfaceView` native window binding.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SurfaceLifecycleState {
     pub active: bool,
     pub bound: bool,
+    pub configured_for_generation: bool,
     pub generation: u64,
+    pub texture_generation: u64,
+    pub recreation_count: u64,
     pub format: i32,
     pub width_px: u32,
     pub height_px: u32,
+    pub density: f32,
+    pub scroll_offset_x: f32,
+    pub scroll_offset_y: f32,
     pub frame_count: u64,
     pub last_frame_nanos: i64,
     pub pending_frame: bool,
+    pub needs_first_frame_after_recreate: bool,
     pub clear_color_argb: u32,
     pub backend: AndroidRenderBackend,
     pub present_failures: u64,
@@ -65,17 +72,57 @@ impl SurfaceLifecycleState {
         Self {
             active: false,
             bound: false,
+            configured_for_generation: false,
             generation: 0,
+            texture_generation: 0,
+            recreation_count: 0,
             format: 0,
             width_px: 0,
             height_px: 0,
+            density: 1.0,
+            scroll_offset_x: 0.0,
+            scroll_offset_y: 0.0,
             frame_count: 0,
             last_frame_nanos: 0,
             pending_frame: true,
+            needs_first_frame_after_recreate: true,
             clear_color_argb: DEFAULT_CLEAR_COLOR_ARGB,
             backend: AndroidRenderBackend::Unselected,
             present_failures: 0,
         }
+    }
+
+    /// Updates the display density preserved across surface recreation.
+    pub fn set_density(&mut self, density: f32) {
+        if density.is_finite() && density > 0.0 {
+            self.density = density;
+        }
+    }
+
+    /// Updates viewport scroll offsets preserved across surface recreation.
+    pub fn set_scroll_offset(&mut self, scroll_x: f32, scroll_y: f32) {
+        if scroll_x.is_finite() {
+            self.scroll_offset_x = scroll_x;
+        }
+        if scroll_y.is_finite() {
+            self.scroll_offset_y = scroll_y;
+        }
+    }
+
+    /// Handles a Vulkan device-lost or swapchain init failure by downgrading to GLES3
+    /// while preserving viewport, scroll, and session state.
+    pub fn report_vulkan_device_lost(&mut self) -> AndroidRenderBackend {
+        self.present_failures = self.present_failures.saturating_add(1);
+        self.texture_generation = self.texture_generation.saturating_add(1);
+        self.pending_frame = true;
+        self.needs_first_frame_after_recreate = true;
+        if matches!(
+            self.backend,
+            AndroidRenderBackend::Unselected | AndroidRenderBackend::Vulkan
+        ) {
+            self.backend = AndroidRenderBackend::Gles3;
+        }
+        self.backend
     }
 
     /// Selects the highest available backend: `Vulkan -> Gles3 -> CpuFallback`.
@@ -96,13 +143,20 @@ impl SurfaceLifecycleState {
 
     /// Handles `SurfaceHolder.Callback.surfaceCreated`.
     ///
-    /// Increments the surface generation and marks a pending redraw so
-    /// background/foreground recreation seamlessly restores the frame.
+    /// Increments surface and texture generations and marks `configured_for_generation = false`
+    /// until `surfaceChanged` delivers non-zero dimensions for this generation, while preserving
+    /// previous viewport dimensions, DPI, and scroll offset for layout memory.
     pub fn on_created(&mut self, surface_non_null: bool) {
         self.generation = self.generation.saturating_add(1);
+        self.texture_generation = self.texture_generation.saturating_add(1);
+        if self.generation > 1 {
+            self.recreation_count = self.recreation_count.saturating_add(1);
+        }
         self.active = true;
         self.bound = surface_non_null;
+        self.configured_for_generation = false;
         self.pending_frame = true;
+        self.needs_first_frame_after_recreate = true;
     }
 
     /// Handles `SurfaceHolder.Callback.surfaceChanged(format, width, height)`.
@@ -110,19 +164,23 @@ impl SurfaceLifecycleState {
         self.format = format;
         self.width_px = width_px;
         self.height_px = height_px;
-        if width_px > 0 && height_px > 0 {
+        self.configured_for_generation = width_px > 0 && height_px > 0;
+        if self.configured_for_generation {
             self.pending_frame = true;
         }
     }
 
     /// Handles `SurfaceHolder.Callback.surfaceDestroyed`.
     ///
-    /// Detaches the native surface while keeping `pending_frame = true` so the
-    /// next `surfaceCreated` + `surfaceChanged` pair immediately presents.
+    /// Detaches the native surface while preserving viewport size, DPI, scroll,
+    /// and backend state so the next `surfaceCreated` + `surfaceChanged` pair
+    /// immediately presents a recovered first frame.
     pub fn on_destroyed(&mut self) {
         self.active = false;
         self.bound = false;
+        self.configured_for_generation = false;
         self.pending_frame = true;
+        self.needs_first_frame_after_recreate = true;
     }
 
     /// Schedules a frame render on the next `Choreographer` tick.
@@ -130,9 +188,14 @@ impl SurfaceLifecycleState {
         self.pending_frame = true;
     }
 
-    /// Returns `true` when the surface is attached and has non-zero dimensions.
+    /// Returns `true` when the surface is attached and configured with non-zero
+    /// dimensions for the current generation.
     pub const fn is_ready(&self) -> bool {
-        self.active && self.bound && self.width_px > 0 && self.height_px > 0
+        self.active
+            && self.bound
+            && self.configured_for_generation
+            && self.width_px > 0
+            && self.height_px > 0
     }
 
     /// Begins a frame tick without clearing `pending_frame` until presentation succeeds.
@@ -158,6 +221,7 @@ impl SurfaceLifecycleState {
                 self.frame_count = self.frame_count.saturating_add(1);
                 self.last_frame_nanos = frame_time_nanos;
                 self.pending_frame = false;
+                self.needs_first_frame_after_recreate = false;
                 true
             }
             Err(err) => {
@@ -168,6 +232,7 @@ impl SurfaceLifecycleState {
                     SurfacePresentError::SurfaceLost | SurfacePresentError::BackendUnavailable
                 ) {
                     self.backend = self.backend.downgrade();
+                    self.texture_generation = self.texture_generation.saturating_add(1);
                 }
                 false
             }
@@ -280,5 +345,67 @@ mod tests {
         surface.on_changed(1, 0, 2400);
         assert!(!surface.is_ready());
         assert_eq!(surface.on_frame_tick(20_000), None);
+    }
+
+    #[test]
+    fn surface_recreation_and_vulkan_device_loss_preserve_viewport_dpi_and_scroll() {
+        let mut surface = SurfaceLifecycleState::new();
+        assert_eq!(
+            surface.select_backend(true, true),
+            AndroidRenderBackend::Vulkan
+        );
+        surface.set_density(3.0);
+        surface.set_scroll_offset(12.5, 420.0);
+        surface.on_created(true);
+        surface.on_changed(1, 1080, 2400);
+        assert!(surface.needs_first_frame_after_recreate);
+        assert_eq!(surface.recreation_count, 0);
+        assert_eq!(surface.texture_generation, 1);
+
+        // First frame presented under Vulkan.
+        assert_eq!(
+            surface.on_frame_tick(16_000_000),
+            Some(DEFAULT_CLEAR_COLOR_ARGB)
+        );
+        assert!(!surface.needs_first_frame_after_recreate);
+
+        // Simulate Vulkan device loss -> downgrades to GLES3 while keeping state intact.
+        assert_eq!(
+            surface.report_vulkan_device_lost(),
+            AndroidRenderBackend::Gles3
+        );
+        assert!(surface.pending_frame);
+        assert!(surface.needs_first_frame_after_recreate);
+        assert_eq!(surface.texture_generation, 2);
+        assert_eq!(surface.density, 3.0);
+        assert_eq!(surface.scroll_offset_x, 12.5);
+        assert_eq!(surface.scroll_offset_y, 420.0);
+
+        // Rotation / backgrounding -> surfaceDestroyed -> surfaceCreated -> surfaceChanged.
+        surface.on_destroyed();
+        assert!(!surface.is_ready());
+        assert_eq!(surface.density, 3.0);
+        assert_eq!(surface.scroll_offset_y, 420.0);
+
+        surface.on_created(true);
+        assert_eq!(surface.generation, 2);
+        assert_eq!(surface.recreation_count, 1);
+        assert_eq!(surface.texture_generation, 3);
+        // Before surfaceChanged arrives for generation 2, is_ready() MUST be false even though
+        // previous width_px/height_px are remembered for layout, preventing 0x0 present failures.
+        assert!(!surface.is_ready());
+        assert_eq!(surface.on_frame_tick(24_000_000), None);
+        assert_eq!(surface.present_failures, 1);
+
+        surface.on_changed(1, 2400, 1080);
+        assert!(surface.is_ready());
+        assert_eq!(
+            surface.on_frame_tick(32_000_000),
+            Some(DEFAULT_CLEAR_COLOR_ARGB)
+        );
+        assert!(!surface.needs_first_frame_after_recreate);
+        assert_eq!(surface.backend, AndroidRenderBackend::Gles3);
+        assert_eq!(surface.density, 3.0);
+        assert_eq!(surface.scroll_offset_y, 420.0);
     }
 }

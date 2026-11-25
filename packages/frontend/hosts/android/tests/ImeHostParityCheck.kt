@@ -1,19 +1,31 @@
 import android.view.inputmethod.InputConnection
 import app.affine.pro.host.AffineImeController
 import app.affine.pro.host.AffineSurfaceView
+import app.affine.pro.host.AndroidAutofillController
+import app.affine.pro.host.AndroidBackDispatcher
 import app.affine.pro.host.AndroidBootstrapCoordinator
 import app.affine.pro.host.AndroidCookieCleaner
+import app.affine.pro.host.AndroidPdfPageRenderer
+import app.affine.pro.host.AndroidSelectionCoordinator
 import app.affine.pro.host.AuthSessionStore
 import app.affine.pro.host.AuthTokenCipher
+import app.affine.pro.host.AutofillPlatformBackend
+import app.affine.pro.host.CaretBounds
 import app.affine.pro.host.CookieCleaner
+import app.affine.pro.host.HostClipboard
+import app.affine.pro.host.HostDocumentBufferController
+import app.affine.pro.host.HostDocumentStore
 import app.affine.pro.host.HttpUrlConnectionRefreshTransport
 import app.affine.pro.host.InMemoryAesKeyProvider
 import app.affine.pro.host.LegacyLocalStorageProbe
 import app.affine.pro.host.NativeBridge
+import app.affine.pro.host.PdfPageBackend
 import app.affine.pro.host.RefreshResult
 import app.affine.pro.host.RefreshTransport
 import app.affine.pro.host.Rfc4648Base64
+import app.affine.pro.host.SelectionGestureController
 import app.affine.pro.host.SessionPersistence
+import app.affine.pro.host.TextLayoutAuthority
 import java.io.File
 import java.net.ServerSocket
 import java.nio.charset.StandardCharsets
@@ -931,5 +943,933 @@ fun main() {
     tmpDir.deleteRecursively()
   }
 
-  println("Kotlin JNI AffineInputConnection + S2 Storage/DataStore/Probe real .so parity check passed (16/16 sequences)")
+  // 17. End-to-end Text <-> SelectionCoordinator/InputConnection: pure-Rust fallback layout
+  //     (proportional widths & per-paragraph UAX #9 BiDi), grab-offset 0px drag, vertical drag
+  //     beyond 0.5*line_height, slow drag across length==0 coincidence point (10->8->6->5->3),
+  //     required HostClipboard Copy/Cut/Paste, InputConnection.performContextMenuAction(cut/paste),
+  //     zero-alloc fillOverlayGeometry, and ACTION_CANCEL.
+  val selHandle = NativeBridge.nativeCreateHost()
+  try {
+    var overlayInvalidations = 0
+    val ime = AffineImeController({ selHandle }, onMutated = { overlayInvalidations += 1 })
+    val sel = AndroidSelectionCoordinator({ selHandle }, onMutated = { overlayInvalidations += 1 })
+    sel.setViewport(1080f, 2400f, 3f)
+
+    // Proportional fallback widths: "WWWW" is strictly wider than "iiii".
+    checkEq(ime.commitText("iiii", 1), true, "seq17 commit iiii")
+    checkEq(ime.setSelection(0, 4), true, "seq17 select iiii")
+    val narrowWidth = sel.overlayGeometry()!![9] - sel.overlayGeometry()!![3]
+    checkEq(ime.replaceText(0, ime.readText().length, "WWWW", 1), true, "seq17 replace with WWWW")
+    checkEq(ime.setSelection(0, 4), true, "seq17 select WWWW")
+    val wideWidth = sel.overlayGeometry()!![9] - sel.overlayGeometry()!![3]
+    checkEq(wideWidth > narrowWidth * 1.5f, true, "seq17 proportional fallback WWWW wider than iiii")
+
+    // Insert "Hello world" and select [6, 11) ("world") -> handles & action menu auto-appear.
+    val invBefore = overlayInvalidations
+    checkEq(ime.replaceText(0, ime.readText().length, "Hello world", 1), true, "seq17 commit Hello world")
+    checkEq(ime.setSelection(6, 11), true, "seq17 select [6, 11)")
+    checkEq(overlayInvalidations > invBefore, true, "seq17 IME mutations trigger overlay invalidation")
+    checkEq(ime.getSelectedText(), "world", "seq17 initial selected text")
+    val g0 = sel.overlayGeometry()!!
+    checkEq(g0.size, 24, "seq17 fixed 24-float overlay geometry")
+    checkEq(g0[0], 1f, "seq17 has_selection=1")
+    checkEq(g0[1], 0f, "seq17 LTR direction=0")
+    checkEq(g0[19], 1f, "seq17 action menu visible before drag")
+
+    // Grab End handle center and move 0px -> tip & selection stay identical.
+    val endCx = g0[11]
+    val endCy = g0[12]
+    val endTipX = g0[9]
+    checkEq(sel.beginDrag(endCx, endCy), 2, "seq17 hit End handle")
+    checkEq(sel.updateDrag(endCx, endCy), true, "seq17 0px drag succeeds")
+    checkEq(ime.getSelectedText(), "world", "seq17 0px drag preserves selection")
+    val gDragBuf = FloatArray(24)
+    checkEq(sel.fillOverlayGeometry(gDragBuf), true, "seq17 zero-alloc fillOverlayGeometry succeeds")
+    checkEq(gDragBuf[14], 1f, "seq17 magnifier visible during drag")
+    checkEq(gDragBuf[19], 0f, "seq17 action menu hidden during drag")
+    // Magnifier anchor_y must sit at the line vertical midpoint (strictly above tip_y).
+    checkEq(gDragBuf[16] < gDragBuf[10], true, "seq17 magnifier focus_y centered on line midpoint")
+
+    // Vertical drag beyond 0.5*line_height on a single line must keep End active and magnifier at right end.
+    for (dy in listOf(-43f, -60f, -120f, 0f, 43f, 120f, 0f)) {
+      checkEq(sel.updateDrag(endCx, endCy + dy), true, "seq17 vertical drag dy=$dy")
+      checkEq(ime.selectionStart(), 6, "seq17 vertical drag dy=$dy keeps start=6")
+      checkEq(ime.selectionEnd(), 11, "seq17 vertical drag dy=$dy keeps end=11")
+      checkEq(sel.fillOverlayGeometry(gDragBuf), true, "seq17 fillOverlayGeometry at dy=$dy")
+      checkEq(
+        kotlin.math.abs(gDragBuf[15] - endTipX) < 0.01f,
+        true,
+        "seq17 magnifier anchor_x stays on right end at dy=$dy",
+      )
+    }
+
+    // Slow continuous drag across coincidence point (length==0) with +/-1px vertical jitter:
+    // offsets 10 -> 8 -> 6 (len=0) -> 5 -> 3 => final selection [3, 6) == "lo ".
+    for ((deltaX, jitterY) in listOf(-36f to 1f, -72f to -1f, -157.68f to 1f, -178.56f to -1f, -229.68f to 1f)) {
+      checkEq(
+        sel.updateDrag(endCx + deltaX, endCy + jitterY),
+        true,
+        "seq17 slow drag step dx=$deltaX",
+      )
+    }
+    checkEq(ime.selectionStart(), 3, "seq17 inverted selection start=3")
+    checkEq(ime.selectionEnd(), 6, "seq17 inverted selection end=6")
+    checkEq(ime.getSelectedText(), "lo ", "seq17 inverted selection text == 'lo '")
+    checkEq(sel.endDrag(), true, "seq17 endDrag restores action menu")
+
+    // Real HostClipboard integration: pre-seeded stale value replaced on Copy & Cut,
+    // failing clipboard aborts Cut before deleting text, Paste restores Cut text.
+    var clipboardStore: String? = "stale-clipboard"
+    val mockClipboard = object : HostClipboard {
+      override fun setPlainText(label: String, text: String): Boolean {
+        clipboardStore = text
+        return true
+      }
+      override fun getPlainText(): String? = clipboardStore
+    }
+    val failingClipboard = object : HostClipboard {
+      override fun setPlainText(label: String, text: String): Boolean = false
+      override fun getPlainText(): String? = null
+    }
+    checkEq(sel.performCopy(ime, mockClipboard), "lo ", "seq17 Copy returns 'lo '")
+    checkEq(clipboardStore, "lo ", "seq17 Copy wrote 'lo ' to HostClipboard")
+
+    // ACTION_CANCEL hides magnifier cleanly.
+    val gBeforeCancel = sel.overlayGeometry()!!
+    checkEq(sel.beginDrag(gBeforeCancel[5], gBeforeCancel[6]) != 0, true, "seq17 begin drag before cancel")
+    checkEq(sel.overlayGeometry()!![14], 1f, "seq17 magnifier shown before cancel")
+    sel.cancelDrag()
+    checkEq(sel.overlayGeometry()!![14], 0f, "seq17 ACTION_CANCEL hides magnifier")
+
+    // Cut with failing clipboard must NOT delete text; Cut with working clipboard writes BEFORE deleting.
+    checkEq(sel.performCut(ime, failingClipboard), null, "seq17 Cut aborts when clipboard write fails")
+    checkEq(ime.readText(), "Hello world", "seq17 text preserved when clipboard write fails")
+    clipboardStore = "stale-before-cut"
+
+    // Real InputConnection.performContextMenuAction(cut / paste / selectAll) round-trip.
+    val ctxIc = AffineSurfaceView.createInputConnection(
+      handleProvider = { selHandle },
+      onContextMenuAction = { actionId ->
+        sel.handleContextMenuAction(actionId, ime, mockClipboard)
+      },
+    )
+    checkEq(ctxIc.performContextMenuAction(android.R.id.cut), true, "seq17 IC performContextMenuAction(cut)")
+    checkEq(clipboardStore, "lo ", "seq17 IC cut wrote 'lo ' to HostClipboard")
+    checkEq(ime.readText(), "Helworld", "seq17 text after IC cut")
+    checkEq(sel.overlayGeometry()!![0], 0f, "seq17 collapsed selection auto-hides handles")
+    checkEq(ctxIc.performContextMenuAction(android.R.id.paste), true, "seq17 IC performContextMenuAction(paste)")
+    checkEq(ime.readText(), "Hello world", "seq17 IC paste restored exact original text")
+    checkEq(ime.selectionStart(), 6, "seq17 IC paste placed cursor at end of pasted span")
+    checkEq(ime.selectionEnd(), 6, "seq17 IC paste collapsed selection")
+    checkEq(ctxIc.performContextMenuAction(android.R.id.selectAll), true, "seq17 IC selectAll")
+    checkEq(ime.getSelectedText(), "Hello world", "seq17 IC selectAll selected full text")
+
+    // Per-paragraph ("\n") UAX #9 BiDi: paragraph 0 ("A") is LTR, paragraph 1 ("שלום") is RTL.
+    checkEq(ime.replaceText(0, ime.readText().length, "A\nשלום", 1), true, "seq17 insert mixed BiDi paragraphs")
+    checkEq(ime.setSelection(0, 1), true, "seq17 select LTR paragraph 0")
+    checkEq(sel.overlayGeometry()!![1], 0f, "seq17 paragraph 0 ('A') is LTR")
+    checkEq(ime.setSelection(2, 6), true, "seq17 select RTL paragraph 1")
+    val gParaRtl = sel.overlayGeometry()!!
+    checkEq(gParaRtl[1], 1f, "seq17 paragraph 1 ('שלום') is RTL")
+    checkEq(gParaRtl[3] > gParaRtl[9], true, "seq17 paragraph 1 Start tip visually right of End tip")
+
+    // Pure RTL ("שלום עולם"): direction=1, Start handle visually right of End handle, drag updates IME.
+    checkEq(ime.replaceText(0, ime.readText().length, "שלום עולם", 1), true, "seq17 insert RTL text")
+    checkEq(ime.setSelection(0, 4), true, "seq17 select RTL [0, 4)")
+    val gRtl = sel.overlayGeometry()!!
+    checkEq(gRtl[1], 1f, "seq17 RTL direction=1")
+    checkEq(gRtl[3] > gRtl[9], true, "seq17 RTL Start tip is visually right of End tip")
+    checkEq(sel.beginDrag(gRtl[11], gRtl[12]), 2, "seq17 hit RTL End handle")
+    checkEq(sel.updateDrag(gRtl[11] - 56.88f, gRtl[12]), true, "seq17 drag RTL End handle left by 2 chars")
+    checkEq(ime.selectionStart(), 0, "seq17 RTL selection start=0")
+    checkEq(ime.selectionEnd(), 6, "seq17 RTL selection end=6")
+    checkEq(sel.endDrag(), true, "seq17 RTL endDrag")
+    sel.clear()
+    checkEq(sel.overlayGeometry()!![0], 0f, "seq17 clear hides selection")
+  } finally {
+    NativeBridge.nativeDestroyHost(selHandle)
+  }
+
+  // 18. Surface recreation state preservation (DPI, scroll, IME text, texture generation),
+  //     nav-bar-deducted effective IME inset, cross-generation readiness guard, and Vulkan -> GLES3 recovery.
+  val recHandle = NativeBridge.nativeCreateHost()
+  try {
+    val ime = AffineImeController { recHandle }
+    checkEq(ime.commitText("persist-me", 1), true, "seq18 seed IME text")
+    NativeBridge.nativeOnSurfaceInsetsPx(recHandle, 120, 0, 72, 0, 900, 3.0f)
+    checkEq(NativeBridge.nativeGetSurfaceDensity(recHandle), 3.0f, "seq18 density preserved")
+    checkEq(NativeBridge.nativeGetEffectiveImeBottomDp(recHandle), 276.0f, "seq18 IME inset deducts nav bar bottom")
+    NativeBridge.nativeSetSurfaceScrollOffset(recHandle, 0f, 512.5f)
+
+    // Select Vulkan (1), report Vulkan device loss -> downgrades seamlessly to GLES3 (2).
+    checkEq(NativeBridge.nativeSelectRenderBackend(recHandle, true, true), 1, "seq18 selected Vulkan")
+    checkEq(NativeBridge.nativeReportVulkanDeviceLost(recHandle), 2, "seq18 Vulkan device loss downgrades to GLES3")
+    checkEq(NativeBridge.nativeGetRenderBackend(recHandle), 2, "seq18 active backend is GLES3")
+    checkEq(NativeBridge.nativeGetTextureGeneration(recHandle) >= 1L, true, "seq18 texture generation advanced")
+
+    // Background destroy & rotation size change preserve scroll, density, and IME text;
+    // before surfaceCreated + surfaceChanged pair completes, surface stays not ready.
+    NativeBridge.nativeOnSurfaceChanged(recHandle, 1, 1080, 2400)
+    NativeBridge.nativeOnSurfaceDestroyed(recHandle)
+    checkEq(NativeBridge.nativeIsSurfaceReady(recHandle), false, "seq18 destroyed surface not ready")
+    checkEq(NativeBridge.nativeOnFrameTick(recHandle, 20_000_000L), 0, "seq18 detached tick returns 0")
+    NativeBridge.nativeOnSurfaceChanged(recHandle, 1, 2400, 1080)
+    checkEq(NativeBridge.nativeHasPendingFrame(recHandle), true, "seq18 pending frame set after destroy")
+    checkEq(NativeBridge.nativeGetSurfaceScrollY(recHandle), 512.5f, "seq18 scroll offset preserved")
+    checkEq(NativeBridge.nativeGetSurfaceDensity(recHandle), 3.0f, "seq18 density preserved after destroy")
+    checkEq(ime.readText(), "persist-me", "seq18 IME text preserved across surface destroy")
+  } finally {
+    NativeBridge.nativeDestroyHost(recHandle)
+  }
+
+  // 19. API 26+ AutofillManager virtual view structure bridge vs API 24/25 silent degradation,
+  //     zero fake placeholders, IME write-back, and sensitive value wipe on commit/cancel.
+  for (legacySdk in listOf(24, 25)) {
+    val legacyAfHandle = NativeBridge.nativeCreateHost()
+    try {
+      val events = mutableListOf<String>()
+      val mockBackend = object : AutofillPlatformBackend {
+        override fun notifyViewEntered(autofillId: Int, left: Int, top: Int, right: Int, bottom: Int) {
+          events.add("enter:$autofillId")
+        }
+        override fun notifyViewExited(autofillId: Int) { events.add("exit:$autofillId") }
+        override fun notifyValueChanged(autofillId: Int, text: String) { events.add("val:$autofillId") }
+        override fun commit() { events.add("commit") }
+        override fun cancel() { events.add("cancel") }
+      }
+      val af = AndroidAutofillController(legacySdk, { legacyAfHandle }, mockBackend)
+      checkEq(af.isEnabled, false, "seq19 API $legacySdk autofill disabled")
+      checkEq(af.registerField(101, 1, 10, 20, 400, 80, false, 0), false, "seq19 API $legacySdk register blocked")
+      af.onFieldFocusChanged(101)
+      checkEq(af.onAutofillValues(mapOf(101 to "a@b.com")), 0, "seq19 API $legacySdk autofill ignored")
+      checkEq(af.commit(), false, "seq19 API $legacySdk commit blocked")
+      checkEq(events.isEmpty(), true, "seq19 API $legacySdk zero platform AutofillManager calls")
+      checkEq(af.virtualNodesSnapshot().isEmpty(), true, "seq19 API $legacySdk empty virtual nodes")
+    } finally {
+      NativeBridge.nativeDestroyHost(legacyAfHandle)
+    }
+  }
+  val api26Handle = NativeBridge.nativeCreateHost()
+  try {
+    val events = mutableListOf<String>()
+    val mockBackend = object : AutofillPlatformBackend {
+      override fun notifyViewEntered(autofillId: Int, left: Int, top: Int, right: Int, bottom: Int) {
+        events.add("enter:$autofillId:$left,$top,$right,$bottom")
+      }
+      override fun notifyViewExited(autofillId: Int) { events.add("exit:$autofillId") }
+      override fun notifyValueChanged(autofillId: Int, text: String) { events.add("val:$autofillId:$text") }
+      override fun commit() { events.add("commit") }
+      override fun cancel() { events.add("cancel") }
+    }
+    var syncingFocus = false
+    lateinit var af: AndroidAutofillController
+    val ime = AffineImeController(
+      handleProvider = { api26Handle },
+      onMutated = {},
+      onTextEdited = { edited ->
+        if (!syncingFocus) {
+          af.onFocusedTextEdited(edited)
+        }
+      },
+    )
+    val afIc = AffineSurfaceView.createInputConnection(
+      handleProvider = { api26Handle },
+      onMutated = {},
+      onTextEdited = { edited ->
+        if (!syncingFocus) {
+          af.onFocusedTextEdited(edited)
+        }
+      },
+    )
+    af = AndroidAutofillController(
+      sdkInt = 26,
+      handleProvider = { api26Handle },
+      backend = mockBackend,
+      onValueCommitted = { id, text ->
+        if (af.focusedFieldId() == id) {
+          syncingFocus = true
+          try {
+            ime.replaceText(0, ime.readText().length, text, 1)
+          } finally {
+            syncingFocus = false
+          }
+        }
+      },
+      onFocusedFieldTextSync = { _, text ->
+        syncingFocus = true
+        try {
+          ime.replaceText(0, ime.readText().length, text, 1)
+        } finally {
+          syncingFocus = false
+        }
+      },
+    )
+    checkEq(af.isEnabled, true, "seq19 API 26 autofill enabled")
+    checkEq(af.registerField(101, 1, 20, 100, 800, 180, false, 0), true, "seq19 register email field")
+    checkEq(af.registerField(102, 2, 20, 200, 800, 280, true, 8), true, "seq19 register password field")
+    checkEq(af.registerField(103, 3, 20, 300, 800, 380, false, 0), true, "seq19 register OTP field")
+    // Empty/unset fields MUST return null (never synthetic "********" or spaces).
+    checkEq(af.resolveVirtualFieldValueForStructure(102), null, "seq19 unset password emits null, never fake asterisks")
+    checkEq(af.virtualNodesSnapshot().size, 3, "seq19 3 virtual autofill nodes exposed")
+
+    // Pure manual typing without any prior Autofill write-back:
+    // focus email (101) -> type "a@b.c" -> switch to password (102) -> switch back to email (101) => "a@b.c" preserved.
+    af.onFieldFocusChanged(101)
+    checkEq(afIc.commitText("a@b.c", 1), true, "seq19 manual type a@b.c without prior autofill")
+    checkEq(af.readFormValues()["email"], "a@b.c", "seq19 manual typed email stored in autofill state")
+    af.onFieldFocusChanged(102)
+    checkEq(ime.readText(), "", "seq19 switching to empty password clears IME")
+    af.onFieldFocusChanged(101)
+    checkEq(ime.readText(), "a@b.c", "seq19 returning to email restores manually typed a@b.c")
+    checkEq(af.readFormValues()["email"], "a@b.c", "seq19 form email remains a@b.c")
+
+    // Matrix test: 2 focus targets (email vs password) x 2 batch orders ([email, password] vs [password, email]).
+    // IME must ALWAYS equal the currently focused field and NEVER be overwritten by another field's password.
+    val batchOrders = listOf(
+      "email_first" to linkedMapOf(101 to "darksky@affine.pro", 102 to "hunter2!"),
+      "password_first" to linkedMapOf(102 to "hunter2!", 101 to "darksky@affine.pro"),
+    )
+    for ((focusId, expectedIme) in listOf(101 to "darksky@affine.pro", 102 to "hunter2!")) {
+      for ((orderName, batch) in batchOrders) {
+        af.onFieldFocusChanged(focusId)
+        checkEq(
+          AffineSurfaceView.dispatchAutofillBatch(af, batch),
+          2,
+          "seq19 batch $orderName focus=$focusId applied 2 fields",
+        )
+        checkEq(
+          ime.readText(),
+          expectedIme,
+          "seq19 batch $orderName focus=$focusId keeps IME strictly isolated to focused field",
+        )
+        val form = af.readFormValues()
+        checkEq(form["email"], "darksky@affine.pro", "seq19 form email preserved ($orderName)")
+        checkEq(form["password"], "hunter2!", "seq19 form password preserved ($orderName)")
+      }
+    }
+
+    // Manual IME edit round-trip: focus email (101) -> autofill A -> manual InputConnection edit to B ->
+    // switch focus to password (102) -> switch back to email (101) => both IME and form read B (never A).
+    af.onFieldFocusChanged(101)
+    checkEq(ime.readText(), "darksky@affine.pro", "seq19 email focused starts with autofilled A")
+    checkEq(afIc.deleteSurroundingText(18, 0), true, "seq19 manual deleteSurroundingText on email")
+    checkEq(afIc.commitText("edited@affine.pro", 1), true, "seq19 manual commitText B on email")
+    checkEq(ime.readText(), "edited@affine.pro", "seq19 IME now has manual edit B")
+    checkEq(af.readFormValues()["email"], "edited@affine.pro", "seq19 autofill store synced manual edit B")
+    af.onFieldFocusChanged(102)
+    checkEq(ime.readText(), "hunter2!", "seq19 switching to password loads password")
+    af.onFieldFocusChanged(101)
+    checkEq(ime.readText(), "edited@affine.pro", "seq19 returning to email preserves manual edit B (never clobbered by A)")
+    checkEq(af.readFormValues()["email"], "edited@affine.pro", "seq19 form email remains B after round-trip")
+
+    // Clearing field text to "" must still notify AutofillManager.
+    checkEq(af.updateFieldText(102, ""), true, "seq19 clear password text")
+    checkEq(events.contains("val:102:"), true, "seq19 empty text still notifies notifyValueChanged")
+    checkEq(af.resolveVirtualFieldValueForStructure(102), null, "seq19 cleared password resolves to null")
+
+    // Re-fill and verify structure JSON never leaks plaintext, then commit/cancel/clear wipe memory.
+    checkEq(af.updateFieldText(102, "hunter2!"), true, "seq19 restore password")
+    val structJson = af.virtualStructureJson()
+    checkEq(structJson.contains("\"emailAddress\""), true, "seq19 structure includes emailAddress")
+    checkEq(structJson.contains("\"password\""), true, "seq19 structure includes password")
+    checkEq(structJson.contains("\"smsOTPCode\""), true, "seq19 structure includes smsOTPCode")
+    checkEq(structJson.contains("hunter2!"), false, "seq19 structure JSON never leaks plaintext password")
+    checkEq(af.commit(), true, "seq19 autofill commit succeeded")
+    checkEq(af.resolveVirtualFieldValueForStructure(102), null, "seq19 commit wiped cached password")
+    checkEq(af.updateFieldText(102, "temp-secret"), true, "seq19 updateFieldText updates password")
+    checkEq(af.cancel(), true, "seq19 cancel wipes cached password")
+    checkEq(af.resolveVirtualFieldValueForStructure(102), null, "seq19 password wiped after cancel")
+    af.clearFields()
+    checkEq(af.virtualNodesSnapshot().isEmpty(), true, "seq19 clearFields removes all virtual nodes")
+    checkEq(events.contains("enter:101:20,100,800,180"), true, "seq19 notified enter 101")
+    checkEq(events.contains("exit:101"), true, "seq19 notified exit 101")
+    checkEq(events.contains("enter:102:20,200,800,280"), true, "seq19 notified enter 102")
+    checkEq(events.contains("commit"), true, "seq19 notified commit")
+    checkEq(events.contains("cancel"), true, "seq19 notified cancel")
+  } finally {
+    NativeBridge.nativeDestroyHost(api26Handle)
+  }
+
+  // 20. Four-phase predictive back dispatcher across API levels (24, 33, 34) with real
+  //     decrementing back_stack_depth, standalone API 34+ button-back, and re-entrancy guard.
+  val backCases = listOf(
+    Triple(24, 0, false),
+    Triple(32, 0, false),
+    Triple(33, 1, false),
+    Triple(34, 2, true),
+    Triple(35, 2, true),
+  )
+  for ((sdk, expectedMode, supportsPredictive) in backCases) {
+    val backHandle = NativeBridge.nativeCreateHost()
+    try {
+      var exitCalls = 0
+      var reentrantBlocked = false
+      var probeReentrantOnNextMutate = false
+      val visitedDestinations = mutableListOf<String>()
+      val docStore = HostDocumentStore()
+      var switchingDoc = false
+      val navIme = AffineImeController(
+        handleProvider = { backHandle },
+        onMutated = {},
+        onTextEdited = { text ->
+          if (!switchingDoc) {
+            docStore.saveCurrent(text)
+          }
+        },
+      )
+      lateinit var dispatcher: AndroidBackDispatcher
+      dispatcher = AndroidBackDispatcher(
+        sdkInt = sdk,
+        handleProvider = { backHandle },
+        onMutated = {
+          // Verify re-entrant commit inside Commit callback is blocked without double-popping.
+          if (probeReentrantOnNextMutate) {
+            probeReentrantOnNextMutate = false
+            if (supportsPredictive) {
+              if (!dispatcher.onBackInvoked()) reentrantBlocked = true
+            } else {
+              if (!dispatcher.onLegacyBackPressed()) reentrantBlocked = true
+            }
+          }
+        },
+        onDestinationChanged = { dest ->
+          if (dest != null) {
+            visitedDestinations.add(dest)
+            if (docStore.activeDocumentId != dest) {
+              val targetText = docStore.switchTo(dest, navIme.currentText())
+              switchingDoc = true
+              try {
+                navIme.replaceText(0, navIme.currentText().length, targetText, 1)
+              } finally {
+                switchingDoc = false
+              }
+            }
+          }
+        },
+        onSystemExit = { exitCalls += 1 },
+      )
+      checkEq(dispatcher.dispatchMode, expectedMode, "seq20 API $sdk dispatchMode")
+      checkEq(dispatcher.currentDestination(), "workspace/home", "seq20 API $sdk starts on root destination")
+
+      if (supportsPredictive) {
+        // Case A: 3-page real destination stack ("workspace/home" -> "doc/welcome" -> "doc/settings")
+        // driven via real host navigation entrypoints (navigateTo / openDocument),
+        // with two consecutive standalone button/key onBackInvoked() WITHOUT onBackStarted().
+        checkEq(dispatcher.navigateTo("doc/welcome"), true, "seq20 API $sdk navigateTo doc/welcome")
+        checkEq(dispatcher.openDocument("settings"), true, "seq20 API $sdk openDocument settings")
+        checkEq(dispatcher.currentDestination(), "doc/settings", "seq20 API $sdk active route doc/settings")
+        probeReentrantOnNextMutate = true
+        checkEq(dispatcher.onBackInvoked(), true, "seq20 API $sdk standalone back #1 pops to doc/welcome")
+        checkEq(dispatcher.currentDestination(), "doc/welcome", "seq20 API $sdk route now doc/welcome")
+        checkEq(reentrantBlocked, true, "seq20 API $sdk re-entrant onBackInvoked blocked")
+        checkEq(dispatcher.onBackInvoked(), true, "seq20 API $sdk standalone back #2 pops to workspace/home")
+        checkEq(dispatcher.currentDestination(), "workspace/home", "seq20 API $sdk route now workspace/home")
+        checkEq(exitCalls, 0, "seq20 API $sdk no exit while popping stack")
+        checkEq(dispatcher.onBackInvoked(), false, "seq20 API $sdk standalone back #3 at root returns false")
+        checkEq(exitCalls, 1, "seq20 API $sdk root delegates to onSystemExit")
+
+        // Case B: Real document content switch (Doc A -> Doc B):
+        // Gesture Cancel keeps "Doc B"; Gesture Commit restores "Doc A";
+        // follow-up standalone button back pops to workspace/home; root exits.
+        checkEq(dispatcher.openDocument("doc-a"), true, "seq20 API $sdk openDocument doc-a")
+        checkEq(navIme.commitText("Doc A", 1), true, "seq20 API $sdk write Doc A")
+        checkEq(dispatcher.openDocument("doc-b"), true, "seq20 API $sdk openDocument doc-b")
+        checkEq(navIme.commitText("Doc B", 1), true, "seq20 API $sdk write Doc B")
+        checkEq(docStore.activeDocumentId, "doc/doc-b", "seq20 API $sdk active doc is doc/doc-b")
+        checkEq(navIme.currentText(), "Doc B", "seq20 API $sdk IME holds Doc B")
+        checkEq(dispatcher.onBackStarted(0f), true, "seq20 API $sdk gesture Start")
+        checkEq(dispatcher.onBackProgressed(0.5f), true, "seq20 API $sdk gesture Progress")
+        checkEq(dispatcher.onBackCancelled(), true, "seq20 API $sdk gesture Cancel")
+        checkEq(dispatcher.currentDestination(), "doc/doc-b", "seq20 API $sdk Cancel keeps doc/doc-b")
+        checkEq(navIme.currentText(), "Doc B", "seq20 API $sdk Cancel keeps Doc B content")
+        checkEq(dispatcher.onBackStarted(0f), true, "seq20 API $sdk second gesture Start")
+        checkEq(dispatcher.onBackProgressed(0.8f), true, "seq20 API $sdk second gesture Progress")
+        checkEq(dispatcher.onBackInvoked(), true, "seq20 API $sdk gesture Commit pops to doc/doc-a")
+        checkEq(dispatcher.currentDestination(), "doc/doc-a", "seq20 API $sdk route doc/doc-a after gesture")
+        checkEq(docStore.activeDocumentId, "doc/doc-a", "seq20 API $sdk activeDocumentId restored to doc/doc-a")
+        checkEq(navIme.currentText(), "Doc A", "seq20 API $sdk IME content restored to Doc A")
+        checkEq(dispatcher.onBackInvoked(), true, "seq20 API $sdk follow-up button back pops to workspace/home")
+        checkEq(dispatcher.currentDestination(), "workspace/home", "seq20 API $sdk route workspace/home after button")
+        checkEq(dispatcher.onBackInvoked(), false, "seq20 API $sdk root back returns false")
+        checkEq(exitCalls, 2, "seq20 API $sdk second root exit delegated")
+        checkEq(visitedDestinations.contains("doc/doc-a"), true, "seq20 API $sdk destination callback fired")
+      } else {
+        checkEq(dispatcher.navigateTo("doc/welcome"), true, "seq20 API $sdk navigateTo doc/welcome")
+        checkEq(dispatcher.openDocument("settings"), true, "seq20 API $sdk openDocument settings")
+        checkEq(dispatcher.onBackStarted(0f), false, "seq20 API $sdk predictive Start disabled")
+        probeReentrantOnNextMutate = true
+        checkEq(dispatcher.onLegacyBackPressed(), true, "seq20 API $sdk legacy #1 pops to doc/welcome")
+        checkEq(dispatcher.currentDestination(), "doc/welcome", "seq20 API $sdk legacy route doc/welcome")
+        checkEq(reentrantBlocked, true, "seq20 API $sdk re-entrant onLegacyBackPressed blocked")
+        checkEq(dispatcher.onLegacyBackPressed(), true, "seq20 API $sdk legacy #2 pops to workspace/home")
+        checkEq(dispatcher.currentDestination(), "workspace/home", "seq20 API $sdk legacy route workspace/home")
+        checkEq(exitCalls, 0, "seq20 API $sdk no exit while popping stack")
+        checkEq(dispatcher.onLegacyBackPressed(), false, "seq20 API $sdk legacy root returns false")
+        checkEq(exitCalls, 1, "seq20 API $sdk legacy root delegates to system exit")
+      }
+    } finally {
+      NativeBridge.nativeDestroyHost(backHandle)
+    }
+  }
+
+  // 21. Native PdfRenderer page bridge: valid ARGB_8888 -> RGBA8, negative dpiBucket clamp,
+  //     out-of-bounds & OOM cap rejection, and >4096-pixel multi-chunk streaming conversion.
+  var backendRenderCalls = 0
+  val fakePdfBackend = object : PdfPageBackend {
+    override fun pageCount(): Int = 3
+    override fun renderPageArgb(pageIndex: Int, widthPx: Int, heightPx: Int): IntArray {
+      backendRenderCalls += 1
+      if (widthPx == 2 && heightPx == 2) {
+        return intArrayOf(
+          0xFF112233.toInt(),
+          0x80AABBCC.toInt(),
+          0xFFFFFFFF.toInt(),
+          0x00010203,
+        )
+      }
+      return IntArray(widthPx * heightPx) { idx ->
+        if (idx % 2 == 0) 0xFF102030.toInt() else 0x80405060.toInt()
+      }
+    }
+    override fun close() {}
+  }
+  AndroidPdfPageRenderer("doc-pdf-1", fakePdfBackend).use { pdf ->
+    checkEq(pdf.renderPageRgba(-1, 2, 2), null, "seq21 negative page rejected")
+    checkEq(pdf.renderPageRgba(3, 2, 2), null, "seq21 out-of-bounds page rejected")
+    checkEq(pdf.renderPageRgba(0, 4097, 2), null, "seq21 OOM width > 4096 rejected")
+    checkEq(pdf.renderPageRgba(0, 0, 2), null, "seq21 zero width rejected")
+    checkEq(backendRenderCalls, 0, "seq21 invalid requests never invoke PdfRenderer backend")
+
+    val page = pdf.renderPageRgba(1, 2, 2, dpiBucket = 320)
+    checkEq(page != null, true, "seq21 valid 2x2 page rendered")
+    checkEq(backendRenderCalls, 1, "seq21 backend invoked once for valid page")
+    checkEq(page!!.cacheKey, "pdf:doc-pdf-1:p1:2x2@320dpi", "seq21 deterministic cache key")
+    val expectedRgba = byteArrayOf(
+      0x11, 0x22, 0x33, 0xFF.toByte(),
+      0xAA.toByte(), 0xBB.toByte(), 0xCC.toByte(), 0x80.toByte(),
+      0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte(),
+      0x01, 0x02, 0x03, 0x00,
+    )
+    checkEq(page.rgbaBytes.contentEquals(expectedRgba), true, "seq21 exact ARGB_8888 -> RGBA8 conversion")
+
+    // Negative dpiBucket clamps to 72dpi without NPE.
+    checkEq(
+      NativeBridge.nativePdfPageCacheKey("doc-pdf-1", 1, 2, 2, -100),
+      "pdf:doc-pdf-1:p1:2x2@72dpi",
+      "seq21 negative dpiBucket clamped to 72dpi without NPE",
+    )
+    // Mismatched array length rejected before conversion.
+    checkEq(
+      NativeBridge.nativePdfConvertArgbToRgba(intArrayOf(1, 2, 3), 2, 2),
+      null,
+      "seq21 mismatched pixel array length returns null",
+    )
+    // Multi-chunk streaming conversion (> 4096 pixels: 100 x 50 = 5000 pixels).
+    val largePage = pdf.renderPageRgba(2, 100, 50, dpiBucket = -5)
+    checkEq(largePage != null, true, "seq21 100x50 multi-chunk streaming page rendered")
+    checkEq(largePage!!.cacheKey, "pdf:doc-pdf-1:p2:100x50@72dpi", "seq21 negative dpi clamped via renderer")
+    checkEq(largePage.rgbaBytes.size, 5000 * 4, "seq21 5000-pixel RGBA8 byte length")
+    checkEq(largePage.rgbaBytes[0], 0x10.toByte(), "seq21 chunk 0 pixel 0 R")
+    checkEq(largePage.rgbaBytes[4999 * 4 + 3], 0x80.toByte(), "seq21 chunk 1 last pixel A")
+  }
+
+  // 22. Authoritative TextLayoutAuthority selection parity (zero snap-back to Rust estimates on
+  //     ACTION_UP/ACTION_CANCEL/selectAll), line-midpoint vertical grab probe on multi-line text,
+  //     cross-anchor active_drag flip for loupe tracking, and strict Autofill/Document buffer isolation.
+  val layoutParityHandle = NativeBridge.nativeCreateHost()
+  try {
+    val narrowLayout = object : TextLayoutAuthority {
+      override var cachedText: String = ""
+      private val originX = 72f
+      private val originY = 240f
+      private val lineH = 60f
+
+      private fun charWidth(c: Char): Float = when (c) {
+        'i' -> 8f
+        ' ' -> 14f
+        else -> 30f
+      }
+
+      override fun ensureLayoutReady(text: String, viewportWidthPx: Int, density: Float): Boolean {
+        cachedText = text
+        return true
+      }
+
+      override fun caretBounds(
+        utf16Offset: Int,
+        isSelectionEnd: Boolean,
+        selStart: Int,
+        selEnd: Int,
+      ): CaretBounds {
+        val off = utf16Offset.coerceIn(0, cachedText.length)
+        var line = 0
+        var x = originX
+        for (idx in 0 until off) {
+          val ch = cachedText[idx]
+          if (ch == '\n') {
+            line += 1
+            x = originX
+          } else {
+            x += charWidth(ch)
+          }
+        }
+        val top = originY + line * lineH
+        return CaretBounds(x = x, top = top, bottom = top + lineH, lineIndex = line, isRtlParagraph = false)
+      }
+
+      override fun selectionEndCarets(selStart: Int, selEnd: Int): Pair<CaretBounds, CaretBounds> =
+        caretBounds(selStart, false, selStart, selEnd) to caretBounds(selEnd, true, selStart, selEnd)
+
+      override fun closestOffset(x: Float, y: Float): Int {
+        val lines = cachedText.split('\n')
+        val targetLine = if (y < originY) 0 else ((y - originY) / lineH).toInt().coerceIn(0, lines.lastIndex)
+        var lineStartOff = 0
+        for (l in 0 until targetLine) {
+          lineStartOff += lines[l].length + 1
+        }
+        val lineText = lines[targetLine]
+        var bestOff = lineStartOff
+        var curX = originX
+        var bestDist = kotlin.math.abs(x - curX)
+        for (i in lineText.indices) {
+          curX += charWidth(lineText[i])
+          val d = kotlin.math.abs(x - curX)
+          if (d < bestDist) {
+            bestDist = d
+            bestOff = lineStartOff + i + 1
+          }
+        }
+        return bestOff
+      }
+    }
+
+    val ime = AffineImeController { layoutParityHandle }
+    val sel = AndroidSelectionCoordinator({ layoutParityHandle })
+    sel.setViewport(1080f, 2400f, 3f)
+    val gesture = SelectionGestureController(
+      coordinator = sel,
+      layoutAuthority = narrowLayout,
+      selectionStartProvider = { ime.selectionStart() },
+      selectionEndProvider = { ime.selectionEnd() },
+      onSelectionChanged = { lo, hi -> ime.setSelection(lo, hi) },
+    )
+
+    // Part A: "iiiiiiiiii world" [11, 16) -> ACTION_DOWN -> ACTION_MOVE -> ACTION_UP & ACTION_CANCEL
+    // and performContextMenuAction(selectAll) must keep 0.0px error against TextLayoutAuthority.
+    checkEq(ime.commitText("iiiiiiiiii world", 1), true, "seq22 commit narrow-i string")
+    checkEq(ime.setSelection(11, 16), true, "seq22 select [11, 16) world")
+    gesture.syncSelectionFromLayout(ime.currentText(), 11, 16, 1080, 3f)
+    val expectedWorld = narrowLayout.selectionEndCarets(11, 16)
+    val gInit = sel.overlayGeometry()!!
+    checkEq(gInit[3], expectedWorld.first.x, "seq22 initial start tip matches authoritative layout")
+    checkEq(gInit[9], expectedWorld.second.x, "seq22 initial end tip matches authoritative layout")
+    checkEq(gesture.onDown(gInit[11], gInit[12], 3f), 2, "seq22 hit End handle on narrow-i string")
+    checkEq(gesture.onMove(gInit[11], gInit[12]), true, "seq22 0px drag on narrow-i string")
+    checkEq(gesture.onUp(1080, 3f), true, "seq22 ACTION_UP restores menu")
+    val gAfterUp = sel.overlayGeometry()!!
+    checkEq(gAfterUp[3], expectedWorld.first.x, "seq22 ACTION_UP start tip keeps 0px error (never snaps to Rust estimate)")
+    checkEq(gAfterUp[9], expectedWorld.second.x, "seq22 ACTION_UP end tip keeps 0px error (never snaps to Rust estimate)")
+    checkEq(gesture.onDown(gAfterUp[11], gAfterUp[12], 3f), 2, "seq22 hit End handle before cancel")
+    checkEq(gesture.onCancel(1080, 3f), true, "seq22 ACTION_CANCEL finishes cleanly")
+    val gAfterCancel = sel.overlayGeometry()!!
+    checkEq(gAfterCancel[3], expectedWorld.first.x, "seq22 ACTION_CANCEL start tip keeps 0px error")
+    checkEq(gAfterCancel[9], expectedWorld.second.x, "seq22 ACTION_CANCEL end tip keeps 0px error")
+
+    val dummyClipboard = object : HostClipboard {
+      var data: String? = null
+      override fun setPlainText(label: String, text: String): Boolean { data = text; return true }
+      override fun getPlainText(): String? = data
+    }
+    val selectAllIc = AffineSurfaceView.createInputConnection(
+      handleProvider = { layoutParityHandle },
+      onContextMenuAction = { id ->
+        val ok = sel.handleContextMenuAction(id, ime, dummyClipboard)
+        if (ok) gesture.syncSelectionFromLayout(ime.currentText(), ime.selectionStart(), ime.selectionEnd(), 1080, 3f)
+        ok
+      },
+    )
+    checkEq(selectAllIc.performContextMenuAction(android.R.id.selectAll), true, "seq22 IC selectAll")
+    val expectedAll = narrowLayout.selectionEndCarets(0, 16)
+    val gAll = sel.overlayGeometry()!!
+    checkEq(gAll[3], expectedAll.first.x, "seq22 selectAll start tip matches layout")
+    checkEq(gAll[9], expectedAll.second.x, "seq22 selectAll end tip matches layout")
+
+    // Part B: Multi-line line-0 handle grab uses line midpoint (never jumps to line 1),
+    // and cross-anchor inversion flips Rust active_drag so magnifier follows moving left end.
+    checkEq(ime.replaceText(0, ime.currentText().length, "First line\nSecond line", 1), true, "seq22 seed 2-line text")
+    checkEq(ime.setSelection(6, 10), true, "seq22 select line-0 'line' [6, 10)")
+    gesture.syncSelectionFromLayout(ime.currentText(), 6, 10, 1080, 3f)
+    val gMulti = sel.overlayGeometry()!!
+    checkEq(gesture.onDown(gMulti[11], gMulti[12], 3f), 2, "seq22 grab line-0 End handle")
+    // Stationary / tiny horizontal move must stay on line 0 (never jump to line 1).
+    checkEq(gesture.onMove(gMulti[11], gMulti[12]), true, "seq22 stationary move on line 0")
+    checkEq(ime.selectionStart(), 6, "seq22 line-0 grab stayed on line 0 start=6")
+    checkEq(ime.selectionEnd(), 10, "seq22 line-0 grab stayed on line 0 end=10")
+    // Drag right handle left past fixed anchor (offset 6) to offset 2 -> active_drag flips to Start
+    // and magnifier.anchor_x tracks moving left end caret(2).x (NOT stationary right anchor caret(6).x).
+    val targetLeftX = narrowLayout.caretBounds(2).x
+    val endTipInitialX = narrowLayout.caretBounds(10).x
+    checkEq(gesture.onMove(gMulti[11] + (targetLeftX - endTipInitialX), gMulti[12]), true, "seq22 cross-anchor drag to offset 2")
+    checkEq(ime.selectionStart(), 2, "seq22 cross-anchor inverted start=2")
+    checkEq(ime.selectionEnd(), 6, "seq22 cross-anchor inverted end=6")
+    val gCross = sel.overlayGeometry()!!
+    checkEq(gCross[14], 1f, "seq22 magnifier visible during cross-anchor drag")
+    checkEq(kotlin.math.abs(gCross[15] - targetLeftX) < 0.01f, true, "seq22 magnifier anchor_x tracks moving left end")
+    checkEq(gesture.onUp(1080, 3f), true, "seq22 release after cross-anchor drag")
+    checkEq(ime.selectionStart(), 2, "seq22 post-release inverted start=2")
+    checkEq(ime.selectionEnd(), 6, "seq22 post-release inverted end=6")
+
+    // Mixed-BiDi outward teardrop orientation: embedded LTR run ("12", start_x < end_x) inside RTL
+    // paragraph and embedded RTL run ("אב", start_x > end_x) inside LTR paragraph both lean outward.
+    sel.updateSelection(200f, 300f, 240f, 300f, 60f, rtl = true, hasSelection = true)
+    val gMixedLtrInRtl = sel.overlayGeometry()!!
+    checkEq(gMixedLtrInRtl[5] < gMixedLtrInRtl[3], true, "seq22 RTL-para LTR-run start bulb leans left")
+    checkEq(gMixedLtrInRtl[11] > gMixedLtrInRtl[9], true, "seq22 RTL-para LTR-run end bulb leans right")
+    checkEq(gMixedLtrInRtl[11] - gMixedLtrInRtl[5] > gMixedLtrInRtl[7] * 2f, true, "seq22 RTL-para LTR-run bulbs never overlap")
+
+    sel.updateSelection(240f, 300f, 200f, 300f, 60f, rtl = false, hasSelection = true)
+    val gMixedRtlInLtr = sel.overlayGeometry()!!
+    checkEq(gMixedRtlInLtr[5] > gMixedRtlInLtr[3], true, "seq22 LTR-para RTL-run start bulb leans right")
+    checkEq(gMixedRtlInLtr[11] < gMixedRtlInLtr[9], true, "seq22 LTR-para RTL-run end bulb leans left")
+    checkEq(gMixedRtlInLtr[5] - gMixedRtlInLtr[11] > gMixedRtlInLtr[7] * 2f, true, "seq22 LTR-para RTL-run bulbs never overlap")
+
+    // Part C: Strict Autofill vs Document buffer isolation across password fill, editing, and route switch.
+    val docStore = HostDocumentStore("doc/roadmap", "")
+    lateinit var afCtrl: AndroidAutofillController
+    lateinit var bufCtrl: HostDocumentBufferController
+    val docIme = AffineImeController(
+      handleProvider = { layoutParityHandle },
+      onMutated = {},
+      onTextEdited = { t -> bufCtrl.onImeTextEdited(t) },
+    )
+    afCtrl = AndroidAutofillController(
+      sdkInt = 26,
+      handleProvider = { layoutParityHandle },
+      onValueCommitted = { id, text ->
+        if (afCtrl.focusedFieldId() == id) {
+          bufCtrl.applyAutofillTextToIme(text)
+        }
+      },
+      onFocusedFieldTextSync = { _, text -> bufCtrl.applyAutofillTextToIme(text) },
+    )
+    bufCtrl = HostDocumentBufferController(
+      documentStore = docStore,
+      imeProvider = { docIme },
+      autofillProvider = { afCtrl },
+    )
+    val nav = AndroidBackDispatcher(
+      sdkInt = 34,
+      handleProvider = { layoutParityHandle },
+      onDestinationChanged = { dest -> if (dest != null) bufCtrl.onRouteChanged(dest) },
+    )
+    checkEq(nav.openDocument("roadmap"), true, "seq22 open doc/roadmap")
+    checkEq(docIme.replaceText(0, docIme.currentText().length, "Project roadmap", 1), true, "seq22 write roadmap text")
+    checkEq(bufCtrl.lastPreviewText, "Project roadmap", "seq22 preview shows Project roadmap")
+
+    checkEq(afCtrl.registerField(202, 2, 20, 200, 800, 280, true, 0), true, "seq22 register password field")
+    bufCtrl.onAutofillFocusChanged(202)
+    checkEq(afCtrl.onAutofillValues(mapOf(202 to "s3cr3t!")), 1, "seq22 autofill password s3cr3t!")
+    checkEq(bufCtrl.lastPreviewText.contains("s3cr3t!"), false, "seq22 password NEVER leaks into HostTextPreviewView")
+    checkEq(bufCtrl.lastPreviewText, "Project roadmap", "seq22 preview stays Project roadmap while editing password")
+    checkEq(docStore.readDocument("doc/roadmap"), "Project roadmap", "seq22 documentStore stays Project roadmap")
+
+    // Switch route to doc B while password was focused, then back to doc A -> roadmap intact, password intact.
+    checkEq(nav.openDocument("notes"), true, "seq22 navigate to doc/notes while password focused")
+    checkEq(docIme.commitText("Meeting notes", 1), true, "seq22 write notes doc")
+    checkEq(nav.onBackInvoked(), true, "seq22 back to doc/roadmap")
+    checkEq(docIme.currentText(), "Project roadmap", "seq22 doc/roadmap restored intact")
+    checkEq(bufCtrl.lastPreviewText, "Project roadmap", "seq22 preview restored to Project roadmap")
+    checkEq(afCtrl.readFormValues()["password"], "s3cr3t!", "seq22 autofill password preserved")
+
+    // Part D: Autofill session exit via commitAutofillSession / cancelAutofillSession / clearAutofillFields
+    // must restore the document buffer immediately so subsequent typing and route switches never leak form text.
+    val exitModes = listOf("commit", "cancel", "clear")
+    for (mode in exitModes) {
+      checkEq(afCtrl.registerField(202, 2, 20, 200, 800, 280, true, 0), true, "seq22 ($mode) register password field")
+      checkEq(docIme.replaceText(0, docIme.currentText().length, "Doc-$mode", 1), true, "seq22 ($mode) seed doc text")
+      bufCtrl.recordDocumentSelection(0, 3)
+      bufCtrl.onAutofillFocusChanged(202)
+      checkEq(docIme.replaceText(0, docIme.currentText().length, "f0rm-secret-99", 1), true, "seq22 ($mode) type secret in form")
+      checkEq(docIme.setSelection(0, 6), true, "seq22 ($mode) select secret in form")
+      // Simulated surfaceChanged while Autofill focused must keep currentDocumentText() untouched.
+      checkEq(bufCtrl.isAutofillFocused(), true, "seq22 ($mode) autofill focused before resize")
+      checkEq(bufCtrl.currentDocumentText(), "Doc-$mode", "seq22 ($mode) currentDocumentText hides form secret")
+      checkEq(bufCtrl.lastPreviewText, "Doc-$mode", "seq22 ($mode) preview hides form secret")
+      when (mode) {
+        "commit" -> checkEq(bufCtrl.commitAutofillSession(), true, "seq22 commitAutofillSession")
+        "cancel" -> checkEq(bufCtrl.cancelAutofillSession(), true, "seq22 cancelAutofillSession")
+        "clear" -> bufCtrl.clearAutofillFields()
+      }
+      checkEq(bufCtrl.isAutofillFocused(), false, "seq22 ($mode) autofill unfocused after exit")
+      checkEq(docIme.currentText(), "Doc-$mode", "seq22 ($mode) IME immediately restored to doc text")
+      checkEq(docIme.setSelection(docIme.currentText().length, docIme.currentText().length), true, "seq22 ($mode) move caret to end")
+      checkEq(docIme.commitText("!", 1), true, "seq22 ($mode) first edit after exit appends to doc")
+      checkEq(docIme.currentText(), "Doc-$mode!", "seq22 ($mode) post-exit edit preserved doc without form text")
+      checkEq(docStore.readDocument("doc/roadmap"), "Doc-$mode!", "seq22 ($mode) store saved clean doc")
+      checkEq(nav.openDocument("scratch-$mode"), true, "seq22 ($mode) navigate away after exit")
+      checkEq(nav.onBackInvoked(), true, "seq22 ($mode) navigate back after exit")
+      checkEq(docIme.currentText(), "Doc-$mode!", "seq22 ($mode) roundtrip route switch kept clean doc")
+      checkEq(docIme.currentText().contains("f0rm-secret-99"), false, "seq22 ($mode) no form secret leaked")
+    }
+
+    // Masked password field selection must clear document selection overlay while keeping form IME selection,
+    // and must block copy/cut from writing masked password plaintext to the system clipboard.
+    val maskedClipboard = object : HostClipboard {
+      var data: String? = "text copied elsewhere"
+      override fun setPlainText(label: String, text: String): Boolean {
+        data = text
+        return true
+      }
+      override fun getPlainText(): String? = data
+    }
+    val maskedSel = AndroidSelectionCoordinator({ layoutParityHandle })
+    maskedSel.setViewport(1080f, 2400f, 3f)
+    checkEq(afCtrl.registerField(202, 2, 20, 200, 800, 280, true, 0), true, "seq22 masked register password field")
+    checkEq(docIme.replaceText(0, docIme.currentText().length, "Hello document", 1), true, "seq22 masked seed doc")
+    bufCtrl.onAutofillFocusChanged(202)
+    checkEq(bufCtrl.isFocusedAutofillFieldMasked(), true, "seq22 focused password field is masked")
+    checkEq(docIme.replaceText(0, docIme.currentText().length, "s3cr3t-pass", 1), true, "seq22 type masked password")
+    checkEq(docIme.setSelection(0, 6), true, "seq22 select [0, 6) inside masked password")
+    // Mirror MainActivity.onImeMutated suppression when Autofill is focused.
+    if (bufCtrl.isAutofillFocused()) {
+      maskedSel.clear()
+    }
+    checkEq(docIme.selectionStart(), 0, "seq22 masked form IME keeps selectionStart=0")
+    checkEq(docIme.selectionEnd(), 6, "seq22 masked form IME keeps selectionEnd=6")
+    val gMasked = maskedSel.overlayGeometry()!!
+    checkEq(gMasked[0], 0f, "seq22 masked password hides document overlay")
+    val maskedIc = AffineSurfaceView.createInputConnection(
+      handleProvider = { layoutParityHandle },
+      onContextMenuAction = { actionId ->
+        if (bufCtrl.isAutofillFocused() &&
+          (actionId == android.R.id.copy || actionId == android.R.id.cut) &&
+          bufCtrl.isFocusedAutofillFieldMasked()
+        ) {
+          false
+        } else {
+          val ok = maskedSel.handleContextMenuAction(actionId, docIme, maskedClipboard)
+          if (bufCtrl.isAutofillFocused()) maskedSel.clear()
+          ok
+        }
+      },
+    )
+    checkEq(maskedIc.performContextMenuAction(android.R.id.copy), false, "seq22 masked copy blocked")
+    checkEq(maskedIc.performContextMenuAction(android.R.id.cut), false, "seq22 masked cut blocked")
+    checkEq(maskedClipboard.data, "text copied elsewhere", "seq22 clipboard untouched by masked copy/cut")
+    checkEq(bufCtrl.commitAutofillSession(), true, "seq22 exit masked autofill session")
+    checkEq(docIme.currentText(), "Hello document", "seq22 doc restored after masked autofill exit")
+    checkEq(docIme.setSelection(0, 5), true, "seq22 select [0, 5) in restored doc")
+    checkEq(maskedIc.performContextMenuAction(android.R.id.copy), true, "seq22 doc copy works after exit")
+    checkEq(maskedClipboard.data, "Hello", "seq22 doc copy wrote Hello to clipboard")
+
+    // Part E: Mixed-direction run boundary disambiguation ("A אבג B") where RTL start offset 2
+    // and LTR start offset 5 share one visual X coordinate.
+    val bidiBoundaryLayout = object : TextLayoutAuthority {
+      override var cachedText: String = "A \u05d0\u05d1\u05d2 B"
+      private val originX = 60f
+      private val originY = 200f
+      private val lineH = 56f
+      private val step = 28f
+      // Visual X positions for "A אבג B" (len 7):
+      // 0='A'[0..28], 1=' '[28..56], RTL run [2..5) occupies [56..140] (2->140, 3->112, 4->84, 5->56),
+      // LTR run [5..7) occupies [140..196] (5->140, 6->168, 7->196).
+      // Notice offset 2 (secondary) and offset 5 (primary) share visual X = originX + 140f!
+      private fun primX(off: Int): Float = when (off) {
+        0 -> 0f
+        1 -> step
+        2 -> step * 2f
+        3 -> step * 4f
+        4 -> step * 3f
+        5 -> step * 5f
+        6 -> step * 6f
+        else -> step * 7f
+      }
+      private fun secX(off: Int): Float = when (off) {
+        2 -> step * 5f
+        5 -> step * 2f
+        else -> primX(off)
+      }
+      override fun ensureLayoutReady(text: String, viewportWidthPx: Int, density: Float): Boolean {
+        cachedText = text
+        return true
+      }
+      override fun caretBounds(
+        utf16Offset: Int,
+        isSelectionEnd: Boolean,
+        selStart: Int,
+        selEnd: Int,
+      ): CaretBounds {
+        val inRtlRun = if (selStart < selEnd) {
+          val idx = if (isSelectionEnd) (utf16Offset - 1).coerceIn(selStart, cachedText.length - 1) else utf16Offset
+          idx in 2..4
+        } else {
+          false
+        }
+        val lx = if (inRtlRun) secX(utf16Offset) else primX(utf16Offset)
+        return CaretBounds(originX + lx, originY, originY + lineH, 0, false)
+      }
+      override fun selectionEndCarets(selStart: Int, selEnd: Int): Pair<CaretBounds, CaretBounds> =
+        caretBounds(selStart, false, selStart, selEnd) to caretBounds(selEnd, true, selStart, selEnd)
+      override fun closestOffset(x: Float, y: Float): Int = closestOffset(x, y, -1)
+      override fun closestOffset(x: Float, y: Float, preferredOffset: Int): Int {
+        val localX = x - originX
+        val snapTol = minOf(6f, step * 0.35f)
+        if (preferredOffset in 0..cachedText.length) {
+          if (kotlin.math.abs(localX - primX(preferredOffset)) <= snapTol ||
+            kotlin.math.abs(localX - secX(preferredOffset)) <= snapTol
+          ) {
+            return preferredOffset
+          }
+        }
+        // Ambiguous point at step*5 always returns 5 when preferredOffset is not matched.
+        return when {
+          localX < step * 0.5f -> 0
+          localX < step * 1.5f -> 1
+          localX < step * 2.5f -> 2
+          localX < step * 3.5f -> 4
+          localX < step * 4.5f -> 3
+          localX < step * 5.5f -> 5
+          localX < step * 6.5f -> 6
+          else -> 7
+        }
+      }
+    }
+    val bidiGesture = SelectionGestureController(
+      coordinator = sel,
+      layoutAuthority = bidiBoundaryLayout,
+      selectionStartProvider = { ime.selectionStart() },
+      selectionEndProvider = { ime.selectionEnd() },
+      onSelectionChanged = { lo, hi -> ime.setSelection(lo, hi) },
+    )
+    checkEq(ime.replaceText(0, ime.currentText().length, "A \u05d0\u05d1\u05d2 B", 1), true, "seq22 seed mixed BiDi boundary text")
+    // Case 1: [2, 5) start handle at shared boundary X -> stationary MOVE(0px) stays [2, 5), inward drag shrinks to [3, 5).
+    checkEq(ime.setSelection(2, 5), true, "seq22 select RTL [2, 5)")
+    bidiGesture.syncSelectionFromLayout(ime.currentText(), 2, 5, 1080, 3f)
+    val gRtl = sel.overlayGeometry()!!
+    checkEq(bidiGesture.onDown(gRtl[5], gRtl[6], 3f), 1, "seq22 hit RTL [2, 5) start handle")
+    checkEq(bidiGesture.onMove(gRtl[5], gRtl[6]), true, "seq22 RTL [2, 5) 0px move")
+    checkEq(ime.selectionStart(), 2, "seq22 RTL [2, 5) 0px move preserves start=2")
+    checkEq(ime.selectionEnd(), 5, "seq22 RTL [2, 5) 0px move preserves end=5")
+    checkEq(bidiGesture.onMove(gRtl[5] - 28f, gRtl[6]), true, "seq22 RTL [2, 5) inward 1-glyph drag")
+    checkEq(bidiGesture.onUp(1080, 3f), true, "seq22 RTL [2, 5) release")
+    checkEq(ime.selectionStart(), 3, "seq22 RTL [2, 5) inward drag shrinks to start=3")
+    checkEq(ime.selectionEnd(), 5, "seq22 RTL [2, 5) inward drag keeps end=5")
+
+    // Case 2: [5, 7) start handle at shared boundary X -> stationary MOVE(0px) stays [5, 7), inward drag shrinks to [6, 7).
+    checkEq(ime.setSelection(5, 7), true, "seq22 select LTR [5, 7)")
+    bidiGesture.syncSelectionFromLayout(ime.currentText(), 5, 7, 1080, 3f)
+    val gLtr = sel.overlayGeometry()!!
+    checkEq(bidiGesture.onDown(gLtr[5], gLtr[6], 3f), 1, "seq22 hit LTR [5, 7) start handle")
+    checkEq(bidiGesture.onMove(gLtr[5], gLtr[6]), true, "seq22 LTR [5, 7) 0px move")
+    checkEq(ime.selectionStart(), 5, "seq22 LTR [5, 7) 0px move preserves start=5")
+    checkEq(ime.selectionEnd(), 7, "seq22 LTR [5, 7) 0px move preserves end=7")
+    checkEq(bidiGesture.onMove(gLtr[5] + 28f, gLtr[6]), true, "seq22 LTR [5, 7) inward 1-glyph drag")
+    checkEq(bidiGesture.onUp(1080, 3f), true, "seq22 LTR [5, 7) release")
+    checkEq(ime.selectionStart(), 6, "seq22 LTR [5, 7) inward drag shrinks to start=6")
+    checkEq(ime.selectionEnd(), 7, "seq22 LTR [5, 7) inward drag keeps end=7")
+  } finally {
+    NativeBridge.nativeDestroyHost(layoutParityHandle)
+  }
+
+  println("Kotlin JNI Android host parity check passed (22/22 sequences)")
 }
