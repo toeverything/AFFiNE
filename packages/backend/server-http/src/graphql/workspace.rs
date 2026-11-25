@@ -287,6 +287,10 @@ impl WorkspaceType {
     self.record.enable_doc_embedding
   }
 
+  async fn embedding(&self, ctx: &Context<'_>) -> Result<super::embedding::CopilotWorkspaceConfig> {
+    super::embedding::resolve_workspace_embedding(ctx, &self.record.id).await
+  }
+
   async fn enable_sharing(&self) -> bool {
     self.record.enable_sharing
   }

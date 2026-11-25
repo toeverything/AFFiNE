@@ -727,11 +727,10 @@ pub(crate) async fn resolve_server_config(ctx: &Context<'_>) -> Result<ServerCon
     DeploymentMode::Cloud => ServerDeploymentType::Affine,
   };
 
-  let mut features = vec![
-    ServerFeature::Comment,
-    ServerFeature::LocalWorkspace,
-    ServerFeature::CopilotEmbedding,
-  ];
+  let mut features = vec![ServerFeature::Comment, ServerFeature::LocalWorkspace];
+  if state.extension.copilot_embedding_spi().is_enabled() {
+    features.push(ServerFeature::CopilotEmbedding);
+  }
   if state.extension.billing_spi().payment_enabled() {
     features.push(ServerFeature::Payment);
   }

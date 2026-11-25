@@ -149,6 +149,15 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           "COPILOT_ACTION_TAKEN",
           "Action has been taken, no more messages allowed.",
         )),
+        "copilot_disabled" => Some(("COPILOT_DISABLED", "Copilot is disabled.")),
+        "copilot_embedding_disabled" => Some((
+          "COPILOT_EMBEDDING_DISABLED",
+          "Embedding feature is disabled, please contact the administrator to enable it in the workspace settings.",
+        )),
+        "copilot_embedding_unavailable" => Some((
+          "COPILOT_EMBEDDING_UNAVAILABLE",
+          "Embedding feature not available, you may need to install pgvector extension to your database",
+        )),
         _ => None,
       } {
         return LegacyErrorEnvelope {
@@ -623,6 +632,28 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           name: "SPACE_OWNER_NOT_FOUND".into(),
           message: format!("Owner of Space {space_id} not found."),
           data: Some(serde_json::json!({ "spaceId": space_id })),
+        };
+      }
+      if let Some(detail) = msg.strip_prefix("copilot_failed_to_add_workspace_artifact:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+          code: "Internal Server Error".into(),
+          error_type: "INTERNAL_SERVER_ERROR".into(),
+          name: "COPILOT_FAILED_TO_ADD_WORKSPACE_ARTIFACT".into(),
+          message: format!("Failed to add workspace artifact: {detail}"),
+          data: Some(serde_json::json!({ "message": detail })),
+        };
+      }
+      if let Some(rest) = msg.strip_prefix("copilot_failed_to_generate_embedding:")
+        && let Some((provider, detail)) = parse_two_part(rest)
+      {
+        return LegacyErrorEnvelope {
+          status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+          code: "Internal Server Error".into(),
+          error_type: "INTERNAL_SERVER_ERROR".into(),
+          name: "COPILOT_FAILED_TO_GENERATE_EMBEDDING".into(),
+          message: format!("Failed to generate embedding with {provider}: {detail}"),
+          data: Some(serde_json::json!({ "provider": provider, "message": detail })),
         };
       }
       let (name, message) = match msg.as_str() {

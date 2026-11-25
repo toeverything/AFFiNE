@@ -9,6 +9,7 @@ pub mod calendar;
 pub mod comment;
 pub mod copilot;
 pub mod doc;
+pub mod embedding;
 pub mod license;
 pub mod mcp;
 pub mod notification;
@@ -569,6 +570,7 @@ pub struct MutationRoot(
   billing::BillingMutation,
   byok::ByokMutation,
   copilot::CopilotMutation,
+  embedding::EmbeddingMutation,
   transcript::TranscriptMutation,
 );
 
@@ -1568,6 +1570,7 @@ mod tests {
       "BillingMutation",
       "ByokMutation",
       "CopilotMutation",
+      "EmbeddingMutation",
       "TranscriptMutation",
     ] {
       assert!(

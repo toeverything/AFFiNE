@@ -7,6 +7,7 @@ pub mod billing;
 pub mod byok;
 pub mod copilot;
 pub mod disposition;
+pub mod embedding;
 pub mod transcript;
 
 use std::collections::HashMap;
@@ -41,6 +42,11 @@ pub use copilot::{
   UploadCopilotAttachmentSpiInput, UploadedCopilotFile,
 };
 pub use disposition::DomainDispositionHandler;
+pub use embedding::{
+  AddWorkspaceArtifactInput, BoxedWorkspaceArtifactLock, CommunityCopilotEmbeddingSpi, CopilotEmbeddingSpi,
+  EmbeddingPagination, WorkspaceArtifactLock, WorkspaceArtifactPage, WorkspaceArtifactRecord, WorkspaceIgnoredDocPage,
+  WorkspaceIgnoredDocRecord,
+};
 pub use server_types::BillingSubject;
 use server_types::{AccessGrant, DomainError};
 use sha2::{Digest, Sha256};
@@ -195,6 +201,9 @@ pub trait ServerExtension: Send + Sync + 'static {
   }
   fn byok_spi(&self) -> Arc<dyn ByokSpi> {
     Arc::new(CommunityByokSpi)
+  }
+  fn copilot_embedding_spi(&self) -> Arc<dyn CopilotEmbeddingSpi> {
+    Arc::new(CommunityCopilotEmbeddingSpi)
   }
   fn copilot_transcript_spi(&self) -> Arc<dyn CopilotTranscriptSpi> {
     Arc::new(CommunityCopilotTranscriptSpi)

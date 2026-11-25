@@ -105,7 +105,9 @@ impl From<DocRole> for DomainDocRole {
 #[derive(InputObject, Clone, Debug, Default)]
 #[graphql(name = "PaginationInput")]
 pub struct PaginationInput {
+  #[graphql(default = 10)]
   pub first: Option<i32>,
+  #[graphql(default = 0)]
   pub offset: Option<i32>,
   pub after: Option<String>,
 }

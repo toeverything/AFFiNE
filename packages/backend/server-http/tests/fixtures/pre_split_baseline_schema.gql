@@ -439,8 +439,8 @@ type PaginatedNotificationObjectType {
 }
 
 input PaginationInput {
-	first: Int
-	offset: Int
+	first: Int = 10
+	offset: Int = 0
 	after: String
 }
 
