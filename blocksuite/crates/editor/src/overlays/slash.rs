@@ -11,9 +11,10 @@ pub enum SlashCommand {
     List(ListType),
     Divider,
     Code,
-    /// Converts the current line into a newly created linked document and replaces it
-    /// with an inline `LinkedPage` reference chip.
-    LinkedPage,
+    /// Creates a new empty document and inserts an inline `LinkedPage` reference chip at the caret.
+    NewDoc,
+    /// Replaces `/query` with `@` and opens the `@` linked-document picker at the caret.
+    LinkedDoc,
 }
 
 impl SlashCommand {
@@ -35,7 +36,7 @@ impl SlashCommand {
                 language: None,
                 caption: String::new(),
             },
-            Self::LinkedPage => BlockSpec::Paragraph {
+            Self::NewDoc | Self::LinkedDoc => BlockSpec::Paragraph {
                 paragraph_type: ParagraphType::Text,
                 text: String::new(),
             },
@@ -78,13 +79,13 @@ const fn slash_item(
 /// Every slash menu item, in menu order; items of one group are adjacent. The order is
 /// BlockSuite's (text, headings, code, quote, divider, then lists), with all six headings
 /// in the list itself so each is one filter away.
-pub const SLASH_ITEMS: [SlashItem; 15] = [
+pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "text",
         "Text",
         "Basic",
         "TextIcon",
-        &["paragraph", "plain"],
+        &["plain"],
         SlashCommand::Paragraph(ParagraphType::Text),
     ),
     slash_item(
@@ -160,12 +161,20 @@ pub const SLASH_ITEMS: [SlashItem; 15] = [
         SlashCommand::Divider,
     ),
     slash_item(
-        "linked_page",
-        "Linked Page",
+        "new_doc",
+        "New Doc",
+        "Basic",
+        "PlusIcon",
+        &["subpage", "newdoc", "page"],
+        SlashCommand::NewDoc,
+    ),
+    slash_item(
+        "linked_doc",
+        "Linked Doc",
         "Basic",
         "LinkedPageIcon",
-        &["subpage", "linkeddoc"],
-        SlashCommand::LinkedPage,
+        &["linkedpage", "at", "mention", "doc", "duallink"],
+        SlashCommand::LinkedDoc,
     ),
     slash_item(
         "bulleted",
@@ -201,33 +210,90 @@ pub const SLASH_ITEMS: [SlashItem; 15] = [
     ),
 ];
 
-/// Items matching `query`, in menu order: the query is found anywhere in a title (case and
-/// spaces ignored) or starts a keyword. An empty query matches every item.
+fn is_fuzzy_match(haystack: &str, needle: &str) -> bool {
+    let mut chars = needle.chars();
+    let Some(mut target) = chars.next() else {
+        return true;
+    };
+    for ch in haystack
+        .chars()
+        .filter(|ch| !ch.is_whitespace())
+        .flat_map(char::to_lowercase)
+    {
+        if ch == target {
+            match chars.next() {
+                Some(next) => target = next,
+                None => return true,
+            }
+        }
+    }
+    false
+}
+
+/// Subsequence score matching BlockSuite's `substringMatchScore` (`string.ts:44-75`):
+/// `[0.5, 1.0]` when `query` is a contiguous substring of `name`, `(0.0, 0.5)` for the
+/// longest common contiguous substring, and `0.0` when empty or longer than `name`.
+pub fn substring_match_score(name: &str, query: &str) -> f64 {
+    let query_units: Vec<u16> = query.to_lowercase().encode_utf16().collect();
+    let name_units: Vec<u16> = name.to_lowercase().encode_utf16().collect();
+    if query_units.is_empty() || name_units.is_empty() || query_units.len() > name_units.len() {
+        return 0.0;
+    }
+    let score = if name_units
+        .windows(query_units.len())
+        .any(|window| window == query_units.as_slice())
+    {
+        1.0 + query_units.len() as f64 / name_units.len() as f64
+    } else {
+        let mut max_match = 0usize;
+        for i in 0..query_units.len() {
+            for j in 0..name_units.len() {
+                let mut len = 0usize;
+                while i + len < query_units.len()
+                    && j + len < name_units.len()
+                    && query_units[i + len] == name_units[j + len]
+                {
+                    len += 1;
+                }
+                if len > max_match {
+                    max_match = len;
+                }
+            }
+        }
+        max_match as f64 / name_units.len() as f64
+    };
+    0.5 * score
+}
+
+/// Items matching `query`: case- and whitespace-insensitive subsequence match
+/// (`isFuzzyMatch`) against the item's title or any keyword, stably sorted by
+/// descending [`substring_match_score`] against the title when `query` is non-empty.
+/// An empty query returns every item in menu order.
 pub fn filter_slash_items(query: &str) -> Vec<&'static SlashItem> {
     let needle: String = query
         .chars()
         .filter(|ch| !ch.is_whitespace())
         .flat_map(char::to_lowercase)
         .collect();
-    SLASH_ITEMS
+    let mut matched: Vec<&'static SlashItem> = SLASH_ITEMS
         .iter()
         .filter(|item| {
-            if needle.is_empty() {
-                return true;
-            }
-            let title: String = item
-                .title
-                .chars()
-                .filter(|ch| !ch.is_whitespace())
-                .flat_map(char::to_lowercase)
-                .collect();
-            title.contains(&needle)
+            needle.is_empty()
+                || is_fuzzy_match(item.title, &needle)
                 || item
                     .keywords
                     .iter()
-                    .any(|keyword| keyword.starts_with(&needle))
+                    .any(|keyword| is_fuzzy_match(keyword, &needle))
         })
-        .collect()
+        .collect();
+    if !needle.is_empty() {
+        let search_str = query.trim_start();
+        matched.sort_by(|a, b| {
+            substring_match_score(b.title, search_str)
+                .total_cmp(&substring_match_score(a.title, search_str))
+        });
+    }
+    matched
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

@@ -601,6 +601,11 @@ mod tests {
         }
         assert_eq!(
             s.doc_json()?["blocks"]["p0"]["prop:text"],
+            serde_json::json!([{"insert":"`code`"}])
+        );
+        s.key("enter", false, false);
+        assert_eq!(
+            s.doc_json()?["blocks"]["p0"]["prop:text"],
             serde_json::json!([{"insert":"code","attributes":{"code":true}}])
         );
         s.set_texts(&[""])?;

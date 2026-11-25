@@ -4254,12 +4254,12 @@ mod tests {
             });
             assert!(has_chip, "expected InlineReference chip after @ selection");
 
-            // Also verify `/linked` (`SlashCommand::LinkedPage`) converts a line into a linked doc
-            // + InlineReference chip.
+            // Also verify `/newdoc` (`SlashCommand::NewDoc`) creates a new empty doc and inserts
+            // an InlineReference chip at the caret while preserving surrounding text.
             if matches!(theme, PlaygroundTheme::Light) {
                 let docs_before = session.view(|view, _| {
                     view.query_linked_docs(&directory::DocQueryRequest::new("", 50))
-                        .expect("docs before /linked")
+                        .expect("docs before /newdoc")
                         .items
                         .len()
                 });
@@ -4278,7 +4278,7 @@ mod tests {
                                 view, None, "/", window, cx,
                             );
                             ui::EntityInputHandler::replace_text_in_range(
-                                view, None, "linked", window, cx,
+                                view, None, "newdoc", window, cx,
                             );
                             view.dispatch_overlay(
                                 overlays::OverlayEvent::SlashExecute(0),
@@ -4286,12 +4286,12 @@ mod tests {
                                 cx,
                             );
                         })
-                        .expect("execute /linked");
+                        .expect("execute /newdoc");
                 });
                 let (docs_after, slash_chip) = session.view(|view, _| {
                     let count = view
                         .query_linked_docs(&directory::DocQueryRequest::new("", 50))
-                        .expect("docs after /linked")
+                        .expect("docs after /newdoc")
                         .items
                         .len();
                     let chip = view
@@ -4299,7 +4299,9 @@ mod tests {
                         .and_then(|s| s.block("showcase-intro"))
                         .and_then(overlays::block_text)
                         .is_some_and(|t| {
-                            t.plain == " "
+                            t.plain.starts_with(' ')
+                                && t.plain.len() > 1
+                                && !t.plain.contains("/newdoc")
                                 && t.delta.iter().any(|op| {
                                     matches!(
                                         op,
@@ -4311,7 +4313,7 @@ mod tests {
                     (count, chip)
                 });
                 assert_eq!(docs_after, docs_before + 1);
-                assert!(slash_chip, "expected InlineReference chip after /linked");
+                assert!(slash_chip, "expected InlineReference chip after /newdoc");
             }
         }
     }
@@ -6829,6 +6831,811 @@ mod tests {
                     "{who}: user text undone cleanly"
                 );
             }
+        });
+    }
+
+    fn send_key(session: &Session, key: &str, modifiers: ui::Modifiers) {
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    let event = ui::KeyDownEvent {
+                        keystroke: ui::Keystroke {
+                            modifiers,
+                            key: key.to_string(),
+                            key_char: None,
+                        },
+                        is_held: false,
+                        prefer_character_input: false,
+                    };
+                    view.editor_key_down(&event, window, cx);
+                })
+                .expect("dispatch key");
+        });
+    }
+
+    fn type_text(session: &Session, text: &str) {
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    ui::EntityInputHandler::replace_text_in_range(view, None, text, window, cx);
+                })
+                .expect("type text");
+        });
+    }
+
+    fn set_caret(session: &Session, block_id: &str, offset: u64) {
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.select_document_range(
+                        editor_session::DocumentSelection::caret(editor_session::DocPoint::new(
+                            block_id, offset,
+                        )),
+                        window,
+                        cx,
+                    );
+                })
+                .expect("set caret");
+        });
+    }
+
+    fn cmd_mod() -> ui::Modifiers {
+        if cfg!(target_os = "macos") {
+            ui::Modifiers {
+                platform: true,
+                ..Default::default()
+            }
+        } else {
+            ui::Modifiers {
+                control: true,
+                ..Default::default()
+            }
+        }
+    }
+
+    #[test]
+    fn s2_touch_tap_and_pan_scroll_work_at_mobile_viewport() {
+        let session = open(390, 844, PlaygroundOptions::default());
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |_, window, _| {
+                    window.set_touch_gestures_enabled(true);
+                })
+                .expect("enable touch gestures");
+        });
+        let _ = session.frame();
+
+        // Tap inside the intro paragraph to place caret.
+        let target_pos = session.view(|view, _| {
+            let layout = view.flow_layout().expect("layout");
+            let block = layout.block("showcase-intro").expect("intro");
+            let geo = block_flow::page_geometry(390.0);
+            point(
+                px(geo.column_x + block.x + 20.0),
+                px(TOPBAR_HEIGHT + block.y + 10.0),
+            )
+        });
+        session
+            .headless
+            .dispatch_input(ui::PlatformInput::Touch(ui::TouchEvent {
+                id: ui::TouchId(1),
+                phase: ui::TouchPhase::Started,
+                position: target_pos,
+                predicted_position: None,
+                force: None,
+            }));
+        session
+            .headless
+            .dispatch_input(ui::PlatformInput::Touch(ui::TouchEvent {
+                id: ui::TouchId(1),
+                phase: ui::TouchPhase::Ended,
+                position: target_pos,
+                predicted_position: None,
+                force: None,
+            }));
+        let sel_block =
+            session.view(|view, _| view.document_selection().map(|s| s.focus.block_id.clone()));
+        assert_eq!(sel_block.as_deref(), Some("showcase-intro"));
+
+        // Pan finger upward (y: 400 -> 200) to scroll page downward (`scroll_y` increases).
+        let scroll_before = session.view(|view, _| view.scroll_offset());
+        session
+            .headless
+            .dispatch_input(ui::PlatformInput::Touch(ui::TouchEvent {
+                id: ui::TouchId(2),
+                phase: ui::TouchPhase::Started,
+                position: point(px(195.0), px(400.0)),
+                predicted_position: None,
+                force: None,
+            }));
+        for y in [360.0_f32, 300.0, 240.0, 200.0] {
+            session
+                .headless
+                .dispatch_input(ui::PlatformInput::Touch(ui::TouchEvent {
+                    id: ui::TouchId(2),
+                    phase: ui::TouchPhase::Moved,
+                    position: point(px(195.0), px(y)),
+                    predicted_position: None,
+                    force: None,
+                }));
+        }
+        session
+            .headless
+            .dispatch_input(ui::PlatformInput::Touch(ui::TouchEvent {
+                id: ui::TouchId(2),
+                phase: ui::TouchPhase::Ended,
+                position: point(px(195.0), px(200.0)),
+                predicted_position: None,
+                force: None,
+            }));
+        let scroll_after = session.view(|view, _| view.scroll_offset());
+        assert!(
+            scroll_after > scroll_before + 50.0,
+            "upward touch pan must increase scroll_y: before={scroll_before}, after={scroll_after}"
+        );
+    }
+
+    #[test]
+    fn s2_linked_doc_triggers_at_mid_word_and_double_brackets() {
+        let session = open(1024, 720, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        for (prefix, trigger, expected_plain) in [
+            ("foo", "@", "foo@"),
+            ("bar", "[[", "bar@"),
+            ("baz[", "[", "baz@"),
+            ("中文", "【【", "中文@"),
+            ("中文【", "【", "中文@"),
+        ] {
+            let block_id = session.view(|view, cx| {
+                let id = view.fresh_block_id();
+                view.edit_document(cx, |state| {
+                    let page = state.workspace.page_mut(HOME_PAGE_ID).expect("page");
+                    let snap = page.read_page_snapshot().expect("snap");
+                    let note_id = snap
+                        .root
+                        .as_ref()
+                        .unwrap()
+                        .children
+                        .iter()
+                        .find(|n| n.is_page_visible_note())
+                        .unwrap()
+                        .id
+                        .clone();
+                    page.add_block(
+                        &id,
+                        BlockSpec::Paragraph {
+                            paragraph_type: ParagraphType::Text,
+                            text: prefix.to_string(),
+                        },
+                        Some(&note_id),
+                        None,
+                        100,
+                    )
+                    .expect("add block");
+                });
+                id
+            });
+            let _ = session.frame();
+            set_caret(&session, &block_id, prefix.encode_utf16().count() as u64);
+            type_text(&session, trigger);
+            let (menu_open, plain) = session.view(|view, _| {
+                let open = view.overlays().linked_doc_menu().is_some();
+                let plain = view.block_text(&block_id).unwrap_or("").to_string();
+                (open, plain)
+            });
+            assert!(
+                menu_open,
+                "trigger {trigger:?} after {prefix:?} must open @ menu"
+            );
+            assert_eq!(plain, expected_plain);
+            send_key(&session, "escape", ui::Modifiers::default());
+        }
+    }
+
+    #[test]
+    fn s2_inline_markdown_rules_ime_guard_and_c1_keep_space_no_leak() {
+        let session = open(1024, 720, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        let cases = [
+            ("***bi***", "bi", "bold", true),
+            ("**bold**", "bold", "bold", false),
+            ("*ital*", "ital", "italic", false),
+            ("~~del~~", "del", "strike", false),
+            ("~und~", "und", "underline", false),
+            ("`code`", "code", "code", false),
+            ("[site](https://affine.pro)", "site", "link", false),
+        ];
+
+        for (raw, expected_word, mark_key, also_italic) in cases {
+            let block_id = session.view(|view, cx| {
+                let id = view.fresh_block_id();
+                view.edit_document(cx, |state| {
+                    let page = state.workspace.page_mut(HOME_PAGE_ID).expect("page");
+                    let snap = page.read_page_snapshot().expect("snap");
+                    let note_id = snap
+                        .root
+                        .as_ref()
+                        .unwrap()
+                        .children
+                        .iter()
+                        .find(|n| n.is_page_visible_note())
+                        .unwrap()
+                        .id
+                        .clone();
+                    page.add_block(
+                        &id,
+                        BlockSpec::Paragraph {
+                            paragraph_type: ParagraphType::Text,
+                            text: format!("a {raw}"),
+                        },
+                        Some(&note_id),
+                        None,
+                        100,
+                    )
+                    .expect("add block");
+                });
+                id
+            });
+            let _ = session.frame();
+            let full_len = format!("a {raw}").encode_utf16().count() as u64;
+            set_caret(&session, &block_id, full_len);
+
+            // Fullwidth space must NOT trigger conversion.
+            type_text(&session, "\u{3000}");
+            assert!(
+                session.view(|v, _| v.block_text(&block_id).unwrap_or("").ends_with('\u{3000}')),
+                "fullwidth space must not trigger markdown for {raw}"
+            );
+            send_key(&session, "backspace", ui::Modifiers::default());
+
+            // ASCII space triggers C1-KeepSpaceNoLeak: keeps trailing space without new mark.
+            type_text(&session, " ");
+            type_text(&session, "z");
+            session.view(|view, _| {
+                let (rich, _) = view.page().unwrap().read_editable_text(&block_id).unwrap();
+                assert_eq!(rich.plain, format!("a {expected_word} z"), "for {raw}");
+                let marked_word = rich.delta.iter().any(|op| {
+                    matches!(
+                        op,
+                        y_octo::TextDeltaOp::Insert {
+                            insert: y_octo::TextInsert::Text(t),
+                            format: Some(f),
+                        } if t == expected_word
+                            && f.contains_key(mark_key)
+                            && (!also_italic || f.get("italic") == Some(&Any::True))
+                    )
+                });
+                assert!(
+                    marked_word,
+                    "expected mark {mark_key} on {expected_word} for {raw}"
+                );
+                let leaked_on_z = rich.delta.iter().any(|op| {
+                    matches!(
+                        op,
+                        y_octo::TextDeltaOp::Insert {
+                            insert: y_octo::TextInsert::Text(t),
+                            format: Some(f),
+                        } if t.contains('z')
+                            && f.get(mark_key).is_some_and(|v| *v != Any::Null)
+                    )
+                });
+                assert!(
+                    !leaked_on_z,
+                    "mark {mark_key} must not leak onto trailing 'z' for {raw}: delta={:?}",
+                    rich.delta
+                );
+            });
+        }
+
+        // Verify Enter trigger swallows Enter, leaves no trailing space, and does not leak mark.
+        let enter_id = session.view(|view, cx| {
+            let id = view.fresh_block_id();
+            view.edit_document(cx, |state| {
+                let page = state.workspace.page_mut(HOME_PAGE_ID).expect("page");
+                let snap = page.read_page_snapshot().expect("snap");
+                let note_id = snap
+                    .root
+                    .as_ref()
+                    .unwrap()
+                    .children
+                    .iter()
+                    .find(|n| n.is_page_visible_note())
+                    .unwrap()
+                    .id
+                    .clone();
+                page.add_block(
+                    &id,
+                    BlockSpec::Paragraph {
+                        paragraph_type: ParagraphType::Text,
+                        text: "**hi**".into(),
+                    },
+                    Some(&note_id),
+                    None,
+                    100,
+                )
+                .expect("add");
+            });
+            id
+        });
+        let _ = session.frame();
+        set_caret(&session, &enter_id, 6);
+        let blocks_before = session.view(|v, _| v.flow_layout().unwrap().blocks.len());
+        send_key(&session, "enter", ui::Modifiers::default());
+        type_text(&session, "x");
+        session.view(|view, _| {
+            assert_eq!(
+                view.flow_layout().unwrap().blocks.len(),
+                blocks_before,
+                "Enter-triggered inline markdown must not split block"
+            );
+            let (rich, _) = view.page().unwrap().read_editable_text(&enter_id).unwrap();
+            assert_eq!(rich.plain, "hix");
+            let x_is_bold = rich.delta.iter().any(|op| {
+                matches!(
+                    op,
+                    y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(t),
+                        format: Some(f),
+                    } if t.contains('x') && f.get("bold") == Some(&Any::True)
+                )
+            });
+            assert!(!x_is_bold, "closed bold mark must not leak after Enter");
+        });
+
+        // Verify inline `$E=mc^2$` conversion and zero `latex` mark leak even after caret move,
+        // plus multi-character `type_text("**multi** ")` trigger.
+        let latex_id = session.view(|view, cx| {
+            let id = view.fresh_block_id();
+            view.edit_document(cx, |state| {
+                let page = state.workspace.page_mut(HOME_PAGE_ID).expect("page");
+                let snap = page.read_page_snapshot().expect("snap");
+                let note_id = snap
+                    .root
+                    .as_ref()
+                    .unwrap()
+                    .children
+                    .iter()
+                    .find(|n| n.is_page_visible_note())
+                    .unwrap()
+                    .id
+                    .clone();
+                page.add_block(
+                    &id,
+                    BlockSpec::Paragraph {
+                        paragraph_type: ParagraphType::Text,
+                        text: "$E=mc^2$".into(),
+                    },
+                    Some(&note_id),
+                    None,
+                    100,
+                )
+                .expect("add latex block");
+            });
+            id
+        });
+        let _ = session.frame();
+        set_caret(&session, &latex_id, 8);
+        send_key(&session, "enter", ui::Modifiers::default());
+        // Reposition caret right after the inline formula (clearing pending_marks) and type "x".
+        set_caret(&session, &latex_id, 1);
+        type_text(&session, "x");
+        type_text(&session, "**multi** ");
+        session.view(|view, _| {
+            let (rich, _) = view.page().unwrap().read_editable_text(&latex_id).unwrap();
+            let has_latex = rich.delta.iter().any(|op| {
+                matches!(
+                    op,
+                    y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(t),
+                        format: Some(f),
+                    } if t == " " && f.get("latex") == Some(&Any::String("E=mc^2".into()))
+                )
+            });
+            assert!(has_latex, "expected inline latex node: {:?}", rich.delta);
+            let x_has_latex = rich.delta.iter().any(|op| {
+                matches!(
+                    op,
+                    y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(t),
+                        format: Some(f),
+                    } if t.contains('x') && f.contains_key("latex")
+                )
+            });
+            assert!(
+                !x_has_latex,
+                "latex mark must not leak onto trailing 'x': {:?}",
+                rich.delta
+            );
+            let has_multi_bold = rich.delta.iter().any(|op| {
+                matches!(
+                    op,
+                    y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(t),
+                        format: Some(f),
+                    } if t == "multi" && f.get("bold") == Some(&Any::True)
+                )
+            });
+            assert!(
+                has_multi_bold,
+                "multi-character type_text('**multi** ') must convert: {:?}",
+                rich.delta
+            );
+        });
+    }
+
+    #[test]
+    fn s2_block_markdown_enter_list_quote_and_quote_double_enter() {
+        let session = open(1024, 720, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        // A.4: block prefix + Enter converts and swallows Enter.
+        for (prefix, expect_flavour) in [
+            ("-", "affine:list"),
+            ("+", "affine:list"),
+            ("1.", "affine:list"),
+            ("##", "affine:paragraph"),
+            ("[]", "affine:list"),
+            (">", "affine:paragraph"),
+        ] {
+            let block_id = session.view(|view, cx| {
+                let id = view.fresh_block_id();
+                view.edit_document(cx, |state| {
+                    let page = state.workspace.page_mut(HOME_PAGE_ID).expect("page");
+                    let snap = page.read_page_snapshot().expect("snap");
+                    let note_id = snap
+                        .root
+                        .as_ref()
+                        .unwrap()
+                        .children
+                        .iter()
+                        .find(|n| n.is_page_visible_note())
+                        .unwrap()
+                        .id
+                        .clone();
+                    page.add_block(
+                        &id,
+                        BlockSpec::Paragraph {
+                            paragraph_type: ParagraphType::Text,
+                            text: prefix.into(),
+                        },
+                        Some(&note_id),
+                        None,
+                        100,
+                    )
+                    .expect("add");
+                });
+                id
+            });
+            let _ = session.frame();
+            let count_before = session.view(|v, _| v.flow_layout().unwrap().blocks.len());
+            set_caret(&session, &block_id, prefix.len() as u64);
+            send_key(&session, "enter", ui::Modifiers::default());
+            let _ = session.frame();
+            session.view(|view, _| {
+                assert_eq!(
+                    view.flow_layout().unwrap().blocks.len(),
+                    count_before,
+                    "prefix {prefix} + Enter must not add extra block"
+                );
+                let focus_id = view.document_selection().unwrap().focus.block_id.clone();
+                let node = view.page_snapshot().unwrap().block(&focus_id).unwrap();
+                assert_eq!(node.flavour, expect_flavour, "for prefix {prefix}");
+            });
+        }
+
+        // A.7: quote("q") -> Enter -> Enter -> "after" yields strictly Quote("q") + Paragraph("after").
+        let quote_id = session.view(|view, cx| {
+            let id = view.fresh_block_id();
+            view.edit_document(cx, |state| {
+                let page = state.workspace.page_mut(HOME_PAGE_ID).expect("page");
+                let snap = page.read_page_snapshot().expect("snap");
+                let note_id = snap
+                    .root
+                    .as_ref()
+                    .unwrap()
+                    .children
+                    .iter()
+                    .find(|n| n.is_page_visible_note())
+                    .unwrap()
+                    .id
+                    .clone();
+                page.add_block(
+                    &id,
+                    BlockSpec::Paragraph {
+                        paragraph_type: ParagraphType::Quote,
+                        text: "q".into(),
+                    },
+                    Some(&note_id),
+                    None,
+                    100,
+                )
+                .expect("add quote");
+            });
+            id
+        });
+        let _ = session.frame();
+        let blocks_before_quote = session.view(|v, _| v.flow_layout().unwrap().blocks.len());
+        set_caret(&session, &quote_id, 1);
+        send_key(&session, "enter", ui::Modifiers::default());
+        send_key(&session, "enter", ui::Modifiers::default());
+        type_text(&session, "after");
+        let _ = session.frame();
+        session.view(|view, _| {
+            assert_eq!(
+                view.flow_layout().unwrap().blocks.len(),
+                blocks_before_quote + 1,
+                "quote double-enter must produce exactly 1 new block, not 2"
+            );
+            let after_id = view.document_selection().unwrap().focus.block_id.clone();
+            let after_node = view.page_snapshot().unwrap().block(&after_id).unwrap();
+            assert!(matches!(
+                &after_node.content,
+                BlockContent::Paragraph {
+                    kind: ParagraphType::Text,
+                    text,
+                    ..
+                } if text.plain == "after"
+            ));
+        });
+    }
+
+    #[test]
+    fn s2_nested_list_outdent_slash_c2_shortcuts_and_block_selection() {
+        let session = open(1024, 720, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        // A.6: nested empty list Enter outdents first.
+        let (parent_list, child_list) = session.view(|view, cx| {
+            let p_id = view.fresh_block_id();
+            let c_id = view.fresh_block_id();
+            view.edit_document(cx, |state| {
+                let page = state.workspace.page_mut(HOME_PAGE_ID).expect("page");
+                let snap = page.read_page_snapshot().expect("snap");
+                let note_id = snap
+                    .root
+                    .as_ref()
+                    .unwrap()
+                    .children
+                    .iter()
+                    .find(|n| n.is_page_visible_note())
+                    .unwrap()
+                    .id
+                    .clone();
+                page.add_block(
+                    &p_id,
+                    BlockSpec::List {
+                        list_type: ListType::Bulleted,
+                        text: "parent".into(),
+                        checked: false,
+                        order: None,
+                    },
+                    Some(&note_id),
+                    None,
+                    100,
+                )
+                .expect("add parent list");
+                page.add_block(
+                    &c_id,
+                    BlockSpec::List {
+                        list_type: ListType::Bulleted,
+                        text: String::new(),
+                        checked: false,
+                        order: None,
+                    },
+                    Some(&p_id),
+                    None,
+                    101,
+                )
+                .expect("add child list");
+            });
+            (p_id, c_id)
+        });
+        let _ = session.frame();
+        set_caret(&session, &child_list, 0);
+        send_key(&session, "enter", ui::Modifiers::default());
+        session.view(|view, _| {
+            let snap = view.page_snapshot().unwrap();
+            let node = snap.block(&child_list).unwrap();
+            assert_eq!(
+                node.flavour, "affine:list",
+                "first Enter must keep affine:list"
+            );
+            assert_ne!(
+                editor_session::parent_of(snap, &child_list).map(|(p, _)| p.id.as_str()),
+                Some(parent_list.as_str()),
+                "first Enter must outdent from parent list"
+            );
+        });
+        // Second Enter at top level demotes to paragraph.
+        send_key(&session, "enter", ui::Modifiers::default());
+        session.view(|view, _| {
+            let focus_id = view.document_selection().unwrap().focus.block_id.clone();
+            let node = view.page_snapshot().unwrap().block(&focus_id).unwrap();
+            assert_eq!(node.flavour, "affine:paragraph");
+        });
+
+        // C.2: in-document slash with no match closes menu and passes Enter through to split.
+        type_text(&session, "11");
+        type_text(&session, "/");
+        type_text(&session, "25");
+        assert!(session.view(|v, _| v.overlays().slash_menu().is_some()));
+        let blocks_before_enter = session.view(|v, _| v.flow_layout().unwrap().blocks.len());
+        send_key(&session, "enter", ui::Modifiers::default());
+        let _ = session.frame();
+        session.view(|view, _| {
+            assert!(
+                view.overlays().slash_menu().is_none(),
+                "C.2 must close slash menu"
+            );
+            assert_eq!(
+                view.flow_layout().unwrap().blocks.len(),
+                blocks_before_enter + 1,
+                "C.2 must pass Enter through to split block"
+            );
+        });
+
+        // A.10: Mod-Alt-2 converts block to H2; Mod-k opens link bar on selection.
+        let conv_block =
+            session.view(|v, _| v.document_selection().unwrap().focus.block_id.clone());
+        type_text(&session, "heading text");
+        let mut alt_cmd = cmd_mod();
+        alt_cmd.alt = true;
+        send_key(&session, "2", alt_cmd);
+        session.view(|view, _| {
+            let node = view.page_snapshot().unwrap().block(&conv_block).unwrap();
+            assert!(matches!(
+                node.content,
+                BlockContent::Paragraph {
+                    kind: ParagraphType::H2,
+                    ..
+                }
+            ));
+        });
+        // First Mod-a selects all text in block; Mod-k opens link field.
+        send_key(&session, "a", cmd_mod());
+        send_key(&session, "k", cmd_mod());
+        assert!(
+            session.view(|v, _| v.overlays().link_field().is_some()),
+            "Mod-k must open formatting toolbar link field"
+        );
+        send_key(&session, "escape", ui::Modifiers::default());
+
+        // A.11: Escape selects current block; second Mod-a selects all content blocks.
+        send_key(&session, "escape", ui::Modifiers::default());
+        assert_eq!(
+            session.view(|v, _| v.block_selection().to_vec()),
+            vec![conv_block.clone()]
+        );
+        send_key(&session, "a", cmd_mod());
+        let all_selected = session.view(|v, _| v.block_selection().len());
+        assert!(
+            all_selected > 1,
+            "second Mod-a must select all content blocks"
+        );
+        send_key(&session, "escape", ui::Modifiers::default());
+        assert!(session.view(|v, _| v.block_selection().is_empty()));
+    }
+
+    #[test]
+    fn s2_delete_selected_parent_with_nested_child_creates_fallback_and_ignores_direct_typing() {
+        let session = open(1024, 720, PlaygroundOptions::default());
+        let mut state = DocState::new("nested-del", client_id_from_seed(77)).expect("doc");
+        state.workspace.initialize_meta().expect("meta");
+        state
+            .workspace
+            .create_page(HOME_PAGE_ID, "Nested Delete", 1)
+            .expect("create page");
+        let page = state.workspace.ensure_page(HOME_PAGE_ID).expect("page");
+        page.structural_edit(1, |page| {
+            page.add_block(
+                "page-root",
+                BlockSpec::Page {
+                    title: "Nested Delete".into(),
+                },
+                None,
+                None,
+                1,
+            )?;
+            page.add_block(
+                "note-root",
+                BlockSpec::Note { xywh: None },
+                Some("page-root"),
+                None,
+                1,
+            )?;
+            page.add_block(
+                "list-parent",
+                BlockSpec::List {
+                    list_type: ListType::Bulleted,
+                    text: "parent".into(),
+                    checked: false,
+                    order: None,
+                },
+                Some("note-root"),
+                None,
+                1,
+            )?;
+            page.add_block(
+                "list-child",
+                BlockSpec::List {
+                    list_type: ListType::Bulleted,
+                    text: "child".into(),
+                    checked: false,
+                    order: None,
+                },
+                Some("list-parent"),
+                None,
+                1,
+            )?;
+            Ok(())
+        })
+        .expect("seed nested list");
+        session.view(|view, cx| view.set_document(state, cx));
+        let _ = session.frame();
+
+        set_caret(&session, "list-parent", 2);
+        send_key(&session, "escape", ui::Modifiers::default());
+        assert_eq!(
+            session.view(|v, _| v.block_selection().to_vec()),
+            vec!["list-parent".to_string()]
+        );
+
+        // Direct printable typing while whole-block selection is active must not corrupt page title.
+        type_text(&session, "ignored");
+        assert_eq!(
+            session.view(|v, _| v.block_text("page-root").unwrap_or("").to_string()),
+            "Nested Delete"
+        );
+
+        // Backspace deletes parent + nested child and creates a surviving empty paragraph.
+        send_key(&session, "backspace", ui::Modifiers::default());
+        let _ = session.frame();
+        let focus_after_del = session.view(|view, _| {
+            let snap = view.page_snapshot().unwrap();
+            assert!(snap.block("list-parent").is_none());
+            assert!(snap.block("list-child").is_none());
+            let focus_id = view
+                .document_selection()
+                .expect("fallback selection")
+                .focus
+                .block_id
+                .clone();
+            assert!(
+                snap.block(&focus_id).is_some(),
+                "caret must point to a surviving block, not deleted child"
+            );
+            focus_id
+        });
+
+        type_text(&session, "hello");
+        assert_eq!(
+            session.view(|v, _| v.block_text(&focus_after_del).unwrap_or("").to_string()),
+            "hello"
+        );
+
+        // Undo reverts typing and then restores the deleted parent + nested child subtree.
+        send_key(&session, "z", cmd_mod());
+        assert_eq!(
+            session.view(|v, _| v.block_text(&focus_after_del).unwrap_or("").to_string()),
+            ""
+        );
+        send_key(&session, "z", cmd_mod());
+        session.view(|view, _| {
+            let snap = view.page_snapshot().unwrap();
+            assert!(
+                snap.block("list-parent").is_some(),
+                "undo must restore parent list"
+            );
+            assert!(
+                snap.block("list-child").is_some(),
+                "undo must restore nested child list"
+            );
         });
     }
 }

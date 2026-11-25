@@ -20,9 +20,9 @@ pub enum CanvasFontFallback {
     /// Use only fonts loaded into GPUI.
     Disabled,
     /// Use Canvas for eligible emoji, including missing text-presentation symbols.
-    #[default]
     Emoji,
     /// Also allow approximate independent rendering of eligible horizontal CJK text.
+    #[default]
     EmojiAndCjk,
 }
 
@@ -114,8 +114,15 @@ fn is_cjk(grapheme: &str) -> bool {
     }
 
     suffix.is_empty()
-        && (matches!(base, '\u{3131}'..='\u{3163}')
-            || "、。〈〉《》「」『』【】〔〕（）［］｛｝，．！？：；・ー々〆".contains(base))
+        && matches!(
+            base,
+            '\u{3000}'..='\u{303f}'
+                | '\u{3131}'..='\u{3163}'
+                | '\u{fe30}'..='\u{fe4f}'
+                | '\u{ff01}'..='\u{ff60}'
+                | '\u{ffe0}'..='\u{ffee}'
+                | '“' | '”' | '‘' | '’' | '—' | '…' | '·' | '・' | 'ー'
+        )
 }
 
 fn is_single_modern_trailing_jamo(text: &str) -> bool {

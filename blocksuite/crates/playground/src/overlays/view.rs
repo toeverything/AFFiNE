@@ -60,7 +60,7 @@ impl PlaygroundView {
     }
 
     /// What the platform's text input sees of the link field: nothing while it is closed.
-    pub(super) fn link_input_state(
+    pub(crate) fn link_input_state(
         &self,
     ) -> Option<(String, Range<usize>, bool, Option<Range<usize>>)> {
         let link = self.overlays.link_field()?;
@@ -71,7 +71,7 @@ impl PlaygroundView {
     /// Tell the platform's text input (AppKit, the browser's mirror element) that the
     /// link field opened, closed, or changed its text, selection or composition since
     /// `before`: the field and the document take turns being the view's text input.
-    pub(super) fn sync_link_input(
+    pub(crate) fn sync_link_input(
         &mut self,
         before: Option<(String, Range<usize>, bool, Option<Range<usize>>)>,
         window: &mut Window,
@@ -110,6 +110,7 @@ impl PlaygroundView {
                         // Peers stop showing the caret, and a typed slash menu has no
                         // caret left to filter by.
                         self.editor.selection = None;
+                        self.editor.block_selection.clear();
                         self.announce_selection(cx);
                         self.sync_slash_trigger(cx);
                         window.notify_text_selection_changed(&self.editor_focus);
@@ -201,6 +202,7 @@ impl PlaygroundView {
         self.overlays.pointer_pressed(now_ms);
         self.sync_link_input(input, window, cx);
         self.editor.slash_trigger = None;
+        self.editor.block_selection.clear();
         self.editor_mouse_down(event, window, cx);
         // A double or triple click selects at once; only a plain press starts a drag the
         // formatting toolbar waits for.
@@ -429,7 +431,7 @@ impl PlaygroundView {
     /// What the formatting toolbar shows for the editor's selection: `None` unless the
     /// selection is non-empty, no composition is running, and it covers paragraph or list
     /// text only. Marks and alignment are read once per selection and document revision.
-    pub(super) fn selection_format(&mut self, layout: &FlowLayout) -> Option<SelectionFormat> {
+    pub(crate) fn selection_format(&mut self, layout: &FlowLayout) -> Option<SelectionFormat> {
         let selection = self.editor.selection.clone()?;
         if selection.empty() || self.editor.composing() {
             return None;

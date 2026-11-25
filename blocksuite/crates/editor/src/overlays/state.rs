@@ -85,6 +85,19 @@ impl Overlays {
         }
     }
 
+    /// Open the formatting toolbar (if needed) and focus its inline link field.
+    pub fn open_link_field(&mut self, selection: &SelectionFormat, now_ms: f64) {
+        self.close_slash(now_ms);
+        self.sync_toolbar(Some(selection), now_ms);
+        if let Some(toolbar) = self.open_toolbar_mut()
+            && toolbar.link.is_none()
+        {
+            toolbar.link = Some(LinkBar::new(
+                toolbar.selection.marks.link.clone().unwrap_or_default(),
+            ));
+        }
+    }
+
     /// Put pasted text into the link field, over its selection. Returns whether the
     /// field is open.
     pub fn link_insert(&mut self, text: &str) -> bool {
@@ -435,8 +448,7 @@ impl Overlays {
         effects.redraw = true;
         match key {
             // `Tab` and `Shift+Tab` step through the items like the arrows, and never
-            // reach the block; `Enter` without a match closes the menu and does not split
-            // the block.
+            // reach the block.
             "down" | "up" | "tab" if count > 0 => {
                 let back = key == "up" || (key == "tab" && shift);
                 menu.selected = (menu.selected + if back { count - 1 } else { 1 }) % count;
@@ -444,11 +456,16 @@ impl Overlays {
             }
             "tab" => {}
             "enter" if count > 0 => self.execute_slash(None, now_ms, &mut effects),
+            // When triggered in-document with no matching items, `Enter`, `Up`, and `Down`
+            // close the menu and pass through to the editor.
+            "enter" | "up" | "down" if menu.query_in_document => {
+                self.close_slash(now_ms);
+                effects.handled = false;
+            }
             "enter" | "escape" => {
                 self.close_slash(now_ms);
             }
-            // Text typed after the `/` in the document is the editor's to edit, and with
-            // no match left the arrows are the document's again.
+            // Text typed after the `/` in the document is the editor's to edit.
             _ if menu.query_in_document => {
                 effects.handled = false;
                 effects.redraw = false;

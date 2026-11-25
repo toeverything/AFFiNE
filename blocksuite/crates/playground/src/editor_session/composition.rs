@@ -3,11 +3,10 @@ use std::ops::Range;
 use blocksuite_playground_doc::{
     DocError, DocResult,
     read::{BlockNode, RichText},
-    schema::{BlockSpec, ParagraphType},
     session::split_delta,
 };
 use ui::{AnyElement, Bounds, Pixels, div, size};
-use y_octo::{Any, TextAttributes, TextDeltaOp, TextInsert};
+use y_octo::{Any, TextDeltaOp, TextInsert};
 
 use super::*;
 use crate::block_flow::{FlowBlock, FlowRect, PAGE_SURFACE_ID, PageViewport, ScrolledCode};
@@ -226,6 +225,33 @@ impl PlaygroundView {
         palette: &Palette,
     ) -> Vec<AnyElement> {
         let mut el = Vec::new();
+        if !self.editor.block_selection.is_empty() {
+            let mut first_block = true;
+            for block_id in &self.editor.block_selection {
+                let Some(block) = layout.block(block_id) else {
+                    continue;
+                };
+                let r = block.rect();
+                if r.bottom() < v.scroll_y || r.y > v.scroll_y + v.height {
+                    continue;
+                }
+                let mut d = div()
+                    .absolute()
+                    .left(px(v.column_x + r.x))
+                    .top(px(r.y - v.scroll_y))
+                    .w(px(r.w.max(1.0)))
+                    .h(px(r.h))
+                    .rounded(px(4.0))
+                    .bg(palette.brand.opacity(0.14));
+                if r.y >= v.scroll_y
+                    && r.bottom() <= v.scroll_y + v.height
+                    && std::mem::take(&mut first_block)
+                {
+                    d = d.snapshot("page.block_selection", Some(PAGE_SURFACE_ID));
+                }
+                el.push(d.into_any_element());
+            }
+        }
         let scrolled = self.overlays.scrolled_code(layout);
         let mut first_box = true;
         let mut draw = |mut r: FlowRect, color: ui::Hsla, caret: bool| {
@@ -287,6 +313,7 @@ impl PlaygroundView {
     }
     pub(super) fn begin_input(&mut self) {
         if self.editor.selection.is_none()
+            && self.editor.block_selection.is_empty()
             && let Some(root) = self.page_snapshot().and_then(|s| s.root.as_ref())
         {
             self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(&root.id, 0)));
@@ -315,142 +342,6 @@ impl PlaygroundView {
             sel.clone()
         })
     }
-    pub(super) fn apply_markdown(
-        &mut self,
-        sel: &DocumentSelection,
-        typed: &str,
-        w: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> DocResult<bool> {
-        if !sel.empty() || self.editor.preedit.is_some() || typed.is_empty() {
-            return Ok(false);
-        }
-        let Some(snapshot) = self.snapshot.as_ref().cloned() else {
-            return Ok(false);
-        };
-        let id = &sel.focus.block_id;
-        let Some(node) = snapshot.block(id) else {
-            return Ok(false);
-        };
-        let BlockContent::Paragraph {
-            kind, text: rich, ..
-        } = &node.content
-        else {
-            return Ok(false);
-        };
-        if *kind == ParagraphType::Quote {
-            return Ok(false);
-        }
-        let offset = sel.focus.offset();
-        let index = TextBiIndex::new(&rich.plain);
-        let byte = index.utf16_to_utf8_clamped(offset);
-        let mut prefix = rich.plain[..byte].to_owned();
-        prefix.push_str(typed);
-        let now = self.now_ms(cx) as u64;
-        if let Some(spec) = markdown_block(&prefix) {
-            let Some((parent, index)) = parent_of(&snapshot, id) else {
-                return Ok(false);
-            };
-            let replacement = self.fresh_block_id();
-            let trailing = self.fresh_block_id();
-            let divider = matches!(spec, BlockSpec::Divider);
-            let code = matches!(spec, BlockSpec::Code { .. });
-            let focus = if divider || spec.flavour() == node.flavour {
-                id
-            } else {
-                &replacement
-            };
-            let page = self.page_mut()?;
-            let before = sel.snapshot(page)?;
-            let commit = page.structural_edit(now, |page| {
-                if offset > 0 {
-                    page.remove_text(id, "prop:text", 0, offset, now)?;
-                }
-                if divider || code {
-                    page.add_block(
-                        &replacement,
-                        spec,
-                        Some(&parent.id),
-                        Some(index as u64),
-                        now,
-                    )?;
-                    if code {
-                        let remaining = page.read_editable_text(id)?.0;
-                        if !remaining.is_empty() {
-                            page.add_block(
-                                &trailing,
-                                paragraph(),
-                                Some(&parent.id),
-                                Some(index as u64 + 1),
-                                now,
-                            )?;
-                            page.apply_text_delta(&trailing, "prop:text", &remaining.delta, now)?;
-                        }
-                        page.remove_lifting_children(id, now)?;
-                    }
-                } else {
-                    page.convert_markdown_block(id, &replacement, spec, now)?;
-                }
-                Ok(())
-            })?;
-            if commit.is_some() {
-                page.set_undo_selection_snapshot(before)?;
-            }
-            self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(focus, 0)));
-            self.editor.last_typing = None;
-            self.did_edit(commit, None, w, cx);
-            return Ok(true);
-        }
-        if let Some(body) = prefix.strip_suffix('`')
-            && let Some(open) = body.rfind('`')
-            && !body[open + 1..].is_empty()
-            && !body[open + 1..].contains('\n')
-        {
-            let from = body[..open].encode_utf16().count() as u64;
-            // Preserve existing inline marks in the text between the delimiters.
-            let existing = offset.saturating_sub(from + 1);
-            let mut delta = vec![TextDeltaOp::Retain {
-                retain: from,
-                format: None,
-            }];
-            if from < offset {
-                delta.push(TextDeltaOp::Delete { delete: 1 });
-            }
-            let attrs = Some(TextAttributes::from([("code".into(), Any::True)]));
-            if existing > 0 {
-                delta.push(TextDeltaOp::Retain {
-                    retain: existing,
-                    format: attrs.clone(),
-                });
-            }
-            let content = &body[open + 1..];
-            let ix = TextBiIndex::new(content);
-            let new = &content[ix.utf16_to_utf8_clamped(existing)..];
-            if !new.is_empty() {
-                delta.push(TextDeltaOp::Insert {
-                    insert: TextInsert::Text(new.into()),
-                    format: attrs,
-                });
-            }
-            let page = self.page_mut()?;
-            let before = sel.snapshot(page)?;
-            page.stop_capturing()?;
-            let commit = page.apply_text_delta(id, "prop:text", &delta, now)?;
-            if commit.is_some() {
-                page.set_undo_selection_snapshot(before)?;
-            }
-            page.stop_capturing()?;
-            self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(
-                id,
-                from + ix.utf16_len(),
-            )));
-            self.editor.last_typing = None;
-            self.did_edit(commit, Some(id), w, cx);
-            return Ok(true);
-        }
-        Ok(false)
-    }
-
     pub(super) fn replace_selection(
         &mut self,
         sel: DocumentSelection,
@@ -504,40 +395,58 @@ impl PlaygroundView {
                 marks.remove(key);
             }
         }
+        let is_rich_block = matches!(
+            layout.blocks[a].body.kind,
+            block_flow::FlowKind::Paragraph(_) | block_flow::FlowKind::List(_)
+        );
+        let outside_code = marks.get("code") != Some(&Any::True);
         // A `/` typed at a caret in paragraph or list text, outside inline code, opens
         // the slash menu at that character.
-        let slash = (text == "/"
-            && sel.empty()
-            && matches!(
-                layout.blocks[a].body.kind,
-                block_flow::FlowKind::Paragraph(_) | block_flow::FlowKind::List(_)
-            )
-            && marks.get("code") != Some(&Any::True))
-        .then(|| (id.clone(), start.offset()));
-        // An `@` typed at the start of a block or after whitespace in paragraph or list text,
-        // outside inline code, opens the linked-document menu at that character.
-        let linked_doc = (text == "@"
-            && sel.empty()
-            && matches!(
-                layout.blocks[a].body.kind,
-                block_flow::FlowKind::Paragraph(_) | block_flow::FlowKind::List(_)
-            )
-            && marks.get("code") != Some(&Any::True)
-            && {
-                let before_byte = TextBiIndex::new(layout.blocks[a].body.plain.as_str())
-                    .utf16_to_utf8_clamped(start.offset());
-                layout.blocks[a].body.plain[..before_byte]
-                    .chars()
-                    .next_back()
-                    .is_none_or(char::is_whitespace)
-            })
-        .then(|| (id.clone(), start.offset()));
+        let slash = (text == "/" && sel.empty() && is_rich_block && outside_code)
+            .then(|| (id.clone(), start.offset()));
+
+        // Double-bracket `[[` or `【【` trigger converts to `@` and opens the linked-doc menu.
+        let double_bracket_convert: Option<(u64, u64)> =
+            if sel.empty() && is_rich_block && outside_code {
+                if text == "[[" || text == "【【" {
+                    Some((start.offset(), 0))
+                } else if text == "[" || text == "【" {
+                    let plain = layout.blocks[a].body.plain.as_str();
+                    let before_byte = TextBiIndex::new(plain).utf16_to_utf8_clamped(start.offset());
+                    let expected = if text == "[" { '[' } else { '【' };
+                    plain[..before_byte]
+                        .chars()
+                        .next_back()
+                        .filter(|&ch| ch == expected)
+                        .map(|ch| {
+                            let u16_len = ch.len_utf16() as u64;
+                            (start.offset().saturating_sub(u16_len), u16_len)
+                        })
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+        let (insert_text, effective_start, extra_delete, linked_doc) =
+            if let Some((at_offset, prev_del)) = double_bracket_convert {
+                ("@", at_offset, prev_del, Some((id.clone(), at_offset)))
+            } else {
+                // An `@` typed anywhere in paragraph or list text, outside inline code,
+                // opens the linked-document menu at that character.
+                let at_trigger = (text == "@" && sel.empty() && is_rich_block && outside_code)
+                    .then(|| (id.clone(), start.offset()));
+                (text, start.offset(), 0, at_trigger)
+            };
+
         let group = self
             .editor
             .last_typing
             .is_some_and(|t| now.saturating_sub(t) < 500)
             && sel.empty()
-            && !cross;
+            && !cross
+            && extra_delete == 0;
         let blocks = RangeBlocks::between(
             self.page_snapshot()
                 .ok_or_else(|| DocError::InvalidState("missing page".into()))?,
@@ -550,18 +459,25 @@ impl PlaygroundView {
         if !group {
             page.stop_capturing()?;
         }
-        let mut delta = vec![TextDeltaOp::Retain {
-            retain: start.offset(),
-            format: None,
-        }];
-        if !cross && end.offset() > start.offset() {
+        let mut delta = Vec::new();
+        if effective_start > 0 {
+            delta.push(TextDeltaOp::Retain {
+                retain: effective_start,
+                format: None,
+            });
+        }
+        if extra_delete > 0 {
+            delta.push(TextDeltaOp::Delete {
+                delete: extra_delete,
+            });
+        } else if !cross && end.offset() > start.offset() {
             delta.push(TextDeltaOp::Delete {
                 delete: end.offset() - start.offset(),
             });
         }
-        if !text.is_empty() {
+        if !insert_text.is_empty() {
             delta.push(TextDeltaOp::Insert {
-                insert: TextInsert::Text(text.into()),
+                insert: TextInsert::Text(insert_text.into()),
                 format: (!marks.is_empty()).then_some(marks),
             });
         }
@@ -574,7 +490,7 @@ impl PlaygroundView {
                     &blocks.survivors,
                     now,
                 )?;
-                if !text.is_empty() {
+                if !insert_text.is_empty() {
                     page.apply_text_delta(&id, key, &delta, now)?;
                 }
                 Ok(())
@@ -587,8 +503,9 @@ impl PlaygroundView {
         }
         self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(
             &id,
-            start.offset() + text.encode_utf16().count() as u64,
+            effective_start + insert_text.encode_utf16().count() as u64,
         )));
+        self.editor.block_selection.clear();
         self.editor.last_typing = (!cross).then_some(now);
         self.editor.preedit = None;
         self.did_edit(commit, (!cross).then_some(&id), w, cx);

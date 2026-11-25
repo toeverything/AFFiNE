@@ -141,6 +141,8 @@ pub struct Preedit {
 #[derive(Default)]
 pub struct EditorSession {
     pub selection: Option<DocumentSelection>,
+    /// Selected whole-block IDs in document order (entered via `Escape` or second `Mod-a`).
+    pub block_selection: Vec<String>,
     pub goal_x: Option<f32>,
     pub preedit: Option<Preedit>,
     pub relative_selection: Option<SelectionSnapshot>,

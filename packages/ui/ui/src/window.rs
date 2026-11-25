@@ -2167,7 +2167,7 @@ impl Window {
             default_prevented: true,
             mouse_position,
             mouse_hit_test: HitTest::default(),
-            touch_gestures_enabled: false,
+            touch_gestures_enabled: cfg!(target_arch = "wasm32"),
             touch_gestures: crate::TouchGestureRecognizer::default(),
             touch_gesture_epoch: None,
             last_touch_gestures: SmallVec::new(),
@@ -5652,8 +5652,9 @@ impl Window {
         self.touch_prediction_enabled
     }
 
-    /// Enables or disables touch gesture recognition on this window. Disabled by default so
-    /// desktop and non-consumer surfaces do not enqueue gestures or schedule redraws on touch.
+    /// Enables or disables touch gesture recognition on this window. Enabled by default on Web
+    /// (`wasm32`) and disabled by default on other platforms so desktop and non-consumer surfaces
+    /// do not enqueue gestures or schedule redraws on touch.
     pub fn set_touch_gestures_enabled(&mut self, enabled: bool) {
         self.touch_gestures_enabled = enabled;
         if !enabled {
@@ -5668,6 +5669,7 @@ impl Window {
         if !self.touch_gestures_enabled {
             return;
         }
+        self.mouse_position = event.position;
         let now = cx.background_executor().now();
         let epoch = *self.touch_gesture_epoch.get_or_insert(now);
         let now_ms = now.saturating_duration_since(epoch).as_millis() as u64;
@@ -5677,7 +5679,29 @@ impl Window {
             .touch_gestures
             .feed(event, now_ms, direction, viewport_width);
         if !gestures.is_empty() {
-            self.last_touch_gestures.extend(gestures);
+            self.last_touch_gestures.extend(gestures.iter().copied());
+            for gesture in gestures {
+                match gesture {
+                    crate::TouchGesture::Tap { position, count } => {
+                        self.bridge_touch_tap(position, count as usize, cx);
+                    }
+                    crate::TouchGesture::PanUpdate {
+                        position, delta, ..
+                    } => {
+                        self.mouse_position = position;
+                        cx.propagate_event = true;
+                        let scroll = crate::ScrollEvent {
+                            position,
+                            delta: crate::ScrollDelta::Pixels(delta),
+                            modifiers: Modifiers::default(),
+                            touch_phase: crate::TouchPhase::Moved,
+                            source: crate::ScrollSource::Touch,
+                        };
+                        self.dispatch_mouse_event(&scroll, cx);
+                    }
+                    _ => {}
+                }
+            }
             self.refresh();
         }
         if event.phase == crate::TouchPhase::Started {
@@ -5699,6 +5723,27 @@ impl Window {
             })
             .detach();
         }
+    }
+
+    fn bridge_touch_tap(&mut self, position: Point<Pixels>, click_count: usize, cx: &mut App) {
+        self.mouse_position = position;
+        cx.propagate_event = true;
+        let down = crate::MouseDownEvent {
+            button: MouseButton::Left,
+            position,
+            modifiers: Modifiers::default(),
+            click_count,
+            first_mouse: false,
+        };
+        self.dispatch_mouse_event(&down, cx);
+        cx.propagate_event = true;
+        let up = crate::MouseUpEvent {
+            button: MouseButton::Left,
+            position,
+            modifiers: Modifiers::default(),
+            click_count,
+        };
+        self.dispatch_mouse_event(&up, cx);
     }
 
     /// Returns and clears touch gestures recognized during recent touch dispatch.

@@ -15,17 +15,18 @@ use ui::{
 
 pub use ui_tokens::{
     DARK_THEME, FONT_CODE, FONT_SANS, IconDef, LIGHT_THEME, TYPOGRAPHY, ThemeMode, ThemeTokens,
-    bundled_font_bytes, icon_by_name, icons, tokens,
+    bundled_font_bytes, bundled_script_font_bytes, icon_by_name, icons, tokens,
 };
 
-/// Registers the tracked repository fonts (`Inter` and `IBM Plex Mono`) into the active
-/// `TextSystem`.
+/// Registers the tracked repository fonts (`Inter`, `IBM Plex Mono`, `Noto Sans Arabic`,
+/// and `Noto Sans Hebrew`) into the active `TextSystem`.
 ///
 /// Must be called before opening any window across macOS, Linux headless, and Web Wasm.
 pub fn register_bundled_fonts(cx: &App) -> anyhow::Result<()> {
     cx.text_system().add_fonts(
         bundled_font_bytes()
             .into_iter()
+            .chain(bundled_script_font_bytes())
             .map(Cow::Borrowed)
             .collect(),
     )

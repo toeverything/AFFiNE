@@ -39,6 +39,13 @@ pub const IBM_PLEX_MONO_ITALIC_TTF: &[u8] =
 pub const IBM_PLEX_MONO_BOLD_ITALIC_TTF: &[u8] =
     include_bytes!("../fonts/ibm-plex-mono/IBMPlexMono-BoldItalic.ttf");
 
+/// Regular Noto Sans Arabic font face for contextual Arabic shaping.
+pub const NOTO_SANS_ARABIC_REGULAR_TTF: &[u8] =
+    include_bytes!("../fonts/noto/NotoSansArabic-Regular.ttf");
+/// Regular Noto Sans Hebrew font face for Hebrew shaping.
+pub const NOTO_SANS_HEBREW_REGULAR_TTF: &[u8] =
+    include_bytes!("../fonts/noto/NotoSansHebrew-Regular.ttf");
+
 /// Returns all five bundled repository font byte slices in registration order.
 pub const fn bundled_font_bytes() -> [&'static [u8]; 5] {
     [
@@ -50,6 +57,11 @@ pub const fn bundled_font_bytes() -> [&'static [u8]; 5] {
     ]
 }
 
+/// Returns bundled RTL script fallback fonts (Arabic and Hebrew) for native shaping.
+pub const fn bundled_script_font_bytes() -> [&'static [u8]; 2] {
+    [NOTO_SANS_ARABIC_REGULAR_TTF, NOTO_SANS_HEBREW_REGULAR_TTF]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -58,7 +70,7 @@ mod tests {
     fn bundled_fonts_are_non_empty_ttf_blobs() {
         let fonts = bundled_font_bytes();
         assert_eq!(fonts.len(), 5);
-        for bytes in fonts {
+        for bytes in fonts.into_iter().chain(bundled_script_font_bytes()) {
             assert!(bytes.len() > 1024, "font payload is unexpectedly small");
             let tag = &bytes[..4];
             assert!(

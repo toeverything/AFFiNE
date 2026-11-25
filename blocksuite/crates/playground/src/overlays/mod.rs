@@ -623,10 +623,14 @@ mod tests {
         assert_eq!(ids("code"), ["code"]);
         assert_eq!(ids("quote"), ["quote"]);
         assert_eq!(ids("div"), ["divider"]);
-        assert_eq!(ids("linked"), ["linked_page"]);
+        assert_eq!(ids("linked"), ["linked_doc"]);
+        assert_eq!(ids("newdoc"), ["new_doc"]);
+        assert_eq!(ids("tdl"), ["todo", "bulleted"]);
+        assert_eq!(ids("do")[0], "new_doc");
+        assert_eq!(ids("h")[0], "h1");
         assert_eq!(ids("HEADING"), ["h1", "h2", "h3", "h4", "h5", "h6"]);
         assert_eq!(ids("heading 3"), ["h3"]);
-        assert_eq!(ids("list"), ["bulleted", "numbered", "todo", "toggle"]);
+        assert_eq!(ids("list"), ["todo", "toggle", "bulleted", "numbered"]);
         assert!(ids("zzz").is_empty());
         // Every generated icon exists.
         for item in &SLASH_ITEMS {
@@ -648,7 +652,7 @@ mod tests {
             })
             .collect();
         assert_eq!(headers, ["Basic", "List"]);
-        // BlockSuite's order: text, the headings, code, quote, divider, linked page, then the lists.
+        // BlockSuite's order: text, the headings, code, quote, divider, new doc, linked doc, then the lists.
         assert_eq!(
             ids(""),
             [
@@ -662,7 +666,8 @@ mod tests {
                 "code",
                 "quote",
                 "divider",
-                "linked_page",
+                "new_doc",
+                "linked_doc",
                 "bulleted",
                 "numbered",
                 "todo",
@@ -670,7 +675,7 @@ mod tests {
             ]
         );
         assert_eq!(rows.first().map(|(_, y, _)| *y), Some(0.0));
-        assert!(matches!(rows.last(), Some((SlashRow::Item(14), _, _))));
+        assert!(matches!(rows.last(), Some((SlashRow::Item(15), _, _))));
         let (_, last_y, last_height) = rows[rows.len() - 1];
         assert_eq!(last_y + last_height, height);
         for pair in rows.windows(2) {
@@ -2267,21 +2272,18 @@ mod tests {
         assert_eq!(session.written(), written);
         assert_eq!(parent(&session), place);
 
-        // Without a match they do nothing, and `Enter` closes the menu instead of
-        // splitting the block.
+        // Without a match `Tab` does nothing, while `Enter` closes the in-document menu
+        // and passes through to split the block (C.2).
         session.insert("zzz");
-        let written = session.written();
         let count = session.children("showcase-note").len();
         session.key("tab");
         session.shift("tab");
         assert_eq!(session.slash_query().as_deref(), Some("zzz"));
         session.key("enter");
         assert_eq!(session.slash_query(), None);
-        assert_eq!(session.written(), written);
         assert_eq!(parent(&session), place);
-        assert_eq!(session.children("showcase-note").len(), count);
+        assert_eq!(session.children("showcase-note").len(), count + 1);
         assert_eq!(session.text("t-keys").plain, "/zzz");
-        assert_eq!(session.caret(), Some(("t-keys".to_string(), 4)));
     }
 
     #[test]

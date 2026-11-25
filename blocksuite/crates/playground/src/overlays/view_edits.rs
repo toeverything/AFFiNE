@@ -161,7 +161,7 @@ impl PlaygroundView {
     /// whatever text it has left, in place within a flavour and as a fresh block across
     /// flavours. A divider goes right below the block, followed by an empty paragraph to
     /// type in when the block was the last of its parent.
-    pub(super) fn run_slash_command(
+    pub(crate) fn run_slash_command(
         &mut self,
         block_id: &str,
         command: SlashCommand,
@@ -203,13 +203,20 @@ impl PlaygroundView {
                 .map_or(0, |selection| selection.focus.offset())
         });
 
-        if command == SlashCommand::LinkedPage {
-            return self.run_linked_page_slash_command(block_id, strip, window, cx);
+        if command == SlashCommand::NewDoc {
+            return self.run_new_doc_slash_command(block_id, offset, strip, window, cx);
+        }
+        if command == SlashCommand::LinkedDoc {
+            return self.run_linked_doc_slash_command(block_id, offset, strip, window, cx);
         }
         let fresh = self.fresh_block_id();
         let trailing = self.fresh_block_id();
-        let text_block =
-            |node: &BlockNode| matches!(node.flavour.as_str(), "affine:paragraph" | "affine:list");
+        let text_block = |node: &BlockNode| {
+            matches!(
+                node.flavour.as_str(),
+                "affine:paragraph" | "affine:list" | "affine:code"
+            )
+        };
         let plan = if command == SlashCommand::Divider {
             match parent.children.get(slot + 1) {
                 None => SlashPlan::Divider {
@@ -296,46 +303,78 @@ impl PlaygroundView {
         Ok(())
     }
 
-    /// Converts a block's remaining text (excluding any typed `/linked...` trigger) into a new
-    /// linked document and replaces the block's text with a standard BlockSuite `LinkedPage`
-    /// inline reference chip in a single undoable step.
-    pub(super) fn run_linked_page_slash_command(
+    /// Creates a new empty document and inserts a standard BlockSuite `LinkedPage` inline
+    /// reference chip at `offset`, deleting only the typed `/query` (`strip`) and keeping
+    /// surrounding text intact, in a single undoable step.
+    pub(super) fn run_new_doc_slash_command(
         &mut self,
         block_id: &str,
+        offset: u64,
         strip: Option<(u64, u64)>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> DocResult {
-        let current_plain = self
-            .page()
-            .and_then(|page| page.read_editable_text(block_id).ok())
-            .map(|(rich, _)| rich.plain)
-            .unwrap_or_default();
-        let total_u16 = current_plain.encode_utf16().count() as u64;
-        let remaining = if let Some((slash, len)) = strip {
-            let units: Vec<u16> = current_plain.encode_utf16().collect();
-            let s = (slash as usize).min(units.len());
-            let e = ((slash + len) as usize).min(units.len());
-            let mut kept = Vec::with_capacity(units.len());
-            kept.extend_from_slice(&units[..s]);
-            kept.extend_from_slice(&units[e..]);
-            String::from_utf16(&kept).unwrap_or_default()
-        } else {
-            current_plain
-        };
-        let title = if remaining.trim().is_empty() {
-            "Untitled".to_string()
-        } else {
-            remaining.trim().to_string()
-        };
         let summary = self
             .doc_directory_mut()
-            .create_linked_doc(&title, crate::directory::EditorDocMode::Page, None)
+            .create_linked_doc("Untitled", crate::directory::EditorDocMode::Page, None)
             .map_err(|err| DocError::InvalidState(err.to_string()))?;
         let now = self.now_ms(cx) as u64;
         self.ensure_workspace_page_and_broadcast(&summary, now)
             .map_err(|err| DocError::InvalidState(err.to_string()))?;
-        self.insert_inline_reference_chip(block_id, 0, total_u16, summary.id.as_str(), window, cx)
+        let delete_len = strip.map_or(0, |(_, len)| len);
+        self.insert_inline_reference_chip(
+            block_id,
+            offset,
+            delete_len,
+            summary.id.as_str(),
+            window,
+            cx,
+        )
+    }
+
+    /// Replaces any typed `/query` with `@` at `offset` in a single undoable step and opens
+    /// the `@` linked-document picker at the caret.
+    pub(super) fn run_linked_doc_slash_command(
+        &mut self,
+        block_id: &str,
+        offset: u64,
+        strip: Option<(u64, u64)>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
+        let now = self.now_ms(cx) as u64;
+        let before = self.selection_snapshot();
+        let delete_len = strip.map_or(0, |(_, len)| len);
+        let mut delta = Vec::new();
+        if offset > 0 {
+            delta.push(y_octo::TextDeltaOp::Retain {
+                retain: offset,
+                format: None,
+            });
+        }
+        if delete_len > 0 {
+            delta.push(y_octo::TextDeltaOp::Delete { delete: delete_len });
+        }
+        delta.push(y_octo::TextDeltaOp::Insert {
+            insert: y_octo::TextInsert::Text("@".into()),
+            format: None,
+        });
+        let page = self.page_mut()?;
+        page.stop_capturing()?;
+        let commit = page.apply_text_delta(block_id, "prop:text", &delta, now)?;
+        if commit.is_some()
+            && let Some(before) = before
+        {
+            page.set_undo_selection_snapshot(before)?;
+        }
+        self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(
+            block_id,
+            offset + 1,
+        )));
+        self.editor.last_typing = None;
+        self.did_edit(commit, Some(block_id), window, cx);
+        self.open_typed_linked_doc_menu(block_id.to_string(), offset, cx);
+        Ok(())
     }
 
     /// Inserts a standard BlockSuite `LinkedPage` inline reference chip (single space with

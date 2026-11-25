@@ -62,6 +62,7 @@ pub struct InlineMarkSet {
     pub strike: bool,
     pub code: bool,
     pub link: Option<String>,
+    pub latex: Option<String>,
     pub reference: Option<InlineReference>,
     /// Text color as stored in the document (`var(--token)` or a hex color).
     pub color: Option<String>,
@@ -96,6 +97,7 @@ impl InlineMarkSet {
             strike: enabled("strike"),
             code: enabled("code"),
             link: string_attr(attrs.get("link")),
+            latex: string_attr(attrs.get("latex")),
             reference,
             color: string_attr(attrs.get("color")),
             background: string_attr(attrs.get("background")),
@@ -175,6 +177,17 @@ impl RichParagraph {
                         .unwrap_or("Untitled");
                     let label = format!("{PAGE_PREFIX}{}", title.replace(['\r', '\n'], " "));
                     // Y.Text may coalesce consecutive identically formatted placeholders.
+                    for _ in s.bytes() {
+                        append(" ", &label, true);
+                    }
+                }
+                TextInsert::Text(s) if marks.latex.is_some() && s.bytes().all(|b| b == b' ') => {
+                    let tex = marks.latex.as_deref().unwrap_or("");
+                    let label = if tex.is_empty() {
+                        "Equation".to_string()
+                    } else {
+                        tex.replace(['\r', '\n'], " ")
+                    };
                     for _ in s.bytes() {
                         append(" ", &label, true);
                     }

@@ -240,9 +240,9 @@ impl PlaygroundView {
                 } as u64;
                 if offset <= cursor {
                     if matches!(insert, TextInsert::Embed(_))
-                        || format
-                            .as_ref()
-                            .is_some_and(|attrs| attrs.contains_key("reference"))
+                        || format.as_ref().is_some_and(|attrs| {
+                            attrs.contains_key("reference") || attrs.contains_key("latex")
+                        })
                     {
                         break;
                     }
@@ -403,17 +403,23 @@ impl PlaygroundView {
         }
         let before = sel.snapshot(self.page_mut()?)?;
         let mut focus = sel.focus.clone();
-        let demote = matches!(
-            node.content,
-            BlockContent::List { .. }
-                | BlockContent::Paragraph {
-                    kind: ParagraphType::Quote,
-                    ..
-                }
-        ) && ((text.is_empty() && key == "enter") || (backwards && offset == 0))
-            || (backwards
-                && offset == 0
-                && matches!(node.content,BlockContent::Paragraph {kind,..} if kind!=ParagraphType::Text));
+        let nested_empty_list_enter = key == "enter"
+            && text.is_empty()
+            && matches!(node.content, BlockContent::List { .. })
+            && parent_of(&snapshot, &id)
+                .is_some_and(|(parent, _)| matches!(parent.content, BlockContent::List { .. }));
+        let demote = !nested_empty_list_enter
+            && (matches!(
+                node.content,
+                BlockContent::List { .. }
+                    | BlockContent::Paragraph {
+                        kind: ParagraphType::Quote,
+                        ..
+                    }
+            ) && ((text.is_empty() && key == "enter") || (backwards && offset == 0))
+                || (backwards
+                    && offset == 0
+                    && matches!(node.content,BlockContent::Paragraph {kind,..} if kind!=ParagraphType::Text)));
         let last_nested = backwards
             && offset == 0
             && !code
@@ -423,7 +429,7 @@ impl PlaygroundView {
                     BlockContent::List { .. } | BlockContent::Paragraph { .. }
                 ) && pos + 1 == parent.children.len()
             });
-        let commit = if last_nested {
+        let commit = if last_nested || nested_empty_list_enter {
             self.page_mut()?.dedent_block(&id, now)?
         } else if demote {
             let fresh = self.fresh_block_id();
@@ -472,10 +478,14 @@ impl PlaygroundView {
                 }
             }
             let spec = match &node.content {
-                BlockContent::Paragraph { kind, .. } if offset < n => BlockSpec::Paragraph {
-                    paragraph_type: *kind,
-                    text: String::new(),
-                },
+                BlockContent::Paragraph { kind, .. }
+                    if offset < n || *kind == ParagraphType::Quote =>
+                {
+                    BlockSpec::Paragraph {
+                        paragraph_type: *kind,
+                        text: String::new(),
+                    }
+                }
                 BlockContent::List { kind, order, .. } => list(
                     *kind,
                     false,
@@ -632,10 +642,57 @@ impl PlaygroundView {
         if self.overlays.link_field().is_some_and(LinkBar::composing) {
             return;
         }
+        // Active whole-block selection intercepts navigation/edit/clipboard keys first.
+        match self.handle_block_selection_key(e, w, cx) {
+            Ok(true) => {
+                w.prevent_default();
+                cx.stop_propagation();
+                return;
+            }
+            Ok(false) => {}
+            Err(err) => {
+                eprintln!("block selection command: {err}");
+                w.prevent_default();
+                cx.stop_propagation();
+                return;
+            }
+        }
         let m = e.keystroke.modifiers;
         let cmd = m.secondary(cx);
         let key = e.keystroke.key.as_str();
+        if cmd
+            && let Some(command) = block_selection::conversion_shortcut(key, m.alt, m.shift)
+            && let Some(block_id) = self
+                .editor
+                .selection
+                .as_ref()
+                .map(|sel| sel.focus.block_id.clone())
+        {
+            if let Err(err) = self.run_slash_command(&block_id, command, false, w, cx) {
+                eprintln!("conversion shortcut {key}: {err}");
+            }
+            w.prevent_default();
+            cx.stop_propagation();
+            return;
+        }
         let result = match key {
+            "escape" => {
+                if let Some(sel) = self.editor.selection.as_ref()
+                    && let Some(layout) = self.flow_layout()
+                    && layout
+                        .block(&sel.focus.block_id)
+                        .is_some_and(|b| !matches!(b.body.kind, block_flow::FlowKind::Title))
+                {
+                    let block_id = sel.focus.block_id.clone();
+                    self.editor.selection = None;
+                    self.editor.block_selection = vec![block_id];
+                    self.editor.pending_marks.clear();
+                    self.announce_selection(cx);
+                    w.notify_text_selection_changed(&self.editor_focus);
+                    cx.notify();
+                }
+                Ok(())
+            }
             "left" | "right" | "up" | "down" | "home" | "end" => {
                 self.navigate(
                     key,
@@ -649,28 +706,27 @@ impl PlaygroundView {
             }
             "enter" | "backspace" | "delete" | "tab" => self.edit_key(key, m.shift, w, cx),
             "a" if cmd => {
+                let width = page_geometry(f32::from(w.viewport_size().width)).column_width;
                 if let Some(sel) = self.editor.selection.clone()
-                    && let Some(layout) = self.flow_layout()
+                    && let Some(layout) = self.ensure_layout(width, w)
                     && let Some(block) = layout.block(&sel.focus.block_id)
                 {
-                    let mut anchor = DocPoint::new(&block.block_id, 0);
-                    let mut focus = DocPoint::new(
-                        &block.block_id,
-                        block.body.plain.encode_utf16().count() as u64,
-                    );
-                    if (sel.anchor == anchor && sel.focus == focus
-                        || sel.focus == anchor && sel.anchor == focus)
-                        && let Some(first) = layout.blocks.iter().find(|b| b.editable())
-                        && let Some(last) = layout.blocks.iter().rfind(|b| b.editable())
-                    {
-                        anchor = DocPoint::new(&first.block_id, 0);
-                        focus = DocPoint::new(
-                            &last.block_id,
-                            last.body.plain.encode_utf16().count() as u64,
-                        );
+                    let full_len = block.body.plain.encode_utf16().count() as u64;
+                    let anchor = DocPoint::new(&block.block_id, 0);
+                    let focus = DocPoint::new(&block.block_id, full_len);
+                    let already_full_block = full_len == 0
+                        || (sel.anchor == anchor && sel.focus == focus)
+                        || (sel.focus == anchor && sel.anchor == focus);
+                    if already_full_block {
+                        self.select_all_blocks(w, cx);
+                    } else {
+                        self.change_selection(DocumentSelection { anchor, focus }, w, cx);
                     }
-                    self.change_selection(DocumentSelection { anchor, focus }, w, cx);
                 }
+                Ok(())
+            }
+            "k" if cmd && !m.alt && !m.shift => {
+                self.open_link_bar_shortcut(w, cx);
                 Ok(())
             }
             "c" | "x" if cmd => {

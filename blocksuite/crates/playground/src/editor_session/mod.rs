@@ -1,9 +1,11 @@
 //! PlaygroundView glue for `blocksuite_editor::editor_session`.
 
+mod block_selection;
 mod clipboard_ops;
 mod commands;
 mod composition;
 mod input_handler;
+mod markdown;
 
 pub use blocksuite_editor::editor_session::*;
 #[cfg(test)]
@@ -11,7 +13,7 @@ pub(crate) use commands::{
     HistoryRejectFault, set_history_reject_fault, take_history_reject_fallback_hits,
 };
 
-use input_handler::{list, markdown_block, paragraph};
+use input_handler::{list, paragraph};
 
 use blocksuite_playground_doc::{
     DocError, DocResult,
@@ -117,6 +119,9 @@ impl PlaygroundView {
     pub fn document_selection(&self) -> Option<&DocumentSelection> {
         self.editor.selection.as_ref()
     }
+    pub fn block_selection(&self) -> &[String] {
+        &self.editor.block_selection
+    }
     pub fn goal_x(&self) -> Option<f32> {
         self.editor.goal_x
     }
@@ -142,6 +147,7 @@ impl PlaygroundView {
             self.doc_rev += 1;
         }
         self.editor.selection = Some(sel);
+        self.editor.block_selection.clear();
         self.editor.pending_marks.clear();
         self.editor.last_typing = None;
         self.editor.goal_x = None;
