@@ -19,6 +19,7 @@
 //! mounted at all, and one that is fading out carries no handlers, so nothing invisible can
 //! be clicked.
 
+mod equation;
 mod paint_linked_doc;
 mod paint_page;
 mod paint_popovers;
@@ -26,9 +27,11 @@ mod slash;
 mod state;
 mod toolbar;
 
+pub use equation::{EquationEditor, EquationTarget};
 pub use paint_page::{block_text, bounding_rect, find_parent, shared_alignment};
 pub use slash::{
     SLASH_ITEMS, SlashCommand, SlashItem, SlashMenu, SlashRow, filter_slash_items, slash_rows,
+    slash_rows_for_query,
 };
 pub use state::normalize_url;
 pub use toolbar::LinkBar;
@@ -83,8 +86,8 @@ pub const SLASH_MENU_RADIUS: f32 = 8.0;
 /// Padding between the slash menu's edge and its rows. BlockSuite pads `8px 4px 8px 8px`;
 /// 4 px all around keeps the 4 px row radius concentric with the menu's 8 px.
 pub const SLASH_MENU_PADDING: f32 = 4.0;
-/// Height of an item row: its 28 px icon box with 2 px above and below.
-pub const SLASH_ITEM_HEIGHT: f32 = 32.0;
+/// Height of an item row: its 28 px icon box alongside title and description subtitle.
+pub const SLASH_ITEM_HEIGHT: f32 = 44.0;
 /// Side of the bordered box around an item's icon.
 pub(super) const SLASH_ICON_BOX: f32 = 28.0;
 /// Gap between an item's icon box and its title.
@@ -370,6 +373,11 @@ pub enum DocEdit {
     Align(BlockAlign),
     /// Link the text selection to a URL, or clear its link.
     Link(Option<String>),
+    /// Commit a LaTeX equation string to a block or inline target.
+    Equation {
+        target: EquationTarget,
+        latex: String,
+    },
 }
 
 /// Something that happened to the overlays: input routed by the view, or a call of the
@@ -434,6 +442,15 @@ pub enum OverlayEvent {
         mode: crate::directory::EditorDocMode,
         intent_id: Option<String>,
     },
+    /// Open the equation editor for a block or inline latex target.
+    OpenEquationEditor {
+        target: EquationTarget,
+        initial: String,
+    },
+    /// Commit the equation editor's current LaTeX string.
+    EquationApply,
+    /// Dismiss the equation editor without committing.
+    CloseEquationEditor,
 }
 
 /// Active `@` linked-document menu state populated from [`crate::directory::WorkspaceDocDirectory`].
@@ -544,6 +561,7 @@ pub struct Overlays {
     pub(super) copied: Option<(String, u64)>,
     pub(super) copied_generation: u64,
     pub(super) linked_doc: Option<LinkedDocMenuState>,
+    pub(super) equation: Option<EquationEditor>,
     pub format_cache: Option<FormatCache>,
 }
 
@@ -604,6 +622,20 @@ impl Overlays {
 
     pub fn link_field_mut(&mut self) -> Option<&mut LinkBar> {
         self.open_toolbar_mut()?.link.as_mut()
+    }
+
+    /// Whichever single-line overlay text field currently owns text input (equation editor or link field).
+    pub fn active_text_field(&self) -> Option<&LinkBar> {
+        self.equation_editor()
+            .map(|editor| &editor.input)
+            .or_else(|| self.link_field())
+    }
+
+    pub fn active_text_field_mut(&mut self) -> Option<&mut LinkBar> {
+        if self.equation_editor().is_some() {
+            return self.equation_editor_mut().map(|editor| &mut editor.input);
+        }
+        self.link_field_mut()
     }
 
     /// Whether the pointer is on the drag handle itself, not just on its block's row.
@@ -693,6 +725,7 @@ impl Overlays {
         self.drag = None;
         self.chevrons.clear();
         self.linked_doc = None;
+        self.equation = None;
         self.format_cache = None;
     }
 }

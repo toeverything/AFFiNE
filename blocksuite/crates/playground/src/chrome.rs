@@ -536,8 +536,8 @@ impl PlaygroundView {
             zoom_controls,
             toolbar,
         );
-        let needs_text_input =
-            self.edgeless.authoring.inline_edit.is_some() || self.overlays.link_field().is_some();
+        let needs_text_input = self.edgeless.authoring.inline_edit.is_some()
+            || self.overlays.active_text_field().is_some();
         let input_overlay = needs_text_input.then(|| {
             let focus = self.editor_focus.clone();
             let entity = cx.entity();

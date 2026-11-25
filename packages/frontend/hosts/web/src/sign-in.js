@@ -6,6 +6,27 @@ export const WEB_CLIENT_KIND = 'web';
 export const DEFAULT_CLIENT_VERSION = '0.27.5';
 export const CSRF_COOKIE_NAME = 'affine_csrf_token';
 export const GLOBAL_STATE_CLIENT_NONCE_KEY = 'global-state:auth-client-nonce';
+export const OTP_RESEND_COOLDOWN_SECONDS = 60;
+const INVALID_OTP_MESSAGE = 'Invalid verification code';
+
+/**
+ * Returns whether the given hostname belongs to the official AFFiNE cloud shell,
+ * used as fallback when GraphQL `serverConfig.type` is unavailable.
+ *
+ * @param {string | null | undefined} hostname
+ * @returns {boolean}
+ */
+export function isOfficialCloudHost(hostname) {
+  const host = String(hostname || '')
+    .toLowerCase()
+    .replace(/\.$/, '');
+  return (
+    host === 'affine.pro' ||
+    host.endsWith('.affine.pro') ||
+    host === 'affine.fail' ||
+    host.endsWith('.affine.fail')
+  );
+}
 
 const NATIVE_CLIENT_SCHEMES = new Set([
   'affine',
@@ -534,7 +555,7 @@ export async function fetchOAuthProviders(options = {}) {
         clientVersion: options.clientVersion,
       }),
       body: JSON.stringify({
-        query: 'query { serverConfig { name features oauthProviders } }',
+        query: 'query { serverConfig { name features oauthProviders type } }',
       }),
     });
     if (!response.ok) {
@@ -553,6 +574,8 @@ export async function fetchOAuthProviders(options = {}) {
       : null;
     const oauthEnabled =
       providers.length > 0 && (features === null || features.includes('OAuth'));
+    const deploymentType =
+      typeof cfg?.type === 'string' && cfg.type.trim() ? cfg.type.trim() : null;
     return {
       serverName:
         typeof cfg?.name === 'string' && cfg.name.trim()
@@ -560,6 +583,7 @@ export async function fetchOAuthProviders(options = {}) {
           : 'AFFiNE',
       oauth: oauthEnabled,
       providers: oauthEnabled ? providers : [],
+      ...(deploymentType ? { deploymentType } : {}),
     };
   } catch {
     return { serverName: 'AFFiNE', oauth: false, providers: [] };
@@ -1381,6 +1405,34 @@ export async function bootSignInPage(env = {}) {
   }
 
   const clientVersion = env.clientVersion || resolveClientVersion(doc);
+  const nowImpl =
+    typeof env.nowImpl === 'function' ? env.nowImpl : () => Date.now();
+  const setIntervalImpl =
+    env.setIntervalImpl ||
+    (typeof win.setInterval === 'function'
+      ? win.setInterval.bind(win)
+      : globalThis.setInterval);
+  const clearIntervalImpl =
+    env.clearIntervalImpl ||
+    (typeof win.clearInterval === 'function'
+      ? win.clearInterval.bind(win)
+      : globalThis.clearInterval);
+
+  const legalNoticeEl = doc.getElementById('auth-legal-notice');
+  /** @param {string | null | undefined} deploymentType */
+  function syncLegalNoticeVisibility(deploymentType) {
+    if (!legalNoticeEl) {
+      return;
+    }
+    const showLegal =
+      typeof env.showLegalNotice === 'boolean'
+        ? env.showLegalNotice
+        : deploymentType
+          ? deploymentType.toLowerCase() === 'affine'
+          : isOfficialCloudHost(currentUrl.hostname);
+    legalNoticeEl.hidden = !showLegal;
+  }
+  syncLegalNoticeVisibility(null);
 
   // Bind `#use-local-btn` synchronously BEFORE any async network calls so
   // offline users can always skip sign-in immediately.
@@ -1410,6 +1462,14 @@ export async function bootSignInPage(env = {}) {
   let captchaRequired = false;
   /** @type {(() => void) | null} */
   let resetTurnstile = null;
+  let otpSendingInFlight = false;
+  let resendCooldown = 0;
+  /** @type {string} */
+  let activeCooldownEmail = '';
+  /** @type {Map<string, number>} */
+  const resendCooldownUntilByEmail = new Map();
+  /** @type {unknown} */
+  let resendTimerId = null;
   const submitButtonEl = /** @type {HTMLButtonElement | null} */ (
     doc.getElementById('submit-button')
   );
@@ -1423,18 +1483,104 @@ export async function bootSignInPage(env = {}) {
     doc.getElementById('resend-otp-btn')
   );
 
+  function normalizeEmailKey(emailVal) {
+    return String(emailVal || '')
+      .trim()
+      .toLowerCase();
+  }
+
+  function remainingCooldownSeconds(emailVal) {
+    const key = normalizeEmailKey(emailVal);
+    if (!key) {
+      return 0;
+    }
+    const until = resendCooldownUntilByEmail.get(key) || 0;
+    const remainingMs = until - nowImpl();
+    if (remainingMs <= 0) {
+      resendCooldownUntilByEmail.delete(key);
+      return 0;
+    }
+    return Math.ceil(remainingMs / 1000);
+  }
+
   function syncSubmitButtonsDisabled() {
     const waitingForCaptcha = captchaRequired && !captchaToken;
     for (const btn of [
       submitButtonEl,
       passwordSubmitButtonEl,
       switchToOtpBtn,
-      resendOtpBtn,
     ]) {
       if (btn) {
-        btn.disabled = waitingForCaptcha;
+        btn.disabled = waitingForCaptcha || otpSendingInFlight;
       }
     }
+    if (resendOtpBtn) {
+      resendOtpBtn.disabled =
+        waitingForCaptcha || otpSendingInFlight || resendCooldown > 0;
+    }
+  }
+
+  function clearResendTimer() {
+    if (resendTimerId !== null) {
+      clearIntervalImpl?.(resendTimerId);
+      resendTimerId = null;
+    }
+    resendCooldown = 0;
+    activeCooldownEmail = '';
+    if (resendOtpBtn) {
+      resendOtpBtn.textContent = 'Resend code';
+    }
+    syncSubmitButtonsDisabled();
+  }
+
+  function runResendCountdown(emailVal) {
+    clearResendTimer();
+    const key = normalizeEmailKey(emailVal);
+    const remaining = remainingCooldownSeconds(key);
+    if (remaining <= 0) {
+      return;
+    }
+    activeCooldownEmail = key;
+    resendCooldown = remaining;
+    if (resendOtpBtn) {
+      resendOtpBtn.textContent = `Resend in ${resendCooldown}s`;
+    }
+    syncSubmitButtonsDisabled();
+    if (typeof setIntervalImpl === 'function') {
+      resendTimerId = setIntervalImpl(() => {
+        const nextRemaining = remainingCooldownSeconds(activeCooldownEmail);
+        if (nextRemaining <= 0) {
+          clearResendTimer();
+          return;
+        }
+        resendCooldown = nextRemaining;
+        if (resendOtpBtn) {
+          resendOtpBtn.textContent = `Resend in ${resendCooldown}s`;
+        }
+        syncSubmitButtonsDisabled();
+      }, 1000);
+      if (
+        resendTimerId &&
+        typeof (/** @type {{ unref?: Function }} */ (resendTimerId).unref) ===
+          'function'
+      ) {
+        /** @type {{ unref: () => void }} */ (resendTimerId).unref();
+      }
+    }
+  }
+
+  function startResendCooldown(
+    emailVal,
+    seconds = OTP_RESEND_COOLDOWN_SECONDS
+  ) {
+    const key = normalizeEmailKey(emailVal);
+    if (key && seconds > 0) {
+      resendCooldownUntilByEmail.set(
+        key,
+        nowImpl() + Math.floor(seconds) * 1000
+      );
+    }
+    runResendCountdown(key);
   }
 
   const container = doc.getElementById('turnstile-container');
@@ -1490,6 +1636,8 @@ export async function bootSignInPage(env = {}) {
   /** @type {'email' | 'password' | 'otp'} */
   let currentStep = 'email';
   let passwordAvailable = false;
+  let preflightSeq = 0;
+  let stepBoundEmail = '';
 
   /**
    * @param {'email' | 'password' | 'otp'} nextStep
@@ -1497,6 +1645,11 @@ export async function bootSignInPage(env = {}) {
    */
   function setStep(nextStep, emailText) {
     currentStep = nextStep;
+    if (nextStep === 'email') {
+      stepBoundEmail = '';
+    } else if (emailText !== undefined) {
+      stepBoundEmail = String(emailText).trim();
+    }
     if (authCard?.dataset) {
       authCard.dataset.step = nextStep;
     }
@@ -1522,16 +1675,19 @@ export async function bootSignInPage(env = {}) {
     }
   }
 
-  if (oauthContainer) {
+  if (oauthContainer || legalNoticeEl) {
     const serverOAuth = await fetchOAuthProviders({ fetchImpl, clientVersion });
-    renderOAuthProviders({
-      doc,
-      container: oauthContainer,
-      divider: oauthDivider,
-      providers: serverOAuth.providers,
-      redirectUri: redirectUriParam,
-      onNavigate: navigateTo,
-    });
+    syncLegalNoticeVisibility(serverOAuth.deploymentType);
+    if (oauthContainer) {
+      renderOAuthProviders({
+        doc,
+        container: oauthContainer,
+        divider: oauthDivider,
+        providers: serverOAuth.providers,
+        redirectUri: redirectUriParam,
+        onNavigate: navigateTo,
+      });
+    }
   }
 
   const clearStepSecrets = () => {
@@ -1550,66 +1706,116 @@ export async function bootSignInPage(env = {}) {
   };
 
   backFromPasswordBtn?.addEventListener?.('click', () => {
+    preflightSeq += 1;
+    clearResendTimer();
     clearStepSecrets();
     setStep('email');
     setStatus('');
     resetTurnstile?.();
   });
   backFromOtpBtn?.addEventListener?.('click', () => {
+    preflightSeq += 1;
+    clearResendTimer();
     clearStepSecrets();
     setStep('email');
     setStatus('');
     resetTurnstile?.();
   });
   doc.getElementById('email')?.addEventListener?.('input', () => {
+    preflightSeq += 1;
     if (currentStep === 'email') {
       clearStepSecrets();
     }
   });
   switchToPasswordBtn?.addEventListener?.('click', () => {
+    preflightSeq += 1;
+    clearResendTimer();
     const emailVal =
-      /** @type {HTMLInputElement | null} */ (
-        doc.getElementById('email')
-      )?.value;
-    setStep('password', emailVal || '');
+      stepBoundEmail ||
+      (/** @type {HTMLInputElement | null} */
+      (doc.getElementById('email'))?.value || '').trim();
+    setStep('password', emailVal);
     setStatus('');
     resetTurnstile?.();
   });
 
   async function triggerMagicLinkSend(emailVal) {
-    const sendRes = await submitSignInForm({
-      fetchImpl,
-      endpoint: '/api/auth/sign-in',
-      email: emailVal,
-      callbackUrl: magicLinkCallbackUrl,
-      captchaProvider: captcha.provider,
-      captchaToken,
-      captchaChallenge,
-      clientVersion,
-      clientNonce: readClientNonce(win.sessionStorage, win.localStorage),
-    });
-    resetTurnstile?.();
-    if (!sendRes.ok) {
-      setStatus(`Failed to send code (${sendRes.status}).`, 'error');
-    } else {
-      setStatus('');
+    if (otpSendingInFlight) {
+      return { ok: false, status: 0, method: 'magic-link-send' };
     }
-    return sendRes;
+    if (remainingCooldownSeconds(emailVal) > 0) {
+      runResendCountdown(emailVal);
+      return {
+        ok: true,
+        status: 200,
+        method: 'magic-link-send',
+        skipped: true,
+      };
+    }
+    const sendSeq = preflightSeq;
+    const boundEmail = String(emailVal || '').trim();
+    const isActiveOtp = () =>
+      sendSeq === preflightSeq &&
+      currentStep === 'otp' &&
+      stepBoundEmail === boundEmail;
+    otpSendingInFlight = true;
+    syncSubmitButtonsDisabled();
+    try {
+      const sendRes = await submitSignInForm({
+        fetchImpl,
+        endpoint: '/api/auth/sign-in',
+        email: boundEmail,
+        callbackUrl: magicLinkCallbackUrl,
+        captchaProvider: captcha.provider,
+        captchaToken,
+        captchaChallenge,
+        clientVersion,
+        clientNonce: readClientNonce(win.sessionStorage, win.localStorage),
+      });
+      resetTurnstile?.();
+      if (!isActiveOtp()) {
+        return {
+          ok: false,
+          status: sendRes.status,
+          method: 'magic-link-send',
+          stale: true,
+        };
+      }
+      if (!sendRes.ok) {
+        setStatus(`Failed to send code (${sendRes.status}).`, 'error');
+      } else {
+        startResendCooldown(boundEmail);
+        setStatus('');
+      }
+      return sendRes;
+    } catch {
+      resetTurnstile?.();
+      if (isActiveOtp()) {
+        setStatus('Network error. Please try again.', 'error');
+      }
+      return { ok: false, status: 0, method: 'magic-link-send' };
+    } finally {
+      otpSendingInFlight = false;
+      syncSubmitButtonsDisabled();
+    }
   }
 
   switchToOtpBtn?.addEventListener?.('click', async () => {
+    preflightSeq += 1;
     const emailVal =
-      /** @type {HTMLInputElement | null} */ (doc.getElementById('email'))
-        ?.value || '';
+      stepBoundEmail ||
+      (/** @type {HTMLInputElement | null} */
+      (doc.getElementById('email'))?.value || '').trim();
     setStep('otp', emailVal);
     await triggerMagicLinkSend(emailVal);
   });
   resendOtpBtn?.addEventListener?.('click', async () => {
     const emailVal =
-      /** @type {HTMLInputElement | null} */ (doc.getElementById('email'))
-        ?.value || '';
+      stepBoundEmail ||
+      (/** @type {HTMLInputElement | null} */
+      (doc.getElementById('email'))?.value || '').trim();
     const res = await triggerMagicLinkSend(emailVal);
-    if (res.ok) {
+    if (res.ok && !res.skipped) {
       setStatus('A new verification code has been sent.', 'info');
     }
   });
@@ -1632,23 +1838,35 @@ export async function bootSignInPage(env = {}) {
       const otpVal = (otpEl?.value || '').trim();
 
       if (authCard && currentStep === 'email') {
+        const seq = ++preflightSeq;
+        const reqEmail = emailVal;
+        const isStalePreflight = () =>
+          seq !== preflightSeq ||
+          currentStep !== 'email' ||
+          (emailEl?.value || '').trim() !== reqEmail;
         clearStepSecrets();
         try {
           const preRes = await fetchImpl('/api/auth/preflight', {
             method: 'POST',
             credentials: 'same-origin',
             headers: buildWebAuthHeaders({ includeJson: true, clientVersion }),
-            body: JSON.stringify({ email: emailVal }),
+            body: JSON.stringify({ email: reqEmail }),
           });
+          if (isStalePreflight()) {
+            return;
+          }
           if (!preRes.ok) {
             setStatus(`Unable to verify account (${preRes.status}).`, 'error');
             return;
           }
           const preData = await preRes.json();
+          if (isStalePreflight()) {
+            return;
+          }
           const methods = preData?.methods;
           passwordAvailable = Boolean(methods?.password?.available);
           if (passwordAvailable) {
-            setStep('password', emailVal);
+            setStep('password', reqEmail);
             setStatus('');
             return;
           }
@@ -1668,10 +1886,13 @@ export async function bootSignInPage(env = {}) {
             );
             return;
           }
-          setStep('otp', emailVal);
-          await triggerMagicLinkSend(emailVal);
+          setStep('otp', reqEmail);
+          await triggerMagicLinkSend(reqEmail);
           return;
         } catch {
+          if (isStalePreflight()) {
+            return;
+          }
           setStatus('Network error while checking account.', 'error');
           return;
         }
@@ -1682,10 +1903,20 @@ export async function bootSignInPage(env = {}) {
         return;
       }
 
+      if (authCard && currentStep === 'otp' && !/^\d{6}$/.test(otpVal)) {
+        setStatus(INVALID_OTP_MESSAGE, 'error');
+        return;
+      }
+
+      const submitEmail =
+        currentStep === 'password' || currentStep === 'otp'
+          ? stepBoundEmail || emailVal
+          : emailVal;
+
       const result = await submitSignInForm({
         fetchImpl,
         endpoint: form.getAttribute?.('action') || '/api/auth/sign-in',
-        email: emailVal,
+        email: submitEmail,
         password: currentStep === 'otp' ? '' : passwordVal,
         otp: currentStep === 'password' ? '' : otpVal,
         callbackUrl: magicLinkCallbackUrl,
@@ -1698,15 +1929,21 @@ export async function bootSignInPage(env = {}) {
       if (result.method !== 'magic-link-otp') {
         resetTurnstile?.();
       }
+      const errorText =
+        result.method === 'magic-link-otp' &&
+        (result.status === 400 || result.status === 401)
+          ? INVALID_OTP_MESSAGE
+          : `Sign-in failed (${result.status}).`;
       setStatus(
         result.ok
           ? result.method === 'magic-link-send'
             ? 'Check your email for the sign-in link.'
             : 'Signed in.'
-          : `Sign-in failed (${result.status}).`,
+          : errorText,
         result.ok ? 'info' : 'error'
       );
       if (result.ok && result.method !== 'magic-link-send') {
+        clearResendTimer();
         navigateTo(
           resolveSafeAuthRedirect(redirectUriParam, currentUrl.origin)
         );
@@ -1719,7 +1956,9 @@ export async function bootSignInPage(env = {}) {
     captcha,
     getStep: () => currentStep,
     getCaptchaToken: () => captchaToken,
+    getResendCooldown: () => resendCooldown,
     resetTurnstile: () => resetTurnstile?.(),
+    dispose: () => clearResendTimer(),
   };
 }
 

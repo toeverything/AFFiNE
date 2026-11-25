@@ -1,10 +1,12 @@
 use crate::platform::web::canvas_fallback::{CanvasFontFallback, classify_canvas_fallback};
 use crate::platform::web::canvas_text::{self, CanvasTextMetrics};
-use crate::platform::web::glyph_cache::{CanvasGlyph, GlyphCache};
+use crate::platform::web::glyph_cache::{
+    CANVAS_FONT_BIT, CanvasGlyph, GlyphCache, LOGICAL_FONT_BIT, LogicalFontTable, format_css_font,
+};
 use crate::platform::web::run_replacements::{Replacement, apply_replacements, collect_candidates};
 use crate::platform::wgpu::CosmicTextSystem;
 use crate::{
-    Bounds, DevicePixels, Font, FontId, FontMetrics, FontRun, FontStyle, GlyphId, Hsla, LineLayout,
+    Bounds, DevicePixels, Font, FontId, FontMetrics, FontRun, GlyphId, LineLayout,
     MissingGlyphSink, Pixels, PlatformTextSystem, RenderGlyphParams, SUBPIXEL_VARIANTS_X,
     SUBPIXEL_VARIANTS_Y, ShapedGlyph, Size, TextRenderingMode, point, px, size,
 };
@@ -12,8 +14,6 @@ use anyhow::{Context as _, Result, ensure};
 use parking_lot::RwLock;
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-// Cosmic's font IDs index its loaded-font vector. Keep browser IDs in a disjoint namespace.
-const CANVAS_FONT_BIT: usize = 1 << (usize::BITS - 1);
 const MAX_MEASUREMENTS: usize = 4096;
 
 pub(crate) struct WebTextSystem {
@@ -25,7 +25,7 @@ pub(crate) struct WebTextSystem {
 #[derive(Default)]
 struct State {
     missing_glyph_sink: Option<Arc<dyn MissingGlyphSink>>,
-    descriptors: HashMap<FontId, Font>,
+    logical_fonts: LogicalFontTable,
     canvas_fonts: Vec<Arc<CanvasFont>>,
     canvas_font_ids: HashMap<FontId, FontId>,
     glyphs: GlyphCache,
@@ -36,21 +36,6 @@ struct CanvasFont {
     native_id: FontId,
     descriptor: Font,
     monospace: bool,
-}
-
-impl State {
-    fn cached_fallback(
-        &self,
-        native_id: FontId,
-        text: &str,
-        color: bool,
-        font_size: Pixels,
-    ) -> Option<(FontId, GlyphId, CanvasTextMetrics)> {
-        let font_id = *self.canvas_font_ids.get(&native_id)?;
-        let glyph_id = self.glyphs.id_for(font_id, text, color)?;
-        let metrics = *self.measurements.get(&(font_id, glyph_id, font_size))?;
-        Some((font_id, glyph_id, metrics))
-    }
 }
 
 impl WebTextSystem {
@@ -77,21 +62,40 @@ impl WebTextSystem {
     }
 
     fn native_font_id(&self, font_id: FontId) -> FontId {
-        self.canvas_font(font_id)
-            .map_or(font_id, |font| font.native_id)
+        if let Some(font) = self.canvas_font(font_id) {
+            return font.native_id;
+        }
+        if let Some((native_id, _)) = self.state.read().logical_fonts.get(font_id) {
+            return *native_id;
+        }
+        font_id
     }
 
-    fn canvas_font_id(&self, native_id: FontId) -> Result<FontId> {
-        let descriptor = {
+    fn native_params<'a>(&self, params: &'a RenderGlyphParams) -> Cow<'a, RenderGlyphParams> {
+        let native_id = self.native_font_id(params.font_id);
+        if native_id == params.font_id {
+            Cow::Borrowed(params)
+        } else {
+            let mut p = params.clone();
+            p.font_id = native_id;
+            Cow::Owned(p)
+        }
+    }
+
+    fn canvas_font_id(&self, source_id: FontId) -> Result<FontId> {
+        if source_id.0 & CANVAS_FONT_BIT != 0 {
+            return Ok(source_id);
+        }
+        let (native_id, descriptor) = {
             let state = self.state.read();
-            if let Some(font_id) = state.canvas_font_ids.get(&native_id) {
+            if let Some(font_id) = state.canvas_font_ids.get(&source_id) {
                 return Ok(*font_id);
             }
-            state
-                .descriptors
-                .get(&native_id)
-                .cloned()
-                .context("missing source font descriptor for Canvas fallback")?
+            let (native_id, descriptor) = state
+                .logical_fonts
+                .get(source_id)
+                .context("missing source font descriptor for Canvas fallback")?;
+            (*native_id, descriptor.clone())
         };
         let monospace = match (
             self.native.glyph_for_char(native_id, 'i'),
@@ -104,11 +108,11 @@ impl WebTextSystem {
             _ => false,
         };
         let mut state = self.state.write();
-        if let Some(font_id) = state.canvas_font_ids.get(&native_id) {
+        if let Some(font_id) = state.canvas_font_ids.get(&source_id) {
             return Ok(*font_id);
         }
         ensure!(
-            state.canvas_fonts.len() < CANVAS_FONT_BIT,
+            state.canvas_fonts.len() < LOGICAL_FONT_BIT,
             "Canvas font ID space exhausted"
         );
         let font_id = FontId(CANVAS_FONT_BIT | state.canvas_fonts.len());
@@ -117,7 +121,7 @@ impl WebTextSystem {
             descriptor,
             monospace,
         }));
-        state.canvas_font_ids.insert(native_id, font_id);
+        state.canvas_font_ids.insert(source_id, font_id);
         Ok(font_id)
     }
 
@@ -155,7 +159,8 @@ impl WebTextSystem {
             .canvas_font(font_id)
             .context("invalid Canvas font ID")?;
         let glyph = self.canvas_glyph(font_id, glyph_id)?;
-        let metrics = canvas_text::measure(&glyph.text, &font.css_font(font_size, glyph.color)?)?;
+        let css = format_css_font(&font.descriptor, font.monospace, font_size, glyph.color)?;
+        let metrics = canvas_text::measure(&glyph.text, &css)?;
         ensure!(metrics.advance >= 0.0, "Canvas returned a negative advance");
         let mut state = self.state.write();
         if state.measurements.len() >= MAX_MEASUREMENTS {
@@ -167,22 +172,24 @@ impl WebTextSystem {
 
     fn fallback_glyph(
         &self,
-        native_id: FontId,
+        font_id: FontId,
         text: &str,
         color: bool,
         font_size: Pixels,
     ) -> Result<(FontId, GlyphId, CanvasTextMetrics)> {
-        if let Some(cached) = self
-            .state
-            .read()
-            .cached_fallback(native_id, text, color, font_size)
         {
-            return Ok(cached);
+            let state = self.state.read();
+            if let Some(&canvas_id) = state.canvas_font_ids.get(&font_id)
+                && let Some(glyph_id) = state.glyphs.id_for(canvas_id, text, color)
+                && let Some(&metrics) = state.measurements.get(&(canvas_id, glyph_id, font_size))
+            {
+                return Ok((canvas_id, glyph_id, metrics));
+            }
         }
-        let font_id = self.canvas_font_id(native_id)?;
-        let glyph_id = self.register_glyph(font_id, text, color)?;
-        let metrics = self.measure(font_id, glyph_id, font_size)?;
-        Ok((font_id, glyph_id, metrics))
+        let canvas_id = self.canvas_font_id(font_id)?;
+        let glyph_id = self.register_glyph(canvas_id, text, color)?;
+        let metrics = self.measure(canvas_id, glyph_id, font_size)?;
+        Ok((canvas_id, glyph_id, metrics))
     }
 
     fn apply_fallback(&self, text: &str, font_runs: &[FontRun], layout: &mut LineLayout) {
@@ -263,32 +270,20 @@ impl PlatformTextSystem for WebTextSystem {
     }
 
     fn font_id(&self, font: &Font) -> Result<FontId> {
-        let font_id = self.native.font_id(font)?;
+        let native_id = self.native.font_id(font)?;
         ensure!(
-            font_id.0 & CANVAS_FONT_BIT == 0,
+            native_id.0 & (CANVAS_FONT_BIT | LOGICAL_FONT_BIT) == 0,
             "native font ID space exhausted"
         );
-        let mut descriptor = font.clone();
-        (descriptor.weight, descriptor.style) = self.native.font_weight_and_style(font_id)?;
+        let (_, resolved_style) = self.native.font_weight_and_style(native_id)?;
         self.state
             .write()
-            .descriptors
-            .entry(font_id)
-            .or_insert(descriptor);
-        Ok(font_id)
+            .logical_fonts
+            .intern(native_id, font, resolved_style)
     }
 
     fn prewarm_fonts(&self, font_ids: &[FontId]) {
-        if font_ids
-            .iter()
-            .all(|font_id| font_id.0 & CANVAS_FONT_BIT == 0)
-        {
-            return self.native.prewarm_fonts(font_ids);
-        }
-        let native_ids: Vec<_> = font_ids
-            .iter()
-            .map(|font_id| self.native_font_id(*font_id))
-            .collect();
+        let native_ids: Vec<_> = font_ids.iter().map(|id| self.native_font_id(*id)).collect();
         self.native.prewarm_fonts(&native_ids);
     }
 
@@ -298,7 +293,9 @@ impl PlatformTextSystem for WebTextSystem {
 
     fn typographic_bounds(&self, font_id: FontId, glyph_id: GlyphId) -> Result<Bounds<f32>> {
         let Some(font) = self.canvas_font(font_id) else {
-            return self.native.typographic_bounds(font_id, glyph_id);
+            return self
+                .native
+                .typographic_bounds(self.native_font_id(font_id), glyph_id);
         };
         let font_size = px(self.native.font_metrics(font.native_id).units_per_em as f32);
         let metrics = self.measure(font_id, glyph_id, font_size)?;
@@ -313,7 +310,7 @@ impl PlatformTextSystem for WebTextSystem {
 
     fn advance(&self, font_id: FontId, glyph_id: GlyphId) -> Result<Size<f32>> {
         let Some(font) = self.canvas_font(font_id) else {
-            return self.native.advance(font_id, glyph_id);
+            return self.native.advance(self.native_font_id(font_id), glyph_id);
         };
         let font_size = px(self.native.font_metrics(font.native_id).units_per_em as f32);
         Ok(size(
@@ -324,7 +321,9 @@ impl PlatformTextSystem for WebTextSystem {
 
     fn glyph_for_char(&self, font_id: FontId, character: char) -> Option<GlyphId> {
         if self.canvas_font(font_id).is_none() {
-            return self.native.glyph_for_char(font_id, character);
+            return self
+                .native
+                .glyph_for_char(self.native_font_id(font_id), character);
         }
         let mut buffer = [0; 4];
         let text = character.encode_utf8(&mut buffer);
@@ -341,7 +340,7 @@ impl PlatformTextSystem for WebTextSystem {
 
     fn glyph_raster_bounds(&self, params: &RenderGlyphParams) -> Result<Bounds<DevicePixels>> {
         if self.canvas_font(params.font_id).is_none() {
-            return self.native.glyph_raster_bounds(params);
+            return self.native.glyph_raster_bounds(&self.native_params(params));
         }
         let metrics = self.measure(
             params.font_id,
@@ -380,10 +379,17 @@ impl PlatformTextSystem for WebTextSystem {
         bounds: Bounds<DevicePixels>,
     ) -> Result<(Size<DevicePixels>, Vec<u8>)> {
         let Some(font) = self.canvas_font(params.font_id) else {
-            return self.native.rasterize_glyph(params, bounds);
+            return self
+                .native
+                .rasterize_glyph(&self.native_params(params), bounds);
         };
         let glyph = self.canvas_glyph(params.font_id, params.glyph_id)?;
-        let css_font = font.css_font(params.font_size * params.scale_factor, glyph.color)?;
+        let css_font = format_css_font(
+            &font.descriptor,
+            font.monospace,
+            params.font_size * params.scale_factor,
+            glyph.color,
+        )?;
         let mut pixels = canvas_text::rasterize(
             &glyph.text,
             &css_font,
@@ -408,23 +414,17 @@ impl PlatformTextSystem for WebTextSystem {
         runs: &[FontRun],
         base_direction: crate::BaseDirection,
     ) -> LineLayout {
-        let native_runs: Cow<'_, [FontRun]> =
-            if runs.iter().any(|run| run.font_id.0 & CANVAS_FONT_BIT != 0) {
-                Cow::Owned(
-                    runs.iter()
-                        .map(|run| FontRun {
-                            len: run.len,
-                            font_id: self.native_font_id(run.font_id),
-                        })
-                        .collect(),
-                )
-            } else {
-                Cow::Borrowed(runs)
-            };
+        let native_runs: Vec<_> = runs
+            .iter()
+            .map(|r| FontRun {
+                len: r.len,
+                font_id: self.native_font_id(r.font_id),
+            })
+            .collect();
         let mut layout =
             self.native
                 .layout_line_with_direction(text, font_size, &native_runs, base_direction);
-        self.apply_fallback(text, &native_runs, &mut layout);
+        self.apply_fallback(text, runs, &mut layout);
         let sink = self.state.read().missing_glyph_sink.clone();
         if let Some(sink) = sink {
             let missing_indices = layout
@@ -446,71 +446,10 @@ impl PlatformTextSystem for WebTextSystem {
         if self.canvas_font(font_id).is_some() {
             TextRenderingMode::Grayscale
         } else {
-            self.native.recommended_rendering_mode(font_id, font_size)
+            self.native
+                .recommended_rendering_mode(self.native_font_id(font_id), font_size)
         }
     }
-
-    fn glyph_dilation_for_color(&self, color: Hsla) -> u8 {
-        self.native.glyph_dilation_for_color(color)
-    }
-}
-
-impl CanvasFont {
-    fn css_font(&self, font_size: Pixels, color: bool) -> Result<String> {
-        let font_size = f32::from(font_size);
-        ensure!(
-            font_size.is_finite() && font_size > 0.,
-            "invalid Canvas font size"
-        );
-        let style = match self.descriptor.style {
-            FontStyle::Normal => "normal",
-            FontStyle::Italic => "italic",
-            FontStyle::Oblique => "oblique",
-        };
-        let mut families = Vec::new();
-        if !color && !self.descriptor.family.starts_with('.') {
-            families.push(quote_family(&self.descriptor.family));
-        }
-        if let Some(fallbacks) = &self.descriptor.fallbacks {
-            families.extend(
-                fallbacks
-                    .fallback_list()
-                    .iter()
-                    .map(|family| quote_family(family)),
-            );
-        }
-        families.push(
-            if color {
-                "emoji"
-            } else if self.monospace {
-                "monospace"
-            } else {
-                "sans-serif"
-            }
-            .to_owned(),
-        );
-        Ok(format!(
-            "{style} {} {font_size}px {}",
-            self.descriptor.weight.0,
-            families.join(", ")
-        ))
-    }
-}
-
-fn quote_family(family: &str) -> String {
-    let mut quoted = String::from("\"");
-    for character in family.chars() {
-        match character {
-            '\\' | '"' => {
-                quoted.push('\\');
-                quoted.push(character);
-            }
-            character if character.is_control() => quoted.push(' '),
-            character => quoted.push(character),
-        }
-    }
-    quoted.push('"');
-    quoted
 }
 
 fn subpixel_offset(params: &RenderGlyphParams) -> (f32, f32) {

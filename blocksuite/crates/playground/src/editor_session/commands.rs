@@ -638,8 +638,12 @@ impl PlaygroundView {
             cx.stop_propagation();
             return;
         }
-        // A composition in the link field keeps its keys from the document as well.
-        if self.overlays.link_field().is_some_and(LinkBar::composing) {
+        // A composition in the link or equation field keeps its keys from the document as well.
+        if self
+            .overlays
+            .active_text_field()
+            .is_some_and(LinkBar::composing)
+        {
             return;
         }
         // Active whole-block selection intercepts navigation/edit/clipboard keys first.

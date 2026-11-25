@@ -17,6 +17,7 @@ import {
   GLOBAL_STATE_CLIENT_NONCE_KEY,
   isAllowedNativeAppUrl,
   isAllowedRedirectTarget,
+  isOfficialCloudHost,
   maybeLoadTurnstile,
   readClientNonce,
   readCsrfToken,
@@ -117,6 +118,11 @@ void test('Iron Rule F3 and WCAG AA contrast >= 4.5:1 on sign-in.html', () => {
   const stepEmailIdx = html.indexOf('<section id="step-email"');
   assert.ok(turnstileIdx > 0 && turnstileIdx < stepEmailIdx);
   assert.ok(html.includes('min-height: 100dvh'));
+  assert.ok(html.includes('align-items: flex-start'));
+  assert.ok(html.includes('button:disabled'));
+  assert.ok(html.includes('id="auth-legal-notice"'));
+  assert.ok(html.includes('https://affine.pro/terms'));
+  assert.ok(html.includes('https://affine.pro/privacy'));
 
   // Assert WCAG AA >= 4.5:1 for all primary/link/error/secondary color tokens.
   const pairs = [
@@ -540,6 +546,7 @@ void test('sign-in 3-step flow, frozen schema.gql OAuth query, Turnstile reset, 
   assert.equal(page.getStep(), 'otp');
   assert.equal(turnstileResets, 1);
   assert.equal(page.getCaptchaToken(), null);
+  page.dispose();
 
   // Use local workspace navigates safely to '/'.
   els.get('use-local-btn').listeners.get('click')();
@@ -741,6 +748,272 @@ void test('sign-in 3-step flow, frozen schema.gql OAuth query, Turnstile reset, 
   assert.deepEqual(seenPreflightEmails, ['a@affine.pro', 'b@affine.pro']);
   assert.equal(bSignInPosts, 0);
   assert.equal(page3.getStep(), 'email');
+  page3.dispose();
+});
+
+void test('sign-in OTP 6-digit validation, 60s resend cooldown, anti-reentry, cross-Back cooldown, and deployment-type Terms notice', async () => {
+  assert.equal(isOfficialCloudHost('app.affine.pro'), true);
+  assert.equal(isOfficialCloudHost('mobile.affine.fail'), true);
+  assert.equal(isOfficialCloudHost('localhost'), false);
+  assert.equal(isOfficialCloudHost('127.0.0.1'), false);
+  assert.equal(isOfficialCloudHost('notes.example.org'), false);
+
+  const els = new Map();
+  for (const id of [
+    'auth-card',
+    'auth-status',
+    'auth-legal-notice',
+    'sign-in-form',
+    'step-email',
+    'step-password',
+    'step-otp',
+    'step-email-display',
+    'otp-email-display',
+    'turnstile-container',
+    'email',
+    'password',
+    'otp',
+    'submit-button',
+    'password-submit-button',
+    'otp-submit-button',
+    'switch-to-otp-btn',
+    'switch-to-password-btn',
+    'resend-otp-btn',
+    'back-from-password-btn',
+    'back-from-otp-btn',
+  ]) {
+    const el = createMockElement(id.endsWith('-btn') ? 'button' : 'div');
+    el.hidden =
+      id === 'step-password' || id === 'step-otp' || id === 'auth-legal-notice';
+    els.set(id, el);
+  }
+  els.get('sign-in-form').getAttribute = name =>
+    name === 'action' ? '/api/auth/sign-in' : null;
+  els.get('email').value = 'otp@affine.pro';
+
+  let nowMs = 1_000_000;
+  const intervals = new Map();
+  let nextTimerId = 1;
+  let clearedCount = 0;
+  const setIntervalImpl = fn => {
+    const id = nextTimerId++;
+    intervals.set(id, fn);
+    return id;
+  };
+  const clearIntervalImpl = id => {
+    if (intervals.delete(id)) {
+      clearedCount += 1;
+    }
+  };
+  const tickSeconds = count => {
+    for (let i = 0; i < count; i += 1) {
+      nowMs += 1000;
+      for (const fn of Array.from(intervals.values())) {
+        fn();
+      }
+    }
+  };
+
+  let signInSendCount = 0;
+  let otpVerifyCount = 0;
+  let otpVerifyStatus = 400;
+  let holdSignInSend = null;
+
+  const page = await bootSignInPage({
+    win: {
+      location: {
+        href: 'https://app.affine.pro/sign-in',
+        pathname: '/sign-in',
+        replace() {},
+      },
+    },
+    doc: {
+      head: createMockElement('head'),
+      querySelectorAll: () => [],
+      getElementById: id => els.get(id) || null,
+      createElement: tag => createMockElement(tag),
+    },
+    nowImpl: () => nowMs,
+    setIntervalImpl,
+    clearIntervalImpl,
+    fetchImpl: async url => {
+      if (url === '/api/auth/captcha') {
+        return { ok: false, status: 404 };
+      }
+      if (url === '/graphql') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            data: {
+              serverConfig: {
+                name: 'AFFiNE Cloud',
+                type: 'Affine',
+                features: ['OAuth'],
+                oauthProviders: [],
+              },
+            },
+          }),
+        };
+      }
+      if (url === '/api/auth/preflight') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            registered: true,
+            methods: {
+              password: { available: false },
+              magicLink: { available: true },
+            },
+          }),
+        };
+      }
+      if (url === '/api/auth/sign-in') {
+        signInSendCount += 1;
+        if (holdSignInSend) {
+          await holdSignInSend;
+        }
+        return { ok: true, status: 200 };
+      }
+      if (url === '/api/auth/magic-link') {
+        otpVerifyCount += 1;
+        return { ok: otpVerifyStatus === 200, status: otpVerifyStatus };
+      }
+      return { ok: true, status: 200 };
+    },
+  });
+
+  // Official cloud deployment type displays the Terms & Privacy notice.
+  assert.equal(els.get('auth-legal-notice').hidden, false);
+
+  // In-flight OTP send immediately disables buttons and prevents duplicate sends on double-click.
+  let releaseSend;
+  holdSignInSend = new Promise(resolve => {
+    releaseSend = resolve;
+  });
+  const firstSubmit = els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(page.getStep(), 'otp');
+  assert.equal(els.get('resend-otp-btn').disabled, true);
+  // Concurrent resend click while in-flight must not trigger a second request.
+  await els.get('resend-otp-btn').listeners.get('click')();
+  assert.equal(signInSendCount, 1);
+  releaseSend();
+  holdSignInSend = null;
+  await firstSubmit;
+
+  assert.equal(page.getResendCooldown(), 60);
+  assert.equal(els.get('resend-otp-btn').disabled, true);
+  assert.equal(els.get('resend-otp-btn').textContent, 'Resend in 60s');
+
+  // Invalid OTP inputs are rejected locally with 0 network calls (never resending email).
+  for (const invalidOtp of ['', '123', 'abcdef', '1234567']) {
+    els.get('otp').value = invalidOtp;
+    await els.get('sign-in-form').listeners.get('submit')({
+      preventDefault() {},
+    });
+    assert.equal(
+      els.get('auth-status').textContent,
+      'Invalid verification code'
+    );
+    assert.equal(els.get('auth-status').dataset.tone, 'error');
+  }
+  assert.equal(signInSendCount, 1);
+  assert.equal(otpVerifyCount, 0);
+
+  // Valid 6-digit OTP returning 400 or 401 displays friendly invalid code message.
+  for (const status of [400, 401]) {
+    otpVerifyStatus = status;
+    els.get('otp').value = '123456';
+    await els.get('sign-in-form').listeners.get('submit')({
+      preventDefault() {},
+    });
+    assert.equal(
+      els.get('auth-status').textContent,
+      'Invalid verification code'
+    );
+    assert.equal(els.get('auth-status').dataset.tone, 'error');
+  }
+  assert.equal(otpVerifyCount, 2);
+
+  // Going Back clears the UI timer, but re-entering with the same email within 60s keeps remaining cooldown.
+  tickSeconds(15);
+  assert.equal(page.getResendCooldown(), 45);
+  els.get('back-from-otp-btn').listeners.get('click')();
+  assert.equal(page.getStep(), 'email');
+  assert.equal(intervals.size, 0);
+  assert.ok(clearedCount >= 1);
+  nowMs += 5000;
+  await els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  assert.equal(page.getStep(), 'otp');
+  assert.equal(signInSendCount, 1);
+  assert.equal(page.getResendCooldown(), 40);
+  assert.equal(els.get('resend-otp-btn').disabled, true);
+  assert.equal(els.get('resend-otp-btn').textContent, 'Resend in 40s');
+
+  // Cooldown ticks down and re-enables resend at 0.
+  tickSeconds(39);
+  assert.equal(page.getResendCooldown(), 1);
+  assert.equal(els.get('resend-otp-btn').disabled, true);
+  assert.equal(els.get('resend-otp-btn').textContent, 'Resend in 1s');
+  tickSeconds(1);
+  assert.equal(page.getResendCooldown(), 0);
+  assert.equal(els.get('resend-otp-btn').disabled, false);
+  assert.equal(els.get('resend-otp-btn').textContent, 'Resend code');
+
+  // Clicking resend after expiry sends a new code and restarts the 60s timer.
+  await els.get('resend-otp-btn').listeners.get('click')();
+  assert.equal(signInSendCount, 2);
+  assert.equal(page.getResendCooldown(), 60);
+  assert.equal(els.get('resend-otp-btn').disabled, true);
+  page.dispose();
+
+  // Localhost with non-Affine deployment type hides the official cloud Terms & Privacy notice.
+  const localLegal = createMockElement('p');
+  localLegal.hidden = false;
+  const localPage = await bootSignInPage({
+    win: {
+      location: {
+        href: 'http://localhost:3010/sign-in',
+        pathname: '/sign-in',
+        replace() {},
+      },
+    },
+    doc: {
+      head: createMockElement('head'),
+      querySelectorAll: () => [],
+      getElementById: id => (id === 'auth-legal-notice' ? localLegal : null),
+      createElement: tag => createMockElement(tag),
+    },
+    fetchImpl: async url => {
+      if (url === '/graphql') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            data: {
+              serverConfig: {
+                name: 'Local Instance',
+                type: 'Selfhosted',
+                features: [],
+                oauthProviders: [],
+              },
+            },
+          }),
+        };
+      }
+      return { ok: false, status: 404 };
+    },
+  });
+  assert.equal(localLegal.hidden, true);
+  localPage.dispose();
 });
 
 void test('a11y tree enforces inert + tabindex exclusivity and mountSandboxedEmbed does not steal focus until activated', async () => {
@@ -835,4 +1108,292 @@ void test('a11y tree enforces inert + tabindex exclusivity and mountSandboxedEmb
   assert.equal(hostIme.readOnly, false);
 
   host.dispose();
+});
+
+void test('sign-in async preflight race discards stale response and binds OTP/resend/verify to step email', async () => {
+  const els = new Map();
+  for (const id of [
+    'auth-card',
+    'auth-status',
+    'auth-legal-notice',
+    'sign-in-form',
+    'step-email',
+    'step-password',
+    'step-otp',
+    'step-email-display',
+    'otp-email-display',
+    'email',
+    'password',
+    'otp',
+    'submit-button',
+    'password-submit-button',
+    'switch-to-otp-btn',
+    'switch-to-password-btn',
+    'resend-otp-btn',
+    'back-from-password-btn',
+    'back-from-otp-btn',
+  ]) {
+    const el = createMockElement(id.endsWith('-btn') ? 'button' : 'div');
+    el.hidden =
+      id === 'step-password' || id === 'step-otp' || id === 'auth-legal-notice';
+    els.set(id, el);
+  }
+  els.get('sign-in-form').getAttribute = name =>
+    name === 'action' ? '/api/auth/sign-in' : null;
+
+  let nowMs = 2_000_000;
+  const preflightResolvers = new Map();
+  const sentEmails = [];
+  const verifiedEmails = [];
+
+  const page = await bootSignInPage({
+    win: {
+      location: {
+        href: 'https://app.affine.pro/sign-in',
+        pathname: '/sign-in',
+        replace() {},
+      },
+    },
+    doc: {
+      head: createMockElement('head'),
+      querySelectorAll: () => [],
+      getElementById: id => els.get(id) || null,
+      createElement: tag => createMockElement(tag),
+    },
+    nowImpl: () => nowMs,
+    fetchImpl: async (url, init) => {
+      if (url === '/api/auth/captcha') {
+        return { ok: false, status: 404 };
+      }
+      if (url === '/graphql') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            data: {
+              serverConfig: {
+                name: 'AFFiNE Cloud',
+                type: 'Affine',
+                features: ['OAuth'],
+                oauthProviders: [],
+              },
+            },
+          }),
+        };
+      }
+      if (url === '/api/auth/preflight') {
+        const body = JSON.parse(String(init?.body || '{}'));
+        return await new Promise(resolve => {
+          preflightResolvers.set(body.email, resolve);
+        });
+      }
+      if (url === '/api/auth/sign-in') {
+        const body = JSON.parse(String(init?.body || '{}'));
+        sentEmails.push(body.email);
+        return { ok: true, status: 200 };
+      }
+      if (url === '/api/auth/magic-link') {
+        const body = JSON.parse(String(init?.body || '{}'));
+        verifiedEmails.push(body.email);
+        return { ok: true, status: 200 };
+      }
+      return { ok: true, status: 200 };
+    },
+  });
+
+  // Start preflight for A, then edit #email to B and submit B before A resolves.
+  els.get('email').value = 'a@affine.pro';
+  const submitA = els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  await Promise.resolve();
+
+  els.get('email').value = 'b@affine.pro';
+  els.get('email').listeners.get('input')?.();
+  const submitB = els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  await Promise.resolve();
+
+  // Resolve B first -> enters OTP step for B and sends OTP to B.
+  preflightResolvers.get('b@affine.pro')({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      registered: true,
+      methods: {
+        password: { available: false },
+        magicLink: { available: true },
+      },
+    }),
+  });
+  await submitB;
+  assert.equal(page.getStep(), 'otp');
+  assert.equal(els.get('otp-email-display').textContent, 'b@affine.pro');
+  assert.deepEqual(sentEmails, ['b@affine.pro']);
+
+  // Stale A preflight now resolves out-of-order -> must be discarded completely.
+  preflightResolvers.get('a@affine.pro')({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      registered: true,
+      methods: {
+        password: { available: true },
+        magicLink: { available: true },
+      },
+    }),
+  });
+  await submitA;
+  assert.equal(page.getStep(), 'otp');
+  assert.equal(els.get('otp-email-display').textContent, 'b@affine.pro');
+  assert.deepEqual(sentEmails, ['b@affine.pro']);
+
+  // Even if #email.value is mutated while on OTP step, resend and verify stay bound to B.
+  els.get('email').value = 'tampered@affine.pro';
+  nowMs += 61_000;
+  await els.get('resend-otp-btn').listeners.get('click')();
+  assert.deepEqual(sentEmails, ['b@affine.pro', 'b@affine.pro']);
+
+  els.get('otp').value = '654321';
+  await els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  assert.deepEqual(verifiedEmails, ['b@affine.pro']);
+
+  page.dispose();
+});
+
+void test('sign-in initial OTP send network failure shows error for immediate retry and discards if Back clicked', async () => {
+  const els = new Map();
+  for (const id of [
+    'auth-card',
+    'auth-status',
+    'auth-legal-notice',
+    'sign-in-form',
+    'step-email',
+    'step-password',
+    'step-otp',
+    'step-email-display',
+    'otp-email-display',
+    'email',
+    'password',
+    'otp',
+    'submit-button',
+    'password-submit-button',
+    'switch-to-otp-btn',
+    'switch-to-password-btn',
+    'resend-otp-btn',
+    'back-from-password-btn',
+    'back-from-otp-btn',
+  ]) {
+    const el = createMockElement(id.endsWith('-btn') ? 'button' : 'div');
+    el.hidden =
+      id === 'step-password' || id === 'step-otp' || id === 'auth-legal-notice';
+    els.set(id, el);
+  }
+  els.get('sign-in-form').getAttribute = name =>
+    name === 'action' ? '/api/auth/sign-in' : null;
+  els.get('email').value = 'net@affine.pro';
+
+  let sendAttempt = 0;
+  let rejectSecondSend = null;
+  const page = await bootSignInPage({
+    win: {
+      location: {
+        href: 'https://app.affine.pro/sign-in',
+        pathname: '/sign-in',
+        replace() {},
+      },
+    },
+    doc: {
+      head: createMockElement('head'),
+      querySelectorAll: () => [],
+      getElementById: id => els.get(id) || null,
+      createElement: tag => createMockElement(tag),
+    },
+    fetchImpl: async url => {
+      if (url === '/api/auth/captcha') {
+        return { ok: false, status: 404 };
+      }
+      if (url === '/graphql') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            data: {
+              serverConfig: {
+                name: 'AFFiNE Cloud',
+                type: 'Affine',
+                features: ['OAuth'],
+                oauthProviders: [],
+              },
+            },
+          }),
+        };
+      }
+      if (url === '/api/auth/preflight') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            registered: true,
+            methods: {
+              password: { available: false },
+              magicLink: { available: true },
+            },
+          }),
+        };
+      }
+      if (url === '/api/auth/sign-in') {
+        sendAttempt += 1;
+        if (sendAttempt === 1) {
+          throw new Error('offline');
+        }
+        if (sendAttempt === 2) {
+          return { ok: true, status: 200 };
+        }
+        return await new Promise((_, reject) => {
+          rejectSecondSend = reject;
+        });
+      }
+      return { ok: true, status: 200 };
+    },
+  });
+
+  // 1. Initial send rejects -> stays on OTP, shows error, cooldown stays 0, resend works immediately.
+  await els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  assert.equal(page.getStep(), 'otp');
+  assert.equal(
+    els.get('auth-status').textContent,
+    'Network error. Please try again.'
+  );
+  assert.equal(page.getResendCooldown(), 0);
+  assert.equal(els.get('resend-otp-btn').disabled, false);
+
+  await els.get('resend-otp-btn').listeners.get('click')();
+  assert.equal(sendAttempt, 2);
+  assert.equal(
+    els.get('auth-status').textContent,
+    'A new verification code has been sent.'
+  );
+
+  // 2. Back clicked before in-flight send rejects -> stale error silently discarded.
+  els.get('back-from-otp-btn').listeners.get('click')();
+  els.get('email').value = 'other@affine.pro';
+  const pendingSubmit = els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  els.get('back-from-otp-btn').listeners.get('click')();
+  rejectSecondSend?.(new Error('late network failure'));
+  await pendingSubmit;
+  assert.equal(page.getStep(), 'email');
+  assert.equal(els.get('auth-status').textContent, '');
+
+  page.dispose();
 });

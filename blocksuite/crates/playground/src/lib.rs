@@ -164,6 +164,7 @@ pub struct PlaygroundView {
     pub(crate) window_size: (f32, f32),
     pub(crate) edgeless: edgeless::EdgelessCanvasState,
     pub(crate) overlays: Overlays,
+    pub(crate) equation_snapshot: Option<blocksuite_playground_doc::session::SelectionSnapshot>,
     /// Timer that ends a code block's `Copied` label; a newer copy replaces it.
     pub(crate) copied_timer: Option<Task<()>>,
     pub(crate) _tasks: Vec<Task<()>>,
@@ -259,6 +260,7 @@ impl PlaygroundView {
             window_size: (0.0, 0.0),
             edgeless: edgeless::EdgelessCanvasState::new(),
             overlays: Overlays::new(),
+            equation_snapshot: None,
             copied_timer: None,
             _tasks: tasks,
         };
@@ -7188,7 +7190,7 @@ mod tests {
             assert!(!x_is_bold, "closed bold mark must not leak after Enter");
         });
 
-        // Verify inline `$E=mc^2$` conversion and zero `latex` mark leak even after caret move,
+        // Verify inline `$$E=mc^2$$` conversion and zero `latex` mark leak even after caret move,
         // plus multi-character `type_text("**multi** ")` trigger.
         let latex_id = session.view(|view, cx| {
             let id = view.fresh_block_id();
@@ -7209,7 +7211,7 @@ mod tests {
                     &id,
                     BlockSpec::Paragraph {
                         paragraph_type: ParagraphType::Text,
-                        text: "$E=mc^2$".into(),
+                        text: "$$E=mc^2$$".into(),
                     },
                     Some(&note_id),
                     None,
@@ -7220,7 +7222,7 @@ mod tests {
             id
         });
         let _ = session.frame();
-        set_caret(&session, &latex_id, 8);
+        set_caret(&session, &latex_id, 10);
         send_key(&session, "enter", ui::Modifiers::default());
         // Reposition caret right after the inline formula (clearing pending_marks) and type "x".
         set_caret(&session, &latex_id, 1);
@@ -7635,6 +7637,878 @@ mod tests {
             assert!(
                 snap.block("list-child").is_some(),
                 "undo must restore nested child list"
+            );
+        });
+    }
+
+    #[test]
+    fn s2_latex_markdown_triggers_undo_and_multi_block_delete_clears_selection() {
+        let session = open(1024, 720, PlaygroundOptions::default());
+        let mut state = DocState::new("s2-parity", client_id_from_seed(91)).expect("doc");
+        state.workspace.initialize_meta().expect("meta");
+        state
+            .workspace
+            .create_page(HOME_PAGE_ID, "Parity Doc", 1)
+            .expect("create page");
+        let page = state.workspace.ensure_page(HOME_PAGE_ID).expect("page");
+        page.structural_edit(1, |page| {
+            page.add_block(
+                "page-root",
+                BlockSpec::Page {
+                    title: "Parity Doc".into(),
+                },
+                None,
+                None,
+                1,
+            )?;
+            page.add_block(
+                "note-root",
+                BlockSpec::Note { xywh: None },
+                Some("page-root"),
+                None,
+                1,
+            )?;
+            for (id, text) in [
+                ("p-1", "First block"),
+                ("p-2", "Second block"),
+                ("p-3", "Third block"),
+                ("p-latex", ""),
+            ] {
+                page.add_block(
+                    id,
+                    BlockSpec::Paragraph {
+                        paragraph_type: ParagraphType::Text,
+                        text: text.into(),
+                    },
+                    Some("note-root"),
+                    None,
+                    1,
+                )?;
+            }
+            Ok(())
+        })
+        .expect("seed parity doc");
+        session.view(|view, cx| view.set_document(state, cx));
+        let _ = session.frame();
+
+        // 1. Multi-block delete of block 3 clears selection instead of jumping to first block.
+        set_caret(&session, "p-3", 2);
+        send_key(&session, "escape", ui::Modifiers::default());
+        assert_eq!(
+            session.view(|v, _| v.block_selection().to_vec()),
+            vec!["p-3".to_string()]
+        );
+        send_key(&session, "backspace", ui::Modifiers::default());
+        let _ = session.frame();
+        session.view(|view, _| {
+            assert!(view.page_snapshot().unwrap().block("p-3").is_none());
+            assert!(view.block_selection().is_empty());
+            assert!(
+                view.document_selection().is_none(),
+                "deleting a block when other blocks survive must clear selection"
+            );
+        });
+
+        // 2. Single `$` stays plain text (`$5 and $10 ` never triggers inline latex).
+        set_caret(&session, "p-latex", 0);
+        type_text(&session, "$5 and $10 ");
+        let _ = session.frame();
+        session.view(|view, _| {
+            let (rich, _) = view.page().unwrap().read_editable_text("p-latex").unwrap();
+            assert_eq!(rich.plain, "$5 and $10 ");
+            assert!(
+                rich.delta.iter().all(|op| !matches!(
+                    op,
+                    y_octo::TextDeltaOp::Insert {
+                        format: Some(f),
+                        ..
+                    } if f.contains_key("latex")
+                )),
+                "single $ must never trigger inline latex: {:?}",
+                rich.delta
+            );
+        });
+
+        // 3. Inline populated `$$x^2$$ `, `$$ x $$ ` (spaces inside), `$$$ ` (keeps leading `$`),
+        // and empty `$$ ` + single-step Undo restores raw markdown.
+        for (input, expected_latex, expected_prefix) in [
+            ("$$x^2$$ ", "x^2", ""),
+            ("$$ x $$ ", " x ", ""),
+            ("$$ ", "", ""),
+            ("$$$ ", "", "$"),
+        ] {
+            session.view(|view, cx| {
+                view.edit_document(cx, |state| {
+                    let page = state.workspace.page_mut(HOME_PAGE_ID).unwrap();
+                    let len = page
+                        .read_editable_text("p-latex")
+                        .unwrap()
+                        .0
+                        .plain
+                        .encode_utf16()
+                        .count() as u64;
+                    if len > 0 {
+                        page.remove_text("p-latex", "prop:text", 0, len, 200)
+                            .unwrap();
+                    }
+                    page.stop_capturing().unwrap();
+                });
+            });
+            let _ = session.frame();
+            set_caret(&session, "p-latex", 0);
+            type_text(&session, input);
+            let _ = session.frame();
+            // Dismiss equation editor if empty inline equation opened it.
+            if expected_latex.is_empty() {
+                send_key(&session, "escape", ui::Modifiers::default());
+            }
+            session.view(|view, _| {
+                let (rich, _) = view.page().unwrap().read_editable_text("p-latex").unwrap();
+                let found = rich.delta.iter().any(|op| {
+                    matches!(
+                        op,
+                        y_octo::TextDeltaOp::Insert {
+                            insert: y_octo::TextInsert::Text(t),
+                            format: Some(f),
+                        } if t == " " && f.get("latex") == Some(&Any::String(expected_latex.into()))
+                    )
+                });
+                assert!(
+                    found,
+                    "expected inline latex {expected_latex:?} for {input:?}: {:?}",
+                    rich.delta
+                );
+                assert!(
+                    rich.plain.starts_with(expected_prefix),
+                    "expected prefix {expected_prefix:?} for {input:?}, got {:?}",
+                    rich.plain
+                );
+            });
+            send_key(&session, "z", cmd_mod());
+            let _ = session.frame();
+            assert_eq!(
+                session.view(|v, _| v.block_text("p-latex").unwrap_or("").to_string()),
+                input,
+                "single-step undo must restore raw markdown {input:?}"
+            );
+        }
+
+        // 4. Inline equation editor flow: `aa$$` + Space + `bbb` + Enter => `latex == "bbb"`.
+        session.view(|view, cx| {
+            view.edit_document(cx, |state| {
+                let page = state.workspace.page_mut(HOME_PAGE_ID).unwrap();
+                let len = page
+                    .read_editable_text("p-latex")
+                    .unwrap()
+                    .0
+                    .plain
+                    .encode_utf16()
+                    .count() as u64;
+                if len > 0 {
+                    page.remove_text("p-latex", "prop:text", 0, len, 250)
+                        .unwrap();
+                }
+                page.stop_capturing().unwrap();
+            });
+        });
+        let _ = session.frame();
+        set_caret(&session, "p-latex", 0);
+        type_text(&session, "aa$$ ");
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_some()));
+        type_text(&session, "bbb");
+        send_key(&session, "enter", ui::Modifiers::default());
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_none()));
+        session.view(|view, _| {
+            let (rich, _) = view.page().unwrap().read_editable_text("p-latex").unwrap();
+            let has_bbb = rich.delta.iter().any(|op| {
+                matches!(
+                    op,
+                    y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(t),
+                        format: Some(f),
+                    } if t == " " && f.get("latex") == Some(&Any::String("bbb".into()))
+                )
+            });
+            assert!(
+                has_bbb,
+                "expected inline latex 'bbb' after equation editor commit: {:?}",
+                rich.delta
+            );
+        });
+
+        // 5. Block equation flow: `$$$$` + Enter + `aaa` + Enter => `affine:latex` with `latex == "aaa"`
+        // rendered as `FlowKind::Latex` (not `FlowKind::Unknown`), and Undo restores cleanly.
+        session.view(|view, cx| {
+            view.edit_document(cx, |state| {
+                let page = state.workspace.page_mut(HOME_PAGE_ID).unwrap();
+                let len = page
+                    .read_editable_text("p-latex")
+                    .unwrap()
+                    .0
+                    .plain
+                    .encode_utf16()
+                    .count() as u64;
+                if len > 0 {
+                    page.remove_text("p-latex", "prop:text", 0, len, 300)
+                        .unwrap();
+                }
+                page.stop_capturing().unwrap();
+            });
+        });
+        let _ = session.frame();
+        set_caret(&session, "p-latex", 0);
+        type_text(&session, "$$$$");
+        send_key(&session, "enter", ui::Modifiers::default());
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_some()));
+        type_text(&session, "aaa");
+        send_key(&session, "enter", ui::Modifiers::default());
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_none()));
+        session.view(|view, _| {
+            let snap = view.page_snapshot().unwrap();
+            let note = snap.block("note-root").unwrap();
+            let idx = note
+                .children
+                .iter()
+                .position(|c| c.id == "p-latex")
+                .unwrap();
+            let next = note.children.get(idx + 1).expect("inserted latex block");
+            assert_eq!(next.flavour, "affine:latex");
+            assert_eq!(
+                next.content,
+                BlockContent::Latex {
+                    latex: "aaa".into()
+                }
+            );
+            let layout = view.flow_layout().unwrap();
+            let flow_block = layout.block(&next.id).expect("laid out latex block");
+            assert_eq!(flow_block.body.kind, crate::block_flow::FlowKind::Latex);
+            assert_eq!(flow_block.body.plain, "aaa");
+            assert_eq!(view.block_text("p-latex").unwrap_or(""), "");
+        });
+        // First undo reverts `prop:latex = "aaa"` -> `""`; second undo removes `affine:latex` and restores `$$$$`.
+        send_key(&session, "z", cmd_mod());
+        send_key(&session, "z", cmd_mod());
+        let _ = session.frame();
+        session.view(|view, _| {
+            let snap = view.page_snapshot().unwrap();
+            let note = snap.block("note-root").unwrap();
+            assert!(
+                note.children.iter().all(|c| c.flavour != "affine:latex"),
+                "undo must remove inserted affine:latex block"
+            );
+            assert_eq!(view.block_text("p-latex").unwrap_or(""), "$$$$");
+        });
+
+        // 6. Clicking an existing inline latex chip opens EquationEditor with its current latex
+        //    and pressing Enter updates the document.
+        session.view(|view, cx| {
+            view.edit_document(cx, |state| {
+                let page = state.workspace.page_mut(HOME_PAGE_ID).unwrap();
+                let len = page
+                    .read_editable_text("p-latex")
+                    .unwrap()
+                    .0
+                    .plain
+                    .encode_utf16()
+                    .count() as u64;
+                if len > 0 {
+                    page.remove_text("p-latex", "prop:text", 0, len, 350)
+                        .unwrap();
+                }
+                page.stop_capturing().unwrap();
+            });
+        });
+        let _ = session.frame();
+        set_caret(&session, "p-latex", 0);
+        type_text(&session, "$$x^2$$ ");
+        let _ = session.frame();
+        let chip_center = session.view(|view, _| {
+            let layout = view.flow_layout().unwrap();
+            let block = layout.block("p-latex").expect("p-latex laid out");
+            let body_text = block.body.text.as_ref().expect("p-latex body text");
+            let deco = body_text
+                .layout
+                .decorations()
+                .iter()
+                .find(|d| matches!(&d.kind, crate::rich_text::DecorationKind::LatexChip(l) if l == "x^2"))
+                .expect("inline latex chip decoration");
+            let geom = page_geometry(1024.0);
+            point(
+                px(geom.column_x
+                    + block.x
+                    + body_text.x
+                    + f32::from(deco.bounds.origin.x)
+                    + f32::from(deco.bounds.size.width) * 0.5),
+                px(TOPBAR_HEIGHT - view.scroll_y
+                    + block.y
+                    + body_text.y
+                    + f32::from(deco.bounds.origin.y)
+                    + f32::from(deco.bounds.size.height) * 0.5),
+            )
+        });
+        session.headless.simulate_click(chip_center);
+        let _ = session.frame();
+        session.view(|view, _| {
+            let field = view
+                .overlays()
+                .active_text_field()
+                .expect("equation editor opened on inline latex chip click");
+            assert_eq!(field.text(), "x^2");
+        });
+        send_key(&session, "a", cmd_mod());
+        type_text(&session, "y^2");
+        send_key(&session, "enter", ui::Modifiers::default());
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_none()));
+        session.view(|view, _| {
+            let (rich, _) = view.page().unwrap().read_editable_text("p-latex").unwrap();
+            let has_y2 = rich.delta.iter().any(|op| {
+                matches!(
+                    op,
+                    y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(t),
+                        format: Some(f),
+                    } if t == " " && f.get("latex") == Some(&Any::String("y^2".into()))
+                )
+            });
+            assert!(
+                has_y2,
+                "expected updated inline latex 'y^2' after chip click edit: {:?}",
+                rich.delta
+            );
+        });
+    }
+
+    #[test]
+    fn s2_equation_editor_collab_drift_deletion_and_ime_done() {
+        let session = open(1024, 720, PlaygroundOptions::default());
+        let mut state = DocState::new("s2-eq-collab", client_id_from_seed(92)).expect("doc");
+        state.workspace.initialize_meta().expect("meta");
+        state
+            .workspace
+            .create_page(HOME_PAGE_ID, "Equation Collab", 1)
+            .expect("create page");
+        let page = state.workspace.ensure_page(HOME_PAGE_ID).expect("page");
+        page.structural_edit(1, |page| {
+            page.add_block(
+                "page-root",
+                BlockSpec::Page {
+                    title: "Equation Collab".into(),
+                },
+                None,
+                None,
+                1,
+            )?;
+            page.add_block(
+                "note-root",
+                BlockSpec::Note { xywh: None },
+                Some("page-root"),
+                None,
+                1,
+            )?;
+            page.add_block(
+                "p-eq",
+                BlockSpec::Paragraph {
+                    paragraph_type: ParagraphType::Text,
+                    text: String::new(),
+                },
+                Some("note-root"),
+                None,
+                1,
+            )?;
+            Ok(())
+        })
+        .expect("seed eq collab doc");
+        session.view(|view, cx| view.set_document(state, cx));
+        let _ = session.frame();
+
+        // 1. IME composing() + click Done (EquationApply) must commit preedit text without dropping it.
+        set_caret(&session, "p-eq", 0);
+        type_text(&session, "$$ ");
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_some()));
+        type_text(&session, "x");
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    ui::EntityInputHandler::replace_and_mark_text_in_range(
+                        view, None, "中", None, window, cx,
+                    );
+                })
+                .unwrap();
+        });
+        assert!(session.view(|v, _| {
+            v.overlays()
+                .active_text_field()
+                .is_some_and(|f| f.composing())
+        }));
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(crate::overlays::OverlayEvent::EquationApply, window, cx);
+                })
+                .unwrap();
+        });
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_none()));
+        session.view(|view, _| {
+            let (rich, _) = view.page().unwrap().read_editable_text("p-eq").unwrap();
+            let has_ime = rich.delta.iter().any(|op| {
+                matches!(
+                    op,
+                    y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(t),
+                        format: Some(f),
+                    } if t == " " && f.get("latex") == Some(&Any::String("x中".into()))
+                )
+            });
+            assert!(
+                has_ime,
+                "expected 'x中' after clicking Done during IME composition: {:?}",
+                rich.delta
+            );
+        });
+
+        // 2. Remote insertion before an open inline equation drifts target offset via CRDT snapshot;
+        //    clicking Done updates the shifted formula and leaves the remote prefix untouched.
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        crate::overlays::OverlayEvent::OpenEquationEditor {
+                            target: crate::overlays::EquationTarget::Inline {
+                                block_id: "p-eq".into(),
+                                utf16_offset: 0,
+                            },
+                            initial: "x中".into(),
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .unwrap();
+        });
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_some()));
+        // Simulate remote peer inserting "X" at offset 0 of `p-eq`.
+        let remote_insert = session.view(|view, _| {
+            let full = view.page().unwrap().encode_update_v1().unwrap();
+            let mut peer = blocksuite_playground_doc::session::PageDocSession::new(
+                HOME_PAGE_ID,
+                blocksuite_playground_doc::client_id_from_seed(93),
+            )
+            .unwrap();
+            peer.apply_remote_update_v1(&full).unwrap();
+            peer.insert_text("p-eq", "prop:text", 0, "X", 200)
+                .unwrap()
+                .expect("remote insert commit")
+                .update
+        });
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                doc.workspace
+                    .page_mut(HOME_PAGE_ID)
+                    .unwrap()
+                    .apply_remote_update_v1(&remote_insert)
+                    .unwrap();
+            });
+        });
+        let _ = session.frame();
+        session.view(|view, _| {
+            let editor = view
+                .overlays()
+                .equation_editor()
+                .expect("editor stays open after remote prefix insert");
+            assert_eq!(
+                editor.target,
+                crate::overlays::EquationTarget::Inline {
+                    block_id: "p-eq".into(),
+                    utf16_offset: 1,
+                }
+            );
+        });
+        send_key(&session, "a", cmd_mod());
+        type_text(&session, "z^2");
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(crate::overlays::OverlayEvent::EquationApply, window, cx);
+                })
+                .unwrap();
+        });
+        let _ = session.frame();
+        session.view(|view, _| {
+            let (rich, _) = view.page().unwrap().read_editable_text("p-eq").unwrap();
+            assert!(
+                matches!(
+                    rich.delta.first(),
+                    Some(y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(t),
+                        format,
+                    }) if t == "X" && format.as_ref().is_none_or(|f| !f.contains_key("latex"))
+                ),
+                "remote 'X' must remain plain text: {:?}",
+                rich.delta
+            );
+            let has_z2 = rich.delta.iter().any(|op| {
+                matches!(
+                    op,
+                    y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(t),
+                        format: Some(f),
+                    } if t == " " && f.get("latex") == Some(&Any::String("z^2".into()))
+                )
+            });
+            assert!(
+                has_z2,
+                "shifted inline formula must update to 'z^2': {:?}",
+                rich.delta
+            );
+        });
+
+        // 3. Remote deletion of an open inline equation (and block equation) auto-closes the editor
+        //    with zero writes.
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        crate::overlays::OverlayEvent::OpenEquationEditor {
+                            target: crate::overlays::EquationTarget::Inline {
+                                block_id: "p-eq".into(),
+                                utf16_offset: 1,
+                            },
+                            initial: "z^2".into(),
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .unwrap();
+        });
+        let _ = session.frame();
+        let remote_del_inline = session.view(|view, _| {
+            let full = view.page().unwrap().encode_update_v1().unwrap();
+            let mut peer = blocksuite_playground_doc::session::PageDocSession::new(
+                HOME_PAGE_ID,
+                blocksuite_playground_doc::client_id_from_seed(94),
+            )
+            .unwrap();
+            peer.apply_remote_update_v1(&full).unwrap();
+            peer.remove_text("p-eq", "prop:text", 1, 1, 250)
+                .unwrap()
+                .expect("remote delete inline")
+                .update
+        });
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                doc.workspace
+                    .page_mut(HOME_PAGE_ID)
+                    .unwrap()
+                    .apply_remote_update_v1(&remote_del_inline)
+                    .unwrap();
+            });
+        });
+        assert!(
+            session.view(|v, _| v.overlays().equation_editor().is_none()),
+            "remote deletion of inline equation must auto-close editor"
+        );
+
+        // Now test remote deletion of a block equation.
+        set_caret(&session, "p-eq", 1);
+        type_text(&session, "$$$$");
+        send_key(&session, "enter", ui::Modifiers::default());
+        let _ = session.frame();
+        let latex_block_id =
+            session.view(
+                |v, _| match &v.overlays().equation_editor().unwrap().target {
+                    crate::overlays::EquationTarget::Block { block_id } => block_id.clone(),
+                    _ => panic!("expected block equation target"),
+                },
+            );
+        let remote_del_block = session.view(|view, _| {
+            let full = view.page().unwrap().encode_update_v1().unwrap();
+            let mut peer = blocksuite_playground_doc::session::PageDocSession::new(
+                HOME_PAGE_ID,
+                blocksuite_playground_doc::client_id_from_seed(95),
+            )
+            .unwrap();
+            peer.apply_remote_update_v1(&full).unwrap();
+            peer.remove_lifting_children(&latex_block_id, 300)
+                .unwrap()
+                .expect("remote delete block")
+                .update
+        });
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                doc.workspace
+                    .page_mut(HOME_PAGE_ID)
+                    .unwrap()
+                    .apply_remote_update_v1(&remote_del_block)
+                    .unwrap();
+            });
+        });
+        assert!(
+            session.view(|v, _| v.overlays().equation_editor().is_none()),
+            "remote deletion of block equation must auto-close editor"
+        );
+
+        // 4. Clicking outside EquationEditor commits the formula into the document (matching Web
+        //    closeOnClickAway), whereas Escape discards without writing.
+        set_caret(&session, "p-eq", 1);
+        type_text(&session, "$$ ");
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_some()));
+        type_text(&session, "w^2");
+        session.headless.simulate_click(point(px(20.0), px(200.0)));
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_none()));
+        session.view(|view, _| {
+            let (rich, _) = view.page().unwrap().read_editable_text("p-eq").unwrap();
+            let has_w2 = rich.delta.iter().any(|op| {
+                matches!(
+                    op,
+                    y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(t),
+                        format: Some(f),
+                    } if t == " " && f.get("latex") == Some(&Any::String("w^2".into()))
+                )
+            });
+            assert!(
+                has_w2,
+                "clicking outside EquationEditor must commit 'w^2': {:?}",
+                rich.delta
+            );
+        });
+
+        // 5a. Remote insertion immediately AFTER an open inline equation keeps the editor open
+        //     and commits cleanly to the original formula, leaving the peer suffix after it.
+        session.view(|view, cx| {
+            view.edit_document(cx, |state| {
+                let page = state.workspace.page_mut(HOME_PAGE_ID).unwrap();
+                let len = page
+                    .read_editable_text("p-eq")
+                    .unwrap()
+                    .0
+                    .plain
+                    .encode_utf16()
+                    .count() as u64;
+                if len > 0 {
+                    page.remove_text("p-eq", "prop:text", 0, len, 350).unwrap();
+                }
+                page.stop_capturing().unwrap();
+            });
+        });
+        let _ = session.frame();
+        set_caret(&session, "p-eq", 0);
+        type_text(&session, "aa$$ ");
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_some()));
+        let remote_after = session.view(|view, _| {
+            let full = view.page().unwrap().encode_update_v1().unwrap();
+            let mut peer = blocksuite_playground_doc::session::PageDocSession::new(
+                HOME_PAGE_ID,
+                blocksuite_playground_doc::client_id_from_seed(96),
+            )
+            .unwrap();
+            peer.apply_remote_update_v1(&full).unwrap();
+            peer.insert_text("p-eq", "prop:text", 3, "Y", 400)
+                .unwrap()
+                .expect("remote insert after formula")
+                .update
+        });
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                doc.workspace
+                    .page_mut(HOME_PAGE_ID)
+                    .unwrap()
+                    .apply_remote_update_v1(&remote_after)
+                    .unwrap();
+            });
+        });
+        let _ = session.frame();
+        assert!(
+            session.view(|v, _| v.overlays().equation_editor().is_some()),
+            "remote insert immediately after inline formula must keep EquationEditor open"
+        );
+        type_text(&session, "ccc");
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(crate::overlays::OverlayEvent::EquationApply, window, cx);
+                })
+                .unwrap();
+        });
+        let _ = session.frame();
+        session.view(|view, _| {
+            let (rich, _) = view.page().unwrap().read_editable_text("p-eq").unwrap();
+            let has_ccc = rich.delta.iter().any(|op| {
+                matches!(
+                    op,
+                    y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(t),
+                        format: Some(f),
+                    } if t == " " && f.get("latex") == Some(&Any::String("ccc".into()))
+                )
+            });
+            assert!(
+                has_ccc && rich.plain == "aa Y ",
+                "expected 'ccc' formula followed by 'Y': plain={:?} delta={:?}",
+                rich.plain,
+                rich.delta
+            );
+        });
+
+        // 5b. Remote delete + re-insert of a new inline formula at the same offset closes local
+        //     EquationEditor (CRDT item ID differs) without overwriting the peer's formula.
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        crate::overlays::OverlayEvent::OpenEquationEditor {
+                            target: crate::overlays::EquationTarget::Inline {
+                                block_id: "p-eq".into(),
+                                utf16_offset: 2,
+                            },
+                            initial: "ccc".into(),
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .unwrap();
+        });
+        let _ = session.frame();
+        let remote_replace = session.view(|view, _| {
+            let full = view.page().unwrap().encode_update_v1().unwrap();
+            let mut peer = blocksuite_playground_doc::session::PageDocSession::new(
+                HOME_PAGE_ID,
+                blocksuite_playground_doc::client_id_from_seed(97),
+            )
+            .unwrap();
+            peer.apply_remote_update_v1(&full).unwrap();
+            peer.apply_text_delta(
+                "p-eq",
+                "prop:text",
+                &[
+                    y_octo::TextDeltaOp::Retain {
+                        retain: 2,
+                        format: None,
+                    },
+                    y_octo::TextDeltaOp::Delete { delete: 1 },
+                    y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(" ".into()),
+                        format: Some([("latex".to_string(), Any::String("peer".into()))].into()),
+                    },
+                ],
+                450,
+            )
+            .unwrap()
+            .expect("remote replace inline formula")
+            .update
+        });
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                doc.workspace
+                    .page_mut(HOME_PAGE_ID)
+                    .unwrap()
+                    .apply_remote_update_v1(&remote_replace)
+                    .unwrap();
+            });
+        });
+        assert!(
+            session.view(|v, _| v.overlays().equation_editor().is_none()),
+            "remote delete+reinsert at same offset must auto-close local EquationEditor"
+        );
+
+        // 6. Opening a block equation without typing and clicking outside must NOT write back
+        //    stale initial text over a peer's concurrent edit.
+        set_caret(&session, "p-eq", 0);
+        type_text(&session, "$$$$");
+        send_key(&session, "enter", ui::Modifiers::default());
+        let _ = session.frame();
+        type_text(&session, "x");
+        send_key(&session, "enter", ui::Modifiers::default());
+        let _ = session.frame();
+        let blk_id = session.view(|view, _| {
+            view.page_snapshot()
+                .unwrap()
+                .block("note-root")
+                .unwrap()
+                .children
+                .iter()
+                .find(|c| c.flavour == "affine:latex")
+                .expect("latex block")
+                .id
+                .clone()
+        });
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        crate::overlays::OverlayEvent::OpenEquationEditor {
+                            target: crate::overlays::EquationTarget::Block {
+                                block_id: blk_id.clone(),
+                            },
+                            initial: "x".into(),
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .unwrap();
+        });
+        let _ = session.frame();
+        let remote_block_edit = session.view(|view, _| {
+            let full = view.page().unwrap().encode_update_v1().unwrap();
+            let mut peer = blocksuite_playground_doc::session::PageDocSession::new(
+                HOME_PAGE_ID,
+                blocksuite_playground_doc::client_id_from_seed(98),
+            )
+            .unwrap();
+            peer.apply_remote_update_v1(&full).unwrap();
+            peer.set_block_prop(
+                &blk_id,
+                "prop:latex",
+                y_octo::SessionValue::Any(Any::String("y".into())),
+                500,
+            )
+            .unwrap()
+            .expect("remote block edit")
+            .update
+        });
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                doc.workspace
+                    .page_mut(HOME_PAGE_ID)
+                    .unwrap()
+                    .apply_remote_update_v1(&remote_block_edit)
+                    .unwrap();
+            });
+        });
+        // Click outside without editing -> must close with zero write, keeping peer's "y".
+        session.headless.simulate_click(point(px(20.0), px(200.0)));
+        let _ = session.frame();
+        assert!(session.view(|v, _| v.overlays().equation_editor().is_none()));
+        session.view(|view, _| {
+            assert_eq!(
+                view.page_snapshot()
+                    .unwrap()
+                    .block(&blk_id)
+                    .unwrap()
+                    .content,
+                BlockContent::Latex { latex: "y".into() }
             );
         });
     }

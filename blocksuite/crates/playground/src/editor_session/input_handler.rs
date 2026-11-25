@@ -10,7 +10,7 @@ use crate::rich_text::TextBiIndex;
 
 impl EntityInputHandler for PlaygroundView {
     fn paste(&mut self, item: ui::ClipboardItem, w: &mut Window, cx: &mut Context<Self>) {
-        if self.overlays.link_field().is_some() {
+        if self.overlays.active_text_field().is_some() {
             if let Some(text) = item.text() {
                 let _ = self.link_input(w, cx, |link| link.replace(None, &text));
             }
@@ -41,7 +41,7 @@ impl EntityInputHandler for PlaygroundView {
         _: &mut Window,
         _: &mut Context<Self>,
     ) -> Option<String> {
-        if let Some(link) = self.overlays.link_field() {
+        if let Some(link) = self.overlays.active_text_field() {
             let (text, covered) = link.text_for_range(range);
             *adjusted = Some(covered);
             return Some(text);
@@ -64,7 +64,7 @@ impl EntityInputHandler for PlaygroundView {
         _: &mut Window,
         _: &mut Context<Self>,
     ) -> Option<UTF16Selection> {
-        if let Some(link) = self.overlays.link_field() {
+        if let Some(link) = self.overlays.active_text_field() {
             let (range, reversed) = link.shown_selection();
             return Some(UTF16Selection { range, reversed });
         }
@@ -93,7 +93,7 @@ impl EntityInputHandler for PlaygroundView {
         })
     }
     fn text_length_utf16(&mut self, _: &mut Window, _: &mut Context<Self>) -> Option<usize> {
-        if let Some(link) = self.overlays.link_field() {
+        if let Some(link) = self.overlays.active_text_field() {
             return Some(link.text().encode_utf16().count());
         }
         if let Some(ed) = self.edgeless.authoring.label_editor() {
@@ -126,7 +126,7 @@ impl EntityInputHandler for PlaygroundView {
         }
     }
     fn marked_text_range(&self, _: &mut Window, _: &mut Context<Self>) -> Option<Range<usize>> {
-        if let Some(link) = self.overlays.link_field() {
+        if let Some(link) = self.overlays.active_text_field() {
             return link.marked_range();
         }
         if let Some(ed) = self.edgeless.authoring.label_editor() {
@@ -277,7 +277,7 @@ impl EntityInputHandler for PlaygroundView {
         _: &mut Context<Self>,
     ) -> Vec<Bounds<Pixels>> {
         // The link field answers with its box: candidates open under the field.
-        if let Some(link) = self.overlays.link_field() {
+        if let Some(link) = self.overlays.active_text_field() {
             return link
                 .bounds()
                 .map(|field| field.bounds(point(px(0.0), px(0.0))))
@@ -344,7 +344,7 @@ impl EntityInputHandler for PlaygroundView {
         w: &mut Window,
         _: &mut Context<Self>,
     ) -> Option<usize> {
-        if let Some(link) = self.overlays.link_field() {
+        if let Some(link) = self.overlays.active_text_field() {
             let (selection, reversed) = link.shown_selection();
             return link
                 .bounds()

@@ -68,9 +68,9 @@
 
       body {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
-        padding: calc(20px + env(safe-area-inset-top, 0px))
+        padding: max(48px, calc(24px + env(safe-area-inset-top, 0px)))
           calc(16px + env(safe-area-inset-right, 0px))
           calc(24px + env(safe-area-inset-bottom, 0px))
           calc(16px + env(safe-area-inset-left, 0px));
@@ -265,6 +265,11 @@
         background: var(--primary-hover);
       }
 
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
       button.oauth-btn,
       button.btn-secondary {
         background: var(--surface-subtle);
@@ -304,6 +309,19 @@
         font-size: 13px;
         line-height: 1.45;
         color: var(--text-secondary);
+      }
+
+      .legal-notice {
+        margin: 4px 0 0;
+        font-size: 12px;
+        line-height: 1.45;
+        color: var(--text-secondary);
+        text-align: center;
+      }
+
+      .legal-notice a {
+        color: var(--link);
+        text-decoration: underline;
       }
     </style>
   </head>
@@ -354,6 +372,23 @@
           <button id="use-local-btn" class="btn-subtle" type="button">
             Use local workspace
           </button>
+
+          <p id="auth-legal-notice" class="legal-notice" hidden>
+            By continuing, you agree to AFFiNE's
+            <a
+              href="https://affine.pro/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Terms of Conditions</a
+            >
+            and
+            <a
+              href="https://affine.pro/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Privacy Policy</a
+            >.
+          </p>
         </section>
 
         <section id="step-password" class="step-section" hidden>

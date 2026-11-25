@@ -166,8 +166,11 @@ impl PlaygroundView {
             Ok(())
         })?;
         self.editor.block_selection.clear();
-        let next_focus = remaining_editable.unwrap_or(fallback_id);
-        self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(next_focus, 0)));
+        self.editor.selection = if remaining_editable.is_none() && first_parent_id.is_some() {
+            Some(DocumentSelection::caret(DocPoint::new(fallback_id, 0)))
+        } else {
+            None
+        };
         self.editor.last_typing = None;
         self.did_edit(commit, None, w, cx);
         Ok(())

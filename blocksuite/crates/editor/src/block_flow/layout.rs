@@ -476,6 +476,7 @@ impl<'a> FlowPass<'a> {
                 caption,
                 width,
             ),
+            BlockContent::Latex { latex } => self.latex_body(latex, width),
             _ => self.unknown_body(&node.flavour, &node.id, width),
         }
     }

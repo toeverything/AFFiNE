@@ -119,6 +119,16 @@ fn match_inline_link(line: &str) -> Option<InlineMatch> {
     })
 }
 
+fn match_inline_latex_content(line: &str) -> Option<(usize, usize)> {
+    let before_close = line.strip_suffix("$$")?;
+    let open = before_close.rfind("$$")?;
+    let content = &before_close[open + 2..];
+    if content.is_empty() || content.contains('$') {
+        return None;
+    }
+    Some((open, content.len()))
+}
+
 fn match_inline_markdown(line: &str) -> Option<InlineMatch> {
     if let Some((open, target_len)) = match_delimited(line, "***", '*') {
         return Some(InlineMatch {
@@ -183,18 +193,29 @@ fn match_inline_markdown(line: &str) -> Option<InlineMatch> {
     if let Some(link) = match_inline_link(line) {
         return Some(link);
     }
-    for delim in ["$$", "$"] {
-        if let Some((open, target_len)) = match_delimited(line, delim, '$') {
-            let content = &line[open + delim.len()..open + delim.len() + target_len];
-            return Some(InlineMatch {
-                start_byte: open,
-                open_bytes: delim.len(),
-                target_bytes: target_len,
-                close_bytes: delim.len(),
-                attrs: TextAttributes::from([("latex".into(), Any::String(content.to_string()))]),
-                replace_with_embed_space: true,
-            });
-        }
+    // Align with BlockSuite `inlines/latex/src/markdown.ts:12-13`:
+    // 1. `$$(?<content>[^$]+)$$` (allows leading/trailing spaces inside `content`).
+    if let Some((open, target_len)) = match_inline_latex_content(line) {
+        let content = &line[open + 2..open + 2 + target_len];
+        return Some(InlineMatch {
+            start_byte: open,
+            open_bytes: 2,
+            target_bytes: target_len,
+            close_bytes: 2,
+            attrs: TextAttributes::from([("latex".into(), Any::String(content.to_string()))]),
+            replace_with_embed_space: true,
+        });
+    }
+    // 3. Trailing `$$` (empty inline equation; `$$$` consumes only the last two `$`).
+    if line.ends_with("$$") {
+        return Some(InlineMatch {
+            start_byte: line.len() - 2,
+            open_bytes: 2,
+            target_bytes: 0,
+            close_bytes: 0,
+            attrs: TextAttributes::from([("latex".into(), Any::String(String::new()))]),
+            replace_with_embed_space: true,
+        });
     }
     None
 }
@@ -337,6 +358,86 @@ impl PlaygroundView {
         let combined_index = TextBiIndex::new(&combined);
         let line_start_byte = combined.rfind('\n').map_or(0, |pos| pos + 1);
         let line = &combined[line_start_byte..];
+
+        // 2a. Block equation trigger: `$$$$` + Space or Enter inserts an `affine:latex` block below
+        // and opens the equation editor immediately.
+        if match_inline_latex_content(line).is_none()
+            && line.ends_with("$$$$")
+            && let Some((parent, slot)) = parent_of(&snapshot, id)
+        {
+            let match_start_byte = line_start_byte + line.len() - 4;
+            let match_start_utf16 = combined_index.utf8_to_utf16(match_start_byte);
+            let outer_marks =
+                self.insertion_marks(&DocPoint::new(id, match_start_utf16.min(offset)))?;
+            let now_ms = self.now_ms(cx);
+            let now = now_ms as u64;
+            let pre_insert = if is_enter { typed_body } else { typed };
+            let pre_insert_utf16 = pre_insert.encode_utf16().count() as u64;
+            if !pre_insert.is_empty() {
+                let page = self.page_mut()?;
+                let mut pre_delta = Vec::new();
+                if offset > 0 {
+                    pre_delta.push(TextDeltaOp::Retain {
+                        retain: offset,
+                        format: None,
+                    });
+                }
+                pre_delta.push(TextDeltaOp::Insert {
+                    insert: TextInsert::Text(pre_insert.into()),
+                    format: (!outer_marks.is_empty()).then(|| outer_marks.clone()),
+                });
+                let pre_commit = page.apply_text_delta(id, "prop:text", &pre_delta, now)?;
+                if let (Some(c), Some(page_id)) = (pre_commit, self.page_id.clone()) {
+                    self.send_page_update(&page_id, c.update);
+                }
+            }
+            let latex_block_id = self.fresh_block_id();
+            let remove_len = 4 + u64::from(!is_enter);
+            let page = self.page_mut()?;
+            let undo_sel = page.capture_selection_snapshot(
+                id,
+                offset + pre_insert_utf16,
+                id,
+                offset + pre_insert_utf16,
+            )?;
+            page.stop_capturing()?;
+            let commit = page.structural_edit(now, |page| {
+                page.remove_text(id, "prop:text", match_start_utf16, remove_len, now)?;
+                page.add_block(
+                    &latex_block_id,
+                    BlockSpec::Latex {
+                        latex: String::new(),
+                    },
+                    Some(&parent.id),
+                    Some(slot as u64 + 1),
+                    now,
+                )?;
+                Ok(())
+            })?;
+            if commit.is_some() {
+                page.set_undo_selection_snapshot(undo_sel)?;
+            }
+            page.stop_capturing()?;
+            self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(
+                id,
+                match_start_utf16,
+            )));
+            self.editor.pending_marks.clear();
+            self.editor.last_typing = None;
+            let before_input = self.link_input_state();
+            self.overlays.open_equation_editor(
+                crate::overlays::EquationTarget::Block {
+                    block_id: latex_block_id,
+                },
+                String::new(),
+                now_ms,
+            );
+            self.capture_equation_snapshot();
+            self.sync_link_input(before_input, w, cx);
+            self.did_edit(commit, None, w, cx);
+            return Ok(true);
+        }
+
         let Some(matched) = match_inline_markdown(line) else {
             return Ok(false);
         };
@@ -428,6 +529,8 @@ impl PlaygroundView {
         }
         page.stop_capturing()?;
 
+        let is_empty_inline_latex = matched.replace_with_embed_space
+            && matched.attrs.get("latex") == Some(&Any::String(String::new()));
         self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(id, new_caret)));
         self.editor.pending_marks.clear();
         if is_enter {
@@ -436,6 +539,20 @@ impl PlaygroundView {
             }
         }
         self.editor.last_typing = None;
+        if is_empty_inline_latex {
+            let before_input = self.link_input_state();
+            let now_ms = self.now_ms(cx);
+            self.overlays.open_equation_editor(
+                crate::overlays::EquationTarget::Inline {
+                    block_id: id.clone(),
+                    utf16_offset: match_start_utf16,
+                },
+                String::new(),
+                now_ms,
+            );
+            self.capture_equation_snapshot();
+            self.sync_link_input(before_input, w, cx);
+        }
         self.did_edit(commit, Some(id), w, cx);
         Ok(true)
     }

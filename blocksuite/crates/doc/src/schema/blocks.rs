@@ -49,6 +49,9 @@ pub enum BlockSpec {
     EdgelessText {
         xywh: Option<String>,
     },
+    Latex {
+        latex: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -125,7 +128,7 @@ fn color_map(dark: &str, light: &str) -> SessionValue {
 pub fn is_leaf_flavour(flavour: &str) -> bool {
     matches!(
         flavour,
-        "affine:code" | "affine:divider" | "affine:image" | "affine:bookmark"
+        "affine:code" | "affine:divider" | "affine:image" | "affine:bookmark" | "affine:latex"
     )
 }
 
@@ -143,6 +146,7 @@ impl BlockSpec {
             Self::Bookmark { .. } => "affine:bookmark",
             Self::Frame { .. } => "affine:frame",
             Self::EdgelessText { .. } => "affine:edgeless-text",
+            Self::Latex { .. } => "affine:latex",
         }
     }
 
@@ -462,6 +466,31 @@ impl BlockSpec {
                     (
                         "prop:textAlign".to_string(),
                         SessionValue::Any(Any::String("left".to_string())),
+                    ),
+                ]);
+            }
+            Self::Latex { latex } => {
+                entries.extend([
+                    (
+                        "prop:xywh".to_string(),
+                        SessionValue::Any(Any::String("[0,0,16,16]".to_string())),
+                    ),
+                    (
+                        "prop:index".to_string(),
+                        SessionValue::Any(Any::String("a0".to_string())),
+                    ),
+                    (
+                        "prop:lockedBySelf".to_string(),
+                        SessionValue::Any(Any::False),
+                    ),
+                    ("prop:scale".to_string(), SessionValue::Any(Any::Integer(1))),
+                    (
+                        "prop:rotate".to_string(),
+                        SessionValue::Any(Any::Integer(0)),
+                    ),
+                    (
+                        "prop:latex".to_string(),
+                        SessionValue::Any(Any::String(latex)),
                     ),
                 ]);
             }

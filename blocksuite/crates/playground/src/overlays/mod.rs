@@ -687,6 +687,27 @@ mod tests {
         let (rows, height) = slash_rows(&[]);
         assert_eq!(rows, [(SlashRow::Empty, 0.0, SLASH_ITEM_HEIGHT)]);
         assert_eq!(height, SLASH_ITEM_HEIGHT);
+
+        // Filtered queries hide group headers while keeping every matching item.
+        let filtered_items = filter_slash_items("tdo");
+        let (filtered_rows, filtered_height) = slash_rows_for_query(&filtered_items, "tdo");
+        assert!(
+            filtered_rows
+                .iter()
+                .all(|(row, _, _)| !matches!(row, SlashRow::Header(_))),
+            "filtered slash rows must omit group headers"
+        );
+        assert_eq!(
+            filtered_height,
+            filtered_items.len() as f32 * SLASH_ITEM_HEIGHT
+        );
+        for item in &SLASH_ITEMS {
+            assert!(
+                !item.description.is_empty(),
+                "slash item {} must have a description",
+                item.id
+            );
+        }
     }
 
     #[test]
@@ -778,7 +799,7 @@ mod tests {
         // Rows sit flush inside the padding and round concentrically with the menu.
         assert_eq!(first_item.bounds.x, menu.bounds.x + 4.0);
         assert_eq!(first_item.corner_radius, 4.0);
-        assert_eq!(first_item.bounds.height, 32.0);
+        assert_eq!(first_item.bounds.height, SLASH_ITEM_HEIGHT);
         assert_eq!(
             element(&opened, "overlay.slash_menu.group.basic").bounds.y,
             element(&opened, "overlay.slash_menu.query").bounds.bottom()
@@ -817,6 +838,11 @@ mod tests {
         assert_no_violations(&filtered, "slash menu filtered");
         assert!(element(&filtered, "overlay.slash_menu.item.h2").focused);
         assert!(!filtered.elements.contains_key("overlay.slash_menu.item.h1"));
+        assert!(
+            !filtered
+                .elements
+                .contains_key("overlay.slash_menu.group.basic")
+        );
         assert_eq!(
             element(&filtered, "overlay.slash_menu.query")
                 .text
@@ -900,8 +926,8 @@ mod tests {
         assert_no_violations(&empty, "slash menu without results");
         let row = element(&empty, "overlay.slash_menu.empty");
         assert_eq!(row.text.as_deref(), Some("No results"));
-        assert_eq!(row.bounds.height, 32.0);
-        assert!(element(&empty, "overlay.slash_menu").bounds.height >= 32.0 + 28.0);
+        assert_eq!(row.bounds.height, SLASH_ITEM_HEIGHT);
+        assert!(element(&empty, "overlay.slash_menu").bounds.height >= SLASH_ITEM_HEIGHT + 28.0);
         let written = session.written();
         session.key("down");
         session.key("tab");

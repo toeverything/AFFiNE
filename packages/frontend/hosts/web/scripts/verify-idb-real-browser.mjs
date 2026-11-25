@@ -23,7 +23,15 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import {
+  closeSync,
+  existsSync,
+  mkdtempSync,
+  openSync,
+  readFileSync,
+  readSync,
+  rmSync,
+} from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join, normalize, resolve } from 'node:path';
@@ -37,18 +45,44 @@ const MIME_TYPES = {
   '.mjs': 'text/javascript; charset=utf-8',
 };
 
+function isSnapWrapper(bin) {
+  if (!bin.startsWith('/usr/bin/chromium')) {
+    return false;
+  }
+  try {
+    const fd = openSync(bin, 'r');
+    try {
+      const buf = Buffer.alloc(256);
+      const n = readSync(fd, buf, 0, buf.length, 0);
+      const head = buf.subarray(0, n).toString('utf8');
+      return head.startsWith('#!') && /snap/i.test(head);
+    } finally {
+      closeSync(fd);
+    }
+  } catch {
+    return false;
+  }
+}
+
 function findChromiumBinary() {
   const candidates = [
     process.env.CHROME_PATH,
+    process.env.CHROME_BIN,
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/google-chrome',
     '/usr/bin/chromium',
     '/usr/bin/chromium-browser',
-    '/usr/bin/google-chrome',
-    '/usr/bin/google-chrome-stable',
   ].filter(Boolean);
+  let snapFallback = null;
   for (const bin of candidates) {
-    if (bin && existsSync(bin)) {
-      return bin;
+    if (!bin || !existsSync(bin)) {
+      continue;
     }
+    if (isSnapWrapper(bin)) {
+      snapFallback ??= bin;
+      continue;
+    }
+    return bin;
   }
   const pwDir = join(process.env.HOME || '', '.cache/ms-playwright');
   if (existsSync(pwDir)) {
@@ -63,6 +97,9 @@ function findChromiumBinary() {
     if (found) {
       return found;
     }
+  }
+  if (snapFallback) {
+    return snapFallback;
   }
   throw new Error('No preinstalled Chromium binary found on this machine');
 }
@@ -279,6 +316,8 @@ const chromeProc = spawn(
     '--no-sandbox',
     '--disable-gpu',
     '--disable-dev-shm-usage',
+    '--no-first-run',
+    '--no-default-browser-check',
     '--remote-debugging-port=0',
     `--user-data-dir=${profileDir}`,
     'about:blank',

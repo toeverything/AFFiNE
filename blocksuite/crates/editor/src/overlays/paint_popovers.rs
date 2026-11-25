@@ -26,6 +26,7 @@ impl Overlays {
         elements.extend(self.render_toolbar(scene, palette, now_ms, window, cx));
         elements.extend(self.render_slash(scene, palette, now_ms, cx));
         elements.extend(self.render_linked_doc(scene, palette, now_ms, cx));
+        elements.extend(self.render_equation(scene, palette, now_ms, window, cx));
         elements
     }
 
@@ -59,7 +60,7 @@ impl Overlays {
 
         let items = filter_slash_items(&menu.query);
         menu.selected = menu.selected.min(items.len().saturating_sub(1));
-        let (rows, content_height) = slash_rows(&items);
+        let (rows, content_height) = slash_rows_for_query(&items, &menu.query);
         let show_query = !menu.query_in_document;
         let chrome = 2.0 * SLASH_MENU_PADDING + if show_query { SLASH_QUERY_HEIGHT } else { 0.0 };
 
@@ -213,7 +214,33 @@ impl Overlays {
                                     .justify_center()
                                     .child(icon(item.icon, 20.0, palette.icon)),
                             )
-                            .child(item.title),
+                            .child(
+                                div()
+                                    .flex_1()
+                                    .min_w(px(0.0))
+                                    .flex()
+                                    .flex_col()
+                                    .justify_center()
+                                    .overflow_hidden()
+                                    .child(
+                                        div()
+                                            .whitespace_nowrap()
+                                            .overflow_hidden()
+                                            .text_size(px(TYPOGRAPHY.font_sm_px))
+                                            .line_height(px(18.0))
+                                            .text_color(palette.text_primary)
+                                            .child(item.title),
+                                    )
+                                    .child(
+                                        div()
+                                            .whitespace_nowrap()
+                                            .overflow_hidden()
+                                            .text_size(px(TYPOGRAPHY.font_xs_px))
+                                            .line_height(px(15.0))
+                                            .text_color(palette.text_secondary)
+                                            .child(item.description),
+                                    ),
+                            ),
                     );
                 }
             }

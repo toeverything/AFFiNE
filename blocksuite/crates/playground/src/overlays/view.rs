@@ -63,9 +63,9 @@ impl PlaygroundView {
     pub(crate) fn link_input_state(
         &self,
     ) -> Option<(String, Range<usize>, bool, Option<Range<usize>>)> {
-        let link = self.overlays.link_field()?;
-        let (selection, reversed) = link.shown_selection();
-        Some((link.text(), selection, reversed, link.marked_range()))
+        let field = self.overlays.active_text_field()?;
+        let (selection, reversed) = field.shown_selection();
+        Some((field.text(), selection, reversed, field.marked_range()))
     }
 
     /// Tell the platform's text input (AppKit, the browser's mirror element) that the
@@ -94,6 +94,8 @@ impl PlaygroundView {
             OverlayEvent::SetSelection(selection) => {
                 self.editor.dragging = false;
                 self.overlays.close_link_field();
+                self.overlays.close_equation_editor();
+                self.equation_snapshot = None;
                 match selection {
                     Some(selection) => self.select_document_range(
                         DocumentSelection {
@@ -129,6 +131,12 @@ impl PlaygroundView {
             PlaygroundMode::Edgeless => None,
         };
         let direction = window.layout_direction();
+        let capture_equation = matches!(
+            event,
+            OverlayEvent::OpenEquationEditor { .. }
+                | OverlayEvent::CloseEquationEditor
+                | OverlayEvent::EquationApply
+        );
         let effects = match &page {
             Some((snapshot, layout)) => {
                 let scene = self.overlay_scene(snapshot, layout, direction, None);
@@ -136,7 +144,73 @@ impl PlaygroundView {
             }
             None => self.overlays.handle(event, None, now_ms),
         };
+        if capture_equation {
+            self.capture_equation_snapshot();
+        }
         self.apply_overlay_effects(effects, window, cx);
+    }
+
+    /// Record a CRDT relative snapshot for an open inline equation target so remote
+    /// insertions/deletions before it keep the popover anchored and write-safe.
+    pub(crate) fn capture_equation_snapshot(&mut self) {
+        self.equation_snapshot = match self.overlays.equation_editor().map(|e| &e.target) {
+            Some(EquationTarget::Inline {
+                block_id,
+                utf16_offset,
+            }) => self.page().and_then(|page| {
+                page.capture_selection_snapshot(block_id, *utf16_offset, block_id, *utf16_offset)
+                    .ok()
+            }),
+            _ => None,
+        };
+    }
+
+    /// Re-resolve the active equation editor target after a remote document update.
+    /// Closes the editor cleanly if the target block or inline equation was deleted.
+    pub(crate) fn sync_equation_target(&mut self) {
+        let Some(target) = self.overlays.equation_editor().map(|e| e.target.clone()) else {
+            self.equation_snapshot = None;
+            return;
+        };
+        match target {
+            EquationTarget::Block { block_id } => {
+                let alive = self
+                    .page_snapshot()
+                    .and_then(|s| s.block(&block_id))
+                    .is_some_and(|b| b.flavour == "affine:latex");
+                if !alive {
+                    self.overlays.close_equation_editor();
+                    self.equation_snapshot = None;
+                }
+            }
+            EquationTarget::Inline { block_id, .. } => {
+                let resolved = self.equation_snapshot.as_ref().and_then(|snap| {
+                    let page = self.page()?;
+                    let r = page.resolve_selection_snapshot(snap).ok().flatten()?;
+                    (r.anchor.0 == block_id
+                        && r.focus == r.anchor
+                        && super::view_edits::is_inline_latex_at(page, &block_id, r.anchor.1)
+                        && page
+                            .capture_selection_snapshot(
+                                &block_id, r.anchor.1, &block_id, r.anchor.1,
+                            )
+                            .ok()
+                            .as_ref()
+                            == Some(snap))
+                    .then_some(r.anchor.1)
+                });
+                if let Some(new_offset) = resolved {
+                    if let Some(editor) = self.overlays.equation_editor_mut()
+                        && let EquationTarget::Inline { utf16_offset, .. } = &mut editor.target
+                    {
+                        *utf16_offset = new_offset;
+                    }
+                } else {
+                    self.overlays.close_equation_editor();
+                    self.equation_snapshot = None;
+                }
+            }
+        }
     }
 
     /// Carry out the effects of an event or key. Returns whether a key was consumed.
@@ -199,7 +273,13 @@ impl PlaygroundView {
     ) {
         let now_ms = self.now_ms(cx);
         let input = self.link_input_state();
+        if self.overlays.equation_editor().is_some() {
+            self.dispatch_overlay_event(OverlayEvent::EquationApply, window, cx);
+        }
         self.overlays.pointer_pressed(now_ms);
+        if self.overlays.equation_editor().is_none() {
+            self.equation_snapshot = None;
+        }
         self.sync_link_input(input, window, cx);
         self.editor.slash_trigger = None;
         self.editor.block_selection.clear();
@@ -307,7 +387,7 @@ impl PlaygroundView {
         call: impl FnOnce(&mut LinkBar) -> R,
     ) -> Option<R> {
         let input = self.link_input_state();
-        let result = call(self.overlays.link_field_mut()?);
+        let result = call(self.overlays.active_text_field_mut()?);
         self.sync_link_input(input, window, cx);
         Some(result)
     }

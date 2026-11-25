@@ -27,6 +27,7 @@ pub enum FlowKind {
     Code,
     Image,
     Bookmark,
+    Latex,
     Unknown,
 }
 
@@ -54,6 +55,13 @@ impl FlowTextLayout {
 
     pub fn height(&self) -> f32 {
         self.line_count() as f32 * self.line_height()
+    }
+
+    pub fn decorations(&self) -> &[crate::rich_text::InlineDecoration] {
+        match self {
+            Self::Rich(layout) => layout.inline_decorations(),
+            Self::Plain(_) => &[],
+        }
     }
 
     /// Width of the widest line.

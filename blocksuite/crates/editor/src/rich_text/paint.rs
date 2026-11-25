@@ -29,7 +29,7 @@ impl LaidOutRichParagraph {
                 DecorationKind::Highlight | DecorationKind::ReferenceChip(_) => {
                     window.paint_quad(fill(bounds, d.color));
                 }
-                DecorationKind::CodePill => window.paint_quad(
+                DecorationKind::CodePill | DecorationKind::LatexChip(_) => window.paint_quad(
                     fill(bounds, d.color)
                         .corner_radii(px(style.code_radius))
                         .border_widths(px(style.code_border_width))

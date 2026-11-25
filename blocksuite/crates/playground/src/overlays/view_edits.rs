@@ -2,10 +2,10 @@ use blocksuite_playground_doc::{
     DocError, DocResult,
     read::{BlockNode, TextAlign as BlockAlign},
     schema::{BlockSpec, ListType, ParagraphType},
-    session::SelectionSnapshot,
+    session::{PageDocSession, SelectionSnapshot},
 };
 use ui::{Context, Window};
-use y_octo::{Any, SessionValue, TextAttributes};
+use y_octo::{Any, SessionValue, TextAttributes, TextDeltaOp, TextInsert};
 
 use crate::{
     PlaygroundView,
@@ -14,6 +14,36 @@ use crate::{
 };
 
 use super::*;
+
+pub(super) fn is_inline_latex_at(page: &PageDocSession, block_id: &str, utf16_offset: u64) -> bool {
+    let Ok((rich, _)) = page.read_editable_text(block_id) else {
+        return false;
+    };
+    let mut pos = 0u64;
+    for op in &rich.delta {
+        match op {
+            TextDeltaOp::Insert {
+                insert: TextInsert::Text(s),
+                format,
+            } => {
+                let len = s.encode_utf16().count() as u64;
+                if utf16_offset >= pos && utf16_offset < pos + len {
+                    return s.encode_utf16().nth((utf16_offset - pos) as usize) == Some(' ' as u16)
+                        && format.as_ref().is_some_and(|f| f.contains_key("latex"));
+                }
+                pos += len;
+            }
+            TextDeltaOp::Insert {
+                insert: TextInsert::Embed(v),
+                ..
+            } => {
+                pos += v.len() as u64;
+            }
+            _ => {}
+        }
+    }
+    false
+}
 
 impl PlaygroundView {
     /// Snapshot of the editor's selection for the undo entry an edit creates.
@@ -33,6 +63,78 @@ impl PlaygroundView {
             DocEdit::Mark(key) => self.format_mark(key, window, cx),
             DocEdit::Align(align) => self.format_selection(Some(align), None, window, cx),
             DocEdit::Link(url) => self.format_selection(None, Some(url), window, cx),
+            DocEdit::Equation { target, latex } => {
+                self.equation_snapshot = None;
+                match &target {
+                    EquationTarget::Block { block_id } => {
+                        let alive = self
+                            .page_snapshot()
+                            .and_then(|s| s.block(block_id))
+                            .is_some_and(|b| b.flavour == "affine:latex");
+                        if !alive {
+                            return Ok(());
+                        }
+                    }
+                    EquationTarget::Inline {
+                        block_id,
+                        utf16_offset,
+                    } => {
+                        if !self
+                            .page()
+                            .is_some_and(|p| is_inline_latex_at(p, block_id, *utf16_offset))
+                        {
+                            return Ok(());
+                        }
+                    }
+                }
+                let before = self.selection_snapshot();
+                let page = self.page_mut()?;
+                page.stop_capturing()?;
+                let (commit, dirty_block) = match &target {
+                    EquationTarget::Block { block_id } => (
+                        page.set_block_prop(
+                            block_id,
+                            "prop:latex",
+                            SessionValue::Any(Any::String(latex)),
+                            now,
+                        )?,
+                        None,
+                    ),
+                    EquationTarget::Inline {
+                        block_id,
+                        utf16_offset,
+                    } => {
+                        let c = page.format_text(
+                            block_id,
+                            "prop:text",
+                            *utf16_offset,
+                            1,
+                            TextAttributes::from([("latex".to_string(), Any::String(latex))]),
+                            now,
+                        )?;
+                        (c, Some(block_id.as_str()))
+                    }
+                };
+                if commit.is_some()
+                    && let Some(before) = before
+                {
+                    page.set_undo_selection_snapshot(before)?;
+                }
+                page.stop_capturing()?;
+                if let EquationTarget::Inline {
+                    block_id,
+                    utf16_offset,
+                } = &target
+                {
+                    self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(
+                        block_id,
+                        utf16_offset + 1,
+                    )));
+                }
+                self.editor.last_typing = None;
+                self.did_edit(commit, dirty_block, window, cx);
+                Ok(())
+            }
             DocEdit::Slash {
                 block_id,
                 command,

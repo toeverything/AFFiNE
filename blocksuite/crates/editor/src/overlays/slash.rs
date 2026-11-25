@@ -50,6 +50,7 @@ pub struct SlashItem {
     /// Stable id, the last segment of the row's snapshot id.
     pub id: &'static str,
     pub title: &'static str,
+    pub description: &'static str,
     pub group: &'static str,
     /// Name of the generated icon.
     pub icon: &'static str,
@@ -61,6 +62,7 @@ pub struct SlashItem {
 const fn slash_item(
     id: &'static str,
     title: &'static str,
+    description: &'static str,
     group: &'static str,
     icon: &'static str,
     keywords: &'static [&'static str],
@@ -69,6 +71,7 @@ const fn slash_item(
     SlashItem {
         id,
         title,
+        description,
         group,
         icon,
         keywords,
@@ -83,6 +86,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "text",
         "Text",
+        "Start typing with plain text.",
         "Basic",
         "TextIcon",
         &["plain"],
@@ -91,6 +95,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "h1",
         "Heading 1",
+        "Headings in the largest font.",
         "Basic",
         "Heading1Icon",
         &["h1", "heading1", "title"],
@@ -99,6 +104,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "h2",
         "Heading 2",
+        "Headings in the 2nd font size.",
         "Basic",
         "Heading2Icon",
         &["h2", "heading2"],
@@ -107,6 +113,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "h3",
         "Heading 3",
+        "Headings in the 3rd font size.",
         "Basic",
         "Heading3Icon",
         &["h3", "heading3"],
@@ -115,6 +122,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "h4",
         "Heading 4",
+        "Headings in the 4th font size.",
         "Basic",
         "Heading4Icon",
         &["h4", "heading4"],
@@ -123,6 +131,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "h5",
         "Heading 5",
+        "Headings in the 5th font size.",
         "Basic",
         "Heading5Icon",
         &["h5", "heading5"],
@@ -131,6 +140,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "h6",
         "Heading 6",
+        "Headings in the 6th font size.",
         "Basic",
         "Heading6Icon",
         &["h6", "heading6"],
@@ -139,6 +149,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "code",
         "Code Block",
+        "Code snippet with formatting.",
         "Basic",
         "CodeBlockIcon",
         &["snippet", "pre"],
@@ -147,6 +158,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "quote",
         "Quote",
+        "Add a blockquote for emphasis.",
         "Basic",
         "QuoteIcon",
         &["blockquote"],
@@ -155,6 +167,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "divider",
         "Divider",
+        "Visually separate content.",
         "Basic",
         "DividerIcon",
         &["hr", "line", "separator"],
@@ -163,6 +176,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "new_doc",
         "New Doc",
+        "Start a new document.",
         "Basic",
         "PlusIcon",
         &["subpage", "newdoc", "page"],
@@ -171,6 +185,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "linked_doc",
         "Linked Doc",
+        "Link to another document.",
         "Basic",
         "LinkedPageIcon",
         &["linkedpage", "at", "mention", "doc", "duallink"],
@@ -179,6 +194,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "bulleted",
         "Bulleted List",
+        "Create a bulleted list.",
         "List",
         "BulletedListIcon",
         &["ul", "unordered"],
@@ -187,6 +203,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "numbered",
         "Numbered List",
+        "Create a numbered list.",
         "List",
         "NumberedListIcon",
         &["ol", "ordered"],
@@ -195,6 +212,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "todo",
         "To-do List",
+        "Add tasks to a to-do list.",
         "List",
         "CheckBoxCheckLinearIcon",
         &["todo", "task", "checkbox"],
@@ -203,6 +221,7 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     slash_item(
         "toggle",
         "Toggle List",
+        "Create a collapsible list.",
         "List",
         "ToggleRightIcon",
         &["collapse", "fold"],
@@ -323,6 +342,29 @@ pub fn slash_rows(items: &[&'static SlashItem]) -> (Vec<(SlashRow, f32, f32)>, f
             rows.push((SlashRow::Header(group), y, SLASH_HEADER_HEIGHT));
             y += SLASH_HEADER_HEIGHT;
         }
+        rows.push((SlashRow::Item(index), y, SLASH_ITEM_HEIGHT));
+        y += SLASH_ITEM_HEIGHT;
+    }
+    (rows, y)
+}
+
+/// Rows of the slash menu list for `query`: hides group headers while filtering.
+pub fn slash_rows_for_query(
+    items: &[&'static SlashItem],
+    query: &str,
+) -> (Vec<(SlashRow, f32, f32)>, f32) {
+    if query.trim().is_empty() {
+        return slash_rows(items);
+    }
+    if items.is_empty() {
+        return (
+            vec![(SlashRow::Empty, 0.0, SLASH_ITEM_HEIGHT)],
+            SLASH_ITEM_HEIGHT,
+        );
+    }
+    let mut rows = Vec::with_capacity(items.len());
+    let mut y = 0.0;
+    for index in 0..items.len() {
         rows.push((SlashRow::Item(index), y, SLASH_ITEM_HEIGHT));
         y += SLASH_ITEM_HEIGHT;
     }

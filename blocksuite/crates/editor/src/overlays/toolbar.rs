@@ -397,6 +397,12 @@ impl LinkBar {
         }
     }
 
+    /// Commit any running IME composition into the field and return the final text.
+    pub fn into_committed_text(mut self) -> String {
+        self.unmark();
+        self.url
+    }
+
     /// Select `range` of the URL; a running composition is abandoned.
     pub fn select(&mut self, range: Range<usize>) {
         self.preedit = None;

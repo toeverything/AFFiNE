@@ -75,6 +75,7 @@ impl Overlays {
         self.close_slash(now_ms);
         self.close_linked_doc(now_ms);
         self.close_link_field();
+        self.close_equation_editor();
         self.drag = None;
     }
 
@@ -101,9 +102,9 @@ impl Overlays {
     /// Put pasted text into the link field, over its selection. Returns whether the
     /// field is open.
     pub fn link_insert(&mut self, text: &str) -> bool {
-        match self.link_field_mut() {
-            Some(link) => {
-                link.replace(None, text);
+        match self.active_text_field_mut() {
+            Some(field) => {
+                field.replace(None, text);
                 true
             }
             None => false,
@@ -223,6 +224,7 @@ impl Overlays {
                         self.slash_menu().and_then(|menu| menu.rect),
                         self.linked_doc_menu().and_then(|menu| menu.rect),
                         self.open_toolbar().and_then(|toolbar| toolbar.rect),
+                        self.equation_editor().and_then(|editor| editor.rect),
                     ]
                     .into_iter()
                     .flatten()
@@ -379,6 +381,16 @@ impl Overlays {
                 });
                 effects.redraw = true;
             }
+            OverlayEvent::OpenEquationEditor { target, initial } => {
+                self.open_equation_editor(target, initial, now_ms);
+                effects.redraw = true;
+            }
+            OverlayEvent::EquationApply => self.apply_equation(&mut effects),
+            OverlayEvent::CloseEquationEditor => {
+                if self.equation.take().is_some() {
+                    effects.redraw = true;
+                }
+            }
             OverlayEvent::OpenLinkedDocMenu { .. }
             | OverlayEvent::SetLinkedDocQuery(_)
             | OverlayEvent::LinkedDocHover(_)
@@ -402,6 +414,41 @@ impl Overlays {
         let mut effects = OverlayEffects::default();
         let key = keystroke.key.as_str();
         let shift = keystroke.modifiers.shift;
+
+        if let Some(equation) = self.equation_editor_mut() {
+            if equation.input.composing() {
+                if key == "escape" {
+                    equation.input.mark(None, "", None);
+                    effects.handled = true;
+                    effects.redraw = true;
+                }
+                return effects;
+            }
+            effects.handled = true;
+            effects.redraw = true;
+            match key {
+                "enter" => self.apply_equation(&mut effects),
+                "escape" => self.close_equation_editor(),
+                "v" if secondary => effects.paste = true,
+                "c" | "x" if secondary => {
+                    if !equation.input.selection.is_empty() {
+                        effects.clipboard = Some(equation.input.selected_text().to_string());
+                        if key == "x" {
+                            equation.input.replace(None, "");
+                        }
+                    }
+                }
+                _ => {
+                    if !equation.input.key(key, shift, secondary)
+                        && typed_text(keystroke, secondary).is_some()
+                    {
+                        effects.handled = false;
+                        effects.redraw = false;
+                    }
+                }
+            }
+            return effects;
+        }
 
         if let Some(link) = self.link_field_mut() {
             if link.composing() {
@@ -540,7 +587,7 @@ impl Overlays {
             return;
         };
         effects.redraw = true;
-        let url = normalize_url(link.url());
+        let url = normalize_url(&link.into_committed_text());
         if remove {
             effects.edits.push(DocEdit::Link(None));
         } else if !url.is_empty() {

@@ -29,6 +29,7 @@ pub struct CaretPosition {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DecorationKind {
     CodePill,
+    LatexChip(String),
     ReferenceChip(InlineReference),
     ReferenceDivider,
     PageGlyph,

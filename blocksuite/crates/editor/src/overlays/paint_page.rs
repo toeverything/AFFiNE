@@ -15,6 +15,7 @@ use crate::{
         CODE_RADIUS, FlowBlock, FlowKind, FlowLayout, FlowRect, PAGE_SURFACE_ID, PagePaint,
         heading_marker_rect_for_direction, paint_chevron, paragraph_spec,
     },
+    rich_text::DecorationKind,
     theme::{IconPaint, Palette, TYPOGRAPHY},
 };
 
@@ -230,7 +231,63 @@ impl Overlays {
                     };
                     elements.push(element.into_any_element());
                 }
+                FlowKind::Latex => {
+                    let initial = scene
+                        .snapshot
+                        .root
+                        .as_ref()
+                        .and_then(|root| find_parent(root, &block.block_id))
+                        .and_then(|(parent, idx)| parent.children.get(idx))
+                        .and_then(|node| match &node.content {
+                            BlockContent::Latex { latex } => Some(latex.clone()),
+                            _ => None,
+                        })
+                        .unwrap_or_default();
+                    let event = OverlayEvent::OpenEquationEditor {
+                        target: EquationTarget::Block {
+                            block_id: block.block_id.clone(),
+                        },
+                        initial,
+                    };
+                    let element = place(viewport.to_local(&rect))
+                        .id(SharedString::from(format!("latex-{}", block.block_id)))
+                        .cursor_pointer()
+                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                        .on_click(emit(cx, move |_: &ClickEvent| event.clone()));
+                    elements.push(element.into_any_element());
+                }
                 _ => {}
+            }
+            if let Some(body_text) = &block.body.text {
+                for deco in body_text.layout.decorations() {
+                    if let DecorationKind::LatexChip(latex) = &deco.kind {
+                        let chip_rect = FlowRect::new(
+                            rect.x + body_text.x + f32::from(deco.bounds.origin.x),
+                            rect.y + body_text.y + f32::from(deco.bounds.origin.y),
+                            f32::from(deco.bounds.size.width),
+                            f32::from(deco.bounds.size.height),
+                        );
+                        if !viewport.intersects(&chip_rect) {
+                            continue;
+                        }
+                        let event = OverlayEvent::OpenEquationEditor {
+                            target: EquationTarget::Inline {
+                                block_id: block.block_id.clone(),
+                                utf16_offset: deco.source_utf16.start,
+                            },
+                            initial: latex.clone(),
+                        };
+                        let element = place(viewport.to_local(&chip_rect))
+                            .id(SharedString::from(format!(
+                                "inline-latex-{}-{}",
+                                block.block_id, deco.source_utf16.start
+                            )))
+                            .cursor_pointer()
+                            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                            .on_click(emit(cx, move |_: &ClickEvent| event.clone()));
+                        elements.push(element.into_any_element());
+                    }
+                }
             }
         }
 

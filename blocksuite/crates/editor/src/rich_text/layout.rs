@@ -248,12 +248,18 @@ impl ParagraphLayout<'_> {
                 ..end.min(group.last().unwrap().source_bytes.end);
             let style = self.style;
             let text = if first.chip {
-                &p.display[first.display_bytes.start + PAGE_PREFIX.len()..first.display_bytes.end]
+                let raw = &p.display[first.display_bytes.clone()];
+                if first.marks.reference.is_some() {
+                    raw.strip_prefix(PAGE_PREFIX).unwrap_or(raw)
+                } else {
+                    raw
+                }
             } else {
                 &p.source[bytes.clone()]
             };
             let is_code = !first.chip && first.marks.code;
-            let font_size = if is_code {
+            let is_latex = first.chip && first.marks.latex.is_some();
+            let font_size = if is_code || is_latex {
                 style.code_font_size
             } else {
                 style.font_size
@@ -297,9 +303,9 @@ impl ParagraphLayout<'_> {
                 &text_runs,
                 style.letter_spacing,
             );
-            let (inset_start, inset_end) = if first.chip {
+            let (inset_start, inset_end) = if first.chip && first.marks.reference.is_some() {
                 (px(font_size + 4.), px(2.))
-            } else if is_code {
+            } else if is_code || is_latex {
                 let inset = px(style.code_padding_x + style.code_border_width);
                 (inset, inset)
             } else {
@@ -431,6 +437,20 @@ impl ParagraphLayout<'_> {
                                 ),
                             ),
                             style.reference_divider,
+                        );
+                    } else if span.chip
+                        && let Some(latex) = &span.marks.latex
+                    {
+                        decorate(
+                            DecorationKind::LatexChip(latex.clone()),
+                            rect(
+                                baseline_y - px(style.code_baseline),
+                                px(style.code_baseline
+                                    + style.code_descent
+                                    + style.code_padding_bottom
+                                    + style.code_border_width),
+                            ),
+                            style.code_bg,
                         );
                     } else if span.marks.code {
                         decorate(
@@ -1087,6 +1107,138 @@ mod tests {
                 }
                 if i > 0 {
                     assert!(edge(0) < edge(1));
+                }
+            }
+
+            // 8. Inline latex chips (populated, empty, mixed with inline code and references).
+            let mixed_ref = Any::Object(Box::new(
+                [
+                    ("type".into(), Any::String("LinkedPage".into())),
+                    ("pageId".into(), Any::String("doc:math".into())),
+                    ("title".into(), Any::String("Algebra".into())),
+                ]
+                .into_iter()
+                .collect(),
+            ));
+            let latex_cases: [(&str, Vec<TextDeltaOp>, usize, usize, &str); 5] = [
+                (
+                    "simple inline latex",
+                    vec![
+                        insert("m ", None),
+                        insert(
+                            " ",
+                            Some([("latex".into(), Any::String("x".into()))].into()),
+                        ),
+                        insert(" ", None),
+                    ],
+                    1,
+                    0,
+                    "m x ",
+                ),
+                (
+                    "latex starting with PAGE_PREFIX keeps literal text",
+                    vec![insert(
+                        " ",
+                        Some([("latex".into(), Any::String(format!("{PAGE_PREFIX}x")))].into()),
+                    )],
+                    1,
+                    0,
+                    PAGE_PREFIX,
+                ),
+                (
+                    "mixed inline latex and code",
+                    vec![
+                        insert("m ", None),
+                        insert(
+                            " ",
+                            Some([("latex".into(), Any::String("x^2".into()))].into()),
+                        ),
+                        insert(" c ", None),
+                        insert("k", Some([("code".into(), Any::True)].into())),
+                        insert(" e", None),
+                    ],
+                    2,
+                    0,
+                    "m x^2 c k e",
+                ),
+                (
+                    "empty inline latex displays Equation",
+                    vec![
+                        insert(" ", Some([("latex".into(), Any::String("".into()))].into())),
+                        insert(" ", None),
+                    ],
+                    1,
+                    0,
+                    "Equation ",
+                ),
+                (
+                    "mixed reference chip and inline latex chip",
+                    vec![
+                        insert("See ", None),
+                        insert(" ", Some([("reference".into(), mixed_ref)].into())),
+                        insert(" for ", None),
+                        insert(
+                            " ",
+                            Some([("latex".into(), Any::String("a+b".into()))].into()),
+                        ),
+                    ],
+                    1,
+                    1,
+                    "See ",
+                ),
+            ];
+            for (name, ops, expected_pills, expected_refs, display_prefix) in latex_cases {
+                let para = RichParagraph::from_delta(ops).unwrap();
+                assert!(
+                    para.display_text().starts_with(display_prefix),
+                    "{name}: display {:?}",
+                    para.display_text()
+                );
+                let layout = para.layout(&ts, &style, 480.);
+                assert_eq!(
+                    layout
+                        .inline_decorations()
+                        .iter()
+                        .filter(|d| matches!(
+                            d.kind,
+                            DecorationKind::CodePill | DecorationKind::LatexChip(_)
+                        ))
+                        .count(),
+                    expected_pills,
+                    "{name}: pill/latex chip count"
+                );
+                assert_eq!(
+                    layout
+                        .inline_decorations()
+                        .iter()
+                        .filter(|d| matches!(d.kind, DecorationKind::ReferenceChip(_)))
+                        .count(),
+                    expected_refs,
+                    "{name}: ReferenceChip count"
+                );
+                assert_eq!(
+                    layout
+                        .inline_decorations()
+                        .iter()
+                        .filter(|d| d.kind == DecorationKind::PageGlyph)
+                        .count(),
+                    expected_refs,
+                    "{name}: PageGlyph count"
+                );
+                let len = para.index().utf16_len();
+                for offset in 0..=len {
+                    let pos = CaretPosition {
+                        utf16_offset: offset,
+                        affinity: WrapAffinity::Downstream,
+                    };
+                    let rect = layout.caret_rect(pos);
+                    let hit = layout.hit_test(rect.origin + point(px(0.), px(2.)));
+                    assert!(hit.utf16_offset <= len, "{name}: hit out of range");
+                }
+                for offset in 0..len {
+                    let rects = layout.selection_rects(offset, offset + 1);
+                    assert!(!rects.is_empty(), "{name}: selection rect at {offset}");
+                    assert!(rects[0].size.width > px(0.), "{name}: non-zero width");
                 }
             }
         });

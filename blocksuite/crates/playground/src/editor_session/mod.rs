@@ -431,6 +431,7 @@ impl PlaygroundView {
     pub(super) fn resolve_remote_selection(&mut self, cx: &Context<Self>) {
         self.resolve_relative_selection(cx);
         self.sync_slash_trigger(cx);
+        self.sync_equation_target();
     }
 
     pub(super) fn resolve_relative_selection(&mut self, cx: &Context<Self>) {

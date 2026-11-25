@@ -644,6 +644,69 @@ impl FlowPass<'_> {
         body
     }
 
+    pub(super) fn latex_body(&mut self, latex: &str, width: f32) -> BlockBody {
+        let pad_x = 16.0;
+        let pad_y = 14.0;
+        let inner = (width - 2.0 * pad_x).max(1.0);
+        let empty = latex.trim().is_empty();
+        let (display, style, line_height) = if empty {
+            (
+                "Add an equation",
+                InlineStyle::new(
+                    FONT_SANS,
+                    TYPOGRAPHY.font_sm_px,
+                    400.0,
+                    self.palette.text_secondary,
+                ),
+                22.0,
+            )
+        } else {
+            (
+                latex,
+                InlineStyle::new(
+                    FONT_CODE,
+                    TYPOGRAPHY.font_base_px,
+                    400.0,
+                    self.palette.text_primary,
+                ),
+                24.0,
+            )
+        };
+        let layout = self.plain_inline(display, style, inner, line_height, InlineAlign::Center);
+        let height = (layout.height() + 2.0 * pad_y).max(52.0);
+        let text_y = ((height - layout.height()) / 2.0).floor().max(pad_y);
+        BlockBody {
+            kind: FlowKind::Latex,
+            width,
+            height,
+            margin_top: CARD_BLOCK_MARGIN,
+            margin_bottom: CARD_BLOCK_MARGIN,
+            plain: if empty {
+                "Add an equation".to_string()
+            } else {
+                latex.to_string()
+            },
+            prims: vec![
+                Prim::Quad {
+                    rect: FlowRect::new(0.0, 0.0, width, height),
+                    fill: Some(self.palette.background_secondary),
+                    border: Some(self.palette.border),
+                    radius: 8.0,
+                    dashed: false,
+                },
+                Prim::Text {
+                    x: pad_x,
+                    y: text_y,
+                    layout,
+                    clip: Some(FlowRect::new(pad_x, pad_y, inner, height - 2.0 * pad_y)),
+                },
+            ],
+            text: None,
+            prefix: None,
+            code_scroll: None,
+        }
+    }
+
     pub(super) fn unknown_body(&mut self, flavour: &str, block_id: &str, width: f32) -> BlockBody {
         let pad = 12.0;
         let inner = (width - 2.0 * pad).max(1.0);

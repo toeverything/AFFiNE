@@ -155,6 +155,9 @@ pub enum BlockContent {
     EdgelessText {
         xywh: String,
     },
+    Latex {
+        latex: String,
+    },
     /// Any flavour without a typed reader, kept with its identity and property keys.
     Unknown(UnknownBlock),
 }
@@ -447,6 +450,9 @@ impl SnapshotReader<'_> {
             },
             "affine:edgeless-text" => BlockContent::EdgelessText {
                 xywh: string(entries.get("prop:xywh")).unwrap_or_default(),
+            },
+            "affine:latex" => BlockContent::Latex {
+                latex: string(entries.get("prop:latex")).unwrap_or_default(),
             },
             _ => BlockContent::Unknown(UnknownBlock {
                 id: id.to_string(),
