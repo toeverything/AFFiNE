@@ -112,7 +112,7 @@ resolver = "3"
     "Win32_UI_Shell_PropertiesSystem",
   ] }
   windows-core = { version = "0.62" }
-  y-octo = { version = "0.4.0", features = ["large_refs"] }
+  y-octo = { version = "0.4.2", features = ["large_refs"] }
   zeroize = "1.9"
   zip = "9.0.5"
 

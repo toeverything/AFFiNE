@@ -30,7 +30,14 @@ pub(super) async fn sync_documents(
   let legacy_active = if workspace_lifecycle_active_in(&mut transaction).await? {
     None
   } else {
-    let legacy = load_legacy_workspace_in(&mut transaction, workspace_id).await?;
+    let legacy = load_legacy_workspace_in(&mut transaction, workspace_id)
+      .await
+      .map_err(|error| match error {
+        RuntimeError::InvalidState(reason) | RuntimeError::SearchSourceInvalid(reason) => {
+          RuntimeError::invalid_state(format!("embedding_legacy_root_invalid: {reason}"))
+        }
+        error => error,
+      })?;
     Some((legacy.active_doc_ids(), legacy.revision))
   };
   let states = load_doc_states_in(&mut transaction, workspace_id, &doc_ids)

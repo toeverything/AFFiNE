@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { McpAccessMode } from '@prisma/client';
 import z from 'zod/v3';
 
@@ -357,8 +357,13 @@ export class WorkspaceMcpProvider {
                 message: 'Document updated successfully',
               })
             );
-          } catch {
-            return notFoundError;
+          } catch (error) {
+            if (error instanceof NotFoundException) {
+              return notFoundError;
+            }
+            return toolError(
+              `Failed to update document: ${error instanceof Error ? error.message : 'Unknown error'}`
+            );
           }
         },
       });
@@ -415,8 +420,13 @@ export class WorkspaceMcpProvider {
                 message: 'Document title updated successfully',
               })
             );
-          } catch {
-            return notFoundError;
+          } catch (error) {
+            if (error instanceof NotFoundException) {
+              return notFoundError;
+            }
+            return toolError(
+              `Failed to update document metadata: ${error instanceof Error ? error.message : 'Unknown error'}`
+            );
           }
         },
       });

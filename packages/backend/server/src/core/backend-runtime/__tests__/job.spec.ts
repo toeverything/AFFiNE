@@ -155,6 +155,90 @@ test.after.always(async t => {
   await t.context.module?.close();
 });
 
+function createDocRunner(
+  module: TestingModule,
+  runtime: BackendRuntimeProvider
+) {
+  const models = module.get(Models);
+  const service = new BackendRuntimeEmbeddingService(runtime, models);
+  const runner = new DocJobRunner(
+    module.get(DatabaseDocReader),
+    module.get(PrismaClient),
+    models,
+    runtime,
+    service,
+    module.get(StorageRuntimeProvider),
+    module.get(DocStorageOptions),
+    module.get(EventBus)
+  );
+  return { runner, service };
+}
+
+test('embedding skips a broken legacy workspace before the batch limit and retries it after repair', async t => {
+  const { module } = t.context;
+  const runtime = new BackendRuntimeProvider(module.get(ServerConfigHandle));
+  const db = module.get(PrismaClient);
+  const broken = randomUUID();
+  const healthy = randomUUID();
+  const root = await t.context.getCurrentWorkspaceDocV1(
+    'workspace-1',
+    'workspace-1'
+  );
+  const body = await t.context.getCurrentWorkspaceDocV1('workspace-1', 'doc-1');
+  await runtime.start();
+  try {
+    await runtime.runMigrations();
+    await db.$executeRaw`INSERT INTO workspaces(id,enable_doc_embedding) VALUES(${broken},true),(${healthy},true)`;
+    await db.$executeRaw`INSERT INTO snapshots(workspace_id,guid,blob,updated_at)
+      VALUES(${broken},${broken},decode('ff','hex'),to_timestamp(1)),
+            (${healthy},${healthy},${root.bin},to_timestamp(2)),
+            (${healthy},'doc-1',${body.bin},to_timestamp(2))`;
+    await db.$executeRaw`INSERT INTO snapshots(workspace_id,guid,blob,updated_at)
+      SELECT ${broken},'doc-'||i::text,${body.bin},to_timestamp(1) FROM generate_series(1,100) i`;
+    const { runner, service } = createDocRunner(module, runtime);
+    const sync = Sinon.spy(service, 'syncDocument');
+    t.deepEqual(await runner.syncEmbeddingDocuments(), {
+      scannedDocuments: 100,
+      syncedDocuments: 0,
+    });
+    t.is(sync.callCount, 1);
+    t.deepEqual(await runner.syncEmbeddingDocuments(), {
+      scannedDocuments: 1,
+      syncedDocuments: 1,
+    });
+    t.is(sync.lastCall.args[0], healthy);
+
+    await db.$executeRaw`UPDATE snapshots SET blob=${root.bin},updated_at=to_timestamp(3)
+      WHERE workspace_id=${broken} AND guid=${broken}`;
+    t.deepEqual(await runner.syncEmbeddingDocuments(), {
+      scannedDocuments: 0,
+      syncedDocuments: 0,
+    });
+    const retryTime = Date.now() + 5 * 60_000 + 1;
+    const now = Sinon.stub(Date, 'now').returns(retryTime);
+    try {
+      t.deepEqual(await runner.syncEmbeddingDocuments(), {
+        scannedDocuments: 100,
+        syncedDocuments: 100,
+      });
+    } finally {
+      now.restore();
+    }
+    const rows = await db.$queryRaw<{ reason: string | null }[]>`
+      SELECT document_projection->>'skipReason' AS reason FROM embedding_sources
+      WHERE workspace_id IN (${broken},${healthy}) AND source_key='doc-1'`;
+    t.is(rows.length, 2);
+    t.true(rows.every(row => row.reason === null));
+  } finally {
+    await runtime.stop();
+    await db.$executeRaw`DELETE FROM embedding_sources WHERE workspace_id IN (${broken},${healthy})`;
+    await db.$executeRaw`DELETE FROM embedding_workspace_states WHERE workspace_id IN (${broken},${healthy})`;
+    await db.$executeRaw`DELETE FROM snapshots WHERE workspace_id IN (${broken},${healthy})`;
+    await db.$executeRaw`DELETE FROM search_projection.workspace_states WHERE workspace_id IN (${broken},${healthy})`;
+    await db.$executeRaw`DELETE FROM workspaces WHERE id IN (${broken},${healthy})`;
+  }
+});
+
 test('backend-runtime jobs ingest documents and clean runtime state', async t => {
   await t.context.embeddingService.syncDocument('workspace-1', 'doc-1', '1');
   t.is(t.context.getCurrentWorkspaceDocV1.callCount, 1);
@@ -410,20 +494,7 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
       FROM generate_series(1,100) i`;
     await db.$executeRaw`INSERT INTO snapshots(workspace_id,guid,blob,updated_at)
       VALUES(${workspaceId},'healthy',${healthySnapshot.bin},to_timestamp(2))`;
-    const service = new BackendRuntimeEmbeddingService(
-      nativeProvider,
-      module.get(Models)
-    );
-    const runner = new DocJobRunner(
-      module.get(DatabaseDocReader),
-      db,
-      module.get(Models),
-      nativeProvider,
-      service,
-      module.get(StorageRuntimeProvider),
-      module.get(DocStorageOptions),
-      module.get(EventBus)
-    );
+    const { runner, service } = createDocRunner(module, nativeProvider);
     await t.throwsAsync(
       () => nativeProvider.getCurrentWorkspaceDocV1(workspaceId, 'bad-001'),
       {
