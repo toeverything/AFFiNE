@@ -48,6 +48,17 @@ dependencies = [
 [[package]]
 name = "affine-ios-host"
 version = "0.1.0"
+dependencies = [
+ "affine-store",
+ "blocksuite-playground-doc",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.21",
+ "tokio",
+ "uuid",
+]
 
 [[package]]
 name = "affine-legacy-import"

@@ -364,6 +364,9 @@ final class MetalHostView: UIView, UITextInput {
 
 final class MetalHostViewController: UIViewController {
   private let hostView = MetalHostView()
+  private let bootstrapCoordinator = HostBootstrapCoordinator()
+  private(set) var lastBootstrapError: Error?
+  private var bootstrapCompleted = false
   private var hostHandle: OpaquePointer?
   private var metalDevice: MTLDevice?
   private var commandQueue: MTLCommandQueue?
@@ -397,6 +400,27 @@ final class MetalHostViewController: UIViewController {
     hostView.hostHandle = handle
     observeNotifications()
     startDisplayLink()
+    retryBootstrapIfNeeded()
+  }
+
+  /// Run or retry legacy `capacitor://localhost` bootstrap, retaining any error for recovery UI.
+  @MainActor
+  func retryBootstrapIfNeeded() {
+    guard !bootstrapCompleted else {
+      return
+    }
+    Task { @MainActor [weak self] in
+      guard let self else {
+        return
+      }
+      do {
+        _ = try await self.bootstrapCoordinator.bootstrapFromLegacyStorage()
+        self.lastBootstrapError = nil
+        self.bootstrapCompleted = true
+      } catch {
+        self.lastBootstrapError = error
+      }
+    }
   }
 
   override func viewSafeAreaInsetsDidChange() {
@@ -454,16 +478,17 @@ final class MetalHostViewController: UIViewController {
 
   func handleDisplayLinkTick(_ link: CADisplayLink) {
     publishInsetsIfChanged()
-    guard let handle = hostHandle else {
-      return
-    }
-    let clearRgba = affine_ios_host_render_frame(handle, link.timestamp)
     guard
-      clearRgba != 0,
+      let handle = hostHandle,
+      affine_ios_host_is_dirty(handle),
       let queue = commandQueue,
       let drawable = hostView.metalLayer.nextDrawable(),
       let commandBuffer = queue.makeCommandBuffer()
     else {
+      return
+    }
+    let clearRgba = affine_ios_host_render_frame(handle, link.timestamp)
+    guard clearRgba != 0 else {
       return
     }
     let red = Double((clearRgba >> 24) & 0xFF) / 255.0
@@ -480,9 +505,11 @@ final class MetalHostViewController: UIViewController {
       blue: blue,
       alpha: alpha
     )
-    if let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass) {
-      encoder.endEncoding()
+    guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass) else {
+      affine_ios_host_request_frame(handle)
+      return
     }
+    encoder.endEncoding()
     commandBuffer.present(drawable)
     commandBuffer.commit()
   }
@@ -511,9 +538,13 @@ final class MetalHostViewController: UIViewController {
 
   @objc private func handleDidEnterBackground() {
     displayLink?.isPaused = true
+    bootstrapCoordinator.checkpointAllPassive()
   }
 
   @objc private func handleWillEnterForeground() {
+    if let handle = hostHandle {
+      affine_ios_host_request_frame(handle)
+    }
     displayLink?.isPaused = false
   }
 

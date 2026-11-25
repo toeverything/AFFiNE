@@ -3,8 +3,15 @@
 //! Thin iOS C-ABI host crate (`affine-ios-host`).
 //!
 //! Owns the authoritative UTF-16 text editing state (surrogate-pair safe),
-//! clamped selection/marked ranges, safe-area and IME insets, and frame tick
-//! accounting behind the `include/affine_mobile_host.h` C ABI.
+//! clamped selection/marked ranges, safe-area and IME insets, frame tick
+//! accounting, in-place 0.27.5 SQLite WAL co-storage, Keychain 2001-epoch
+//! token compatibility, and zero-IDB `capacitor://localhost` upgrade/rollback
+//! bridges behind `include/affine_mobile_host.h`.
+
+pub mod auth;
+pub mod ffi;
+pub mod legacy_storage;
+pub mod workspace_store;
 
 /// C-ABI window insets matching `AffineWindowInsets` in `include/affine_mobile_host.h`.
 #[repr(C)]
@@ -36,6 +43,7 @@ pub struct IosHostState {
     insets: AffineWindowInsets,
     frame_count: u64,
     last_frame_timestamp_sec: f64,
+    dirty: bool,
     utf16_text: Vec<u16>,
     selected_range: AffineUtf16Range,
     marked_range: Option<AffineUtf16Range>,
@@ -51,6 +59,7 @@ impl IosHostState {
             } else {
                 1.0
             },
+            dirty: true,
             ..Self::default()
         }
     }
@@ -61,16 +70,21 @@ impl IosHostState {
         if scale_factor.is_finite() && scale_factor > 0.0 {
             self.scale_factor = scale_factor;
         }
+        self.dirty = true;
     }
 
     pub fn set_insets(&mut self, insets: AffineWindowInsets) {
-        self.insets = AffineWindowInsets {
+        let next = AffineWindowInsets {
             safe_top: insets.safe_top.max(0.0),
             safe_right: insets.safe_right.max(0.0),
             safe_bottom: insets.safe_bottom.max(0.0),
             safe_left: insets.safe_left.max(0.0),
             ime_bottom: insets.ime_bottom.max(0.0),
         };
+        if next != self.insets {
+            self.insets = next;
+            self.dirty = true;
+        }
     }
 
     pub fn insets(&self) -> AffineWindowInsets {
@@ -79,7 +93,20 @@ impl IosHostState {
 
     pub const DEFAULT_CLEAR_COLOR_RGBA: u32 = 0x1414_14FF;
 
+    /// Mark the host surface dirty so the next `render_frame` tick draws.
+    pub fn request_frame(&mut self) {
+        self.dirty = true;
+    }
+
+    pub fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+
     pub fn render_frame(&mut self, timestamp_sec: f64) -> u32 {
+        if !self.dirty {
+            return 0;
+        }
+        self.dirty = false;
         self.frame_count = self.frame_count.saturating_add(1);
         if timestamp_sec.is_finite() {
             self.last_frame_timestamp_sec = timestamp_sec;
@@ -119,6 +146,7 @@ impl IosHostState {
             length: 0,
         };
         self.marked_range = None;
+        self.dirty = true;
     }
 
     /// Deletes the active selection, or one full UTF-16 scalar (including
@@ -134,6 +162,7 @@ impl IosHostState {
                 length: 0,
             };
             self.shrink_marked_range(start, end);
+            self.dirty = true;
             return;
         }
         if sel.location == 0 {
@@ -154,6 +183,7 @@ impl IosHostState {
             length: 0,
         };
         self.shrink_marked_range(start, end);
+        self.dirty = true;
     }
 
     /// Deletes an explicit UTF-16 range (for grapheme clusters such as multi-codepoint
@@ -172,11 +202,16 @@ impl IosHostState {
             length: 0,
         };
         self.shrink_marked_range(start, end);
+        self.dirty = true;
     }
 
     /// Updates the active UTF-16 selection range (clamped to current buffer bounds).
     pub fn set_selected_range(&mut self, range: AffineUtf16Range) {
-        self.selected_range = self.clamp_range(range);
+        let next = self.clamp_range(range);
+        if next != self.selected_range {
+            self.selected_range = next;
+            self.dirty = true;
+        }
     }
 
     /// Replaces an explicit UTF-16 range with `utf16`, moves the caret to the end
@@ -192,6 +227,7 @@ impl IosHostState {
             length: 0,
         };
         self.marked_range = None;
+        self.dirty = true;
     }
 
     pub fn set_marked_text(&mut self, utf16: &[u16], selected_in_marked: AffineUtf16Range) {
@@ -218,10 +254,13 @@ impl IosHostState {
                 length: rel_len,
             };
         }
+        self.dirty = true;
     }
 
     pub fn unmark_text(&mut self) {
-        self.marked_range = None;
+        if self.marked_range.take().is_some() {
+            self.dirty = true;
+        }
     }
 
     fn clamp_range(&self, range: AffineUtf16Range) -> AffineUtf16Range {
@@ -261,220 +300,6 @@ impl IosHostState {
     }
 }
 
-#[allow(unsafe_code)]
-pub mod ffi {
-    use core::ffi::c_void;
-
-    use super::{AffineUtf16Range, AffineWindowInsets, IosHostState};
-
-    /// Opaque C-ABI handle matching `typedef struct AffineIosHost AffineIosHost`.
-    pub struct AffineIosHost {
-        state: IosHostState,
-        _metal_layer: *mut c_void,
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn affine_ios_host_create(
-        metal_layer: *mut c_void,
-        width_pt: f32,
-        height_pt: f32,
-        scale_factor: f32,
-    ) -> *mut AffineIosHost {
-        let host = Box::new(AffineIosHost {
-            state: IosHostState::new(width_pt, height_pt, scale_factor),
-            _metal_layer: metal_layer,
-        });
-        Box::into_raw(host)
-    }
-
-    /// # Safety
-    /// `host` must be null or a pointer returned once by `affine_ios_host_create`.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_destroy(host: *mut AffineIosHost) {
-        if host.is_null() {
-            return;
-        }
-        // SAFETY: Caller transfers ownership back to Rust exactly once.
-        let _ = unsafe { Box::from_raw(host) };
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_resize(
-        host: *mut AffineIosHost,
-        width_pt: f32,
-        height_pt: f32,
-        scale_factor: f32,
-    ) {
-        let Some(host) = (unsafe { host.as_mut() }) else {
-            return;
-        };
-        host.state.resize(width_pt, height_pt, scale_factor);
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_set_insets(
-        host: *mut AffineIosHost,
-        insets: AffineWindowInsets,
-    ) {
-        let Some(host) = (unsafe { host.as_mut() }) else {
-            return;
-        };
-        host.state.set_insets(insets);
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_render_frame(
-        host: *mut AffineIosHost,
-        frame_timestamp_sec: f64,
-    ) -> u32 {
-        let Some(host) = (unsafe { host.as_mut() }) else {
-            return 0;
-        };
-        host.state.render_frame(frame_timestamp_sec)
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer; `utf16_ptr` must be valid for `utf16_len` reads when non-zero.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_insert_text(
-        host: *mut AffineIosHost,
-        utf16_ptr: *const u16,
-        utf16_len: usize,
-    ) {
-        let Some(host) = (unsafe { host.as_mut() }) else {
-            return;
-        };
-        let slice = if utf16_len == 0 || utf16_ptr.is_null() {
-            &[]
-        } else {
-            // SAFETY: Caller guarantees `utf16_ptr` points to `utf16_len` initialized `u16`s.
-            unsafe { core::slice::from_raw_parts(utf16_ptr, utf16_len) }
-        };
-        host.state.insert_text(slice);
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_delete_backward(host: *mut AffineIosHost) {
-        let Some(host) = (unsafe { host.as_mut() }) else {
-            return;
-        };
-        host.state.delete_backward();
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_delete_range(
-        host: *mut AffineIosHost,
-        range: AffineUtf16Range,
-    ) {
-        let Some(host) = (unsafe { host.as_mut() }) else {
-            return;
-        };
-        host.state.delete_range(range);
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_set_selected_range(
-        host: *mut AffineIosHost,
-        range: AffineUtf16Range,
-    ) {
-        let Some(host) = (unsafe { host.as_mut() }) else {
-            return;
-        };
-        host.state.set_selected_range(range);
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer; `utf16_ptr` must be valid for `utf16_len` reads when non-zero.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_replace_range(
-        host: *mut AffineIosHost,
-        range: AffineUtf16Range,
-        utf16_ptr: *const u16,
-        utf16_len: usize,
-    ) {
-        let Some(host) = (unsafe { host.as_mut() }) else {
-            return;
-        };
-        let slice = if utf16_len == 0 || utf16_ptr.is_null() {
-            &[]
-        } else {
-            // SAFETY: Caller guarantees `utf16_ptr` points to `utf16_len` initialized `u16`s.
-            unsafe { core::slice::from_raw_parts(utf16_ptr, utf16_len) }
-        };
-        host.state.replace_range(range, slice);
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer; `utf16_ptr` must be valid for `utf16_len` reads when non-zero.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_set_marked_text(
-        host: *mut AffineIosHost,
-        utf16_ptr: *const u16,
-        utf16_len: usize,
-        selected_range: AffineUtf16Range,
-    ) {
-        let Some(host) = (unsafe { host.as_mut() }) else {
-            return;
-        };
-        let slice = if utf16_len == 0 || utf16_ptr.is_null() {
-            &[]
-        } else {
-            // SAFETY: Caller guarantees `utf16_ptr` points to `utf16_len` initialized `u16`s.
-            unsafe { core::slice::from_raw_parts(utf16_ptr, utf16_len) }
-        };
-        host.state.set_marked_text(slice, selected_range);
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_unmark_text(host: *mut AffineIosHost) {
-        let Some(host) = (unsafe { host.as_mut() }) else {
-            return;
-        };
-        host.state.unmark_text();
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_selected_range(
-        host: *const AffineIosHost,
-    ) -> AffineUtf16Range {
-        let Some(host) = (unsafe { host.as_ref() }) else {
-            return AffineUtf16Range::default();
-        };
-        host.state.selected_range()
-    }
-
-    /// # Safety
-    /// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-    #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn affine_ios_host_marked_range(
-        host: *const AffineIosHost,
-    ) -> AffineUtf16Range {
-        let Some(host) = (unsafe { host.as_ref() }) else {
-            return AffineUtf16Range {
-                location: u32::MAX,
-                length: 0,
-            };
-        };
-        host.state.marked_range()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -493,7 +318,6 @@ mod tests {
             }
         );
 
-        // Single backspace must delete the full 2-unit surrogate pair for 😀.
         state.delete_backward();
         assert_eq!(String::from_utf16(state.utf16_text()).unwrap(), "A");
         assert_eq!(
@@ -530,8 +354,6 @@ mod tests {
         state.unmark_text();
         assert_eq!(state.marked_range().location, u32::MAX);
 
-        // Multi-codepoint ZWJ family Emoji cluster (11 UTF-16 units) deleted atomically via delete_range.
-        // Buffer currently holds "An" (2 UTF-16 units) with caret at 2.
         let zwj_family: Vec<u16> = "👨‍👩‍👧‍👦".encode_utf16().collect();
         assert_eq!(zwj_family.len(), 11);
         state.insert_text(&zwj_family);
@@ -561,7 +383,6 @@ mod tests {
             ime_bottom: -5.0,
         });
         assert_eq!(state.insets().ime_bottom, 0.0);
-        // Absolute keyboard overlap preserves full height without subtracting safe_bottom.
         state.set_insets(AffineWindowInsets {
             safe_top: 59.0,
             safe_right: 0.0,
@@ -574,6 +395,15 @@ mod tests {
         let color = state.render_frame(1.25);
         assert_eq!(color, IosHostState::DEFAULT_CLEAR_COLOR_RGBA);
         assert_eq!(state.frame_count(), 1);
+        // Idle frame returns 0 and skips GPU submission until dirty again.
+        assert_eq!(state.render_frame(1.266), 0);
+        assert_eq!(state.frame_count(), 1);
+        state.request_frame();
+        assert_eq!(
+            state.render_frame(1.283),
+            IosHostState::DEFAULT_CLEAR_COLOR_RGBA
+        );
+        assert_eq!(state.frame_count(), 2);
     }
 
     #[test]
@@ -600,7 +430,6 @@ mod tests {
             }
         );
 
-        // Spellcheck autocorrect: "teh cat" -> replace 0..3 with "the" -> "the cat" (caret at 3).
         let mut spell = IosHostState::new(390.0, 844.0, 3.0);
         let teh_cat: Vec<u16> = "teh cat".encode_utf16().collect();
         spell.insert_text(&teh_cat);
