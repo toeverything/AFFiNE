@@ -25,6 +25,13 @@ pub(crate) async fn handle_get_avatar(
     Err(err) => return err.into_http_response(),
   };
   let https = state.app.config.load().https;
+  if !matches!(state.app.avatars.backend_identity().kind.as_str(), "fs" | "assetpack") {
+    let mut resp = domain_error_to_http_response(&DomainError::Forbidden(
+      "Only available when avatar storage provider is fs or assetpack.".into(),
+    ));
+    resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    return resp;
+  }
   if id.is_empty() || id.contains('/') || id.contains('\\') || id.contains("..") || id.contains('\0') {
     let mut resp = envelope_to_http_response(LegacyErrorEnvelope {
       status: StatusCode::NOT_FOUND.as_u16(),
@@ -648,8 +655,14 @@ pub(crate) async fn handle_get_comment_attachment(
       return resp;
     }
   };
-  let object_key = format!("{}/{}/{}", meta.workspace_id, meta.doc_id, meta.key);
-  let (bytes, obj_meta) = match state.app.comment_attachments.get(&object_key).await {
+  let shared_key = format!("comment-attachments/{}/{}/{}", meta.workspace_id, meta.doc_id, meta.key);
+  let legacy_key = format!("{}/{}/{}", meta.workspace_id, meta.doc_id, meta.key);
+  let loaded = match state.app.blobs.storage().get(&shared_key).await {
+    Ok(Some(v)) => Ok(Some(v)),
+    Ok(None) => state.app.comment_attachments.get(&legacy_key).await,
+    Err(err) => Err(err),
+  };
+  let (bytes, obj_meta) = match loaded {
     Ok(Some(v)) => v,
     Ok(None) => {
       let mut resp = envelope_to_http_response(LegacyErrorEnvelope {

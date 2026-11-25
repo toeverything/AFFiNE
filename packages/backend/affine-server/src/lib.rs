@@ -408,6 +408,51 @@ pub fn effective_runtime_flags(channel_arg: Option<&str>, node_env: Option<&str>
   (channel, dev_mode)
 }
 
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct RedisRuntimeConfigFile {
+  host: String,
+  port: u16,
+  db: u8,
+  username: String,
+  password: String,
+  ioredis: RedisIoRuntimeConfigFile,
+}
+
+#[derive(Default, serde::Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct RedisIoRuntimeConfigFile {
+  tls: Option<serde_json::Value>,
+}
+
+impl Default for RedisRuntimeConfigFile {
+  fn default() -> Self {
+    Self {
+      host: "localhost".to_owned(),
+      port: 6379,
+      db: 0,
+      username: String::new(),
+      password: String::new(),
+      ioredis: Default::default(),
+    }
+  }
+}
+
+impl RedisRuntimeConfigFile {
+  fn validate(&self) -> Result<(), ServerError> {
+    if self.port == 0 || self.db > 10 {
+      return Err(ServerError::InvalidConfig(
+        "redis.port must be positive and redis.db must be at most 10".into(),
+      ));
+    }
+    Ok(())
+  }
+}
+
+fn non_empty_str(s: &str) -> Option<&str> {
+  if s.trim().is_empty() { None } else { Some(s) }
+}
+
 impl ServerCli {
   /// Effective listen IP (`LISTEN_ADDR` overrides `AFFINE_SERVER_HOST`).
   pub fn effective_host(&self) -> IpAddr {
@@ -425,33 +470,87 @@ impl ServerCli {
   /// `REDIS_SERVER_HOST` / `REDIS_SERVER_PORT` / `REDIS_SERVER_DATABASE` /
   /// `REDIS_SERVER_USERNAME` / `REDIS_SERVER_PASSWORD`.
   pub fn effective_redis_url(&self) -> Option<String> {
-    if let Some(url) = self.redis_url.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
-      return Some(url.to_owned());
+    self
+      .effective_redis_url_with_file(&serde_json::Value::Null)
+      .ok()
+      .flatten()
+  }
+
+  /// Effective Redis URL combining CLI/env overrides with file config `redis.*`
+  /// fallbacks (`REDIS_URL`/`REDIS_SERVER_URL` > `REDIS_SERVER_*` > file `redis.*`).
+  pub fn effective_redis_url_with_file(&self, file_json: &serde_json::Value) -> Result<Option<String>, ServerError> {
+    let file_cfg: Option<RedisRuntimeConfigFile> = match file_json.get("redis") {
+      None | Some(serde_json::Value::Null) => None,
+      Some(v) => {
+        let parsed: RedisRuntimeConfigFile =
+          serde_json::from_value(v.clone()).map_err(|_| ServerError::InvalidConfig("invalid Redis config".into()))?;
+        parsed.validate()?;
+        Some(parsed)
+      }
+    };
+    if let Some(url) = self
+      .redis_url
+      .as_deref()
+      .and_then(non_empty_str)
+      .map(str::to_owned)
+      .or_else(|| std::env::var("REDIS_SERVER_URL").ok().filter(|s| !s.trim().is_empty()))
+    {
+      let parsed = url::Url::parse(&url).map_err(|_| ServerError::InvalidConfig("invalid Redis URL".into()))?;
+      if !matches!(parsed.scheme(), "redis" | "rediss") || parsed.host_str().is_none_or(str::is_empty) {
+        return Err(ServerError::InvalidConfig("invalid Redis URL".into()));
+      }
+      return Ok(Some(parsed.to_string()));
     }
+    let env_user_alt = std::env::var("REDIS_SERVER_USER").ok().filter(|s| !s.trim().is_empty());
+    let has_cli_env = self.redis_server_host.as_deref().and_then(non_empty_str).is_some()
+      || self.redis_server_port.is_some()
+      || self.redis_server_database.is_some()
+      || self.redis_server_username.as_deref().and_then(non_empty_str).is_some()
+      || env_user_alt.is_some()
+      || self.redis_server_password.as_deref().and_then(non_empty_str).is_some();
+    if !has_cli_env && file_cfg.is_none() {
+      return Ok(None);
+    }
+    let file = file_cfg.unwrap_or_default();
     let host = self
       .redis_server_host
       .as_deref()
-      .map(str::trim)
-      .filter(|s| !s.is_empty())?;
-    let port = self.redis_server_port.unwrap_or(6379);
-    let db = self.redis_server_database.unwrap_or(0);
-    let user = self
+      .and_then(non_empty_str)
+      .or_else(|| non_empty_str(&file.host));
+    let Some(host) = host else {
+      return Ok(None);
+    };
+    let port = self.redis_server_port.unwrap_or(file.port);
+    let db = self.redis_server_database.unwrap_or(file.db);
+    let username = self
       .redis_server_username
       .as_deref()
-      .map(str::trim)
-      .filter(|s| !s.is_empty());
-    let pass = self
+      .and_then(non_empty_str)
+      .map(str::to_owned)
+      .or(env_user_alt)
+      .unwrap_or(file.username);
+    let password = self
       .redis_server_password
       .as_deref()
-      .map(str::trim)
-      .filter(|s| !s.is_empty());
-    let auth = match (user, pass) {
-      (Some(u), Some(p)) => format!("{u}:{p}@"),
-      (Some(u), None) => format!("{u}@"),
-      (None, Some(p)) => format!(":{p}@"),
-      (None, None) => String::new(),
-    };
-    Some(format!("redis://{auth}{host}:{port}/{db}"))
+      .and_then(non_empty_str)
+      .map(str::to_owned)
+      .unwrap_or(file.password);
+    let scheme = if file.ioredis.tls.is_some() { "rediss" } else { "redis" };
+    if host
+      .chars()
+      .any(|c| c.is_whitespace() || matches!(c, '@' | '/' | '?' | '#'))
+    {
+      return Err(ServerError::InvalidConfig("invalid Redis host".into()));
+    }
+    let mut url = url::Url::parse(&format!("{scheme}://{host}:{port}/{db}"))
+      .map_err(|_| ServerError::InvalidConfig("invalid Redis host".into()))?;
+    if !username.is_empty() {
+      let _ = url.set_username(&username);
+    }
+    if !password.is_empty() {
+      let _ = url.set_password(Some(&password));
+    }
+    Ok(Some(url.to_string()))
   }
 
   /// Resolves the effective [`ServerRole`], preferring `--role` / `AFFINE_SERVER_ROLE`,
@@ -650,15 +749,15 @@ async fn build_server_with_bound_port(
   })
   .await?;
 
-  let effective_redis_url = cli.effective_redis_url();
+  let effective_redis_url = cli.effective_redis_url_with_file(&file_json)?;
   let (redis_client, redis_db_index, session_redis_url_str, session_redis_db_index, session_mutex, redis_runtime_cfg) =
     match effective_redis_url.as_deref() {
       Some(url) => {
+        let runtime_cfg = RedisRuntimeConfig::from_redis_url(url)?;
         let base_db = parse_redis_db_index(url)?;
         let (session_url, session_db) = session_redis_url(url)?;
         let client = redis::Client::open(url)?;
         let mutex = RedisMutex::new(&session_url, cli.redis_key_prefix.clone())?;
-        let runtime_cfg = RedisRuntimeConfig::from_redis_url(url)?;
         (
           Some(client),
           base_db,
@@ -680,15 +779,80 @@ async fn build_server_with_bound_port(
     ignore_tls: cli.mailer_ignore_tls,
   };
 
-  let env_redis_url_raw = std::env::var("REDIS_URL")
-    .ok()
-    .filter(|v| !v.trim().is_empty())
+  let mut env_keys = std::collections::BTreeSet::new();
+  let env_redis_url_raw = cli
+    .redis_url
+    .as_deref()
+    .map(str::trim)
+    .filter(|v| !v.is_empty())
+    .map(str::to_owned)
+    .or_else(|| std::env::var("REDIS_URL").ok().filter(|v| !v.trim().is_empty()))
     .or_else(|| std::env::var("REDIS_SERVER_URL").ok().filter(|v| !v.trim().is_empty()));
   let redis_url_has_password = env_redis_url_raw
     .as_deref()
     .and_then(|u| url::Url::parse(u).ok())
     .and_then(|u| u.password().map(|p| !p.is_empty()))
     .unwrap_or(false);
+  if env_redis_url_raw.is_some() {
+    for k in [
+      "redis.host",
+      "redis.port",
+      "redis.db",
+      "redis.username",
+      "redis.password",
+    ] {
+      env_keys.insert(k.to_owned());
+    }
+  } else {
+    if cli.redis_server_host.as_deref().is_some_and(|s| !s.trim().is_empty()) {
+      env_keys.insert("redis.host".to_owned());
+    }
+    if cli.redis_server_port.is_some() {
+      env_keys.insert("redis.port".to_owned());
+    }
+    if cli.redis_server_database.is_some() {
+      env_keys.insert("redis.db".to_owned());
+    }
+    if cli
+      .redis_server_username
+      .as_deref()
+      .is_some_and(|s| !s.trim().is_empty())
+      || std::env::var("REDIS_SERVER_USER").is_ok_and(|v| !v.trim().is_empty())
+    {
+      env_keys.insert("redis.username".to_owned());
+    }
+    if cli
+      .redis_server_password
+      .as_deref()
+      .is_some_and(|s| !s.trim().is_empty())
+    {
+      env_keys.insert("redis.password".to_owned());
+    }
+  }
+  if cli.external_url.as_deref().is_some_and(|s| !s.trim().is_empty()) {
+    env_keys.insert("server.externalUrl".to_owned());
+  }
+  if cli.listen_addr.is_some() {
+    env_keys.insert("server.listenAddr".to_owned());
+  }
+  if cli.mailer_host.as_deref().is_some_and(|s| !s.trim().is_empty()) {
+    env_keys.insert("mailer.SMTP.host".to_owned());
+  }
+  if cli.mailer_port.is_some() {
+    env_keys.insert("mailer.SMTP.port".to_owned());
+  }
+  if cli.mailer_servername.as_deref().is_some_and(|s| !s.trim().is_empty()) {
+    env_keys.insert("mailer.SMTP.name".to_owned());
+  }
+  if cli.mailer_sender.as_deref().is_some_and(|s| !s.trim().is_empty()) {
+    env_keys.insert("mailer.SMTP.sender".to_owned());
+  }
+  if cli.mailer_user.as_deref().is_some_and(|s| !s.trim().is_empty()) {
+    env_keys.insert("mailer.SMTP.username".to_owned());
+  }
+  if cli.mailer_password.as_deref().is_some_and(|s| !s.trim().is_empty()) {
+    env_keys.insert("mailer.SMTP.password".to_owned());
+  }
   let app_config_baseline = RuntimeAppConfigBaseline {
     server: ServerRuntimeConfig {
       name: server_name.clone(),
@@ -704,9 +868,10 @@ async fn build_server_with_bound_port(
     smtp: smtp_runtime_cfg,
     fallback_smtp: SmtpRuntimeConfig::default(),
     file_json,
+    env_keys,
+    redis_configured: effective_redis_url.is_some(),
     redis_url_env_set: env_redis_url_raw.is_some(),
     redis_url_has_password,
-    ..RuntimeAppConfigBaseline::default()
   };
 
   let config = RuntimeConfig {
@@ -724,6 +889,7 @@ async fn build_server_with_bound_port(
     refresh_retention_secs: server_domain::auth::DEFAULT_REFRESH_RETENTION_SECS,
     smtp_password: cli.mailer_password.clone().unwrap_or_default(),
     app_config_baseline: app_config_baseline.clone(),
+    ..RuntimeConfig::default()
   };
 
   let origin_channel = format!("v2:{channel}");
@@ -832,23 +998,29 @@ async fn build_server_with_bound_port(
     doc_sharing.clone(),
     Arc::clone(&event_bus),
   );
-  let app_config = AppConfigService::new(db.clone(), app_config_baseline, Arc::clone(&event_bus));
   let blob_root = std::env::var_os("HOME")
     .map(PathBuf::from)
     .unwrap_or_else(std::env::temp_dir)
     .join(".affine/storage");
   let blob_root_str = blob_root.to_string_lossy();
-  let storage = LocalFsBlobStorage::new(&blob_root_str, "blobs")
-    .map_err(|e| ServerError::InvalidConfig(format!("invalid blob storage config: {e}")))?;
-  let avatars: Arc<dyn server_blob::BlobStorageBackend> = Arc::new(
-    LocalFsBlobStorage::new(&blob_root_str, "avatars")
-      .map_err(|e| ServerError::InvalidConfig(format!("invalid avatar storage config: {e}")))?,
-  );
-  let comment_attachments: Arc<dyn server_blob::BlobStorageBackend> = Arc::new(
-    LocalFsBlobStorage::new(&blob_root_str, "comment-attachments")
-      .map_err(|e| ServerError::InvalidConfig(format!("invalid comment-attachments storage config: {e}")))?,
-  );
-  let blobs = BlobService::new(db.clone(), Arc::new(storage), ext.quota_gate());
+  let boot_storage = |name: &str, bucket: &str| -> Result<Arc<dyn server_blob::BlobStorageBackend>, ServerError> {
+    let scope = if name == "avatar" { "avatar" } else { "blob" };
+    if let Some(raw) = app_config_baseline.file_storage_config(name)
+      && let Some(spec) = server_blob::StorageBackendSpec::from_app_config_json_scoped(raw, scope, bucket)?
+    {
+      return spec
+        .build()
+        .map_err(|e| ServerError::InvalidConfig(format!("invalid {name} storage config: {e}")));
+    }
+    Ok(Arc::new(LocalFsBlobStorage::new(&blob_root_str, bucket).map_err(
+      |e| ServerError::InvalidConfig(format!("invalid {name} storage config: {e}")),
+    )?))
+  };
+  let storage = boot_storage("blob", "blobs")?;
+  let avatars = boot_storage("avatar", "avatars")?;
+  let comment_attachments = boot_storage("comment-attachments", "comment-attachments")?;
+  let app_config = AppConfigService::new(db.clone(), app_config_baseline, Arc::clone(&event_bus));
+  let blobs = BlobService::new(db.clone(), storage, ext.quota_gate());
   if cli.search_enabled && cli.search_provider == "embedded" && role != ServerRole::Allinone {
     return Err(ServerError::InvalidConfig(
       "embedded search provider is in-process and only supported with --role allinone; use elasticsearch/manticoresearch or --search-enabled=false for split roles".to_owned(),
@@ -982,6 +1154,11 @@ where
   let built = build_server_with_bound_port(&cli, ext, shutdown.clone(), Some(local_addr.port())).await?;
   if !cli.skip_schema_check {
     built.state.db.ensure_schema_ready().await?;
+    built
+      .state
+      .init_blob_storage_from_app_config()
+      .await
+      .map_err(|e| ServerError::InvalidConfig(format!("invalid blob storage app_config: {e}")))?;
     if matches!(
       built.role,
       ServerRole::Allinone | ServerRole::Front | ServerRole::Graphql
@@ -991,9 +1168,28 @@ where
     if matches!(built.role, ServerRole::Allinone | ServerRole::Worker) {
       built.state.search.initialize().await?;
     }
+  } else {
+    let _ = built.state.init_blob_storage_from_app_config().await;
   }
 
   before_serve(&built).await?;
+
+  if built.state.redis.is_some() {
+    let cfg_state = Arc::clone(&built.state);
+    built
+      .supervisor
+      .spawn(move |shutdown| async move {
+        let stop = Arc::new(tokio::sync::Notify::new());
+        let stop_sub = Arc::clone(&stop);
+        tokio::select! {
+          () = shutdown.cancelled() => {
+            stop.notify_waiters();
+          }
+          () = cfg_state.run_blob_storage_config_subscriber(stop_sub) => {}
+        }
+      })
+      .await;
+  }
 
   if matches!(built.role, ServerRole::Allinone | ServerRole::Worker) {
     built.state.search.spawn_worker_loop(&built.supervisor).await;
@@ -1062,7 +1258,7 @@ where
     )
     .await;
 
-    let hk_db = built.state.db.clone();
+    let hk_state = Arc::clone(&built.state);
     server_worker::spawn_locked_periodic_task(
       &built.supervisor,
       built.session_mutex.clone(),
@@ -1071,20 +1267,23 @@ where
       Duration::from_secs(1800),
       300,
       move |lease_cancel| {
-        let db = hk_db.clone();
+        let state = Arc::clone(&hk_state);
         async move {
           if !lease_cancel.is_cancelled()
-            && let Err(err) = server_domain::histories::cleanup_expired_snapshot_histories(&db, 1_000).await
+            && let Err(err) = server_domain::histories::cleanup_expired_snapshot_histories(&state.db, 1_000).await
           {
             tracing::warn!(error = %err, "expired snapshot_histories cleanup failed");
           }
           if !lease_cancel.is_cancelled()
-            && let Err(err) = server_domain::histories::cleanup_expired_runtime_states(&db, 1_000).await
+            && let Err(err) = server_domain::histories::cleanup_expired_runtime_states(&state.db, 1_000).await
           {
             tracing::warn!(error = %err, "expired runtime_states cleanup failed");
           }
           if !lease_cancel.is_cancelled()
-            && let Err(err) = server_domain::histories::cleanup_expired_blob_reservations(&db, 1_000).await
+            && let Err(err) = state
+              .blobs
+              .cleanup_expired_reservations(1_000, &|| lease_cancel.is_cancelled())
+              .await
           {
             tracing::warn!(error = %err, "expired blob reservation cleanup failed");
           }

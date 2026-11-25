@@ -559,8 +559,25 @@ pub(crate) async fn mutate_upload_avatar(ctx: &Context<'_>, avatar: Upload) -> R
     .await
     .map_err(|e| domain_error_to_graphql(&DomainError::Unavailable(format!("store avatar failed: {e}"))))?;
 
-  let base = state.config.load().external_url.trim_end_matches('/').to_owned();
-  let avatar_url = format!("{base}/api/avatars/{key}");
+  let cfg = state.config.load();
+  let req_host = ctx
+    .data_opt::<axum::http::HeaderMap>()
+    .and_then(|h| h.get(axum::http::header::HOST))
+    .and_then(|v| v.to_str().ok());
+  let req_origin = crate::rest::calendar_callback_origin(
+    &cfg.external_url,
+    &cfg.app_config_baseline.server.hosts,
+    cfg.app_config_baseline.server.port,
+    req_host,
+  );
+  let public_path = state
+    .app_config
+    .get_effective_app_config()
+    .await
+    .ok()
+    .and_then(|c| c.pointer("/storages/avatar/publicPath")?.as_str().map(str::to_owned))
+    .unwrap_or_else(|| "/api/avatars/".to_owned());
+  let avatar_url = format_avatar_url(&public_path, &key, &req_origin);
   let updated = state
     .users
     .update_profile(
@@ -574,8 +591,11 @@ pub(crate) async fn mutate_upload_avatar(ctx: &Context<'_>, avatar: Upload) -> R
     .map_err(|e| domain_error_to_graphql(&e))?;
 
   if let Some(old_url) = user.avatar_url.as_deref()
-    && let Some(old_key) = old_url.rsplit("/api/avatars/").next()
-    && old_key != old_url
+    && let Some(old_key) = old_url
+      .split(['?', '#'])
+      .next()
+      .and_then(|p| p.trim_end_matches('/').rsplit('/').next())
+    && !old_key.is_empty()
     && old_key != key
     && is_owned_avatar_key(&user.id, old_key)
   {
@@ -583,6 +603,18 @@ pub(crate) async fn mutate_upload_avatar(ctx: &Context<'_>, avatar: Upload) -> R
   }
 
   Ok(UserType { view: updated })
+}
+
+fn format_avatar_url(public_path: &str, key: &str, req_origin: &str) -> String {
+  let link = format!("{public_path}{key}");
+  if link.starts_with('/') {
+    url::Url::parse(req_origin)
+      .and_then(|u| u.join(&link))
+      .map(String::from)
+      .unwrap_or_else(|_| format!("{}{link}", req_origin.trim_end_matches('/')))
+  } else {
+    link
+  }
 }
 
 pub(crate) async fn mutate_remove_avatar(ctx: &Context<'_>) -> Result<RemoveAvatar> {
@@ -1324,5 +1356,19 @@ mod tests {
       db.pool().close().await;
       let _ = std::fs::remove_dir_all(&root);
     });
+  }
+
+  #[test]
+  fn format_avatar_url_matches_v0275_three_states() {
+    let origin = "http://127.0.0.1:3010";
+    assert_eq!(super::format_avatar_url("", "K", origin), "K");
+    assert_eq!(
+      super::format_avatar_url("/custom-avatars", "K", origin),
+      "http://127.0.0.1:3010/custom-avatarsK"
+    );
+    assert_eq!(
+      super::format_avatar_url("/custom-avatars/", "K", origin),
+      "http://127.0.0.1:3010/custom-avatars/K"
+    );
   }
 }

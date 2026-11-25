@@ -1,11 +1,11 @@
-//! Workspace blob GraphQL mutations and quota invalidation helpers.
+//! Workspace blob GraphQL mutations, multipart upload helpers, and quota invalidation.
 
 use std::io::Read as _;
 use std::sync::Arc;
 
-use async_graphql::{Context, Enum, Result, SimpleObject, Upload};
+use async_graphql::{Context, Enum, InputObject, Result, SimpleObject, Upload};
 use chrono::{DateTime, Utc};
-use server_blob::PutBlobOutcome;
+use server_blob::{PutBlobOutcome, UploadInitMethod, UploadedPart};
 use server_domain::events::InvalidationHintV1;
 use server_types::{DeploymentMode, DomainError};
 
@@ -21,7 +21,6 @@ pub struct ListedBlob {
   pub mime: String,
   pub created_at: String,
 }
-
 #[derive(Enum, Copy, Clone, Debug, Eq, PartialEq)]
 #[graphql(name = "BlobUploadMethod")]
 pub enum BlobUploadMethod {
@@ -29,14 +28,25 @@ pub enum BlobUploadMethod {
   Multipart,
   Presigned,
 }
-
 #[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
 #[graphql(name = "BlobUploadedPart")]
 pub struct BlobUploadedPart {
   pub etag: String,
   pub part_number: i32,
 }
-
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "BlobUploadPart")]
+pub struct BlobUploadPart {
+  pub expires_at: Option<DateTime<Utc>>,
+  pub headers: Option<JsonObjectScalar>,
+  pub upload_url: String,
+}
+#[derive(InputObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "BlobUploadPartInput")]
+pub struct BlobUploadPartInput {
+  pub etag: String,
+  pub part_number: i32,
+}
 #[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
 #[graphql(name = "BlobUploadInit")]
 pub struct BlobUploadInit {
@@ -50,7 +60,13 @@ pub struct BlobUploadInit {
   pub upload_url: Option<String>,
   pub uploaded_parts: Option<Vec<BlobUploadedPart>>,
 }
-
+fn headers_to_json_scalar(headers: Option<std::collections::BTreeMap<String, String>>) -> Option<JsonObjectScalar> {
+  headers.map(|m| {
+    JsonObjectScalar(serde_json::Value::Object(
+      m.into_iter().map(|(k, v)| (k, v.into())).collect(),
+    ))
+  })
+}
 async fn publish_quota_storage_invalidation(state: &AppState, workspace_id: &str) {
   let owner_id: Option<String> = sqlx::query_scalar(
     "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
@@ -60,19 +76,12 @@ async fn publish_quota_storage_invalidation(state: &AppState, workspace_id: &str
   .await
   .ok()
   .flatten();
-
-  let _ = state
-    .invalidation
-    .publish_invalidation(&InvalidationHintV1::QuotaStorageUsage {
-      subject: format!("workspace:{workspace_id}"),
-    })
-    .await;
-  if let Some(ref owner) = owner_id {
+  for subject in
+    std::iter::once(format!("workspace:{workspace_id}")).chain(owner_id.as_ref().map(|o| format!("user:{o}")))
+  {
     let _ = state
       .invalidation
-      .publish_invalidation(&InvalidationHintV1::QuotaStorageUsage {
-        subject: format!("user:{owner}"),
-      })
+      .publish_invalidation(&InvalidationHintV1::QuotaStorageUsage { subject })
       .await;
   }
 
@@ -80,124 +89,175 @@ async fn publish_quota_storage_invalidation(state: &AppState, workspace_id: &str
     DeploymentMode::Selfhosted => "selfhosted",
     DeploymentMode::Cloud => "cloud",
   };
-  let req1 = format!("{prefix}:event:{}", uuid::Uuid::new_v4());
-  let _ = state
-    .event_bus
-    .publish_event(
-      "realtime.topic.changed",
-      serde_json::json!({
-        "event": { "changed": true, "reason": "runtime-invalidation" },
-        "input": { "workspaceId": workspace_id },
-        "room": format!("workspace:{workspace_id}:quota-state"),
-        "topic": "workspace.quota-state.changed",
-      }),
-      Some(&req1),
-    )
-    .await;
-  let req2 = format!("{prefix}:event:{}", uuid::Uuid::new_v4());
-  let _ = state
-    .event_bus
-    .publish_event(
-      "realtime.topic.changed",
-      serde_json::json!({
-        "event": { "changed": true, "reason": "quota-state-changed" },
-        "input": { "workspaceId": workspace_id },
-        "room": format!("workspace:{workspace_id}:access"),
-        "topic": "workspace.access.changed",
-      }),
-      Some(&req2),
-    )
-    .await;
+  let mut topics = vec![
+    (
+      "runtime-invalidation",
+      serde_json::json!({ "workspaceId": workspace_id }),
+      format!("workspace:{workspace_id}:quota-state"),
+      "workspace.quota-state.changed",
+    ),
+    (
+      "quota-state-changed",
+      serde_json::json!({ "workspaceId": workspace_id }),
+      format!("workspace:{workspace_id}:access"),
+      "workspace.access.changed",
+    ),
+  ];
   if let Some(ref owner) = owner_id {
-    let req3 = format!("{prefix}:event:{}", uuid::Uuid::new_v4());
+    topics.push((
+      "runtime-invalidation",
+      serde_json::json!({}),
+      format!("user:{owner}:quota-state"),
+      "user.quota-state.changed",
+    ));
+  }
+  for (reason, input, room, topic) in topics {
+    let req = format!("{prefix}:event:{}", uuid::Uuid::new_v4());
+    let payload = serde_json::json!({
+      "event": { "changed": true, "reason": reason }, "input": input, "room": room, "topic": topic,
+    });
     let _ = state
       .event_bus
-      .publish_event(
-        "realtime.topic.changed",
-        serde_json::json!({
-          "event": { "changed": true, "reason": "runtime-invalidation" },
-          "input": {},
-          "room": format!("user:{owner}:quota-state"),
-          "topic": "user.quota-state.changed",
-        }),
-        Some(&req3),
-      )
+      .publish_event("realtime.topic.changed", payload, Some(&req))
       .await;
   }
 }
 
+async fn require_member_state<'a>(ctx: &'a Context<'_>, workspace_id: &str) -> Result<&'a Arc<AppState>> {
+  let user = require_authenticated_user(ctx).await?;
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  state
+    .workspaces
+    .require_active_member_role(workspace_id, &user.id)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  Ok(state)
+}
+
+pub(crate) async fn resolve_blob_upload_part_url(
+  ctx: &Context<'_>,
+  workspace_id: &str,
+  key: String,
+  upload_id: String,
+  part_number: i32,
+) -> Result<BlobUploadPart> {
+  let state = require_member_state(ctx, workspace_id).await?;
+  let cfg = state.config.load();
+  let plan = state
+    .blobs
+    .get_blob_upload_part_url(
+      workspace_id,
+      &key,
+      &upload_id,
+      part_number,
+      &cfg.external_url,
+      cfg.multipart_part_size,
+    )
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  Ok(BlobUploadPart {
+    expires_at: plan.expires_at,
+    headers: headers_to_json_scalar(plan.headers),
+    upload_url: plan.upload_url,
+  })
+}
 pub(crate) async fn mutate_create_blob_upload(
   ctx: &Context<'_>,
   workspace_id: String,
   key: String,
   size: i32,
-  _mime: String,
+  mime: String,
 ) -> Result<BlobUploadInit> {
-  let user = require_authenticated_user(ctx).await?;
-  let state = ctx.data_unchecked::<Arc<AppState>>();
-  state
-    .workspaces
-    .require_active_member_role(&workspace_id, &user.id)
-    .await
-    .map_err(|e| domain_error_to_graphql(&e))?;
-  if size < 0 {
-    return Err(domain_error_to_graphql(&DomainError::Validation(
-      "blob size must be non-negative".into(),
-    )));
-  }
-  let existing = state
+  let state = require_member_state(ctx, &workspace_id).await?;
+  let cfg = state.config.load();
+  let plan = state
     .blobs
-    .get_blob(&workspace_id, &key)
+    .init_blob_upload(
+      &workspace_id,
+      &key,
+      i64::from(size),
+      &mime,
+      &cfg.external_url,
+      cfg.multipart_threshold,
+      cfg.multipart_part_size,
+    )
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
-  if let Some((record, _)) = existing {
-    if record.size != i64::from(size) {
-      return Err(domain_error_to_graphql(&DomainError::Validation(
-        "Blob size mismatch".into(),
-      )));
-    }
-    return Ok(BlobUploadInit {
-      already_uploaded: Some(true),
-      blob_key: key,
-      expires_at: None,
-      headers: None,
-      method: BlobUploadMethod::Graphql,
-      part_size: None,
-      upload_id: None,
-      upload_url: None,
-      uploaded_parts: None,
-    });
-  }
+  let method = match plan.method {
+    UploadInitMethod::Graphql => BlobUploadMethod::Graphql,
+    UploadInitMethod::Multipart => BlobUploadMethod::Multipart,
+    UploadInitMethod::Presigned => BlobUploadMethod::Presigned,
+  };
   Ok(BlobUploadInit {
-    already_uploaded: Some(false),
-    blob_key: key,
-    expires_at: None,
-    headers: None,
-    method: BlobUploadMethod::Graphql,
-    part_size: None,
-    upload_id: None,
-    upload_url: None,
-    uploaded_parts: None,
+    already_uploaded: plan.already_uploaded.then_some(true),
+    blob_key: plan.blob_key,
+    expires_at: plan.expires_at,
+    headers: headers_to_json_scalar(plan.headers),
+    method,
+    part_size: plan.part_size,
+    upload_id: plan.upload_id,
+    upload_url: plan.upload_url,
+    uploaded_parts: plan.uploaded_parts.map(|parts| {
+      parts
+        .into_iter()
+        .map(|p| BlobUploadedPart {
+          etag: p.etag,
+          part_number: p.part_number,
+        })
+        .collect()
+    }),
   })
 }
 
-pub(crate) async fn mutate_set_blob(ctx: &Context<'_>, workspace_id: String, blob: Upload) -> Result<String> {
-  let user = require_authenticated_user(ctx).await?;
-  let state = ctx.data_unchecked::<Arc<AppState>>();
-  state
-    .workspaces
-    .require_active_member_role(&workspace_id, &user.id)
+pub(crate) async fn mutate_complete_blob_upload(
+  ctx: &Context<'_>,
+  workspace_id: String,
+  key: String,
+  upload_id: Option<String>,
+  parts: Option<Vec<BlobUploadPartInput>>,
+) -> Result<String> {
+  let state = require_member_state(ctx, &workspace_id).await?;
+  let mapped: Option<Vec<UploadedPart>> = parts.map(|list| {
+    list
+      .into_iter()
+      .map(|p| UploadedPart {
+        part_number: p.part_number,
+        etag: p.etag,
+      })
+      .collect()
+  });
+  let completed_key = state
+    .blobs
+    .complete_blob_upload(&workspace_id, &key, upload_id.as_deref(), mapped.as_deref())
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
+  publish_quota_storage_invalidation(state, &workspace_id).await;
+  Ok(completed_key)
+}
+pub(crate) async fn mutate_abort_blob_upload(
+  ctx: &Context<'_>,
+  workspace_id: String,
+  key: String,
+  upload_id: String,
+) -> Result<bool> {
+  let state = require_member_state(ctx, &workspace_id).await?;
+  state
+    .blobs
+    .abort_blob_upload(&workspace_id, &key, &upload_id)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))
+}
+pub(crate) async fn mutate_set_blob(ctx: &Context<'_>, workspace_id: String, blob: Upload) -> Result<String> {
+  let state = require_member_state(ctx, &workspace_id).await?;
   let mut upload = blob
     .value(ctx)
     .map_err(|e| domain_error_to_graphql(&DomainError::Validation(format!("invalid blob upload: {e}"))))?;
   let filename = upload.filename.clone();
   let mime = upload
     .content_type
-    .clone()
+    .as_deref()
     .filter(|s| !s.trim().is_empty())
-    .unwrap_or_else(|| "application/octet-stream".to_owned());
+    .unwrap_or("application/octet-stream");
   let mut bytes = Vec::new();
   upload
     .content
@@ -205,7 +265,7 @@ pub(crate) async fn mutate_set_blob(ctx: &Context<'_>, workspace_id: String, blo
     .map_err(|e| domain_error_to_graphql(&DomainError::Validation(format!("failed to read blob upload: {e}"))))?;
   let outcome = state
     .blobs
-    .put_blob(&workspace_id, &filename, &mime, bytes)
+    .put_blob(&workspace_id, &filename, mime, bytes)
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
   if matches!(outcome, PutBlobOutcome::Created(_)) {
@@ -213,7 +273,6 @@ pub(crate) async fn mutate_set_blob(ctx: &Context<'_>, workspace_id: String, blo
   }
   Ok(filename)
 }
-
 pub(crate) async fn mutate_delete_blob(
   ctx: &Context<'_>,
   workspace_id: String,
@@ -241,7 +300,6 @@ pub(crate) async fn mutate_delete_blob(
   }
   Ok(deleted)
 }
-
 pub(crate) async fn mutate_release_deleted_blobs(ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
   let user = require_authenticated_user(ctx).await?;
   let state = ctx.data_unchecked::<Arc<AppState>>();
@@ -255,10 +313,8 @@ pub(crate) async fn mutate_release_deleted_blobs(ctx: &Context<'_>, workspace_id
   }
   Ok(true)
 }
-
 #[derive(Default)]
 pub struct BlobMutation;
-
 #[async_graphql::Object]
 impl BlobMutation {
   async fn create_blob_upload(
@@ -271,11 +327,28 @@ impl BlobMutation {
   ) -> Result<BlobUploadInit> {
     mutate_create_blob_upload(ctx, workspace_id, key, size, mime).await
   }
-
+  async fn complete_blob_upload(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    key: String,
+    upload_id: Option<String>,
+    parts: Option<Vec<BlobUploadPartInput>>,
+  ) -> Result<String> {
+    mutate_complete_blob_upload(ctx, workspace_id, key, upload_id, parts).await
+  }
+  async fn abort_blob_upload(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    key: String,
+    upload_id: String,
+  ) -> Result<bool> {
+    mutate_abort_blob_upload(ctx, workspace_id, key, upload_id).await
+  }
   async fn set_blob(&self, ctx: &Context<'_>, workspace_id: String, blob: async_graphql::Upload) -> Result<String> {
     mutate_set_blob(ctx, workspace_id, blob).await
   }
-
   async fn delete_blob(
     &self,
     ctx: &Context<'_>,
@@ -286,7 +359,6 @@ impl BlobMutation {
   ) -> Result<bool> {
     mutate_delete_blob(ctx, workspace_id, key, hash, permanently).await
   }
-
   async fn release_deleted_blobs(&self, ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
     mutate_release_deleted_blobs(ctx, workspace_id).await
   }

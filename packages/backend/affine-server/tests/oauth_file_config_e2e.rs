@@ -310,3 +310,207 @@ fn file_configured_oauth_provider_precedence_and_fallback() {
   });
   let _ = std::fs::remove_file(&tmp_path);
 }
+
+async fn http_req(
+  addr: SocketAddr,
+  method: &str,
+  path: &str,
+  cookie: Option<&str>,
+  body: Option<&[u8]>,
+) -> (u16, Vec<u8>) {
+  let mut stream = TcpStream::connect(addr).await.expect("connect server");
+  let mut req = format!("{method} {path} HTTP/1.1\r\nHost: {addr}\r\nConnection: close\r\n");
+  if let Some(c) = cookie {
+    req.push_str(&format!("Cookie: {c}\r\n"));
+  }
+  if let Some(b) = body {
+    req.push_str(&format!(
+      "Content-Type: application/json\r\nContent-Length: {}\r\n",
+      b.len()
+    ));
+  }
+  req.push_str("\r\n");
+  stream.write_all(req.as_bytes()).await.expect("write req head");
+  if let Some(b) = body {
+    stream.write_all(b).await.expect("write req body");
+  }
+  let mut buf = Vec::new();
+  stream.read_to_end(&mut buf).await.expect("read resp");
+  let split = buf.windows(4).position(|w| w == b"\r\n\r\n").expect("split headers");
+  let head = std::str::from_utf8(&buf[..split]).expect("utf8 head");
+  let status: u16 = head
+    .lines()
+    .next()
+    .unwrap()
+    .split_whitespace()
+    .nth(1)
+    .unwrap()
+    .parse()
+    .unwrap();
+  (status, buf[split + 4..].to_vec())
+}
+
+#[test]
+fn file_configured_blob_storage_precedence_and_clear_fallback() {
+  let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+  let migrations = MigrationSet {
+    migrations: vec![],
+    digest: "5e20000000000015".into(),
+  };
+  let template = cluster.ensure_template(&migrations).expect("ensure empty template");
+  let lease = cluster.lease(&template, DEFAULT_LEASE_TTL).expect("lease db");
+
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .enable_all()
+    .build()
+    .expect("build tokio runtime");
+  let tmp_root = std::env::temp_dir().join(format!("affine-blob-file-cfg-{}", uuid::Uuid::new_v4().simple()));
+  let dir_a = tmp_root.join("dir-a");
+  let dir_b = tmp_root.join("dir-b");
+  let cfg_path = tmp_root.join("config.json");
+  std::fs::create_dir_all(&dir_a).unwrap();
+  std::fs::create_dir_all(&dir_b).unwrap();
+  let cfg_json = json!({
+    "storages": {
+      "blob.storage": {
+        "provider": "fs",
+        "bucket": "custom-blobs-a",
+        "config": { "path": dir_a.to_str().unwrap() }
+      }
+    }
+  });
+  std::fs::write(&cfg_path, serde_json::to_vec(&cfg_json).unwrap()).expect("write config file");
+
+  let db_url = lease.url().to_owned();
+  let cfg_path_task = cfg_path.clone();
+  let dir_a_task = dir_a.clone();
+  let dir_b_task = dir_b.clone();
+  rt.block_on(async move {
+    let cli = ServerCli {
+      role: Some(RoleArg::Allinone),
+      host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+      port: 0,
+      database_url: db_url,
+      deployment_mode: DeploymentModeArg::Selfhosted,
+      channel: Some("canary".into()),
+      private_key: Some("test-file-blob-key".into()),
+      external_url: Some("http://127.0.0.1:3010".into()),
+      db_max_connections: 8,
+      config_path: Some(cfg_path_task),
+      skip_schema_check: true,
+      ..ServerCli::default()
+    };
+
+    let shutdown = CancellationToken::new();
+    let running = serve_with_extension(cli, Arc::new(CommunityExtension::new()), shutdown.clone())
+      .await
+      .expect("serve_with_extension");
+    sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+      .execute(running.state.db.pool())
+      .await
+      .expect("reset schema");
+    running.state.db.ensure_schema_ready().await.expect("ensure schema");
+
+    // Create admin user, session cookie, and workspace.
+    let admin_id = uuid::Uuid::new_v4().to_string();
+    let session_id = uuid::Uuid::new_v4().to_string();
+    let user_sess_id = uuid::Uuid::new_v4().to_string();
+    sqlx::query("INSERT INTO users (id, name, email, email_verified) VALUES ($1, 'Admin', 'admin-blob-file@example.test', now())")
+      .bind(&admin_id)
+      .execute(running.state.db.pool())
+      .await
+      .expect("insert admin");
+    sqlx::query("INSERT INTO multiple_users_sessions (id, created_at) VALUES ($1, now())")
+      .bind(&session_id)
+      .execute(running.state.db.pool())
+      .await
+      .expect("insert session");
+    sqlx::query(
+      "INSERT INTO user_sessions (id, session_id, user_id, expires_at, created_at) \
+       VALUES ($1, $2, $3, now() + interval '1 day', now())",
+    )
+    .bind(&user_sess_id)
+    .bind(&session_id)
+    .bind(&admin_id)
+    .execute(running.state.db.pool())
+    .await
+    .expect("insert user_session");
+    sqlx::query(
+      "INSERT INTO user_features (user_id, name, type, reason, activated) \
+       VALUES ($1, 'administrator', 0, 'test', true)",
+    )
+    .bind(&admin_id)
+    .execute(running.state.db.pool())
+    .await
+    .expect("grant administrator");
+    let cookie = format!("affine_session={session_id}; affine_user_id={admin_id}");
+    let ws = running
+      .state
+      .workspaces
+      .create_workspace(&admin_id, Some("FileCfgWS"))
+      .await
+      .expect("create workspace");
+
+    // 1. Upload k1 under file-configured dir_a/custom-blobs-a and verify via HTTP download.
+    let payload = b"payload-from-file-config-dir-a".to_vec();
+    running
+      .state
+      .blobs
+      .put_blob(&ws.id, "k1", "text/plain", payload.clone())
+      .await
+      .expect("put k1 to dir_a");
+    assert!(
+      dir_a_task.join("custom-blobs-a").join(&ws.id).join("k1").exists(),
+      "k1 must land in file-configured dir_a/custom-blobs-a"
+    );
+    const ROOT_DOC_WITH_K1: &[u8] = &[
+      1, 1, 1, 0, 0x28, 1, 4, b'm', b'e', b't', b'a', 6, b'a', b'v', b'a', b't', b'a', b'r', 1, 119, 2, b'k', b'1', 0,
+    ];
+    sqlx::query(
+      "INSERT INTO snapshots (workspace_id, guid, blob, state, created_at, updated_at, created_by, updated_by) \
+       VALUES ($1, $2, $3, NULL, clock_timestamp(), clock_timestamp(), $4, $4)",
+    )
+    .bind(&ws.id)
+    .bind(&ws.id)
+    .bind(ROOT_DOC_WITH_K1)
+    .bind(&admin_id)
+    .execute(running.state.db.pool())
+    .await
+    .expect("seed root snapshot referencing k1");
+    let dl_path = format!("/api/workspaces/{}/blobs/v1/k1?sourceType=currentDoc&docId={}", ws.id, ws.id);
+    let (st1, body1) = http_req(running.addr, "GET", &dl_path, Some(&cookie), None).await;
+    assert_eq!(st1, 200);
+    assert_eq!(body1, payload);
+
+    // 2. Admin switches storages.blob.storage to dir_b via updateAppConfig.
+    let switch_q = serde_json::to_vec(&json!({
+      "query": "mutation($u: [UpdateAppConfigInput!]!) { updateAppConfig(updates: $u) }",
+      "variables": { "u": [{ "module": "storages", "key": "blob.storage", "value": { "provider": "fs", "bucket": "blobs", "config": { "path": dir_b_task.to_str().unwrap() } } }] }
+    }))
+    .unwrap();
+    let (st_sw, sw_body) = http_req(running.addr, "POST", "/graphql", Some(&cookie), Some(&switch_q)).await;
+    assert_eq!(st_sw, 200);
+    let sw_json: Value = serde_json::from_slice(&sw_body).unwrap();
+    assert!(sw_json.get("errors").is_none(), "switch to dir_b failed: {sw_json}");
+    let (st_miss, _) = http_req(running.addr, "GET", &dl_path, Some(&cookie), None).await;
+    assert_eq!(st_miss, 404, "dir_b should not contain k1");
+
+    // 3. Admin clears PG override (clear: true) -> must fall back to file-configured dir_a/custom-blobs-a!
+    let clear_q = serde_json::to_vec(&json!({
+      "query": "mutation($u: [UpdateAppConfigInput!]!) { updateAppConfig(updates: $u) }",
+      "variables": { "u": [{ "module": "storages", "key": "blob.storage", "clear": true }] }
+    }))
+    .unwrap();
+    let (st_cl, cl_body) = http_req(running.addr, "POST", "/graphql", Some(&cookie), Some(&clear_q)).await;
+    assert_eq!(st_cl, 200);
+    let cl_json: Value = serde_json::from_slice(&cl_body).unwrap();
+    assert!(cl_json.get("errors").is_none(), "clear override failed: {cl_json}");
+    let (st2, body2) = http_req(running.addr, "GET", &dl_path, Some(&cookie), None).await;
+    assert_eq!(st2, 200, "after clear: true, download must read k1 back from file-configured dir_a");
+    assert_eq!(body2, payload);
+
+    shutdown.cancel();
+    let _ = running.join_handle.await;
+  });
+  let _ = std::fs::remove_dir_all(&tmp_root);
+}

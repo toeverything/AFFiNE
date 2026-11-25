@@ -118,6 +118,18 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
       }
     }
     DomainError::NotFound(msg) => {
+      if let Some(rest) = msg.strip_prefix("blob_not_found:")
+        && let Some((space_id, blob_id)) = parse_two_part(rest)
+      {
+        return LegacyErrorEnvelope {
+          status: StatusCode::NOT_FOUND.as_u16(),
+          code: "Not Found".into(),
+          error_type: "RESOURCE_NOT_FOUND".into(),
+          name: "BLOB_NOT_FOUND".into(),
+          message: format!("Blob {blob_id} under Space {space_id} not found."),
+          data: Some(serde_json::json!({ "spaceId": space_id, "blobId": blob_id })),
+        };
+      }
       if let Some(rest) = msg.strip_prefix("doc_not_found:")
         && let Some((space_id, doc_id)) = parse_two_part(rest)
       {
@@ -184,15 +196,36 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
         data: None,
       }
     }
-    DomainError::QuotaExceeded { kind, message } => LegacyErrorEnvelope {
-      status: StatusCode::PAYMENT_REQUIRED.as_u16(),
-      code: "Payment Required".into(),
-      error_type: "QUOTA_EXCEEDED".into(),
-      name: "QUOTA_EXCEEDED".into(),
-      message: message.clone(),
-      data: Some(serde_json::json!({ "kind": kind })),
-    },
+    DomainError::QuotaExceeded { kind, message } => {
+      let (name, error_type, data) = match *kind {
+        "blob_limit" => ("BLOB_QUOTA_EXCEEDED", "QUOTA_EXCEEDED", None),
+        "storage_quota" => ("STORAGE_QUOTA_EXCEEDED", "QUOTA_EXCEEDED", None),
+        _ => (
+          "QUOTA_EXCEEDED",
+          "QUOTA_EXCEEDED",
+          Some(serde_json::json!({ "kind": kind })),
+        ),
+      };
+      LegacyErrorEnvelope {
+        status: StatusCode::PAYMENT_REQUIRED.as_u16(),
+        code: "Payment Required".into(),
+        error_type: error_type.into(),
+        name: name.into(),
+        message: message.clone(),
+        data,
+      }
+    }
     DomainError::Validation(msg) => {
+      if let Some(detail) = msg.strip_prefix("blob_invalid:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "BAD_REQUEST".into(),
+          name: "BLOB_INVALID".into(),
+          message: detail.to_owned(),
+          data: None,
+        };
+      }
       if msg == "cannot_delete_account_with_owned_team_workspace" {
         return LegacyErrorEnvelope {
           status: StatusCode::FORBIDDEN.as_u16(),

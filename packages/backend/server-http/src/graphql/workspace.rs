@@ -452,6 +452,17 @@ impl WorkspaceType {
     ))
   }
 
+  /// Get blob upload part url
+  async fn blob_upload_part_url(
+    &self,
+    ctx: &Context<'_>,
+    key: String,
+    part_number: i32,
+    upload_id: String,
+  ) -> Result<super::blob::BlobUploadPart> {
+    super::blob::resolve_blob_upload_part_url(ctx, &self.record.id, key, upload_id, part_number).await
+  }
+
   async fn blobs(
     &self,
     ctx: &Context<'_>,

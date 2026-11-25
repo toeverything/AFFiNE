@@ -311,8 +311,11 @@ pub(crate) async fn mutate_upload_comment_attachment(
     })
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
-  let object_key = format!("{workspace_id}/{}/{key}", reservation.storage_doc_id);
-  if let Err(err) = state.comment_attachments.put(&object_key, bytes, &mime).await {
+  let object_key = format!(
+    "comment-attachments/{workspace_id}/{}/{key}",
+    reservation.storage_doc_id
+  );
+  if let Err(err) = state.blobs.storage().put(&object_key, bytes, &mime).await {
     state
       .comments
       .abort_comment_attachment(
@@ -322,7 +325,7 @@ pub(crate) async fn mutate_upload_comment_attachment(
         &reservation.reservation_id,
       )
       .await;
-    let _ = state.comment_attachments.delete(&object_key).await;
+    let _ = state.blobs.storage().delete(&object_key).await;
     return Err(domain_error_to_graphql(&DomainError::Unavailable(format!(
       "store comment attachment: {err}"
     ))));
@@ -346,7 +349,7 @@ pub(crate) async fn mutate_upload_comment_attachment(
         &reservation.reservation_id,
       )
       .await;
-    let _ = state.comment_attachments.delete(&object_key).await;
+    let _ = state.blobs.storage().delete(&object_key).await;
     return Err(domain_error_to_graphql(&err));
   }
 

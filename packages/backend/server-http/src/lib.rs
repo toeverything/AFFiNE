@@ -57,6 +57,8 @@ pub struct RuntimeConfig {
   pub refresh_retention_secs: i64,
   pub smtp_password: String,
   pub app_config_baseline: RuntimeAppConfigBaseline,
+  pub multipart_part_size: i64,
+  pub multipart_threshold: i64,
 }
 
 impl std::fmt::Debug for RuntimeConfig {
@@ -75,6 +77,8 @@ impl std::fmt::Debug for RuntimeConfig {
       .field("graphql_playground", &self.graphql_playground)
       .field("refresh_retention_secs", &self.refresh_retention_secs)
       .field("smtp_password", &"[REDACTED]")
+      .field("multipart_part_size", &self.multipart_part_size)
+      .field("multipart_threshold", &self.multipart_threshold)
       .finish()
   }
 }
@@ -96,6 +100,8 @@ impl Default for RuntimeConfig {
       refresh_retention_secs: server_domain::auth::DEFAULT_REFRESH_RETENTION_SECS,
       smtp_password: String::new(),
       app_config_baseline: RuntimeAppConfigBaseline::default(),
+      multipart_part_size: server_blob::MULTIPART_PART_SIZE,
+      multipart_threshold: server_blob::MULTIPART_THRESHOLD,
     }
   }
 }
@@ -129,6 +135,8 @@ pub struct AppState {
   pub calendar_oauth: Option<CalendarOAuthStore>,
   pub mcp: McpCredentialService,
   pub mcp_throttler: Arc<crate::rest::mcp::McpDefaultThrottler>,
+  avatars_dynamic: Arc<server_blob::DynamicBlobStorage>,
+  boot_avatars: Arc<dyn BlobStorageBackend>,
 }
 
 /// Pre-wired domain services passed into [`AppState::with_services`].
@@ -260,6 +268,9 @@ impl AppState {
       .with_quota_gate(extension.quota_gate())
       .with_invalidation(Arc::clone(&services.invalidation));
     let mcp_throttler = Arc::new(crate::rest::mcp::McpDefaultThrottler::new(redis.clone()));
+    let boot_avatars = services.avatars;
+    let avatars_dynamic = Arc::new(server_blob::DynamicBlobStorage::new(Arc::clone(&boot_avatars)));
+    let avatars: Arc<dyn BlobStorageBackend> = Arc::clone(&avatars_dynamic) as Arc<dyn BlobStorageBackend>;
     Arc::new(Self {
       db,
       redis,
@@ -277,7 +288,7 @@ impl AppState {
       app_config: services.app_config,
       blobs: services.blobs,
       search: services.search,
-      avatars: services.avatars,
+      avatars,
       comment_attachments: services.comment_attachments,
       invalidation: services.invalidation,
       event_bus: services.event_bus,
@@ -288,12 +299,101 @@ impl AppState {
       calendar_oauth,
       mcp,
       mcp_throttler,
+      avatars_dynamic,
+      boot_avatars,
     })
   }
 
   /// Atomically swaps the runtime configuration snapshot without locking readers.
   pub fn swap_config(&self, next: RuntimeConfig) {
     self.config.store(Arc::new(next));
+  }
+
+  pub async fn reload_blob_storage_from_app_config(&self) -> Result<bool, server_types::DomainError> {
+    let _guard = self.blobs.write_reload().await;
+    let spec = match self.app_config.load_effective_blob_storage_config_uncached().await? {
+      Some(raw) => server_blob::StorageBackendSpec::from_app_config_json(&raw, "blobs")?,
+      None => None,
+    };
+    match spec {
+      Some(s) => self.blobs.swap_storage_backend(s.build()?),
+      None => self.blobs.reset_to_boot_storage(),
+    }
+    Ok(true)
+  }
+
+  pub async fn reload_avatar_storage_from_app_config(&self) -> Result<bool, server_types::DomainError> {
+    let _guard = self.avatars_dynamic.write_reload().await;
+    let spec = match self.app_config.load_effective_avatar_storage_config_uncached().await? {
+      Some(raw) => server_blob::StorageBackendSpec::from_app_config_json_scoped(&raw, "avatar", "avatars")?,
+      None => None,
+    };
+    match spec {
+      Some(s) => self.avatars_dynamic.swap_backend(s.build()?),
+      None => self.avatars_dynamic.swap_backend(Arc::clone(&self.boot_avatars)),
+    }
+    Ok(true)
+  }
+
+  pub async fn init_blob_storage_from_app_config(&self) -> Result<bool, server_types::DomainError> {
+    self.reload_blob_storage_from_app_config().await?;
+    self.reload_avatar_storage_from_app_config().await
+  }
+
+  pub async fn run_blob_storage_config_subscriber(self: Arc<Self>, shutdown: Arc<tokio::sync::Notify>) {
+    use futures_util::StreamExt as _;
+    let Some(redis) = self.redis.clone() else {
+      return;
+    };
+    let backoff = || tokio::time::timeout(Duration::from_millis(200), shutdown.notified());
+    loop {
+      let Ok(mut pubsub) = redis.get_async_pubsub().await else {
+        if backoff().await.is_ok() {
+          return;
+        }
+        continue;
+      };
+      if pubsub.subscribe("affine:eventbus:v1").await.is_err() {
+        if backoff().await.is_ok() {
+          return;
+        }
+        continue;
+      }
+      if let Err(err) = self.reload_blob_storage_from_app_config().await {
+        tracing::warn!(error = %err, "catch-up blob storage reload failed");
+      }
+      if let Err(err) = self.reload_avatar_storage_from_app_config().await {
+        tracing::warn!(error = %err, "catch-up avatar storage reload failed");
+      }
+      let mut stream = pubsub.on_message();
+      loop {
+        let msg = tokio::select! {
+          () = shutdown.notified() => return,
+          m = stream.next() => match m { Some(m) => m, None => break },
+        };
+        let keys: Vec<String> = msg
+          .get_payload::<String>()
+          .ok()
+          .and_then(|p| serde_json::from_str::<serde_json::Value>(&p).ok())
+          .filter(|e| e.get("event").and_then(serde_json::Value::as_str) == Some("config.changed.broadcast"))
+          .and_then(|e| e.pointer("/payload/keys")?.as_array().cloned())
+          .map(|ks| ks.into_iter().filter_map(|v| v.as_str().map(str::to_owned)).collect())
+          .unwrap_or_default();
+        if keys.iter().any(|k| k == "storages" || k.starts_with("storages.blob"))
+          && let Err(err) = self.reload_blob_storage_from_app_config().await
+        {
+          tracing::warn!(error = %err, "broadcast blob storage reload failed");
+        }
+        if keys.iter().any(|k| k == "storages" || k.starts_with("storages.avatar"))
+          && let Err(err) = self.reload_avatar_storage_from_app_config().await
+        {
+          tracing::warn!(error = %err, "broadcast avatar storage reload failed");
+        }
+      }
+      if backoff().await.is_ok() {
+        return;
+      }
+    }
   }
 }
 

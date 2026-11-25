@@ -865,11 +865,55 @@ pub(crate) async fn mutate_update_app_config(
       AppConfigUpdate { key: full_key, value }
     })
     .collect();
+  let touched_blob_storage = domain_updates
+    .iter()
+    .any(|u| u.key == "storages" || u.key.starts_with("storages.blob"));
+  let touched_avatar_storage = domain_updates
+    .iter()
+    .any(|u| u.key == "storages" || u.key.starts_with("storages.avatar"));
+  for u in &domain_updates {
+    let raw_blob = match u.key.as_str() {
+      "storages.blob.storage" => u.value.as_ref(),
+      "storages.blob" => u.value.as_ref().and_then(|v| v.get("storage")),
+      "storages" => u.value.as_ref().and_then(|v| v.pointer("/blob/storage")),
+      _ => None,
+    };
+    if let Some(raw) = raw_blob
+      && let Some(spec) =
+        server_blob::StorageBackendSpec::from_app_config_json(raw, "blobs").map_err(|e| domain_error_to_graphql(&e))?
+    {
+      let _ = spec.build().map_err(|e| domain_error_to_graphql(&e))?;
+    }
+    let raw_avatar = match u.key.as_str() {
+      "storages.avatar.storage" => u.value.as_ref(),
+      "storages.avatar" => u.value.as_ref().and_then(|v| v.get("storage")),
+      "storages" => u.value.as_ref().and_then(|v| v.pointer("/avatar/storage")),
+      _ => None,
+    };
+    if let Some(raw) = raw_avatar
+      && let Some(spec) = server_blob::StorageBackendSpec::from_app_config_json_scoped(raw, "avatar", "avatars")
+        .map_err(|e| domain_error_to_graphql(&e))?
+    {
+      let _ = spec.build().map_err(|e| domain_error_to_graphql(&e))?;
+    }
+  }
   let effective = state
     .app_config
-    .update_app_config(Some(&admin.id), &domain_updates)
+    .update_app_config_with_blob_guard(Some(&admin.id), &domain_updates, touched_blob_storage)
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
+  if touched_blob_storage {
+    state
+      .reload_blob_storage_from_app_config()
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+  }
+  if touched_avatar_storage {
+    state
+      .reload_avatar_storage_from_app_config()
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+  }
   Ok(JsonObjectScalar(effective))
 }
 
