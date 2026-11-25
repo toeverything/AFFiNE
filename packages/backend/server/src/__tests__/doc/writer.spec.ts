@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { McpAccessMode } from '@prisma/client';
 import test from 'ava';
 import {
@@ -520,6 +521,80 @@ test('MCP create_document recovers incomplete registration as collaborator witho
     (globalThis as any).env = prevEnv;
   }
 });
+
+const mcpUpdateToolCases = [
+  {
+    tool: 'update_document',
+    method: 'updateDoc',
+    args: { docId: 'doc-1', content: 'Line one, edited.' },
+    prefix: 'Failed to update document: ',
+  },
+  {
+    tool: 'update_document_meta',
+    method: 'updateDocMeta',
+    args: { docId: 'doc-1', title: 'New Title' },
+    prefix: 'Failed to update document title: ',
+  },
+] as const;
+
+const mcpUpdateOutcomes = [
+  {
+    name: 'surfaces the writer error message',
+    thrown: new Error('source_merge: ambiguous_identity'),
+    expected: 'source_merge: ambiguous_identity',
+  },
+  {
+    name: 'surfaces a non-Error thrown value',
+    thrown: 'source_merge: invalid_projection',
+    expected: 'source_merge: invalid_projection',
+  },
+  {
+    name: 'reports not found for NotFoundException',
+    thrown: new NotFoundException('Document doc-1 not found'),
+    expected: null,
+  },
+];
+
+for (const toolCase of mcpUpdateToolCases) {
+  for (const outcome of mcpUpdateOutcomes) {
+    test(`MCP ${toolCase.tool} ${outcome.name}`, async t => {
+      const writer = {
+        async [toolCase.method]() {
+          throw outcome.thrown;
+        },
+      };
+      const provider = new WorkspaceMcpProvider(
+        createPermissionMock() as any,
+        {} as any,
+        writer as any,
+        {} as any
+      );
+      const prevEnv = (globalThis as any).env;
+      (globalThis as any).env = { ...prevEnv, dev: true };
+      try {
+        const server = await provider.for(
+          'user-1',
+          'ws-1',
+          McpAccessMode.READ_WRITE
+        );
+        const tool = server.tools.find(tool => tool.name === toolCase.tool)!;
+        const result = await tool.execute(toolCase.args, {
+          signal: new AbortController().signal,
+        });
+
+        t.true(result.isError);
+        t.is(
+          result.content[0].text,
+          outcome.expected === null
+            ? 'Doc with id doc-1 not found.'
+            : `${toolCase.prefix}${outcome.expected}`
+        );
+      } finally {
+        (globalThis as any).env = prevEnv;
+      }
+    });
+  }
+}
 
 test('Copilot doc_create via executeToolCall recovers from error message hint and rejects unknown retry keys', async t => {
   const workspaceId = 'ws-copilot-recover';
