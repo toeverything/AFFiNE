@@ -40,6 +40,7 @@ url.workspace                   = true
 uuid.workspace                  = true
 xmlparser.workspace             = true
 y-octo.workspace                = true
+y-octo-core.workspace           = true
 zeroize.workspace               = true
 
 [dev-dependencies]

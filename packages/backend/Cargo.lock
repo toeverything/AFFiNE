@@ -3943,6 +3943,7 @@ dependencies = [
  "uuid",
  "xmlparser",
  "y-octo",
+ "y-octo-core",
  "zeroize",
 ]
 
@@ -4080,6 +4081,7 @@ dependencies = [
  "url",
  "uuid",
  "y-octo",
+ "y-octo-core",
 ]
 
 [[package]]
@@ -4651,7 +4653,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
@@ -5666,9 +5668,9 @@ checksum = "66fee0b777b0f5ac1c69bb06d361268faafa61cd4682ae064a171c16c433e9e4"
 
 [[package]]
 name = "y-octo"
-version = "0.4.0"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1c249c160b09c4f0bd6cef90881200667c8e119feff6a9f7c07bb538760d574"
+checksum = "0ca83593de45d6f6bd0118d8199ccb2a13ec9a3b572b962c2b9a6149c443443d"
 dependencies = [
  "ahash",
  "arbitrary",
@@ -5685,7 +5687,14 @@ dependencies = [
  "serde_json",
  "smol_str",
  "thiserror 2.0.21",
+ "y-octo-core",
 ]
+
+[[package]]
+name = "y-octo-core"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ca7f2eed556822e81c35f76c8a27855daca946bf1818707ddcd5b9d4434dc6f"
 
 [[package]]
 name = "yoke"

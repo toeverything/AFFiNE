@@ -114,15 +114,25 @@ pub fn is_empty_doc_bin(bin: &[u8]) -> bool {
 
 /// Extracts logical `pageId -> subdoc guid` aliases from a workspace root doc.
 pub fn extract_root_doc_id_aliases(root_doc_bin: &[u8]) -> Result<HashMap<String, String>, DomainError> {
+  extract_root_doc_id_aliases_with_limits(root_doc_bin, y_octo::ReadLimits::default())
+}
+
+fn extract_root_doc_id_aliases_with_limits(
+  root_doc_bin: &[u8],
+  limits: y_octo::ReadLimits,
+) -> Result<HashMap<String, String>, DomainError> {
   if is_empty_doc_bin(root_doc_bin) {
     return Ok(HashMap::new());
   }
-  match y_octo::ReadDoc::from_full_update_v1(root_doc_bin.to_vec()) {
+  match y_octo::ReadDoc::from_full_update_v1_with_limits(root_doc_bin.to_vec(), limits) {
     Ok(doc) => Ok(extract_aliases_from_read_doc(&doc)),
     Err(y_octo::ReadError::IncompleteSnapshot(_)) => {
       let doc = y_octo::Doc::try_from_binary_v1(root_doc_bin)
         .map_err(|e| DomainError::Internal(format!("decode root doc for aliases: {e}")))?;
       Ok(extract_aliases_from_doc(&doc))
+    }
+    Err(err @ y_octo::ReadError::ResourceLimit(_)) => {
+      Err(DomainError::Internal(format!("[affine-doc:resource_limit] {err}")))
     }
     Err(e) => Err(DomainError::Internal(format!("read root doc for aliases: {e}"))),
   }
@@ -2257,5 +2267,186 @@ mod tests {
     assert_eq!(ids, vec!["pub-1".to_owned()]);
     assert!(!String::from_utf8_lossy(&public_bin).contains("Top Secret"));
     assert!(!String::from_utf8_lossy(&public_bin).contains("priv-1"));
+  }
+
+  fn push_varuint(buf: &mut Vec<u8>, mut v: u64) {
+    while v >= 0x80 {
+      buf.push(((v as u8) & 0x7f) | 0x80);
+      v >>= 7;
+    }
+    buf.push(v as u8);
+  }
+
+  fn push_varstring(buf: &mut Vec<u8>, s: &str) {
+    push_varuint(buf, s.len() as u64);
+    buf.extend_from_slice(s.as_bytes());
+  }
+
+  fn synthetic_deleted_zero_len_string_update(client: u64) -> Vec<u8> {
+    let mut buf = Vec::new();
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 4);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    buf.push(0x07);
+    buf.push(0x01);
+    push_varstring(&mut buf, "legacy_zero_str");
+    push_varuint(&mut buf, 2);
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "a");
+    buf.push(0x84);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varstring(&mut buf, "");
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "b");
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 2);
+    buf
+  }
+
+  fn synthetic_zero_len_deleted_update(client: u64) -> Vec<u8> {
+    let mut buf = Vec::new();
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 3);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    buf.push(0x07);
+    buf.push(0x01);
+    push_varstring(&mut buf, "legacy_zero_del");
+    push_varuint(&mut buf, 2);
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "x");
+    buf.push(0x81);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 0);
+    push_varuint(&mut buf, 0);
+    buf
+  }
+
+  #[test]
+  fn extract_root_doc_id_aliases_handles_empty_single_merged_and_zero_len_deleted_frames() {
+    for empty in [&[][..], &[0u8][..], &[0u8, 0u8][..]] {
+      assert!(extract_root_doc_id_aliases(empty).unwrap().is_empty());
+    }
+
+    let root = y_octo::Doc::with_client(301);
+    let mut meta = root.get_or_create_map("meta").unwrap();
+    let mut pages = root.create_array().unwrap();
+    let mut p1 = root.create_map().unwrap();
+    p1.insert("id".to_owned(), y_octo::Any::String("logical-1".into()))
+      .unwrap();
+    pages.push(p1).unwrap();
+    meta.insert("pages".to_owned(), pages).unwrap();
+
+    let mut spaces = root.get_or_create_map("spaces").unwrap();
+    let sub1 = y_octo::Doc::with_options(y_octo::DocOptions::new().with_guid("physical-1".to_owned()));
+    spaces.insert("logical-1".to_owned(), sub1).unwrap();
+
+    let single_snap = root.encode_update_v1().unwrap();
+    let single_aliases = extract_root_doc_id_aliases(&single_snap).unwrap();
+    assert_eq!(single_aliases.get("logical-1").map(String::as_str), Some("physical-1"));
+
+    let sv = root.get_state_vector();
+    let Some(y_octo::Value::Array(mut pages_arr)) = root.get_map("meta").unwrap().get("pages") else {
+      panic!("expected pages array");
+    };
+    let mut p2 = root.create_map().unwrap();
+    p2.insert("id".to_owned(), y_octo::Any::String("logical-2".into()))
+      .unwrap();
+    pages_arr.push(p2).unwrap();
+    let sub2 = y_octo::Doc::with_options(y_octo::DocOptions::new().with_guid("physical-2".to_owned()));
+    root
+      .get_or_create_map("spaces")
+      .unwrap()
+      .insert("logical-2".to_owned(), sub2)
+      .unwrap();
+    let inc_update = root.encode_state_as_update_v1(&sv).unwrap();
+
+    let merged = y_octo::merge_updates_v1([
+      synthetic_deleted_zero_len_string_update(900_021),
+      synthetic_zero_len_deleted_update(900_022),
+      single_snap,
+      inc_update,
+    ])
+    .and_then(|u| u.encode_v1())
+    .expect("merge_updates_v1 with zero-len frames");
+
+    let aliases = extract_root_doc_id_aliases(&merged).unwrap();
+    assert_eq!(aliases.get("logical-1").map(String::as_str), Some("physical-1"));
+    assert_eq!(aliases.get("logical-2").map(String::as_str), Some("physical-2"));
+
+    // Cross-client update where c1 has complete meta.pages + spaces and c2 has a client clock gap:
+    // ReadDoc returns IncompleteSnapshot, and Doc fallback recovers c1's aliases.
+    let doc_c1 = y_octo::DocOptions::new().with_client_id(1).build();
+    let mut delta_meta = doc_c1.get_or_create_map("meta").unwrap();
+    let mut delta_pages = doc_c1.create_array().unwrap();
+    let mut delta_page = doc_c1.create_map().unwrap();
+    delta_page
+      .insert("id".to_owned(), y_octo::Any::String("delta-doc-1".into()))
+      .unwrap();
+    delta_pages.push(delta_page).unwrap();
+    delta_meta.insert("pages".to_owned(), delta_pages).unwrap();
+    let mut delta_spaces = doc_c1.get_or_create_map("spaces").unwrap();
+    let delta_subdoc = y_octo::DocOptions::new().with_guid("delta-guid-1".into()).build();
+    delta_spaces.insert("delta-doc-1".to_owned(), delta_subdoc).unwrap();
+
+    let mut doc_c2 = y_octo::DocOptions::new().with_client_id(2).build();
+    let mut c2_other = doc_c2.get_or_create_map("other").unwrap();
+    c2_other
+      .insert("a".to_owned(), y_octo::Any::String("first".into()))
+      .unwrap();
+    let sv_c2 = doc_c2.get_state_vector();
+    c2_other
+      .insert("b".to_owned(), y_octo::Any::String("second".into()))
+      .unwrap();
+    doc_c2
+      .apply_update_from_binary_v1(doc_c1.encode_update_v1().unwrap())
+      .unwrap();
+
+    let delta_bin = doc_c2.encode_state_as_update_v1(&sv_c2).unwrap();
+    assert!(matches!(
+      y_octo::ReadDoc::from_full_update_v1_with_limits(delta_bin.clone(), y_octo::ReadLimits::default()),
+      Err(y_octo::ReadError::IncompleteSnapshot(_))
+    ));
+    let delta_aliases = extract_root_doc_id_aliases(&delta_bin).unwrap();
+    assert_eq!(
+      delta_aliases.get("delta-doc-1").map(String::as_str),
+      Some("delta-guid-1")
+    );
+
+    // Scan-phase ReadLimits (max_structs) must return ResourceLimit without falling back to unbounded Doc.
+    let tiny_limits = y_octo::ReadLimits {
+      max_structs: 1,
+      ..y_octo::ReadLimits::default()
+    };
+    assert!(matches!(
+      y_octo::ReadDoc::from_full_update_v1_with_limits(merged.clone(), tiny_limits.clone()),
+      Err(y_octo::ReadError::ResourceLimit(_))
+    ));
+    let limit_err = extract_root_doc_id_aliases_with_limits(&merged, tiny_limits).unwrap_err();
+    assert!(
+      matches!(limit_err, DomainError::Internal(ref msg) if msg.contains("[affine-doc:resource_limit]")),
+      "expected [affine-doc:resource_limit] marker, got: {limit_err:?}"
+    );
+
+    let corrupt_err = extract_root_doc_id_aliases(b"\xff\xff\xff").unwrap_err();
+    assert!(
+      matches!(corrupt_err, DomainError::Internal(ref msg) if !msg.contains("[affine-doc:resource_limit]")),
+      "corrupt input must not emit [affine-doc:resource_limit] marker, got: {corrupt_err:?}"
+    );
   }
 }

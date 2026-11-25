@@ -440,3 +440,109 @@ pub fn build_test_doc(title: &str, body: &str, page_id: &str) -> Vec<u8> {
 
   doc.encode_update_v1().expect("encode yjs update")
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn push_varuint(buf: &mut Vec<u8>, mut v: u64) {
+    while v >= 0x80 {
+      buf.push(((v as u8) & 0x7f) | 0x80);
+      v >>= 7;
+    }
+    buf.push(v as u8);
+  }
+
+  fn push_varstring(buf: &mut Vec<u8>, s: &str) {
+    push_varuint(buf, s.len() as u64);
+    buf.extend_from_slice(s.as_bytes());
+  }
+
+  fn synthetic_deleted_zero_len_string_update(client: u64) -> Vec<u8> {
+    let mut buf = Vec::new();
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 4);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    buf.push(0x07);
+    buf.push(0x01);
+    push_varstring(&mut buf, "legacy_zero_str");
+    push_varuint(&mut buf, 2);
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "a");
+    buf.push(0x84);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varstring(&mut buf, "");
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "b");
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 2);
+    buf
+  }
+
+  fn synthetic_zero_len_deleted_update(client: u64) -> Vec<u8> {
+    let mut buf = Vec::new();
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 3);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    buf.push(0x07);
+    buf.push(0x01);
+    push_varstring(&mut buf, "legacy_zero_del");
+    push_varuint(&mut buf, 2);
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "x");
+    buf.push(0x81);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 0);
+    push_varuint(&mut buf, 0);
+    buf
+  }
+
+  #[test]
+  fn project_document_search_recovers_after_zero_len_deleted_frames_and_incremental_edit() {
+    let base_snap = build_test_doc("Zero-Len Recovery", "Initial body", "page-z");
+    let doc = Doc::try_from_binary_v1(&base_snap).unwrap();
+    let sv = doc.get_state_vector();
+    if let Some(Value::Map(para)) = doc.get_map("blocks").unwrap().get("para-page-z")
+      && let Some(Value::Text(mut text)) = para.get("prop:text")
+    {
+      text.insert(text.len(), " + incremental edit").unwrap();
+    }
+    let inc_update = doc.encode_state_as_update_v1(&sv).unwrap();
+
+    let merged = y_octo::merge_updates_v1([
+      synthetic_deleted_zero_len_string_update(900_031),
+      synthetic_zero_len_deleted_update(900_032),
+      base_snap,
+      inc_update,
+    ])
+    .and_then(|u| u.encode_v1())
+    .expect("merge_updates_v1 must succeed");
+
+    let proj = project_document_search(merged, "page-z".to_owned()).expect("projection must succeed");
+    assert_eq!(proj.title, "Zero-Len Recovery");
+    assert!(
+      proj
+        .units
+        .iter()
+        .any(|u| u.text.contains("Initial body + incremental edit")),
+      "expected recovered incremental paragraph text, got {:?}",
+      proj.units
+    );
+  }
+}

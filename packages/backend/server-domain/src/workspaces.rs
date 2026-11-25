@@ -307,13 +307,8 @@ impl WorkspaceService {
     name: Option<&str>,
     init_bytes: Option<&[u8]>,
   ) -> Result<WorkspaceRecord, DomainError> {
-    const MAX_INIT_BYTES: usize = 16 * 1024 * 1024;
     if let Some(bytes) = init_bytes {
-      if bytes.len() > MAX_INIT_BYTES {
-        return Err(DomainError::Validation("workspace init document is too large".into()));
-      }
-      y_octo::ReadDoc::from_full_update_v1(bytes.to_vec())
-        .map_err(|err| DomainError::Validation(format!("invalid Yjs document update: {err}")))?;
+      validate_workspace_init_update(bytes)?;
     }
 
     let mut tx = self
@@ -2890,5 +2885,294 @@ fn row_to_workspace(row: sqlx::postgres::PgRow) -> WorkspaceRecord {
     indexed: row.get("indexed"),
     created_at: row.get("created_at"),
     last_check_embeddings: row.get("last_check_embeddings"),
+  }
+}
+
+#[derive(Default)]
+struct RejectZeroLengthSink {
+  saw_zero_length: bool,
+}
+
+impl y_octo_core::decoder_v1::V1Sink for RejectZeroLengthSink {
+  fn core_validates_utf8(&self) -> bool {
+    false
+  }
+  fn validate_utf8_early(
+    &mut self,
+    _slot: u8,
+    _value: y_octo_core::decoder_v1::Span,
+  ) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_decode_error(&mut self, _err: y_octo_core::CodecError, _a: usize, _b: u64) {}
+  fn record_client(&mut self, _client: u64) -> Result<bool, y_octo_core::CodecError> {
+    Ok(true)
+  }
+  fn begin_client(&mut self, _client: u64, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_gc(&mut self, _id: y_octo_core::decoder_v1::WireId, _len: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_skip(&mut self, _id: y_octo_core::decoder_v1::WireId, _len: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_item(
+    &mut self,
+    _id: y_octo_core::decoder_v1::WireId,
+    _len: u64,
+    _meta: y_octo_core::decoder_v1::ItemMetaCore,
+  ) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_skipped_zero_origin(&mut self, _origin_left: y_octo_core::decoder_v1::WireId) {
+    self.saw_zero_length = true;
+  }
+  fn on_deleted(&mut self, _len: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_json_start(&mut self, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_json_value(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_json_finish(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_binary(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_string(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_embed(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_format(
+    &mut self,
+    _key: y_octo_core::decoder_v1::Span,
+    _value: y_octo_core::decoder_v1::Span,
+  ) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_type(
+    &mut self,
+    _kind: u64,
+    _tag: Option<y_octo_core::decoder_v1::Span>,
+  ) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_content_start(&mut self, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_content_value(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_content_finish(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_doc(&mut self, _guid: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_start(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_undefined(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_null(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_i32(&mut self, _value: i32) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_f32_bits(&mut self, _bits: u32) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_f64_bits(&mut self, _bits: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_i64_bits(&mut self, _bits: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_bool(&mut self, _value: bool) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_str(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_bytes(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_begin_object(&mut self, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_object_key(&mut self, _key: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_begin_array(&mut self, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_end_container(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_finish(&mut self, _range: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn begin_delete_client(&mut self, _client: u64, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_delete_range(&mut self, _client: u64, _start: u64, _end: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+}
+
+fn validate_workspace_init_update(bytes: &[u8]) -> Result<(), DomainError> {
+  const MAX_INIT_BYTES: usize = 16 * 1024 * 1024;
+  if bytes.len() > MAX_INIT_BYTES {
+    return Err(DomainError::Validation("workspace init document is too large".into()));
+  }
+  y_octo::ReadDoc::from_full_update_v1(bytes.to_vec())
+    .map_err(|err| DomainError::Validation(format!("invalid Yjs document update: {err}")))?;
+
+  let mut sink = RejectZeroLengthSink::default();
+  let limits = y_octo_core::decoder_v1::DecodeLimitsCore::default_update();
+  if y_octo_core::decoder_v1::decode_update_v1(bytes, &mut sink, &limits).is_err() || sink.saw_zero_length {
+    return Err(DomainError::Validation(
+      "invalid Yjs document update: zero-length struct".into(),
+    ));
+  }
+  Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn push_varuint(out: &mut Vec<u8>, mut value: u64) {
+    loop {
+      let mut byte = (value & 0x7f) as u8;
+      value >>= 7;
+      if value != 0 {
+        byte |= 0x80;
+      }
+      out.push(byte);
+      if value == 0 {
+        break;
+      }
+    }
+  }
+
+  fn push_varstring(out: &mut Vec<u8>, s: &str) {
+    push_varuint(out, s.len() as u64);
+    out.extend_from_slice(s.as_bytes());
+  }
+
+  /// Synthetic Yjs v1 update with a zero-length `ContentString("")`
+  /// at the outer end of a `Y.Text` sequence, strictly covered by a delete range.
+  fn synthetic_deleted_zero_len_string_update(client: u64) -> Vec<u8> {
+    let mut buf = Vec::new();
+    push_varuint(&mut buf, 1); // 1 client
+    push_varuint(&mut buf, 4); // 4 structs
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0); // start clock = 0
+    // Struct 0 (clock 0, len 1): ContentType(Y.Text, kind=2) under named root.
+    buf.push(0x07);
+    buf.push(0x01);
+    push_varstring(&mut buf, "legacy_zero_str");
+    push_varuint(&mut buf, 2);
+    // Struct 1 (clock 1, len 1): ContentString("a") in Y.Text(client, 0).
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "a");
+    // Struct 2 (clock 2, len 0): ContentString("") with origin_left = (client, 1).
+    buf.push(0x84);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varstring(&mut buf, "");
+    // Struct 3 (clock 2, len 1): ContentString("b") in Y.Text(client, 0).
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "b");
+    // Delete set: [1, 3) strictly covers clock 2.
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 2);
+    buf
+  }
+
+  /// Synthetic Yjs v1 update with a Yjs re-encoded `ContentDeleted(0)`
+  /// at the outer end of a `Y.Text` sequence.
+  fn synthetic_zero_len_deleted_update(client: u64) -> Vec<u8> {
+    let mut buf = Vec::new();
+    push_varuint(&mut buf, 1); // 1 client
+    push_varuint(&mut buf, 3); // 3 structs
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0); // start clock = 0
+    // Struct 0 (clock 0, len 1): ContentType(Y.Text, kind=2) under named root.
+    buf.push(0x07);
+    buf.push(0x01);
+    push_varstring(&mut buf, "legacy_zero_del");
+    push_varuint(&mut buf, 2);
+    // Struct 1 (clock 1, len 1): ContentString("x") in Y.Text(client, 0).
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "x");
+    // Struct 2 (clock 2, len 0): ContentDeleted(0) with origin_left = (client, 1).
+    buf.push(0x81);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 0);
+    // Empty delete set.
+    push_varuint(&mut buf, 0);
+    buf
+  }
+
+  #[test]
+  fn validate_workspace_init_update_rejects_zero_length_struct_frames() {
+    let doc = y_octo::Doc::with_client(1);
+    let mut meta = doc.get_or_create_map("meta").unwrap();
+    meta
+      .insert("name".to_owned(), y_octo::Any::String("init-ws".into()))
+      .unwrap();
+    let valid = doc.encode_update_v1().unwrap();
+    validate_workspace_init_update(&valid).expect("normal init update must pass");
+
+    let zero_str = synthetic_deleted_zero_len_string_update(900_001);
+    let zero_del = synthetic_zero_len_deleted_update(900_002);
+
+    // Step 1: Historical zero-length samples remain readable via ReadDoc.
+    let read_zero_str = y_octo::ReadDoc::from_full_update_v1(zero_str.clone())
+      .expect("historical zero-length string frame must remain readable via ReadDoc");
+    assert!(read_zero_str.array("legacy_zero_str").is_some());
+
+    let read_zero_del = y_octo::ReadDoc::from_full_update_v1(zero_del.clone())
+      .expect("historical zero-length deleted frame must remain readable via ReadDoc");
+    let nested_del = read_zero_del
+      .array("legacy_zero_del")
+      .and_then(|arr| arr.get(0))
+      .and_then(|val| match val {
+        y_octo::ReadValue::Text(t) => Some(t.to_string()),
+        _ => None,
+      });
+    assert_eq!(nested_del.as_deref(), Some("x"));
+
+    // Step 2: Write-boundary decode_update_v1 + RejectZeroLengthSink strictly rejects both.
+    for sample in [&zero_str, &zero_del] {
+      let err = validate_workspace_init_update(sample).unwrap_err();
+      assert!(
+        matches!(err, DomainError::Validation(ref msg) if msg == "invalid Yjs document update: zero-length struct"),
+        "expected step-2 write-boundary zero-length struct rejection, got: {err:?}"
+      );
+    }
   }
 }

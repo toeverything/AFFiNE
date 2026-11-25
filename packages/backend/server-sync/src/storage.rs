@@ -107,12 +107,173 @@ pub fn merge_and_diff_doc(updates: &[&[u8]], state_vector: Option<&[u8]>) -> Res
   Ok((missing, state))
 }
 
-/// Validates a Yjs v1 update binary using `y-octo`.
+/// Dedicated read limits for workspace lifecycle migration, matching
+/// `packages/backend/native/src/doc/mod.rs`.
+pub const WORKSPACE_LIFECYCLE_MIGRATION_READ_LIMITS: y_octo::ReadLimits = y_octo::ReadLimits {
+  max_input_bytes: 256 * 1024 * 1024,
+  max_structs: 16_000_000,
+  max_clients: 200_000,
+  max_collection_entries: 32_000_000,
+  max_any_depth: y_octo::Any::DEFAULT_MAX_DEPTH,
+  max_content_bytes: 256 * 1024 * 1024,
+};
+
+#[derive(Default)]
+struct RejectZeroLengthSink {
+  saw_zero_length: bool,
+}
+
+impl y_octo_core::decoder_v1::V1Sink for RejectZeroLengthSink {
+  fn core_validates_utf8(&self) -> bool {
+    false
+  }
+  fn validate_utf8_early(
+    &mut self,
+    _slot: u8,
+    _value: y_octo_core::decoder_v1::Span,
+  ) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_decode_error(&mut self, _err: y_octo_core::CodecError, _a: usize, _b: u64) {}
+  fn record_client(&mut self, _client: u64) -> Result<bool, y_octo_core::CodecError> {
+    Ok(true)
+  }
+  fn begin_client(&mut self, _client: u64, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_gc(&mut self, _id: y_octo_core::decoder_v1::WireId, _len: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_skip(&mut self, _id: y_octo_core::decoder_v1::WireId, _len: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_item(
+    &mut self,
+    _id: y_octo_core::decoder_v1::WireId,
+    _len: u64,
+    _meta: y_octo_core::decoder_v1::ItemMetaCore,
+  ) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_skipped_zero_origin(&mut self, _origin_left: y_octo_core::decoder_v1::WireId) {
+    self.saw_zero_length = true;
+  }
+  fn on_deleted(&mut self, _len: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_json_start(&mut self, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_json_value(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_json_finish(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_binary(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_string(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_embed(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_format(
+    &mut self,
+    _key: y_octo_core::decoder_v1::Span,
+    _value: y_octo_core::decoder_v1::Span,
+  ) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_type(
+    &mut self,
+    _kind: u64,
+    _tag: Option<y_octo_core::decoder_v1::Span>,
+  ) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_content_start(&mut self, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_content_value(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_content_finish(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_doc(&mut self, _guid: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_start(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_undefined(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_null(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_i32(&mut self, _value: i32) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_f32_bits(&mut self, _bits: u32) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_f64_bits(&mut self, _bits: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_i64_bits(&mut self, _bits: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_bool(&mut self, _value: bool) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_str(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_bytes(&mut self, _value: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_begin_object(&mut self, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_object_key(&mut self, _key: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_begin_array(&mut self, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_end_container(&mut self) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_any_finish(&mut self, _range: y_octo_core::decoder_v1::Span) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn begin_delete_client(&mut self, _client: u64, _count: usize) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+  fn on_delete_range(&mut self, _client: u64, _start: u64, _end: u64) -> Result<(), y_octo_core::CodecError> {
+    Ok(())
+  }
+}
+
+/// Validates a Yjs v1 update binary using `y-octo`, strictly rejecting new
+/// zero-length struct frames at the write boundary.
 pub fn validate_doc_update(update: &[u8]) -> Result<(), SyncError> {
   if update.len() > MAX_DOC_UPDATE_BYTES {
     return Err(SyncError::DocUpdateTooLarge);
   }
-  y_octo::validate_update_v1(update).map_err(|e| SyncError::DocUpdateInvalid(format!("invalid doc update: {e}")))
+  y_octo::validate_update_v1(update).map_err(|e| SyncError::DocUpdateInvalid(format!("invalid doc update: {e}")))?;
+
+  let mut sink = RejectZeroLengthSink::default();
+  let limits = y_octo_core::decoder_v1::DecodeLimitsCore::default_update();
+  if y_octo_core::decoder_v1::decode_update_v1(update, &mut sink, &limits).is_err() || sink.saw_zero_length {
+    return Err(SyncError::DocUpdateInvalid(
+      "invalid doc update: zero-length struct".to_owned(),
+    ));
+  }
+  Ok(())
 }
 
 /// Offloads Yjs v1 update validation to Tokio's blocking thread pool.
@@ -138,22 +299,43 @@ pub async fn merge_and_diff_doc_async(
   .map_err(|e| SyncError::Internal(format!("merge/diff task failed: {e}")))?
 }
 
+enum LifecycleRootDecodeError {
+  ResourceLimit(String),
+  InvalidMetadata(String),
+}
+
 /// Extracts legacy `{ id, trash }` entries from a workspace root doc's
-/// `meta.pages` array, matching `packages/backend/native/src/doc/mod.rs:592-676`.
+/// `meta.pages` array, matching `packages/backend/native/src/doc/mod.rs`.
 pub fn extract_workspace_lifecycle_root_pages(bytes: &[u8]) -> Result<Vec<LegacyRootPage>, SyncError> {
+  extract_workspace_lifecycle_root_pages_with_limits(bytes, WORKSPACE_LIFECYCLE_MIGRATION_READ_LIMITS).map_err(|err| {
+    match err {
+      LifecycleRootDecodeError::ResourceLimit(detail) => {
+        SyncError::DocUpdateInvalid(format!("root doc decode exceeded read limits: {detail}"))
+      }
+      LifecycleRootDecodeError::InvalidMetadata(detail) => {
+        SyncError::DocUpdateInvalid(format!("root doc decode failed: {detail}"))
+      }
+    }
+  })
+}
+
+fn extract_workspace_lifecycle_root_pages_with_limits(
+  bytes: &[u8],
+  limits: y_octo::ReadLimits,
+) -> Result<Vec<LegacyRootPage>, LifecycleRootDecodeError> {
   if is_empty_doc_bin(bytes) {
     return Ok(Vec::new());
   }
 
-  let limits = y_octo::ReadLimits::default();
   match y_octo::ReadDoc::from_full_update_v1_with_limits(bytes.to_vec(), limits) {
     Ok(doc) => Ok(extract_lifecycle_pages_from_read_doc(&doc)),
     Err(y_octo::ReadError::IncompleteSnapshot(_)) => {
       let doc = y_octo::Doc::try_from_binary_v1(bytes)
-        .map_err(|e| SyncError::DocUpdateInvalid(format!("root doc fallback decode failed: {e}")))?;
+        .map_err(|e| LifecycleRootDecodeError::InvalidMetadata(format!("root doc fallback decode failed: {e}")))?;
       Ok(extract_lifecycle_pages_from_doc(&doc))
     }
-    Err(err) => Err(SyncError::DocUpdateInvalid(format!("root doc decode failed: {err}"))),
+    Err(y_octo::ReadError::ResourceLimit(detail)) => Err(LifecycleRootDecodeError::ResourceLimit(detail.to_owned())),
+    Err(err) => Err(LifecycleRootDecodeError::InvalidMetadata(err.to_string())),
   }
 }
 
@@ -398,6 +580,21 @@ impl SyncStorage {
   /// legacy `meta.pages` document identities & trash flags from the workspace
   /// root doc before marking `completed` (1:1 with `workspace_state.rs`).
   pub async fn ensure_workspace_lifecycle(&self, workspace_id: &str, protocol_version: u8) -> Result<(), SyncError> {
+    self
+      .ensure_workspace_lifecycle_with_limits(
+        workspace_id,
+        protocol_version,
+        WORKSPACE_LIFECYCLE_MIGRATION_READ_LIMITS,
+      )
+      .await
+  }
+
+  async fn ensure_workspace_lifecycle_with_limits(
+    &self,
+    workspace_id: &str,
+    protocol_version: u8,
+    limits: y_octo::ReadLimits,
+  ) -> Result<(), SyncError> {
     let mut tx = self.db.begin_tiered(WorkloadTier::InteractiveWrite).await?;
 
     let globally_active: bool = sqlx::query_scalar(
@@ -477,15 +674,18 @@ impl SyncStorage {
       tokio::task::spawn_blocking(move || {
         let slices: Vec<&[u8]> = blobs.iter().map(Vec::as_slice).collect();
         let Ok(merged) = y_octo::merge_updates_v1(slices).and_then(|u| u.encode_v1()) else {
-          return ("invalid_binary", Vec::new());
+          return Ok(("invalid_binary", Vec::new()));
         };
-        match extract_workspace_lifecycle_root_pages(&merged) {
-          Ok(pages) => ("decoded", pages),
-          Err(_) => ("invalid_metadata", Vec::new()),
+        match extract_workspace_lifecycle_root_pages_with_limits(&merged, limits) {
+          Ok(pages) => Ok(("decoded", pages)),
+          Err(LifecycleRootDecodeError::InvalidMetadata(_)) => Ok(("invalid_metadata", Vec::new())),
+          Err(LifecycleRootDecodeError::ResourceLimit(detail)) => Err(SyncError::Internal(format!(
+            "workspace lifecycle root doc exceeded read limits: {detail}"
+          ))),
         }
       })
       .await
-      .map_err(|e| SyncError::Internal(format!("root lifecycle decode task failed: {e}")))?
+      .map_err(|e| SyncError::Internal(format!("root lifecycle decode task failed: {e}")))??
     };
 
     // Deduplicate ordinary docs; duplicate entries clear their trash state (workspace_state.rs:199-211).
@@ -2430,6 +2630,195 @@ mod realtime_snapshot_tests {
         grants_err,
         SyncError::DocActionDenied { ref action, .. } if action == "Doc.Users.Read"
       ));
+
+      db.pool().close().await;
+    });
+  }
+
+  #[test]
+  fn extract_workspace_lifecycle_root_pages_enforces_scan_phase_read_limits_without_doc_fallback() {
+    assert_eq!(WORKSPACE_LIFECYCLE_MIGRATION_READ_LIMITS.max_structs, 16_000_000);
+    assert_ne!(
+      WORKSPACE_LIFECYCLE_MIGRATION_READ_LIMITS.max_structs,
+      y_octo::ReadLimits::default().max_structs
+    );
+
+    let doc = y_octo::Doc::with_client(1);
+    let mut meta = doc.get_or_create_map("meta").unwrap();
+    let mut pages = doc.create_array().unwrap();
+    let mut p = doc.create_map().unwrap();
+    p.insert("id".to_owned(), y_octo::Any::String("limit-doc".into()))
+      .unwrap();
+    p.insert("trash".to_owned(), y_octo::Any::True).unwrap();
+    pages.push(p).unwrap();
+    meta.insert("pages".to_owned(), pages).unwrap();
+    let bin = doc.encode_update_v1().unwrap();
+
+    // Scan-phase ReadLimits (max_structs) must return ResourceLimit without falling back to unbounded Doc.
+    let tiny_limits = y_octo::ReadLimits {
+      max_structs: 1,
+      ..y_octo::ReadLimits::default()
+    };
+    assert!(matches!(
+      y_octo::ReadDoc::from_full_update_v1_with_limits(bin.clone(), tiny_limits.clone()),
+      Err(y_octo::ReadError::ResourceLimit(_))
+    ));
+    let err = extract_workspace_lifecycle_root_pages_with_limits(&bin, tiny_limits).unwrap_err();
+    assert!(matches!(err, LifecycleRootDecodeError::ResourceLimit(_)));
+  }
+
+  #[test]
+  fn ensure_workspace_lifecycle_rethrows_resource_limit_without_completed_checkpoint() {
+    struct TempDb {
+      admin_url: String,
+      db_name: String,
+      url: String,
+    }
+    impl Drop for TempDb {
+      fn drop(&mut self) {
+        if let Ok(mut admin) = postgres::Client::connect(&self.admin_url, postgres::NoTls) {
+          let _ = admin.batch_execute(&format!("DROP DATABASE IF EXISTS \"{}\" WITH (FORCE)", self.db_name));
+        }
+      }
+    }
+
+    let cluster = test_db_harness::pg::PgCluster::from_env_or_docker().expect("test postgres cluster");
+    let suffix = uuid::Uuid::new_v4().simple().to_string();
+    let db_name = format!("test_lifecycle_limit_{}", &suffix[..12]);
+    let mut admin = postgres::Client::connect(cluster.admin_url(), postgres::NoTls).expect("connect test admin");
+    admin
+      .batch_execute(&format!("CREATE DATABASE \"{db_name}\""))
+      .expect("create empty test db");
+    let temp_db = TempDb {
+      admin_url: cluster.admin_url().to_owned(),
+      url: cluster.url_for(&db_name),
+      db_name,
+    };
+    let db_url = temp_db.url.clone();
+
+    let rt = tokio::runtime::Builder::new_current_thread()
+      .enable_all()
+      .build()
+      .unwrap();
+    rt.block_on(async move {
+      let db = ServerDb::connect(DbConfig::new(&db_url))
+        .await
+        .expect("connect db");
+      db.ensure_schema_ready().await.expect("ensure schema ready");
+      let storage = SyncStorage::new(db.clone());
+      let ws_id = uuid::Uuid::new_v4().to_string();
+
+      sqlx::query("INSERT INTO workspaces (id, name, enable_ai, enable_doc_embedding, indexed, last_check_embeddings) VALUES ($1, 'limit-ws', true, true, false, now())")
+        .bind(&ws_id)
+        .execute(db.pool())
+        .await
+        .unwrap();
+      sqlx::query(
+        "INSERT INTO storage_reconciliation_checkpoints (kind, scope, status, updated_at) \
+         VALUES ('workspace_doc_lifecycle_activation', 'global', 'active', now()) \
+         ON CONFLICT (kind, scope) DO UPDATE SET status = 'active', updated_at = now()",
+      )
+      .execute(db.pool())
+      .await
+      .unwrap();
+
+      let doc = y_octo::Doc::with_client(1);
+      let mut meta = doc.get_or_create_map("meta").unwrap();
+      let mut pages = doc.create_array().unwrap();
+      let mut active_page = doc.create_map().unwrap();
+      active_page
+        .insert("id".to_owned(), y_octo::Any::String("page-active".into()))
+        .unwrap();
+      pages.push(active_page).unwrap();
+      let mut trashed_page = doc.create_map().unwrap();
+      trashed_page
+        .insert("id".to_owned(), y_octo::Any::String("page-trashed".into()))
+        .unwrap();
+      trashed_page
+        .insert("trash".to_owned(), y_octo::Any::True)
+        .unwrap();
+      pages.push(trashed_page).unwrap();
+      meta.insert("pages".to_owned(), pages).unwrap();
+      let bin = doc.encode_update_v1().unwrap();
+
+      sqlx::query("INSERT INTO snapshots (workspace_id, guid, blob, created_at, updated_at) VALUES ($1, $1, $2, now(), now())")
+        .bind(&ws_id)
+        .bind(&bin)
+        .execute(db.pool())
+        .await
+        .unwrap();
+
+      let tiny_limits = y_octo::ReadLimits {
+        max_structs: 1,
+        ..y_octo::ReadLimits::default()
+      };
+      let err = storage
+        .ensure_workspace_lifecycle_with_limits(&ws_id, 2, tiny_limits)
+        .await
+        .unwrap_err();
+      assert!(matches!(err, SyncError::Internal(ref msg) if msg.contains("read limits")));
+
+      let completed: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints \
+         WHERE kind = 'workspace_doc_lifecycle' AND scope = $1 AND status = 'completed')",
+      )
+      .bind(&ws_id)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+      assert!(!completed, "ResourceLimit must roll back without writing completed checkpoint");
+
+      // Retrying the same workspace under normal migration limits succeeds, records completed,
+      // and persists both active and trashed page lifecycle states.
+      storage.ensure_workspace_lifecycle(&ws_id, 2).await.unwrap();
+
+      let completed_after: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints \
+         WHERE kind = 'workspace_doc_lifecycle' AND scope = $1 AND status = 'completed')",
+      )
+      .bind(&ws_id)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+      assert!(completed_after, "retry under normal limits must write completed checkpoint");
+
+      let active_seeded: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM updates WHERE workspace_id = $1 AND guid = 'page-active')",
+      )
+      .bind(&ws_id)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+      let trashed_seeded: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM updates WHERE workspace_id = $1 AND guid = 'page-trashed')",
+      )
+      .bind(&ws_id)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+      assert!(active_seeded, "page-active must be seeded in updates");
+      assert!(trashed_seeded, "page-trashed must be seeded in updates");
+
+      let active_state: Option<String> = sqlx::query_scalar(
+        "SELECT lifecycle_state::text FROM workspace_pages WHERE workspace_id = $1 AND page_id = 'page-active'",
+      )
+      .bind(&ws_id)
+      .fetch_optional(db.pool())
+      .await
+      .unwrap();
+      let trashed_state: Option<String> = sqlx::query_scalar(
+        "SELECT lifecycle_state::text FROM workspace_pages WHERE workspace_id = $1 AND page_id = 'page-trashed'",
+      )
+      .bind(&ws_id)
+      .fetch_optional(db.pool())
+      .await
+      .unwrap();
+      assert_eq!(active_state, None, "page-active must remain active (no trashed/deleted row)");
+      assert_eq!(
+        trashed_state.as_deref(),
+        Some("trashed"),
+        "page-trashed must be persisted with lifecycle_state = 'trashed'"
+      );
 
       db.pool().close().await;
     });

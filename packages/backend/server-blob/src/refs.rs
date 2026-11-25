@@ -827,3 +827,143 @@ async fn list_live_blobs_by_keys_in_tx(
       .collect(),
   )
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn push_varuint(buf: &mut Vec<u8>, mut v: u64) {
+    while v >= 0x80 {
+      buf.push(((v as u8) & 0x7f) | 0x80);
+      v >>= 7;
+    }
+    buf.push(v as u8);
+  }
+
+  fn push_varstring(buf: &mut Vec<u8>, s: &str) {
+    push_varuint(buf, s.len() as u64);
+    buf.extend_from_slice(s.as_bytes());
+  }
+
+  fn synthetic_deleted_zero_len_string_update(client: u64) -> Vec<u8> {
+    let mut buf = Vec::new();
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 4);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    buf.push(0x07);
+    buf.push(0x01);
+    push_varstring(&mut buf, "legacy_zero_str");
+    push_varuint(&mut buf, 2);
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "a");
+    buf.push(0x84);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varstring(&mut buf, "");
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "b");
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 2);
+    buf
+  }
+
+  fn synthetic_zero_len_deleted_update(client: u64) -> Vec<u8> {
+    let mut buf = Vec::new();
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 3);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    buf.push(0x07);
+    buf.push(0x01);
+    push_varstring(&mut buf, "legacy_zero_del");
+    push_varuint(&mut buf, 2);
+    buf.push(0x04);
+    buf.push(0x00);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 0);
+    push_varstring(&mut buf, "x");
+    buf.push(0x81);
+    push_varuint(&mut buf, client);
+    push_varuint(&mut buf, 1);
+    push_varuint(&mut buf, 0);
+    push_varuint(&mut buf, 0);
+    buf
+  }
+
+  #[test]
+  fn live_blob_keys_recover_across_zero_len_deleted_frames_and_incremental_edits() {
+    let doc = y_octo::Doc::with_client(201);
+    let mut blocks = doc.get_or_create_map("blocks").unwrap();
+
+    let mut page = doc.create_map().unwrap();
+    page
+      .insert("sys:id".to_owned(), y_octo::Any::String("page-1".into()))
+      .unwrap();
+    page
+      .insert("sys:flavour".to_owned(), y_octo::Any::String("affine:page".into()))
+      .unwrap();
+    let mut page_children = doc.create_array().unwrap();
+    page_children.push(y_octo::Any::String("img-1".into())).unwrap();
+    page.insert("sys:children".to_owned(), page_children).unwrap();
+    blocks.insert("page-1".to_owned(), page).unwrap();
+
+    let mut img = doc.create_map().unwrap();
+    img
+      .insert("sys:id".to_owned(), y_octo::Any::String("img-1".into()))
+      .unwrap();
+    img
+      .insert("sys:flavour".to_owned(), y_octo::Any::String("affine:image".into()))
+      .unwrap();
+    img
+      .insert("prop:sourceId".to_owned(), y_octo::Any::String("blob-img-1".into()))
+      .unwrap();
+    blocks.insert("img-1".to_owned(), img).unwrap();
+
+    let base_snap = doc.encode_update_v1().unwrap();
+    let sv = doc.get_state_vector();
+
+    // Incremental update mounting an attachment block.
+    let mut att = doc.create_map().unwrap();
+    att
+      .insert("sys:id".to_owned(), y_octo::Any::String("att-1".into()))
+      .unwrap();
+    att
+      .insert(
+        "sys:flavour".to_owned(),
+        y_octo::Any::String("affine:attachment".into()),
+      )
+      .unwrap();
+    att
+      .insert("prop:sourceId".to_owned(), y_octo::Any::String("blob-att-1".into()))
+      .unwrap();
+    blocks.insert("att-1".to_owned(), att).unwrap();
+    if let Some(y_octo::Value::Map(p)) = blocks.get("page-1")
+      && let Some(y_octo::Value::Array(mut children)) = p.get("sys:children")
+    {
+      children.push(y_octo::Any::String("att-1".into())).unwrap();
+    }
+    let inc_update = doc.encode_state_as_update_v1(&sv).unwrap();
+
+    let keys = live_blob_keys_from_updates(
+      vec![
+        synthetic_deleted_zero_len_string_update(900_011),
+        synthetic_zero_len_deleted_update(900_012),
+        base_snap,
+        inc_update,
+      ],
+      false,
+    )
+    .expect("live_blob_keys_from_updates must succeed");
+    assert_eq!(keys, BTreeSet::from(["blob-att-1".to_owned(), "blob-img-1".to_owned()]));
+  }
+}

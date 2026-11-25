@@ -77,7 +77,8 @@ url                = "2.5"
 uuid               = { version = "1", features = ["v4", "serde"] }
 v_htmlescape       = "0.15"
 xmlparser          = "0.13"
-y-octo             = { version = "0.4.0", features = ["large_refs"] }
+y-octo             = { version = "0.4.2", features = ["large_refs"] }
+y-octo-core        = "0.1.1"
 zeroize            = "1"
 zstd               = "0.13"
 
