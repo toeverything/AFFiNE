@@ -14,6 +14,8 @@
  * @typedef {Object} BuildManifest
  * @property {string} shellVersion
  * @property {string} buildHash
+ * @property {string} [buildId]
+ * @property {string | null} [assetBaseUrl]
  * @property {string | null} [appEntryJs]
  * @property {Record<PreviewWorkerKind, WorkerAssetSpec>} workers
  * @property {Record<string, string>} fonts
@@ -30,7 +32,11 @@ export function freezeBuildManifest(raw) {
   if (!raw || typeof raw !== 'object') {
     throw new TypeError('Build manifest must be an object');
   }
-  if (!raw.buildHash || typeof raw.buildHash !== 'string') {
+  const effectiveBuildId =
+    (typeof raw.buildId === 'string' && raw.buildId) ||
+    (typeof raw.buildHash === 'string' && raw.buildHash) ||
+    '';
+  if (!effectiveBuildId) {
     throw new TypeError('Build manifest requires a non-empty buildHash');
   }
   /** @type {Record<string, Readonly<WorkerAssetSpec>>} */
@@ -52,9 +58,15 @@ export function freezeBuildManifest(raw) {
   }
   const workers = Object.freeze(frozenWorkers);
   const fonts = Object.freeze({ ...raw.fonts });
+  const assetBaseUrl =
+    typeof raw.assetBaseUrl === 'string' && raw.assetBaseUrl.trim()
+      ? raw.assetBaseUrl.trim()
+      : null;
   return Object.freeze({
     shellVersion: String(raw.shellVersion || 'mobile-v1'),
-    buildHash: raw.buildHash,
+    buildHash: effectiveBuildId,
+    buildId: effectiveBuildId,
+    assetBaseUrl,
     appEntryJs: typeof raw.appEntryJs === 'string' ? raw.appEntryJs : null,
     workers: /** @type {Record<PreviewWorkerKind, WorkerAssetSpec>} */ (
       workers
@@ -79,20 +91,33 @@ export function readEmbeddedManifest(doc, elementId = 'affine-build-manifest') {
 }
 
 /**
- * Resolves a pinned asset URL against the site root (`new URL('/', baseUrl)`)
- * so nested routes like `/workspace/123` never turn `/assets/...` or
- * `./assets/...` into `/workspace/assets/...` 404s.
+ * Resolves a pinned asset URL against the locked asset root or site root so
+ * nested routes and dual-tab shell cookie switches never cause 404 errors.
  *
  * @param {string} assetUrl
  * @param {string} baseUrl
- * @param {string} buildHash
+ * @param {string} buildId
+ * @param {string | null} [assetBaseUrl]
  * @returns {string}
  */
-function pinUrl(assetUrl, baseUrl, buildHash) {
+function pinUrl(assetUrl, baseUrl, buildId, assetBaseUrl = null) {
   const siteRoot = new URL('/', baseUrl);
-  const resolved = new URL(assetUrl, siteRoot);
-  if (!resolved.pathname.includes(buildHash)) {
-    resolved.searchParams.set('v', buildHash);
+  let resolved;
+  if (assetBaseUrl) {
+    const normalizedRoot = assetBaseUrl.endsWith('/')
+      ? assetBaseUrl
+      : `${assetBaseUrl}/`;
+    const lockedRoot = new URL(normalizedRoot, siteRoot);
+    const trimmed =
+      assetUrl.startsWith('/') && !assetUrl.startsWith('//')
+        ? assetUrl.slice(1)
+        : assetUrl;
+    resolved = new URL(trimmed, lockedRoot);
+  } else {
+    resolved = new URL(assetUrl, siteRoot);
+  }
+  if (!resolved.pathname.includes(buildId)) {
+    resolved.searchParams.set('v', buildId);
   }
   return resolved.toString();
 }
@@ -125,26 +150,47 @@ export function buildWorkerBootstrapSource(hostOrigin, scriptUrl, wasmUrl) {
  * @param {BuildManifest} rawManifest
  * @param {Object} [options]
  * @param {string} [options.baseUrl]
+ * @param {string | null} [options.assetBaseUrl]
+ * @param {string} [options.buildId]
  * @param {(url: string, opts: WorkerOptions) => Worker} [options.createWorker]
  * @param {(blob: Blob) => string} [options.createObjectURL]
+ * @param {(url: string) => void} [options.revokeObjectURL]
  * @param {typeof fetch} [options.fetchImpl]
  */
 export function createWorkerLoader(rawManifest, options = {}) {
-  const manifest = freezeBuildManifest(rawManifest);
+  const manifest = freezeBuildManifest({
+    ...rawManifest,
+    buildId: options.buildId || rawManifest.buildId || rawManifest.buildHash,
+    assetBaseUrl:
+      options.assetBaseUrl !== undefined
+        ? options.assetBaseUrl
+        : rawManifest.assetBaseUrl,
+  });
   const baseUrl =
     options.baseUrl ||
     (globalThis.location === undefined
       ? 'https://app.affine.pro/'
       : globalThis.location.href);
+  const lockedAssetBaseUrl = manifest.assetBaseUrl || null;
+  const lockedBuildId = manifest.buildId || manifest.buildHash;
   const hostOrigin = new URL(baseUrl).origin;
   const createWorker =
     options.createWorker || ((url, workerOpts) => new Worker(url, workerOpts));
   const createObjectURL =
     options.createObjectURL || (blob => URL.createObjectURL(blob));
+  const revokeObjectURL =
+    options.revokeObjectURL ||
+    (url => {
+      if (typeof URL.revokeObjectURL === 'function') {
+        URL.revokeObjectURL(url);
+      }
+    });
   const fetchImpl = options.fetchImpl || globalThis.fetch;
 
   /** @type {Map<string, Worker>} */
   const workerCache = new Map();
+  /** @type {Map<string, string>} */
+  const workerBlobUrls = new Map();
 
   /**
    * Resolves pinned `{ script, wasm }` asset URLs for one preview worker.
@@ -158,8 +204,8 @@ export function createWorkerLoader(rawManifest, options = {}) {
       throw new Error(`Unknown worker kind: ${kind}`);
     }
     return {
-      script: pinUrl(entry.script, baseUrl, manifest.buildHash),
-      wasm: pinUrl(entry.wasm, baseUrl, manifest.buildHash),
+      script: pinUrl(entry.script, baseUrl, lockedBuildId, lockedAssetBaseUrl),
+      wasm: pinUrl(entry.wasm, baseUrl, lockedBuildId, lockedAssetBaseUrl),
     };
   }
 
@@ -174,7 +220,7 @@ export function createWorkerLoader(rawManifest, options = {}) {
     if (!entry) {
       throw new Error(`Unknown font script: ${scriptName}`);
     }
-    return pinUrl(entry, baseUrl, manifest.buildHash);
+    return pinUrl(entry, baseUrl, lockedBuildId, lockedAssetBaseUrl);
   }
 
   /**
@@ -195,10 +241,51 @@ export function createWorkerLoader(rawManifest, options = {}) {
     const blobUrl = createObjectURL(blob);
     const worker = createWorker(blobUrl, {
       type: 'module',
-      name: `affine-${kind}-${manifest.buildHash}`,
+      name: `affine-${kind}-${lockedBuildId}`,
     });
     workerCache.set(kind, worker);
+    workerBlobUrls.set(kind, blobUrl);
     return worker;
+  }
+
+  /**
+   * Returns true when a worker of `kind` has already been spawned.
+   *
+   * @param {PreviewWorkerKind} kind
+   * @returns {boolean}
+   */
+  function hasLoadedWorker(kind) {
+    return workerCache.has(kind);
+  }
+
+  /**
+   * Terminates and removes a spawned worker of `kind`.
+   *
+   * @param {PreviewWorkerKind} kind
+   * @returns {boolean}
+   */
+  function terminateWorker(kind) {
+    const worker = workerCache.get(kind);
+    if (!worker) {
+      return false;
+    }
+    workerCache.delete(kind);
+    const blobUrl = workerBlobUrls.get(kind);
+    if (blobUrl) {
+      workerBlobUrls.delete(kind);
+      revokeObjectURL(blobUrl);
+    }
+    worker.terminate?.();
+    return true;
+  }
+
+  /**
+   * Terminates all spawned preview workers.
+   */
+  function dispose() {
+    for (const kind of workerCache.keys()) {
+      terminateWorker(/** @type {PreviewWorkerKind} */ (kind));
+    }
   }
 
   /**
@@ -218,9 +305,14 @@ export function createWorkerLoader(rawManifest, options = {}) {
 
   return Object.freeze({
     manifest,
+    buildId: lockedBuildId,
+    assetBaseUrl: lockedAssetBaseUrl,
     resolveWorkerAssets,
     resolveFontUrl,
     loadWorker,
+    hasLoadedWorker,
+    terminateWorker,
+    dispose,
     loadFont,
   });
 }

@@ -5,6 +5,8 @@ const OPCODE_MERMAID_SVG = 2;
 const OPCODE_MATH_SVG = 3;
 const OPCODE_TYPST_SVG = 4;
 const OPCODE_PDF_PAGE = 5;
+const OPCODE_PDF_PAGE_SCALED = 6;
+const OPCODE_PDF_PAGE_COUNT = 7;
 
 const KIND_OPCODES = {
   mermaid: OPCODE_MERMAID_SVG,
@@ -152,6 +154,24 @@ function prependPageIndex(pageIndex, body) {
 }
 
 /**
+ * Prepends a 4-byte little-endian `pageIndex` and 4-byte little-endian `scale`
+ * float header to a byte payload.
+ *
+ * @param {number} pageIndex
+ * @param {number} scale
+ * @param {Uint8Array} body
+ * @returns {Uint8Array}
+ */
+function prependPageIndexAndScale(pageIndex, scale, body) {
+  const buf = new Uint8Array(8 + body.length);
+  const view = new DataView(buf.buffer);
+  view.setUint32(0, pageIndex >>> 0, true);
+  view.setFloat32(4, scale, true);
+  buf.set(body, 8);
+  return buf;
+}
+
+/**
  * Starts a dedicated preview Web Worker for one capability (`mermaid`, `math`,
  * `typst`, or `pdf`), reading its pinned `.wasm` URL from
  * `globalThis.AFFINE_WORKER_WASM_URL`.
@@ -213,6 +233,7 @@ export function startPreviewWorker(kind) {
 
       /** @type {Uint8Array} */
       let payloadBytes;
+      let opcode = defaultOpcode;
       if (kind === 'mermaid') {
         const themeTag =
           msg.theme === 'light' ? 1 : msg.theme === 'dark' ? 2 : 0;
@@ -230,12 +251,28 @@ export function startPreviewWorker(kind) {
           msg.pdfBytes instanceof Uint8Array
             ? msg.pdfBytes
             : new Uint8Array(msg.pdfBytes || []);
-        payloadBytes = prependPageIndex(Number(msg.pageIndex ?? 0), pdfBytes);
+        if (msg.op === 'page_count') {
+          opcode = OPCODE_PDF_PAGE_COUNT;
+          payloadBytes = pdfBytes;
+        } else if (
+          typeof msg.scale === 'number' &&
+          Number.isFinite(msg.scale) &&
+          msg.scale > 0
+        ) {
+          opcode = OPCODE_PDF_PAGE_SCALED;
+          payloadBytes = prependPageIndexAndScale(
+            Number(msg.pageIndex ?? 0),
+            msg.scale,
+            pdfBytes
+          );
+        } else {
+          payloadBytes = prependPageIndex(Number(msg.pageIndex ?? 0), pdfBytes);
+        }
       } else {
         payloadBytes = encoder.encode(String(msg.latex ?? msg.source ?? ''));
       }
 
-      const frame = invokeRaw(exports, defaultOpcode, payloadBytes);
+      const frame = invokeRaw(exports, opcode, payloadBytes);
       if (frame.length === 0 || frame[0] !== 1) {
         throw new Error(decoder.decode(frame.subarray(1)) || 'worker error');
       }
@@ -262,6 +299,14 @@ export function startPreviewWorker(kind) {
           frame.byteLength
         );
         const pageCount = view.getUint32(1, true);
+        if (msg.op === 'page_count') {
+          globalThis.postMessage({
+            id,
+            ok: true,
+            result: { kind, pageCount },
+          });
+          return;
+        }
         const widthPx = view.getUint32(5, true);
         const heightPx = view.getUint32(9, true);
         const rgba = frame.slice(13);

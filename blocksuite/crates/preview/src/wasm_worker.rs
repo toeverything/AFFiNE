@@ -143,22 +143,49 @@ impl RawWorkerState {
                     let page_index =
                         u32::from_le_bytes([payload[0], payload[1], payload[2], payload[3]])
                             as usize;
+                    Self::render_pdf_frame(&mut self.engine, page_index, 2.0, &payload[4..])
+                }
+                #[cfg(not(feature = "pdf"))]
+                {
+                    Err("pdf feature disabled in this worker".to_string())
+                }
+            }
+            6 => {
+                #[cfg(feature = "pdf")]
+                {
+                    if payload.len() < 8 {
+                        return Err("missing pdf page_index and scale header".to_string());
+                    }
+                    let page_index =
+                        u32::from_le_bytes([payload[0], payload[1], payload[2], payload[3]])
+                            as usize;
+                    let raw_scale =
+                        f32::from_le_bytes([payload[4], payload[5], payload[6], payload[7]]);
+                    let scale = if raw_scale.is_finite() && raw_scale > 0.0 {
+                        raw_scale.clamp(0.25, 4.0)
+                    } else {
+                        1.0
+                    };
+                    Self::render_pdf_frame(&mut self.engine, page_index, scale, &payload[8..])
+                }
+                #[cfg(not(feature = "pdf"))]
+                {
+                    Err("pdf feature disabled in this worker".to_string())
+                }
+            }
+            7 => {
+                #[cfg(feature = "pdf")]
+                {
                     let handle = self
                         .engine
-                        .load_pdf(payload[4..].to_vec())
+                        .load_pdf(payload.to_vec())
                         .map_err(|e| e.to_string())?;
-                    let render = self
-                        .engine
-                        .render_pdf_page(handle, PdfRenderRequest::for_page(page_index, 2.0));
+                    let count = self.engine.pdf_page_count(handle);
                     let _ = self.engine.unload_pdf(handle);
-                    let (page_count, buf) = render.map_err(|e| e.to_string())?;
-                    // `buf.pixels` holds tightly packed premultiplied RGBA8 pixels (`width * height * 4`).
-                    let mut frame = Vec::with_capacity(13 + buf.pixels.len());
+                    let page_count = count.map_err(|e| e.to_string())?;
+                    let mut frame = Vec::with_capacity(5);
                     frame.push(1);
                     frame.extend_from_slice(&(page_count as u32).to_le_bytes());
-                    frame.extend_from_slice(&buf.width_px.to_le_bytes());
-                    frame.extend_from_slice(&buf.height_px.to_le_bytes());
-                    frame.extend_from_slice(&buf.pixels);
                     Ok(frame)
                 }
                 #[cfg(not(feature = "pdf"))]
@@ -168,6 +195,28 @@ impl RawWorkerState {
             }
             other => Err(format!("unknown worker opcode {other}")),
         }
+    }
+
+    #[cfg(feature = "pdf")]
+    fn render_pdf_frame(
+        engine: &mut PreviewEngine,
+        page_index: usize,
+        scale: f32,
+        pdf_bytes: &[u8],
+    ) -> Result<Vec<u8>, String> {
+        let handle = engine
+            .load_pdf(pdf_bytes.to_vec())
+            .map_err(|e| e.to_string())?;
+        let render = engine.render_pdf_page(handle, PdfRenderRequest::for_page(page_index, scale));
+        let _ = engine.unload_pdf(handle);
+        let (page_count, buf) = render.map_err(|e| e.to_string())?;
+        let mut frame = Vec::with_capacity(13 + buf.pixels.len());
+        frame.push(1);
+        frame.extend_from_slice(&(page_count as u32).to_le_bytes());
+        frame.extend_from_slice(&buf.width_px.to_le_bytes());
+        frame.extend_from_slice(&buf.height_px.to_le_bytes());
+        frame.extend_from_slice(&buf.pixels);
+        Ok(frame)
     }
 }
 

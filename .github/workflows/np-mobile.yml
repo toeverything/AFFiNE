@@ -39,6 +39,7 @@ jobs:
         working-directory: packages/frontend
         run: |
           node --test hosts/web/tests/*.test.mjs
+          node hosts/web/scripts/verify-zero-third-party-js.mjs
           node --test perf/compare-n3.test.mjs
 
       - name: Install Linux fontconfig, Mesa Lavapipe Vulkan, and CJK fallback font
@@ -160,6 +161,9 @@ jobs:
 
       - name: Verify real-browser IndexedDB storage and V1 Yjs extraction
         run: node hosts/web/scripts/verify-idb-real-browser.mjs
+
+      - name: Verify real-browser S3-Web GPU recovery, selection menu, and lazy hayro PDF worker
+        run: node hosts/web/scripts/verify-s3-web-real-browser.mjs
 
   android-host:
     name: Android Thin Host (NDK .so Link & kotlinc)

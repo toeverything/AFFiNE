@@ -1,22 +1,47 @@
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { verifyZeroThirdPartyJs } from '../scripts/verify-zero-third-party-js.mjs';
 import {
   bootWebHost,
   buildLegacyFallbackUrl,
+  createGpuRecoveryController,
   createSafeAreaTracker,
   createSandboxedEmbedIframe,
   detectGraphicsSupport,
   flushBeforeNavigation,
   focusImeInGesture,
+  hideRuntimeFatal,
   isLegacyShellUrl,
   observeSafeAreaProbe,
+  removeBootSkeleton,
   sanitizeEmbedSandbox,
+  showBootFatal,
   validateEmbedSrc,
 } from '../src/host.js';
+import {
+  buildPdfPageCacheKey,
+  createPdfPreviewClient,
+} from '../src/pdf-client.js';
+import {
+  attachImeSelectionGuard,
+  computeSelectionOverlayLayout,
+  createSelectionOverlayController,
+  drawSelectionOverlay,
+  executeClipboardAction,
+} from '../src/selection-overlay.js';
 import {
   bootSignInPage,
   classifyAuthRoute,
@@ -72,16 +97,22 @@ void test('static gate: zero package.json, wasm-safe CSP, and DOM whitelist', ()
     for (const match of text.matchAll(createElRe)) {
       const tag = match[1].toLowerCase();
       assert.ok(allowedTags.has(tag), `${file}: unexpected created tag ${tag}`);
-      if (tag === 'script' || tag === 'button') {
+      if (tag === 'script') {
         assert.ok(
           file.endsWith('/sign-in.js'),
-          `${tag} creation is only allowed in sign-in.js, found in ${file}`
+          `script creation is only allowed in sign-in.js, found in ${file}`
+        );
+      }
+      if (tag === 'button') {
+        assert.ok(
+          file.endsWith('/sign-in.js') || file.endsWith('/host.js'),
+          `button creation is only allowed in sign-in.js or host.js, found in ${file}`
         );
       }
       if (tag === 'div') {
         assert.ok(
-          file.endsWith('/a11y.js'),
-          `non-visual semantic div creation is only allowed in a11y.js, found in ${file}`
+          file.endsWith('/a11y.js') || file.endsWith('/host.js'),
+          `div creation is only allowed in a11y.js or host.js, found in ${file}`
         );
       }
     }
@@ -827,13 +858,18 @@ void test('index.html default-app-entry paints first frame on #app-canvas before
   assert.equal(new URL(assignedUrls[0]).searchParams.get('state'), 's1');
   assert.equal(new URL(assignedUrls[0]).searchParams.get('shell'), 'legacy');
 
-  // After markOAuthCodeConsumed(), WebGPU device.lost strips both code and state.
-  handle.markOAuthCodeConsumed();
+  // After markOAuthCodeConsumed(), WebGPU device.lost on a fresh host strips both code and state.
+  const handle2 = await bootWebHost({
+    win: fakeWin,
+    doc: fakeDoc,
+    importModule: async () => {},
+  });
+  handle2.markOAuthCodeConsumed();
   let resolveLost;
   const lostPromise = new Promise(r => {
     resolveLost = r;
   });
-  handle.bindWebGpuDevice({ lost: lostPromise });
+  handle2.bindWebGpuDevice({ lost: lostPromise });
   resolveLost({ reason: 'destroyed' });
   await new Promise(r => setTimeout(r, 10));
   assert.equal(assignedUrls.length, 2);
@@ -1015,4 +1051,1595 @@ void test('sign-in cold-start Turnstile renders on async script load event and s
     'async-turnstile-token'
   );
   assert.equal(posts[0].init.headers['x-captcha-provider'], 'turnstile');
+});
+
+void test('gpu recovery controller restores WebGL2 context and trips IDB-flushed fallback on timeout, threshold, or WebGPU failure', async () => {
+  let clock = 1000;
+  let nextTimerId = 1;
+  /** @type {Map<number, { fn: () => void, at: number }>} */
+  const timers = new Map();
+  const events = [];
+  const navigated = [];
+  let rebuildShouldSucceed = true;
+  let webgl2FallbackOk = true;
+  let flushOk = true;
+  let pendingCount = 2;
+
+  const controller = createGpuRecoveryController({
+    getHref: () =>
+      'https://app.affine.pro/workspace/ws-1/doc-2?code=abc&state=st1&tab=doc',
+    isOAuthCodeConsumed: () => true,
+    pauseInput: () => events.push('pause'),
+    resumeInput: () => events.push('resume'),
+    freezeFrameLoop: () => events.push('freeze'),
+    unfreezeFrameLoop: () => events.push('unfreeze'),
+    onContextRestored: () => {
+      events.push('rebuild');
+      return rebuildShouldSucceed;
+    },
+    tryWebGl2Fallback: () => {
+      events.push('webgl2-fallback');
+      return webgl2FallbackOk;
+    },
+    flushPendingWrites: async () => {
+      events.push(`flush:${flushOk ? 'ok' : 'fail'}`);
+      if (!flushOk) {
+        return { ok: false, pendingCount };
+      }
+      pendingCount = 0;
+      return { ok: true, pendingCount: 0 };
+    },
+    navigate: url => navigated.push(url),
+    showFatal: msg => events.push(`fatal:${msg}`),
+    restoreTimeoutMs: 4000,
+    maxContextLosses: 3,
+    lossWindowMs: 30_000,
+    now: () => clock,
+    setTimer: (fn, ms) => {
+      const id = nextTimerId++;
+      timers.set(id, { fn, at: clock + ms });
+      return id;
+    },
+    clearTimer: id => {
+      timers.delete(/** @type {number} */ (id));
+    },
+  });
+
+  // 1. Recoverable webglcontextlost -> webglcontextrestored without reload.
+  let prevented = false;
+  controller.handleWebGlContextLost({
+    preventDefault() {
+      prevented = true;
+    },
+  });
+  assert.equal(prevented, true);
+  assert.equal(controller.getState().status, 'context-lost');
+  assert.equal(controller.getState().inputPaused, true);
+  assert.equal(controller.getState().frameLoopFrozen, true);
+  assert.equal(timers.size, 1);
+
+  const restoreRes = await controller.handleWebGlContextRestored();
+  assert.deepEqual(restoreRes, { recovered: true });
+  assert.equal(timers.size, 0);
+  assert.equal(controller.getState().status, 'ready');
+  assert.equal(controller.getState().inputPaused, false);
+  assert.equal(controller.getState().frameLoopFrozen, false);
+  assert.equal(navigated.length, 0);
+
+  // 2. WebGPU device.lost downgrades to WebGL2 cleanly when available.
+  const downgradeRes = await controller.handleWebGpuDeviceLost({
+    reason: 'destroyed',
+  });
+  assert.deepEqual(downgradeRes, { recovered: true, mode: 'webgl2' });
+  assert.equal(navigated.length, 0);
+
+  // 3. Unrecoverable restore timeout with failing IDB flush aborts navigation and stays retryable.
+  clock += 1000;
+  flushOk = false;
+  pendingCount = 2;
+  controller.handleWebGlContextLost({ preventDefault() {} });
+  assert.equal(timers.size, 1);
+  const [timerEntry] = [...timers.values()];
+  timers.clear();
+  timerEntry.fn();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(navigated.length, 0);
+  assert.equal(pendingCount, 2);
+  assert.equal(controller.getState().status, 'fallback-blocked');
+  assert.equal(controller.getState().retryable, true);
+
+  // 4. Retrying fallback after IDB recovers persists pending writes and navigates to legacy.
+  flushOk = true;
+  const retryRes = await controller.retryFallback();
+  assert.deepEqual(retryRes, { navigated: true });
+  assert.equal(pendingCount, 0);
+  assert.equal(navigated.length, 1);
+  const target = new URL(navigated[0]);
+  assert.equal(target.searchParams.get('shell'), 'legacy');
+  assert.equal(target.searchParams.get('tab'), 'doc');
+  assert.equal(target.searchParams.has('code'), false);
+  assert.equal(target.searchParams.has('state'), false);
+
+  // 5. Repeated context losses trip circuit breaker immediately at threshold.
+  const thresholdNavs = [];
+  const thresholdCtrl = createGpuRecoveryController({
+    getHref: () => 'https://app.affine.pro/doc/1',
+    isOAuthCodeConsumed: () => false,
+    pauseInput() {},
+    resumeInput() {},
+    flushPendingWrites: async () => ({ ok: true, pendingCount: 0 }),
+    navigate: url => thresholdNavs.push(url),
+    maxContextLosses: 2,
+    now: () => 5000,
+    setTimer: () => 1,
+    clearTimer() {},
+  });
+  assert.equal(
+    thresholdCtrl.handleWebGlContextLost({ preventDefault() {} }).tripped,
+    false
+  );
+  assert.equal(
+    thresholdCtrl.handleWebGlContextLost({ preventDefault() {} }).tripped,
+    true
+  );
+  await Promise.resolve();
+  assert.equal(thresholdNavs.length, 1);
+  assert.equal(new URL(thresholdNavs[0]).searchParams.get('shell'), 'legacy');
+
+  // 6. WebGPU device.lost + WebGL2 fallback failure triggers legacy circuit breaker.
+  const webgpuNavs = [];
+  webgl2FallbackOk = false;
+  const webgpuCtrl = createGpuRecoveryController({
+    getHref: () => 'https://app.affine.pro/doc/2',
+    isOAuthCodeConsumed: () => false,
+    pauseInput() {},
+    resumeInput() {},
+    tryWebGl2Fallback: () => webgl2FallbackOk,
+    flushPendingWrites: async () => ({ ok: true, pendingCount: 0 }),
+    navigate: url => webgpuNavs.push(url),
+  });
+  const gpuLostRes = await webgpuCtrl.handleWebGpuDeviceLost({
+    reason: 'unknown',
+  });
+  assert.equal(gpuLostRes.recovered, false);
+  assert.equal(gpuLostRes.navigated, true);
+  assert.equal(webgpuNavs.length, 1);
+});
+
+void test('selection overlay computes non-overlapping bidi handles, safe margins, drag state, and safe clipboard actions', async () => {
+  // Table-driven geometry checks: LTR, RTL/bidi close carets, left/right viewport clamping, top flip.
+  const cases = [
+    {
+      name: 'ltr-standard',
+      input: {
+        viewport: {
+          width: 390,
+          height: 844,
+          safeArea: { top: 44, bottom: 34 },
+        },
+        rects: [{ x: 60, y: 200, width: 220, height: 24 }],
+        caretStart: { x: 60, y: 200, height: 24, dir: 'ltr' },
+        caretEnd: { x: 280, y: 200, height: 24, dir: 'ltr' },
+      },
+      expectedStartFlare: 'left',
+      expectedEndFlare: 'right',
+      expectedPlacement: 'above',
+    },
+    {
+      name: 'rtl-close-carets-no-overlap',
+      input: {
+        viewport: { width: 390, height: 844 },
+        rects: [{ x: 180, y: 220, width: 6, height: 22 }],
+        caretStart: { x: 186, y: 220, height: 22, dir: 'rtl' },
+        caretEnd: { x: 180, y: 220, height: 22, dir: 'rtl' },
+      },
+      expectedStartFlare: 'right',
+      expectedEndFlare: 'left',
+      expectedPlacement: 'above',
+    },
+    {
+      name: 'top-edge-flips-below-and-clamps-left',
+      input: {
+        viewport: { width: 390, height: 844, safeArea: { top: 50, left: 0 } },
+        rects: [{ x: 4, y: 58, width: 30, height: 22 }],
+        caretStart: { x: 4, y: 58, height: 22 },
+        caretEnd: { x: 34, y: 58, height: 22 },
+      },
+      expectedStartFlare: 'left',
+      expectedEndFlare: 'right',
+      expectedPlacement: 'below',
+    },
+  ];
+
+  for (const tc of cases) {
+    const layout = computeSelectionOverlayLayout(tc.input);
+    assert.equal(layout.startHandle.flare, tc.expectedStartFlare, tc.name);
+    assert.equal(layout.endHandle.flare, tc.expectedEndFlare, tc.name);
+    assert.equal(layout.menu.placement, tc.expectedPlacement, tc.name);
+    assert.equal(layout.menu.visible, true, tc.name);
+    assert.ok(layout.menu.x >= 12, `${tc.name}: left margin >= 12px`);
+    assert.ok(
+      layout.menu.x + layout.menu.width <= tc.input.viewport.width - 12,
+      `${tc.name}: right margin >= 12px`
+    );
+    const headDist = Math.abs(
+      layout.endHandle.headCx - layout.startHandle.headCx
+    );
+    assert.ok(
+      headDist >= layout.startHandle.radius * 2,
+      `${tc.name}: teardrop heads must not overlap`
+    );
+  }
+
+  // Dragging hides menu and shows loupe; pointerup restores menu and hides loupe.
+  const actionsTriggered = [];
+  const drags = [];
+  const ctrl = createSelectionOverlayController({
+    getInput: () => ({
+      viewport: { width: 390, height: 844 },
+      rects: [{ x: 60, y: 200, width: 200, height: 24 }],
+      caretStart: { x: 60, y: 200, height: 24 },
+      caretEnd: { x: 260, y: 200, height: 24 },
+    }),
+    onDragHandle: (handle, x, y) => drags.push({ handle, x, y }),
+    onAction: action => actionsTriggered.push(action),
+  });
+
+  const initialLayout = ctrl.getLayout();
+  assert.ok(initialLayout);
+  const copyBtn = initialLayout.menu.items.find(i => i.id === 'copy');
+  assert.ok(copyBtn);
+  const cx = copyBtn.x + copyBtn.width / 2;
+  const cy = copyBtn.y + copyBtn.height / 2;
+
+  // Pointer down records press without firing action yet; sliding off cancels.
+  const downSlide = ctrl.onPointerDown(cx, cy);
+  assert.equal(downSlide.handled, true);
+  assert.deepEqual(actionsTriggered, []);
+  ctrl.onPointerMove(5, 800);
+  const upSlide = ctrl.onPointerUp(5, 800);
+  assert.equal(upSlide.cancelled, true);
+  assert.deepEqual(actionsTriggered, []);
+
+  // Pointer down + pointer up on same button fires action on pointerup.
+  ctrl.onPointerDown(cx, cy);
+  assert.deepEqual(actionsTriggered, []);
+  const upConfirm = ctrl.onPointerUp(cx, cy);
+  assert.equal(upConfirm.handled, true);
+  assert.equal(upConfirm.action, 'copy');
+  assert.deepEqual(actionsTriggered, ['copy']);
+
+  // Pointer cancel clears pressed menu state without firing action.
+  ctrl.onPointerDown(cx, cy);
+  assert.equal(ctrl.onPointerCancel(), true);
+  assert.equal(ctrl.getPressedMenuAction(), null);
+  assert.deepEqual(actionsTriggered, ['copy']);
+
+  const dragStart = ctrl.onPointerDown(
+    initialLayout.endHandle.headCx,
+    initialLayout.endHandle.headCy
+  );
+  assert.equal(dragStart.handled, true);
+  assert.equal(ctrl.isDragging(), true);
+  assert.equal(ctrl.getLayout().menu.visible, false);
+  assert.equal(ctrl.getLayout().loupe.visible, true);
+  ctrl.onPointerMove(280, 200);
+  assert.equal(drags.length, 1);
+  ctrl.onPointerUp();
+  assert.equal(ctrl.isDragging(), false);
+  assert.equal(ctrl.getLayout().menu.visible, true);
+  assert.equal(ctrl.getLayout().loupe.visible, false);
+
+  // Canvas 2D draw smoke test (ensures drawSelectionOverlay executes cleanly).
+  const drawOps = [];
+  const fakeCtx = new Proxy(
+    {},
+    {
+      get(_target, prop) {
+        return (...args) => drawOps.push([String(prop), args.length]);
+      },
+      set() {
+        return true;
+      },
+    }
+  );
+  drawSelectionOverlay(/** @type {any} */ (fakeCtx), initialLayout, {
+    theme: 'light',
+  });
+  assert.ok(drawOps.length > 10);
+
+  // Clipboard Cut MUST NOT delete text if clipboard write fails.
+  let docText = 'hello world';
+  const failedCut = await executeClipboardAction({
+    action: 'cut',
+    getSelectedText: () => 'world',
+    getSelectionToken: () => 'sel-6-11',
+    deleteSelection: () => {
+      docText = 'hello ';
+    },
+    isSecureContext: true,
+    clipboard: {
+      writeText: async () => {
+        throw new Error('NotAllowedError');
+      },
+    },
+  });
+  assert.equal(failedCut.ok, false);
+  assert.equal(docText, 'hello world');
+
+  // Clipboard Cut deletes text only after writeText succeeds with a valid selection token.
+  let copiedValue = '';
+  const okCut = await executeClipboardAction({
+    action: 'cut',
+    getSelectedText: () => 'world',
+    getSelectionToken: () => 'sel-6-11',
+    deleteSelection: () => {
+      docText = 'hello ';
+    },
+    isSecureContext: true,
+    clipboard: {
+      writeText: async text => {
+        copiedValue = text;
+      },
+    },
+  });
+  assert.equal(okCut.ok, true);
+  assert.equal(copiedValue, 'world');
+  assert.equal(docText, 'hello ');
+
+  // Non-HTTPS transient fallback clears #ime value after copy.
+  const fakeIme = {
+    readOnly: true,
+    value: '',
+    focus() {},
+    setSelectionRange() {},
+    addEventListener(type, fn) {
+      this._listeners = this._listeners || new Map();
+      this._listeners.set(type, fn);
+    },
+    removeEventListener(type) {
+      this._listeners?.delete(type);
+    },
+  };
+  const fallbackCopy = await executeClipboardAction({
+    action: 'copy',
+    getSelectedText: () => 'fallback-text',
+    isSecureContext: false,
+    clipboard: null,
+    imeEl: /** @type {any} */ (fakeIme),
+    doc: /** @type {any} */ ({ execCommand: cmd => cmd === 'copy' }),
+  });
+  assert.equal(fallbackCopy.ok, true);
+  assert.equal(fallbackCopy.method, 'exec-command-fallback');
+  assert.equal(fakeIme.value, '');
+  assert.equal(fakeIme.readOnly, true);
+
+  // IME selection guard blocks native menu only when overlay is active.
+  let overlayActive = true;
+  const guard = attachImeSelectionGuard(
+    /** @type {any} */ (fakeIme),
+    () => overlayActive
+  );
+  let menuPrevented = false;
+  fakeIme._listeners.get('contextmenu')({
+    preventDefault() {
+      menuPrevented = true;
+    },
+  });
+  assert.equal(menuPrevented, true);
+  overlayActive = false;
+  menuPrevented = false;
+  fakeIme._listeners.get('contextmenu')({
+    preventDefault() {
+      menuPrevented = true;
+    },
+  });
+  assert.equal(menuPrevented, false);
+  guard.dispose();
+});
+
+void test('pdf client lazy-spawns worker, deduplicates in-flight renders, evicts offscreen LRU, and locks assetBaseUrl across tabs', async () => {
+  // Dual-tab assetBaseUrl + buildId pinning.
+  const pinnedLoader = createWorkerLoader(
+    {
+      shellVersion: 'mobile-v1',
+      buildHash: 'ignored-hash',
+      buildId: 'build-native-42',
+      assetBaseUrl: 'https://app.affine.pro/shells/native-42/',
+      workers: {
+        mermaid: {
+          script: '/src/workers/mermaid-worker.js',
+          wasm: '/assets/mermaid-worker.wasm',
+        },
+        math: {
+          script: '/src/workers/math-worker.js',
+          wasm: '/assets/math-worker.wasm',
+        },
+        typst: {
+          script: '/src/workers/typst-worker.js',
+          wasm: '/assets/typst-worker.wasm',
+        },
+        pdf: {
+          script: '/src/workers/pdf-worker.js',
+          wasm: '/assets/pdf-worker.wasm',
+        },
+      },
+      fonts: { latin: '/assets/fonts/inter.ttf' },
+    },
+    { baseUrl: 'https://app.affine.pro/workspace/ws-1/doc-9' }
+  );
+  assert.deepEqual(pinnedLoader.resolveWorkerAssets('pdf'), {
+    script:
+      'https://app.affine.pro/shells/native-42/src/workers/pdf-worker.js?v=build-native-42',
+    wasm: 'https://app.affine.pro/shells/native-42/assets/pdf-worker.wasm?v=build-native-42',
+  });
+  assert.equal(
+    pinnedLoader.resolveFontUrl('latin'),
+    'https://app.affine.pro/shells/native-42/assets/fonts/inter.ttf?v=build-native-42'
+  );
+
+  // Lazy PDF client test with controllable mock worker.
+  let spawnCount = 0;
+  let terminated = false;
+  const posted = [];
+  /** @type {Set<(ev: { data: any }) => void>} */
+  const msgListeners = new Set();
+
+  const mockWorker = {
+    postMessage(msg) {
+      posted.push(msg);
+    },
+    addEventListener(type, fn) {
+      if (type === 'message') msgListeners.add(fn);
+    },
+    removeEventListener(type, fn) {
+      if (type === 'message') msgListeners.delete(fn);
+    },
+    terminate() {
+      terminated = true;
+    },
+  };
+
+  const client = createPdfPreviewClient({
+    workerLoader: {
+      loadWorker(kind) {
+        assert.equal(kind, 'pdf');
+        spawnCount += 1;
+        return mockWorker;
+      },
+      terminateWorker() {
+        terminated = true;
+        return true;
+      },
+    },
+    maxCacheBytes: 32,
+  });
+
+  // Zero workers spawned before any PDF request.
+  assert.equal(spawnCount, 0);
+  assert.equal(client.getStats().workerSpawned, false);
+
+  const emitResponse = data => {
+    for (const fn of msgListeners) {
+      fn({ data });
+    }
+  };
+
+  // Concurrent duplicate requests for same (docKey, pageIndex, scale) share 1 RPC.
+  const pdfBytes = new Uint8Array([37, 80, 68, 70]);
+  const r1 = client.renderPage({
+    docKey: 'doc-pdf',
+    pdfBytes,
+    pageIndex: 0,
+    scale: 1,
+  });
+  const r2 = client.renderPage({
+    docKey: 'doc-pdf',
+    pdfBytes,
+    pageIndex: 0,
+    scale: 1,
+  });
+  const r3 = client.renderPage({
+    docKey: 'doc-pdf',
+    pdfBytes,
+    pageIndex: 1,
+    scale: 1,
+  });
+
+  assert.equal(spawnCount, 1);
+  assert.equal(posted.length, 2);
+  assert.equal(client.getStats().dedupHits, 1);
+
+  // Resolve out-of-order to verify requestId multiplexing.
+  emitResponse({
+    id: posted[1].id,
+    ok: true,
+    result: {
+      pageCount: 3,
+      widthPx: 2,
+      heightPx: 2,
+      rgba: new Uint8Array(16).fill(200),
+    },
+  });
+  emitResponse({
+    id: posted[0].id,
+    ok: true,
+    result: {
+      pageCount: 3,
+      widthPx: 2,
+      heightPx: 2,
+      rgba: new Uint8Array(16).fill(100),
+    },
+  });
+
+  const [page0a, page0b, page1] = await Promise.all([r1, r2, r3]);
+  assert.equal(page0a.pageCount, 3);
+  assert.equal(page0b.rgba[0], 100);
+  assert.equal(page1.rgba[0], 200);
+  assert.equal(client.getStats().cacheBytes, 32);
+
+  // Page count is already cached (0 extra worker RPCs).
+  assert.equal(await client.getPageCount({ docKey: 'doc-pdf', pdfBytes }), 3);
+  assert.equal(posted.length, 2);
+
+  // Protect page 0 as visible; rendering page 2 evicts offscreen page 1 first.
+  client.setVisibleKeys([buildPdfPageCacheKey('doc-pdf', 0, 1)]);
+  const r4 = client.renderPage({
+    docKey: 'doc-pdf',
+    pdfBytes,
+    pageIndex: 2,
+    scale: 1,
+  });
+  assert.equal(posted.length, 3);
+  emitResponse({
+    id: posted[2].id,
+    ok: true,
+    result: {
+      pageCount: 3,
+      widthPx: 2,
+      heightPx: 2,
+      rgba: new Uint8Array(16).fill(50),
+    },
+  });
+  await r4;
+  assert.equal(client.getStats().evictions, 1);
+  assert.equal(client.getStats().cacheBytes, 32);
+
+  // Page 0 must still be a cache hit.
+  const page0Cached = await client.renderPage({
+    docKey: 'doc-pdf',
+    pdfBytes,
+    pageIndex: 0,
+    scale: 1,
+  });
+  assert.equal(page0Cached.fromCache, true);
+  assert.equal(posted.length, 3);
+
+  client.dispose();
+  assert.equal(terminated, true);
+  assert.equal(client.getStats().disposed, true);
+  assert.equal(client.getStats().cacheEntries, 0);
+});
+
+void test('verifyZeroThirdPartyJs passes on repo and catches forbidden imports, scripts, and manifests', () => {
+  const realReport = verifyZeroThirdPartyJs();
+  assert.equal(
+    realReport.ok,
+    true,
+    `Expected 0 violations, got: ${realReport.violations.join('; ')}`
+  );
+  assert.ok(realReport.checkedFiles >= 8);
+
+  const tmp = mkdtempSync(join(tmpdir(), 'affine-zero-js-gate-'));
+  try {
+    const fakeWeb = join(tmp, 'web');
+    mkdirSync(join(fakeWeb, 'src'), { recursive: true });
+    writeFileSync(join(tmp, 'package.json'), '{"name":"bad"}');
+    writeFileSync(
+      join(fakeWeb, 'src/bad.js'),
+      "import {\n  useState,\n} from 'react';\nexport {\n  debounce,\n} from 'lodash';\nconst s = document.createElement('script');\ns.src = 'https://evil.example/a.js';\n"
+    );
+    writeFileSync(
+      join(fakeWeb, 'index.html'),
+      '<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="script-src \'self\' https://cdn.evil.com" /></head><body><canvas id="app-canvas"></canvas><div id="floating-menu"></div></body></html>'
+    );
+    const badReport = verifyZeroThirdPartyJs({
+      webRoot: fakeWeb,
+      hostsRoot: tmp,
+    });
+    assert.equal(badReport.ok, false);
+    assert.ok(badReport.violations.some(v => v.includes('package.json')));
+    assert.ok(badReport.violations.some(v => v.includes('react')));
+    assert.ok(badReport.violations.some(v => v.includes('lodash')));
+    assert.ok(badReport.violations.some(v => v.includes('cdn.evil.com')));
+    assert.ok(badReport.violations.some(v => v.includes('floating-menu')));
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+void test('gpu recovery single-flight mutex blocks late restore, deduplicates concurrent losses, pauses timer when hidden, and recreates runtime #boot retry UI', async () => {
+  const tick = () => new Promise(r => setTimeout(r, 0));
+
+  // 1. Late webglcontextrestored while fallback flush is in flight must not resume input or overwrite state.
+  for (const flushOk of [true, false]) {
+    let resolveFlush;
+    const log = [];
+    const ctrl = createGpuRecoveryController({
+      getHref: () => 'https://app.affine.pro/workspace/ws-1',
+      isOAuthCodeConsumed: () => false,
+      pauseInput: () => log.push('pause'),
+      resumeInput: () => log.push('resume'),
+      freezeFrameLoop: () => log.push('freeze'),
+      unfreezeFrameLoop: () => log.push('unfreeze'),
+      flushPendingWrites: () =>
+        new Promise(r => {
+          log.push('flush-start');
+          resolveFlush = () =>
+            r({ ok: flushOk, pendingCount: flushOk ? 0 : 1 });
+        }),
+      navigate: url => log.push(`nav:${new URL(url).search}`),
+      showFatal: (_msg, opts) =>
+        log.push(`fatal:retry=${Boolean(opts?.retryable)}`),
+      onContextRestored: () => true,
+    });
+
+    const fallbackPromise = ctrl.triggerFallback('context-restore-timeout');
+    assert.equal(ctrl.getState().status, 'fallback-pending');
+
+    const lateRestore = await ctrl.handleWebGlContextRestored();
+    assert.equal(lateRestore.recovered, false);
+    assert.equal(ctrl.getState().status, 'fallback-pending');
+    assert.equal(ctrl.getState().inputPaused, true);
+    assert.equal(log.includes('resume'), false);
+
+    // Concurrent loss events during fallback-pending must not start extra flushes.
+    ctrl.handleWebGlContextLost({ preventDefault() {} });
+    ctrl.handleWebGlContextLost({ preventDefault() {} });
+    resolveFlush();
+    await fallbackPromise;
+    await tick();
+
+    assert.equal(log.filter(x => x === 'flush-start').length, 1);
+    assert.equal(log.filter(x => x.startsWith('nav:')).length, flushOk ? 1 : 0);
+    assert.equal(
+      ctrl.getState().status,
+      flushOk ? 'fallback-navigated' : 'fallback-blocked'
+    );
+  }
+
+  // 2. Visibility hidden pauses restore timeout; visible resumes it.
+  let hidden = true;
+  let timerCallbacks = [];
+  const visCtrl = createGpuRecoveryController({
+    getHref: () => 'https://app.affine.pro/doc/1',
+    isOAuthCodeConsumed: () => false,
+    isDocumentHidden: () => hidden,
+    pauseInput() {},
+    resumeInput() {},
+    flushPendingWrites: async () => ({ ok: true, pendingCount: 0 }),
+    navigate() {},
+    setTimer: fn => {
+      timerCallbacks.push(fn);
+      return timerCallbacks.length;
+    },
+    clearTimer() {
+      timerCallbacks = [];
+    },
+  });
+  visCtrl.handleWebGlContextLost({ preventDefault() {} });
+  assert.equal(timerCallbacks.length, 0);
+  hidden = false;
+  visCtrl.handleVisibilityChange(false);
+  assert.equal(timerCallbacks.length, 1);
+
+  // 3. Post-boot showBootFatal recreates #boot on doc.body with clickable #gpu-fallback-retry.
+  const elements = new Map();
+  const makeNode = tag => {
+    const node = {
+      tag,
+      id: '',
+      dataset: {},
+      style: {},
+      textContent: '',
+      disabled: false,
+      onclick: null,
+      children: [],
+      setAttribute() {},
+      append(child) {
+        this.children.push(child);
+        if (child.id) elements.set(child.id, child);
+      },
+      remove() {
+        if (this.id) elements.delete(this.id);
+        for (const c of this.children) {
+          if (c.id) elements.delete(c.id);
+        }
+      },
+    };
+    return node;
+  };
+  const body = makeNode('body');
+  const bootInit = makeNode('div');
+  bootInit.id = 'boot';
+  elements.set('boot', bootInit);
+  const fakeDoc = {
+    body,
+    createElement: makeNode,
+    getElementById: id => elements.get(id) || null,
+    querySelectorAll: () => [],
+  };
+
+  removeBootSkeleton(/** @type {any} */ (fakeDoc));
+  assert.equal(fakeDoc.getElementById('boot'), null);
+
+  let retryClicked = 0;
+  showBootFatal(
+    /** @type {any} */ (fakeDoc),
+    'Unable to save pending edits. Tap Retry to try again.',
+    {
+      retryable: true,
+      onRetry: () => {
+        retryClicked += 1;
+      },
+    }
+  );
+  assert.ok(fakeDoc.getElementById('boot'));
+  assert.equal(
+    fakeDoc.getElementById('boot-message')?.textContent,
+    'Unable to save pending edits. Tap Retry to try again.'
+  );
+  const retryBtn = fakeDoc.getElementById('gpu-fallback-retry');
+  assert.ok(retryBtn);
+  retryBtn.onclick();
+  assert.equal(retryClicked, 1);
+  hideRuntimeFatal(/** @type {any} */ (fakeDoc));
+  assert.equal(fakeDoc.getElementById('boot'), null);
+});
+
+void test('pdf client recovers from worker error by spawning a fresh worker and protects cached RGBA buffers from caller transfer', async () => {
+  let spawnCount = 0;
+  let respond = false;
+  let currentListeners = null;
+  const sentScales = [];
+
+  const makeMockWorker = () => {
+    const listeners = { message: new Set(), error: new Set() };
+    currentListeners = listeners;
+    return {
+      postMessage(msg) {
+        sentScales.push(msg.scale);
+        if (!respond) return;
+        queueMicrotask(() => {
+          const rgba = new Uint8Array(64).fill(42);
+          for (const fn of listeners.message) {
+            fn({
+              data: {
+                id: msg.id,
+                ok: true,
+                result: { pageCount: 2, widthPx: 4, heightPx: 4, rgba },
+              },
+            });
+          }
+        });
+      },
+      addEventListener: (t, fn) => listeners[t]?.add(fn),
+      removeEventListener: (t, fn) => listeners[t]?.delete(fn),
+      terminate() {},
+    };
+  };
+
+  const client = createPdfPreviewClient({
+    workerLoader: {
+      loadWorker() {
+        spawnCount += 1;
+        return makeMockWorker();
+      },
+      terminateWorker() {
+        return true;
+      },
+    },
+  });
+
+  const pdfBytes = new Uint8Array(16);
+  const failed = client.renderPage({ docKey: 'd1', pdfBytes, pageIndex: 0 });
+  for (const fn of currentListeners.error) {
+    fn({ message: 'worker crashed' });
+  }
+  await assert.rejects(failed, /worker crashed/);
+  assert.equal(spawnCount, 1);
+
+  // Next request spawns a fresh worker and succeeds; concurrent dedup returns independent buffers.
+  respond = true;
+  const [pA, pB] = await Promise.all([
+    client.renderPage({ docKey: 'd1', pdfBytes, pageIndex: 0, scale: 8 }),
+    client.renderPage({ docKey: 'd1', pdfBytes, pageIndex: 0, scale: 4 }),
+  ]);
+  assert.equal(spawnCount, 2);
+  assert.equal(pA.scale, 4);
+  assert.equal(pB.scale, 4);
+  assert.equal(client.getStats().dedupHits, 1);
+  assert.notEqual(pA.rgba, pB.rgba);
+
+  // Transferring caller A's buffer must NOT empty caller B's buffer or the cached entry.
+  structuredClone(pA.rgba.buffer, { transfer: [pA.rgba.buffer] });
+  assert.equal(pA.rgba.byteLength, 0);
+  assert.equal(pB.rgba.byteLength, 64);
+
+  const cached = await client.renderPage({
+    docKey: 'd1',
+    pdfBytes,
+    pageIndex: 0,
+    scale: 8,
+  });
+  assert.equal(cached.fromCache, true);
+  assert.equal(cached.scale, 4);
+  assert.equal(cached.rgba.byteLength, 64);
+  assert.equal(cached.rgba[0], 42);
+
+  // Scale below 0.25 clamps to 0.25 before cache lookup and worker RPC.
+  const lowScale = await client.renderPage({
+    docKey: 'd1',
+    pdfBytes,
+    pageIndex: 1,
+    scale: 0.1,
+  });
+  assert.equal(lowScale.scale, 0.25);
+  assert.equal(sentScales.at(-1), 0.25);
+  client.dispose();
+});
+
+void test('stale async restore epoch cannot overwrite fallback-pending, async Cut aborts when selection changes, and WebGPU setScene presents frames', async () => {
+  // 1. Stale async onContextRestored resolving after a newer contextlost tripped fallback-pending.
+  let resolveRestore;
+  let resolveFlush;
+  const events = [];
+  const ctrl = createGpuRecoveryController({
+    getHref: () => 'https://app.affine.pro/workspace/ws-1/doc-1',
+    isOAuthCodeConsumed: () => false,
+    pauseInput: () => events.push('pause'),
+    resumeInput: () => events.push('resume'),
+    freezeFrameLoop: () => events.push('freeze'),
+    unfreezeFrameLoop: () => events.push('unfreeze'),
+    onContextRestored: () =>
+      new Promise(r => {
+        resolveRestore = () => r(true);
+      }),
+    flushPendingWrites: () =>
+      new Promise(r => {
+        events.push('flush-start');
+        resolveFlush = () => r({ ok: true, pendingCount: 0 });
+      }),
+    navigate: url => events.push(`nav:${new URL(url).search}`),
+    maxContextLosses: 2,
+  });
+
+  ctrl.handleWebGlContextLost({ preventDefault() {} });
+  const staleRestorePromise = ctrl.handleWebGlContextRestored();
+  // Second loss arrives before async restore finishes -> trips fallback-pending.
+  ctrl.handleWebGlContextLost({ preventDefault() {} });
+  assert.equal(ctrl.getState().status, 'fallback-pending');
+
+  // Stale restore now resolves true -> must NOT revert status or resume input.
+  resolveRestore();
+  const staleResult = await staleRestorePromise;
+  assert.equal(staleResult.recovered, false);
+  assert.equal(ctrl.getState().status, 'fallback-pending');
+  assert.equal(ctrl.getState().inputPaused, true);
+  assert.equal(events.includes('resume'), false);
+
+  resolveFlush();
+  await new Promise(r => setTimeout(r, 0));
+  assert.equal(ctrl.getState().status, 'fallback-navigated');
+
+  // 2. Async Cut aborts deleteSelection when selection moves from "A" to "B" mid-write.
+  let docText = 'AB';
+  let selectedRange = 'A';
+  let selectionToken = 'sel-0-1';
+  let resolveWrite;
+  const cutPromise = executeClipboardAction({
+    action: 'cut',
+    getSelectedText: () => selectedRange,
+    getSelectionToken: () => selectionToken,
+    deleteSelection: () => {
+      docText = docText.replace(selectedRange, '');
+    },
+    isSecureContext: true,
+    clipboard: {
+      writeText: () =>
+        new Promise(r => {
+          resolveWrite = r;
+        }),
+    },
+  });
+  selectedRange = 'B';
+  selectionToken = 'sel-1-2';
+  resolveWrite();
+  const cutRes = await cutPromise;
+  assert.equal(cutRes.ok, false);
+  assert.equal(cutRes.reason, 'selection-changed-during-cut');
+  assert.equal(docText, 'AB');
+
+  // 3. Sandwiched bare side-effect import before semicolon is caught by verifyZeroThirdPartyJs.
+  const tmp = mkdtempSync(join(tmpdir(), 'affine-zero-js-semi-'));
+  try {
+    const fakeWeb = join(tmp, 'web');
+    mkdirSync(join(fakeWeb, 'src'), { recursive: true });
+    writeFileSync(
+      join(fakeWeb, 'src/sandwich.js'),
+      "import 'evil-polyfill';\nimport { ok } from './ok.js';\nexport const v = ok;\n"
+    );
+    writeFileSync(
+      join(fakeWeb, 'index.html'),
+      '<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="script-src \'self\' \'wasm-unsafe-eval\'" /></head><body><canvas id="app-canvas"></canvas><textarea id="ime"></textarea><div id="safe-area-probe" aria-hidden="true"></div><div id="embed-layer"></div></body></html>'
+    );
+    const report = verifyZeroThirdPartyJs({ webRoot: fakeWeb, hostsRoot: tmp });
+    assert.equal(report.ok, false);
+    assert.ok(report.violations.some(v => v.includes('evil-polyfill')));
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+
+  // 4. WebGPU first frame followed by setScene presents a second frame and returns true.
+  let submitCount = 0;
+  let copyCalls = 0;
+  const webGpuCanvas = {
+    id: 'app-canvas',
+    width: 390,
+    height: 844,
+    getContext(kind) {
+      if (kind === 'webgpu') {
+        return {
+          configure() {},
+          getCurrentTexture: () => ({ createView: () => ({}) }),
+        };
+      }
+      return null;
+    },
+    addEventListener() {},
+    removeEventListener() {},
+  };
+  const fakeGpuNav = {
+    gpu: {
+      getPreferredCanvasFormat: () => 'bgra8unorm',
+      requestAdapter: async () => ({
+        requestDevice: async () => ({
+          lost: new Promise(() => {}),
+          createCommandEncoder: () => ({
+            beginRenderPass: () => ({ end() {} }),
+            finish: () => ({}),
+          }),
+          queue: {
+            copyExternalImageToTexture: () => {
+              copyCalls += 1;
+            },
+            submit: () => {
+              submitCount += 1;
+            },
+          },
+        }),
+      }),
+    },
+  };
+  const indexHtml = readFileSync(join(WEB_ROOT, 'index.html'), 'utf8');
+  const manifestJson = indexHtml
+    .match(
+      /<script id="affine-build-manifest" type="application\/json">([\s\S]*?)<\/script>/
+    )[1]
+    .trim();
+  const fakeDoc = {
+    createElement: tag =>
+      tag === 'canvas'
+        ? {
+            width: 390,
+            height: 844,
+            getContext: kind =>
+              kind === '2d'
+                ? new Proxy(
+                    {},
+                    {
+                      get: () => () => {},
+                      set: () => true,
+                    }
+                  )
+                : null,
+          }
+        : {},
+    getElementById(id) {
+      if (id === 'affine-build-manifest') return { textContent: manifestJson };
+      if (id === 'app-canvas') return webGpuCanvas;
+      if (id === 'ime') return { readOnly: false };
+      if (id === 'boot') return { dataset: {}, remove() {} };
+      return null;
+    },
+    querySelectorAll: () => [],
+  };
+  const origNav = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  const origDoc = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  Object.defineProperty(globalThis, 'navigator', {
+    value: fakeGpuNav,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis, 'document', {
+    value: fakeDoc,
+    configurable: true,
+  });
+  try {
+    const fakeWin = {
+      navigator: fakeGpuNav,
+      location: { href: 'https://app.affine.pro/', assign() {} },
+    };
+    const handle = await bootWebHost({
+      win: fakeWin,
+      doc: fakeDoc,
+      importModule: async () => {
+        globalThis.__AFFINE_WEB_HOST__ = fakeWin.__AFFINE_WEB_HOST__;
+        try {
+          await import('../src/default-app-entry.js?webgpu-scene=1');
+        } finally {
+          delete globalThis.__AFFINE_WEB_HOST__;
+        }
+      },
+    });
+    assert.equal(submitCount, 1);
+    const presented = handle.selectionOverlay.setScene({
+      paint(ctx) {
+        ctx.fillRect(0, 0, 10, 10);
+      },
+      selection: {
+        viewport: { width: 390, height: 844 },
+        rects: [{ x: 20, y: 100, width: 100, height: 24 }],
+        caretStart: { x: 20, y: 100, height: 24 },
+        caretEnd: { x: 120, y: 100, height: 24 },
+      },
+    });
+    assert.equal(presented, true);
+    assert.equal(submitCount, 2);
+    assert.ok(copyCalls >= 1);
+    handle.dispose();
+  } finally {
+    if (origNav) Object.defineProperty(globalThis, 'navigator', origNav);
+    else delete globalThis.navigator;
+    if (origDoc) Object.defineProperty(globalThis, 'document', origDoc);
+    else delete globalThis.document;
+  }
+});
+
+void test('cut requires non-null selection token, concurrent PDF dedup survives first-caller transfer, and setScene rejects clear-only presentation', async () => {
+  // 1. Duplicate-text "A·A" cut without getSelectionToken (or null token) refuses deletion.
+  let dupDoc = 'A·A';
+  let writeCalled = 0;
+  const noTokenCut = await executeClipboardAction({
+    action: 'cut',
+    getSelectedText: () => 'A',
+    deleteSelection: () => {
+      dupDoc = 'A·';
+    },
+    isSecureContext: true,
+    clipboard: {
+      writeText: async () => {
+        writeCalled += 1;
+      },
+    },
+  });
+  assert.equal(noTokenCut.ok, false);
+  assert.equal(noTokenCut.reason, 'missing-selection-token');
+  assert.equal(writeCalled, 0);
+  assert.equal(dupDoc, 'A·A');
+
+  // Moving selection between two identical "A" occurrences mid-write aborts deletion.
+  let token = 'range:0-1';
+  let resolveDupWrite;
+  const movedIdenticalCut = executeClipboardAction({
+    action: 'cut',
+    getSelectedText: () => 'A',
+    getSelectionToken: () => token,
+    deleteSelection: () => {
+      dupDoc = 'A·';
+    },
+    isSecureContext: true,
+    clipboard: {
+      writeText: () =>
+        new Promise(r => {
+          resolveDupWrite = r;
+        }),
+    },
+  });
+  token = 'range:2-3';
+  resolveDupWrite();
+  const movedRes = await movedIdenticalCut;
+  assert.equal(movedRes.ok, false);
+  assert.equal(movedRes.reason, 'selection-changed-during-cut');
+  assert.equal(dupDoc, 'A·A');
+
+  // 2. Concurrent PDF dedup: caller A transfers immediately in .then before caller B slices (cacheable & uncacheable).
+  for (const maxCacheBytes of [1024, 1]) {
+    let rpcCount = 0;
+    /** @type {((ev: { data: any }) => void)[]} */
+    const listeners = [];
+    let lastMsgId = 0;
+    const client = createPdfPreviewClient({
+      workerLoader: {
+        loadWorker: () => ({
+          postMessage(msg) {
+            rpcCount += 1;
+            lastMsgId = msg.id;
+          },
+          addEventListener(type, fn) {
+            if (type === 'message') listeners.push(fn);
+          },
+          removeEventListener() {},
+          terminate() {},
+        }),
+      },
+      maxCacheBytes,
+    });
+    const pdfBytes = new Uint8Array(8);
+    // Caller A registers transfer .then BEFORE caller B requests the same page.
+    const callerA = client
+      .renderPage({ docKey: 'doc-t', pdfBytes, pageIndex: 0, scale: 1 })
+      .then(res => {
+        const transferred = structuredClone(res.rgba, {
+          transfer: [res.rgba.buffer],
+        });
+        return transferred.byteLength;
+      });
+    const callerB = client
+      .renderPage({ docKey: 'doc-t', pdfBytes, pageIndex: 0, scale: 1 })
+      .then(res => res.rgba.byteLength);
+
+    const rgba = new Uint8Array([10, 20, 30, 40]);
+    for (const fn of listeners) {
+      fn({
+        data: {
+          id: lastMsgId,
+          ok: true,
+          result: { pageCount: 1, widthPx: 1, heightPx: 1, rgba },
+        },
+      });
+    }
+    const [lenA, lenB] = await Promise.all([callerA, callerB]);
+    assert.equal(rpcCount, 1);
+    assert.equal(lenA, 4);
+    assert.equal(lenB, 4);
+    client.dispose();
+  }
+
+  // 3. WebGPU without copyExternalImageToTexture falls back to replacement canvas; offscreen missing 2D returns false.
+  const indexHtml = readFileSync(join(WEB_ROOT, 'index.html'), 'utf8');
+  const manifestJson = indexHtml
+    .match(
+      /<script id="affine-build-manifest" type="application\/json">([\s\S]*?)<\/script>/
+    )[1]
+    .trim();
+
+  for (const mode of [
+    'webgpu-no-copy-draws-on-replacement',
+    'offscreen-no-2d',
+  ]) {
+    let replacedWith = null;
+    let replacementDrawImages = 0;
+    let clearOnlySubmits = 0;
+    const gpuCanvas = {
+      id: 'app-canvas',
+      width: 390,
+      height: 844,
+      replaceWith(next) {
+        replacedWith = next;
+      },
+      getContext(kind) {
+        if (kind === 'webgpu') {
+          return {
+            configure() {},
+            getCurrentTexture: () => ({ createView: () => ({}) }),
+          };
+        }
+        return null;
+      },
+      addEventListener() {},
+      removeEventListener() {},
+    };
+    const fakeGpuNav = {
+      gpu: {
+        getPreferredCanvasFormat: () => 'bgra8unorm',
+        requestAdapter: async () => ({
+          requestDevice: async () => ({
+            lost: new Promise(() => {}),
+            createCommandEncoder: () => ({
+              beginRenderPass: () => ({ end() {} }),
+              finish: () => ({}),
+            }),
+            queue: {
+              // Intentionally omit copyExternalImageToTexture.
+              submit: () => {
+                clearOnlySubmits += 1;
+              },
+            },
+          }),
+        }),
+      },
+    };
+    const fakeDoc = {
+      createElement(tag) {
+        if (tag !== 'canvas') return {};
+        return {
+          id: '',
+          width: 390,
+          height: 844,
+          setAttribute() {},
+          addEventListener() {},
+          removeEventListener() {},
+          getContext(kind) {
+            if (this.id === 'app-canvas') {
+              if (kind === '2d') {
+                return {
+                  clearRect() {},
+                  drawImage() {
+                    replacementDrawImages += 1;
+                  },
+                };
+              }
+              return null;
+            }
+            if (kind === '2d') {
+              if (mode === 'offscreen-no-2d') return null;
+              return new Proxy({}, { get: () => () => {}, set: () => true });
+            }
+            return null;
+          },
+        };
+      },
+      getElementById(id) {
+        if (id === 'affine-build-manifest')
+          return { textContent: manifestJson };
+        if (id === 'app-canvas') return gpuCanvas;
+        if (id === 'ime') return { readOnly: false };
+        if (id === 'boot') return { dataset: {}, remove() {} };
+        return null;
+      },
+      querySelectorAll: () => [],
+    };
+    const origNav = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    const origDoc = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    const origOffscreen = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'OffscreenCanvas'
+    );
+    Object.defineProperty(globalThis, 'navigator', {
+      value: fakeGpuNav,
+      configurable: true,
+    });
+    Object.defineProperty(globalThis, 'document', {
+      value: fakeDoc,
+      configurable: true,
+    });
+    Object.defineProperty(globalThis, 'OffscreenCanvas', {
+      value: undefined,
+      configurable: true,
+    });
+    try {
+      const fakeWin = {
+        navigator: fakeGpuNav,
+        location: { href: 'https://app.affine.pro/', assign() {} },
+      };
+      const handle = await bootWebHost({
+        win: fakeWin,
+        doc: fakeDoc,
+        importModule: async () => {
+          globalThis.__AFFINE_WEB_HOST__ = fakeWin.__AFFINE_WEB_HOST__;
+          try {
+            await import(`../src/default-app-entry.js?scene-mode=${mode}`);
+          } finally {
+            delete globalThis.__AFFINE_WEB_HOST__;
+          }
+        },
+      });
+      assert.equal(clearOnlySubmits, 1);
+      const presented = handle.selectionOverlay.setScene({
+        paint(ctx) {
+          ctx.fillRect(0, 0, 10, 10);
+        },
+        selection: {
+          viewport: { width: 390, height: 844 },
+          rects: [{ x: 20, y: 100, width: 100, height: 24 }],
+          caretStart: { x: 20, y: 100, height: 24 },
+          caretEnd: { x: 120, y: 100, height: 24 },
+        },
+      });
+      if (mode === 'webgpu-no-copy-draws-on-replacement') {
+        assert.equal(presented, true);
+        assert.ok(replacedWith);
+        assert.equal(replacementDrawImages, 1);
+        assert.equal(clearOnlySubmits, 1);
+      } else {
+        assert.equal(presented, false);
+        assert.equal(handle.selectionOverlay.getLayout(), null);
+        assert.equal(clearOnlySubmits, 1);
+      }
+      handle.dispose();
+    } finally {
+      if (origNav) Object.defineProperty(globalThis, 'navigator', origNav);
+      else delete globalThis.navigator;
+      if (origDoc) Object.defineProperty(globalThis, 'document', origDoc);
+      else delete globalThis.document;
+      if (origOffscreen) {
+        Object.defineProperty(globalThis, 'OffscreenCanvas', origOffscreen);
+      } else {
+        delete globalThis.OffscreenCanvas;
+      }
+    }
+  }
+});
+
+void test('production overlay Cut rejects missing logical token and isolates scene close or replacement during async clipboard write', async () => {
+  const indexHtml = readFileSync(join(WEB_ROOT, 'index.html'), 'utf8');
+  const manifestJson = indexHtml
+    .match(
+      /<script id="affine-build-manifest" type="application\/json">([\s\S]*?)<\/script>/
+    )[1]
+    .trim();
+
+  const listeners = new Map();
+  const appCanvas = {
+    id: 'app-canvas',
+    width: 390,
+    height: 844,
+    getBoundingClientRect: () => ({
+      left: 0,
+      top: 0,
+      width: 390,
+      height: 844,
+    }),
+    getContext(kind) {
+      if (kind === '2d') {
+        return new Proxy({}, { get: () => () => {}, set: () => true });
+      }
+      return null;
+    },
+    addEventListener(type, fn) {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type).add(fn);
+    },
+    removeEventListener(type, fn) {
+      listeners.get(type)?.delete(fn);
+    },
+  };
+  const fakeDoc = {
+    createElement(tag) {
+      if (tag !== 'canvas') return {};
+      return {
+        id: '',
+        width: 390,
+        height: 844,
+        getContext(kind) {
+          if (kind === '2d') {
+            return new Proxy({}, { get: () => () => {}, set: () => true });
+          }
+          if (kind === 'webgl2') {
+            return { getParameter: () => 'WebGL2', getExtension: () => null };
+          }
+          return null;
+        },
+      };
+    },
+    getElementById(id) {
+      if (id === 'affine-build-manifest') return { textContent: manifestJson };
+      if (id === 'app-canvas') return appCanvas;
+      if (id === 'ime') return { readOnly: false };
+      if (id === 'boot') return { dataset: {}, remove() {} };
+      return null;
+    },
+    querySelectorAll: () => [],
+  };
+  const origDoc = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  const origOffscreen = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'OffscreenCanvas'
+  );
+  Object.defineProperty(globalThis, 'document', {
+    value: fakeDoc,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis, 'OffscreenCanvas', {
+    value: undefined,
+    configurable: true,
+  });
+
+  const dispatchPointer = (type, x, y) => {
+    for (const fn of listeners.get(type) || []) {
+      fn({ clientX: x, clientY: y, preventDefault() {} });
+    }
+  };
+  const flushMicrotasks = async () => {
+    for (let i = 0; i < 6; i += 1) {
+      await Promise.resolve();
+    }
+  };
+
+  try {
+    const fakeWin = {
+      navigator: { clipboard: {} },
+      location: { href: 'https://app.affine.pro/', assign() {} },
+    };
+    const handle = await bootWebHost({
+      win: fakeWin,
+      doc: fakeDoc,
+      importModule: async () => {
+        globalThis.__AFFINE_WEB_HOST__ = fakeWin.__AFFINE_WEB_HOST__;
+        try {
+          await import('../src/default-app-entry.js?scene-mode=overlay-cut');
+        } finally {
+          delete globalThis.__AFFINE_WEB_HOST__;
+        }
+      },
+    });
+
+    const viewportSelection = {
+      viewport: { width: 390, height: 844 },
+      rects: [{ x: 24, y: 214, width: 120, height: 28 }],
+      caretStart: { x: 24, y: 214, height: 28 },
+      caretEnd: { x: 144, y: 214, height: 28 },
+    };
+
+    const tapCut = () => {
+      const layout = handle.selectionOverlay.getLayout();
+      const cutBtn = layout.menu.items.find(b => b.id === 'cut');
+      assert.ok(cutBtn, 'cut button must exist in overlay layout');
+      const cx = cutBtn.x + cutBtn.width / 2;
+      const cy = cutBtn.y + cutBtn.height / 2;
+      dispatchPointer('pointerdown', cx, cy);
+      dispatchPointer('pointerup', cx, cy);
+    };
+
+    // 1a. Missing logical getSelectionToken on "A\nA" rejects Cut before clipboard write.
+    let docText = 'A\nA';
+    let writeCalls = 0;
+    const missingTokenResults = [];
+    handle.selectionOverlay.setScene({
+      selection: viewportSelection,
+      callbacks: {
+        getSelectedText: () => docText.slice(0, 1),
+        deleteSelection: () => {
+          docText = docText.slice(1);
+        },
+        onActionResult: res => missingTokenResults.push(res),
+        isSecureContext: true,
+        clipboard: {
+          writeText: async () => {
+            writeCalls += 1;
+          },
+        },
+      },
+    });
+    tapCut();
+    await flushMicrotasks();
+    assert.equal(missingTokenResults.length, 1);
+    assert.equal(missingTokenResults[0].ok, false);
+    assert.equal(missingTokenResults[0].reason, 'missing-selection-token');
+    assert.equal(writeCalls, 0);
+    assert.equal(docText, 'A\nA');
+
+    // 1b. Logical range token aborts Cut when scrolled to line 2 "A" at identical viewport coordinates.
+    let activeRange = { line: 1, start: 0, end: 1 };
+    let resolveWrite;
+    const movedResults = [];
+    handle.selectionOverlay.setScene({
+      selection: viewportSelection,
+      callbacks: {
+        getSelectedText: () =>
+          docText.slice(activeRange.start, activeRange.end),
+        getSelectionToken: () =>
+          `line:${activeRange.line}:${activeRange.start}-${activeRange.end}`,
+        deleteSelection: () => {
+          docText =
+            docText.slice(0, activeRange.start) +
+            docText.slice(activeRange.end);
+        },
+        onActionResult: res => movedResults.push(res),
+        isSecureContext: true,
+        clipboard: {
+          writeText: () =>
+            new Promise(resolve => {
+              resolveWrite = resolve;
+            }),
+        },
+      },
+    });
+    tapCut();
+    activeRange = { line: 2, start: 2, end: 3 };
+    resolveWrite();
+    await flushMicrotasks();
+    assert.equal(movedResults.length, 1);
+    assert.equal(movedResults[0].ok, false);
+    assert.equal(movedResults[0].reason, 'selection-changed-during-cut');
+    assert.equal(docText, 'A\nA');
+
+    // 2a. Closing the scene with setScene({}) during async clipboard write does not throw or mutate text.
+    let closeDeleted = 0;
+    const closeResults = [];
+    let resolveCloseWrite;
+    handle.selectionOverlay.setScene({
+      selection: viewportSelection,
+      callbacks: {
+        getSelectedText: () => 'A',
+        getSelectionToken: () => 'line:1:0-1',
+        deleteSelection: () => {
+          closeDeleted += 1;
+        },
+        onActionResult: res => closeResults.push(res),
+        isSecureContext: true,
+        clipboard: {
+          writeText: () =>
+            new Promise(resolve => {
+              resolveCloseWrite = resolve;
+            }),
+        },
+      },
+    });
+    tapCut();
+    handle.selectionOverlay.setScene({});
+    resolveCloseWrite();
+    await flushMicrotasks();
+    assert.equal(closeDeleted, 0);
+    assert.equal(closeResults.length, 0);
+    assert.equal(docText, 'A\nA');
+
+    // 2b. Replacing the scene during async clipboard write delivers 0 stale results or deletes to new callbacks.
+    let oldDeleted = 0;
+    let newDeleted = 0;
+    const oldResults = [];
+    const newResults = [];
+    let resolveReplaceWrite;
+    handle.selectionOverlay.setScene({
+      selection: viewportSelection,
+      callbacks: {
+        getSelectedText: () => 'A',
+        getSelectionToken: () => 'scene-old:0-1',
+        deleteSelection: () => {
+          oldDeleted += 1;
+        },
+        onActionResult: res => oldResults.push(res),
+        isSecureContext: true,
+        clipboard: {
+          writeText: () =>
+            new Promise(resolve => {
+              resolveReplaceWrite = resolve;
+            }),
+        },
+      },
+    });
+    tapCut();
+    handle.selectionOverlay.setScene({
+      selection: viewportSelection,
+      callbacks: {
+        getSelectedText: () => 'B',
+        getSelectionToken: () => 'scene-new:0-1',
+        deleteSelection: () => {
+          newDeleted += 1;
+        },
+        onActionResult: res => newResults.push(res),
+        isSecureContext: true,
+        clipboard: { writeText: async () => {} },
+      },
+    });
+    resolveReplaceWrite();
+    await flushMicrotasks();
+    assert.equal(oldDeleted, 0);
+    assert.equal(newDeleted, 0);
+    assert.equal(oldResults.length, 0);
+    assert.equal(newResults.length, 0);
+    assert.equal(docText, 'A\nA');
+
+    handle.dispose();
+  } finally {
+    if (origDoc) Object.defineProperty(globalThis, 'document', origDoc);
+    else delete globalThis.document;
+    if (origOffscreen) {
+      Object.defineProperty(globalThis, 'OffscreenCanvas', origOffscreen);
+    } else {
+      delete globalThis.OffscreenCanvas;
+    }
+  }
 });

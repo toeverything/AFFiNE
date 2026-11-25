@@ -11,6 +11,11 @@ import {
   setLocalWorkspaceIds,
   setWebPreference,
 } from './idb-storage.js';
+import { createPdfPreviewClient } from './pdf-client.js';
+import {
+  attachImeSelectionGuard,
+  executeClipboardAction,
+} from './selection-overlay.js';
 import { createWorkerLoader, readEmbeddedManifest } from './worker-loader.js';
 
 /**
@@ -387,20 +392,524 @@ export function removeBootSkeleton(doc) {
 }
 
 /**
- * Displays a fatal boot error inside `#boot`.
+ * Creates a deterministic graphics context recovery and legacy-fallback
+ * controller for `#app-canvas` WebGL2 and WebGPU devices.
+ *
+ * @param {Object} options
+ * @param {() => string} options.getHref
+ * @param {() => boolean} options.isOAuthCodeConsumed
+ * @param {() => HTMLCanvasElement | null} [options.getActiveCanvas]
+ * @param {() => void} options.pauseInput
+ * @param {() => void} options.resumeInput
+ * @param {() => void} [options.freezeFrameLoop]
+ * @param {() => void} [options.unfreezeFrameLoop]
+ * @param {() => Promise<boolean | { ok: boolean, pendingCount?: number }>} options.flushPendingWrites
+ * @param {(url: string) => void} options.navigate
+ * @param {(message: string, opts?: { retryable?: boolean }) => void} [options.showFatal]
+ * @param {() => void} [options.hideFatal]
+ * @param {() => boolean} [options.isDocumentHidden]
+ * @param {(canvas: HTMLCanvasElement | null) => boolean | Promise<boolean>} [options.onContextRestored]
+ * @param {(info: unknown) => boolean | Promise<boolean>} [options.tryWebGl2Fallback]
+ * @param {number} [options.restoreTimeoutMs=4000]
+ * @param {number} [options.maxContextLosses=3]
+ * @param {number} [options.lossWindowMs=30000]
+ * @param {() => number} [options.now]
+ * @param {(fn: () => void, ms: number) => unknown} [options.setTimer]
+ * @param {(handle: unknown) => void} [options.clearTimer]
+ */
+export function createGpuRecoveryController(options) {
+  const restoreTimeoutMs = Math.max(1, options.restoreTimeoutMs ?? 4000);
+  const maxContextLosses = Math.max(1, options.maxContextLosses ?? 3);
+  const lossWindowMs = Math.max(1, options.lossWindowMs ?? 30_000);
+  const now = options.now || (() => Date.now());
+  const setTimer = options.setTimer || ((fn, ms) => setTimeout(fn, ms));
+  const clearTimer =
+    options.clearTimer || (handle => clearTimeout(/** @type {any} */ (handle)));
+
+  /** @type {'ready' | 'context-lost' | 'fallback-pending' | 'fallback-blocked' | 'fallback-navigated' | 'fatal'} */
+  let status = 'ready';
+  let inputPaused = false;
+  let frameLoopFrozen = false;
+  let totalLossCount = 0;
+  let restoreCount = 0;
+  let recoveryEpoch = 0;
+  /** @type {number[]} */
+  let lossTimestamps = [];
+  /** @type {unknown} */
+  let restoreTimer = null;
+  let restoreTimerPausedByVisibility = false;
+  /** @type {Promise<{ navigated: boolean, retryable?: boolean, reason?: string }> | null} */
+  let fallbackInFlight = null;
+  /** @type {string | null} */
+  let lastError = null;
+  /** @type {string | null} */
+  let lastFallbackReason = null;
+  /** @type {string | null} */
+  let pendingFallbackUrl = null;
+  /** @type {((canvas: HTMLCanvasElement | null) => boolean | Promise<boolean>) | null} */
+  let onContextRestoredHook = options.onContextRestored || null;
+  /** @type {((info: unknown) => boolean | Promise<boolean>) | null} */
+  let tryWebGl2FallbackHook = options.tryWebGl2Fallback || null;
+
+  function clearRestoreTimer() {
+    restoreTimerPausedByVisibility = false;
+    if (restoreTimer !== null) {
+      clearTimer(restoreTimer);
+      restoreTimer = null;
+    }
+  }
+
+  function scheduleRestoreTimeout() {
+    clearRestoreTimer();
+    if (options.isDocumentHidden?.()) {
+      restoreTimerPausedByVisibility = true;
+      return;
+    }
+    restoreTimer = setTimer(() => {
+      restoreTimer = null;
+      void triggerFallback('context-restore-timeout');
+    }, restoreTimeoutMs);
+  }
+
+  function pauseAll() {
+    if (!inputPaused) {
+      inputPaused = true;
+      options.pauseInput();
+    }
+    if (!frameLoopFrozen) {
+      frameLoopFrozen = true;
+      options.freezeFrameLoop?.();
+    }
+  }
+
+  function resumeAll() {
+    if (frameLoopFrozen) {
+      frameLoopFrozen = false;
+      options.unfreezeFrameLoop?.();
+    }
+    if (inputPaused) {
+      inputPaused = false;
+      options.resumeInput();
+    }
+  }
+
+  /**
+   * Flushes pending IndexedDB writes and navigates to `?shell=legacy` only
+   * after persistence succeeds. Single-flight mutex prevents overlapping
+   * flushes or duplicate navigations. Aborts navigation and exposes a
+   * retryable error state if persistence fails.
+   *
+   * @param {string} [reason='runtime-gpu-loss']
+   * @returns {Promise<{ navigated: boolean, retryable?: boolean, reason?: string }>}
+   */
+  function triggerFallback(reason = 'runtime-gpu-loss') {
+    if (fallbackInFlight) {
+      return fallbackInFlight;
+    }
+    if (status === 'fallback-navigated' || status === 'fatal') {
+      return Promise.resolve({
+        navigated: false,
+        retryable: false,
+        reason: status,
+      });
+    }
+
+    clearRestoreTimer();
+    pauseAll();
+    recoveryEpoch += 1;
+    lastFallbackReason = reason;
+
+    if (isLegacyShellUrl(options.getHref())) {
+      status = 'fatal';
+      lastError = 'already-legacy';
+      options.showFatal?.('Graphics context was lost.', { retryable: false });
+      return Promise.resolve({
+        navigated: false,
+        retryable: false,
+        reason: 'already-legacy',
+      });
+    }
+
+    const fallback = buildLegacyFallbackUrl(options.getHref(), {
+      codeConsumed: options.isOAuthCodeConsumed(),
+    });
+    status = 'fallback-pending';
+    pendingFallbackUrl = fallback.url;
+
+    const run = (async () => {
+      try {
+        const result = await flushBeforeNavigation({
+          pauseInput: () => pauseAll(),
+          flushPendingWrites: options.flushPendingWrites,
+          navigate: options.navigate,
+          targetUrl: fallback.url,
+        });
+
+        if (result.navigated) {
+          status = 'fallback-navigated';
+          lastError = null;
+          pendingFallbackUrl = null;
+          return { navigated: true };
+        }
+
+        status = 'fallback-blocked';
+        lastError = result.reason || 'flush-rejected';
+        options.showFatal?.(
+          'Unable to save pending edits. Tap Retry to try again.',
+          { retryable: true }
+        );
+        return {
+          navigated: false,
+          retryable: true,
+          reason: lastError,
+        };
+      } finally {
+        fallbackInFlight = null;
+      }
+    })();
+
+    fallbackInFlight = run;
+    return run;
+  }
+
+  /**
+   * Handles `#app-canvas` `webglcontextlost`. Calls `preventDefault()`, pauses
+   * input, freezes the frame loop, and starts the visibility-aware restore
+   * timeout. Ignores duplicate losses once fallback is pending or terminal.
+   *
+   * @param {Event | null | undefined} event
+   * @returns {{ tripped: boolean, lossCountInWindow: number }}
+   */
+  function handleWebGlContextLost(event) {
+    if (event && typeof event.preventDefault === 'function') {
+      event.preventDefault();
+    }
+    if (
+      fallbackInFlight !== null ||
+      status === 'fallback-pending' ||
+      status === 'fallback-navigated' ||
+      status === 'fatal'
+    ) {
+      return { tripped: false, lossCountInWindow: lossTimestamps.length };
+    }
+
+    pauseAll();
+    recoveryEpoch += 1;
+    const t = now();
+    totalLossCount += 1;
+    lossTimestamps = lossTimestamps.filter(ts => t - ts <= lossWindowMs);
+    lossTimestamps.push(t);
+
+    if (lossTimestamps.length >= maxContextLosses) {
+      void triggerFallback('context-loss-threshold');
+      return { tripped: true, lossCountInWindow: lossTimestamps.length };
+    }
+
+    status = 'context-lost';
+    scheduleRestoreTimeout();
+
+    return { tripped: false, lossCountInWindow: lossTimestamps.length };
+  }
+
+  /**
+   * Pauses or resumes the restore timeout when page visibility changes.
+   *
+   * @param {boolean} hidden
+   */
+  function handleVisibilityChange(hidden) {
+    if (status !== 'context-lost') {
+      return;
+    }
+    if (hidden) {
+      if (restoreTimer !== null) {
+        clearTimer(restoreTimer);
+        restoreTimer = null;
+      }
+      restoreTimerPausedByVisibility = true;
+    } else if (restoreTimerPausedByVisibility) {
+      scheduleRestoreTimeout();
+    }
+  }
+
+  /**
+   * Handles `#app-canvas` `webglcontextrestored`. Rebuilds render targets and
+   * redraws immediately, then resumes the frame loop and input delivery.
+   * Strictly blocked once fallback is pending, navigated, or fatal, or when a
+   * newer loss epoch superseded this async restore.
+   *
+   * @returns {Promise<{ recovered: boolean, reason?: string }>}
+   */
+  async function handleWebGlContextRestored() {
+    clearRestoreTimer();
+    if (
+      fallbackInFlight !== null ||
+      status === 'fallback-pending' ||
+      status === 'fallback-navigated' ||
+      status === 'fatal'
+    ) {
+      return { recovered: false, reason: status };
+    }
+    const epoch = recoveryEpoch;
+    try {
+      const rebuilt = onContextRestoredHook
+        ? await onContextRestoredHook(options.getActiveCanvas?.() ?? null)
+        : true;
+      if (
+        epoch !== recoveryEpoch ||
+        fallbackInFlight !== null ||
+        status === 'fallback-pending' ||
+        status === 'fallback-navigated' ||
+        status === 'fatal'
+      ) {
+        return { recovered: false, reason: status };
+      }
+      if (!rebuilt) {
+        await triggerFallback('context-restore-failed');
+        return { recovered: false, reason: 'context-restore-failed' };
+      }
+      restoreCount += 1;
+      status = 'ready';
+      lastError = null;
+      pendingFallbackUrl = null;
+      options.hideFatal?.();
+      resumeAll();
+      return { recovered: true };
+    } catch {
+      if (
+        epoch !== recoveryEpoch ||
+        fallbackInFlight !== null ||
+        status === 'fallback-pending' ||
+        status === 'fallback-navigated' ||
+        status === 'fatal'
+      ) {
+        return { recovered: false, reason: status };
+      }
+      await triggerFallback('context-restore-failed');
+      return { recovered: false, reason: 'context-restore-failed' };
+    }
+  }
+
+  /**
+   * Handles WebGPU `device.lost`. Tries WebGL2 downgrade when a fallback hook
+   * is provided; triggers the IDB-flushed legacy circuit breaker otherwise.
+   *
+   * @param {unknown} info
+   * @param {{ tryWebGl2Fallback?: (info: unknown) => boolean | Promise<boolean> }} [override]
+   * @returns {Promise<{ recovered: boolean, mode?: string, navigated?: boolean, retryable?: boolean, reason?: string }>}
+   */
+  async function handleWebGpuDeviceLost(info, override = {}) {
+    if (
+      fallbackInFlight !== null ||
+      status === 'fallback-pending' ||
+      status === 'fallback-navigated' ||
+      status === 'fatal'
+    ) {
+      if (fallbackInFlight) {
+        const res = await fallbackInFlight;
+        return { recovered: false, ...res };
+      }
+      return { recovered: false, navigated: false, reason: status };
+    }
+    clearRestoreTimer();
+    pauseAll();
+    recoveryEpoch += 1;
+    const epoch = recoveryEpoch;
+    const fallbackFn = override.tryWebGl2Fallback || tryWebGl2FallbackHook;
+    if (typeof fallbackFn === 'function') {
+      try {
+        const ok = await fallbackFn(info);
+        if (
+          epoch !== recoveryEpoch ||
+          fallbackInFlight !== null ||
+          status === 'fallback-pending' ||
+          status === 'fallback-navigated' ||
+          status === 'fatal'
+        ) {
+          return { recovered: false, navigated: false, reason: status };
+        }
+        if (ok) {
+          restoreCount += 1;
+          status = 'ready';
+          lastError = null;
+          pendingFallbackUrl = null;
+          options.hideFatal?.();
+          resumeAll();
+          return { recovered: true, mode: 'webgl2' };
+        }
+      } catch {
+        if (
+          epoch !== recoveryEpoch ||
+          fallbackInFlight !== null ||
+          status === 'fallback-pending' ||
+          status === 'fallback-navigated' ||
+          status === 'fatal'
+        ) {
+          return { recovered: false, navigated: false, reason: status };
+        }
+        // Fall through to unrecoverable circuit breaker.
+      }
+    }
+    const res = await triggerFallback('webgpu-device-lost');
+    return { recovered: false, ...res };
+  }
+
+  /**
+   * Retries a blocked legacy fallback after an IndexedDB flush error.
+   * Only starts a new single-flight flush when currently `fallback-blocked`.
+   */
+  function retryFallback() {
+    if (fallbackInFlight) {
+      return fallbackInFlight;
+    }
+    if (status !== 'fallback-blocked') {
+      return Promise.resolve({
+        navigated: false,
+        retryable: false,
+        reason: status,
+      });
+    }
+    return triggerFallback(lastFallbackReason || 'retry-fallback');
+  }
+
+  /**
+   * Updates recovery hooks after app entry boot.
+   *
+   * @param {{ onContextRestored?: (canvas: HTMLCanvasElement | null) => boolean | Promise<boolean>, tryWebGl2Fallback?: (info: unknown) => boolean | Promise<boolean> }} hooks
+   */
+  function setHooks(hooks) {
+    if (hooks.onContextRestored !== undefined) {
+      onContextRestoredHook = hooks.onContextRestored;
+    }
+    if (hooks.tryWebGl2Fallback !== undefined) {
+      tryWebGl2FallbackHook = hooks.tryWebGl2Fallback;
+    }
+  }
+
+  function dispose() {
+    clearRestoreTimer();
+  }
+
+  return {
+    handleWebGlContextLost,
+    handleWebGlContextRestored,
+    handleWebGpuDeviceLost,
+    handleVisibilityChange,
+    triggerFallback,
+    retryFallback,
+    setHooks,
+    dispose,
+    getState: () => ({
+      status,
+      inputPaused,
+      frameLoopFrozen,
+      totalLossCount,
+      restoreCount,
+      lossCountInWindow: lossTimestamps.length,
+      retryable: status === 'fallback-blocked',
+      lastError,
+      lastFallbackReason,
+      pendingFallbackUrl,
+    }),
+  };
+}
+
+/**
+ * Displays a fatal or retryable error overlay inside `#boot`.
+ * Recreates `#boot` on `doc.body` if the boot skeleton was already removed
+ * after the first canvas frame, keeping zero extra DOM during normal steady
+ * state.
  *
  * @param {Document} doc
  * @param {string} message
+ * @param {{ retryable?: boolean, onRetry?: () => void }} [options]
  */
-export function showBootFatal(doc, message) {
-  const boot = doc.getElementById('boot');
+export function showBootFatal(doc, message, options = {}) {
+  let boot = doc.getElementById('boot');
+  let msgEl = doc.getElementById('boot-message');
+
+  if (!boot && doc.body && typeof doc.createElement === 'function') {
+    boot = doc.createElement('div');
+    boot.id = 'boot';
+    boot.setAttribute?.('role', 'alert');
+    boot.setAttribute?.('aria-live', 'assertive');
+    if (boot.style) {
+      boot.style.position = 'fixed';
+      boot.style.inset = '0';
+      boot.style.zIndex = '20';
+      boot.style.display = 'flex';
+      boot.style.flexDirection = 'column';
+      boot.style.alignItems = 'center';
+      boot.style.justifyContent = 'center';
+      boot.style.gap = '12px';
+      boot.style.padding = '24px';
+      boot.style.background = 'rgba(20, 20, 24, 0.92)';
+      boot.style.color = '#ffffff';
+    }
+    msgEl = doc.createElement('div');
+    msgEl.id = 'boot-message';
+    if (msgEl.style) {
+      msgEl.style.fontSize = '15px';
+      msgEl.style.lineHeight = '1.5';
+      msgEl.style.textAlign = 'center';
+      msgEl.style.maxWidth = '320px';
+    }
+    boot.append?.(msgEl);
+    doc.body.append?.(boot);
+  }
+
   if (!boot) {
     return;
   }
-  boot.dataset.state = 'fatal';
-  const msgEl = doc.getElementById('boot-message');
+  if (boot.dataset) {
+    boot.dataset.state = 'fatal';
+  }
   if (msgEl) {
     msgEl.textContent = message;
+  }
+
+  let retryBtn = doc.getElementById('gpu-fallback-retry');
+  if (options.retryable) {
+    if (!retryBtn && typeof doc.createElement === 'function') {
+      retryBtn = doc.createElement('button');
+      retryBtn.id = 'gpu-fallback-retry';
+      retryBtn.setAttribute?.('type', 'button');
+      retryBtn.textContent = 'Retry';
+      if (retryBtn.style) {
+        retryBtn.style.padding = '10px 20px';
+        retryBtn.style.borderRadius = '8px';
+        retryBtn.style.border = '0';
+        retryBtn.style.background = '#1e6efb';
+        retryBtn.style.color = '#ffffff';
+        retryBtn.style.fontSize = '14px';
+        retryBtn.style.fontWeight = '600';
+        retryBtn.style.cursor = 'pointer';
+      }
+      boot.append?.(retryBtn);
+    }
+    if (retryBtn && options.onRetry) {
+      const btn = /** @type {HTMLButtonElement} */ (retryBtn);
+      btn.disabled = false;
+      btn.onclick = () => {
+        btn.disabled = true;
+        void Promise.resolve(options.onRetry?.()).finally(() => {
+          btn.disabled = false;
+        });
+      };
+    }
+  } else if (retryBtn) {
+    retryBtn.remove?.();
+  }
+}
+
+/**
+ * Removes any runtime `#boot` error banner once recovery or navigation settles.
+ *
+ * @param {Document} doc
+ */
+export function hideRuntimeFatal(doc) {
+  const boot = doc.getElementById('boot');
+  if (boot) {
+    boot.remove?.();
   }
 }
 
@@ -418,6 +927,18 @@ export function showBootFatal(doc, message) {
  * @param {typeof BroadcastChannel} [env.BroadcastChannelImpl]
  * @param {ReturnType<typeof createIdbWorkspaceStorage>} [env.workspaceStorage]
  * @param {() => number} [env.now]
+ * @param {(fn: () => void, ms: number) => unknown} [env.setTimer]
+ * @param {(handle: unknown) => void} [env.clearTimer]
+ * @param {number} [env.restoreTimeoutMs]
+ * @param {number} [env.maxContextLosses]
+ * @param {number} [env.lossWindowMs]
+ * @param {() => void} [env.onFreezeFrameLoop]
+ * @param {() => void} [env.onUnfreezeFrameLoop]
+ * @param {(canvas: HTMLCanvasElement | null) => boolean | Promise<boolean>} [env.onContextRestored]
+ * @param {(info: unknown) => boolean | Promise<boolean>} [env.tryWebGl2Fallback]
+ * @param {string | null} [env.assetBaseUrl]
+ * @param {string} [env.buildId]
+ * @param {number} [env.pdfCacheMaxBytes]
  */
 export async function bootWebHost(env = {}) {
   const win = env.win || globalThis.window;
@@ -502,6 +1023,12 @@ export async function bootWebHost(env = {}) {
   const manifest = readEmbeddedManifest(doc);
   const workerLoader = createWorkerLoader(manifest, {
     baseUrl: win.location.href,
+    assetBaseUrl: env.assetBaseUrl,
+    buildId: env.buildId,
+  });
+  const pdfClient = createPdfPreviewClient({
+    workerLoader,
+    maxCacheBytes: env.pdfCacheMaxBytes,
   });
 
   const safeAreaObserver = probe
@@ -521,14 +1048,30 @@ export async function bootWebHost(env = {}) {
       })
     : null;
 
+  let selectionOverlayActive = false;
+  const imeSelectionGuard = ime
+    ? attachImeSelectionGuard(ime, () => selectionOverlayActive)
+    : null;
+
   let oauthCodeConsumed = false;
+  let inputPaused = false;
   /** @type {HTMLCanvasElement | null} */
   let boundCanvas = null;
+
+  /** @param {Event} event */
+  function blockPausedCanvasInput(event) {
+    if (!inputPaused) {
+      return;
+    }
+    event.preventDefault?.();
+    event.stopImmediatePropagation?.();
+  }
 
   /** @param {string} targetUrl */
   async function navigateWithFlush(targetUrl) {
     return flushBeforeNavigation({
       pauseInput() {
+        inputPaused = true;
         if (ime) {
           ime.readOnly = true;
         }
@@ -537,6 +1080,7 @@ export async function bootWebHost(env = {}) {
       navigate: url => win.location.assign(url),
       targetUrl,
       resumeInput() {
+        inputPaused = false;
         if (ime) {
           ime.readOnly = false;
         }
@@ -544,23 +1088,61 @@ export async function bootWebHost(env = {}) {
     });
   }
 
+  const gpuRecovery = createGpuRecoveryController({
+    getHref: () => win.location.href,
+    isOAuthCodeConsumed: () => oauthCodeConsumed,
+    getActiveCanvas: () => boundCanvas,
+    isDocumentHidden: () => doc.visibilityState === 'hidden',
+    pauseInput() {
+      inputPaused = true;
+      if (ime) {
+        ime.readOnly = true;
+      }
+    },
+    resumeInput() {
+      inputPaused = false;
+      if (ime) {
+        ime.readOnly = false;
+      }
+    },
+    freezeFrameLoop: env.onFreezeFrameLoop,
+    unfreezeFrameLoop: env.onUnfreezeFrameLoop,
+    flushPendingWrites: resolveFlush,
+    navigate: url => win.location.assign(url),
+    showFatal: (message, opts) =>
+      showBootFatal(doc, message, {
+        retryable: Boolean(opts?.retryable),
+        onRetry: opts?.retryable
+          ? () => gpuRecovery.retryFallback()
+          : undefined,
+      }),
+    hideFatal: () => hideRuntimeFatal(doc),
+    onContextRestored: env.onContextRestored,
+    tryWebGl2Fallback: env.tryWebGl2Fallback,
+    restoreTimeoutMs: env.restoreTimeoutMs,
+    maxContextLosses: env.maxContextLosses,
+    lossWindowMs: env.lossWindowMs,
+    now: env.now,
+    setTimer: env.setTimer,
+    clearTimer: env.clearTimer,
+  });
+
+  function onVisibilityChange() {
+    gpuRecovery.handleVisibilityChange(doc.visibilityState === 'hidden');
+  }
+  doc.addEventListener?.('visibilitychange', onVisibilityChange);
+
   async function handleRuntimeGpuLoss() {
-    if (isLegacyShellUrl(win.location.href)) {
-      showBootFatal(doc, 'Graphics context was lost.');
-      return { navigated: false, reason: 'already-legacy' };
-    }
-    const fallback = buildLegacyFallbackUrl(win.location.href, {
-      codeConsumed: oauthCodeConsumed,
-    });
-    return navigateWithFlush(fallback.url);
+    return gpuRecovery.triggerFallback('runtime-gpu-loss');
   }
 
   /** @param {Event} event */
   function onContextLost(event) {
-    if (event && typeof event.preventDefault === 'function') {
-      event.preventDefault();
-    }
-    void handleRuntimeGpuLoss();
+    gpuRecovery.handleWebGlContextLost(event);
+  }
+
+  function onContextRestored() {
+    void gpuRecovery.handleWebGlContextRestored();
   }
 
   /** @param {HTMLCanvasElement | null} activeCanvas */
@@ -570,18 +1152,44 @@ export async function bootWebHost(env = {}) {
     }
     if (boundCanvas && typeof boundCanvas.removeEventListener === 'function') {
       boundCanvas.removeEventListener('webglcontextlost', onContextLost);
+      boundCanvas.removeEventListener(
+        'webglcontextrestored',
+        onContextRestored
+      );
+      boundCanvas.removeEventListener(
+        'pointerdown',
+        blockPausedCanvasInput,
+        true
+      );
+      boundCanvas.removeEventListener(
+        'pointermove',
+        blockPausedCanvasInput,
+        true
+      );
+      boundCanvas.removeEventListener(
+        'pointerup',
+        blockPausedCanvasInput,
+        true
+      );
     }
     boundCanvas = activeCanvas || null;
     if (boundCanvas && typeof boundCanvas.addEventListener === 'function') {
       boundCanvas.addEventListener('webglcontextlost', onContextLost);
+      boundCanvas.addEventListener('webglcontextrestored', onContextRestored);
+      boundCanvas.addEventListener('pointerdown', blockPausedCanvasInput, true);
+      boundCanvas.addEventListener('pointermove', blockPausedCanvasInput, true);
+      boundCanvas.addEventListener('pointerup', blockPausedCanvasInput, true);
     }
   }
 
-  /** @param {{ lost?: Promise<unknown> } | null | undefined} device */
-  function bindWebGpuDevice(device) {
+  /**
+   * @param {{ lost?: Promise<unknown> } | null | undefined} device
+   * @param {{ tryWebGl2Fallback?: (info: unknown) => boolean | Promise<boolean> }} [deviceOpts]
+   */
+  function bindWebGpuDevice(device, deviceOpts = {}) {
     if (device && device.lost && typeof device.lost.then === 'function') {
-      void device.lost.then(() => {
-        void handleRuntimeGpuLoss();
+      void device.lost.then(info => {
+        void gpuRecovery.handleWebGpuDeviceLost(info, deviceOpts);
       });
     }
   }
@@ -612,10 +1220,13 @@ export async function bootWebHost(env = {}) {
     fallback: false,
     fatal: false,
     graphics,
-    canvas,
+    get canvas() {
+      return boundCanvas || canvas;
+    },
     ime,
     embedLayer,
     a11yTree,
+    isInputPaused: () => inputPaused,
     get workspaceStorage() {
       return workspaceStorage;
     },
@@ -683,9 +1294,24 @@ export async function bootWebHost(env = {}) {
       return { workspaceStorage, pendingWrites, v1Reader };
     },
     workerLoader,
+    pdfClient,
+    gpuRecovery,
     safeAreaObserver,
     navigateWithFlush,
     handleRuntimeGpuLoss,
+    retryGpuFallback: () => gpuRecovery.retryFallback(),
+    setGraphicsRecoveryHooks: hooks => gpuRecovery.setHooks(hooks),
+    setSelectionOverlayActive: active => {
+      selectionOverlayActive = Boolean(active);
+    },
+    executeClipboardAction: params =>
+      executeClipboardAction({
+        ...params,
+        clipboard: params.clipboard ?? win.navigator?.clipboard ?? null,
+        isSecureContext: params.isSecureContext ?? win.isSecureContext ?? true,
+        imeEl: ime,
+        doc,
+      }),
     markOAuthCodeConsumed: () => {
       oauthCodeConsumed = true;
     },
@@ -758,6 +1384,7 @@ export async function bootWebHost(env = {}) {
       setWebPreference(key, value, win.localStorage),
     markFirstFrameReady: () => removeBootSkeleton(doc),
     dispose: () => {
+      doc.removeEventListener?.('visibilitychange', onVisibilityChange);
       localWorkspaceChannel?.removeEventListener(
         'message',
         handleLocalWorkspaceChanged
@@ -766,6 +1393,10 @@ export async function bootWebHost(env = {}) {
       localWorkspaceListeners.clear();
       workspaceStorage?.close();
       safeAreaObserver?.dispose();
+      imeSelectionGuard?.dispose();
+      gpuRecovery.dispose();
+      pdfClient.dispose();
+      workerLoader.dispose();
       bindCanvas(null);
     },
   };
