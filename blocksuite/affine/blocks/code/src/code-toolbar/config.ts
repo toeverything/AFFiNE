@@ -260,6 +260,7 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
                       lineNumber: on,
                     });
                   }}
+                  @click=${stopPropagation}
                 ></toggle-switch>
               </editor-menu-action>
             `;
