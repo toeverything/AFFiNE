@@ -31,7 +31,7 @@ async-graphql-axum = "7"
 async-trait        = "0.1"
 axum               = { version = "0.8", features = ["macros", "ws"] }
 base64             = "0.22"
-brotli             = "8"
+brotli             = "9"
 bytes              = "1"
 chrono             = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 clap               = { version = "4", features = ["derive", "env"] }
@@ -48,7 +48,6 @@ image              = { version = "0.25", default-features = false, features = ["
 jiff               = { version = "0.2", default-features = false, features = ["std", "tzdb-zoneinfo", "tzdb-concatenated"] }
 lettre             = { version = "0.11", default-features = false, features = ["builder", "hostname", "smtp-transport", "tokio1-rustls-tls"] }
 lru                = "0.12"
-lzma-rust2         = "0.16"
 mailparse          = "0.16"
 memory-indexer     = "0.4.1"
 p256               = { version = "0.13", features = ["ecdsa", "pem"] }
@@ -61,8 +60,8 @@ rusty-s3           = "0.10"
 serde              = { version = "1", features = ["derive"] }
 serde_json         = "1"
 sha2               = "0.10"
-assetpack-core     = "0.1.0"
-assetpack-transform-precomp2 = "0.1.0"
+assetpack-core     = { version = "0.4.2", default-features = false, features = ["file-transform"] }
+assetpack-transform-precomp2 = "0.4.4"
 sqlx               = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "sqlite", "chrono", "uuid", "json"] }
 subtle             = "2"
 thiserror          = "2"
@@ -80,7 +79,7 @@ xmlparser          = "0.13"
 y-octo             = { version = "0.4.2", features = ["large_refs"] }
 y-octo-core        = "0.1.1"
 zeroize            = "1"
-zstd               = "0.13"
+zstd               = "0.14"
 
 affine-server   = { path = "affine-server" }
 frame-audit     = { path = "../../tools/frame-audit" }

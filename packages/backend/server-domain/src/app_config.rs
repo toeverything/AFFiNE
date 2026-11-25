@@ -1156,6 +1156,14 @@ struct FsStorageProviderConfig {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct AssetpackStorageProviderConfig {
+  path: String,
+  #[serde(default)]
+  precomp2: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct S3StorageProviderConfig {
   #[serde(default)]
   #[allow(dead_code)]
@@ -1226,11 +1234,10 @@ fn validate_storage_object_config(key: &str, value: &Value) -> Result<(), Domain
     )));
   }
   match parsed.provider.as_str() {
-    "fs" | "assetpack" => {
+    "fs" => {
       let cfg: FsStorageProviderConfig = serde_json::from_value(parsed.config).map_err(|err| {
         DomainError::Validation(format!(
-          "invalid app config value for `{key}`: invalid {} config ({err})",
-          parsed.provider
+          "invalid app config value for `{key}`: invalid fs config ({err})"
         ))
       })?;
       if cfg.path.trim().is_empty() {
@@ -1238,6 +1245,19 @@ fn validate_storage_object_config(key: &str, value: &Value) -> Result<(), Domain
           "invalid app config value for `{key}`: config.path must be a non-empty string"
         )));
       }
+    }
+    "assetpack" => {
+      let cfg: AssetpackStorageProviderConfig = serde_json::from_value(parsed.config).map_err(|err| {
+        DomainError::Validation(format!(
+          "invalid app config value for `{key}`: invalid assetpack config ({err})"
+        ))
+      })?;
+      if cfg.path.trim().is_empty() {
+        return Err(DomainError::Validation(format!(
+          "invalid app config value for `{key}`: config.path must be a non-empty string"
+        )));
+      }
+      let _ = cfg.precomp2;
     }
     "aws-s3" => {
       let cfg: S3StorageProviderConfig = serde_json::from_value(parsed.config).map_err(|err| {
@@ -1811,6 +1831,38 @@ mod tests {
       )
       .is_ok()
     );
+    for (cfg, valid) in [
+      (
+        json!({ "provider": "assetpack", "bucket": "blobs", "config": { "path": "/var/lib/affine/blobs" } }),
+        true,
+      ),
+      (
+        json!({ "provider": "assetpack", "bucket": "blobs", "config": { "path": "/var/lib/affine/blobs", "precomp2": true } }),
+        true,
+      ),
+      (
+        json!({ "provider": "assetpack", "bucket": "blobs", "config": { "path": "/var/lib/affine/blobs", "precomp2": false } }),
+        true,
+      ),
+      (
+        json!({ "provider": "assetpack", "bucket": "blobs", "config": { "path": "/var/lib/affine/blobs", "precomp2": "false" } }),
+        false,
+      ),
+      (
+        json!({ "provider": "assetpack", "bucket": "blobs", "config": { "path": "/var/lib/affine/blobs", "precomp2": 1 } }),
+        false,
+      ),
+      (
+        json!({ "provider": "fs", "bucket": "blobs", "config": { "path": "/var/lib/affine/blobs", "precomp2": false } }),
+        false,
+      ),
+    ] {
+      assert_eq!(
+        validate_config_value("storages.blob.storage", &cfg, &defaults).is_ok(),
+        valid,
+        "unexpected validation result for {cfg}"
+      );
+    }
     assert!(
       validate_config_value(
         "storages.blob.storage",

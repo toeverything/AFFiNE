@@ -871,23 +871,20 @@ fn assetpack_rejects_oversized_recipe_without_panicking() {
     let fake_chunk_hash = assetpack_core::Hash32::sha3_256(b"x");
     let bad_recipe = assetpack_core::build_recipe(u64::MAX, &[(fake_chunk_hash, 1)], fake_chunk_hash, 0, 0);
     let rhash = assetpack_core::Hash32::sha3_256(&bad_recipe);
-    let store = assetpack_core::SqliteStore::open(root.join("blobs/assetpack.sqlite"))
+    let pool = sqlx::SqlitePool::connect(&format!("sqlite://{}", root.join("blobs/assetpack.sqlite").display()))
       .await
       .expect("open sqlite");
-    let mut tx = store.begin_write_tx().await.expect("tx");
-    store
-      .put_objects_batch_tx(
-        &mut tx,
-        &[assetpack_core::pack::ObjectRecord {
-          hash: rhash,
-          kind: assetpack_core::ObjectKind::Recipe,
-          size: bad_recipe.len() as u64,
-          codec: assetpack_core::Codec::Raw,
-          content: bad_recipe,
-        }],
-      )
-      .await
-      .expect("put bad recipe");
+    let mut tx = pool.begin().await.expect("tx");
+    sqlx::query(
+      "INSERT OR REPLACE INTO objects (hash, kind, size, stored_size, codec, content, created_at) \
+       VALUES (?1, 2, ?2, ?2, 'raw', ?3, 0)",
+    )
+    .bind(rhash.as_bytes().as_ref())
+    .bind(bad_recipe.len() as i64)
+    .bind(&bad_recipe)
+    .execute(&mut *tx)
+    .await
+    .expect("put bad recipe");
     sqlx::query(
       "INSERT INTO storage_assetpack_blobs (scope, key, recipe_hash, content_type, content_length, checksum_crc32, last_modified_ms) \
        VALUES ('blob', 'ws/bomb.bin', ?1, 'application/octet-stream', 1, NULL, 0)",
@@ -897,6 +894,7 @@ fn assetpack_rejects_oversized_recipe_without_panicking() {
     .await
     .expect("insert manifest");
     tx.commit().await.expect("commit");
+    pool.close().await;
 
     let err = ap
       .get("ws/bomb.bin")
@@ -925,44 +923,42 @@ fn assetpack_blocks_zstd_bomb_and_malformed_precomp2_without_panicking() {
       .await
       .expect("seed");
 
-    let store = assetpack_core::SqliteStore::open(root.join("blobs/assetpack.sqlite"))
+    let pool = sqlx::SqlitePool::connect(&format!("sqlite://{}", root.join("blobs/assetpack.sqlite").display()))
       .await
       .expect("open sqlite");
 
     async fn seed_crafted(
-      store: &assetpack_core::SqliteStore,
+      pool: &sqlx::SqlitePool,
       key: &str,
       transform_id: u16,
+      transform_version: u16,
       orig_len: u64,
       chunk_bytes: Vec<u8>,
     ) {
       let chash = assetpack_core::Hash32::sha3_256(&chunk_bytes);
       let orig_hash = assetpack_core::Hash32::sha3_256(vec![0u8; orig_len as usize]);
-      let recipe = assetpack_core::build_recipe(orig_len, &[(chash, chunk_bytes.len() as u32)], orig_hash, transform_id, 1);
+      let recipe = assetpack_core::build_recipe(
+        orig_len,
+        &[(chash, chunk_bytes.len() as u32)],
+        orig_hash,
+        transform_id,
+        transform_version,
+      );
       let rhash = assetpack_core::Hash32::sha3_256(&recipe);
-      let mut tx = store.begin_write_tx().await.unwrap();
-      store
-        .put_objects_batch_tx(
-          &mut tx,
-          &[
-            assetpack_core::pack::ObjectRecord {
-              hash: chash,
-              kind: assetpack_core::ObjectKind::Chunk,
-              size: chunk_bytes.len() as u64,
-              codec: assetpack_core::Codec::Raw,
-              content: chunk_bytes,
-            },
-            assetpack_core::pack::ObjectRecord {
-              hash: rhash,
-              kind: assetpack_core::ObjectKind::Recipe,
-              size: recipe.len() as u64,
-              codec: assetpack_core::Codec::Raw,
-              content: recipe,
-            },
-          ],
+      let mut tx = pool.begin().await.unwrap();
+      for (hash, kind, bytes) in [(chash, 1i64, &chunk_bytes), (rhash, 2i64, &recipe)] {
+        sqlx::query(
+          "INSERT OR REPLACE INTO objects (hash, kind, size, stored_size, codec, content, created_at) \
+           VALUES (?1, ?2, ?3, ?3, 'raw', ?4, 0)",
         )
+        .bind(hash.as_bytes().as_ref())
+        .bind(kind)
+        .bind(bytes.len() as i64)
+        .bind(bytes)
+        .execute(&mut *tx)
         .await
         .unwrap();
+      }
       sqlx::query(
         "INSERT INTO storage_assetpack_blobs (scope, key, recipe_hash, content_type, content_length, checksum_crc32, last_modified_ms) \
          VALUES ('blob', ?1, ?2, 'application/octet-stream', ?3, NULL, 0)",
@@ -980,25 +976,137 @@ fn assetpack_blocks_zstd_bomb_and_malformed_precomp2_without_panicking() {
     let zeros = vec![0u8; 128 * 1024 * 1024];
     let zstd_bomb = zstd::encode_all(std::io::Cursor::new(&zeros), 1).expect("encode zstd bomb");
     drop(zeros);
-    seed_crafted(&store, "ws/zstd-bomb.bin", assetpack_core::TRANSFORM_ID_PRECOMP2_ZSTD, 64, zstd_bomb).await;
-    let t0 = std::time::Instant::now();
-    let bomb_err = ap.get("ws/zstd-bomb.bin").await.expect_err("zstd bomb must fail");
-    assert!(
-      bomb_err.to_string().contains("exceeds bound"),
-      "expected zstd bound error, got: {bomb_err}"
-    );
-    assert!(t0.elapsed() < std::time::Duration::from_secs(2), "bomb rejection must be fast");
+    for ver in [1u16, 2u16] {
+      let key = format!("ws/zstd-bomb-v{ver}.bin");
+      seed_crafted(
+        &pool,
+        &key,
+        assetpack_core::TRANSFORM_ID_PRECOMP2_ZSTD,
+        ver,
+        64,
+        zstd_bomb.clone(),
+      )
+      .await;
+      let t0 = std::time::Instant::now();
+      let bomb_err = ap.get(&key).await.expect_err("zstd bomb must fail");
+      assert!(!bomb_err.to_string().is_empty());
+      assert!(t0.elapsed() < std::time::Duration::from_secs(2), "bomb rejection must be fast");
+    }
 
-    // (b) 6-byte malformed precomp2 stream that triggers slice OOB panic inside restore.rs.
+    // (a2) PCF2 Dflt segment bomb (v1 and v2): valid PCF2 header (original_size = 64) + single Dflt
+    //      segment (orig_len = 64, meta = [0, 0], data_len = 64 MiB of zeros) wrapped in zstd.
+    //      Must fail fast (< 1s) with "exceeds budget" under per-file bounded max_total_output.
+    for ver in [1u16, 2u16] {
+      use std::io::Write as _;
+      let mut seg_hdr = Vec::with_capacity(32);
+      seg_hdr.extend_from_slice(b"PCF2");
+      seg_hdr.extend_from_slice(&ver.to_le_bytes());
+      seg_hdr.extend_from_slice(&0u16.to_le_bytes());
+      seg_hdr.extend_from_slice(&0u16.to_le_bytes());
+      seg_hdr.extend_from_slice(&64u64.to_le_bytes());
+      // Segment: kind = Dflt (0x01), flags = 0x00, orig_len = 64, meta_len = 2, data_len = 64 MiB.
+      seg_hdr.push(0x01);
+      seg_hdr.push(0x00);
+      seg_hdr.push(64);
+      seg_hdr.push(2);
+      let mut v = 64u64 * 1024 * 1024;
+      loop {
+        let mut byte = (v & 0x7f) as u8;
+        v >>= 7;
+        if v != 0 {
+          byte |= 0x80;
+        }
+        seg_hdr.push(byte);
+        if v == 0 {
+          break;
+        }
+      }
+      seg_hdr.extend_from_slice(&[0u8, 0u8]);
+      let mut enc = zstd::Encoder::new(Vec::new(), 1).expect("zstd encoder");
+      enc.write_all(&seg_hdr).unwrap();
+      let zero_chunk = [0u8; 64 * 1024];
+      for _ in 0..1024 {
+        enc.write_all(&zero_chunk).unwrap();
+      }
+      let segbomb_zstd = enc.finish().unwrap();
+      let key = format!("ws/pcf2-segbomb-v{ver}.bin");
+      seed_crafted(
+        &pool,
+        &key,
+        assetpack_core::TRANSFORM_ID_PRECOMP2_ZSTD,
+        ver,
+        64,
+        segbomb_zstd,
+      )
+      .await;
+      let t_seg = std::time::Instant::now();
+      let seg_err = ap.get(&key).await.expect_err("pcf2 segbomb must fail");
+      assert!(
+        seg_err.to_string().contains("exceeds budget"),
+        "expected exceeds budget error for v{ver}, got: {seg_err}"
+      );
+      assert!(
+        t_seg.elapsed() < std::time::Duration::from_secs(1),
+        "segbomb rejection took {:?}",
+        t_seg.elapsed()
+      );
+    }
+
+    // (a3) PCF2 forged 512 MiB segment on 1 KiB file (v1 and v2): must fail in milliseconds
+    //      via `segment_data_limit` without allocating hundreds of MiB.
+    for ver in [1u16, 2u16] {
+      let mut seg = Vec::with_capacity(32);
+      seg.extend_from_slice(b"PCF2");
+      seg.extend_from_slice(&ver.to_le_bytes());
+      seg.extend_from_slice(&0u16.to_le_bytes());
+      seg.extend_from_slice(&0u16.to_le_bytes());
+      seg.extend_from_slice(&1024u64.to_le_bytes());
+      seg.push(0x01); // Dflt
+      seg.push(0x00); // flags
+      // orig_len = 1024 (varint: 0x80, 0x08), meta_len = 2, data_len = 512 MiB.
+      seg.extend_from_slice(&[0x80, 0x08, 2]);
+      let mut v = 512u64 * 1024 * 1024;
+      loop {
+        let mut byte = (v & 0x7f) as u8;
+        v >>= 7;
+        if v != 0 {
+          byte |= 0x80;
+        }
+        seg.push(byte);
+        if v == 0 {
+          break;
+        }
+      }
+      seg.extend_from_slice(&[0u8, 0u8]);
+      let key = format!("ws/pcf2-forged-512m-v{ver}.bin");
+      seed_crafted(&pool, &key, assetpack_core::TRANSFORM_ID_PRECOMP2, ver, 1024, seg).await;
+      let err = ap.get(&key).await.expect_err("forged 512 MiB segment must fail");
+      assert!(
+        err.to_string().contains("exceeds budget"),
+        "expected exceeds budget error for forged 512 MiB v{ver}, got: {err}"
+      );
+    }
+
+    // (b) 6-byte malformed precomp2 stream for both transform_version 1 and 2.
     let bad_precomp = b"\x00\x05\x00\x00\x00\x00".to_vec();
-    seed_crafted(&store, "ws/oob-raw.bin", assetpack_core::TRANSFORM_ID_PRECOMP2, 6, bad_precomp.clone()).await;
-    let oob1 = ap.get("ws/oob-raw.bin").await.expect_err("malformed precomp2 raw must Err");
-    assert!(!oob1.to_string().is_empty());
-
     let bad_precomp_zstd = zstd::encode_all(std::io::Cursor::new(&bad_precomp), 1).expect("encode bad precomp");
-    seed_crafted(&store, "ws/oob-zstd.bin", assetpack_core::TRANSFORM_ID_PRECOMP2_ZSTD, 6, bad_precomp_zstd).await;
-    let oob2 = ap.get("ws/oob-zstd.bin").await.expect_err("malformed precomp2 zstd must Err");
-    assert!(!oob2.to_string().is_empty());
+    for ver in [1u16, 2u16] {
+      let raw_key = format!("ws/oob-raw-v{ver}.bin");
+      seed_crafted(&pool, &raw_key, assetpack_core::TRANSFORM_ID_PRECOMP2, ver, 6, bad_precomp.clone()).await;
+      assert!(ap.get(&raw_key).await.is_err(), "malformed precomp2 raw v{ver} must Err");
+
+      let zstd_key = format!("ws/oob-zstd-v{ver}.bin");
+      seed_crafted(
+        &pool,
+        &zstd_key,
+        assetpack_core::TRANSFORM_ID_PRECOMP2_ZSTD,
+        ver,
+        6,
+        bad_precomp_zstd.clone(),
+      )
+      .await;
+      assert!(ap.get(&zstd_key).await.is_err(), "malformed precomp2 zstd v{ver} must Err");
+    }
 
     // (c) Object-layer (SQLite `objects` table) zstd and brotli bombs: declared size=64,
     //     compressed content expands to 4 MiB of zeros. Must fail fast at `.take(65)` with Err.
@@ -1019,7 +1127,7 @@ fn assetpack_blocks_zstd_bomb_and_malformed_precomp2_without_panicking() {
       let chash = assetpack_core::Hash32::sha3_256(&claimed_plain);
       let recipe = assetpack_core::build_recipe(64, &[(chash, 64)], chash, 0, 0);
       let rhash = assetpack_core::Hash32::sha3_256(&recipe);
-      let mut tx = store.begin_write_tx().await.unwrap();
+      let mut tx = pool.begin().await.unwrap();
       sqlx::query(
         "INSERT OR REPLACE INTO objects (hash, kind, size, stored_size, codec, content, created_at) \
          VALUES (?1, 1, 64, ?2, ?3, ?4, 0)",
@@ -1031,19 +1139,16 @@ fn assetpack_blocks_zstd_bomb_and_malformed_precomp2_without_panicking() {
       .execute(&mut *tx)
       .await
       .unwrap();
-      store
-        .put_objects_batch_tx(
-          &mut tx,
-          &[assetpack_core::pack::ObjectRecord {
-            hash: rhash,
-            kind: assetpack_core::ObjectKind::Recipe,
-            size: recipe.len() as u64,
-            codec: assetpack_core::Codec::Raw,
-            content: recipe,
-          }],
-        )
-        .await
-        .unwrap();
+      sqlx::query(
+        "INSERT OR REPLACE INTO objects (hash, kind, size, stored_size, codec, content, created_at) \
+         VALUES (?1, 2, ?2, ?2, 'raw', ?3, 0)",
+      )
+      .bind(rhash.as_bytes().as_ref())
+      .bind(recipe.len() as i64)
+      .bind(&recipe)
+      .execute(&mut *tx)
+      .await
+      .unwrap();
       sqlx::query(
         "INSERT INTO storage_assetpack_blobs (scope, key, recipe_hash, content_type, content_length, checksum_crc32, last_modified_ms) \
          VALUES ('blob', ?1, ?2, 'application/octet-stream', 64, NULL, 0)",
@@ -1068,7 +1173,7 @@ fn assetpack_blocks_zstd_bomb_and_malformed_precomp2_without_panicking() {
     //     must be rejected inside SQL before materializing the BLOB into Rust memory.
     let oversized_recipe_blob = vec![0u8; 2 * 1024 * 1024];
     let bad_rhash = assetpack_core::Hash32::sha3_256(b"oversized-recipe-row");
-    let mut tx = store.begin_write_tx().await.unwrap();
+    let mut tx = pool.begin().await.unwrap();
     sqlx::query(
       "INSERT OR REPLACE INTO objects (hash, kind, size, stored_size, codec, content, created_at) \
        VALUES (?1, 2, ?2, ?3, 'raw', ?4, 0)",
@@ -1089,6 +1194,8 @@ fn assetpack_blocks_zstd_bomb_and_malformed_precomp2_without_panicking() {
     .await
     .unwrap();
     tx.commit().await.unwrap();
+    pool.close().await;
+
     let sql_bounds_err = ap
       .get("ws/sql-bounds-recipe.bin")
       .await
@@ -1100,4 +1207,90 @@ fn assetpack_blocks_zstd_bomb_and_malformed_precomp2_without_panicking() {
 
     let _ = std::fs::remove_dir_all(&root);
   });
+}
+
+#[test]
+fn assetpack_storage_spec_parses_precomp2_option_and_defaults_true() {
+  let root = std::env::temp_dir().join(format!("affine-ap-spec-{}", uuid::Uuid::new_v4()));
+  let root_s = root.to_str().unwrap();
+
+  for (cfg, expected) in [
+    (
+      serde_json::json!({ "provider": "assetpack", "bucket": "blobs", "config": { "path": root_s } }),
+      Ok(true),
+    ),
+    (
+      serde_json::json!({ "provider": "assetpack", "bucket": "blobs", "config": { "path": root_s, "precomp2": null } }),
+      Ok(true),
+    ),
+    (
+      serde_json::json!({ "provider": "assetpack", "bucket": "blobs", "config": { "path": root_s, "precomp2": true } }),
+      Ok(true),
+    ),
+    (
+      serde_json::json!({ "provider": "assetpack", "bucket": "blobs", "config": { "path": root_s, "precomp2": false } }),
+      Ok(false),
+    ),
+    (
+      serde_json::json!({ "provider": "assetpack", "bucket": "blobs", "config": { "path": root_s, "precomp2": "false" } }),
+      Err("boolean"),
+    ),
+    (
+      serde_json::json!({ "provider": "assetpack", "bucket": "blobs", "config": { "path": root_s, "precomp2": 0 } }),
+      Err("boolean"),
+    ),
+    (
+      serde_json::json!({ "provider": "assetpack", "bucket": "blobs", "config": "not-an-object" }),
+      Err("must be an object"),
+    ),
+  ] {
+    let parsed = server_blob::StorageBackendSpec::from_app_config_json(&cfg, "blobs");
+    match expected {
+      Ok(want_enabled) => {
+        let spec = parsed.expect("valid assetpack spec").expect("some spec");
+        match &spec {
+          server_blob::StorageBackendSpec::Assetpack { precomp2, .. } => {
+            assert_eq!(*precomp2, want_enabled, "for {cfg}");
+          }
+          other => panic!("expected Assetpack spec, got {other:?}"),
+        }
+        assert!(spec.build().is_ok(), "build failed for {cfg}");
+        let direct = server_blob::AssetpackBlobStorage::new(root_s, "blobs", "blob")
+          .unwrap()
+          .with_precomp2(want_enabled);
+        assert_eq!(direct.precomp2_enabled(), want_enabled);
+      }
+      Err(needle) => {
+        let err = parsed.expect_err(&format!("expected error for {cfg}"));
+        assert!(
+          err.to_string().contains(needle),
+          "expected error containing `{needle}`, got `{err}`"
+        );
+      }
+    }
+  }
+  assert!(
+    server_blob::AssetpackBlobStorage::new(root_s, "blobs", "blob")
+      .unwrap()
+      .precomp2_enabled()
+  );
+
+  // Exact parity check: fs config with `precomp2` must be rejected by both app_config validation
+  // and startup StorageBackendSpec::from_app_config_json.
+  let bad_fs = serde_json::json!({
+    "provider": "fs",
+    "bucket": "blobs",
+    "config": { "path": root_s, "precomp2": false }
+  });
+  let defaults =
+    server_domain::app_config::default_app_config_json(&server_domain::app_config::RuntimeAppConfigBaseline::default());
+  assert!(
+    server_domain::app_config::validate_config_value("storages.blob.storage", &bad_fs, &defaults).is_err(),
+    "app_config validation must reject fs precomp2"
+  );
+  assert!(
+    server_blob::StorageBackendSpec::from_app_config_json(&bad_fs, "blobs").is_err(),
+    "StorageBackendSpec::from_app_config_json must reject fs precomp2"
+  );
+  let _ = std::fs::remove_dir_all(&root);
 }

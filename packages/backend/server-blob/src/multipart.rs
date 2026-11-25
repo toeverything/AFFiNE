@@ -98,6 +98,7 @@ pub enum StorageBackendSpec {
     root: String,
     bucket: String,
     scope: String,
+    precomp2: bool,
   },
   S3 {
     config: S3Config,
@@ -133,12 +134,19 @@ impl StorageBackendSpec {
         }
         Ok(Arc::new(fs))
       }
-      Self::Assetpack { root, bucket, scope } => {
+      Self::Assetpack {
+        root,
+        bucket,
+        scope,
+        precomp2,
+      } => {
         if root.trim().is_empty() {
           return Err(DomainError::Validation("storage root must not be empty".into()));
         }
         Ok(Arc::new(
-          AssetpackBlobStorage::new(root, bucket, scope).map_err(cfg_err)?,
+          AssetpackBlobStorage::new(root, bucket, scope)
+            .map_err(cfg_err)?
+            .with_precomp2(*precomp2),
         ))
       }
       Self::S3 { config, upload_options } => {
@@ -184,18 +192,41 @@ impl StorageBackendSpec {
     let cfg_str = |ks: &[&str]| cfg.and_then(|c| first_str(c, ks)).map(str::to_owned);
     match provider.as_str() {
       "fs" | "local" | "assetpack" => {
+        if let Some(raw_cfg) = obj.get("config")
+          && !raw_cfg.is_null()
+          && !raw_cfg.is_object()
+        {
+          return Err(DomainError::Validation(format!(
+            "{provider} storage config must be an object"
+          )));
+        }
         let (root, proxy_upload_secret, upload_url_prefix) = (
           cfg_str(&["path", "root"]).unwrap_or_else(|| "~/.affine/storage".into()),
           cfg_str(&["proxyUploadSecret"]),
           cfg_str(&["uploadUrlPrefix"]),
         );
         Ok(Some(if provider == "assetpack" {
+          let precomp2 = match cfg.and_then(|c| c.get("precomp2")) {
+            None | Some(Value::Null) => true,
+            Some(Value::Bool(enabled)) => *enabled,
+            Some(_) => {
+              return Err(DomainError::Validation(
+                "assetpack config.precomp2 must be a boolean".into(),
+              ));
+            }
+          };
           Self::Assetpack {
             root,
             bucket,
             scope: scope.to_owned(),
+            precomp2,
           }
         } else {
+          if cfg.is_some_and(|c| c.contains_key("precomp2")) {
+            return Err(DomainError::Validation(
+              "fs storage config does not support precomp2".into(),
+            ));
+          }
           Self::Fs {
             root,
             bucket,

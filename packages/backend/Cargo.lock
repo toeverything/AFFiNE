@@ -59,12 +59,14 @@ dependencies = [
 name = "affine-server"
 version = "0.1.0"
 dependencies = [
+ "assetpack-core 0.4.2",
  "async-trait",
  "axum",
  "base64 0.22.1",
  "chrono",
  "clap",
  "http",
+ "image",
  "p256",
  "rand 0.9.5",
  "redis",
@@ -120,12 +122,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc7bb162ec39d46ab1ca8c77bf72e890535becd1751bb45f64c597edb4c8c6b3"
 
 [[package]]
+name = "alloc-no-stdlib"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2fb6cfd47bf496ff64095c20eaba0c201404ee38714d4142fcfa1dc334fcc7a"
+
+[[package]]
 name = "alloc-stdlib"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e76a019e91224d279006ff972f1e984179a6e9feb050adba6ce8274aef23195"
 dependencies = [
- "alloc-no-stdlib",
+ "alloc-no-stdlib 2.0.4",
+]
+
+[[package]]
+name = "alloc-stdlib"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b5c1865780388bfa186411ab5f247819487fc4864c6e9c3106611fa347586e1"
+dependencies = [
+ "alloc-no-stdlib 3.0.0",
 ]
 
 [[package]]
@@ -250,14 +267,14 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72bb7294f3c191cc25839285896f7973ce4470dca2a412a95ad39956c99326f5"
 dependencies = [
- "brotli",
+ "brotli 8.0.4",
  "chrono",
- "fastcdc",
+ "fastcdc 3.2.1",
  "futures-core",
  "futures-util",
  "hex",
  "serde",
- "sha3",
+ "sha3 0.11.0",
  "sqlx",
  "tempfile",
  "thiserror 2.0.21",
@@ -266,15 +283,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "assetpack-core"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "840685c39a3e06ed971bb9cf5e155633052f8440ad747f7ce4646e13b89371f8"
+dependencies = [
+ "brotli 9.1.3",
+ "fastcdc 5.0.0",
+ "hex",
+ "serde",
+ "sha3 0.12.0",
+ "tempfile",
+ "thiserror 2.0.21",
+ "zstd 0.14.4",
+]
+
+[[package]]
 name = "assetpack-transform-precomp2"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "780badf66e57dd350c0b2778966c383a871b3df6873d4e6ca12174344761819c"
 dependencies = [
- "assetpack-core",
+ "assetpack-core 0.1.0",
  "lzma-rust2",
- "precomp2",
+ "precomp2 0.1.0",
  "zstd 0.13.5",
+]
+
+[[package]]
+name = "assetpack-transform-precomp2"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb4740ee9faeb226528085c8328a018cd2544d80d6b0451aced9012d93458ac5"
+dependencies = [
+ "assetpack-core 0.4.2",
+ "lzma-rust2",
+ "precomp2 0.3.4",
+ "zstd 0.14.4",
 ]
 
 [[package]]
@@ -623,9 +668,20 @@ version = "8.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5cc91aac060a7a1e25823bdccbfb6af1875b88f17c6daac97894eed8207166b3"
 dependencies = [
- "alloc-no-stdlib",
- "alloc-stdlib",
- "brotli-decompressor",
+ "alloc-no-stdlib 2.0.4",
+ "alloc-stdlib 0.2.4",
+ "brotli-decompressor 5.0.3",
+]
+
+[[package]]
+name = "brotli"
+version = "9.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9071f285ed78f04f37d675abaaef5de7689e2f30a216c8dc6795465d81910a13"
+dependencies = [
+ "alloc-no-stdlib 3.0.0",
+ "alloc-stdlib 0.3.0",
+ "brotli-decompressor 6.4.0",
 ]
 
 [[package]]
@@ -634,8 +690,18 @@ version = "5.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a32acac15fe1967bc3986b2a6347dffc965602354ea6f450ad07e8bfd253583"
 dependencies = [
- "alloc-no-stdlib",
- "alloc-stdlib",
+ "alloc-no-stdlib 2.0.4",
+ "alloc-stdlib 0.2.4",
+]
+
+[[package]]
+name = "brotli-decompressor"
+version = "6.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "664148598c930650998ef56df301329ffe7b4cdb02d49b2a3fca3bcaf2185bcb"
+dependencies = [
+ "alloc-no-stdlib 3.0.0",
+ "alloc-stdlib 0.3.0",
 ]
 
 [[package]]
@@ -1317,6 +1383,12 @@ name = "fastcdc"
 version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf51ceb43e96afbfe4dd5c6f6082af5dfd60e220820b8123792d61963f2ce6bc"
+
+[[package]]
+name = "fastcdc"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0431c3132902a1bed6fe77dcfa5d03844e083f263b81288246a2d43dd7d4b2ad"
 
 [[package]]
 name = "fastrand"
@@ -2522,6 +2594,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4050469837a6ff301cd14c1f8f24f88549e6d548f24f64e2148eb0f72cebc51f"
 
 [[package]]
+name = "lz4_flex"
+version = "0.11.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13591d77a9b6d941f7e6fcade7f9dfd9e801308752bde50c0a9bb5852778c22c"
+dependencies = [
+ "twox-hash",
+]
+
+[[package]]
 name = "lzma-rust2"
 version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3190,6 +3271,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "precomp2"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6f4023fea23eb3e76f529d5fe9604be98a8638fc3951771a5878e56f5570686"
+dependencies = [
+ "base64 0.23.1",
+ "bzip2",
+ "crc32fast",
+ "flate2",
+ "lepton_jpeg",
+ "lz4_flex",
+ "memchr",
+ "preflate-rs",
+ "thiserror 2.0.21",
+ "tokio",
+ "webp",
+]
+
+[[package]]
 name = "prefix-trie"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3850,12 +3950,14 @@ name = "server-blob"
 version = "0.1.0"
 dependencies = [
  "arc-swap",
- "assetpack-core",
- "assetpack-transform-precomp2",
+ "assetpack-core 0.1.0",
+ "assetpack-core 0.4.2",
+ "assetpack-transform-precomp2 0.1.0",
+ "assetpack-transform-precomp2 0.4.4",
  "async-trait",
  "axum",
  "base64 0.22.1",
- "brotli",
+ "brotli 9.1.3",
  "chrono",
  "crc32fast",
  "flate2",
@@ -3863,7 +3965,6 @@ dependencies = [
  "hmac 0.12.1",
  "image",
  "lru",
- "lzma-rust2",
  "reqwest",
  "rusty-s3",
  "serde",
@@ -3882,7 +3983,7 @@ dependencies = [
  "url",
  "uuid",
  "y-octo",
- "zstd 0.13.5",
+ "zstd 0.14.4",
 ]
 
 [[package]]
@@ -4175,6 +4276,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha3"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc9bad02c26382724b2d2692c6f179285e4b54eeecd7968f52a50059c3c11759"
+dependencies = [
+ "digest 0.11.3",
+ "keccak",
+ "sponge-cursor",
+]
+
+[[package]]
 name = "sharded-slab"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4300,6 +4412,12 @@ dependencies = [
  "base64ct",
  "der",
 ]
+
+[[package]]
+name = "sponge-cursor"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a0219bd7d979d58245a4f41f695e1ac9f8befdffadd7f61f1bae9e39abc6620"
 
 [[package]]
 name = "sqlx"
@@ -5034,6 +5152,12 @@ dependencies = [
  "sha1",
  "thiserror 2.0.21",
 ]
+
+[[package]]
+name = "twox-hash"
+version = "2.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86a801b3cea342a06d468c8710662aa29e5e05e4f5c0d62f00bbb7f2ad7941c2"
 
 [[package]]
 name = "typenum"

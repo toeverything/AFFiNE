@@ -36,6 +36,8 @@ Never edit an existing SQL migration file. Add a new versioned file instead.
 1. Serialize blob writes and deletes with per-object advisory locks outside the pooled connection.
 2. Keep local and S3 object key layouts identical to `v0.27.5`.
 3. Keep `v0.27.5` workspace storage reconciliation active during mixed rollout until `affine-server` owns orphan object sweeps.
+4. `provider: "assetpack"` enables `config.precomp2 = true` by default (writing `PCF2 v2` recipes while decoding `v0.27.5` `PCF2 v1`, `PCF2 v2`, and raw FastCDC chunks). Set `config.precomp2 = false` during mixed rollout with `v0.27.5` or while keeping a rollback window to `v0.27.5` so newly written objects remain readable by `v0.27.5`.
+5. `AssetpackBlobStorage` bounds total decoded transform output per read to `512 MiB` (`DECODE_MAX_TOTAL_OUTPUT_BYTES`, 4x the `128 MiB` `FileTransformConfig::fast()` write transform cap). Legacy `v0.27.5` `PCF2 v1` PNG objects whose uncompressed pixel stream exceeds `512 MiB` (for example RGB images above roughly `13,000 x 13,000` or RGBA images above roughly `11,500 x 11,500`) remain intact on disk, and reading them returns a `decode output exceeds budget` error instead of allocating unbounded memory.
 
 ## 6. Search Projection v6 and Dual-Mode Lock Fence
 

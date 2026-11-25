@@ -1,4 +1,7 @@
-//! Bidirectional interop test against the unmodified frozen `v0.27.5` assetpack backend.
+//! Bidirectional interop test against the unmodified frozen `v0.27.5` (`0.1.0`) assetpack backend.
+
+extern crate assetpack_core_v0275 as assetpack_core;
+extern crate assetpack_transform_precomp2_v0275 as assetpack_transform_precomp2;
 
 #[allow(dead_code)]
 mod runtime {
@@ -138,12 +141,9 @@ fn encode_real_png(width: u32, height: u32, rgba: bool) -> Vec<u8> {
   for y in 0..height {
     for x in 0..width {
       let idx = ((y * width + x) * channels) as usize;
-      let r = ((x * 255) / width.max(1)) as u8;
-      let g = ((y * 255) / height.max(1)) as u8;
-      let b = (((x ^ y) * 3 + (x / 17) * 29) & 0xFF) as u8;
-      pixels[idx] = r;
-      pixels[idx + 1] = g;
-      pixels[idx + 2] = b;
+      pixels[idx] = ((x * 255) / width.max(1)) as u8;
+      pixels[idx + 1] = ((y * 255) / height.max(1)) as u8;
+      pixels[idx + 2] = (((x ^ y) * 3 + (x / 17) * 29) & 0xFF) as u8;
       if rgba {
         pixels[idx + 3] = 255 - ((x + y) & 0x3F) as u8;
       }
@@ -158,6 +158,74 @@ fn encode_real_png(width: u32, height: u32, rgba: bool) -> Vec<u8> {
   };
   enc.write_image(&pixels, width, height, color).expect("encode real png");
   out
+}
+
+fn encode_gradient_png(width: u32, height: u32) -> Vec<u8> {
+  use image::ImageEncoder as _;
+  let mut pixels = vec![0u8; (width * height * 3) as usize];
+  for y in 0..height {
+    for x in 0..width {
+      let idx = ((y * width + x) * 3) as usize;
+      pixels[idx] = ((x * 255) / width.max(1)) as u8;
+      pixels[idx + 1] = ((y * 255) / height.max(1)) as u8;
+      pixels[idx + 2] = (((x + y) * 127) / (width + height).max(1)) as u8;
+    }
+  }
+  let mut out = Vec::new();
+  image::codecs::png::PngEncoder::new(&mut out)
+    .write_image(&pixels, width, height, image::ExtendedColorType::Rgb8)
+    .expect("encode gradient png");
+  out
+}
+
+/// Builds a valid 16000x16000 1-bit grayscale PNG (>= 40 KiB) quickly for oversized PNG memory regression testing.
+fn encode_16000x16000_png() -> Vec<u8> {
+  use std::io::Write as _;
+  fn push_chunk(out: &mut Vec<u8>, kind: &[u8; 4], data: &[u8]) {
+    out.extend_from_slice(&(data.len() as u32).to_be_bytes());
+    out.extend_from_slice(kind);
+    out.extend_from_slice(data);
+    let mut h = crc32fast::Hasher::new();
+    h.update(kind);
+    h.update(data);
+    out.extend_from_slice(&h.finalize().to_be_bytes());
+  }
+  let (w, h) = (16_000u32, 16_000u32);
+  let mut ihdr = Vec::with_capacity(13);
+  ihdr.extend_from_slice(&w.to_be_bytes());
+  ihdr.extend_from_slice(&h.to_be_bytes());
+  ihdr.extend_from_slice(&[1, 0, 0, 0, 0]); // 1-bit grayscale
+
+  let row_bytes = (w as usize) / 8;
+  let mut enc = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::fast());
+  let mut row = vec![0u8; 1 + row_bytes];
+  let mut prng: u64 = 0x517C_C1B7_2722_0A95;
+  for y in 0..h {
+    row[0] = 0;
+    if y % 64 == 0 {
+      for b in &mut row[1..65] {
+        prng ^= prng << 13;
+        prng ^= prng >> 7;
+        prng ^= prng << 17;
+        *b = prng as u8;
+      }
+    } else {
+      row[1..65].fill(0);
+    }
+    enc.write_all(&row).unwrap();
+  }
+  let idat = enc.finish().unwrap();
+  let mut png = Vec::with_capacity(idat.len() + 64);
+  png.extend_from_slice(b"\x89PNG\r\n\x1a\n");
+  push_chunk(&mut png, b"IHDR", &ihdr);
+  push_chunk(&mut png, b"IDAT", &idat);
+  push_chunk(&mut png, b"IEND", &[]);
+  assert!(
+    png.len() >= 32 * 1024,
+    "16000x16000 png must exceed 32 KiB, got {}",
+    png.len()
+  );
+  png
 }
 
 fn encode_real_gz(raw: &[u8]) -> Vec<u8> {
@@ -175,25 +243,8 @@ fn encode_real_zip(entry_name: &str, raw: &[u8]) -> Vec<u8> {
   let crc = crc32fast::hash(raw);
   let name = entry_name.as_bytes();
   let mut zip = Vec::new();
-  // Local File Header
   zip.extend_from_slice(&0x0403_4b50u32.to_le_bytes());
-  zip.extend_from_slice(&20u16.to_le_bytes()); // version needed
-  zip.extend_from_slice(&0u16.to_le_bytes()); // flags
-  zip.extend_from_slice(&8u16.to_le_bytes()); // deflate
-  zip.extend_from_slice(&0u16.to_le_bytes()); // mod time
-  zip.extend_from_slice(&0u16.to_le_bytes()); // mod date
-  zip.extend_from_slice(&crc.to_le_bytes());
-  zip.extend_from_slice(&(comp.len() as u32).to_le_bytes());
-  zip.extend_from_slice(&(raw.len() as u32).to_le_bytes());
-  zip.extend_from_slice(&(name.len() as u16).to_le_bytes());
-  zip.extend_from_slice(&0u16.to_le_bytes()); // extra len
-  zip.extend_from_slice(name);
-  zip.extend_from_slice(&comp);
-  let cd_offset = zip.len() as u32;
-  // Central Directory Header
-  zip.extend_from_slice(&0x0201_4b50u32.to_le_bytes());
-  zip.extend_from_slice(&20u16.to_le_bytes()); // version made
-  zip.extend_from_slice(&20u16.to_le_bytes()); // version needed
+  zip.extend_from_slice(&20u16.to_le_bytes());
   zip.extend_from_slice(&0u16.to_le_bytes());
   zip.extend_from_slice(&8u16.to_le_bytes());
   zip.extend_from_slice(&0u16.to_le_bytes());
@@ -202,15 +253,29 @@ fn encode_real_zip(entry_name: &str, raw: &[u8]) -> Vec<u8> {
   zip.extend_from_slice(&(comp.len() as u32).to_le_bytes());
   zip.extend_from_slice(&(raw.len() as u32).to_le_bytes());
   zip.extend_from_slice(&(name.len() as u16).to_le_bytes());
-  zip.extend_from_slice(&0u16.to_le_bytes()); // extra
-  zip.extend_from_slice(&0u16.to_le_bytes()); // comment
-  zip.extend_from_slice(&0u16.to_le_bytes()); // disk start
-  zip.extend_from_slice(&0u16.to_le_bytes()); // internal attrs
-  zip.extend_from_slice(&0u32.to_le_bytes()); // external attrs
-  zip.extend_from_slice(&0u32.to_le_bytes()); // local header offset
+  zip.extend_from_slice(&0u16.to_le_bytes());
+  zip.extend_from_slice(name);
+  zip.extend_from_slice(&comp);
+  let cd_offset = zip.len() as u32;
+  zip.extend_from_slice(&0x0201_4b50u32.to_le_bytes());
+  zip.extend_from_slice(&20u16.to_le_bytes());
+  zip.extend_from_slice(&20u16.to_le_bytes());
+  zip.extend_from_slice(&0u16.to_le_bytes());
+  zip.extend_from_slice(&8u16.to_le_bytes());
+  zip.extend_from_slice(&0u16.to_le_bytes());
+  zip.extend_from_slice(&0u16.to_le_bytes());
+  zip.extend_from_slice(&crc.to_le_bytes());
+  zip.extend_from_slice(&(comp.len() as u32).to_le_bytes());
+  zip.extend_from_slice(&(raw.len() as u32).to_le_bytes());
+  zip.extend_from_slice(&(name.len() as u16).to_le_bytes());
+  zip.extend_from_slice(&0u16.to_le_bytes());
+  zip.extend_from_slice(&0u16.to_le_bytes());
+  zip.extend_from_slice(&0u16.to_le_bytes());
+  zip.extend_from_slice(&0u16.to_le_bytes());
+  zip.extend_from_slice(&0u32.to_le_bytes());
+  zip.extend_from_slice(&0u32.to_le_bytes());
   zip.extend_from_slice(name);
   let cd_size = (zip.len() as u32) - cd_offset;
-  // End of Central Directory
   zip.extend_from_slice(&0x0605_4b50u32.to_le_bytes());
   zip.extend_from_slice(&0u16.to_le_bytes());
   zip.extend_from_slice(&0u16.to_le_bytes());
@@ -237,7 +302,7 @@ fn encode_real_pdf(raw_stream: &[u8]) -> Vec<u8> {
   pdf
 }
 
-async fn read_recipe_transform_id(store: &assetpack_core::SqliteStore, key: &str) -> u16 {
+async fn read_recipe_meta(store: &assetpack_core::SqliteStore, key: &str) -> (u16, u16) {
   let hex: String =
     sqlx::query_scalar("SELECT recipe_hash FROM storage_assetpack_blobs WHERE scope = 'blob' AND key = ?1")
       .bind(key)
@@ -246,9 +311,8 @@ async fn read_recipe_transform_id(store: &assetpack_core::SqliteStore, key: &str
       .expect("manifest row");
   let rhash = assetpack_core::Hash32::from_hex(&hex).unwrap();
   let obj = store.get_object(&rhash).await.unwrap().expect("recipe object");
-  assetpack_core::parse_recipe_checked(&obj.content, &rhash)
-    .expect("parse recipe")
-    .transform_id
+  let parsed = assetpack_core::parse_recipe_checked(&obj.content, &rhash).expect("parse recipe");
+  (parsed.transform_id, parsed.transform_version)
 }
 
 fn main() {
@@ -268,103 +332,130 @@ fn main() {
       root: root.to_string_lossy().into_owned(),
       bucket: "blobs".into(),
     };
-    let ap = server_blob::AssetpackBlobStorage::new(root.to_str().unwrap(), "blobs", "blob").unwrap();
+    let ap_on = server_blob::AssetpackBlobStorage::new(root.to_str().unwrap(), "blobs", "blob").unwrap();
+    let ap_off = server_blob::AssetpackBlobStorage::new(root.to_str().unwrap(), "blobs", "blob")
+      .unwrap()
+      .with_precomp2(false);
+    assert!(ap_on.precomp2_enabled());
+    assert!(!ap_off.precomp2_enabled());
 
-    // 1. Real deflate-bearing samples across 4 formats: PNG (600x600 RGBA & 1500x1500 RGB),
-    //    gzip (text + ~1 MiB medium-entropy + incompressible), docx/zip, and FlateDecode PDF.
-    let png_600 = encode_real_png(600, 600, true);
-    let png_1500 = encode_real_png(1500, 1500, false);
-
-    let gz_text = encode_real_gz(&b"AFFiNE workspace document block payload line 0123456789\n".repeat(1200));
-    let mut mid_raw = Vec::with_capacity(1024 * 1024);
-    let mut prng: u64 = 0xD1B5_4A32_D192_ED03;
-    for i in 0..4096u32 {
-      if i % 4 == 0 {
-        mid_raw.extend_from_slice(&b"REPEATED_STRUCTURED_BLOCK_0123456789_ABCDEF_".repeat(6));
-      } else {
-        for _ in 0..32 {
-          prng ^= prng << 13;
-          prng ^= prng >> 7;
-          prng ^= prng << 17;
-          mid_raw.extend_from_slice(&prng.to_le_bytes());
-        }
+    // Builds a ~256 KiB payload from 4 copies of a 64 KiB varied block: deflate's 32 KiB window
+    // cannot match across copies (keeping compressed size >= 50 KiB), while precomp2 + zstd level 3
+    // matches across the 64 KiB stride for >50% gain without degenerate LZMA2 chains in 0.1.0.
+    let make_semi_structured = |seed: u64, prefix: &str, suffix: &str| -> Vec<u8> {
+      let mut block = Vec::with_capacity(64 * 1024);
+      let mut s = seed;
+      for i in 0..950u32 {
+        s ^= s << 13;
+        s ^= s >> 7;
+        s ^= s << 17;
+        let line = format!(
+          "rec={i:04} tag={:02x} a={:08x} b={:08x} payload=affine_block_{:04}_{:04x}\n",
+          (s & 0xff) as u8,
+          (s >> 8) as u32,
+          (s >> 32) as u32,
+          i % 64,
+          (s >> 16) as u16,
+        );
+        block.extend_from_slice(line.as_bytes());
       }
-    }
-    let gz_mid = encode_real_gz(&mid_raw);
+      let mut out = Vec::with_capacity(prefix.len() + block.len() * 4 + suffix.len());
+      out.extend_from_slice(prefix.as_bytes());
+      for _ in 0..4 {
+        out.extend_from_slice(&block);
+      }
+      out.extend_from_slice(suffix.as_bytes());
+      out
+    };
 
-    let mut rand_raw = vec![0u8; 64 * 1024];
-    for c in rand_raw.as_chunks_mut::<8>().0 {
-      prng ^= prng << 13;
-      prng ^= prng >> 7;
-      prng ^= prng << 17;
-      c.copy_from_slice(&prng.to_le_bytes());
-    }
-    let gz_rand = encode_real_gz(&rand_raw);
-
-    let docx_xml = b"<?xml version=\"1.0\"?><w:document><w:body>".iter()
-      .copied()
-      .chain(b"<w:p><w:r><w:t>AFFiNE interop paragraph 0123456789</w:t></w:r></w:p>".repeat(900))
-      .chain(b"</w:body></w:document>".iter().copied())
-      .collect::<Vec<u8>>();
+    let png_600 = encode_real_png(600, 600, true);
+    let gz_text = encode_real_gz(&make_semi_structured(0x1111_2222_3333_4444, "", ""));
+    let docx_xml = make_semi_structured(
+      0x5555_6666_7777_8888,
+      "<?xml version=\"1.0\"?><w:document><w:body>",
+      "</w:body></w:document>",
+    );
     let real_docx = encode_real_zip("word/document.xml", &docx_xml);
-    let real_zip = encode_real_zip("archive/data.txt", &docx_xml);
-    let pdf_content = b"BT /F1 12 Tf 72 720 Td (AFFiNE PDF FlateDecode stream) Tj ET\n".repeat(1500);
+    let zip_data = make_semi_structured(0x9999_AAAA_BBBB_CCCC, "", "");
+    let real_zip = encode_real_zip("archive/data.txt", &zip_data);
+    let pdf_content = make_semi_structured(0xDEAD_BEEF_CAFE_BABE, "BT /F1 12 Tf\n", "ET\n");
     let real_pdf = encode_real_pdf(&pdf_content);
+    for (name, buf) in [
+      ("png_600", &png_600),
+      ("gz_text", &gz_text),
+      ("real_zip", &real_zip),
+      ("real_docx", &real_docx),
+      ("real_pdf", &real_pdf),
+    ] {
+      assert!(
+        buf.len() >= 36 * 1024,
+        "{name} must exceed 32 KiB min_size, got {}",
+        buf.len()
+      );
+    }
 
     let samples: Vec<(&str, &str, Vec<u8>)> = vec![
-      ("ws/real-600.png", "image/png", png_600.clone()),
-      ("ws/real-1500.png", "image/png", png_1500),
-      ("ws/real-text.gz", "application/gzip", gz_text),
-      ("ws/real-mid.gz", "application/gzip", gz_mid),
-      ("ws/real-rand.gz", "application/gzip", gz_rand),
-      ("ws/real.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", real_docx),
-      ("ws/real.zip", "application/zip", real_zip),
-      ("ws/real.pdf", "application/pdf", real_pdf),
+      ("real-600.png", "image/png", png_600.clone()),
+      ("real-text.gz", "application/gzip", gz_text),
+      ("real.zip", "application/zip", real_zip),
+      (
+        "real.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        real_docx,
+      ),
+      ("real.pdf", "application/pdf", real_pdf),
     ];
 
+    // Direction A: real frozen v0.27.5 (0.1.0) put -> new AssetpackBlobStorage (both precomp2=true and false).
     let mut seen_transforms = std::collections::BTreeSet::new();
-    for (key, ct, body) in &samples {
-      frozen_v0275_object_storage::frozen_put(&cfg, "blob", key, body.clone(), ct)
+    for (name, ct, body) in &samples {
+      let key = format!("ws/frozen-{name}");
+      frozen_v0275_object_storage::frozen_put(&cfg, "blob", &key, body.clone(), ct)
         .await
         .unwrap_or_else(|e| panic!("frozen_put {key}: {e}"));
-      let (got, meta) = ap
-        .get(key)
-        .await
-        .unwrap_or_else(|e| panic!("ap.get {key}: {e}"))
-        .expect("exists");
-      assert_eq!(meta.content_length, body.len() as i64, "len mismatch for {key}");
-      assert_eq!(
-        sha2::Sha256::digest(&got),
-        sha2::Sha256::digest(body),
-        "sha256 mismatch for {key}"
-      );
+      let expected_sha = sha2::Sha256::digest(body);
+      for (label, reader) in [("ap_on", &ap_on), ("ap_off", &ap_off)] {
+        let (got, meta) = reader.get(&key).await.expect("get").expect("exists");
+        assert_eq!(meta.content_length, body.len() as i64, "{label} {key}");
+        assert_eq!(sha2::Sha256::digest(&got), expected_sha, "{label} {key}");
+      }
     }
     let store = assetpack_core::SqliteStore::open(root.join("blobs/assetpack.sqlite"))
       .await
       .expect("open sqlite");
-    for (key, _, _) in &samples {
-      let tid = read_recipe_transform_id(&store, key).await;
+    for (name, _, _) in &samples {
+      let (tid, _) = read_recipe_meta(&store, &format!("ws/frozen-{name}")).await;
       seen_transforms.insert(tid);
-      eprintln!("interop sample {key} -> transform_id={tid}");
     }
-    // Verify precomp2 transforms produced by unmodified frozen_put are exercised.
     for required in [
       assetpack_core::TRANSFORM_ID_PRECOMP2,
       assetpack_core::TRANSFORM_ID_PRECOMP2_ZSTD,
       assetpack_core::TRANSFORM_ID_PRECOMP2_LZMA,
     ] {
       if !seen_transforms.contains(&required) {
-        // Also cover explicit precomp2 recipe for any transform_id not selected by heuristic.
         use assetpack_core::file_transform::FileTransform as _;
         let tc = assetpack_core::FileTransformConfig::default();
-        let mut precomp_buf = Vec::new();
-        assetpack_transform_precomp2::Precomp2Transform::new(&tc)
-          .encode(&mut std::io::BufReader::new(std::io::Cursor::new(&png_600)), &mut precomp_buf)
-          .expect("precomp2 encode");
         let stream_bytes = match required {
-          assetpack_core::TRANSFORM_ID_PRECOMP2 => precomp_buf,
+          assetpack_core::TRANSFORM_ID_PRECOMP2 => {
+            let mut buf = Vec::new();
+            assetpack_transform_precomp2::Precomp2Transform::new(&tc)
+              .encode(&mut std::io::BufReader::new(std::io::Cursor::new(&png_600)), &mut buf)
+              .expect("0.1.0 precomp2 encode");
+            buf
+          }
           assetpack_core::TRANSFORM_ID_PRECOMP2_ZSTD => {
-            zstd::encode_all(std::io::Cursor::new(&precomp_buf), 1).expect("zstd encode")
+            let mut buf = Vec::new();
+            assetpack_transform_precomp2::Precomp2ZstdTransform::new(&tc)
+              .encode(&mut std::io::BufReader::new(std::io::Cursor::new(&png_600)), &mut buf)
+              .expect("0.1.0 precomp2-zstd encode");
+            buf
+          }
+          assetpack_core::TRANSFORM_ID_PRECOMP2_LZMA => {
+            let mut buf = Vec::new();
+            assetpack_transform_precomp2::Precomp2LzmaTransform::new(&tc)
+              .encode(&mut std::io::BufReader::new(std::io::Cursor::new(&png_600)), &mut buf)
+              .expect("0.1.0 precomp2-lzma encode");
+            buf
           }
           _ => unreachable!(),
         };
@@ -378,7 +469,7 @@ fn main() {
           1,
         );
         let rhash = assetpack_core::Hash32::sha3_256(&recipe);
-        let key = format!("ws/explicit-tid-{required}.png");
+        let key = format!("ws/frozen-explicit-tid-{required}.png");
         let mut tx = store.begin_write_tx().await.expect("tx");
         store
           .put_objects_batch_tx(
@@ -401,7 +492,7 @@ fn main() {
             ],
           )
           .await
-          .expect("put explicit transform objects");
+          .expect("put explicit v1 objects");
         sqlx::query(
           "INSERT INTO storage_assetpack_blobs (scope, key, recipe_hash, content_type, content_length, checksum_crc32, last_modified_ms) \
            VALUES ('blob', ?1, ?2, 'image/png', ?3, NULL, 0)",
@@ -413,8 +504,10 @@ fn main() {
         .await
         .expect("insert manifest");
         tx.commit().await.expect("commit");
-        let (got, _) = ap.get(&key).await.expect("ap.get explicit tid").expect("exists");
-        assert_eq!(sha2::Sha256::digest(&got), sha2::Sha256::digest(&png_600));
+        for reader in [&ap_on, &ap_off] {
+          let (got, _) = reader.get(&key).await.expect("get explicit v1").expect("exists");
+          assert_eq!(sha2::Sha256::digest(&got), sha2::Sha256::digest(&png_600));
+        }
         seen_transforms.insert(required);
       }
     }
@@ -422,7 +515,36 @@ fn main() {
     assert!(seen_transforms.contains(&assetpack_core::TRANSFORM_ID_PRECOMP2_ZSTD));
     assert!(seen_transforms.contains(&assetpack_core::TRANSFORM_ID_PRECOMP2_LZMA));
 
-    // Deterministic xorshift64 100 MiB + 1 payload (avoids degenerate LZMA match chains in frozen_put).
+    // High-compression-ratio gradient PNGs written by real v0.27.5 (0.1.0) hit (tid != 0, v1)
+    // WebP transform whose decoded pixel bitmap exceeds 16x the compressed PNG size.
+    for (w, h) in [(1500u32, 1500u32), (3000u32, 3000u32), (5000u32, 5000u32)] {
+      let grad_png = encode_gradient_png(w, h);
+      let raw_pixels = u64::from(w) * u64::from(h) * 3;
+      assert!(
+        grad_png.len() >= 32 * 1024 && raw_pixels > (grad_png.len() as u64) * 16,
+        "frozen gradient {w}x{h} png len {} vs raw {raw_pixels}",
+        grad_png.len()
+      );
+      let key = format!("ws/frozen-grad-{w}x{h}.png");
+      frozen_v0275_object_storage::frozen_put(&cfg, "blob", &key, grad_png.clone(), "image/png")
+        .await
+        .unwrap_or_else(|e| panic!("frozen_put {key}: {e}"));
+      let (tid, tver) = read_recipe_meta(&store, &key).await;
+      assert_ne!(tid, 0, "0.1.0 must transform gradient PNG {w}x{h}");
+      assert_eq!(tver, 1, "0.1.0 must write v1 for {w}x{h}");
+      let expected_sha = sha2::Sha256::digest(&grad_png);
+      for (label, reader) in [("ap_on", &ap_on), ("ap_off", &ap_off)] {
+        let (got, meta) = reader
+          .get(&key)
+          .await
+          .unwrap_or_else(|e| panic!("{label} get {key}: {e}"))
+          .expect("exists");
+        assert_eq!(meta.content_length, grad_png.len() as i64, "{label} {key}");
+        assert_eq!(sha2::Sha256::digest(&got), expected_sha, "{label} {key}");
+      }
+    }
+
+    // Deterministic xorshift64 100 MiB + 1 payload for multi-chunk interop.
     let big_len: usize = 104_857_601;
     let mut big = vec![0u8; big_len];
     let mut s: u64 = 0x9E37_79B9_7F4A_7C15;
@@ -435,7 +557,6 @@ fn main() {
     big[big_len - 1] = 0xEE;
     let big_sha = sha2::Sha256::digest(&big);
 
-    // Direction A2: frozen v0.27.5 put 100 MiB + 1 -> new AssetpackBlobStorage head & get.
     frozen_v0275_object_storage::frozen_put(
       &cfg,
       "blob",
@@ -445,36 +566,125 @@ fn main() {
     )
     .await
     .expect("frozen put 100MiB+1");
-    let head_big = ap
-      .head("ws/frozen-big.bin")
-      .await
-      .expect("new head big")
-      .expect("exists");
+    let head_big = ap_on.head("ws/frozen-big.bin").await.unwrap().unwrap();
     assert_eq!(head_big.content_length, big_len as i64);
-    let (got_big, _) = ap.get("ws/frozen-big.bin").await.expect("new get big").expect("exists");
+    let (got_big, _) = ap_on.get("ws/frozen-big.bin").await.unwrap().unwrap();
     assert_eq!(got_big.len(), big_len);
     assert_eq!(sha2::Sha256::digest(&got_big), big_sha);
     drop(got_big);
 
-    // Direction B: new AssetpackBlobStorage put -> frozen v0.27.5 get.
-    let png_sha = sha2::Sha256::digest(&png_600);
-    ap.put("ws/new.png", png_600, "image/png").await.expect("new put png");
-    let f_png = frozen_v0275_object_storage::frozen_get(&cfg, "blob", "ws/new.png")
+    // Direction B: new AssetpackBlobStorage (precomp2 = false) put -> real frozen v0.27.5 get.
+    for (name, ct, body) in &samples {
+      let off_key = format!("ws/off-{name}");
+      ap_off.put(&off_key, body.clone(), ct).await.expect("ap_off put");
+      assert_eq!(read_recipe_meta(&store, &off_key).await, (0, 0));
+      let f_got = frozen_v0275_object_storage::frozen_get(&cfg, "blob", &off_key)
+        .await
+        .unwrap_or_else(|e| panic!("frozen_get {off_key}: {e}"))
+        .expect("exists");
+      assert_eq!(sha2::Sha256::digest(&f_got.body), sha2::Sha256::digest(body));
+    }
+    ap_off
+      .put("ws/off-big.bin", big, "application/octet-stream")
       .await
-      .expect("frozen get png")
-      .expect("exists");
-    assert_eq!(sha2::Sha256::digest(&f_png.body), png_sha);
-
-    ap.put("ws/new-big.bin", big, "application/octet-stream")
+      .expect("ap_off put 100MiB+1");
+    assert_eq!(read_recipe_meta(&store, "ws/off-big.bin").await, (0, 0));
+    let f_big = frozen_v0275_object_storage::frozen_get(&cfg, "blob", "ws/off-big.bin")
       .await
-      .expect("new put 100MiB+1");
-    let f_big = frozen_v0275_object_storage::frozen_get(&cfg, "blob", "ws/new-big.bin")
-      .await
-      .expect("frozen get 100MiB+1")
+      .expect("frozen get off-big")
       .expect("exists");
     assert_eq!(f_big.body.len(), big_len);
     assert_eq!(sha2::Sha256::digest(&f_big.body), big_sha);
     drop(f_big);
+
+    // Direction C: new AssetpackBlobStorage (precomp2 = true) put -> new reads succeed,
+    // real frozen v0.27.5 get explicitly reports unsupported version, 8000x8000 PNG triggers
+    // IHDR pixel guard -> (0, 0) in < 5s and stays readable by frozen_get, and SQLite timestamps
+    // use Unix seconds for objects/file_recipe_cache and Unix ms for storage_assetpack_blobs.
+    for (name, ct, body) in &samples {
+      let on_key = format!("ws/on-{name}");
+      ap_on.put(&on_key, body.clone(), ct).await.expect("ap_on put");
+      let (tid, tver) = read_recipe_meta(&store, &on_key).await;
+      assert_ne!(tid, 0, "precomp2=true must transform {name}");
+      assert_eq!(tver, 2, "precomp2=true must write transform_version=2 for {name}");
+      let expected_sha = sha2::Sha256::digest(body);
+      for reader in [&ap_on, &ap_off] {
+        let (got, _) = reader.get(&on_key).await.expect("get on").expect("exists");
+        assert_eq!(sha2::Sha256::digest(&got), expected_sha);
+      }
+      let frozen_err = frozen_v0275_object_storage::frozen_get(&cfg, "blob", &on_key)
+        .await
+        .err()
+        .expect("v0.27.5 frozen_get must reject PCF2 v2");
+      assert!(
+        frozen_err.to_string().contains("unsupported version"),
+        "expected unsupported version for {on_key}, got: {frozen_err}"
+      );
+    }
+
+    let png_16k = encode_16000x16000_png();
+    let png_16k_sha = sha2::Sha256::digest(&png_16k);
+    let t0 = std::time::Instant::now();
+    ap_on
+      .put("ws/on-16000x16000.png", png_16k.clone(), "image/png")
+      .await
+      .expect("put 16000x16000 png");
+    assert!(
+      t0.elapsed() < std::time::Duration::from_secs(10),
+      "16000x16000 PNG must avoid WebP OOM and complete quickly, took {:?}",
+      t0.elapsed()
+    );
+    let (got_16k, _) = ap_on
+      .get("ws/on-16000x16000.png")
+      .await
+      .expect("get 16000x16000")
+      .expect("exists");
+    assert_eq!(sha2::Sha256::digest(&got_16k), png_16k_sha);
+
+    ap_off
+      .put("ws/off-16000x16000.png", png_16k.clone(), "image/png")
+      .await
+      .expect("put off 16000x16000 png");
+    assert_eq!(read_recipe_meta(&store, "ws/off-16000x16000.png").await, (0, 0));
+    let f_16k = frozen_v0275_object_storage::frozen_get(&cfg, "blob", "ws/off-16000x16000.png")
+      .await
+      .expect("frozen get 16000x16000")
+      .expect("exists");
+    assert_eq!(sha2::Sha256::digest(&f_16k.body), png_16k_sha);
+
+    // Verify SQLite timestamp units on the freshly written 16000x16000 PNG row.
+    let (rhex, last_modified_ms): (String, i64) = sqlx::query_as(
+      "SELECT recipe_hash, last_modified_ms FROM storage_assetpack_blobs WHERE scope = 'blob' AND key = 'ws/off-16000x16000.png'",
+    )
+    .fetch_one(store.pool())
+    .await
+    .expect("manifest timestamp row");
+    let rhash = assetpack_core::Hash32::from_hex(&rhex).unwrap();
+    let obj_created_at: i64 = sqlx::query_scalar("SELECT created_at FROM objects WHERE hash = ?1")
+      .bind(rhash.as_bytes().as_ref())
+      .fetch_one(store.pool())
+      .await
+      .expect("object created_at");
+    let orig_hash = assetpack_core::Hash32::sha3_256(&png_16k);
+    let cache_updated_at: i64 =
+      sqlx::query_scalar("SELECT updated_at FROM file_recipe_cache WHERE file_hash = ?1")
+        .bind(orig_hash.as_bytes().as_ref())
+        .fetch_one(store.pool())
+        .await
+        .expect("cache updated_at");
+    assert!(
+      (1_700_000_000..10_000_000_000).contains(&obj_created_at),
+      "objects.created_at must be Unix seconds, got {obj_created_at}"
+    );
+    assert!(
+      (1_700_000_000..10_000_000_000).contains(&cache_updated_at),
+      "file_recipe_cache.updated_at must be Unix seconds, got {cache_updated_at}"
+    );
+    assert_eq!(
+      last_modified_ms.div_euclid(1000),
+      cache_updated_at,
+      "storage_assetpack_blobs.last_modified_ms / 1000 must match Unix seconds"
+    );
 
     let _ = std::fs::remove_dir_all(&root);
   });

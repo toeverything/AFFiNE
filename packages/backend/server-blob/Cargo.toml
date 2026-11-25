@@ -21,7 +21,6 @@ crc32fast.workspace     = true
 hex.workspace           = true
 hmac.workspace          = true
 lru.workspace           = true
-lzma-rust2.workspace    = true
 reqwest.workspace       = true
 rusty-s3.workspace      = true
 serde.workspace         = true
@@ -42,10 +41,12 @@ y-octo.workspace        = true
 zstd.workspace          = true
 
 [dev-dependencies]
-axum.workspace            = true
-flate2.workspace          = true
-image.workspace           = true
-test-db-harness.workspace = true
+assetpack_core_v0275               = { package = "assetpack-core", version = "=0.1.0" }
+assetpack_transform_precomp2_v0275 = { package = "assetpack-transform-precomp2", version = "=0.1.0" }
+axum.workspace                     = true
+flate2.workspace                   = true
+image.workspace                    = true
+test-db-harness.workspace          = true
 
 [[test]]
 name    = "assetpack_frozen_interop"

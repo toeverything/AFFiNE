@@ -282,6 +282,219 @@ fn assetpack_v0275_interop_mixed_boot_and_metadata_exact_keys() {
       .await
       .unwrap();
     assert_eq!(count, 2, "both legacy and newly uploaded blobs must exist in assetpack.sqlite");
+
+    // 2b. Verify assetpack config.precomp2 defaults to true, hot-reloads to false and back to true,
+    //     keeps both precomp2 and raw objects readable over HTTP GET, and leaks zero metadata keys.
+    let make_png = |salt: u8| -> Vec<u8> {
+      use image::ImageEncoder as _;
+      let (w, h) = (320u32, 320u32);
+      let mut pixels = vec![0u8; (w * h * 4) as usize];
+      for y in 0..h {
+        for x in 0..w {
+          let i = ((y * w + x) * 4) as usize;
+          pixels[i] = (((x * 255) / w) as u8).wrapping_add(salt);
+          pixels[i + 1] = ((y * 255) / h) as u8;
+          pixels[i + 2] = (((x ^ y) * 3 + (x / 17) * 29) & 0xFF) as u8;
+          pixels[i + 3] = 255 - ((x + y) & 0x3F) as u8;
+        }
+      }
+      let mut out = Vec::new();
+      image::codecs::png::PngEncoder::new(&mut out)
+        .write_image(&pixels, w, h, image::ExtendedColorType::Rgba8)
+        .expect("encode png");
+      assert!(out.len() >= 64 * 1024, "test png must be >= 64 KiB, got {}", out.len());
+      out
+    };
+    let build_set_blob_mp = |boundary: &str, filename: &str, bytes: &[u8]| -> Vec<u8> {
+      let ops = json!({
+        "query": "mutation($blob: Upload!, $ws: String!) { setBlob(blob: $blob, workspaceId: $ws) }",
+        "variables": { "blob": null, "ws": pre_ws }
+      });
+      let map = json!({ "0": ["variables.blob"] });
+      let mut out = format!(
+        "--{boundary}\r\nContent-Disposition: form-data; name=\"operations\"\r\n\r\n{ops}\r\n\
+         --{boundary}\r\nContent-Disposition: form-data; name=\"map\"\r\n\r\n{map}\r\n\
+         --{boundary}\r\nContent-Disposition: form-data; name=\"0\"; filename=\"{filename}\"\r\nContent-Type: image/png\r\n\r\n"
+      )
+      .into_bytes();
+      out.extend_from_slice(bytes);
+      out.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+      out
+    };
+    let read_tid = |pool: sqlx::SqlitePool, obj_key: String| async move {
+      let hex: String =
+        sqlx::query_scalar("SELECT recipe_hash FROM storage_assetpack_blobs WHERE scope = 'blob' AND key = ?1")
+          .bind(&obj_key)
+          .fetch_one(&pool)
+          .await
+          .expect("manifest row");
+      let rhash = assetpack_core::Hash32::from_hex(&hex).unwrap();
+      let raw: Vec<u8> = sqlx::query_scalar("SELECT content FROM objects WHERE hash = ?1 AND kind = 2")
+        .bind(rhash.as_bytes().as_ref())
+        .fetch_one(&pool)
+        .await
+        .expect("recipe row");
+      assetpack_core::parse_recipe_checked(&raw, &rhash)
+        .expect("parse recipe")
+        .transform_id
+    };
+
+    // Upload 1: default assetpack (no `precomp2` field -> true) produces transform_id != 0.
+    let png_default = make_png(1);
+    let mp_p1 = build_set_blob_mp(boundary, "precomp-default.png", &png_default);
+    let (st_p1, _, raw_p1) = raw_http(
+      addr1,
+      "POST",
+      "/graphql",
+      &[
+        ("Cookie", &cookie),
+        ("Content-Type", &format!("multipart/form-data; boundary={boundary}")),
+      ],
+      &mp_p1,
+    )
+    .await;
+    assert_eq!(st_p1, 200);
+    let j_p1: Value = serde_json::from_slice(&raw_p1).unwrap();
+    assert!(j_p1["errors"].is_null(), "setBlob png 1 failed: {j_p1}");
+    let key_p1 = j_p1["data"]["setBlob"].as_str().expect("key_p1").to_owned();
+    let tid_p1 = read_tid(sqlite_pool.clone(), format!("{pre_ws}/{key_p1}")).await;
+    assert_ne!(tid_p1, 0, "default assetpack config must enable precomp2");
+
+    // Hot-update blob & avatar storage to precomp2: false.
+    let disable_precomp2 = json!({
+      "query": "mutation($u: [UpdateAppConfigInput!]!) { updateAppConfig(updates: $u) }",
+      "variables": {
+        "u": [
+          {
+            "module": "storages",
+            "key": "blob.storage",
+            "value": { "provider": "assetpack", "bucket": "blobs", "config": { "path": ap_root.to_str().unwrap(), "precomp2": false } }
+          },
+          {
+            "module": "storages",
+            "key": "avatar.storage",
+            "value": { "provider": "assetpack", "bucket": "avatars", "config": { "path": ap_root.to_str().unwrap(), "precomp2": false } }
+          }
+        ]
+      }
+    })
+    .to_string();
+    let (st_off, _, raw_off) = raw_http(
+      addr1,
+      "POST",
+      "/graphql",
+      &[("Cookie", &cookie), ("Content-Type", "application/json")],
+      disable_precomp2.as_bytes(),
+    )
+    .await;
+    assert_eq!(st_off, 200);
+    let j_off: Value = serde_json::from_slice(&raw_off).unwrap();
+    assert!(j_off["errors"].is_null(), "disable precomp2 failed: {j_off}");
+
+    // Upload 2: with precomp2: false, recipe transform_id == 0; both old & new blobs download 200 OK.
+    let png_off = make_png(2);
+    let mp_p2 = build_set_blob_mp(boundary, "precomp-off.png", &png_off);
+    let (st_p2, _, raw_p2) = raw_http(
+      addr1,
+      "POST",
+      "/graphql",
+      &[
+        ("Cookie", &cookie),
+        ("Content-Type", &format!("multipart/form-data; boundary={boundary}")),
+      ],
+      &mp_p2,
+    )
+    .await;
+    assert_eq!(st_p2, 200);
+    let j_p2: Value = serde_json::from_slice(&raw_p2).unwrap();
+    assert!(j_p2["errors"].is_null(), "setBlob png 2 failed: {j_p2}");
+    let key_p2 = j_p2["data"]["setBlob"].as_str().expect("key_p2").to_owned();
+    let tid_p2 = read_tid(sqlite_pool.clone(), format!("{pre_ws}/{key_p2}")).await;
+    assert_eq!(tid_p2, 0, "precomp2: false must write transform_id == 0");
+
+    for (k, expected) in [(&key_p1, &png_default), (&key_p2, &png_off)] {
+      sqlx::query("UPDATE snapshots SET blob = $1 WHERE workspace_id = $2 AND guid = $2")
+        .bind(yjs_snapshot_referencing(k))
+        .bind(pre_ws)
+        .execute(&pool)
+        .await
+        .unwrap();
+      let (st_dl, _, got_dl) = raw_http(
+        addr1,
+        "GET",
+        &format!("/api/workspaces/{pre_ws}/blobs/v1/{k}?sourceType=currentDoc&docId={pre_ws}"),
+        &[("Cookie", &cookie)],
+        b"",
+      )
+      .await;
+      assert_eq!(st_dl, 200);
+      assert_eq!(got_dl, *expected);
+    }
+
+    // Hot-update back to precomp2: true via clear: true; next upload resumes transform_id != 0
+    // and appConfigMetadata still exposes only ["configured", "settable", "source"].
+    let clear_precomp2 = json!({
+      "query": "mutation($u: [UpdateAppConfigInput!]!) { updateAppConfig(updates: $u) }",
+      "variables": {
+        "u": [
+          { "module": "storages", "key": "blob.storage", "clear": true },
+          { "module": "storages", "key": "avatar.storage", "clear": true }
+        ]
+      }
+    })
+    .to_string();
+    let (st_re, _, raw_re) = raw_http(
+      addr1,
+      "POST",
+      "/graphql",
+      &[("Cookie", &cookie), ("Content-Type", "application/json")],
+      clear_precomp2.as_bytes(),
+    )
+    .await;
+    assert_eq!(st_re, 200);
+    let j_re: Value = serde_json::from_slice(&raw_re).unwrap();
+    assert!(j_re["errors"].is_null(), "clear precomp2 override failed: {j_re}");
+
+    let png_re = make_png(3);
+    let mp_p3 = build_set_blob_mp(boundary, "precomp-restored.png", &png_re);
+    let (st_p3, _, raw_p3) = raw_http(
+      addr1,
+      "POST",
+      "/graphql",
+      &[
+        ("Cookie", &cookie),
+        ("Content-Type", &format!("multipart/form-data; boundary={boundary}")),
+      ],
+      &mp_p3,
+    )
+    .await;
+    assert_eq!(st_p3, 200);
+    let j_p3: Value = serde_json::from_slice(&raw_p3).unwrap();
+    assert!(j_p3["errors"].is_null(), "setBlob png 3 failed: {j_p3}");
+    let key_p3 = j_p3["data"]["setBlob"].as_str().expect("key_p3").to_owned();
+    let tid_p3 = read_tid(sqlite_pool.clone(), format!("{pre_ws}/{key_p3}")).await;
+    assert_ne!(tid_p3, 0, "clearing precomp2: false must restore precomp2 transform");
+
+    let (st_m1, _, raw_m1) = raw_http(
+      addr1,
+      "POST",
+      "/graphql",
+      &[("Cookie", &cookie), ("Content-Type", "application/json")],
+      br#"{"query":"{ appConfigMetadata }"}"#,
+    )
+    .await;
+    assert_eq!(st_m1, 200);
+    let jm1: Value = serde_json::from_slice(&raw_m1).unwrap();
+    for ptr in ["/storages/blob/storage", "/storages/avatar/storage"] {
+      let obj = jm1["data"]["appConfigMetadata"]
+        .pointer(ptr)
+        .and_then(Value::as_object)
+        .expect("storage metadata object");
+      let mut keys: Vec<&str> = obj.keys().map(String::as_str).collect();
+      keys.sort_unstable();
+      assert_eq!(keys, vec!["configured", "settable", "source"]);
+    }
+
     sqlite_pool.close().await;
 
     cancel1.cancel();
