@@ -21,6 +21,14 @@ impl MobileLocale {
         }
     }
 
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::En => "English",
+            Self::ZhHans => "简体中文",
+            Self::Ar => "العربية",
+        }
+    }
+
     pub const fn direction(self) -> Direction {
         match self {
             Self::Ar => Direction::Rtl,
@@ -55,12 +63,18 @@ pub struct MobileStrings {
     pub recent_docs: &'static str,
     pub favorites: &'static str,
     pub folders: &'static str,
+    pub documents_heading: &'static str,
+    pub new_doc_label: &'static str,
+    pub untitled_doc: &'static str,
     pub collections: &'static str,
     pub tags: &'static str,
     pub trash: &'static str,
     pub today_journal: &'static str,
+    pub open_journal: &'static str,
     pub create_journal: &'static str,
+    pub no_journal_for_date: &'static str,
     pub search_placeholder: &'static str,
+    pub search_no_results: &'static str,
     pub exact_match_badge: &'static str,
     pub settings_title: &'static str,
     pub back_label: &'static str,
@@ -73,6 +87,16 @@ pub struct MobileStrings {
     pub backlinks_ready_zero: &'static str,
     pub backlinks_partial_suffix: &'static str,
     pub in_trash_badge: &'static str,
+    pub restore_doc_label: &'static str,
+    pub delete_permanently_label: &'static str,
+    pub confirm_delete_title: &'static str,
+    pub confirm_delete_body: &'static str,
+    pub cancel_label: &'static str,
+    pub doc_not_found_title: &'static str,
+    pub doc_not_found_body: &'static str,
+    pub toggle_on: &'static str,
+    pub toggle_off: &'static str,
+    pub weekday_short: [&'static str; 7],
     pub close_label: &'static str,
     pub settings_groups: [&'static str; 10],
     pub theme_light: &'static str,
@@ -103,6 +127,20 @@ impl MobileStrings {
         }
     }
 
+    pub fn compact_owner_multi_location_label(
+        &self,
+        locale: MobileLocale,
+        owner_title: &str,
+        count: usize,
+    ) -> String {
+        let short = truncate_display_width(owner_title, 12);
+        match locale {
+            MobileLocale::En => format!("{short} · {count} locations"),
+            MobileLocale::ZhHans => format!("{short} 的 {count} 个位置"),
+            MobileLocale::Ar => format!("{short} ({count} مواقع)"),
+        }
+    }
+
     pub fn backlinks_pill_label(
         &self,
         locale: MobileLocale,
@@ -123,6 +161,29 @@ impl MobileStrings {
     }
 }
 
+fn char_display_width(ch: char) -> usize {
+    if ch.is_ascii() { 1 } else { 2 }
+}
+
+fn truncate_display_width(text: &str, max_units: usize) -> String {
+    let total: usize = text.chars().map(char_display_width).sum();
+    if total <= max_units {
+        return text.to_string();
+    }
+    let budget = max_units.saturating_sub(2);
+    let mut used = 0usize;
+    let mut prefix = String::new();
+    for ch in text.chars() {
+        let w = char_display_width(ch);
+        if used + w > budget {
+            break;
+        }
+        prefix.push(ch);
+        used += w;
+    }
+    format!("{}…", prefix.trim_end())
+}
+
 const EN_STRINGS: MobileStrings = MobileStrings {
     tab_home: "Home",
     tab_explorer: "All Docs",
@@ -131,12 +192,18 @@ const EN_STRINGS: MobileStrings = MobileStrings {
     recent_docs: "Recent Documents",
     favorites: "Favorites",
     folders: "Folders",
+    documents_heading: "Documents",
+    new_doc_label: "New Document",
+    untitled_doc: "Untitled",
     collections: "Collections",
     tags: "Tags",
     trash: "Trash",
     today_journal: "Today's Journal",
+    open_journal: "Open Journal",
     create_journal: "New Journal Entry",
-    search_placeholder: "Exact substring search…",
+    no_journal_for_date: "No journal entry for this date yet.",
+    search_placeholder: "Search docs…",
+    search_no_results: "No matching documents",
     exact_match_badge: "Exact Match",
     settings_title: "Settings",
     back_label: "Back",
@@ -149,6 +216,16 @@ const EN_STRINGS: MobileStrings = MobileStrings {
     backlinks_ready_zero: "No backlinks",
     backlinks_partial_suffix: "Indexing…",
     in_trash_badge: "In Trash",
+    restore_doc_label: "Restore",
+    delete_permanently_label: "Delete Permanently",
+    confirm_delete_title: "Delete Permanently?",
+    confirm_delete_body: "This action cannot be undone. The document and its links will be removed from this workspace.",
+    cancel_label: "Cancel",
+    doc_not_found_title: "Document not found",
+    doc_not_found_body: "This document was deleted or is no longer available in this workspace.",
+    toggle_on: "On",
+    toggle_off: "Off",
+    weekday_short: ["M", "T", "W", "T", "F", "S", "S"],
     close_label: "Done",
     settings_groups: [
         "Account",
@@ -176,12 +253,18 @@ const ZH_STRINGS: MobileStrings = MobileStrings {
     recent_docs: "最近文档",
     favorites: "收藏夹",
     folders: "文件夹",
+    documents_heading: "文档",
+    new_doc_label: "新建文档",
+    untitled_doc: "无标题",
     collections: "集合",
     tags: "标签",
     trash: "回收站",
     today_journal: "今日日记",
-    create_journal: "新建今日日记",
-    search_placeholder: "精确子串搜索…",
+    open_journal: "打开日记",
+    create_journal: "新建日记",
+    no_journal_for_date: "该日期尚未创建日记。",
+    search_placeholder: "搜索文档…",
+    search_no_results: "无匹配结果",
     exact_match_badge: "精确匹配",
     settings_title: "设置",
     back_label: "返回",
@@ -194,6 +277,16 @@ const ZH_STRINGS: MobileStrings = MobileStrings {
     backlinks_ready_zero: "暂无引用",
     backlinks_partial_suffix: "索引中",
     in_trash_badge: "已移入回收站",
+    restore_doc_label: "恢复",
+    delete_permanently_label: "永久删除",
+    confirm_delete_title: "永久删除此文档？",
+    confirm_delete_body: "此操作不可撤销，该文档及其所有链接将从当前工作区永久移除。",
+    cancel_label: "取消",
+    doc_not_found_title: "文档不存在",
+    doc_not_found_body: "该文档已被删除或不在当前工作区中。",
+    toggle_on: "已开启",
+    toggle_off: "已关闭",
+    weekday_short: ["一", "二", "三", "四", "五", "六", "日"],
     close_label: "完成",
     settings_groups: [
         "账户",
@@ -221,12 +314,18 @@ const AR_STRINGS: MobileStrings = MobileStrings {
     recent_docs: "المستندات الأخيرة",
     favorites: "المفضلة",
     folders: "المجلدات",
+    documents_heading: "المستندات",
+    new_doc_label: "مستند جديد",
+    untitled_doc: "بدون عنوان",
     collections: "المجموعات",
     tags: "الوسوم",
     trash: "المهملات",
     today_journal: "يومية اليوم",
-    create_journal: "إنشاء يومية جديدة",
-    search_placeholder: "بحث نصي دقيق…",
+    open_journal: "فتح اليومية",
+    create_journal: "إدخال يومية جديد",
+    no_journal_for_date: "لا توجد يومية لهذا التاريخ بعد.",
+    search_placeholder: "البحث في المستندات…",
+    search_no_results: "لا توجد نتائج",
     exact_match_badge: "مطابقة دقيقة",
     settings_title: "الإعدادات",
     back_label: "رجوع",
@@ -239,6 +338,16 @@ const AR_STRINGS: MobileStrings = MobileStrings {
     backlinks_ready_zero: "لا توجد روابط خلفية",
     backlinks_partial_suffix: "جارٍ الفهرسة",
     in_trash_badge: "في المهملات",
+    restore_doc_label: "استعادة",
+    delete_permanently_label: "حذف نهائي",
+    confirm_delete_title: "حذف المستند نهائياً؟",
+    confirm_delete_body: "لا يمكن التراجع عن هذا الإجراء. سيتم حذف المستند وجميع روابطه من مساحة العمل.",
+    cancel_label: "إلغاء",
+    doc_not_found_title: "المستند غير موجود",
+    doc_not_found_body: "تم حذف هذا المستند أو لم يعد متاحاً في مساحة العمل هذه.",
+    toggle_on: "مفعّل",
+    toggle_off: "متوقف",
+    weekday_short: ["ن", "ث", "ر", "خ", "ج", "س", "ح"],
     close_label: "تم",
     settings_groups: [
         "الحساب",

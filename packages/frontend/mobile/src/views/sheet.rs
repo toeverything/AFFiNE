@@ -43,6 +43,7 @@ pub(super) fn render_active_sheet(
         MobileSheet::WorkspaceSelector => strings.switch_workspace,
         MobileSheet::LocationAndTrail => strings.location_trail_title,
         MobileSheet::Backlinks => strings.backlinks_label,
+        MobileSheet::ConfirmDeleteDoc => strings.confirm_delete_title,
         MobileSheet::None => "",
     };
 
@@ -407,7 +408,7 @@ pub(super) fn render_active_sheet(
                 let block_id = item.source_block_id.clone();
                 let src_title = state
                     .doc_by_id(&src_id)
-                    .map(|d| d.title.clone())
+                    .map(|d| d.display_title(state.locale()))
                     .unwrap_or_else(|| src_id.clone());
                 let bl_id = format!("mobile.sheet.backlink.{idx}");
                 let mut row = row_dir(dir)
@@ -445,6 +446,113 @@ pub(super) fn render_active_sheet(
                 bl_box = bl_box.child(row);
             }
             content = content.child(bl_box);
+        }
+        MobileSheet::ConfirmDeleteDoc => {
+            let (ws_id, doc_id) = state
+                .pending_delete_target
+                .clone()
+                .unwrap_or_else(|| (state.active_workspace_id().to_string(), String::new()));
+            let doc_title = state
+                .doc_by_id(&doc_id)
+                .map(|d| d.display_title(state.locale()))
+                .unwrap_or_else(|| doc_id.clone());
+            let scoped = crate::encode_scoped_doc_target(&ws_id, &doc_id);
+            let cancel_id = format!("app.sheet.delete_cancel.{scoped}");
+            let confirm_id = format!("app.sheet.delete_confirm.{scoped}");
+
+            let mut cancel_btn = div()
+                .id(cancel_id.clone())
+                .snapshot(cancel_id.clone(), Some("mobile.sheet.panel"))
+                .relative()
+                .flex_1()
+                .h(px(44.0))
+                .min_w(px(44.0))
+                .rounded(px(10.0))
+                .bg(palette.bg_canvas)
+                .border_1()
+                .border_color(palette.border)
+                .flex()
+                .items_center()
+                .justify_center()
+                .text_size(px(14.0))
+                .text_color(palette.text_primary)
+                .child(crate::a11y::a11y_bounds_probe_border(
+                    cancel_id,
+                    a11y_bounds.clone(),
+                    1.0,
+                ))
+                .child(strings.cancel_label);
+            if accepts_input {
+                cancel_btn = cancel_btn.on_click(cx.listener(|this, _, _, cx| {
+                    let t = this.now_ms(cx);
+                    this.state.close_sheet(t);
+                    cx.notify();
+                }));
+            }
+
+            let confirm_ws = ws_id.clone();
+            let confirm_doc = doc_id.clone();
+            let mut confirm_btn = div()
+                .id(confirm_id.clone())
+                .snapshot(confirm_id.clone(), Some("mobile.sheet.panel"))
+                .relative()
+                .flex_1()
+                .h(px(44.0))
+                .min_w(px(44.0))
+                .rounded(px(10.0))
+                .bg(palette.danger)
+                .flex()
+                .items_center()
+                .justify_center()
+                .text_size(px(14.0))
+                .text_color(ui::hsla(0.0, 0.0, 1.0, 1.0))
+                .child(a11y_bounds_probe(confirm_id, a11y_bounds.clone()))
+                .child(strings.delete_permanently_label);
+            if accepts_input {
+                confirm_btn = confirm_btn.on_click(cx.listener(move |this, _, _, cx| {
+                    let t = this.now_ms(cx);
+                    this.state
+                        .delete_doc_permanently_scoped(&confirm_ws, &confirm_doc, t);
+                    cx.notify();
+                }));
+            }
+
+            content = content
+                .child(
+                    div()
+                        .w_full()
+                        .p(px(12.0))
+                        .rounded(px(10.0))
+                        .bg(palette.bg_canvas)
+                        .border_1()
+                        .border_color(palette.border)
+                        .flex()
+                        .flex_col()
+                        .gap(px(6.0))
+                        .child(
+                            div()
+                                .w_full()
+                                .text_size(px(14.0))
+                                .text_color(palette.text_primary)
+                                .align_start_for(dir)
+                                .child(doc_title),
+                        )
+                        .child(
+                            div()
+                                .w_full()
+                                .text_size(px(13.0))
+                                .text_color(palette.text_secondary)
+                                .align_start_for(dir)
+                                .child(strings.confirm_delete_body),
+                        ),
+                )
+                .child(
+                    row_dir(dir)
+                        .w_full()
+                        .gap(px(10.0))
+                        .child(cancel_btn)
+                        .child(confirm_btn),
+                );
         }
         MobileSheet::None => {}
     }

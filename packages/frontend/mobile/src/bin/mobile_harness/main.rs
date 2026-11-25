@@ -156,13 +156,16 @@ fn check_snapshot_bounds(
             ));
         }
         let is_touch_control = id.contains(".btn")
+            || id.contains("_btn")
             || id.starts_with("mobile.tab.")
+            || id.starts_with("mobile.journals.day.")
+            || id.starts_with("mobile.settings.row.")
             || id == "mobile.page.backlinks_pill"
             || id == "mobile.page.breadcrumb_bar";
-        if is_touch_control && b.height < 43.5 {
+        if is_touch_control && (b.height < 43.5 || b.width < 43.5) {
             violations.push(format!(
-                "{context}: touch target {id} height {:.1} < 44pt",
-                b.height
+                "{context}: touch target {id} size {:.1}x{:.1} < 44x44pt",
+                b.width, b.height
             ));
         }
     }
@@ -221,11 +224,15 @@ fn run_audit_matrix() -> Result<()> {
                 let session = start_session(vp_w, vp_h, 1.0, state)?;
                 let tag_prefix = format!("{vp_w}x{vp_h}/{:?}/{}", theme, locale.code());
 
-                let routes: [(&str, Box<dyn Fn(&mut MobileAppState)>); 6] = [
+                let routes: [(&str, Box<dyn Fn(&mut MobileAppState)>); 8] = [
                     ("home", Box::new(|s| s.switch_tab(MobileTab::Home, 0.0))),
                     (
                         "explorer",
                         Box::new(|s| s.switch_tab(MobileTab::Explorer, 50.0)),
+                    ),
+                    (
+                        "journals",
+                        Box::new(|s| s.switch_tab(MobileTab::Journals, 75.0)),
                     ),
                     (
                         "page_multi",
@@ -234,8 +241,15 @@ fn run_audit_matrix() -> Result<()> {
                         }),
                     ),
                     (
+                        "page_trash",
+                        Box::new(|s| {
+                            s.open_doc("doc-trash", Origin::Direct(DirectKind::AllDocs));
+                        }),
+                    ),
+                    (
                         "location_sheet",
                         Box::new(|s| {
+                            s.open_doc("doc-arch", Origin::Direct(DirectKind::Home));
                             s.open_sheet(MobileSheet::LocationAndTrail, 100.0);
                             s.settle_animations(500.0);
                         }),
@@ -534,9 +548,72 @@ fn run_gallery(out_dir: PathBuf) -> Result<()> {
                 );
             }),
         ),
+        (
+            "search-empty-no-results.png",
+            MobileLocale::En,
+            ThemeMode::Light,
+            Box::new(|s| {
+                s.switch_tab(MobileTab::Search, 0.0);
+                s.search_query = "NonexistentQuery".to_string();
+            }),
+        ),
+        (
+            "journals-today-and-other-day.png",
+            MobileLocale::En,
+            ThemeMode::Light,
+            Box::new(|s| {
+                s.switch_tab(MobileTab::Journals, 0.0);
+                s.select_journal_date("2026-11-26");
+            }),
+        ),
+        (
+            "trash-doc-actions.png",
+            MobileLocale::En,
+            ThemeMode::Light,
+            Box::new(|s| {
+                s.open_doc("doc-trash", Origin::Direct(DirectKind::AllDocs));
+            }),
+        ),
+        (
+            "trash-delete-confirm-sheet.png",
+            MobileLocale::En,
+            ThemeMode::Light,
+            Box::new(|s| {
+                s.open_doc("doc-trash", Origin::Direct(DirectKind::AllDocs));
+                let delete_id = format!(
+                    "mobile.page.trash_delete_btn.{}",
+                    affine_mobile::encode_scoped_doc_target("ws-mobile-rust", "doc-trash")
+                );
+                s.request_delete_doc_scoped("ws-mobile-rust", "doc-trash", Some(&delete_id), 0.0);
+                s.settle_animations(500.0);
+            }),
+        ),
+        (
+            "explorer-30-docs-scrolled.png",
+            MobileLocale::En,
+            ThemeMode::Light,
+            Box::new(|s| {
+                for i in 1..=30 {
+                    s.docs.push(affine_mobile::MobileDocRecord {
+                        id: format!("doc-bulk-{i}"),
+                        title: format!("Spec Document #{i:02}"),
+                        body_preview: format!("Body preview for document #{i:02}."),
+                        tags: Vec::new(),
+                        updated_at_ms: 1_764_000_000 + i as i64,
+                        is_favorite: false,
+                        trashed: false,
+                        journal_date: None,
+                        clock: 1,
+                        outgoing_edges: Vec::new(),
+                    });
+                }
+                s.switch_tab(MobileTab::Explorer, 0.0);
+                s.explorer_scroll_y = 2000.0;
+            }),
+        ),
     ];
 
-    // Reuse one HeadlessPlatform + GPU surface across all 7 shots so full gallery renders in < 5s.
+    // Reuse one HeadlessPlatform + GPU surface across all 390x844 shots.
     let initial = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
     let session = start_session(390, 844, 2.0, initial)?;
 
@@ -548,6 +625,24 @@ fn run_gallery(out_dir: PathBuf) -> Result<()> {
         let glyphs = session.render_png(&out_path)?;
         println!(
             "gallery: rendered {} (780x1688, {glyphs} glyphs)",
+            out_path.display()
+        );
+    }
+
+    // 320x568 narrow viewport LTR & RTL Journals 2-row grid shots.
+    let narrow_initial = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
+    let narrow_session = start_session(320, 568, 2.0, narrow_initial)?;
+    for (filename, locale) in [
+        ("journals-320-ltr.png", MobileLocale::En),
+        ("journals-320-rtl.png", MobileLocale::Ar),
+    ] {
+        let mut next_state = seed_showcase_state(locale, ThemeMode::Light, "2026-11-25");
+        next_state.switch_tab(MobileTab::Journals, 0.0);
+        narrow_session.update_state(|s| *s = next_state)?;
+        let out_path = out_dir.join(filename);
+        let glyphs = narrow_session.render_png(&out_path)?;
+        println!(
+            "gallery: rendered {} (640x1136, {glyphs} glyphs)",
             out_path.display()
         );
     }

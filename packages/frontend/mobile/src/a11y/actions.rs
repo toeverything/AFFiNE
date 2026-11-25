@@ -13,7 +13,9 @@ use affine_client::{
 };
 use ui::{IntoElement, Styled, canvas};
 
-use crate::state::{MobileAppState, MobileBackCoordinator, MobileRoute, MobileSheet, MobileTab};
+use crate::state::{
+    MobileAppState, MobileBackCoordinator, MobileRoute, MobileSheet, MobileTab, SettingsGroupId,
+};
 
 /// Shared per-frame map from accessibility node ID to real post-layout painted bounds.
 pub type A11yBoundsMap = Rc<RefCell<HashMap<String, AccessibilityBounds>>>;
@@ -57,6 +59,8 @@ pub fn a11y_bounds_probe_border(
 pub enum MobileA11yAction {
     Activate,
     Dismiss,
+    ScrollForward,
+    ScrollBackward,
 }
 
 /// Thread-safe in-memory [`PlatformAccessibility`] sink for hosts and integration tests.
@@ -211,6 +215,42 @@ pub(crate) fn perform_a11y_action_with_layout(
         return false;
     }
 
+    if matches!(
+        action,
+        MobileA11yAction::ScrollForward | MobileA11yAction::ScrollBackward
+    ) {
+        if state.active_sheet != MobileSheet::None || state.route != MobileRoute::Explorer {
+            return false;
+        }
+        let valid_scroll_target = node_id == "mobile.explorer.scroll_viewport"
+            || node_id == "app.main"
+            || node_id.starts_with("mobile.explorer.");
+        if !valid_scroll_target
+            || !super::build_accessibility_tree_with_layout(
+                state,
+                viewport_width,
+                viewport_height,
+                safe_area,
+                measured_breadcrumb,
+            )
+            .nodes
+            .contains_key(node_id)
+        {
+            return false;
+        }
+        let (avail_h, max_scroll) =
+            super::explorer::explorer_scroll_metrics(state, viewport_height, safe_area);
+        let step = (avail_h - 46.0).max(46.0);
+        let prev = state.explorer_scroll_y.clamp(0.0, max_scroll);
+        let delta = if action == MobileA11yAction::ScrollForward {
+            step
+        } else {
+            -step
+        };
+        state.scroll_explorer_by(delta, max_scroll);
+        return (state.explorer_scroll_y - prev).abs() > 0.5;
+    }
+
     if state.active_sheet != MobileSheet::None {
         return perform_sheet_a11y_action(state, node_id, now_ms);
     }
@@ -247,7 +287,7 @@ pub(crate) fn perform_a11y_action_with_layout(
             state.switch_tab(MobileTab::Search, now_ms);
             true
         }
-        "mobile.page.back_btn" | "mobile.settings.back_btn" => {
+        "mobile.page.back_btn" | "mobile.settings.back_btn" | "mobile.page.not_found_back_btn" => {
             MobileBackCoordinator::handle_back(state, now_ms);
             true
         }
@@ -272,6 +312,53 @@ pub(crate) fn perform_a11y_action_with_layout(
                 Some("mobile.home.workspace_btn"),
                 now_ms,
             );
+            true
+        }
+        "mobile.home.new_doc_btn" => {
+            state.create_doc(None, now_ms);
+            true
+        }
+        "mobile.explorer.new_doc_btn" => {
+            let folder_id = match state.history.current().map(|e| &e.target) {
+                Some(NavTarget::Folder(fid)) => Some(fid.clone()),
+                _ => None,
+            };
+            state.create_doc(folder_id.as_deref(), now_ms);
+            true
+        }
+        "mobile.journals.create_btn" => {
+            let date = state.selected_journal_date.clone();
+            state.open_or_create_journal_for_date(&date, now_ms);
+            true
+        }
+        _ if node_id.starts_with("mobile.page.trash_restore_btn.") => {
+            let rest = &node_id["mobile.page.trash_restore_btn.".len()..];
+            let Some((ws_id, doc_id)) = crate::decode_scoped_doc_target(rest) else {
+                return false;
+            };
+            state.restore_doc_scoped(ws_id, doc_id)
+        }
+        _ if node_id.starts_with("mobile.page.trash_delete_btn.") => {
+            let rest = &node_id["mobile.page.trash_delete_btn.".len()..];
+            let Some((ws_id, doc_id)) = crate::decode_scoped_doc_target(rest) else {
+                return false;
+            };
+            state.request_delete_doc_scoped(ws_id, doc_id, Some(node_id), now_ms)
+        }
+        _ if node_id.starts_with("mobile.settings.row.") => {
+            let key = &node_id["mobile.settings.row.".len()..];
+            let Some(group) = SettingsGroupId::ALL
+                .iter()
+                .copied()
+                .find(|g| g.a11y_key() == key)
+            else {
+                return false;
+            };
+            state.activate_setting(group)
+        }
+        _ if node_id.starts_with("mobile.journals.day.") => {
+            let date = &node_id["mobile.journals.day.".len()..];
+            state.select_journal_date(date);
             true
         }
         "page.backlinks.pill" => {
@@ -321,7 +408,13 @@ pub(crate) fn perform_a11y_action_with_layout(
             true
         }
         _ if node_id.starts_with("mobile.explorer.doc.") => {
-            let doc_id = &node_id["mobile.explorer.doc.".len()..];
+            let rest = &node_id["mobile.explorer.doc.".len()..];
+            let Some((ws_id, doc_id)) = crate::decode_scoped_doc_target(rest) else {
+                return false;
+            };
+            if ws_id != state.active_workspace_id() {
+                return false;
+            }
             let origin = derive_explorer_doc_origin(state, doc_id);
             state.open_doc(doc_id, origin);
             true
@@ -446,6 +539,36 @@ fn perform_sheet_a11y_action(state: &mut MobileAppState, node_id: &str, now_ms: 
                 },
             );
             true
+        }
+        MobileSheet::ConfirmDeleteDoc => {
+            if let Some(rest) = node_id.strip_prefix("app.sheet.delete_cancel.") {
+                let Some((ws_id, doc_id)) = crate::decode_scoped_doc_target(rest) else {
+                    return false;
+                };
+                if state
+                    .pending_delete_target
+                    .as_ref()
+                    .is_some_and(|(w, d)| w == ws_id && d == doc_id)
+                {
+                    state.close_sheet(now_ms);
+                    return true;
+                }
+                return false;
+            }
+            if let Some(rest) = node_id.strip_prefix("app.sheet.delete_confirm.") {
+                let Some((ws_id, doc_id)) = crate::decode_scoped_doc_target(rest) else {
+                    return false;
+                };
+                if state
+                    .pending_delete_target
+                    .as_ref()
+                    .is_some_and(|(w, d)| w == ws_id && d == doc_id)
+                {
+                    return state.delete_doc_permanently_scoped(ws_id, doc_id, now_ms);
+                }
+                return false;
+            }
+            false
         }
         MobileSheet::None => false,
     }

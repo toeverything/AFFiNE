@@ -214,7 +214,7 @@ fn explorer_drilldown_and_breadcrumb_folder_navigation_roundtrip() {
     t.click_id("mobile.tab.explorer");
     t.click_id("mobile.explorer.folder.f-eng");
     t.click_id("mobile.explorer.folder.f-mobile");
-    t.click_id("mobile.explorer.doc.doc-arch");
+    t.click_id("mobile.explorer.doc.14:ws-mobile-rustdoc-arch");
 
     let route = t
         .app
@@ -544,10 +544,12 @@ fn explorer_collections_and_tags_index_filter_exact_members() {
             t.window_handle.update(cx, |_, window, _| {
                 let snap = window.frame_snapshot();
                 (
-                    snap.elements.contains_key("mobile.explorer.doc.doc-sync"),
                     snap.elements
-                        .contains_key("mobile.explorer.doc.doc-journal"),
-                    snap.elements.contains_key("mobile.explorer.doc.doc-arch"),
+                        .contains_key("mobile.explorer.doc.14:ws-mobile-rustdoc-sync"),
+                    snap.elements
+                        .contains_key("mobile.explorer.doc.14:ws-mobile-rustdoc-journal"),
+                    snap.elements
+                        .contains_key("mobile.explorer.doc.14:ws-mobile-rustdoc-arch"),
                 )
             })
         })
@@ -578,8 +580,10 @@ fn explorer_collections_and_tags_index_filter_exact_members() {
             t.window_handle.update(cx, |_, window, _| {
                 let snap = window.frame_snapshot();
                 (
-                    snap.elements.contains_key("mobile.explorer.doc.doc-sync"),
-                    snap.elements.contains_key("mobile.explorer.doc.doc-arch"),
+                    snap.elements
+                        .contains_key("mobile.explorer.doc.14:ws-mobile-rustdoc-sync"),
+                    snap.elements
+                        .contains_key("mobile.explorer.doc.14:ws-mobile-rustdoc-arch"),
                 )
             })
         })
@@ -773,4 +777,650 @@ fn single_click_sheet_animation_completes_via_request_animation_frame_without_ex
         .unwrap();
     assert!(close_done);
     assert!(!panel_mounted);
+}
+
+#[test]
+fn create_doc_from_home_explorer_root_and_folder_opens_with_expected_origin() {
+    let t = TestApp::launch(390, 844, MobileLocale::ZhHans);
+
+    // 1. Create doc from Home `+` button -> empty stored title, localized display_title,
+    //    workspace-scoped id, Origin::Direct(AllDocs).
+    t.click_id("mobile.home.new_doc_btn");
+    let (route1, stored_title1, display_zh, display_en, origin1) = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, _, _| {
+                let id = match &v.state.route {
+                    MobileRoute::Page(id) => id.clone(),
+                    other => panic!("expected Page route, got {other:?}"),
+                };
+                let doc = v.state.doc_by_id(&id).unwrap();
+                let origin = v.state.history.current().unwrap().origin.clone();
+                (
+                    id,
+                    doc.title.clone(),
+                    doc.display_title(MobileLocale::ZhHans),
+                    doc.display_title(MobileLocale::En),
+                    origin,
+                )
+            })
+        })
+        .unwrap();
+    assert_eq!(route1, "doc-ws-mobile-rust-new-1");
+    assert!(
+        stored_title1.is_empty(),
+        "new doc stored title must stay empty so locale switches update display_title"
+    );
+    assert_eq!(display_zh, "无标题");
+    assert_eq!(display_en, "Untitled");
+    assert_eq!(origin1, Origin::Direct(DirectKind::AllDocs));
+
+    // 2. Return to Home, go to All Docs root -> newly created doc and unfiled journal are listed.
+    t.click_id("mobile.page.back_btn");
+    t.click_id("mobile.tab.explorer");
+    let (has_new_doc, has_journal) = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |_, window, _| {
+                let snap = window.frame_snapshot();
+                (
+                    snap.elements.contains_key(
+                        "mobile.explorer.doc.14:ws-mobile-rustdoc-ws-mobile-rust-new-1",
+                    ),
+                    snap.elements
+                        .contains_key("mobile.explorer.doc.14:ws-mobile-rustdoc-journal"),
+                )
+            })
+        })
+        .unwrap();
+    assert!(
+        has_new_doc,
+        "new doc must appear in All Docs Documents list"
+    );
+    assert!(
+        has_journal,
+        "unfiled journal doc must appear in All Docs Documents list"
+    );
+
+    // 3. Drill into folder `f-eng` and click `+` -> creates doc mounted in `f-eng` with valid fractional index.
+    t.click_id("mobile.explorer.folder.f-eng");
+    t.click_id("mobile.explorer.new_doc_btn");
+    let (route2, origin2, folder_index) = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, _, _| {
+                let id = match &v.state.route {
+                    MobileRoute::Page(id) => id.clone(),
+                    other => panic!("expected Page route, got {other:?}"),
+                };
+                let origin = v.state.history.current().unwrap().origin.clone();
+                let idx = v
+                    .state
+                    .folder_rows
+                    .iter()
+                    .find(|r| {
+                        r.folder_type == "doc"
+                            && r.data == id
+                            && r.parent_id.as_deref() == Some("f-eng")
+                    })
+                    .map(|r| r.index.clone());
+                (id, origin, idx)
+            })
+        })
+        .unwrap();
+    assert_eq!(route2, "doc-ws-mobile-rust-new-2");
+    assert!(matches!(origin2, Origin::Placement { .. }));
+    let idx = folder_index.expect("new folder doc must be linked under f-eng");
+    assert!(
+        idx.as_str() > "a0" && !idx.starts_with("z9"),
+        "folder doc index {idx:?} must be a valid fractional index after existing siblings"
+    );
+
+    // 4. Opening a nonexistent doc renders explicit `Document not found` empty state.
+    t.app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, _, cx| {
+                v.state.route = MobileRoute::Page("doc-does-not-exist".into());
+                cx.notify();
+            })
+        })
+        .unwrap();
+    t.platform.run_until_parked();
+    t.headless_win.request_frame();
+    let has_not_found = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |_, window, _| {
+                let snap = window.frame_snapshot();
+                snap.elements.contains_key("mobile.page.not_found")
+                    && snap.elements.contains_key("mobile.page.not_found_back_btn")
+            })
+        })
+        .unwrap();
+    assert!(
+        has_not_found,
+        "missing doc id must render explicit Document not found state"
+    );
+}
+
+#[test]
+fn search_no_results_omits_bordered_list_and_shows_empty_state() {
+    let t = TestApp::launch(390, 844, MobileLocale::En);
+    t.click_id("mobile.tab.search");
+    t.app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, _, cx| {
+                v.state.search_query = "NonexistentQuery".to_string();
+                cx.notify();
+            })
+        })
+        .unwrap();
+    t.platform.run_until_parked();
+    t.headless_win.request_frame();
+
+    let (has_list, has_empty) = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |_, window, _| {
+                let snap = window.frame_snapshot();
+                (
+                    snap.elements.contains_key("mobile.search.results"),
+                    snap.elements.contains_key("mobile.search.empty_state"),
+                )
+            })
+        })
+        .unwrap();
+    assert!(!has_list, "empty search must not render bordered list box");
+    assert!(has_empty, "empty search must render centered empty state");
+}
+
+#[test]
+fn journals_week_strip_switches_date_and_creates_new_journal_for_empty_day() {
+    let t = TestApp::launch(390, 844, MobileLocale::En);
+    t.click_id("mobile.tab.journals");
+
+    // Today (2026-11-25) already has `doc-journal`: clicking CTA opens it without creating a new doc.
+    let docs_before = t
+        .app
+        .update(|cx| t.window_handle.update(cx, |v, _, _| v.state.docs.len()))
+        .unwrap();
+    t.click_id("mobile.journals.create_btn");
+    let (route_today, docs_after_today) = t
+        .app
+        .update(|cx| {
+            t.window_handle
+                .update(cx, |v, _, _| (v.state.route.clone(), v.state.docs.len()))
+        })
+        .unwrap();
+    assert_eq!(route_today, MobileRoute::Page("doc-journal".into()));
+    assert_eq!(docs_after_today, docs_before);
+
+    // Go back, select 2026-11-26 (no journal yet), and click CTA -> creates & opens new journal.
+    t.click_id("mobile.page.back_btn");
+    t.click_id("mobile.journals.day.2026-11-26");
+    t.click_id("mobile.journals.create_btn");
+    let (new_route, new_title, new_date, origin) = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, _, _| {
+                let id = match &v.state.route {
+                    MobileRoute::Page(id) => id.clone(),
+                    other => panic!("expected Page route, got {other:?}"),
+                };
+                let doc = v.state.doc_by_id(&id).unwrap();
+                (
+                    id,
+                    doc.title.clone(),
+                    doc.journal_date.clone(),
+                    v.state.history.current().unwrap().origin.clone(),
+                )
+            })
+        })
+        .unwrap();
+    assert_ne!(new_route, "doc-journal");
+    assert_eq!(new_title, "Journal 2026-11-26");
+    assert_eq!(new_date.as_deref(), Some("2026-11-26"));
+    assert_eq!(origin, Origin::Journal);
+}
+
+#[test]
+fn trashed_doc_supports_restore_ready_backlinks_two_step_delete_and_history_purge() {
+    // 1. Restore clears trashed flag, hides banner, keeps backlinks `Ready` workspace-wide,
+    //    and rejects late/stale delete or restore calls on non-trashed or wrong-workspace docs.
+    let t1 = TestApp::launch(390, 844, MobileLocale::En);
+    t1.click_id("mobile.tab.explorer");
+    t1.click_id("mobile.explorer.trash");
+    t1.click_id("mobile.explorer.doc.14:ws-mobile-rustdoc-trash");
+    t1.click_id("mobile.page.trash_restore_btn.14:ws-mobile-rustdoc-trash");
+    let (route_after_restore, still_trashed, has_banner, arch_bl_ready, arch_bl_len) = t1
+        .app
+        .update(|cx| {
+            t1.window_handle.update(cx, |v, window, _| {
+                let bl = v.state.backlinks_for("doc-arch");
+                assert!(!v.state.restore_doc_scoped("ws-mobile-rust", "doc-trash"));
+                assert!(!v.state.delete_doc_permanently_scoped(
+                    "ws-mobile-rust",
+                    "doc-trash",
+                    500.0
+                ));
+                assert!(
+                    !v.state
+                        .delete_doc_permanently_scoped("ws-personal", "doc-trash", 500.0)
+                );
+                (
+                    v.state.route.clone(),
+                    v.state.doc_by_id("doc-trash").unwrap().trashed,
+                    window
+                        .frame_snapshot()
+                        .elements
+                        .contains_key("mobile.page.trash_banner"),
+                    bl.completeness == affine_client::BacklinkCompleteness::Ready,
+                    bl.items.len(),
+                )
+            })
+        })
+        .unwrap();
+    assert_eq!(route_after_restore, MobileRoute::Page("doc-trash".into()));
+    assert!(!still_trashed);
+    assert!(!has_banner);
+    assert!(
+        arch_bl_ready,
+        "restoring trashed doc must sync link_graph clock so backlinks stay Ready"
+    );
+    assert_eq!(arch_bl_len, 2);
+
+    // 2. Delete permanently requires two-step confirmation; Cancel preserves doc; Confirm purges
+    //    all history entries pointing to `doc-trash` (`Home -> doc-trash -> doc-arch -> doc-trash`).
+    let t2 = TestApp::launch(390, 844, MobileLocale::En);
+    t2.app
+        .update(|cx| {
+            t2.window_handle.update(cx, |v, _, cx| {
+                v.state
+                    .open_doc("doc-trash", Origin::Direct(DirectKind::AllDocs));
+                v.state
+                    .open_doc("doc-arch", Origin::Direct(DirectKind::Home));
+                v.state
+                    .open_doc("doc-trash", Origin::Direct(DirectKind::AllDocs));
+                cx.notify();
+            })
+        })
+        .unwrap();
+    t2.platform.run_until_parked();
+    t2.headless_win.request_frame();
+
+    // First click opens confirmation sheet without deleting.
+    t2.click_id("mobile.page.trash_delete_btn.14:ws-mobile-rustdoc-trash");
+    let (sheet_after_first, doc_still_exists) = t2
+        .app
+        .update(|cx| {
+            t2.window_handle.update(cx, |v, _, _| {
+                (
+                    v.state.active_sheet,
+                    v.state.doc_by_id("doc-trash").is_some(),
+                )
+            })
+        })
+        .unwrap();
+    assert_eq!(sheet_after_first, MobileSheet::ConfirmDeleteDoc);
+    assert!(doc_still_exists, "first click must NOT delete immediately");
+
+    // Cancel closes sheet and keeps doc intact.
+    t2.click_id("app.sheet.delete_cancel.14:ws-mobile-rustdoc-trash");
+    let (sheet_after_cancel, doc_after_cancel) = t2
+        .app
+        .update(|cx| {
+            t2.window_handle.update(cx, |v, _, _| {
+                (
+                    v.state.active_sheet,
+                    v.state.doc_by_id("doc-trash").is_some(),
+                )
+            })
+        })
+        .unwrap();
+    assert_eq!(sheet_after_cancel, MobileSheet::None);
+    assert!(doc_after_cancel);
+
+    // Reopen and confirm delete -> doc removed, lands on `doc-arch`, one Back goes straight to `Home`.
+    t2.click_id("mobile.page.trash_delete_btn.14:ws-mobile-rustdoc-trash");
+    t2.click_id("app.sheet.delete_confirm.14:ws-mobile-rustdoc-trash");
+    let (route_after_del, doc_exists) = t2
+        .app
+        .update(|cx| {
+            t2.window_handle.update(cx, |v, _, _| {
+                (
+                    v.state.route.clone(),
+                    v.state.doc_by_id("doc-trash").is_some(),
+                )
+            })
+        })
+        .unwrap();
+    assert_eq!(route_after_del, MobileRoute::Page("doc-arch".into()));
+    assert!(!doc_exists);
+
+    t2.click_id("mobile.page.back_btn");
+    let route_after_back = t2
+        .app
+        .update(|cx| t2.window_handle.update(cx, |v, _, _| v.state.route.clone()))
+        .unwrap();
+    assert_eq!(
+        route_after_back,
+        MobileRoute::Home,
+        "Back after permanent delete must skip purged ghost entries and reach Home"
+    );
+}
+
+#[test]
+fn explorer_scrolls_30_docs_keeps_tabbar_fixed_and_opens_30th_doc() {
+    let t = TestApp::launch(390, 844, MobileLocale::En);
+    t.app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, _, cx| {
+                for i in 1..=30 {
+                    v.state.docs.push(affine_mobile::MobileDocRecord {
+                        id: format!("doc-bulk-{i}"),
+                        title: format!("Bulk Document {i}"),
+                        body_preview: format!("Preview {i}"),
+                        tags: Vec::new(),
+                        updated_at_ms: 1_764_000_000 + i as i64,
+                        is_favorite: false,
+                        trashed: false,
+                        journal_date: None,
+                        clock: 1,
+                        outgoing_edges: Vec::new(),
+                    });
+                }
+                v.state.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
+                cx.notify();
+            })
+        })
+        .unwrap();
+    t.platform.run_until_parked();
+    t.headless_win.request_frame();
+
+    let tabbar_before = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |_, window, _| {
+                window.frame_snapshot().elements["mobile.tabbar"].bounds
+            })
+        })
+        .unwrap();
+
+    // Dispatch real scroll-wheel events to scroll to the bottom of the 30-doc list.
+    for _ in 0..8 {
+        t.headless_win
+            .dispatch_input(PlatformInput::Scroll(ui::ScrollEvent {
+                position: point(px(195.0), px(400.0)),
+                delta: ui::ScrollDelta::Pixels(point(px(0.0), px(-300.0))),
+                modifiers: ui::Modifiers::default(),
+                touch_phase: ui::TouchPhase::Moved,
+                ..Default::default()
+            }));
+        t.platform.run_until_parked();
+        t.headless_win.request_frame();
+    }
+
+    let doc30_id = "mobile.explorer.doc.14:ws-mobile-rustdoc-bulk-30";
+    let (tabbar_after, snap_bounds, a11y_bounds) = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, window, _| {
+                let snap = window.frame_snapshot();
+                let tb = snap.elements["mobile.tabbar"].bounds;
+                let sb = snap
+                    .elements
+                    .get(doc30_id)
+                    .expect("30th doc must be visible in FrameSnapshot after scrolling")
+                    .bounds;
+                let ab = v
+                    .published_a11y_tree()
+                    .nodes
+                    .get(doc30_id)
+                    .expect("30th doc must be published in AccessibilityTree after scrolling")
+                    .bounds;
+                (tb, sb, ab)
+            })
+        })
+        .unwrap();
+
+    assert!((tabbar_after.y - tabbar_before.y).abs() <= 0.5);
+    let drift = (snap_bounds.x - a11y_bounds.x)
+        .abs()
+        .max((snap_bounds.y - a11y_bounds.y).abs())
+        .max((snap_bounds.width - a11y_bounds.width).abs())
+        .max((snap_bounds.height - a11y_bounds.height).abs());
+    assert!(drift <= 1.0, "30th doc a11y drift {drift:.2}px");
+
+    t.click_id(doc30_id);
+    let route = t
+        .app
+        .update(|cx| t.window_handle.update(cx, |v, _, _| v.state.route.clone()))
+        .unwrap();
+    assert_eq!(route, MobileRoute::Page("doc-bulk-30".into()));
+}
+
+#[test]
+fn touch_swipe_scrolls_30_docs_without_accidental_click_and_back_restores_scroll() {
+    let t = TestApp::launch(390, 844, MobileLocale::En);
+    t.app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, _, cx| {
+                for i in 1..=30 {
+                    v.state.docs.push(affine_mobile::MobileDocRecord {
+                        id: format!("doc-bulk-{i}"),
+                        title: format!("Bulk Document {i}"),
+                        body_preview: format!("Preview {i}"),
+                        tags: Vec::new(),
+                        updated_at_ms: 1_764_000_000 + i as i64,
+                        is_favorite: false,
+                        trashed: false,
+                        journal_date: None,
+                        clock: 1,
+                        outgoing_edges: Vec::new(),
+                    });
+                }
+                v.state.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
+                cx.notify();
+            })
+        })
+        .unwrap();
+    t.platform.run_until_parked();
+    t.headless_win.request_frame();
+
+    let tabbar_before = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |_, window, _| {
+                window.frame_snapshot().elements["mobile.tabbar"].bounds
+            })
+        })
+        .unwrap();
+
+    // Perform 4 native Touch pan swipes upward (y=600 -> y=160) to scroll to the 30th doc.
+    for swipe in 0..4u64 {
+        let touch_id = ui::TouchId(swipe + 1);
+        t.headless_win
+            .dispatch_input(PlatformInput::Touch(ui::TouchEvent {
+                id: touch_id,
+                phase: ui::TouchPhase::Started,
+                position: point(px(195.0), px(600.0)),
+                predicted_position: None,
+                force: None,
+            }));
+        for step in 1..=8 {
+            let y = 600.0 - (step as f32) * 55.0;
+            t.headless_win
+                .dispatch_input(PlatformInput::Touch(ui::TouchEvent {
+                    id: touch_id,
+                    phase: ui::TouchPhase::Moved,
+                    position: point(px(195.0), px(y)),
+                    predicted_position: None,
+                    force: None,
+                }));
+        }
+        t.headless_win
+            .dispatch_input(PlatformInput::Touch(ui::TouchEvent {
+                id: touch_id,
+                phase: ui::TouchPhase::Ended,
+                position: point(px(195.0), px(160.0)),
+                predicted_position: None,
+                force: None,
+            }));
+        t.platform.run_until_parked();
+        t.headless_win.request_frame();
+    }
+
+    let doc30_id = format!(
+        "mobile.explorer.doc.{}",
+        affine_mobile::encode_scoped_doc_target("ws-mobile-rust", "doc-bulk-30")
+    );
+    let (route_after_swipe, scroll_after_swipe, tabbar_after, doc30_bounds) = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, window, _| {
+                let snap = window.frame_snapshot();
+                (
+                    v.state.route.clone(),
+                    v.state.explorer_scroll_y,
+                    snap.elements["mobile.tabbar"].bounds,
+                    snap.elements
+                        .get(&doc30_id)
+                        .expect("30th doc must be visible after touch swipe")
+                        .bounds,
+                )
+            })
+        })
+        .unwrap();
+    assert_eq!(
+        route_after_swipe,
+        MobileRoute::Explorer,
+        "touch swipe must never accidentally open an intermediate document"
+    );
+    assert!(
+        scroll_after_swipe > 600.0,
+        "expected scroll_y > 600 after swipes, got {scroll_after_swipe}"
+    );
+    assert!((tabbar_after.y - tabbar_before.y).abs() <= 0.5);
+
+    // Tap the 30th document via native Touch Started -> Ended.
+    let tap_pos = point(
+        px(doc30_bounds.x + doc30_bounds.width * 0.5),
+        px(doc30_bounds.y + doc30_bounds.height * 0.5),
+    );
+    t.headless_win
+        .dispatch_input(PlatformInput::Touch(ui::TouchEvent {
+            id: ui::TouchId(99),
+            phase: ui::TouchPhase::Started,
+            position: tap_pos,
+            predicted_position: None,
+            force: None,
+        }));
+    t.headless_win
+        .dispatch_input(PlatformInput::Touch(ui::TouchEvent {
+            id: ui::TouchId(99),
+            phase: ui::TouchPhase::Ended,
+            position: tap_pos,
+            predicted_position: None,
+            force: None,
+        }));
+    t.platform.run_until_parked();
+    t.headless_win.request_frame();
+
+    let route_after_tap = t
+        .app
+        .update(|cx| t.window_handle.update(cx, |v, _, _| v.state.route.clone()))
+        .unwrap();
+    assert_eq!(route_after_tap, MobileRoute::Page("doc-bulk-30".into()));
+
+    // Pressing Back must restore the exact saved Explorer scroll position.
+    t.click_id("mobile.page.back_btn");
+    let (route_after_back, restored_scroll) = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, _, _| {
+                (v.state.route.clone(), v.state.explorer_scroll_y)
+            })
+        })
+        .unwrap();
+    assert_eq!(route_after_back, MobileRoute::Explorer);
+    assert!(
+        (restored_scroll - scroll_after_swipe).abs() <= 1.0,
+        "expected restored scroll {scroll_after_swipe}, got {restored_scroll}"
+    );
+}
+
+#[test]
+fn mouse_drag_off_list_and_hover_does_not_scroll_or_open_doc() {
+    let t = TestApp::launch(390, 844, MobileLocale::En);
+    t.app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, _, cx| {
+                for i in 1..=30 {
+                    v.state.docs.push(affine_mobile::MobileDocRecord {
+                        id: format!("doc-bulk-{i}"),
+                        title: format!("Bulk Document {i}"),
+                        body_preview: format!("Preview {i}"),
+                        tags: Vec::new(),
+                        updated_at_ms: 1_764_000_000 + i as i64,
+                        is_favorite: false,
+                        trashed: false,
+                        journal_date: None,
+                        clock: 1,
+                        outgoing_edges: Vec::new(),
+                    });
+                }
+                v.state.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
+                cx.notify();
+            })
+        })
+        .unwrap();
+    t.platform.run_until_parked();
+    t.headless_win.request_frame();
+
+    // Press mouse on a list row, drag onto the bottom TabBar, release on TabBar, then hover back across list.
+    t.headless_win
+        .dispatch_input(PlatformInput::MouseDown(ui::MouseDownEvent {
+            button: ui::MouseButton::Left,
+            position: point(px(195.0), px(450.0)),
+            modifiers: ui::Modifiers::default(),
+            click_count: 1,
+            first_mouse: false,
+        }));
+    t.headless_win
+        .dispatch_input(PlatformInput::MouseMove(ui::MouseMoveEvent {
+            position: point(px(195.0), px(810.0)),
+            pressed_button: Some(ui::MouseButton::Left),
+            modifiers: ui::Modifiers::default(),
+        }));
+    t.headless_win
+        .dispatch_input(PlatformInput::MouseUp(ui::MouseUpEvent {
+            button: ui::MouseButton::Left,
+            position: point(px(195.0), px(810.0)),
+            modifiers: ui::Modifiers::default(),
+            click_count: 1,
+        }));
+    for y in [700.0_f32, 550.0, 400.0, 250.0] {
+        t.headless_win
+            .dispatch_input(PlatformInput::MouseMove(ui::MouseMoveEvent {
+                position: point(px(195.0), px(y)),
+                pressed_button: None,
+                modifiers: ui::Modifiers::default(),
+            }));
+    }
+    t.platform.run_until_parked();
+    t.headless_win.request_frame();
+
+    let (route, scroll_y) = t
+        .app
+        .update(|cx| {
+            t.window_handle.update(cx, |v, _, _| {
+                (v.state.route.clone(), v.state.explorer_scroll_y)
+            })
+        })
+        .unwrap();
+    assert_eq!(route, MobileRoute::Explorer);
+    assert_eq!(
+        scroll_y, 0.0,
+        "mouse drag off-list and subsequent unpressed hover must not scroll Explorer"
+    );
 }

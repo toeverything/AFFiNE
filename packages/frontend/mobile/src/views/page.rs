@@ -45,14 +45,16 @@ pub(super) fn render_page(
 ) -> (impl IntoElement, Option<BreadcrumbBarLayout>) {
     let locale = state.locale();
     let font_scale = state.font_scale.max(0.5);
+    let doc_opt = state.doc_by_id(doc_id).cloned();
+    let ws_id = state.active_workspace_id().to_string();
     let derivation = state.derive_breadcrumb();
     let backlinks = state.backlinks_for(doc_id);
-    let doc_title = state
-        .doc_by_id(doc_id)
-        .map(|d| d.title.clone())
-        .unwrap_or_else(|| "Untitled".to_string());
-    let doc_body = state
-        .doc_by_id(doc_id)
+    let doc_title = doc_opt
+        .as_ref()
+        .map(|d| d.display_title(locale))
+        .unwrap_or_else(|| strings.doc_not_found_title.to_string());
+    let doc_body = doc_opt
+        .as_ref()
         .map(|d| d.body_preview.clone())
         .unwrap_or_default();
 
@@ -155,6 +157,16 @@ pub(super) fn render_page(
             .map(|c| {
                 let label = if c.is_switcher {
                     match &derivation.context {
+                        ContextState::MultiLocation {
+                            count,
+                            owner_doc_id,
+                            owner_doc_title,
+                            ..
+                        } if owner_doc_id != doc_id => strings.compact_owner_multi_location_label(
+                            locale,
+                            owner_doc_title,
+                            *count,
+                        ),
                         ContextState::MultiLocation { count, .. } => {
                             strings.multi_location_label(locale, *count)
                         }
@@ -342,18 +354,161 @@ pub(super) fn render_page(
         .gap(px(12.0))
         .overflow_hidden();
 
+    if doc_opt.is_none() {
+        let not_found_body = div()
+            .id("mobile.page.not_found")
+            .snapshot("mobile.page.not_found", Some("mobile.shell.root"))
+            .flex_1()
+            .min_h(px(0.0))
+            .p(px(24.0))
+            .flex()
+            .flex_col()
+            .items_center()
+            .justify_center()
+            .gap(px(12.0))
+            .child(
+                div()
+                    .text_size(px(18.0 * font_scale))
+                    .text_color(palette.text_primary)
+                    .child(strings.doc_not_found_title),
+            )
+            .child(
+                div()
+                    .text_size(px(13.0 * font_scale))
+                    .text_color(palette.text_secondary)
+                    .child(strings.doc_not_found_body),
+            )
+            .child(
+                div()
+                    .id("mobile.page.not_found_back_btn")
+                    .snapshot("mobile.page.not_found_back_btn", Some("mobile.shell.root"))
+                    .relative()
+                    .h(px(44.0))
+                    .min_w(px(120.0))
+                    .px(px(16.0))
+                    .rounded(px(10.0))
+                    .bg(palette.accent)
+                    .text_color(ui::hsla(0.0, 0.0, 1.0, 1.0))
+                    .text_size(px(14.0 * font_scale))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .on_click(cx.listener(|this, _, _, cx| {
+                        let t = this.now_ms(cx);
+                        MobileBackCoordinator::handle_back(&mut this.state, t);
+                        cx.notify();
+                    }))
+                    .child(a11y_bounds_probe(
+                        "mobile.page.not_found_back_btn",
+                        a11y_bounds.clone(),
+                    ))
+                    .child(strings.back_label),
+            );
+        return (page_col.child(not_found_body), measured_layout);
+    }
+
     if derivation.in_trash {
-        body = body.child(
-            div()
+        let scoped = crate::encode_scoped_doc_target(&ws_id, doc_id);
+        let restore_ws = ws_id.clone();
+        let restore_doc_id = doc_id.to_string();
+        let restore_id = format!("mobile.page.trash_restore_btn.{scoped}");
+        let delete_ws = ws_id.clone();
+        let delete_doc_id = doc_id.to_string();
+        let delete_id = format!("mobile.page.trash_delete_btn.{scoped}");
+        let delete_trigger = delete_id.clone();
+
+        let restore_btn = div()
+            .id(restore_id.clone())
+            .snapshot(restore_id.clone(), Some("mobile.shell.root"))
+            .relative()
+            .h(px(44.0))
+            .min_w(px(64.0))
+            .px(px(10.0))
+            .rounded(px(8.0))
+            .bg(palette.bg_surface)
+            .border_1()
+            .border_color(palette.border)
+            .flex()
+            .items_center()
+            .justify_center()
+            .text_size(px(12.0 * font_scale))
+            .text_color(palette.text_primary)
+            .on_click(cx.listener(move |this, _, _, cx| {
+                this.state.restore_doc_scoped(&restore_ws, &restore_doc_id);
+                cx.notify();
+            }))
+            .child(a11y_bounds_probe_border(
+                restore_id,
+                a11y_bounds.clone(),
+                1.0,
+            ))
+            .child(strings.restore_doc_label);
+
+        let delete_btn = div()
+            .id(delete_id.clone())
+            .snapshot(delete_id.clone(), Some("mobile.shell.root"))
+            .relative()
+            .h(px(44.0))
+            .min_w(px(88.0))
+            .px(px(10.0))
+            .rounded(px(8.0))
+            .bg(palette.danger)
+            .flex()
+            .items_center()
+            .justify_center()
+            .text_size(px(12.0 * font_scale))
+            .text_color(ui::hsla(0.0, 0.0, 1.0, 1.0))
+            .on_click(cx.listener(move |this, _, _, cx| {
+                let t = this.now_ms(cx);
+                this.state.request_delete_doc_scoped(
+                    &delete_ws,
+                    &delete_doc_id,
+                    Some(&delete_trigger),
+                    t,
+                );
+                cx.notify();
+            }))
+            .child(a11y_bounds_probe(delete_id, a11y_bounds.clone()))
+            .child(strings.delete_permanently_label);
+
+        let actions = row_dir(dir)
+            .gap(px(8.0))
+            .child(restore_btn)
+            .child(delete_btn);
+        let badge = div()
+            .text_size(px(12.0 * font_scale))
+            .text_color(palette.danger)
+            .align_start_for(dir)
+            .child(strings.in_trash_badge);
+        let banner = if viewport_w >= 360.0 {
+            row_dir(dir)
+                .id("mobile.page.trash_banner")
+                .snapshot("mobile.page.trash_banner", Some("mobile.shell.root"))
                 .w_full()
                 .p(px(10.0))
                 .rounded(px(10.0))
                 .bg(palette.danger_soft)
-                .text_size(px(12.0 * font_scale))
-                .text_color(palette.danger)
-                .align_start_for(dir)
-                .child(strings.in_trash_badge),
-        );
+                .justify_between()
+                .gap(px(8.0))
+                .child(badge)
+                .child(actions)
+                .into_any_element()
+        } else {
+            div()
+                .id("mobile.page.trash_banner")
+                .snapshot("mobile.page.trash_banner", Some("mobile.shell.root"))
+                .w_full()
+                .p(px(10.0))
+                .rounded(px(10.0))
+                .bg(palette.danger_soft)
+                .flex()
+                .flex_col()
+                .gap(px(8.0))
+                .child(badge)
+                .child(actions)
+                .into_any_element()
+        };
+        body = body.child(banner);
     }
 
     body = body

@@ -282,6 +282,46 @@ impl NavHistory {
         self.entries.get(cur + 1)
     }
 
+    /// Remove every history entry matching `(scope, target)` while preserving the original
+    /// causal `seq` of all remaining entries, adjusting `cursor` to the nearest preceding
+    /// retained entry if the active entry was removed.
+    pub fn remove_target(&mut self, scope: &Scope, target: &NavTarget) -> usize {
+        let old_cursor = self.cursor;
+        let mut retained = Vec::with_capacity(self.entries.len());
+        let mut removed = 0usize;
+        let mut new_cursor: Option<usize> = None;
+        let mut retained_before_cursor = 0usize;
+
+        for (idx, entry) in self.entries.drain(..).enumerate() {
+            if entry.scope == *scope && entry.target == *target {
+                removed += 1;
+                continue;
+            }
+            let new_idx = retained.len();
+            if old_cursor == Some(idx) {
+                new_cursor = Some(new_idx);
+            }
+            if old_cursor.is_some_and(|c| idx < c) {
+                retained_before_cursor += 1;
+            }
+            retained.push(entry);
+        }
+
+        self.entries = retained;
+        self.cursor = if self.entries.is_empty() {
+            None
+        } else if let Some(exact) = new_cursor {
+            Some(exact)
+        } else {
+            Some(
+                retained_before_cursor
+                    .saturating_sub(1)
+                    .min(self.entries.len() - 1),
+            )
+        };
+        removed
+    }
+
     /// Update `pick` in place on the entry with `seq` without pushing a new history entry.
     pub fn pick_location(&mut self, seq: u64, choice: Option<LocationChoice>) -> bool {
         if let Some(entry) = self.entries.iter_mut().find(|e| e.seq == seq) {
@@ -371,5 +411,53 @@ impl NavHistory {
             entry.pick = None;
         }
         entry
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn remove_target_purges_all_matching_entries_and_keeps_seqs_intact() {
+        let scope = Scope::new("u1", "https://app.affine.pro", "ws1");
+        let mut history = NavHistory::new();
+        let s_home = history.push(
+            scope.clone(),
+            NavTarget::Home,
+            Origin::Direct(DirectKind::Home),
+            None,
+        );
+        history.push(
+            scope.clone(),
+            NavTarget::Doc("doc-trash".into()),
+            Origin::Direct(DirectKind::AllDocs),
+            None,
+        );
+        let s_arch = history.push(
+            scope.clone(),
+            NavTarget::Doc("doc-arch".into()),
+            Origin::Direct(DirectKind::Home),
+            None,
+        );
+        history.push(
+            scope.clone(),
+            NavTarget::Doc("doc-trash".into()),
+            Origin::Direct(DirectKind::AllDocs),
+            None,
+        );
+
+        let removed = history.remove_target(&scope, &NavTarget::Doc("doc-trash".into()));
+        assert_eq!(removed, 2);
+        assert_eq!(history.len(), 2);
+        assert_eq!(
+            history.current().map(|e| (e.seq, e.target.clone())),
+            Some((s_arch, NavTarget::Doc("doc-arch".into())))
+        );
+        assert_eq!(
+            history.back().map(|e| (e.seq, e.target.clone())),
+            Some((s_home, NavTarget::Home))
+        );
+        assert!(!history.can_back());
     }
 }

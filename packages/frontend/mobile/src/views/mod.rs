@@ -2,11 +2,14 @@
 //! `Focusable` + `EntityInputHandler` for Search IME, and live `AccessibilityTree` publication).
 
 mod explorer;
+mod explorer_rows;
 mod page;
 mod search;
 mod settings;
 mod sheet;
 mod tabs;
+
+pub(crate) use tabs::week_days_for_date;
 
 use std::{
     cell::RefCell,
@@ -38,7 +41,8 @@ pub(super) const HOME_ICON_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/s
 pub(super) const EXPLORER_ICON_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M3 6.5H9.5L11.5 9H21V19H3V6.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>"#;
 pub(super) const JOURNALS_ICON_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M4 10H20M8 3V6M16 3V6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>"#;
 pub(super) const SEARCH_ICON_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6" stroke="currentColor" stroke-width="1.8"/><path d="M15.2 15.2L20 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>"#;
-pub(super) const SETTINGS_ICON_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 3V5.5M12 18.5V21M3 12H5.5M18.5 12H21M5.6 5.6L7.4 7.4M16.6 16.6L18.4 18.4M18.4 5.6L16.6 7.4M7.4 16.6L5.6 18.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>"#;
+pub(super) const SETTINGS_ICON_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M10.6 2.8H13.4L13.9 5.2L17.0 7.1L19.2 6.2L20.6 8.6L18.8 10.1V13.9L20.6 15.4L19.2 17.8L17.0 16.9L13.9 18.8L13.4 21.2H10.6L10.1 18.8L7.0 16.9L4.8 17.8L3.4 15.4L5.2 13.9V10.1L3.4 8.6L4.8 6.2L7.0 7.1L10.1 5.2L10.6 2.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>"#;
+pub(super) const PLUS_ICON_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>"#;
 pub(super) const CHEVRON_LEFT_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none"><path d="M10 3.5L5.5 8L10 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>"#;
 pub(super) const CHEVRON_RIGHT_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>"#;
 pub(super) const CHEVRON_DOWN_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>"#;
@@ -77,6 +81,11 @@ pub(super) trait MobileFlexExt: Styled {
 
     fn items_start(mut self) -> Self {
         self.style().align_items = Some(ui::AlignItems::FlexStart);
+        self
+    }
+
+    fn items_stretch(mut self) -> Self {
+        self.style().align_items = Some(ui::AlignItems::Stretch);
         self
     }
 
@@ -486,6 +495,7 @@ impl EntityInputHandler for MobileShellView {
 
 impl Render for MobileShellView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        window.set_touch_gestures_enabled(true);
         let now_ms = self.now_ms(cx);
         self.state.settle_animations(now_ms);
 
@@ -525,6 +535,17 @@ impl Render for MobileShellView {
             .into_any_element(),
             MobileRoute::Explorer => explorer::render_explorer(
                 &mut self.state,
+                (viewport_h - safe_metrics.top - safe_metrics.bottom).max(160.0),
+                palette,
+                dir,
+                strings,
+                &a11y_bounds,
+                cx,
+            )
+            .into_any_element(),
+            MobileRoute::Journals => tabs::render_journals(
+                &self.state,
+                content_w,
                 viewport_h,
                 palette,
                 dir,
@@ -533,10 +554,6 @@ impl Render for MobileShellView {
                 cx,
             )
             .into_any_element(),
-            MobileRoute::Journals => {
-                tabs::render_journals(&self.state, viewport_h, palette, dir, strings, cx)
-                    .into_any_element()
-            }
             MobileRoute::Search => search::render_search(
                 &self.state,
                 self.search_focus.clone(),

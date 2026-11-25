@@ -10,6 +10,7 @@ use affine_client::{
     nav::breadcrumb,
 };
 use affine_store::workspace_db::FolderRow;
+use blocksuite_playground_doc::refs::DocRefEdge;
 use serde::{Deserialize, Serialize};
 use ui_kit::{MicroIconKind, Sheet};
 use ui_tokens::ThemeMode;
@@ -68,6 +69,7 @@ pub enum MobileSheet {
     WorkspaceSelector,
     LocationAndTrail,
     Backlinks,
+    ConfirmDeleteDoc,
 }
 
 /// Appearance mode preference in Settings.
@@ -105,6 +107,14 @@ pub enum SettingsGroupId {
     About,
 }
 
+/// Honest interaction kind for each mobile Settings row.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum SettingRowInteraction {
+    Info,
+    Toggle,
+    Cycle,
+}
+
 impl SettingsGroupId {
     pub const ALL: [Self; 10] = [
         Self::Account,
@@ -118,6 +128,34 @@ impl SettingsGroupId {
         Self::Experimental,
         Self::About,
     ];
+
+    pub const fn interaction(self) -> SettingRowInteraction {
+        match self {
+            Self::Appearance | Self::Language => SettingRowInteraction::Cycle,
+            Self::SyncOffline | Self::Notifications => SettingRowInteraction::Toggle,
+            Self::Account
+            | Self::Workspace
+            | Self::Editor
+            | Self::Storage
+            | Self::Experimental
+            | Self::About => SettingRowInteraction::Info,
+        }
+    }
+
+    pub const fn a11y_key(self) -> &'static str {
+        match self {
+            Self::Account => "account",
+            Self::Workspace => "workspace",
+            Self::Appearance => "appearance",
+            Self::Language => "language",
+            Self::Editor => "editor",
+            Self::SyncOffline => "sync_offline",
+            Self::Storage => "storage",
+            Self::Notifications => "notifications",
+            Self::Experimental => "experimental",
+            Self::About => "about",
+        }
+    }
 }
 
 /// Full 10-group mobile settings model.
@@ -190,6 +228,7 @@ pub struct WorkspaceData {
     pub link_graph: LinkGraph,
     pub workspace_index_seeded: bool,
     pub history: NavHistory,
+    pub next_doc_seq: u64,
 }
 
 /// Document record stored in the mobile shell view model.
@@ -204,6 +243,18 @@ pub struct MobileDocRecord {
     pub trashed: bool,
     pub journal_date: Option<String>,
     pub clock: u64,
+    pub outgoing_edges: Vec<DocRefEdge>,
+}
+
+impl MobileDocRecord {
+    /// Localized display title, falling back to the locale's untitled placeholder when empty.
+    pub fn display_title(&self, locale: MobileLocale) -> String {
+        if self.title.trim().is_empty() {
+            locale.strings().untitled_doc.to_string()
+        } else {
+            self.title.clone()
+        }
+    }
 }
 
 /// Result of dispatching a platform back gesture through [`MobileBackCoordinator`].
@@ -253,6 +304,8 @@ pub struct MobileAppState {
     pub active_sheet: MobileSheet,
     /// Retains the sheet kind while its closing transition finishes so content never flashes empty.
     pub closing_sheet: Option<MobileSheet>,
+    /// Scoped `(workspace_id, doc_id)` awaiting confirmation in `MobileSheet::ConfirmDeleteDoc`.
+    pub pending_delete_target: Option<(String, String)>,
     /// Accessibility node ID of the control that opened the active sheet (restored on close).
     pub sheet_trigger_a11y_id: Option<String>,
     /// Active semantic focus target exported into `AccessibilityTree`.
@@ -260,7 +313,11 @@ pub struct MobileAppState {
     pub sheet_motion: Sheet,
     pub tab_anim_start_ms: f64,
     pub page_overlay_active: bool,
+    pub explorer_scroll_y: f32,
+    pub explorer_scroll_by_seq: std::collections::HashMap<u64, f32>,
     pub today_date: String,
+    pub selected_journal_date: String,
+    pub next_doc_seq: u64,
     pub search_query: String,
     pub search_selection: Range<usize>,
     pub search_preedit: Option<Range<usize>>,
@@ -312,6 +369,7 @@ impl MobileAppState {
             prev.link_graph = self.link_graph.clone();
             prev.workspace_index_seeded = self.workspace_index_seeded;
             prev.history = self.history.clone();
+            prev.next_doc_seq = self.next_doc_seq;
         }
         // Load incoming workspace slice.
         self.active_workspace_idx = idx;
@@ -327,10 +385,15 @@ impl MobileAppState {
         self.link_graph = next.link_graph;
         self.workspace_index_seeded = next.workspace_index_seeded;
         self.history = next.history;
+        self.next_doc_seq = next.next_doc_seq;
+        self.selected_journal_date = self.today_date.clone();
         self.search_query.clear();
         self.search_selection = 0..0;
         self.search_preedit = None;
         self.page_overlay_active = false;
+        self.pending_delete_target = None;
+        self.explorer_scroll_y = 0.0;
+        self.explorer_scroll_by_seq.clear();
         self.sync_route_from_history();
         self.close_sheet(now_ms);
     }
@@ -383,13 +446,17 @@ impl MobileAppState {
             self.sync_route_from_history();
             return;
         }
+        self.save_current_explorer_scroll();
         self.history.push(self.scope.clone(), target, origin, None);
+        self.explorer_scroll_y = 0.0;
         self.sync_route_from_history();
     }
 
     pub fn switch_tab(&mut self, tab: MobileTab, now_ms: f64) {
+        self.save_current_explorer_scroll();
         self.active_tab = tab;
         self.tab_anim_start_ms = now_ms;
+        self.explorer_scroll_y = 0.0;
         let target = match tab {
             MobileTab::Home => NavTarget::Home,
             MobileTab::Explorer => NavTarget::AllDocs,
@@ -407,6 +474,7 @@ impl MobileAppState {
             .current()
             .is_some_and(|e| e.target == target && e.scope == self.scope);
         if already_same_root {
+            self.restore_current_explorer_scroll();
             return;
         }
         // Switching between top-level root tabs resets the root entry instead of piling up
@@ -420,6 +488,7 @@ impl MobileAppState {
             });
         if at_single_root {
             self.history = NavHistory::new();
+            self.explorer_scroll_by_seq.clear();
         }
         self.history.push(
             self.scope.clone(),
@@ -458,6 +527,7 @@ impl MobileAppState {
         if self.active_sheet != MobileSheet::None {
             self.closing_sheet = Some(self.active_sheet);
             self.active_sheet = MobileSheet::None;
+            self.pending_delete_target = None;
             self.focused_a11y_id = self.sheet_trigger_a11y_id.take();
             self.sheet_motion.close(now_ms);
         }
@@ -535,6 +605,7 @@ impl MobileAppState {
                 self.route = MobileRoute::Settings;
             }
         }
+        self.restore_current_explorer_scroll();
     }
 
     pub fn breadcrumb_snapshot(&mut self) -> WorkspaceBreadcrumbSnapshot {
@@ -543,6 +614,7 @@ impl MobileAppState {
             self.folder_revision,
             &self.folder_rows,
         );
+        let locale = self.locale();
         let docs = self
             .docs
             .iter()
@@ -550,7 +622,7 @@ impl MobileAppState {
                 (
                     d.id.clone(),
                     DocMetaSnapshot {
-                        title: d.title.clone(),
+                        title: d.display_title(locale),
                         trashed: d.trashed,
                         journal_date: d.journal_date.clone(),
                         revoked_or_deleted: false,

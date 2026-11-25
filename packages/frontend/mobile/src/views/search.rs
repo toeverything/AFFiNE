@@ -116,85 +116,119 @@ pub(super) fn render_search(
         );
     }
 
-    let mut list = div()
-        .w_full()
-        .rounded(px(12.0))
-        .bg(palette.bg_surface)
-        .border_1()
-        .border_color(palette.border)
-        .flex()
-        .flex_col()
-        .overflow_hidden();
-
-    for (idx, hit) in hits.iter().take(max_hits).enumerate() {
-        let doc_id = hit.doc_id.clone();
-        let body_preview = state
-            .doc_by_id(&doc_id)
-            .map(|d| d.body_preview.clone())
-            .unwrap_or_default();
-        let mut row = div()
-            .id(format!("mobile.search.hit.{doc_id}"))
-            .snapshot(
-                format!("mobile.search.hit.{doc_id}"),
-                Some("mobile.shell.root"),
-            )
-            .w_full()
-            .min_h(px(64.0))
-            .p(px(12.0))
-            .flex()
-            .flex_col()
-            .gap(px(4.0))
-            .overflow_hidden()
-            .on_click(cx.listener(move |this, _, _, cx| {
-                this.state
-                    .open_doc(&doc_id, Origin::Direct(DirectKind::Search));
-                cx.notify();
-            }));
-        if idx > 0 {
-            row = row.border_t(px(1.0)).border_color(palette.border);
-        }
-        let title_spans: Vec<(usize, usize)> = hit
-            .title_highlights
-            .iter()
-            .map(|s| (s.start, s.end))
-            .collect();
-        let body_spans: Vec<(usize, usize)> = hit
-            .body_highlights
-            .iter()
-            .map(|s| (s.start, s.end))
-            .collect();
-        let (snippet_text, snippet_spans) = snippet_window_utf16(&body_preview, &body_spans, 44);
-        row = row
-            .child(render_highlighted_line(
-                &hit.title,
-                &title_spans,
-                14.0,
-                palette.text_primary,
-                palette.accent,
-                palette.accent_soft,
-                dir,
-            ))
-            .child(render_highlighted_line(
-                &snippet_text,
-                &snippet_spans,
-                12.0,
-                palette.text_secondary,
-                palette.accent,
-                palette.accent_soft,
-                dir,
-            ));
-        list = list.child(row);
-    }
-
-    div()
+    let mut root = div()
         .size_full()
         .flex()
         .flex_col()
         .p(px(16.0))
         .gap(px(12.0))
         .overflow_hidden()
-        .child(search_bar)
-        .child(list)
+        .child(search_bar);
+
+    if !hits.is_empty() {
+        let mut list = div()
+            .id("mobile.search.results")
+            .snapshot("mobile.search.results", Some("mobile.shell.root"))
+            .w_full()
+            .rounded(px(12.0))
+            .bg(palette.bg_surface)
+            .border_1()
+            .border_color(palette.border)
+            .flex()
+            .flex_col()
+            .overflow_hidden();
+
+        for (idx, hit) in hits.iter().take(max_hits).enumerate() {
+            let doc_id = hit.doc_id.clone();
+            let body_preview = state
+                .doc_by_id(&doc_id)
+                .map(|d| d.body_preview.clone())
+                .unwrap_or_default();
+            let mut row = div()
+                .id(format!("mobile.search.hit.{doc_id}"))
+                .snapshot(
+                    format!("mobile.search.hit.{doc_id}"),
+                    Some("mobile.shell.root"),
+                )
+                .w_full()
+                .min_h(px(64.0))
+                .p(px(12.0))
+                .flex()
+                .flex_col()
+                .gap(px(4.0))
+                .overflow_hidden()
+                .on_click(cx.listener(move |this, _, _, cx| {
+                    this.state
+                        .open_doc(&doc_id, Origin::Direct(DirectKind::Search));
+                    cx.notify();
+                }));
+            if idx > 0 {
+                row = row.border_t(px(1.0)).border_color(palette.border);
+            }
+            let title_spans: Vec<(usize, usize)> = hit
+                .title_highlights
+                .iter()
+                .map(|s| (s.start, s.end))
+                .collect();
+            let body_spans: Vec<(usize, usize)> = hit
+                .body_highlights
+                .iter()
+                .map(|s| (s.start, s.end))
+                .collect();
+            let (snippet_text, snippet_spans) =
+                snippet_window_utf16(&body_preview, &body_spans, 44);
+            row = row
+                .child(render_highlighted_line(
+                    &hit.title,
+                    &title_spans,
+                    14.0,
+                    palette.text_primary,
+                    palette.accent,
+                    palette.accent_soft,
+                    dir,
+                ))
+                .child(render_highlighted_line(
+                    &snippet_text,
+                    &snippet_spans,
+                    12.0,
+                    palette.text_secondary,
+                    palette.accent,
+                    palette.accent_soft,
+                    dir,
+                ));
+            list = list.child(row);
+        }
+        root = root.child(list);
+    } else if !state.search_query.is_empty() {
+        root = root.child(
+            div()
+                .id("mobile.search.empty_state")
+                .snapshot("mobile.search.empty_state", Some("mobile.shell.root"))
+                .flex_1()
+                .w_full()
+                .flex()
+                .flex_col()
+                .items_center()
+                .justify_center()
+                .gap(px(10.0))
+                .child(
+                    svg()
+                        .data(SEARCH_ICON_SVG)
+                        .mirror_in_rtl(true)
+                        .w(px(28.0))
+                        .h(px(28.0))
+                        .text_color(palette.text_muted),
+                )
+                .child(
+                    div()
+                        .text_size(px(14.0))
+                        .text_color(palette.text_secondary)
+                        .child(strings.search_no_results),
+                ),
+        );
+    }
+
+    root
 }
 
 fn render_highlighted_line(

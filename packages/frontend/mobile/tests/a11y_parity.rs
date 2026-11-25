@@ -386,6 +386,45 @@ fn all_published_interactive_a11y_nodes_activate_and_modal_blocks_background() {
                 s
             }),
         ),
+        (
+            "explorer-root",
+            Box::new(|| {
+                let mut s = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
+                s.switch_tab(MobileTab::Explorer, 0.0);
+                s
+            }),
+        ),
+        (
+            "journals",
+            Box::new(|| {
+                let mut s = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
+                s.switch_tab(MobileTab::Journals, 0.0);
+                s
+            }),
+        ),
+        (
+            "page-trash",
+            Box::new(|| {
+                let mut s = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
+                s.open_doc("doc-trash", Origin::Direct(DirectKind::AllDocs));
+                s
+            }),
+        ),
+        (
+            "confirm-delete-sheet",
+            Box::new(|| {
+                let mut s = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
+                s.open_doc("doc-trash", Origin::Direct(DirectKind::AllDocs));
+                s.request_delete_doc_scoped(
+                    "ws-mobile-rust",
+                    "doc-trash",
+                    Some("mobile.page.trash_delete_btn.14:ws-mobile-rustdoc-trash"),
+                    0.0,
+                );
+                s.settle_animations(500.0);
+                s
+            }),
+        ),
     ];
 
     for (name, make_state) in factories {
@@ -600,7 +639,7 @@ fn explorer_a11y_drilldown_and_origins_match_clicks_across_folder_collection_tag
     for id in [
         "mobile.explorer.folder.f-eng",
         "mobile.explorer.folder.f-mobile",
-        "mobile.explorer.doc.doc-arch",
+        "mobile.explorer.doc.14:ws-mobile-rustdoc-arch",
     ] {
         click_app.click_id(id);
     }
@@ -623,7 +662,7 @@ fn explorer_a11y_drilldown_and_origins_match_clicks_across_folder_collection_tag
     for id in [
         "mobile.explorer.folder.f-eng",
         "mobile.explorer.folder.f-mobile",
-        "mobile.explorer.doc.doc-arch",
+        "mobile.explorer.doc.14:ws-mobile-rustdoc-arch",
     ] {
         assert!(perform_a11y_action(
             &mut a11y_state,
@@ -658,7 +697,7 @@ fn explorer_a11y_drilldown_and_origins_match_clicks_across_folder_collection_tag
         (
             "folder",
             NavTarget::Folder("f-mobile".into()),
-            "mobile.explorer.doc.doc-arch",
+            "mobile.explorer.doc.14:ws-mobile-rustdoc-arch",
             Origin::Placement {
                 link_id: "l-arch-eng".into(),
             },
@@ -666,13 +705,13 @@ fn explorer_a11y_drilldown_and_origins_match_clicks_across_folder_collection_tag
         (
             "collection",
             NavTarget::Collection("col-sync".into()),
-            "mobile.explorer.doc.doc-sync",
+            "mobile.explorer.doc.14:ws-mobile-rustdoc-sync",
             Origin::Collection("col-sync".into()),
         ),
         (
             "tag",
             NavTarget::Tag("rust".into()),
-            "mobile.explorer.doc.doc-arch",
+            "mobile.explorer.doc.14:ws-mobile-rustdoc-arch",
             Origin::Tag("rust".into()),
         ),
     ];
@@ -979,14 +1018,14 @@ fn stale_explorer_doc_action_from_previous_workspace_is_rejected() {
     let app = ParityApp::launch_with_state(390, 844, init);
     app.headless_win.request_frame();
 
-    // Confirm `mobile.explorer.doc.doc-arch` is published in AFFiNE Core's Mobile Rust folder.
+    // Confirm `mobile.explorer.doc.14:ws-mobile-rustdoc-arch` is published in AFFiNE Core's Mobile Rust folder.
     let present_in_core = app
         .app
         .update(|cx| {
             app.window_handle.update(cx, |v, _, _| {
                 v.published_a11y_tree()
                     .nodes
-                    .contains_key("mobile.explorer.doc.doc-arch")
+                    .contains_key("mobile.explorer.doc.14:ws-mobile-rustdoc-arch")
             })
         })
         .unwrap();
@@ -1019,7 +1058,7 @@ fn stale_explorer_doc_action_from_previous_workspace_is_rejected() {
                 assert!(
                     !v.published_a11y_tree()
                         .nodes
-                        .contains_key("mobile.explorer.doc.doc-arch")
+                        .contains_key("mobile.explorer.doc.14:ws-mobile-rustdoc-arch")
                 );
                 let ws_before = v.state.scope.workspace_id.clone();
                 let route_before = v.state.route.clone();
@@ -1032,7 +1071,7 @@ fn stale_explorer_doc_action_from_previous_workspace_is_rejected() {
                     .collect();
 
                 assert!(!v.perform_a11y_action(
-                    "mobile.explorer.doc.doc-arch",
+                    "mobile.explorer.doc.14:ws-mobile-rustdoc-arch",
                     MobileA11yAction::Activate,
                     cx
                 ));
@@ -1139,4 +1178,472 @@ fn stale_breadcrumb_ellipsis_action_after_widening_viewport_is_rejected() {
             })
         })
         .unwrap();
+}
+
+#[test]
+fn dotted_workspace_and_doc_ids_do_not_collide_in_scoped_actions() {
+    let enc_a = affine_mobile::encode_scoped_doc_target("team.eu", "notes");
+    let enc_b = affine_mobile::encode_scoped_doc_target("team", "eu.notes");
+    assert_ne!(enc_a, enc_b);
+    assert_eq!(
+        affine_mobile::decode_scoped_doc_target(&enc_a),
+        Some(("team.eu", "notes"))
+    );
+    assert_eq!(
+        affine_mobile::decode_scoped_doc_target(&enc_b),
+        Some(("team", "eu.notes"))
+    );
+
+    let mut state = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
+    state.workspaces[0].id = "team.eu".into();
+    state.workspace_store[0].summary.id = "team.eu".into();
+    state.workspace_store[0].scope.workspace_id = "team.eu".into();
+    state.scope.workspace_id = "team.eu".into();
+    state.docs.push(affine_mobile::MobileDocRecord {
+        id: "notes".into(),
+        title: "EU Team Notes".into(),
+        body_preview: "EU workspace doc".into(),
+        tags: Vec::new(),
+        updated_at_ms: 1_764_000_500,
+        is_favorite: false,
+        trashed: true,
+        journal_date: None,
+        clock: 1,
+        outgoing_edges: Vec::new(),
+    });
+    state.workspace_store[0].docs = state.docs.clone();
+
+    state.workspaces[1].id = "team".into();
+    state.workspace_store[1].summary.id = "team".into();
+    state.workspace_store[1].scope.workspace_id = "team".into();
+    state.workspace_store[1]
+        .docs
+        .push(affine_mobile::MobileDocRecord {
+            id: "eu.notes".into(),
+            title: "Team EU Subnotes".into(),
+            body_preview: "Team workspace doc".into(),
+            tags: Vec::new(),
+            updated_at_ms: 1_764_000_501,
+            is_favorite: false,
+            trashed: true,
+            journal_date: None,
+            clock: 1,
+            outgoing_edges: Vec::new(),
+        });
+
+    // Open & restore `(team.eu, notes)` via scoped a11y actions.
+    state.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
+    state.navigate_target(NavTarget::Trash, Origin::Direct(DirectKind::AllDocs));
+    let open_a = format!("mobile.explorer.doc.{enc_a}");
+    assert!(affine_mobile::perform_a11y_action(
+        &mut state,
+        &open_a,
+        MobileA11yAction::Activate,
+        10.0,
+    ));
+    assert_eq!(state.route, MobileRoute::Page("notes".into()));
+
+    let restore_a = format!("mobile.page.trash_restore_btn.{enc_a}");
+    assert!(affine_mobile::perform_a11y_action(
+        &mut state,
+        &restore_a,
+        MobileA11yAction::Activate,
+        20.0,
+    ));
+    assert!(!state.doc_by_id("notes").unwrap().trashed);
+
+    // Switch to `team`, open `(team, eu.notes)` delete confirmation sheet, and replay stale
+    // `(team.eu, notes)` delete_confirm -> must return false and preserve `(team, eu.notes)`.
+    state.select_workspace(1, 30.0);
+    state.settle_animations(600.0);
+    state.switch_tab(affine_mobile::MobileTab::Explorer, 610.0);
+    state.navigate_target(NavTarget::Trash, Origin::Direct(DirectKind::AllDocs));
+    let open_b = format!("mobile.explorer.doc.{enc_b}");
+    assert!(affine_mobile::perform_a11y_action(
+        &mut state,
+        &open_b,
+        MobileA11yAction::Activate,
+        620.0,
+    ));
+    assert_eq!(state.route, MobileRoute::Page("eu.notes".into()));
+
+    let del_btn_b = format!("mobile.page.trash_delete_btn.{enc_b}");
+    assert!(affine_mobile::perform_a11y_action(
+        &mut state,
+        &del_btn_b,
+        MobileA11yAction::Activate,
+        630.0,
+    ));
+    assert_eq!(state.active_sheet, MobileSheet::ConfirmDeleteDoc);
+
+    let stale_confirm_a = format!("app.sheet.delete_confirm.{enc_a}");
+    assert!(
+        !affine_mobile::perform_a11y_action(
+            &mut state,
+            &stale_confirm_a,
+            MobileA11yAction::Activate,
+            640.0,
+        ),
+        "stale delete_confirm from (team.eu, notes) must be rejected when (team, eu.notes) is open"
+    );
+    assert!(
+        state.doc_by_id("eu.notes").is_some(),
+        "(team, eu.notes) must remain intact after rejected cross-workspace confirm"
+    );
+
+    let confirm_b = format!("app.sheet.delete_confirm.{enc_b}");
+    assert!(affine_mobile::perform_a11y_action(
+        &mut state,
+        &confirm_b,
+        MobileA11yAction::Activate,
+        650.0,
+    ));
+    assert!(state.doc_by_id("eu.notes").is_none());
+}
+
+#[test]
+fn screen_reader_scroll_actions_reach_34th_doc_and_30th_collection_and_tag() {
+    // 1. 34 docs across both 390x844 and 320x568 viewports reachable via ScrollForward + Activate.
+    for (w, h) in [(390u32, 844u32), (320u32, 568u32)] {
+        let mut init = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
+        for i in 1..=34 {
+            init.docs.push(affine_mobile::MobileDocRecord {
+                id: format!("doc-a11y-{i}"),
+                title: format!("A11y Document {i}"),
+                body_preview: format!("Body {i}"),
+                tags: Vec::new(),
+                updated_at_ms: 1_764_000_000 + i as i64,
+                is_favorite: false,
+                trashed: false,
+                journal_date: None,
+                clock: 1,
+                outgoing_edges: Vec::new(),
+            });
+        }
+        init.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
+
+        let app = ParityApp::launch_with_state(w, h, init);
+        app.headless_win.request_frame();
+
+        // At top, ScrollBackward returns false.
+        let top_back = app
+            .app
+            .update(|cx| {
+                app.window_handle.update(cx, |v, _, cx| {
+                    v.perform_a11y_action(
+                        "mobile.explorer.scroll_viewport",
+                        MobileA11yAction::ScrollBackward,
+                        cx,
+                    )
+                })
+            })
+            .unwrap();
+        assert!(
+            !top_back,
+            "{w}x{h}: ScrollBackward at top must return false"
+        );
+
+        let target_id = format!(
+            "mobile.explorer.doc.{}",
+            affine_mobile::encode_scoped_doc_target("ws-mobile-rust", "doc-a11y-34")
+        );
+        let mut found = false;
+        for _ in 0..20 {
+            let visible = app
+                .app
+                .update(|cx| {
+                    app.window_handle.update(cx, |v, _, _| {
+                        v.published_a11y_tree().nodes.contains_key(&target_id)
+                    })
+                })
+                .unwrap();
+            if visible {
+                found = true;
+                break;
+            }
+            let moved = app
+                .app
+                .update(|cx| {
+                    app.window_handle.update(cx, |v, _, cx| {
+                        v.perform_a11y_action(
+                            "mobile.explorer.scroll_viewport",
+                            MobileA11yAction::ScrollForward,
+                            cx,
+                        )
+                    })
+                })
+                .unwrap();
+            app.platform.run_until_parked();
+            app.headless_win.request_frame();
+            if !moved {
+                break;
+            }
+        }
+        assert!(
+            found,
+            "{w}x{h}: 34th doc must become reachable via ScrollForward"
+        );
+
+        // Scroll to absolute bottom and assert next ScrollForward returns false.
+        for _ in 0..10 {
+            let moved = app
+                .app
+                .update(|cx| {
+                    app.window_handle.update(cx, |v, _, cx| {
+                        v.perform_a11y_action(
+                            "mobile.explorer.scroll_viewport",
+                            MobileA11yAction::ScrollForward,
+                            cx,
+                        )
+                    })
+                })
+                .unwrap();
+            app.platform.run_until_parked();
+            app.headless_win.request_frame();
+            if !moved {
+                break;
+            }
+        }
+        let bottom_fwd = app
+            .app
+            .update(|cx| {
+                app.window_handle.update(cx, |v, _, cx| {
+                    v.perform_a11y_action(
+                        "mobile.explorer.scroll_viewport",
+                        MobileA11yAction::ScrollForward,
+                        cx,
+                    )
+                })
+            })
+            .unwrap();
+        assert!(
+            !bottom_fwd,
+            "{w}x{h}: ScrollForward at bottom must return false"
+        );
+
+        let activated = app
+            .app
+            .update(|cx| {
+                app.window_handle.update(cx, |v, _, cx| {
+                    v.perform_a11y_action(&target_id, MobileA11yAction::Activate, cx)
+                })
+            })
+            .unwrap();
+        assert!(activated, "{w}x{h}: Activate on 34th doc must succeed");
+        let route = app
+            .app
+            .update(|cx| {
+                app.window_handle
+                    .update(cx, |v, _, _| v.state.route.clone())
+            })
+            .unwrap();
+        assert_eq!(route, MobileRoute::Page("doc-a11y-34".into()));
+    }
+
+    // 2. 30 collections and 30 tags scroll to bottom and activate 30th item.
+    let mut init = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
+    init.collections.clear();
+    init.tags.clear();
+    for i in 1..=30 {
+        init.collections.push(affine_mobile::MobileCollection {
+            id: format!("col-bulk-{i}"),
+            name: format!("Collection #{i}"),
+            doc_ids: vec!["doc-arch".into()],
+        });
+        init.tags
+            .push((format!("tag-bulk-{i}"), format!("tag-{i}")));
+    }
+    init.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
+    init.navigate_target(
+        NavTarget::Collection(String::new()),
+        Origin::Direct(DirectKind::AllDocs),
+    );
+    let app = ParityApp::launch_with_state(390, 844, init);
+    app.headless_win.request_frame();
+
+    for _ in 0..10 {
+        let moved = app
+            .app
+            .update(|cx| {
+                app.window_handle.update(cx, |v, _, cx| {
+                    v.perform_a11y_action(
+                        "mobile.explorer.scroll_viewport",
+                        MobileA11yAction::ScrollForward,
+                        cx,
+                    )
+                })
+            })
+            .unwrap();
+        app.platform.run_until_parked();
+        app.headless_win.request_frame();
+        if !moved {
+            break;
+        }
+    }
+    let col30_ok = app
+        .app
+        .update(|cx| {
+            app.window_handle.update(cx, |v, _, cx| {
+                assert!(
+                    v.published_a11y_tree()
+                        .nodes
+                        .contains_key("mobile.explorer.collection.col-bulk-30")
+                );
+                v.perform_a11y_action(
+                    "mobile.explorer.collection.col-bulk-30",
+                    MobileA11yAction::Activate,
+                    cx,
+                )
+            })
+        })
+        .unwrap();
+    assert!(col30_ok);
+    let col_target = app
+        .app
+        .update(|cx| {
+            app.window_handle.update(cx, |v, _, _| {
+                v.state.history.current().unwrap().target.clone()
+            })
+        })
+        .unwrap();
+    assert_eq!(col_target, NavTarget::Collection("col-bulk-30".into()));
+
+    // Navigate to Tags index, scroll to bottom, verify and activate 30th tag.
+    app.app
+        .update(|cx| {
+            app.window_handle.update(cx, |v, _, cx| {
+                v.state.navigate_target(
+                    NavTarget::Tag(String::new()),
+                    Origin::Direct(DirectKind::AllDocs),
+                );
+                cx.notify();
+            })
+        })
+        .unwrap();
+    app.platform.run_until_parked();
+    app.headless_win.request_frame();
+
+    for _ in 0..10 {
+        let moved = app
+            .app
+            .update(|cx| {
+                app.window_handle.update(cx, |v, _, cx| {
+                    v.perform_a11y_action(
+                        "mobile.explorer.scroll_viewport",
+                        MobileA11yAction::ScrollForward,
+                        cx,
+                    )
+                })
+            })
+            .unwrap();
+        app.platform.run_until_parked();
+        app.headless_win.request_frame();
+        if !moved {
+            break;
+        }
+    }
+    let tag30_ok = app
+        .app
+        .update(|cx| {
+            app.window_handle.update(cx, |v, _, cx| {
+                assert!(
+                    v.published_a11y_tree()
+                        .nodes
+                        .contains_key("mobile.explorer.tag.tag-bulk-30")
+                );
+                v.perform_a11y_action(
+                    "mobile.explorer.tag.tag-bulk-30",
+                    MobileA11yAction::Activate,
+                    cx,
+                )
+            })
+        })
+        .unwrap();
+    assert!(tag30_ok);
+    let tag_target = app
+        .app
+        .update(|cx| {
+            app.window_handle.update(cx, |v, _, _| {
+                v.state.history.current().unwrap().target.clone()
+            })
+        })
+        .unwrap();
+    assert_eq!(tag_target, NavTarget::Tag("tag-bulk-30".into()));
+}
+
+#[test]
+fn empty_title_uses_localized_untitled_in_main_landmark_and_backlinks_sheet() {
+    let mut init = seed_showcase_state(MobileLocale::ZhHans, ThemeMode::Light, "2026-11-25");
+    let new_doc_id = init.create_doc(None, 100.0);
+    assert!(init.doc_by_id(&new_doc_id).unwrap().title.is_empty());
+
+    let app = ParityApp::launch_with_state(390, 844, init);
+    app.headless_win.request_frame();
+
+    let main_name = app
+        .app
+        .update(|cx| {
+            app.window_handle.update(cx, |v, _, _| {
+                v.published_a11y_tree().nodes["app.main"].name.clone()
+            })
+        })
+        .unwrap();
+    assert_eq!(main_name, "无标题");
+
+    // Link the untitled doc to `doc-arch`, open `doc-arch`, and open Backlinks sheet.
+    let src_id = new_doc_id.clone();
+    app.app
+        .update(|cx| {
+            app.window_handle.update(cx, |v, _, cx| {
+                let edge = blocksuite_playground_doc::refs::DocRefEdge {
+                    source_doc_id: src_id.clone(),
+                    source_block_id: "b-untitled".into(),
+                    target_doc_id: "doc-arch".into(),
+                    kind: blocksuite_playground_doc::refs::OutboundRefKind::InlineMention,
+                };
+                if let Some(d) = v.state.docs.iter_mut().find(|d| d.id == src_id) {
+                    d.outgoing_edges.push(edge.clone());
+                }
+                v.state.link_graph.replace_edges(&src_id, vec![edge], 1);
+                v.state
+                    .open_doc("doc-arch", Origin::Direct(DirectKind::Home));
+                v.state
+                    .open_sheet_from(MobileSheet::Backlinks, Some("page.backlinks.pill"), 200.0);
+                v.state.settle_animations(700.0);
+                cx.notify();
+            })
+        })
+        .unwrap();
+    app.platform.run_until_parked();
+    app.headless_win.request_frame();
+
+    let (has_untitled_a11y, has_bl_snapshot) = app
+        .app
+        .update(|cx| {
+            app.window_handle.update(cx, |v, window, _| {
+                let tree = v.published_a11y_tree();
+                let bl_nodes: Vec<_> = tree
+                    .nodes
+                    .iter()
+                    .filter(|(id, _)| id.starts_with("mobile.sheet.backlink."))
+                    .collect();
+                let has_untitled = bl_nodes.iter().any(|(_, n)| n.name == "无标题");
+                let no_empty = bl_nodes.iter().all(|(_, n)| !n.name.is_empty());
+                assert!(no_empty, "no backlink row may have an empty a11y name");
+                let snap = window.frame_snapshot();
+                let has_snap = bl_nodes
+                    .iter()
+                    .any(|(id, _)| snap.elements.contains_key(id.as_str()));
+                (has_untitled, has_snap)
+            })
+        })
+        .unwrap();
+    assert!(
+        has_untitled_a11y,
+        "backlinks sheet a11y row must show localized 无标题 for untitled source doc"
+    );
+    assert!(
+        has_bl_snapshot,
+        "backlinks sheet visual snapshot must contain the untitled source doc row"
+    );
 }

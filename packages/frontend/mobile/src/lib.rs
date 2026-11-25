@@ -10,6 +10,7 @@
 pub mod a11y;
 pub mod showcase;
 pub mod state;
+mod state_ops;
 pub mod strings;
 pub mod views;
 
@@ -25,9 +26,10 @@ pub use a11y::{
 pub use showcase::seed_showcase_state;
 pub use state::{
     BackOutcome, MobileAppState, MobileBackCoordinator, MobileCollection, MobileDocRecord,
-    MobileRoute, MobileSheet, MobileTab, SettingsGroupId, SettingsState, ThemePreference,
-    WorkspaceData, WorkspaceSummary,
+    MobileRoute, MobileSheet, MobileTab, SettingRowInteraction, SettingsGroupId, SettingsState,
+    ThemePreference, WorkspaceData, WorkspaceSummary,
 };
+pub use state_ops::{decode_scoped_doc_target, encode_scoped_doc_target};
 pub use strings::{MobileLocale, MobileStrings};
 pub use views::MobileShellView;
 

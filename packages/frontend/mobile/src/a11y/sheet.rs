@@ -130,12 +130,33 @@ pub(super) fn insert_sheet_a11y_nodes(
                     .map(|(i, item)| {
                         let title = state
                             .doc_by_id(&item.source_doc_id)
-                            .map(|d| d.title.clone())
+                            .map(|d| d.display_title(state.locale()))
                             .unwrap_or_else(|| item.source_doc_id.clone());
                         (format!("mobile.sheet.backlink.{i}"), title, false, 46.0)
                     })
                     .collect(),
             );
+        }
+        MobileSheet::ConfirmDeleteDoc => {
+            let (ws_id, doc_id) = state
+                .pending_delete_target
+                .clone()
+                .unwrap_or_else(|| (state.active_workspace_id().to_string(), String::new()));
+            let scoped = crate::encode_scoped_doc_target(&ws_id, &doc_id);
+            cols.push(vec![
+                (
+                    format!("app.sheet.delete_cancel.{scoped}"),
+                    strings.cancel_label.to_string(),
+                    false,
+                    44.0,
+                ),
+                (
+                    format!("app.sheet.delete_confirm.{scoped}"),
+                    strings.delete_permanently_label.to_string(),
+                    false,
+                    44.0,
+                ),
+            ]);
         }
         MobileSheet::None => {}
     }
@@ -224,6 +245,7 @@ pub(super) fn insert_sheet_a11y_nodes(
         MobileSheet::WorkspaceSelector => strings.switch_workspace,
         MobileSheet::LocationAndTrail => strings.location_trail_title,
         MobileSheet::Backlinks => strings.backlinks_label,
+        MobileSheet::ConfirmDeleteDoc => strings.confirm_delete_title,
         MobileSheet::None => "",
     };
     nodes.insert(

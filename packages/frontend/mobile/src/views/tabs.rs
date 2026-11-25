@@ -15,8 +15,8 @@ use crate::{
 
 use super::{
     A11yBoundsMap, CHEVRON_DOWN_SVG, EXPLORER_ICON_SVG, HOME_ICON_SVG, JOURNALS_ICON_SVG,
-    MobileFlexExt, MobilePalette, MobileShellView, SEARCH_ICON_SVG, SETTINGS_ICON_SVG,
-    STAR_ICON_SVG, a11y_bounds_probe,
+    MobileFlexExt, MobilePalette, MobileShellView, PLUS_ICON_SVG, SEARCH_ICON_SVG,
+    SETTINGS_ICON_SVG, STAR_ICON_SVG, a11y_bounds_probe, a11y_bounds_probe_border,
 };
 
 fn row_dir(dir: Direction) -> ui::Div {
@@ -38,6 +38,7 @@ pub(super) fn render_home(
     cx: &mut Context<MobileShellView>,
 ) -> impl IntoElement {
     let ws = state.active_workspace();
+    let locale = state.locale();
     let compact = viewport_h < 460.0;
 
     let header = row_dir(dir)
@@ -101,30 +102,68 @@ pub(super) fn render_home(
                 ),
         )
         .child(
-            div()
-                .id("mobile.home.settings_btn")
-                .snapshot("mobile.home.settings_btn", Some("mobile.shell.root"))
-                .w(px(44.0))
-                .h(px(44.0))
-                .rounded(px(10.0))
-                .bg(palette.bg_pill)
-                .flex()
-                .items_center()
-                .justify_center()
-                .on_click(cx.listener(|this, _, _, cx| {
-                    this.state.open_settings();
-                    cx.notify();
-                }))
+            row_dir(dir)
+                .flex_shrink(0.0)
+                .gap(px(8.0))
                 .child(
-                    svg()
-                        .data(SETTINGS_ICON_SVG)
-                        .w(px(18.0))
-                        .h(px(18.0))
-                        .text_color(palette.text_secondary),
+                    div()
+                        .id("mobile.home.new_doc_btn")
+                        .snapshot("mobile.home.new_doc_btn", Some("mobile.shell.root"))
+                        .relative()
+                        .w(px(44.0))
+                        .h(px(44.0))
+                        .rounded(px(10.0))
+                        .bg(palette.accent_soft)
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            let t = this.now_ms(cx);
+                            this.state.create_doc(None, t);
+                            cx.notify();
+                        }))
+                        .child(a11y_bounds_probe(
+                            "mobile.home.new_doc_btn",
+                            a11y_bounds.clone(),
+                        ))
+                        .child(
+                            svg()
+                                .data(PLUS_ICON_SVG)
+                                .w(px(18.0))
+                                .h(px(18.0))
+                                .text_color(palette.accent),
+                        ),
+                )
+                .child(
+                    div()
+                        .id("mobile.home.settings_btn")
+                        .snapshot("mobile.home.settings_btn", Some("mobile.shell.root"))
+                        .w(px(44.0))
+                        .h(px(44.0))
+                        .rounded(px(10.0))
+                        .bg(palette.bg_pill)
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.state.open_settings();
+                            cx.notify();
+                        }))
+                        .child(
+                            svg()
+                                .data(SETTINGS_ICON_SVG)
+                                .w(px(18.0))
+                                .h(px(18.0))
+                                .text_color(palette.text_secondary),
+                        ),
                 ),
         );
 
-    let mut fav_row = row_dir(dir).w_full().flex_shrink(0.0).gap(px(10.0));
+    let mut fav_row = row_dir(dir)
+        .w_full()
+        .flex_shrink(0.0)
+        .items_stretch()
+        .gap(px(10.0));
     for doc in state
         .docs
         .iter()
@@ -170,7 +209,7 @@ pub(super) fn render_home(
                         .text_color(palette.text_primary)
                         .align_start_for(dir)
                         .overflow_hidden()
-                        .child(doc.title.clone()),
+                        .child(doc.display_title(locale)),
                 ),
         );
     }
@@ -228,7 +267,7 @@ pub(super) fn render_home(
                 .text_color(palette.text_primary)
                 .align_start_for(dir)
                 .overflow_hidden()
-                .child(doc.title.clone()),
+                .child(doc.display_title(locale)),
         );
         if !compact {
             row = row.child(
@@ -308,14 +347,18 @@ pub(super) fn render_home(
         .child(body)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn render_journals(
     state: &MobileAppState,
-    _viewport_h: f32,
+    viewport_w: f32,
+    viewport_h: f32,
     palette: MobilePalette,
     dir: Direction,
     strings: &'static MobileStrings,
+    a11y_bounds: &A11yBoundsMap,
     cx: &mut Context<MobileShellView>,
 ) -> impl IntoElement {
+    let selected_date = state.selected_journal_date.clone();
     let header = row_dir(dir)
         .id("mobile.journals.header")
         .snapshot("mobile.journals.header", Some("mobile.shell.root"))
@@ -342,24 +385,34 @@ pub(super) fn render_journals(
                 .bg(palette.accent_soft)
                 .text_size(px(12.0))
                 .text_color(palette.accent)
-                .child(state.today_date.clone()),
+                .child(selected_date.clone()),
         );
 
+    let compact = viewport_h < 460.0;
+    let day_pill_h = if compact { 44.0 } else { 52.0 };
     let week = week_days_for_date(&state.today_date);
-    let mut day_strip = row_dir(dir).w_full().justify_between().gap(px(4.0));
-    for (day_lbl, day_num, is_today) in week {
-        day_strip = day_strip.child(
+    let make_day_pill =
+        |idx: usize, day_num: String, iso_date: String, cx: &mut Context<MobileShellView>| {
+            let day_lbl = strings.weekday_short[idx];
+            let is_selected = iso_date == selected_date;
+            let is_today = iso_date == state.today_date;
+            let day_id = format!("mobile.journals.day.{iso_date}");
+            let click_date = iso_date.clone();
             div()
+                .id(day_id.clone())
+                .snapshot(day_id.clone(), Some("mobile.shell.root"))
+                .relative()
                 .flex_1()
-                .h(px(52.0))
+                .min_w(px(44.0))
+                .h(px(day_pill_h))
                 .rounded(px(10.0))
-                .bg(if is_today {
+                .bg(if is_selected {
                     palette.accent
                 } else {
                     palette.bg_surface
                 })
                 .border_1()
-                .border_color(if is_today {
+                .border_color(if is_selected || is_today {
                     palette.accent
                 } else {
                     palette.border
@@ -369,10 +422,15 @@ pub(super) fn render_journals(
                 .items_center()
                 .justify_center()
                 .gap(px(2.0))
+                .on_click(cx.listener(move |this, _, _, cx| {
+                    this.state.select_journal_date(&click_date);
+                    cx.notify();
+                }))
+                .child(a11y_bounds_probe_border(day_id, a11y_bounds.clone(), 1.0))
                 .child(
                     div()
                         .text_size(px(10.0))
-                        .text_color(if is_today {
+                        .text_color(if is_selected {
                             ui::hsla(0.0, 0.0, 1.0, 0.85)
                         } else {
                             palette.text_secondary
@@ -382,24 +440,154 @@ pub(super) fn render_journals(
                 .child(
                     div()
                         .text_size(px(13.0))
-                        .text_color(if is_today {
+                        .text_color(if is_selected {
                             ui::hsla(0.0, 0.0, 1.0, 1.0)
                         } else {
                             palette.text_primary
                         })
                         .child(day_num),
-                ),
-        );
-    }
+                )
+        };
 
-    let today_doc = state
+    let day_strip: ui::AnyElement = if viewport_w < 364.0 {
+        let mut top_row = row_dir(dir).w_full().gap(px(4.0));
+        let mut bottom_row = row_dir(dir).w_full().gap(px(4.0));
+        for (idx, (_, day_num, iso_date)) in week.into_iter().enumerate() {
+            let pill = make_day_pill(idx, day_num, iso_date, cx);
+            if idx < 4 {
+                top_row = top_row.child(pill);
+            } else {
+                bottom_row = bottom_row.child(pill);
+            }
+        }
+        div()
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap(px(6.0))
+            .child(top_row)
+            .child(bottom_row)
+            .into_any_element()
+    } else {
+        let mut single_row = row_dir(dir).w_full().justify_between().gap(px(4.0));
+        for (idx, (_, day_num, iso_date)) in week.into_iter().enumerate() {
+            single_row = single_row.child(make_day_pill(idx, day_num, iso_date, cx));
+        }
+        single_row.into_any_element()
+    };
+
+    let selected_doc = state
         .docs
         .iter()
-        .find(|d| d.journal_date.as_deref() == Some(state.today_date.as_str()));
-    let today_doc_id = today_doc
-        .map(|d| d.id.clone())
-        .unwrap_or_else(|| "doc-journal".to_string());
-    let create_doc_id = today_doc_id.clone();
+        .find(|d| !d.trashed && d.journal_date.as_deref() == Some(selected_date.as_str()));
+    let has_entry = selected_doc.is_some();
+    let card_eyebrow = if selected_date == state.today_date {
+        strings.today_journal.to_string()
+    } else {
+        selected_date.clone()
+    };
+    let card_title = selected_doc
+        .map(|d| d.title.clone())
+        .unwrap_or_else(|| format!("Journal {selected_date}"));
+    let card_preview = selected_doc
+        .map(|d| d.body_preview.clone())
+        .unwrap_or_else(|| strings.no_journal_for_date.to_string());
+    let cta_label = if has_entry {
+        strings.open_journal
+    } else {
+        strings.create_journal
+    };
+    let card_date = selected_date.clone();
+    let btn_date = selected_date;
+
+    let today_card = div()
+        .id("mobile.journals.today_card")
+        .snapshot("mobile.journals.today_card", Some("mobile.shell.root"))
+        .w_full()
+        .p(px(if compact { 10.0 } else { 14.0 }))
+        .rounded(px(12.0))
+        .bg(palette.bg_surface)
+        .border_1()
+        .border_color(palette.border)
+        .flex()
+        .flex_col()
+        .gap(px(if compact { 3.0 } else { 6.0 }))
+        .on_click(cx.listener(move |this, _, _, cx| {
+            let t = this.now_ms(cx);
+            this.state.open_or_create_journal_for_date(&card_date, t);
+            cx.notify();
+        }))
+        .child(
+            div()
+                .w_full()
+                .text_size(px(12.0))
+                .text_color(palette.accent)
+                .align_start_for(dir)
+                .child(card_eyebrow),
+        )
+        .child(
+            div()
+                .w_full()
+                .text_size(px(15.0))
+                .text_color(palette.text_primary)
+                .align_start_for(dir)
+                .child(card_title),
+        )
+        .child(
+            div()
+                .w_full()
+                .text_size(px(13.0))
+                .text_color(palette.text_secondary)
+                .align_start_for(dir)
+                .child(card_preview),
+        );
+
+    let create_btn = div()
+        .id("mobile.journals.create_btn")
+        .snapshot("mobile.journals.create_btn", Some("mobile.shell.root"))
+        .relative()
+        .w_full()
+        .h(px(46.0))
+        .px(px(14.0))
+        .rounded(px(12.0))
+        .bg(palette.accent)
+        .text_color(ui::hsla(0.0, 0.0, 1.0, 1.0))
+        .text_size(px(14.0))
+        .flex()
+        .items_center()
+        .justify_center()
+        .on_click(cx.listener(move |this, _, _, cx| {
+            let t = this.now_ms(cx);
+            this.state.open_or_create_journal_for_date(&btn_date, t);
+            cx.notify();
+        }))
+        .child(a11y_bounds_probe(
+            "mobile.journals.create_btn",
+            a11y_bounds.clone(),
+        ))
+        .child(cta_label);
+
+    let mut content = div()
+        .flex_1()
+        .min_h(px(0.0))
+        .p(px(if compact { 10.0 } else { 16.0 }))
+        .flex()
+        .flex_col()
+        .gap(px(if compact { 10.0 } else { 14.0 }))
+        .overflow_hidden()
+        .child(day_strip);
+    if compact {
+        content = content.child(
+            row_dir(dir)
+                .w_full()
+                .gap(px(10.0))
+                .items_center()
+                .child(div().flex_1().min_w(px(0.0)).child(today_card))
+                .child(div().w(px(184.0)).flex_shrink(0.0).child(create_btn)),
+        );
+    } else {
+        content = content.child(today_card).child(create_btn);
+    }
 
     div()
         .size_full()
@@ -407,90 +595,18 @@ pub(super) fn render_journals(
         .flex_col()
         .overflow_hidden()
         .child(header)
-        .child(
-            div()
-                .flex_1()
-                .min_h(px(0.0))
-                .p(px(16.0))
-                .flex()
-                .flex_col()
-                .gap(px(14.0))
-                .overflow_hidden()
-                .child(day_strip)
-                .child(
-                    div()
-                        .id("mobile.journals.today_card")
-                        .snapshot("mobile.journals.today_card", Some("mobile.shell.root"))
-                        .w_full()
-                        .p(px(14.0))
-                        .rounded(px(12.0))
-                        .bg(palette.bg_surface)
-                        .border_1()
-                        .border_color(palette.border)
-                        .flex()
-                        .flex_col()
-                        .gap(px(6.0))
-                        .on_click(cx.listener(move |this, _, _, cx| {
-                            this.state.open_doc(&today_doc_id, Origin::Journal);
-                            cx.notify();
-                        }))
-                        .child(
-                            div()
-                                .text_size(px(12.0))
-                                .text_color(palette.accent)
-                                .child(strings.today_journal),
-                        )
-                        .child(
-                            div()
-                                .text_size(px(15.0))
-                                .text_color(palette.text_primary)
-                                .child(
-                                    today_doc
-                                        .map(|d| d.title.clone())
-                                        .unwrap_or_else(|| state.today_date.clone()),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .text_size(px(13.0))
-                                .text_color(palette.text_secondary)
-                                .child(
-                                    today_doc
-                                        .map(|d| d.body_preview.clone())
-                                        .unwrap_or_default(),
-                                ),
-                        ),
-                )
-                .child(
-                    div()
-                        .id("mobile.journals.create_btn")
-                        .snapshot("mobile.journals.create_btn", Some("mobile.shell.root"))
-                        .w_full()
-                        .h(px(46.0))
-                        .rounded(px(12.0))
-                        .bg(palette.accent)
-                        .text_color(ui::hsla(0.0, 0.0, 1.0, 1.0))
-                        .text_size(px(14.0))
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .on_click(cx.listener(move |this, _, _, cx| {
-                            this.state.open_doc(&create_doc_id, Origin::Journal);
-                            cx.notify();
-                        }))
-                        .child(strings.create_journal),
-                ),
-        )
+        .child(content)
 }
 
 /// Pure calendar week derivation (Monday..Sunday) from an ISO `YYYY-MM-DD` date string.
-pub(crate) fn week_days_for_date(iso_date: &str) -> Vec<(&'static str, String, bool)> {
+/// Returns `(weekday_short, day_number, full_iso_date)` for each of the 7 days.
+pub(crate) fn week_days_for_date(iso_date: &str) -> Vec<(&'static str, String, String)> {
     const LABELS: [&str; 7] = ["M", "T", "W", "T", "F", "S", "S"];
     let Some((y, m, d)) = parse_iso_date(iso_date) else {
         return LABELS
             .iter()
             .enumerate()
-            .map(|(i, lbl)| (*lbl, (i + 1).to_string(), i == 0))
+            .map(|(i, lbl)| (*lbl, (i + 1).to_string(), format!("2026-01-{:02}", i + 1)))
             .collect();
     };
     let z = days_from_civil(y, m, d);
@@ -500,8 +616,12 @@ pub(crate) fn week_days_for_date(iso_date: &str) -> Vec<(&'static str, String, b
     (0..7)
         .map(|offset| {
             let day_z = monday + offset;
-            let (_, _, day_num) = civil_from_days(day_z);
-            (LABELS[offset as usize], day_num.to_string(), day_z == z)
+            let (dy, dm, dd) = civil_from_days(day_z);
+            (
+                LABELS[offset as usize],
+                dd.to_string(),
+                format!("{dy:04}-{dm:02}-{dd:02}"),
+            )
         })
         .collect()
 }
@@ -659,14 +779,14 @@ mod tests {
         // 2026-11-25 is Wednesday -> Monday Nov 23 .. Sunday Nov 29.
         let week = week_days_for_date("2026-11-25");
         assert_eq!(week.len(), 7);
-        assert_eq!(week[0], ("M", "23".to_string(), false));
-        assert_eq!(week[2], ("W", "25".to_string(), true));
-        assert_eq!(week[6], ("S", "29".to_string(), false));
+        assert_eq!(week[0], ("M", "23".to_string(), "2026-11-23".to_string()));
+        assert_eq!(week[2], ("W", "25".to_string(), "2026-11-25".to_string()));
+        assert_eq!(week[6], ("S", "29".to_string(), "2026-11-29".to_string()));
 
         // 2024-02-29 (leap day, Thursday) -> Monday Feb 26 .. Sunday Mar 3.
         let leap = week_days_for_date("2024-02-29");
-        assert_eq!(leap[0], ("M", "26".to_string(), false));
-        assert_eq!(leap[3], ("T", "29".to_string(), true));
-        assert_eq!(leap[4], ("F", "1".to_string(), false));
+        assert_eq!(leap[0], ("M", "26".to_string(), "2024-02-26".to_string()));
+        assert_eq!(leap[3], ("T", "29".to_string(), "2024-02-29".to_string()));
+        assert_eq!(leap[4], ("F", "1".to_string(), "2024-03-01".to_string()));
     }
 }

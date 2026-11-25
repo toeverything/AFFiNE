@@ -96,6 +96,7 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
             trashed: false,
             journal_date: None,
             clock: 3,
+            outgoing_edges: Vec::new(),
         },
         MobileDocRecord {
             id: "doc-sync".into(),
@@ -115,6 +116,12 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
             trashed: false,
             journal_date: None,
             clock: 2,
+            outgoing_edges: vec![DocRefEdge {
+                source_doc_id: "doc-sync".into(),
+                target_doc_id: "doc-arch".into(),
+                source_block_id: "b-sync-1".into(),
+                kind: OutboundRefKind::InlineMention,
+            }],
         },
         MobileDocRecord {
             id: "doc-journal".into(),
@@ -130,6 +137,12 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
             trashed: false,
             journal_date: Some(today_date.to_string()),
             clock: 1,
+            outgoing_edges: vec![DocRefEdge {
+                source_doc_id: "doc-journal".into(),
+                target_doc_id: "doc-arch".into(),
+                source_block_id: "b-j-1".into(),
+                kind: OutboundRefKind::EmbedLinkedDoc,
+            }],
         },
         MobileDocRecord {
             id: "doc-trash".into(),
@@ -145,31 +158,14 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
             trashed: true,
             journal_date: None,
             clock: 1,
+            outgoing_edges: Vec::new(),
         },
     ];
 
     let mut link_graph = LinkGraph::new();
-    link_graph.replace_edges(
-        "doc-sync",
-        vec![DocRefEdge {
-            source_doc_id: "doc-sync".into(),
-            target_doc_id: "doc-arch".into(),
-            source_block_id: "b-sync-1".into(),
-            kind: OutboundRefKind::InlineMention,
-        }],
-        2,
-    );
-    link_graph.replace_edges(
-        "doc-journal",
-        vec![DocRefEdge {
-            source_doc_id: "doc-journal".into(),
-            target_doc_id: "doc-arch".into(),
-            source_block_id: "b-j-1".into(),
-            kind: OutboundRefKind::EmbedLinkedDoc,
-        }],
-        1,
-    );
-    link_graph.replace_edges("doc-arch", Vec::new(), 3);
+    for doc in &docs {
+        link_graph.replace_edges(&doc.id, doc.outgoing_edges.clone(), doc.clock);
+    }
 
     let mut history = NavHistory::new();
     history.push(
@@ -223,6 +219,7 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
         link_graph,
         workspace_index_seeded: true,
         history,
+        next_doc_seq: 1,
     }
 }
 
@@ -264,6 +261,7 @@ fn build_personal_workspace(locale: MobileLocale) -> WorkspaceData {
             trashed: false,
             journal_date: None,
             clock: 1,
+            outgoing_edges: Vec::new(),
         },
         MobileDocRecord {
             id: "doc-personal-2".into(),
@@ -279,20 +277,18 @@ fn build_personal_workspace(locale: MobileLocale) -> WorkspaceData {
             trashed: false,
             journal_date: None,
             clock: 1,
+            outgoing_edges: vec![DocRefEdge {
+                source_doc_id: "doc-personal-2".into(),
+                target_doc_id: "doc-personal-1".into(),
+                source_block_id: "b-p-1".into(),
+                kind: OutboundRefKind::InlineMention,
+            }],
         },
     ];
     let mut link_graph = LinkGraph::new();
-    link_graph.replace_edges(
-        "doc-personal-2",
-        vec![DocRefEdge {
-            source_doc_id: "doc-personal-2".into(),
-            target_doc_id: "doc-personal-1".into(),
-            source_block_id: "b-p-1".into(),
-            kind: OutboundRefKind::InlineMention,
-        }],
-        1,
-    );
-    link_graph.replace_edges("doc-personal-1", Vec::new(), 1);
+    for doc in &docs {
+        link_graph.replace_edges(&doc.id, doc.outgoing_edges.clone(), doc.clock);
+    }
 
     let mut history = NavHistory::new();
     history.push(
@@ -328,6 +324,7 @@ fn build_personal_workspace(locale: MobileLocale) -> WorkspaceData {
         link_graph,
         workspace_index_seeded: true,
         history,
+        next_doc_seq: 1,
     }
 }
 
@@ -361,12 +358,17 @@ pub fn seed_showcase_state(
         route: MobileRoute::Home,
         active_sheet: MobileSheet::None,
         closing_sheet: None,
+        pending_delete_target: None,
         sheet_trigger_a11y_id: None,
         focused_a11y_id: None,
         sheet_motion: Sheet::new(),
         tab_anim_start_ms: 0.0,
         page_overlay_active: false,
+        explorer_scroll_y: 0.0,
+        explorer_scroll_by_seq: std::collections::HashMap::new(),
         today_date: today_date.to_string(),
+        selected_journal_date: today_date.to_string(),
+        next_doc_seq: primary.next_doc_seq,
         search_query: match locale {
             MobileLocale::En => "Sync".into(),
             MobileLocale::ZhHans => "同步".into(),

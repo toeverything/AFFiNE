@@ -8,8 +8,11 @@ use ui::{
 use ui_kit::{LogicalStyled, bidi_isolate};
 
 use crate::{
-    state::{MobileAppState, MobileBackCoordinator, SettingsGroupId, ThemePreference},
-    strings::{MobileLocale, MobileStrings},
+    state::{
+        MobileAppState, MobileBackCoordinator, SettingRowInteraction, SettingsGroupId,
+        ThemePreference,
+    },
+    strings::MobileStrings,
 };
 
 use super::{
@@ -89,16 +92,6 @@ pub(super) fn render_settings(
                     .text_color(palette.text_primary)
                     .child(strings.settings_title),
             ),
-        )
-        .child(
-            div()
-                .px(px(8.0))
-                .py(px(3.0))
-                .rounded(px(6.0))
-                .bg(palette.bg_pill)
-                .text_size(px(11.0))
-                .text_color(palette.text_secondary)
-                .child(strings.about_version_label),
         );
 
     let theme_label = match state.settings.theme_preference {
@@ -119,21 +112,21 @@ pub(super) fn render_settings(
             SettingsGroupId::Account => state.settings.account_email.clone(),
             SettingsGroupId::Workspace => state.active_workspace().name.clone(),
             SettingsGroupId::Appearance => theme_label.to_string(),
-            SettingsGroupId::Language => state.settings.locale.code().to_string(),
+            SettingsGroupId::Language => state.settings.locale.display_name().to_string(),
             SettingsGroupId::Editor => format!("{}%", state.settings.editor_font_scale_pct),
             SettingsGroupId::SyncOffline => {
                 if state.settings.offline_sync_enabled {
-                    "On".to_string()
+                    strings.toggle_on.to_string()
                 } else {
-                    "Off".to_string()
+                    strings.toggle_off.to_string()
                 }
             }
             SettingsGroupId::Storage => format!("{} MB", state.settings.cache_size_mb),
             SettingsGroupId::Notifications => {
                 if state.settings.push_notifications {
-                    "On".to_string()
+                    strings.toggle_on.to_string()
                 } else {
-                    "Off".to_string()
+                    strings.toggle_off.to_string()
                 }
             }
             SettingsGroupId::Experimental => {
@@ -147,12 +140,57 @@ pub(super) fn render_settings(
             value
         };
 
+        let interaction = group.interaction();
+        let toggle_enabled = match group {
+            SettingsGroupId::SyncOffline => state.settings.offline_sync_enabled,
+            SettingsGroupId::Notifications => state.settings.push_notifications,
+            _ => false,
+        };
+        let trailing: ui::AnyElement = match interaction {
+            SettingRowInteraction::Toggle => div()
+                .px(px(10.0))
+                .py(px(4.0))
+                .rounded(px(999.0))
+                .bg(if toggle_enabled {
+                    palette.accent
+                } else {
+                    palette.bg_pill
+                })
+                .text_size(px(12.0))
+                .text_color(if toggle_enabled {
+                    ui::hsla(0.0, 0.0, 1.0, 1.0)
+                } else {
+                    palette.text_secondary
+                })
+                .child(display_value)
+                .into_any_element(),
+            SettingRowInteraction::Cycle => div()
+                .px(px(10.0))
+                .py(px(4.0))
+                .rounded(px(8.0))
+                .bg(palette.bg_pill)
+                .border_1()
+                .border_color(palette.border)
+                .text_size(px(12.0))
+                .text_color(palette.text_primary)
+                .child(display_value)
+                .into_any_element(),
+            SettingRowInteraction::Info => div()
+                .text_size(px(12.0))
+                .text_color(palette.text_secondary)
+                .child(display_value)
+                .into_any_element(),
+        };
+
+        let row_id = if interaction == SettingRowInteraction::Info {
+            format!("mobile.settings.group.{idx}")
+        } else {
+            format!("mobile.settings.row.{}", group.a11y_key())
+        };
         let mut row = row_dir(dir)
-            .id(format!("mobile.settings.group.{idx}"))
-            .snapshot(
-                format!("mobile.settings.group.{idx}"),
-                Some("mobile.shell.root"),
-            )
+            .id(row_id.clone())
+            .snapshot(row_id.clone(), Some("mobile.shell.root"))
+            .relative()
             .w_full()
             .h(px(44.0))
             .flex_shrink(0.0)
@@ -160,47 +198,21 @@ pub(super) fn render_settings(
             .pe(px(14.0), dir)
             .justify_between()
             .overflow_hidden()
-            .on_click(cx.listener(move |this, _, _, cx| {
-                match group {
-                    SettingsGroupId::Appearance => {
-                        this.state.settings.theme_preference =
-                            match this.state.settings.theme_preference {
-                                ThemePreference::Light => ThemePreference::Dark,
-                                ThemePreference::Dark => ThemePreference::System,
-                                ThemePreference::System => ThemePreference::Light,
-                            };
-                    }
-                    SettingsGroupId::Language => {
-                        this.state.settings.locale = match this.state.settings.locale {
-                            MobileLocale::En => MobileLocale::ZhHans,
-                            MobileLocale::ZhHans => MobileLocale::Ar,
-                            MobileLocale::Ar => MobileLocale::En,
-                        };
-                    }
-                    SettingsGroupId::SyncOffline => {
-                        this.state.settings.offline_sync_enabled =
-                            !this.state.settings.offline_sync_enabled;
-                    }
-                    SettingsGroupId::Notifications => {
-                        this.state.settings.push_notifications =
-                            !this.state.settings.push_notifications;
-                    }
-                    _ => {}
-                }
-                cx.notify();
-            }))
             .child(
                 div()
                     .text_size(px(13.0))
                     .text_color(palette.text_primary)
                     .child(title),
             )
-            .child(
-                div()
-                    .text_size(px(12.0))
-                    .text_color(palette.text_secondary)
-                    .child(display_value),
-            );
+            .child(trailing);
+        if interaction != SettingRowInteraction::Info {
+            row = row
+                .child(a11y_bounds_probe(row_id, a11y_bounds.clone()))
+                .on_click(cx.listener(move |this, _, _, cx| {
+                    this.state.activate_setting(group);
+                    cx.notify();
+                }));
+        }
         if top_border {
             row = row.border_t(px(1.0)).border_color(palette.border);
         }
