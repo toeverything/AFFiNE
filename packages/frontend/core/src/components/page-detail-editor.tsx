@@ -76,7 +76,7 @@ export const PageDetailEditor = ({
 
       <BlockSuiteEditor
         className={clsx(styles.editor, {
-          'full-screen': !isSharedMode && fullWidthLayout,
+          'full-screen': fullWidthLayout,
           'is-public': isSharedMode,
         })}
         mode={mode}
