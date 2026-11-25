@@ -144,6 +144,11 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           "LICENSE_REVEALED",
           "License key has been revealed. Please check your mail box of the one provided during checkout.",
         )),
+        "copilot_session_deleted" => Some(("COPILOT_SESSION_DELETED", "Copilot session has been deleted.")),
+        "copilot_action_taken" => Some((
+          "COPILOT_ACTION_TAKEN",
+          "Action has been taken, no more messages allowed.",
+        )),
         _ => None,
       } {
         return LegacyErrorEnvelope {
@@ -228,6 +233,36 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           data: Some(serde_json::json!({ "plan": plan, "recurring": recurring })),
         };
       }
+      if let Some(doc_id) = msg.strip_prefix("copilot_doc_not_found:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::NOT_FOUND.as_u16(),
+          code: "Not Found".into(),
+          error_type: "RESOURCE_NOT_FOUND".into(),
+          name: "COPILOT_DOC_NOT_FOUND".into(),
+          message: format!("Doc {doc_id} not found."),
+          data: Some(serde_json::json!({ "docId": doc_id })),
+        };
+      }
+      if let Some(msg_id) = msg.strip_prefix("copilot_message_not_found:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::NOT_FOUND.as_u16(),
+          code: "Not Found".into(),
+          error_type: "RESOURCE_NOT_FOUND".into(),
+          name: "COPILOT_MESSAGE_NOT_FOUND".into(),
+          message: format!("Copilot message {msg_id} not found."),
+          data: Some(serde_json::json!({ "messageId": msg_id })),
+        };
+      }
+      if let Some(prompt_name) = msg.strip_prefix("copilot_prompt_not_found:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::NOT_FOUND.as_u16(),
+          code: "Not Found".into(),
+          error_type: "RESOURCE_NOT_FOUND".into(),
+          name: "COPILOT_PROMPT_NOT_FOUND".into(),
+          message: format!("Copilot prompt {prompt_name} not found."),
+          data: Some(serde_json::json!({ "name": prompt_name })),
+        };
+      }
       let (name, message) = match msg.as_str() {
         "doc_not_found" => ("DOC_NOT_FOUND", "Doc not found."),
         "doc_history_not_found" => ("DOC_HISTORY_NOT_FOUND", "Doc history not found."),
@@ -235,6 +270,8 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
         "reply_not_found" => ("REPLY_NOT_FOUND", "Reply not found."),
         "license_not_found" => ("LICENSE_NOT_FOUND", "License not found."),
         "user_not_found" => ("USER_NOT_FOUND", "User not found."),
+        "copilot_session_not_found" => ("COPILOT_SESSION_NOT_FOUND", "Copilot session not found."),
+        "copilot_docs_not_found" => ("COPILOT_DOCS_NOT_FOUND", "Some docs not found."),
         _ => ("RESOURCE_NOT_FOUND", msg.as_str()),
       };
       LegacyErrorEnvelope {
@@ -277,6 +314,16 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
       }
     }
     DomainError::QuotaExceeded { kind, message } => {
+      if matches!(*kind, "copilot_quota" | "copilot_action_limit") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::PAYMENT_REQUIRED.as_u16(),
+          code: "Payment Required".into(),
+          error_type: "QUOTA_EXCEEDED".into(),
+          name: "COPILOT_QUOTA_EXCEEDED".into(),
+          message: "You have reached the limit of actions in this workspace, please upgrade your plan.".into(),
+          data: None,
+        };
+      }
       let (name, error_type, data) = match *kind {
         "blob_limit" => ("BLOB_QUOTA_EXCEEDED", "QUOTA_EXCEEDED", None),
         "storage_quota" => ("STORAGE_QUOTA_EXCEEDED", "QUOTA_EXCEEDED", None),
@@ -423,6 +470,38 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           data: Some(serde_json::json!({ "recurring": recurring })),
         };
       }
+      if let Some(detail) = msg.strip_prefix("bad_request:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "BAD_REQUEST".into(),
+          name: "BAD_REQUEST".into(),
+          message: detail.to_owned(),
+          data: None,
+        };
+      }
+      if let Some(format_name) = msg.strip_prefix("image_format_not_supported:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "INVALID_INPUT".into(),
+          name: "IMAGE_FORMAT_NOT_SUPPORTED".into(),
+          message: format!("Image format not supported: {format_name}"),
+          data: Some(serde_json::json!({ "format": format_name })),
+        };
+      }
+      if let Some(rest) = msg.strip_prefix("copilot_provider_not_supported:")
+        && let Some((provider, kind)) = parse_two_part(rest)
+      {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "INVALID_INPUT".into(),
+          name: "COPILOT_PROVIDER_NOT_SUPPORTED".into(),
+          message: format!("Copilot provider {provider} does not support output type {kind}"),
+          data: Some(serde_json::json!({ "provider": provider, "kind": kind })),
+        };
+      }
       let (name, message) = match msg.as_str() {
         "expect_to_publish_doc" => ("EXPECT_TO_PUBLISH_DOC", "Expected to publish a doc, not a Space."),
         "expect_to_revoke_public_doc" => (
@@ -445,6 +524,12 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
         "invalid_subscription_parameters" => (
           "INVALID_SUBSCRIPTION_PARAMETERS",
           "Invalid subscription parameters provided.",
+        ),
+        "copilot_prompt_invalid" => ("COPILOT_PROMPT_INVALID", "Copilot prompt is invalid."),
+        "copilot_session_invalid_input" => ("COPILOT_SESSION_INVALID_INPUT", "Copilot session input is invalid."),
+        "copilot_selected_sources_limit_exceeded" => (
+          "COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED",
+          "Too many or too much content was selected. Select fewer sources and try again.",
         ),
         _ => ("INVALID_INPUT", msg.as_str()),
       };
@@ -486,12 +571,37 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
       data: None,
     },
     DomainError::Internal(msg) => {
+      if let Some(model_id) = msg.strip_prefix("no_copilot_provider_available:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+          code: "Internal Server Error".into(),
+          error_type: "INTERNAL_SERVER_ERROR".into(),
+          name: "NO_COPILOT_PROVIDER_AVAILABLE".into(),
+          message: format!("No copilot provider available: {model_id}"),
+          data: Some(serde_json::json!({ "modelId": model_id })),
+        };
+      }
+      if let Some(rest) = msg.strip_prefix("copilot_provider_side_error:")
+        && let Some((provider, kind, detail)) = parse_three_part(rest)
+      {
+        return LegacyErrorEnvelope {
+          status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+          code: "Internal Server Error".into(),
+          error_type: "INTERNAL_SERVER_ERROR".into(),
+          name: "COPILOT_PROVIDER_SIDE_ERROR".into(),
+          message: format!("Provider {provider} failed with {kind} error: {detail}"),
+          data: Some(serde_json::json!({ "provider": provider, "kind": kind, "message": detail })),
+        };
+      }
       let (name, message) = match msg.as_str() {
         "failed_to_checkout" => ("FAILED_TO_CHECKOUT", "Failed to create checkout session."),
         "customer_portal_create_failed" => (
           "CUSTOMER_PORTAL_CREATE_FAILED",
           "Failed to create customer portal session.",
         ),
+        "copilot_failed_to_create_message" => ("COPILOT_FAILED_TO_CREATE_MESSAGE", "Failed to create chat message."),
+        "copilot_failed_to_generate_text" => ("COPILOT_FAILED_TO_GENERATE_TEXT", "Failed to generate text."),
+        "unsplash_is_not_configured" => ("UNSPLASH_IS_NOT_CONFIGURED", "Unsplash is not configured."),
         // Never leak internal error details to clients (matches v0.27.5 def.ts:248-251).
         _ => ("INTERNAL_SERVER_ERROR", "An internal error occurred."),
       };
@@ -672,5 +782,22 @@ mod tests {
       large_env.data,
       Some(serde_json::json!({ "limitBytes": 1024, "receivedBytes": 2048 }))
     );
+
+    let copilot_quota = domain_error_to_envelope(&DomainError::QuotaExceeded {
+      kind: "copilot_quota",
+      message: "limit".into(),
+    });
+    assert_eq!(copilot_quota.status, 402);
+    assert_eq!(copilot_quota.name, "COPILOT_QUOTA_EXCEEDED");
+    assert!(copilot_quota.data.is_none());
+
+    let copilot_msg = domain_error_to_envelope(&DomainError::NotFound("copilot_message_not_found:m-42".into()));
+    assert_eq!(copilot_msg.status, 404);
+    assert_eq!(copilot_msg.name, "COPILOT_MESSAGE_NOT_FOUND");
+    assert_eq!(copilot_msg.data, Some(serde_json::json!({ "messageId": "m-42" })));
+
+    let unsplash = domain_error_to_envelope(&DomainError::Internal("unsplash_is_not_configured".into()));
+    assert_eq!(unsplash.status, 500);
+    assert_eq!(unsplash.name, "UNSPLASH_IS_NOT_CONFIGURED");
   }
 }

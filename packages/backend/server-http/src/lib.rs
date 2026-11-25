@@ -965,7 +965,8 @@ pub fn build_router(app: Arc<AppState>) -> Router {
       .merge(rest::captcha::router())
       .merge(rest::r2_proxy::router())
       .merge(rest::calendar::router())
-      .merge(rest::mcp::router());
+      .merge(rest::mcp::router())
+      .merge(rest::copilot::router());
   }
   if matrix.worker_proxy {
     router = router.merge(rest::worker_proxy::router());

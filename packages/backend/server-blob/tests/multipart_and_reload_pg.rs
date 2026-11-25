@@ -645,6 +645,33 @@ fn expired_reservation_cleanup_and_orphan_reconciliation_are_idempotent() {
     assert!(rec2.leased);
     assert_eq!(rec2.deleted_objects, 0);
 
+    // Copilot & artifact prefixes older than 24h must be skipped and never deleted.
+    let exempt_keys = [
+      "copilot-attachments/ws-deleted/u-1/k1",
+      "copilot/artifacts/ws-deleted/a1",
+      "copilot/transcript/ws-deleted/t1",
+      "artifacts/ws-deleted/a2",
+    ];
+    for key in exempt_keys {
+      fs.put(key, b"keep-exempt".to_vec(), "application/octet-stream").await.unwrap();
+      let full = fs.bucket_dir().join(key);
+      std::fs::OpenOptions::new()
+        .write(true)
+        .open(&full)
+        .unwrap()
+        .set_modified(old_time)
+        .unwrap();
+    }
+    let rec_exempt = svc.reconcile_storage_orphans(100, &|| false).await.unwrap();
+    assert!(rec_exempt.leased);
+    assert_eq!(rec_exempt.deleted_objects, 0);
+    for key in exempt_keys {
+      assert!(
+        fs.head(key).await.unwrap().is_some(),
+        "exempt prefix object older than 24h must not be deleted: {key}"
+      );
+    }
+
     // 5. Verify createBlobUpload (GRAPHQL) -> put_blob succeeds without self-block,
     //    retry returns already_uploaded == true, and size mismatch returns blob_invalid.
     let init_gql = svc

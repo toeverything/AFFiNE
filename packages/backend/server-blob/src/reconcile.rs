@@ -41,7 +41,10 @@ fn object_key_workspace(key: &str) -> Option<&str> {
     (!ws.is_empty()
       && !ws.starts_with('.')
       && !rest.is_empty()
-      && !matches!(ws, "avatars" | "assets" | "tmp" | "temp" | "system"))
+      && !matches!(
+        ws,
+        "avatars" | "assets" | "tmp" | "temp" | "system" | "copilot" | "copilot-attachments" | "artifacts"
+      ))
     .then_some(ws)
   })
 }

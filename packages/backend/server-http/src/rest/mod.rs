@@ -4,6 +4,7 @@ pub mod auth;
 pub mod blobs;
 pub mod calendar;
 pub mod captcha;
+pub mod copilot;
 pub mod doc_renderer;
 pub mod mcp;
 pub mod oauth;

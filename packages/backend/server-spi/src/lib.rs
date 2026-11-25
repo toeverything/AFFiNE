@@ -19,7 +19,16 @@ pub use billing::{
   BillingSubscriptionList, BillingSubscriptionRecord, CommunityBillingSpi, ReconcileAdminPaymentSpiInput,
 };
 use chrono::{DateTime, Utc};
-pub use copilot::{CommunityCopilotPolicySpi, CommunityCopilotRuntime, CopilotPolicySpi, CopilotRuntimeSpi};
+pub use copilot::{
+  CleanupCopilotSessionsSpiInput, CommunityCopilotPolicySpi, CommunityCopilotRuntime, CopilotAttachmentObject,
+  CopilotChatMessageRecord, CopilotHistoryOrder, CopilotHistoryRecord, CopilotPolicySpi, CopilotQuotaRecord,
+  CopilotRouteOptionsRecord, CopilotRouteTargetRecord, CopilotRuntimeSpi, CopilotScopeMode,
+  CopilotSessionSummaryRecord, CopilotSseFrame, CopilotSseStream, CopilotStreamObjectRecord, CopilotStreamSpiInput,
+  CreateCopilotMessageSpiInput, CreateCopilotSessionSpiInput, DownloadCopilotAttachmentSpiInput,
+  ForkCopilotSessionSpiInput, ListCopilotChatsSpiInput, ListCopilotHistoriesSpiInput, ListCopilotSessionsSpiInput,
+  PaginatedCopilotHistoriesRecord, PreparedCopilotSseStream, UpdateCopilotSessionSpiInput,
+  UploadCopilotAttachmentSpiInput, UploadedCopilotFile,
+};
 pub use disposition::DomainDispositionHandler;
 pub use server_types::BillingSubject;
 use server_types::{AccessGrant, DomainError};
@@ -519,8 +528,9 @@ mod tests {
     assert!(ext.extra_router().is_none());
     let runtime = ext.copilot_runtime();
     assert!(!runtime.is_enabled());
+    assert!(!runtime.is_effectively_enabled(true).await);
     assert!(matches!(
-      runtime.assert_enabled().await,
+      runtime.assert_enabled(true).await,
       Err(DomainError::Forbidden(msg)) if msg == "Copilot is disabled."
     ));
   }

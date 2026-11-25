@@ -11,7 +11,7 @@ use server_types::DomainError;
 use super::{FeatureType, current_authenticated_user, require_authenticated_user};
 use crate::AppState;
 use crate::legacy_compat::errors::domain_error_to_graphql;
-use crate::legacy_compat::quota::{UserQuotaType, user_quota_from_grant};
+use crate::legacy_compat::quota::{SafeInt, UserQuotaType, UserQuotaUsageType, user_quota_from_grant};
 
 const MAX_AVATAR_BYTES: usize = 5 * 1024 * 1024;
 
@@ -179,72 +179,23 @@ impl UserType {
   async fn quota(&self, ctx: &Context<'_>) -> Result<UserQuotaType> {
     let caller = require_authenticated_user(ctx).await?;
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let mut tx = state
-      .db
-      .begin_tiered(server_db::WorkloadTier::InteractiveRead)
-      .await
-      .map_err(|e| domain_error_to_graphql(&DomainError::Unavailable(e.to_string())))?;
-    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
-      .fetch_one(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("load user quota clock: {e}"))))?;
-    let grant = state
-      .extension
-      .quota_gate()
-      .resolve_user_grant(tx.tx_mut(), &caller.id, now)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-
-    let owned_workspaces: Vec<String> = sqlx::query_scalar(
-      "SELECT workspace_id FROM workspace_members WHERE user_id = $1 AND role = 'owner' AND state = 'active'",
-    )
-    .bind(&caller.id)
-    .fetch_all(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("load owned workspaces: {e}"))))?;
-
-    let mut personal_ws_ids = Vec::with_capacity(owned_workspaces.len());
-    for ws_id in owned_workspaces {
-      let ws_grant = state
-        .extension
-        .quota_gate()
-        .resolve_workspace_grant(tx.tx_mut(), &ws_id, now)
-        .await
-        .map_err(|e| domain_error_to_graphql(&e))?;
-      if ws_grant.billing_subject == server_types::BillingSubject::Owner {
-        personal_ws_ids.push(ws_id);
-      }
-    }
-
-    let used_storage_quota: i64 = if personal_ws_ids.is_empty() {
-      0
-    } else {
-      sqlx::query_scalar(
-        r#"SELECT (
-             COALESCE((
-               SELECT SUM(b.size)::bigint
-               FROM blobs b
-               WHERE b.workspace_id = ANY($1)
-                 AND b.deleted_at IS NULL
-                 AND (b.status = 'completed' OR (b.status = 'pending' AND b.reservation_expires_at > $2))
-             ), 0)
-             + COALESCE((
-               SELECT SUM(ca.size)::bigint
-               FROM comment_attachments ca
-               WHERE ca.workspace_id = ANY($1)
-                 AND ca.deleted_at IS NULL
-                 AND (ca.status = 'completed' OR (ca.status = 'pending' AND ca.reservation_expires_at > $2))
-             ), 0)
-           )::bigint"#,
-      )
-      .bind(&personal_ws_ids)
-      .bind(now)
-      .fetch_one(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("load user storage usage: {e}"))))?
-    };
-    let _ = tx.rollback().await;
+    let (grant, used_storage_quota) = compute_user_quota_and_storage(state, &caller.id).await?;
     Ok(user_quota_from_grant(&grant, used_storage_quota))
+  }
+
+  async fn quota_usage(&self, ctx: &Context<'_>) -> Result<UserQuotaUsageType> {
+    let caller = require_authenticated_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let (_grant, used_storage_quota) = compute_user_quota_and_storage(state, &caller.id).await?;
+    let safe_used = SafeInt::try_from_i64(used_storage_quota)
+      .map_err(|_| domain_error_to_graphql(&DomainError::Internal("storage quota overflow".into())))?;
+    Ok(UserQuotaUsageType {
+      storage_quota: safe_used,
+    })
+  }
+
+  async fn copilot(&self, ctx: &Context<'_>, workspace_id: Option<String>) -> Result<super::copilot::Copilot> {
+    super::copilot::resolve_user_copilot(ctx, workspace_id).await
   }
 
   async fn settings(&self, ctx: &Context<'_>) -> Result<UserSettingsType> {
@@ -317,6 +268,75 @@ impl UserType {
   ) -> Result<Vec<super::billing::InvoiceType>> {
     super::billing::resolve_user_invoices(ctx, &self.view.id, take, skip).await
   }
+}
+
+async fn compute_user_quota_and_storage(state: &AppState, user_id: &str) -> Result<(server_types::AccessGrant, i64)> {
+  let mut tx = state
+    .db
+    .begin_tiered(server_db::WorkloadTier::InteractiveRead)
+    .await
+    .map_err(|e| domain_error_to_graphql(&DomainError::Unavailable(e.to_string())))?;
+  let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+    .fetch_one(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("load user quota clock: {e}"))))?;
+  let grant = state
+    .extension
+    .quota_gate()
+    .resolve_user_grant(tx.tx_mut(), user_id, now)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+
+  let owned_workspaces: Vec<String> = sqlx::query_scalar(
+    "SELECT workspace_id FROM workspace_members WHERE user_id = $1 AND role = 'owner' AND state = 'active'",
+  )
+  .bind(user_id)
+  .fetch_all(&mut **tx.tx_mut())
+  .await
+  .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("load owned workspaces: {e}"))))?;
+
+  let mut personal_ws_ids = Vec::with_capacity(owned_workspaces.len());
+  for ws_id in owned_workspaces {
+    let ws_grant = state
+      .extension
+      .quota_gate()
+      .resolve_workspace_grant(tx.tx_mut(), &ws_id, now)
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    if ws_grant.billing_subject == server_types::BillingSubject::Owner {
+      personal_ws_ids.push(ws_id);
+    }
+  }
+
+  let used_storage_quota: i64 = if personal_ws_ids.is_empty() {
+    0
+  } else {
+    sqlx::query_scalar(
+      r#"SELECT (
+           COALESCE((
+             SELECT SUM(b.size)::bigint
+             FROM blobs b
+             WHERE b.workspace_id = ANY($1)
+               AND b.deleted_at IS NULL
+               AND (b.status = 'completed' OR (b.status = 'pending' AND b.reservation_expires_at > $2))
+           ), 0)
+           + COALESCE((
+             SELECT SUM(ca.size)::bigint
+             FROM comment_attachments ca
+             WHERE ca.workspace_id = ANY($1)
+               AND ca.deleted_at IS NULL
+               AND (ca.status = 'completed' OR (ca.status = 'pending' AND ca.reservation_expires_at > $2))
+           ), 0)
+         )::bigint"#,
+    )
+    .bind(&personal_ws_ids)
+    .bind(now)
+    .fetch_one(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("load user storage usage: {e}"))))?
+  };
+  let _ = tx.rollback().await;
+  Ok((grant, used_storage_quota))
 }
 
 pub(crate) fn resolve_current_user(ctx: &Context<'_>) -> Option<UserType> {

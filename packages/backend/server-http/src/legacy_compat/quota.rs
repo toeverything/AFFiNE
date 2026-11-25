@@ -83,6 +83,14 @@ pub fn legacy_plan_name(tier: LicenseTier) -> &'static str {
   }
 }
 
+#[derive(SimpleObject, Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[graphql(name = "UserQuotaUsageType")]
+#[serde(rename_all = "camelCase")]
+pub struct UserQuotaUsageType {
+  #[graphql(deprecation = "use `UserQuotaType['usedStorageQuota']` instead")]
+  pub storage_quota: SafeInt,
+}
+
 #[derive(SimpleObject, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[graphql(name = "UserQuotaHumanReadableType")]
 #[serde(rename_all = "camelCase")]

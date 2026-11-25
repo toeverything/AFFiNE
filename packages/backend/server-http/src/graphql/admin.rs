@@ -761,6 +761,18 @@ pub(crate) async fn resolve_server_config(ctx: &Context<'_>) -> Result<ServerCon
     .get_effective_app_config()
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
+  let cfg_copilot_enabled = effective_cfg
+    .pointer("/copilot/enabled")
+    .and_then(|v| v.as_bool())
+    .unwrap_or(true);
+  if state
+    .extension
+    .copilot_runtime()
+    .is_effectively_enabled(cfg_copilot_enabled)
+    .await
+  {
+    features.push(ServerFeature::Copilot);
+  }
   let (default_min, default_max) = (
     i32::try_from(state.auth.config().password_min_length).unwrap_or(8),
     i32::try_from(state.auth.config().password_max_length).unwrap_or(32),
