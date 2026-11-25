@@ -4,6 +4,7 @@
 //! and commercial extensions, along with [`CommunityExtension`].
 
 pub mod billing;
+pub mod byok;
 pub mod copilot;
 pub mod disposition;
 
@@ -17,6 +18,15 @@ pub use billing::{
   AdminPaymentSourceRecord, BillingAppStorePurchaseInput, BillingAppStorePurchaseResult, BillingCheckoutInput,
   BillingCheckoutResult, BillingGroupRecord, BillingInvoiceRecord, BillingPriceRecord, BillingSourceRecord, BillingSpi,
   BillingSubscriptionList, BillingSubscriptionRecord, CommunityBillingSpi, ReconcileAdminPaymentSpiInput,
+};
+pub use byok::{
+  ByokCapabilityDto, ByokCatalogDto, ByokCatalogModelDto, ByokCatalogProviderDto, ByokEndpointDto, ByokLocalLeaseDto,
+  ByokModelDeclarationDto, ByokModelProbeCheckDto, ByokModelProbeDto, ByokPolicyDto, ByokProbeCheckSpiInput,
+  ByokProbeResultDto, ByokProbeStatusDto, ByokProfileDefinitionDto, ByokProfileDto, ByokProfileOrderSpiInput,
+  ByokSettingsDto, ByokSpi, ByokUsagePointDto, ByokValidationDto, CommunityByokSpi,
+  CreateByokLocalLeaseProviderSpiInput, CreateByokLocalLeaseSpiInput, CreateByokProfileSpiInput,
+  ProbeByokDraftSpiInput, ProbeByokProfileSpiInput, ReorderByokProfilesSpiInput, ReplaceByokProfileSpiInput,
+  RotateByokCredentialSpiInput,
 };
 use chrono::{DateTime, Utc};
 pub use copilot::{
@@ -174,6 +184,9 @@ pub trait ServerExtension: Send + Sync + 'static {
   fn copilot_policy(&self) -> Arc<dyn CopilotPolicySpi>;
   fn copilot_runtime(&self) -> Arc<dyn CopilotRuntimeSpi> {
     Arc::new(CommunityCopilotRuntime)
+  }
+  fn byok_spi(&self) -> Arc<dyn ByokSpi> {
+    Arc::new(CommunityByokSpi)
   }
   fn rate_limit_policy(&self) -> Arc<dyn RateLimitPolicy> {
     Arc::new(CommunityRateLimitPolicy)

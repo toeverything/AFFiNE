@@ -4,6 +4,7 @@ pub mod admin;
 pub mod auth;
 pub mod billing;
 pub mod blob;
+pub mod byok;
 pub mod calendar;
 pub mod comment;
 pub mod copilot;
@@ -565,6 +566,7 @@ pub struct MutationRoot(
   calendar::CalendarMutation,
   mcp::McpMutation,
   billing::BillingMutation,
+  byok::ByokMutation,
   copilot::CopilotMutation,
 );
 
@@ -1575,6 +1577,7 @@ mod tests {
       "CalendarMutation",
       "McpMutation",
       "BillingMutation",
+      "ByokMutation",
       "CopilotMutation",
     ] {
       assert!(

@@ -593,6 +593,16 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           data: Some(serde_json::json!({ "provider": provider, "kind": kind, "message": detail })),
         };
       }
+      if let Some(space_id) = msg.strip_prefix("space_owner_not_found:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+          code: "Internal Server Error".into(),
+          error_type: "INTERNAL_SERVER_ERROR".into(),
+          name: "SPACE_OWNER_NOT_FOUND".into(),
+          message: format!("Owner of Space {space_id} not found."),
+          data: Some(serde_json::json!({ "spaceId": space_id })),
+        };
+      }
       let (name, message) = match msg.as_str() {
         "failed_to_checkout" => ("FAILED_TO_CHECKOUT", "Failed to create checkout session."),
         "customer_portal_create_failed" => (

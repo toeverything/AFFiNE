@@ -726,6 +726,19 @@ impl WorkspaceType {
   async fn license(&self, ctx: &Context<'_>) -> Result<Option<super::license::License>> {
     super::license::resolve_workspace_license(ctx, &self.record.id).await
   }
+
+  async fn byok_settings(&self, ctx: &Context<'_>) -> Result<super::byok::WorkspaceByokSettingsType> {
+    super::byok::resolve_workspace_byok_settings(ctx, &self.record.id).await
+  }
+
+  async fn byok_usage(
+    &self,
+    ctx: &Context<'_>,
+    from: DateTime<Utc>,
+    to: DateTime<Utc>,
+  ) -> Result<Vec<super::byok::WorkspaceByokUsagePointType>> {
+    super::byok::resolve_workspace_byok_usage(ctx, &self.record.id, from, to).await
+  }
 }
 
 pub(crate) async fn resolve_workspaces(ctx: &Context<'_>) -> Result<Vec<WorkspaceType>> {
