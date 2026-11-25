@@ -10,27 +10,43 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-async-trait.workspace  = true
-base64.workspace       = true
-chrono.workspace       = true
-crc32fast.workspace    = true
-lru.workspace          = true
-reqwest.workspace      = true
-rusty-s3.workspace     = true
-serde.workspace        = true
-serde_json.workspace   = true
-server-db.workspace    = true
+arc-swap.workspace      = true
+assetpack-core.workspace = true
+assetpack-transform-precomp2.workspace = true
+async-trait.workspace   = true
+base64.workspace        = true
+brotli.workspace        = true
+chrono.workspace        = true
+crc32fast.workspace     = true
+hex.workspace           = true
+hmac.workspace          = true
+lru.workspace           = true
+lzma-rust2.workspace    = true
+reqwest.workspace       = true
+rusty-s3.workspace      = true
+serde.workspace         = true
+serde_json.workspace    = true
+server-db.workspace     = true
 server-domain.workspace = true
-server-spi.workspace   = true
-server-types.workspace = true
-sqlx.workspace         = true
-thiserror.workspace    = true
-tokio.workspace        = true
-tracing.workspace      = true
-url.workspace          = true
-uuid.workspace         = true
-y-octo.workspace       = true
+server-spi.workspace    = true
+server-types.workspace  = true
+sha2.workspace          = true
+sqlx.workspace          = true
+subtle.workspace        = true
+thiserror.workspace     = true
+tokio.workspace         = true
+tracing.workspace       = true
+url.workspace           = true
+uuid.workspace          = true
+y-octo.workspace        = true
+zstd.workspace          = true
 
 [dev-dependencies]
 axum.workspace            = true
+flate2.workspace          = true
+image.workspace           = true
 test-db-harness.workspace = true
+
+[[test]]
+name    = "assetpack_frozen_interop"
+harness = false

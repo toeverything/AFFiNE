@@ -31,10 +31,12 @@ async-graphql-axum = "7"
 async-trait        = "0.1"
 axum               = { version = "0.8", features = ["macros", "ws"] }
 base64             = "0.22"
+brotli             = "8"
 bytes              = "1"
 chrono             = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 clap               = { version = "4", features = ["derive", "env"] }
 crc32fast          = "1"
+flate2             = "1"
 futures-util       = "0.3"
 hex                = "0.4"
 hickory-resolver   = "0.26.2"
@@ -45,6 +47,7 @@ image              = { version = "0.25", default-features = false, features = ["
 jiff               = { version = "0.2", default-features = false, features = ["std", "tzdb-zoneinfo", "tzdb-concatenated"] }
 lettre             = { version = "0.11", default-features = false, features = ["builder", "hostname", "smtp-transport", "tokio1-rustls-tls"] }
 lru                = "0.12"
+lzma-rust2         = "0.16"
 mailparse          = "0.16"
 memory-indexer     = "0.4.1"
 p256               = { version = "0.13", features = ["ecdsa", "pem"] }
@@ -57,7 +60,9 @@ rusty-s3           = "0.10"
 serde              = { version = "1", features = ["derive"] }
 serde_json         = "1"
 sha2               = "0.10"
-sqlx               = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "json"] }
+assetpack-core     = "0.1.0"
+assetpack-transform-precomp2 = "0.1.0"
+sqlx               = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "sqlite", "chrono", "uuid", "json"] }
 subtle             = "2"
 thiserror          = "2"
 tokio              = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time", "process"] }
@@ -73,6 +78,7 @@ v_htmlescape       = "0.15"
 xmlparser          = "0.13"
 y-octo             = { version = "0.4.0", features = ["large_refs"] }
 zeroize            = "1"
+zstd               = "0.13"
 
 affine-server   = { path = "affine-server" }
 frame-audit     = { path = "../../tools/frame-audit" }

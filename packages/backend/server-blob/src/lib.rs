@@ -23,6 +23,9 @@
 //! row soft-deleted until its object is gone, so a failed object delete can be
 //! retried and the key cannot be reused meanwhile.
 
+mod assetpack;
+pub mod multipart;
+pub mod reconcile;
 pub mod refs;
 mod s3;
 mod storage;
@@ -37,10 +40,15 @@ use sqlx::{Connection as _, PgConnection, Postgres, Row as _, Transaction};
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
 pub use crate::{
-  s3::{S3BlobStorage, S3Config},
+  assetpack::AssetpackBlobStorage,
+  multipart::{BlobUploadInitPlan, BlobUploadPartPlan, StorageBackendSpec, UploadInitMethod},
+  reconcile::{ExpiredReservationCleanupReport, StorageOrphanReconcileReport},
+  s3::{S3BlobStorage, S3Config, S3UploadOptions},
   storage::{
-    BlobStorageBackend, LocalFsBlobStorage, ObjectMetadata, StorageError, checksum_crc32_base64, is_reserved_segment,
-    normalize_storage_key,
+    BlobStorageBackend, DynamicBlobStorage, LocalFsBlobStorage, MULTIPART_PART_SIZE, MULTIPART_THRESHOLD,
+    MultipartUploadInit, ObjectMetadata, PROXY_MULTIPART_PATH, PROXY_UPLOAD_PATH, PresignedUpload,
+    StorageBackendIdentity, StorageCapabilities, StorageError, UploadUrlConfig, UploadedPart, checksum_crc32_base64,
+    is_reserved_segment, normalize_storage_key, sign_proxy_upload_token, verify_proxy_upload_token,
   },
 };
 
@@ -106,13 +114,13 @@ pub fn blob_object_key(workspace_id: &str, key: &str) -> Result<String, DomainEr
   Ok(format!("{workspace_id}/{key}"))
 }
 
-fn db_error(context: &'static str) -> impl FnOnce(sqlx::Error) -> DomainError {
+pub(crate) fn db_error(context: &'static str) -> impl FnOnce(sqlx::Error) -> DomainError {
   move |err| DomainError::Internal(format!("{context}: {err}"))
 }
 
 /// Backend failures are logged here and reach callers only as a fixed
 /// message: their text can name storage endpoints or carry provider responses.
-fn storage_error(err: StorageError) -> DomainError {
+pub(crate) fn storage_error(err: StorageError) -> DomainError {
   match err {
     StorageError::InvalidKey(key) => DomainError::Validation(format!("invalid storage key `{key}`")),
     other => {
@@ -201,7 +209,7 @@ async fn assert_blobs_manage_in_tx(
   Ok(())
 }
 
-enum Admission {
+pub(crate) enum Admission {
   /// A live completed row with the same size and mime; its bytes still have
   /// to be compared.
   Existing(BlobRecord),
@@ -224,7 +232,7 @@ const STORAGE_LOCK_POLL: Duration = Duration::from_millis(25);
 /// take pooled connections for its queries without exhausting the pool.
 /// Dropping the lock without [`StorageObjectLock::release`] (cancellation,
 /// timeout, unlock failure) drops the session, which ends its locks.
-struct StorageObjectLock {
+pub(crate) struct StorageObjectLock {
   connection: PgConnection,
   workspace_key: String,
   object_key: String,
@@ -232,7 +240,7 @@ struct StorageObjectLock {
 }
 
 impl StorageObjectLock {
-  async fn acquire(
+  pub(crate) async fn acquire(
     db: &ServerDb,
     permits: &Arc<Semaphore>,
     workspace_id: &str,
@@ -280,7 +288,7 @@ impl StorageObjectLock {
 
   /// Unlocks object then workspace and closes the session; on an unlock
   /// failure the session is dropped, which ends its locks.
-  async fn release(mut self) {
+  pub(crate) async fn release(mut self) {
     let unlocked = async {
       sqlx::query("SELECT pg_advisory_unlock(hashtextextended($1,0))")
         .bind(&self.object_key)
@@ -307,22 +315,33 @@ impl StorageObjectLock {
 }
 
 pub struct BlobService {
-  db: ServerDb,
+  pub(crate) db: ServerDb,
+  pub(crate) boot_storage: Arc<dyn BlobStorageBackend>,
+  pub(crate) dynamic_storage: Arc<DynamicBlobStorage>,
   storage: Arc<dyn BlobStorageBackend>,
   quota: Arc<dyn QuotaGate>,
-  lock_permits: Arc<Semaphore>,
+  pub(crate) lock_permits: Arc<Semaphore>,
   ref_cache: Arc<std::sync::Mutex<refs::BlobRefCache>>,
 }
 
 impl BlobService {
   pub fn new(db: ServerDb, storage: Arc<dyn BlobStorageBackend>, quota: Arc<dyn QuotaGate>) -> Self {
+    let boot_storage = Arc::clone(&storage);
+    let dynamic_storage = Arc::new(DynamicBlobStorage::new(storage));
+    let storage: Arc<dyn BlobStorageBackend> = dynamic_storage.clone();
     Self {
       db,
+      boot_storage,
+      dynamic_storage,
       storage,
       quota,
       lock_permits: Arc::new(Semaphore::new(DEFAULT_STORAGE_LOCK_CONCURRENCY)),
       ref_cache: Arc::new(std::sync::Mutex::new(refs::BlobRefCache::new())),
     }
+  }
+
+  pub fn dynamic_storage(&self) -> &Arc<DynamicBlobStorage> {
+    &self.dynamic_storage
   }
 
   /// Caps the dedicated lock sessions this service opens at once (default
@@ -776,7 +795,7 @@ impl BlobService {
     Ok(removed == 1)
   }
 
-  async fn begin_write(&self) -> Result<server_db::TieredTx<'_>, DomainError> {
+  pub(crate) async fn begin_write(&self) -> Result<server_db::TieredTx<'_>, DomainError> {
     self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -815,7 +834,7 @@ impl BlobService {
 
   /// Locks the workspace row and the key's ledger row, classifies the ledger
   /// row, checks the grant, and records a pending reservation.
-  async fn reserve(
+  pub(crate) async fn reserve(
     &self,
     tx: &mut Transaction<'_, Postgres>,
     workspace_id: &str,
@@ -834,6 +853,7 @@ impl BlobService {
 
     let existing = sqlx::query(
       "SELECT size::bigint AS size, mime, status::text AS status, created_at, deleted_at IS NOT NULL AS deleted, \
+       reservation_id::text AS reservation_id, upload_id, \
        COALESCE(reservation_expires_at > clock_timestamp(), false) AS live_reservation FROM blobs WHERE \
        workspace_id=$1 AND key=$2 FOR UPDATE",
     )
@@ -889,14 +909,47 @@ impl BlobService {
         ),
       });
     }
+    let charged_workspaces: Vec<String> = if grant.billing_subject == server_types::BillingSubject::Workspace {
+      vec![workspace_id.to_owned()]
+    } else {
+      let owner_id: Option<String> = sqlx::query_scalar(
+        "SELECT user_id FROM workspace_members WHERE workspace_id=$1 AND role='owner' AND state='active' LIMIT 1",
+      )
+      .bind(workspace_id)
+      .fetch_optional(&mut **tx)
+      .await
+      .map_err(db_error("load workspace owner for quota"))?;
+      let mut list = vec![workspace_id.to_owned()];
+      if let Some(owner_id) = owner_id {
+        let owned: Vec<String> = sqlx::query_scalar(
+          "SELECT workspace_id FROM workspace_members WHERE user_id=$1 AND role='owner' AND state='active' \
+           ORDER BY workspace_id",
+        )
+        .bind(&owner_id)
+        .fetch_all(&mut **tx)
+        .await
+        .map_err(db_error("load owner workspaces for quota"))?;
+        for wid in owned {
+          if wid == workspace_id {
+            continue;
+          }
+          if let Ok(other_grant) = self.quota.resolve_workspace_grant(tx, &wid, now).await
+            && other_grant.billing_subject == server_types::BillingSubject::Owner
+          {
+            list.push(wid);
+          }
+        }
+      }
+      list
+    };
     let used: i64 = sqlx::query_scalar(
       r#"SELECT
-        COALESCE((SELECT SUM(size)::bigint FROM blobs WHERE workspace_id=$1 AND deleted_at IS NULL
+        COALESCE((SELECT SUM(size)::bigint FROM blobs WHERE workspace_id=ANY($1) AND deleted_at IS NULL
           AND (status='completed' OR (status='pending' AND reservation_expires_at > clock_timestamp()))),0)
-        + COALESCE((SELECT SUM(size)::bigint FROM comment_attachments WHERE workspace_id=$1 AND deleted_at IS NULL
+        + COALESCE((SELECT SUM(size)::bigint FROM comment_attachments WHERE workspace_id=ANY($1) AND deleted_at IS NULL
           AND (status='completed' OR (status='pending' AND reservation_expires_at > clock_timestamp()))),0)"#,
     )
-    .bind(workspace_id)
+    .bind(&charged_workspaces)
     .fetch_one(&mut **tx)
     .await
     .map_err(db_error("load workspace storage usage"))?;
@@ -942,7 +995,7 @@ impl BlobService {
 
   /// Turns this upload's own live reservation into a completed row; `None`
   /// when the reservation expired or was replaced.
-  async fn complete_reservation(
+  pub(crate) async fn complete_reservation(
     &self,
     workspace_id: &str,
     key: &str,

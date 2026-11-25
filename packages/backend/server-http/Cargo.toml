@@ -17,6 +17,7 @@ axum.workspace               = true
 base64.workspace             = true
 bytes.workspace              = true
 chrono.workspace             = true
+futures-util.workspace       = true
 http.workspace               = true
 image.workspace              = true
 redis.workspace              = true
