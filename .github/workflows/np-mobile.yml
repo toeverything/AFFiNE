@@ -41,10 +41,10 @@ jobs:
           node --test hosts/web/tests/*.test.mjs
           node --test perf/compare-n3.test.mjs
 
-      - name: Install Linux fontconfig headers
+      - name: Install Linux fontconfig, Mesa Lavapipe Vulkan, and CJK fallback font
         run: |
           sudo apt-get update
-          sudo apt-get install -y libfontconfig1-dev libfreetype-dev
+          sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers libvulkan1 libfontconfig1-dev libfreetype-dev fonts-wqy-zenhei
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@1.98.1
@@ -58,12 +58,15 @@ jobs:
           workspaces: packages/frontend -> target
           key: np-mobile-gates
 
-      - name: Format, clippy, invariants, and host/preview unit tests
+      - name: Format, clippy, invariants, and host/preview/mobile tests
         working-directory: packages/frontend
         run: |
           cargo fmt --all -- --check
           cargo clippy --locked --workspace --all-targets --features harness -- -D warnings
           cargo test --locked -p affine-android-host -p affine-ios-host -p blocksuite-preview --all-features
+          cargo test --locked -p affine-mobile --all-targets
+          cargo run --locked -p affine-mobile --features harness --bin mobile-harness -- audit-matrix
+          cargo run --locked -p affine-mobile --features harness --bin mobile-harness -- fps-replay
           ./scripts/check-invariants.sh
 
   s1-probes-bench:

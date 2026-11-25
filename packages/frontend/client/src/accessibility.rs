@@ -18,6 +18,7 @@ pub enum AccessibilityRole {
     Region,
     Heading,
     Button,
+    Link,
     TextField,
     Document,
     List,
@@ -48,6 +49,8 @@ pub struct AccessibilityState {
     pub expanded: Option<bool>,
     pub hidden: bool,
     pub busy: bool,
+    #[serde(default)]
+    pub current: bool,
 }
 
 /// Stable production semantic node consumed by Web, iOS, and Android hosts.

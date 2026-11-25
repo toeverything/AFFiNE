@@ -11,6 +11,9 @@ pub mod doc_directory;
 pub mod domain;
 pub mod host;
 pub mod i18n;
+pub mod links;
+pub mod nav;
+pub mod organize;
 pub mod search;
 pub mod server;
 
@@ -31,6 +34,17 @@ pub use domain::{
 };
 pub use host::{HostBridge, HostKind, MemoryHostBridge, WsHandle};
 pub use i18n::{I18nCatalog, LanguageMeta, SUPPORTED_LANGUAGES, resolve_fallback_chain};
+pub use links::{BacklinkCompleteness, BacklinkItem, BacklinksResult, CloudBacklinkHit, LinkGraph};
+pub use nav::{
+    BreadcrumbAction, BreadcrumbCrumb, BreadcrumbDerivation, ContextState, DirectKind,
+    DocMetaSnapshot, LocationChoice, LocationOption, LocationRef, NAV_HISTORY_CAPACITY, NavEntry,
+    NavHistory, NavTarget, Origin, Scope, TrailEntry, WEB_HISTORY_STATE_SCHEMA_VERSION,
+    WorkspaceBreadcrumbSnapshot,
+};
+pub use organize::{
+    FolderForest, FolderForestCache, FolderForestState, FolderPlacement, FolderSegment,
+    MAX_FOLDER_DEPTH,
+};
 pub use search::{SearchDocument, SearchHit, SearchWeights, WeightedSearchEngine};
 pub use server::{DEFAULT_CLOUD_SERVER_ID, ServerEntry, ServerRegistry};
 

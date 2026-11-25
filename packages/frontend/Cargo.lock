@@ -46,6 +46,7 @@ dependencies = [
  "affine-legacy-import",
  "affine-store",
  "blocksuite-editor",
+ "blocksuite-playground-doc",
  "getrandom 0.3.4",
  "serde",
  "serde_json",
@@ -75,6 +76,22 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "affine-mobile"
+version = "0.1.0"
+dependencies = [
+ "affine-client",
+ "affine-store",
+ "anyhow",
+ "blocksuite-playground-doc",
+ "image",
+ "serde",
+ "serde_json",
+ "ui",
+ "ui-kit",
+ "ui-tokens",
 ]
 
 [[package]]

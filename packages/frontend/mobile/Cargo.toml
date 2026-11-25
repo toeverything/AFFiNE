@@ -1,0 +1,36 @@
+[package]
+name = "affine-mobile"
+workspace = ".."
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+harness = ["ui/harness", "ui-kit/harness"]
+
+[[bin]]
+name = "mobile-harness"
+path = "src/bin/mobile_harness/main.rs"
+required-features = ["harness"]
+
+[dependencies]
+affine-client = { path = "../client" }
+affine-store = { path = "../../common/store", default-features = false }
+anyhow.workspace = true
+blocksuite-playground-doc = { path = "../../../blocksuite/crates/doc", default-features = false }
+serde.workspace = true
+serde_json.workspace = true
+ui = { path = "../../ui/ui" }
+ui-kit = { path = "../../ui/kit" }
+ui-tokens = { path = "../../ui/tokens" }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+image.workspace = true
+
+[dev-dependencies]
+ui = { path = "../../ui/ui", features = ["harness"] }
