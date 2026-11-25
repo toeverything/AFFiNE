@@ -1615,3 +1615,1040 @@ fn config_file_dotted_keys_oauth_and_private_key_source_priority_e2e() {
     pool.close().await;
   });
 }
+
+#[test]
+fn standalone_prometheus_metrics_endpoint_reports_doc_pending_updates_over_http() {
+  let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+  let migrations = MigrationSet {
+    migrations: vec![],
+    digest: "e2e0000000000010".into(),
+  };
+  let template = cluster.ensure_template(&migrations).expect("ensure empty template");
+  let lease = cluster.lease(&template, DEFAULT_LEASE_TTL).expect("lease db");
+  let db_url = lease.url().to_owned();
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .enable_all()
+    .build()
+    .unwrap();
+  rt.block_on(async move {
+    drop_empty_prisma_table(&db_url).await;
+    let db = server_db::ServerDb::connect(server_db::DbConfig {
+      database_url: db_url.clone(),
+      channel: "canary".into(),
+      role: server_types::ServerRole::Allinone,
+      selfhosted: true,
+      max_connections: 4,
+      statement_timeout_ms: 5_000,
+      tier_permits: [4, 2, 2, 1],
+    })
+    .await
+    .expect("connect server db");
+    db.ensure_schema_ready().await.expect("ensure schema ready");
+    let pool = db.pool().clone();
+    sqlx::query("INSERT INTO workspaces (id) VALUES ('ws-prom')")
+      .execute(&pool)
+      .await
+      .unwrap();
+    let bin: &[u8] = &[0u8, 0u8];
+    sqlx::query(
+      "INSERT INTO updates (workspace_id, guid, blob, created_at) VALUES ('ws-prom', 'd1', $1, now() - interval '20 minutes')",
+    )
+    .bind(bin)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let cli = ServerCli {
+      role: Some(RoleArg::Allinone),
+      host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+      port: 0,
+      metrics_port: Some(0),
+      database_url: db_url,
+      channel: Some("canary".into()),
+      db_max_connections: 4,
+      skip_schema_check: true,
+      ..ServerCli::default()
+    };
+    let shutdown = CancellationToken::new();
+    let running = serve_with_extension(cli, Arc::new(CommunityExtension::new()), shutdown.clone())
+      .await
+      .expect("serve_with_extension with metrics_port");
+    let metrics_addr = running.metrics_addr.expect("standalone metrics_addr must be bound");
+    assert_ne!(metrics_addr, running.addr, "metrics must bind on a separate port");
+
+    // Main HTTP port must not expose /metrics.
+    let (main_st, _, _) = raw_http_request(running.addr, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(main_st, 404, "main server router must not expose /metrics");
+
+    // Record pending updates before compaction and scrape over real HTTP.
+    let before = server_worker::maintenance::record_pending_doc_updates_count(
+      &running.state.db,
+      &running.state.pending_doc_updates_gauge,
+    )
+    .await
+    .unwrap();
+    assert!(before > 0);
+    let (st1, head1, body1) = raw_http_request(metrics_addr, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(st1, 200);
+    assert!(head1.to_ascii_lowercase().contains("text/plain; version=0.0.4"));
+    let text1 = String::from_utf8(body1).unwrap();
+    assert!(
+      text1.contains(&format!("doc_pending_updates {before}\n")),
+      "expected doc_pending_updates {before}, got: {text1}"
+    );
+
+    // Compact pending updates, re-record gauge, and verify /metrics drops to 0.
+    let quota = running.state.extension.quota_gate();
+    server_domain::histories::compact_pending_docs_batch(&running.state.db, quota.as_ref(), 100, 500, 600_000, || {
+      false
+    })
+    .await
+    .unwrap();
+    let after = server_worker::maintenance::record_pending_doc_updates_count(
+      &running.state.db,
+      &running.state.pending_doc_updates_gauge,
+    )
+    .await
+    .unwrap();
+    assert_eq!(after, 0);
+    let (st2, _, body2) = raw_http_request(metrics_addr, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(st2, 200);
+    let text2 = String::from_utf8(body2).unwrap();
+    assert!(
+      text2.contains("doc_pending_updates 0\n"),
+      "expected doc_pending_updates 0 after compaction, got: {text2}"
+    );
+
+    shutdown.cancel();
+    let _ = running.join_handle.await;
+    pool.close().await;
+  });
+}
+
+#[test]
+fn file_configured_metrics_port_and_dynamic_toggle_via_update_app_config() {
+  let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+  let migrations = MigrationSet {
+    migrations: vec![],
+    digest: "e2e0000000000011".into(),
+  };
+  let template = cluster.ensure_template(&migrations).expect("ensure empty template");
+  let lease = cluster.lease(&template, DEFAULT_LEASE_TTL).expect("lease db");
+  let db_url = lease.url().to_owned();
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .enable_all()
+    .build()
+    .unwrap();
+  let tmp_cfg = std::env::temp_dir().join(format!("affine-metrics-cfg-{}.json", uuid::Uuid::new_v4().simple()));
+  let tmp_cfg_task = tmp_cfg.clone();
+  rt.block_on(async move {
+    drop_empty_prisma_table(&db_url).await;
+    let db = server_db::ServerDb::connect(server_db::DbConfig {
+      database_url: db_url.clone(),
+      channel: "canary".into(),
+      role: server_types::ServerRole::Allinone,
+      selfhosted: true,
+      max_connections: 4,
+      statement_timeout_ms: 5_000,
+      tier_permits: [4, 2, 2, 1],
+    })
+    .await
+    .expect("connect server db");
+    db.ensure_schema_ready().await.expect("ensure schema ready");
+    let pool = db.pool().clone();
+
+    // Reserve a free loopback port, then drop the probe listener and write it to config.json.
+    let probe = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let mport = probe.local_addr().unwrap().port();
+    drop(probe);
+    std::fs::write(
+      &tmp_cfg_task,
+      serde_json::json!({ "metrics": { "enabled": true, "port": mport } }).to_string(),
+    )
+    .unwrap();
+
+    // Seed admin user & session cookie.
+    let admin_id = uuid::Uuid::new_v4().to_string();
+    let session_id = uuid::Uuid::new_v4().to_string();
+    let user_sess_id = uuid::Uuid::new_v4().to_string();
+    sqlx::query(
+      "INSERT INTO users (id, email, name, registered, disabled, auth_epoch, created_at) \
+       VALUES ($1, 'metrics-admin@affine.test', 'Metrics Admin', true, false, 0, now())",
+    )
+    .bind(&admin_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO user_features (user_id, name, type, reason, activated) \
+       VALUES ($1, 'administrator', 0, 'test', true)",
+    )
+    .bind(&admin_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("INSERT INTO multiple_users_sessions (id, created_at) VALUES ($1, now())")
+      .bind(&session_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO user_sessions (id, session_id, user_id, expires_at, created_at) \
+       VALUES ($1, $2, $3, now() + interval '1 day', now())",
+    )
+    .bind(&user_sess_id)
+    .bind(&session_id)
+    .bind(&admin_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let cookie = format!("affine_session={session_id}; affine_user_id={admin_id}");
+
+    // 1. Root-level literal dotted key `{"metrics.enabled": true}` must NOT enable metrics
+    //    and must report `metrics.enabled = false` with `source == "default"`.
+    let tmp_root_cfg = tmp_cfg_task.with_extension("root-dotted.json");
+    std::fs::write(
+      &tmp_root_cfg,
+      serde_json::json!({ "metrics.enabled": true }).to_string(),
+    )
+    .unwrap();
+    let root_shutdown = CancellationToken::new();
+    let root_running = serve_with_extension(
+      ServerCli {
+        role: Some(RoleArg::Allinone),
+        host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+        port: 0,
+        metrics_port: None,
+        config_path: Some(tmp_root_cfg.clone()),
+        database_url: db_url.clone(),
+        channel: Some("canary".into()),
+        db_max_connections: 4,
+        skip_schema_check: true,
+        ..ServerCli::default()
+      },
+      Arc::new(CommunityExtension::new()),
+      root_shutdown.clone(),
+    )
+    .await
+    .expect("serve_with_extension with root dotted metrics key");
+    assert!(
+      root_running.metrics_addr.is_none(),
+      "root-level literal metrics.enabled must not bind metrics listener"
+    );
+    let meta_q = serde_json::json!({ "query": "{ appConfig appConfigMetadata }" }).to_string();
+    let (st_rm, _, raw_rm) = raw_http_request(
+      root_running.addr,
+      "POST",
+      "/graphql",
+      &[("Content-Type", "application/json"), ("Cookie", &cookie)],
+      meta_q.as_bytes(),
+    )
+    .await;
+    assert_eq!(st_rm, 200);
+    let j_rm: Value = serde_json::from_slice(&raw_rm).unwrap();
+    assert!(j_rm.get("errors").is_none(), "root metadata query failed: {j_rm}");
+    assert_eq!(j_rm["data"]["appConfig"]["metrics"]["enabled"], false);
+    assert_eq!(
+      j_rm["data"]["appConfigMetadata"]["metrics"]["enabled"]["source"],
+      "default"
+    );
+    root_shutdown.cancel();
+    let _ = root_running.join_handle.await;
+    let _ = std::fs::remove_file(&tmp_root_cfg);
+
+    // 2. Module-scoped config `{"metrics": {"enabled": true, "port": mport}}` WITHOUT CLI metrics_port
+    //    must bind metrics_addr and report `enabled == true` with `source == "file"`.
+    let cli = ServerCli {
+      role: Some(RoleArg::Allinone),
+      host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+      port: 0,
+      metrics_port: None,
+      config_path: Some(tmp_cfg_task),
+      database_url: db_url,
+      channel: Some("canary".into()),
+      db_max_connections: 4,
+      skip_schema_check: true,
+      ..ServerCli::default()
+    };
+    let shutdown = CancellationToken::new();
+    let running = serve_with_extension(cli, Arc::new(CommunityExtension::new()), shutdown.clone())
+      .await
+      .expect("serve_with_extension with file metrics config");
+    let metrics_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), mport);
+    assert_eq!(running.metrics_addr, Some(metrics_addr));
+    let (st_mm, _, raw_mm) = raw_http_request(
+      running.addr,
+      "POST",
+      "/graphql",
+      &[("Content-Type", "application/json"), ("Cookie", &cookie)],
+      meta_q.as_bytes(),
+    )
+    .await;
+    assert_eq!(st_mm, 200);
+    let j_mm: Value = serde_json::from_slice(&raw_mm).unwrap();
+    assert!(j_mm.get("errors").is_none(), "module metadata query failed: {j_mm}");
+    assert_eq!(j_mm["data"]["appConfig"]["metrics"]["enabled"], true);
+    assert_eq!(
+      j_mm["data"]["appConfigMetadata"]["metrics"]["enabled"]["source"],
+      "file"
+    );
+
+    // 1. Initial scrape succeeds (200 + doc_pending_updates).
+    let (st1, _, body1) = raw_http_request(metrics_addr, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(st1, 200);
+    assert!(String::from_utf8(body1).unwrap().contains("doc_pending_updates"));
+
+    // 2. Disable metrics.enabled via updateAppConfig -> port stops immediately (connection refused).
+    let disable_req = serde_json::json!({
+      "query": "mutation($u: [UpdateAppConfigInput!]!) { updateAppConfig(updates: $u) }",
+      "variables": { "u": [{ "module": "metrics", "key": "enabled", "value": false }] }
+    })
+    .to_string();
+    let (gql_st1, _, gql_b1) = raw_http_request(
+      running.addr,
+      "POST",
+      "/graphql",
+      &[("Content-Type", "application/json"), ("Cookie", &cookie)],
+      disable_req.as_bytes(),
+    )
+    .await;
+    assert_eq!(gql_st1, 200);
+    let gql_j1: Value = serde_json::from_slice(&gql_b1).unwrap();
+    assert!(gql_j1.get("errors").is_none(), "disable metrics failed: {gql_j1}");
+    assert!(
+      tokio::net::TcpStream::connect(metrics_addr).await.is_err(),
+      "metrics port must be closed immediately after metrics.enabled=false"
+    );
+
+    // 3. Clear override (restoring file metrics.enabled=true) -> /metrics returns 200 again.
+    let clear_req = serde_json::json!({
+      "query": "mutation($u: [UpdateAppConfigInput!]!) { updateAppConfig(updates: $u) }",
+      "variables": { "u": [{ "module": "metrics", "key": "enabled", "clear": true }] }
+    })
+    .to_string();
+    let (gql_st2, _, gql_b2) = raw_http_request(
+      running.addr,
+      "POST",
+      "/graphql",
+      &[("Content-Type", "application/json"), ("Cookie", &cookie)],
+      clear_req.as_bytes(),
+    )
+    .await;
+    assert_eq!(gql_st2, 200);
+    let gql_j2: Value = serde_json::from_slice(&gql_b2).unwrap();
+    assert!(
+      gql_j2.get("errors").is_none(),
+      "clear metrics override failed: {gql_j2}"
+    );
+    let (st2, _, body2) = raw_http_request(metrics_addr, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(st2, 200);
+    assert!(String::from_utf8(body2).unwrap().contains("doc_pending_updates"));
+
+    shutdown.cancel();
+    let _ = running.join_handle.await;
+    pool.close().await;
+  });
+  let _ = std::fs::remove_file(&tmp_cfg);
+}
+
+#[test]
+fn dual_instance_metrics_broadcast_invalidates_cache_and_cli_port_priority() {
+  let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+  let migrations = MigrationSet {
+    migrations: vec![],
+    digest: "e2e0000000000012".into(),
+  };
+  let template = cluster.ensure_template(&migrations).expect("ensure empty template");
+  let lease = cluster.lease(&template, DEFAULT_LEASE_TTL).expect("lease db");
+  let db_url = lease.url().to_owned();
+  let redis = TestRedis::from_env_or_docker().expect("start redis");
+  let redis_url = redis.url().to_owned();
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .enable_all()
+    .build()
+    .unwrap();
+  let tmp_dir = std::env::temp_dir().join(format!("affine-metrics-dual-{}", uuid::Uuid::new_v4().simple()));
+  let tmp_dir_task = tmp_dir.clone();
+  rt.block_on(async move {
+    std::fs::create_dir_all(&tmp_dir_task).unwrap();
+    drop_empty_prisma_table(&db_url).await;
+    let db = server_db::ServerDb::connect(server_db::DbConfig {
+      database_url: db_url.clone(),
+      channel: "canary".into(),
+      role: server_types::ServerRole::Allinone,
+      selfhosted: true,
+      max_connections: 6,
+      statement_timeout_ms: 5_000,
+      tier_permits: [4, 2, 2, 1],
+    })
+    .await
+    .expect("connect server db");
+    db.ensure_schema_ready().await.expect("ensure schema ready");
+    let pool = db.pool().clone();
+
+    let admin_id = uuid::Uuid::new_v4().to_string();
+    let session_id = uuid::Uuid::new_v4().to_string();
+    let user_sess_id = uuid::Uuid::new_v4().to_string();
+    sqlx::query(
+      "INSERT INTO users (id, email, name, registered, disabled, auth_epoch, created_at) \
+       VALUES ($1, 'dual-metrics@affine.test', 'Dual Admin', true, false, 0, now())",
+    )
+    .bind(&admin_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO user_features (user_id, name, type, reason, activated) \
+       VALUES ($1, 'administrator', 0, 'test', true)",
+    )
+    .bind(&admin_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("INSERT INTO multiple_users_sessions (id, created_at) VALUES ($1, now())")
+      .bind(&session_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO user_sessions (id, session_id, user_id, expires_at, created_at) \
+       VALUES ($1, $2, $3, now() + interval '1 day', now())",
+    )
+    .bind(&user_sess_id)
+    .bind(&session_id)
+    .bind(&admin_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let cookie = format!("affine_session={session_id}; affine_user_id={admin_id}");
+
+    // Reserve two loopback ports for instances A and B.
+    let p_a = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port_a = p_a.local_addr().unwrap().port();
+    let p_b = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port_b = p_b.local_addr().unwrap().port();
+    drop(p_a);
+    drop(p_b);
+
+    let cfg_a = tmp_dir_task.join("a.json");
+    let cfg_b = tmp_dir_task.join("b.json");
+    let cfg_c = tmp_dir_task.join("c.json");
+    std::fs::write(
+      &cfg_a,
+      serde_json::json!({ "metrics": { "enabled": true, "port": port_a } }).to_string(),
+    )
+    .unwrap();
+    std::fs::write(
+      &cfg_b,
+      serde_json::json!({ "metrics": { "enabled": true, "port": port_b } }).to_string(),
+    )
+    .unwrap();
+    std::fs::write(
+      &cfg_c,
+      serde_json::json!({ "metrics": { "enabled": false } }).to_string(),
+    )
+    .unwrap();
+
+    let mk_cli = |cfg_path, metrics_port| ServerCli {
+      role: Some(RoleArg::Allinone),
+      host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+      port: 0,
+      metrics_port,
+      config_path: Some(cfg_path),
+      database_url: db_url.clone(),
+      redis_url: Some(redis_url.clone()),
+      channel: Some("canary".into()),
+      db_max_connections: 4,
+      skip_schema_check: true,
+      ..ServerCli::default()
+    };
+
+    let stop_a = CancellationToken::new();
+    let stop_b = CancellationToken::new();
+    let inst_a = serve_with_extension(mk_cli(cfg_a, None), Arc::new(CommunityExtension::new()), stop_a.clone())
+      .await
+      .expect("boot A");
+    let inst_b = serve_with_extension(mk_cli(cfg_b, None), Arc::new(CommunityExtension::new()), stop_b.clone())
+      .await
+      .expect("boot B");
+    let addr_b_metrics = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port_b);
+    assert_eq!(inst_b.metrics_addr, Some(addr_b_metrics));
+
+    // Warm B's 2s appConfig cache before A mutates metrics.enabled.
+    let (st_warm, _, warm_raw) = raw_http_request(
+      inst_b.addr,
+      "POST",
+      "/graphql",
+      &[("Content-Type", "application/json"), ("Cookie", &cookie)],
+      br#"{"query":"{ serverConfig { initialized } appConfig }"}"#,
+    )
+    .await;
+    assert_eq!(st_warm, 200);
+    let warm_json: Value = serde_json::from_slice(&warm_raw).unwrap();
+    assert_eq!(warm_json["data"]["appConfig"]["metrics"]["enabled"], true);
+
+    // 1. A disables metrics.enabled via GraphQL updateAppConfig -> single Redis broadcast
+    //    must invalidate B's cache and close B's metrics port.
+    let disable_req = serde_json::json!({
+      "query": "mutation($u: [UpdateAppConfigInput!]!) { updateAppConfig(updates: $u) }",
+      "variables": { "u": [{ "module": "metrics", "key": "enabled", "value": false }] }
+    })
+    .to_string();
+    let (st_dis, _, dis_raw) = raw_http_request(
+      inst_a.addr,
+      "POST",
+      "/graphql",
+      &[("Content-Type", "application/json"), ("Cookie", &cookie)],
+      disable_req.as_bytes(),
+    )
+    .await;
+    assert_eq!(st_dis, 200);
+    let dis_json: Value = serde_json::from_slice(&dis_raw).unwrap();
+    assert!(dis_json.get("errors").is_none(), "disable failed: {dis_json}");
+
+    let mut tick = tokio::time::interval(std::time::Duration::from_millis(25));
+    let mut b_closed = false;
+    for _ in 0..80 {
+      if TcpStream::connect(addr_b_metrics).await.is_err() {
+        b_closed = true;
+        break;
+      }
+      tick.tick().await;
+    }
+    assert!(b_closed, "B's metrics port must close promptly after A's broadcast");
+
+    // 2. A clears override -> single Redis broadcast re-opens B's metrics port.
+    let clear_req = serde_json::json!({
+      "query": "mutation($u: [UpdateAppConfigInput!]!) { updateAppConfig(updates: $u) }",
+      "variables": { "u": [{ "module": "metrics", "key": "enabled", "clear": true }] }
+    })
+    .to_string();
+    let (st_clr, _, clr_raw) = raw_http_request(
+      inst_a.addr,
+      "POST",
+      "/graphql",
+      &[("Content-Type", "application/json"), ("Cookie", &cookie)],
+      clear_req.as_bytes(),
+    )
+    .await;
+    assert_eq!(st_clr, 200);
+    let clr_json: Value = serde_json::from_slice(&clr_raw).unwrap();
+    assert!(clr_json.get("errors").is_none(), "clear failed: {clr_json}");
+
+    let mut b_reopened = false;
+    for _ in 0..80 {
+      if TcpStream::connect(addr_b_metrics).await.is_ok() {
+        b_reopened = true;
+        break;
+      }
+      tick.tick().await;
+    }
+    assert!(b_reopened, "B's metrics port must reopen after clear broadcast");
+    let (st_m, _, body_m) = raw_http_request(addr_b_metrics, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(st_m, 200);
+    assert!(String::from_utf8(body_m).unwrap().contains("doc_pending_updates"));
+
+    stop_a.cancel();
+    stop_b.cancel();
+    let _ = inst_a.join_handle.await;
+    let _ = inst_b.join_handle.await;
+
+    // 3. Explicit CLI --metrics-port overrides config file metrics.enabled=false AND PG override metrics.enabled=false.
+    let stop_c = CancellationToken::new();
+    let inst_c = serve_with_extension(
+      mk_cli(cfg_c, Some(0)),
+      Arc::new(CommunityExtension::new()),
+      stop_c.clone(),
+    )
+    .await
+    .expect("boot C with explicit cli metrics_port");
+    let addr_c_metrics = inst_c
+      .metrics_addr
+      .expect("explicit CLI metrics_port must bind even when file has metrics.enabled=false");
+    let (st_c1, _, body_c1) = raw_http_request(addr_c_metrics, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(st_c1, 200);
+    assert!(String::from_utf8(body_c1).unwrap().contains("doc_pending_updates"));
+
+    let (st_c_dis, _, c_dis_raw) = raw_http_request(
+      inst_c.addr,
+      "POST",
+      "/graphql",
+      &[("Content-Type", "application/json"), ("Cookie", &cookie)],
+      disable_req.as_bytes(),
+    )
+    .await;
+    assert_eq!(st_c_dis, 200);
+    let c_dis_json: Value = serde_json::from_slice(&c_dis_raw).unwrap();
+    assert!(c_dis_json.get("errors").is_none(), "PG disable failed: {c_dis_json}");
+    let (st_c2, _, body_c2) = raw_http_request(addr_c_metrics, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(
+      st_c2, 200,
+      "explicit CLI metrics_port must remain available even after PG metrics.enabled=false"
+    );
+    assert!(String::from_utf8(body_c2).unwrap().contains("doc_pending_updates"));
+
+    stop_c.cancel();
+    let _ = inst_c.join_handle.await;
+
+    // 4. Deterministic PG transient failure convergence via RLS gate + non-transactional sequence:
+    //    `nextval('b_fail_seq')` persists across RAISE EXCEPTION, proving B2 received the single
+    //    broadcast and experienced a real app_configs query failure before recovering automatically.
+    sqlx::query("DELETE FROM app_configs").execute(&pool).await.unwrap();
+    let db_name: String = sqlx::query_scalar("SELECT current_database()")
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    let b_role = format!("metrics_b_{}", uuid::Uuid::new_v4().simple());
+    sqlx::query(&format!(
+      "CREATE ROLE {b_role} NOSUPERUSER NOBYPASSRLS LOGIN PASSWORD 'pw'"
+    ))
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(&format!("GRANT CONNECT ON DATABASE \"{db_name}\" TO {b_role}"))
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(&format!("GRANT USAGE ON SCHEMA public TO {b_role}"))
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(&format!(
+      "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {b_role}"
+    ))
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::raw_sql(&format!(
+      "CREATE SEQUENCE b_fail_seq; \
+       CREATE TABLE b_fail_gate (fail BOOLEAN NOT NULL); \
+       INSERT INTO b_fail_gate VALUES (false); \
+       CREATE FUNCTION b_check_app_configs() RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS $$ \
+       BEGIN \
+         IF (SELECT fail FROM b_fail_gate LIMIT 1) THEN \
+           PERFORM nextval('b_fail_seq'); \
+           RAISE EXCEPTION 'simulated app_configs read failure'; \
+         END IF; \
+         RETURN true; \
+       END; $$; \
+       ALTER TABLE app_configs ENABLE ROW LEVEL SECURITY; \
+       CREATE POLICY b_gate_policy ON app_configs FOR SELECT TO {b_role} USING (b_check_app_configs());"
+    ))
+    .execute(&pool)
+    .await
+    .unwrap();
+    let mut b_url = url::Url::parse(&db_url).unwrap();
+    b_url.set_username(&b_role).unwrap();
+    b_url.set_password(Some("pw")).unwrap();
+    let b_db_url = b_url.to_string();
+
+    let p_a2 = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port_a2 = p_a2.local_addr().unwrap().port();
+    let p_b2 = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port_b2 = p_b2.local_addr().unwrap().port();
+    drop(p_a2);
+    drop(p_b2);
+    let cfg_a2 = tmp_dir_task.join("a2.json");
+    let cfg_b2 = tmp_dir_task.join("b2.json");
+    std::fs::write(
+      &cfg_a2,
+      serde_json::json!({ "metrics": { "enabled": true, "port": port_a2 } }).to_string(),
+    )
+    .unwrap();
+    std::fs::write(
+      &cfg_b2,
+      serde_json::json!({ "metrics": { "enabled": true, "port": port_b2 } }).to_string(),
+    )
+    .unwrap();
+
+    let stop_a2 = CancellationToken::new();
+    let stop_b2 = CancellationToken::new();
+    let inst_a2 = serve_with_extension(
+      mk_cli(cfg_a2, None),
+      Arc::new(CommunityExtension::new()),
+      stop_a2.clone(),
+    )
+    .await
+    .expect("boot A2");
+    let b_db_url_iso = b_db_url.clone();
+    let mut cli_b2 = mk_cli(cfg_b2, None);
+    cli_b2.database_url = b_db_url;
+    let inst_b2 = serve_with_extension(cli_b2, Arc::new(CommunityExtension::new()), stop_b2.clone())
+      .await
+      .expect("boot B2");
+    let addr_b2 = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port_b2);
+    assert_eq!(inst_b2.metrics_addr, Some(addr_b2));
+    let (st_init, _, _) = raw_http_request(addr_b2, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(st_init, 200);
+
+    let read_fail_seq = |p: sqlx::PgPool| async move {
+      let v: i64 = sqlx::query_scalar("SELECT CASE WHEN is_called THEN last_value ELSE 0 END FROM b_fail_seq")
+        .fetch_one(&p)
+        .await
+        .unwrap();
+      v
+    };
+    let mk_poll = || {
+      let mut iv = tokio::time::interval(std::time::Duration::from_millis(20));
+      iv.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+      iv
+    };
+
+    // 4a. Shutdown convergence: arm fail gate, A2 sends ONE disable broadcast.
+    let seq0 = read_fail_seq(pool.clone()).await;
+    sqlx::query("UPDATE b_fail_gate SET fail = true")
+      .execute(&pool)
+      .await
+      .unwrap();
+    let (st_d2, _, raw_d2) = raw_http_request(
+      inst_a2.addr,
+      "POST",
+      "/graphql",
+      &[("Content-Type", "application/json"), ("Cookie", &cookie)],
+      disable_req.as_bytes(),
+    )
+    .await;
+    assert_eq!(st_d2, 200);
+    assert!(
+      serde_json::from_slice::<Value>(&raw_d2)
+        .unwrap()
+        .get("errors")
+        .is_none()
+    );
+
+    let fail_deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    let mut poll_f1 = mk_poll();
+    let mut seq_bcast = seq0;
+    while std::time::Instant::now() < fail_deadline {
+      let cur = read_fail_seq(pool.clone()).await;
+      if cur > seq0 {
+        seq_bcast = cur;
+        break;
+      }
+      poll_f1.tick().await;
+    }
+    assert!(
+      seq_bcast > seq0,
+      "B2 must observe broadcast and trigger app_configs failure"
+    );
+    let (st_keep, _, _) = raw_http_request(addr_b2, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(st_keep, 200, "B2 must keep metrics listener open while PG query fails");
+
+    let recover_at = std::time::Instant::now();
+    sqlx::query("UPDATE b_fail_gate SET fail = false")
+      .execute(&pool)
+      .await
+      .unwrap();
+    let mut poll_r1 = mk_poll();
+    let mut b2_closed = false;
+    while recover_at.elapsed() < std::time::Duration::from_secs(5) {
+      if TcpStream::connect(addr_b2).await.is_err() {
+        b2_closed = true;
+        break;
+      }
+      poll_r1.tick().await;
+    }
+    assert!(
+      b2_closed,
+      "B2 must converge and close metrics listener after PG recovers"
+    );
+
+    // 4b. Re-open convergence: arm fail gate again, A2 sends ONE enable broadcast.
+    let seq1 = read_fail_seq(pool.clone()).await;
+    sqlx::query("UPDATE b_fail_gate SET fail = true")
+      .execute(&pool)
+      .await
+      .unwrap();
+    let enable_req = serde_json::json!({
+      "query": "mutation($u: [UpdateAppConfigInput!]!) { updateAppConfig(updates: $u) }",
+      "variables": { "u": [{ "module": "metrics", "key": "enabled", "value": true }] }
+    })
+    .to_string();
+    let (st_e2, _, raw_e2) = raw_http_request(
+      inst_a2.addr,
+      "POST",
+      "/graphql",
+      &[("Content-Type", "application/json"), ("Cookie", &cookie)],
+      enable_req.as_bytes(),
+    )
+    .await;
+    assert_eq!(st_e2, 200);
+    assert!(
+      serde_json::from_slice::<Value>(&raw_e2)
+        .unwrap()
+        .get("errors")
+        .is_none()
+    );
+
+    let fail_deadline2 = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    let mut poll_f2 = mk_poll();
+    let mut saw_fail_2 = false;
+    while std::time::Instant::now() < fail_deadline2 {
+      if read_fail_seq(pool.clone()).await > seq1 {
+        saw_fail_2 = true;
+        break;
+      }
+      poll_f2.tick().await;
+    }
+    assert!(
+      saw_fail_2,
+      "B2 must observe re-open broadcast and trigger app_configs failure"
+    );
+    assert!(
+      TcpStream::connect(addr_b2).await.is_err(),
+      "B2 must remain closed while PG query fails"
+    );
+
+    let recover2_at = std::time::Instant::now();
+    sqlx::query("UPDATE b_fail_gate SET fail = false")
+      .execute(&pool)
+      .await
+      .unwrap();
+    let mut poll_r2 = mk_poll();
+    let mut b2_reopened = false;
+    while recover2_at.elapsed() < std::time::Duration::from_secs(5) {
+      if TcpStream::connect(addr_b2).await.is_ok() {
+        b2_reopened = true;
+        break;
+      }
+      poll_r2.tick().await;
+    }
+    assert!(
+      b2_reopened,
+      "B2 must converge and reopen metrics listener after PG recovers"
+    );
+    let (st_m2, _, body_m2) = raw_http_request(addr_b2, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(st_m2, 200);
+    assert!(String::from_utf8(body_m2).unwrap().contains("doc_pending_updates"));
+
+    stop_a2.cancel();
+    stop_b2.cancel();
+    let _ = inst_a2.join_handle.await;
+    let _ = inst_b2.join_handle.await;
+
+    // 4c. Isolated Redis PubSub channel regression for exact cache_generation, DB-read count,
+    //     and 800ms backoff preservation under unrelated business and config events (immune to
+    //     parallel tests sharing AFFINE_TEST_REDIS_URL on "affine:eventbus:v1").
+    let p_iso = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port_iso = p_iso.local_addr().unwrap().port();
+    drop(p_iso);
+    let cfg_iso = tmp_dir_task.join("iso.json");
+    std::fs::write(
+      &cfg_iso,
+      serde_json::json!({ "metrics": { "enabled": true, "port": port_iso } }).to_string(),
+    )
+    .unwrap();
+    let mut cli_iso = mk_cli(cfg_iso, None);
+    cli_iso.database_url = b_db_url_iso;
+    let built_iso =
+      affine_server::build_server(&cli_iso, Arc::new(CommunityExtension::new()), CancellationToken::new())
+        .await
+        .expect("build isolated subscriber server");
+    let iso_state = built_iso.state;
+    iso_state.configure_metrics_listener(IpAddr::V4(Ipv4Addr::LOCALHOST), None, true);
+    let addr_iso = iso_state
+      .reconcile_metrics_listener()
+      .await
+      .expect("initial iso metrics bind")
+      .expect("iso metrics enabled");
+    assert_eq!(addr_iso, SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port_iso));
+
+    let iso_chan = format!("{}eventbus:{}", redis.key_prefix(), uuid::Uuid::new_v4());
+    let iso_stop = Arc::new(tokio::sync::Notify::new());
+    let iso_sub = tokio::spawn({
+      let st = Arc::clone(&iso_state);
+      let ch = iso_chan.clone();
+      let stop = Arc::clone(&iso_stop);
+      async move { st.run_config_subscriber_on_channel(&ch, stop).await }
+    });
+    let r_client = redis::Client::open(redis_url.as_str()).unwrap();
+    let mut r_conn = r_client.get_multiplexed_async_connection().await.unwrap();
+    let sub_ready_deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    let mut poll_sub = mk_poll();
+    let mut probe_sent = false;
+    while std::time::Instant::now() < sub_ready_deadline {
+      if !probe_sent {
+        let subs: i64 = redis::cmd("PUBLISH")
+          .arg(&iso_chan)
+          .arg(r#"{"event":"config.changed.broadcast","payload":{"keys":["flags.allowGuestDemoWorkspace"]}}"#)
+          .query_async(&mut r_conn)
+          .await
+          .unwrap();
+        if subs >= 1 {
+          probe_sent = true;
+        }
+      }
+      if probe_sent && iso_state.app_config.cache_generation() == 2 {
+        break;
+      }
+      poll_sub.tick().await;
+    }
+    assert!(
+      probe_sent && iso_state.app_config.cache_generation() == 2,
+      "isolated subscriber must complete initial catch-up and enter message loop"
+    );
+
+    sqlx::query(
+      "INSERT INTO app_configs (id, value, created_at, updated_at) \
+       VALUES ('metrics.enabled', 'false'::jsonb, now(), now()) \
+       ON CONFLICT (id) DO UPDATE SET value = excluded.value, updated_at = now()",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    let seq_iso0 = read_fail_seq(pool.clone()).await;
+    sqlx::query("UPDATE b_fail_gate SET fail = true")
+      .execute(&pool)
+      .await
+      .unwrap();
+    let _: i64 = redis::cmd("PUBLISH")
+      .arg(&iso_chan)
+      .arg(r#"{"event":"config.changed.broadcast","payload":{"keys":["metrics.enabled"]}}"#)
+      .query_async(&mut r_conn)
+      .await
+      .unwrap();
+
+    let iso_fail_deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    let mut poll_if1 = mk_poll();
+    let mut seq_iso_bcast = seq_iso0;
+    while std::time::Instant::now() < iso_fail_deadline {
+      let cur = read_fail_seq(pool.clone()).await;
+      if cur > seq_iso0 {
+        seq_iso_bcast = cur;
+        break;
+      }
+      poll_if1.tick().await;
+    }
+    assert!(
+      seq_iso_bcast > seq_iso0,
+      "isolated subscriber must observe metrics broadcast failure"
+    );
+    let (st_iso_keep, _, _) = raw_http_request(addr_iso, "GET", "/metrics", &[], &[]).await;
+    assert_eq!(st_iso_keep, 200);
+
+    let retry_deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    let mut poll_r_cnt = mk_poll();
+    let mut gen_after_retry1 = None;
+    let mut seq_before_noise = seq_iso_bcast;
+    while std::time::Instant::now() < retry_deadline {
+      let cur = read_fail_seq(pool.clone()).await;
+      if cur > seq_iso_bcast && gen_after_retry1.is_none() {
+        gen_after_retry1 = Some(iso_state.app_config.cache_generation());
+      }
+      if cur >= seq_iso_bcast + 2 {
+        seq_before_noise = cur;
+        break;
+      }
+      poll_r_cnt.tick().await;
+    }
+    assert!(
+      seq_before_noise >= seq_iso_bcast + 2,
+      "isolated subscriber must complete 2 scheduled retry failures to reach 800ms backoff"
+    );
+    let gen_before_noise = iso_state.app_config.cache_generation();
+    assert_eq!(
+      Some(gen_before_noise),
+      gen_after_retry1,
+      "failed scheduled metrics retry must not invalidate cache or bump cache_generation"
+    );
+
+    let _: i64 = redis::cmd("PUBLISH")
+      .arg(&iso_chan)
+      .arg(r#"{"event":"workspace.updated","payload":{"id":"w1"}}"#)
+      .query_async(&mut r_conn)
+      .await
+      .unwrap();
+    let _: i64 = redis::cmd("PUBLISH")
+      .arg(&iso_chan)
+      .arg(r#"{"event":"config.changed.broadcast","payload":{"keys":["flags.allowGuestDemoWorkspace"]}}"#)
+      .query_async(&mut r_conn)
+      .await
+      .unwrap();
+
+    let noise_deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    let mut poll_noise = tokio::time::interval(std::time::Duration::from_millis(10));
+    poll_noise.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    let mut saw_unrelated_gen = false;
+    while std::time::Instant::now() < noise_deadline {
+      let g = iso_state.app_config.cache_generation();
+      if g == gen_before_noise + 1 {
+        saw_unrelated_gen = true;
+        break;
+      }
+      assert!(
+        g <= gen_before_noise + 1,
+        "unrelated business event must not bump cache_generation: before={gen_before_noise} got={g}"
+      );
+      poll_noise.tick().await;
+    }
+    assert!(
+      saw_unrelated_gen,
+      "unrelated config broadcast on isolated channel must bump cache_generation by exactly 1"
+    );
+    assert_eq!(
+      read_fail_seq(pool.clone()).await,
+      seq_before_noise,
+      "unrelated events must not trigger an immediate app_configs DB read"
+    );
+    let mut poll_backoff = tokio::time::interval(std::time::Duration::from_millis(25));
+    poll_backoff.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    poll_backoff.tick().await;
+    for _ in 0..10 {
+      poll_backoff.tick().await;
+      assert_eq!(
+        read_fail_seq(pool.clone()).await,
+        seq_before_noise,
+        "unrelated events must not reset the 800ms retry backoff to 200ms"
+      );
+    }
+
+    let iso_recover_at = std::time::Instant::now();
+    sqlx::query("UPDATE b_fail_gate SET fail = false")
+      .execute(&pool)
+      .await
+      .unwrap();
+    let mut poll_iso_r = mk_poll();
+    let mut iso_closed = false;
+    while iso_recover_at.elapsed() < std::time::Duration::from_secs(5) {
+      if TcpStream::connect(addr_iso).await.is_err() {
+        iso_closed = true;
+        break;
+      }
+      poll_iso_r.tick().await;
+    }
+    assert!(
+      iso_closed,
+      "isolated subscriber must converge and close metrics listener after PG recovers"
+    );
+    iso_stop.notify_one();
+    tokio::time::timeout(std::time::Duration::from_secs(5), iso_sub)
+      .await
+      .expect("isolated config subscriber must exit promptly after notify_one")
+      .expect("isolated config subscriber must not panic");
+    iso_state.stop_metrics_listener().await;
+    let _ = sqlx::raw_sql(
+      "DROP POLICY IF EXISTS b_gate_policy ON app_configs; \
+       ALTER TABLE app_configs DISABLE ROW LEVEL SECURITY; \
+       DROP FUNCTION IF EXISTS b_check_app_configs(); \
+       DROP TABLE IF EXISTS b_fail_gate; \
+       DROP SEQUENCE IF EXISTS b_fail_seq;",
+    )
+    .execute(&pool)
+    .await;
+    let _ = sqlx::query(&format!("REVOKE ALL ON ALL TABLES IN SCHEMA public FROM {b_role}"))
+      .execute(&pool)
+      .await;
+    let _ = sqlx::query(&format!("REVOKE USAGE ON SCHEMA public FROM {b_role}"))
+      .execute(&pool)
+      .await;
+    let _ = sqlx::query(&format!("REVOKE CONNECT ON DATABASE \"{db_name}\" FROM {b_role}"))
+      .execute(&pool)
+      .await;
+    let _ = sqlx::query(&format!("DROP ROLE IF EXISTS {b_role}"))
+      .execute(&pool)
+      .await;
+
+    pool.close().await;
+  });
+  let _ = std::fs::remove_dir_all(&tmp_dir);
+}

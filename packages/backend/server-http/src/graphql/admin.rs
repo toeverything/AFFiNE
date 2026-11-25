@@ -914,6 +914,15 @@ pub(crate) async fn mutate_update_app_config(
       .await
       .map_err(|e| domain_error_to_graphql(&e))?;
   }
+  if domain_updates
+    .iter()
+    .any(|u| u.key == "metrics" || u.key.starts_with("metrics."))
+  {
+    state
+      .reconcile_metrics_listener()
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+  }
   Ok(JsonObjectScalar(effective))
 }
 

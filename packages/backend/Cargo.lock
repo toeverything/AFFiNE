@@ -3959,11 +3959,14 @@ dependencies = [
  "bytes",
  "chrono",
  "crc32fast",
+ "encoding_rs",
  "futures-util",
+ "hex",
  "http",
  "image",
  "p256",
  "redis",
+ "reqwest",
  "ryu-js",
  "serde",
  "serde_json",
@@ -3974,6 +3977,7 @@ dependencies = [
  "server-search",
  "server-spi",
  "server-types",
+ "sha2 0.10.9",
  "sqlx",
  "test-db-harness",
  "tokio",
@@ -3982,6 +3986,7 @@ dependencies = [
  "tracing",
  "url",
  "uuid",
+ "v_htmlescape",
  "y-octo",
 ]
 
@@ -4096,12 +4101,24 @@ dependencies = [
 name = "server-worker"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "chrono",
+ "hex",
  "redis",
+ "serde_json",
+ "server-blob",
+ "server-db",
+ "server-domain",
+ "server-spi",
+ "server-types",
+ "sha2 0.10.9",
+ "sqlx",
  "test-db-harness",
  "thiserror 2.0.21",
  "tokio",
  "tracing",
  "uuid",
+ "y-octo",
 ]
 
 [[package]]

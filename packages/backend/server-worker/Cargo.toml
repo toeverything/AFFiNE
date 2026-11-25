@@ -10,11 +10,23 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-redis.workspace     = true
-thiserror.workspace = true
-tokio.workspace     = true
-tracing.workspace   = true
-uuid.workspace      = true
+chrono.workspace       = true
+hex.workspace          = true
+redis.workspace        = true
+serde_json.workspace   = true
+server-blob.workspace  = true
+server-db.workspace    = true
+server-domain.workspace = true
+server-types.workspace = true
+sha2.workspace         = true
+sqlx.workspace         = true
+thiserror.workspace    = true
+tokio.workspace        = true
+tracing.workspace      = true
+uuid.workspace         = true
+y-octo.workspace       = true
 
 [dev-dependencies]
+async-trait.workspace     = true
+server-spi.workspace      = true
 test-db-harness.workspace = true

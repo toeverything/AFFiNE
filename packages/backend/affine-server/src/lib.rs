@@ -190,6 +190,12 @@ pub struct ServerCli {
   pub search_password: String,
   #[arg(long, env = "AFFINE_CONFIG_PATH")]
   pub config_path: Option<PathBuf>,
+
+  #[arg(long, env = "AFFINE_STATIC_DIR")]
+  pub static_dir: Option<PathBuf>,
+
+  #[arg(long, env = "OTEL_EXPORTER_PROMETHEUS_PORT")]
+  pub metrics_port: Option<u16>,
 }
 
 impl Default for ServerCli {
@@ -230,6 +236,8 @@ impl Default for ServerCli {
       search_username: String::new(),
       search_password: String::new(),
       config_path: None,
+      static_dir: None,
+      metrics_port: None,
     }
   }
 }
@@ -635,6 +643,7 @@ pub struct BuiltServer {
 /// Handle to a running server instance started via [`serve_with_extension`].
 pub struct RunningServer {
   pub addr: SocketAddr,
+  pub metrics_addr: Option<SocketAddr>,
   pub state: Arc<AppState>,
   pub supervisor: WorkerSupervisor,
   pub session_mutex: Option<RedisMutex>,
@@ -889,7 +898,11 @@ async fn build_server_with_bound_port(
     refresh_retention_secs: server_domain::auth::DEFAULT_REFRESH_RETENTION_SECS,
     smtp_password: cli.mailer_password.clone().unwrap_or_default(),
     app_config_baseline: app_config_baseline.clone(),
-    ..RuntimeConfig::default()
+    static_dir: cli.static_dir.clone(),
+    multipart_part_size: server_blob::MULTIPART_PART_SIZE,
+    multipart_threshold: server_blob::MULTIPART_THRESHOLD,
+    telemetry_allowed_origins: Vec::new(),
+    worker_proxy_allow_private_origins: Vec::new(),
   };
 
   let origin_channel = format!("v2:{channel}");
@@ -1234,6 +1247,7 @@ where
 
     let compactor_db = built.state.db.clone();
     let compactor_quota = built.state.extension.quota_gate();
+    let compactor_gauge = Arc::clone(&built.state.pending_doc_updates_gauge);
     server_worker::spawn_locked_periodic_task(
       &built.supervisor,
       built.session_mutex.clone(),
@@ -1244,7 +1258,11 @@ where
       move |lease_cancel| {
         let db = compactor_db.clone();
         let quota = Arc::clone(&compactor_quota);
+        let gauge = Arc::clone(&compactor_gauge);
         async move {
+          if let Err(err) = server_worker::maintenance::record_pending_doc_updates_count(&db, &gauge).await {
+            tracing::warn!(error = %err, "failed to record pending doc updates count");
+          }
           if let Err(err) =
             server_domain::histories::compact_pending_docs_batch(&db, quota.as_ref(), 100, 500, 600_000, || {
               lease_cancel.is_cancelled()
@@ -1252,6 +1270,9 @@ where
             .await
           {
             tracing::warn!(error = %err, "doc compaction tick failed");
+          }
+          if let Err(err) = server_worker::maintenance::record_pending_doc_updates_count(&db, &gauge).await {
+            tracing::warn!(error = %err, "failed to record pending doc updates count");
           }
         }
       },
@@ -1275,17 +1296,100 @@ where
             tracing::warn!(error = %err, "expired snapshot_histories cleanup failed");
           }
           if !lease_cancel.is_cancelled()
-            && let Err(err) = server_domain::histories::cleanup_expired_runtime_states(&state.db, 1_000).await
+            && let Err(err) =
+              server_worker::maintenance::cleanup_expired_runtime_housekeeping(&state.db, 1_000, &lease_cancel).await
           {
-            tracing::warn!(error = %err, "expired runtime_states cleanup failed");
+            tracing::warn!(error = %err, "expired runtime housekeeping failed");
           }
-          if !lease_cancel.is_cancelled()
-            && let Err(err) = state
-              .blobs
-              .cleanup_expired_reservations(1_000, &|| lease_cancel.is_cancelled())
-              .await
+        }
+      },
+    )
+    .await;
+
+    for (lock, name, every, ttl) in [
+      ("doc:lifecycle-migrations", "doc-lifecycle", 30_u64, 120_u64),
+      ("notification:housekeeping", "notification-housekeeping", 3600, 300),
+      ("mail:housekeeping", "mail-housekeeping", 300, 180),
+      ("workspace:stats:refresh-dirty", "workspace-stats-dirty", 60, 180),
+      (
+        "workspace:stats:recalibrate",
+        "workspace-stats-recalibrate",
+        86_400,
+        600,
+      ),
+    ] {
+      let state = Arc::clone(&built.state);
+      let mtx = built.session_mutex.clone();
+      server_worker::spawn_locked_periodic_task(
+        &built.supervisor,
+        mtx,
+        lock,
+        name,
+        Duration::from_secs(every),
+        ttl,
+        move |c| {
+          let state = Arc::clone(&state);
+          async move {
+            use server_worker::maintenance as m;
+            let res: Result<(), server_types::DomainError> = match name {
+              "doc-lifecycle" => {
+                m::advance_workspace_lifecycle_migrations(&state.db, 100, Some(state.invalidation.as_ref()), &c)
+                  .await
+                  .map(|_| ())
+              }
+              "notification-housekeeping" => {
+                m::cleanup_expired_notifications(&state.db, 365, 1_000, Some(state.event_bus.as_ref()), &c)
+                  .await
+                  .map(|_| ())
+              }
+              "mail-housekeeping" => {
+                let raw = state
+                  .app_config
+                  .get_raw_config_value("mailer.deliveryWorker.retentionDays")
+                  .await;
+                let retention = raw
+                  .ok()
+                  .flatten()
+                  .and_then(|v| i32::try_from(v.as_i64()?).ok())
+                  .unwrap_or(30);
+                m::cleanup_mail_deliveries_and_skip_disabled(&state.db, retention, 1_000, &c)
+                  .await
+                  .map(|_| ())
+              }
+              "workspace-stats-dirty" => m::refresh_dirty_workspace_stats(&state.db, 500, &c).await.map(|_| ()),
+              "workspace-stats-recalibrate" => m::recalibrate_workspace_stats(&state.db, 1_000, &c).await.map(|_| ()),
+              _ => Ok(()),
+            };
+            if let Err(err) = res {
+              tracing::warn!(task = name, error = %err, "periodic maintenance task failed");
+            }
+          }
+        },
+      )
+      .await;
+    }
+
+    let storage_state = Arc::clone(&built.state);
+    server_worker::spawn_locked_periodic_task(
+      &built.supervisor,
+      built.session_mutex.clone(),
+      "storage:orphan-reconcile",
+      "storage-reconcile",
+      Duration::from_secs(60),
+      300,
+      move |lease_cancel| {
+        let state = Arc::clone(&storage_state);
+        async move {
+          let cancelled = || lease_cancel.is_cancelled();
+          if !cancelled()
+            && let Err(err) = state.blobs.cleanup_expired_reservations(1_000, &cancelled).await
           {
-            tracing::warn!(error = %err, "expired blob reservation cleanup failed");
+            tracing::warn!(error = %err, "expired storage reservation cleanup failed");
+          }
+          if !cancelled()
+            && let Err(err) = state.blobs.reconcile_storage_orphans(250, &cancelled).await
+          {
+            tracing::warn!(error = %err, "storage orphan reconciliation failed");
           }
         }
       },
@@ -1373,6 +1477,18 @@ where
     }
   }
 
+  built
+    .state
+    .configure_metrics_listener(cli.effective_host(), cli.metrics_port, built.role != ServerRole::Script);
+  let metrics_addr = match built.state.reconcile_metrics_listener().await {
+    Ok(a) => a,
+    Err(e) if cli.skip_schema_check => {
+      tracing::warn!(error = %e, "metrics reconcile skipped");
+      None
+    }
+    Err(e) => return Err(e.into()),
+  };
+
   tracing::info!(
     addr = %local_addr,
     role = ?built.role,
@@ -1381,6 +1497,7 @@ where
   );
 
   let state_ret = Arc::clone(&built.state);
+  let state_shutdown = Arc::clone(&built.state);
   let supervisor_ret = built.supervisor.clone();
   let session_mutex_ret = built.session_mutex.clone();
   let shutdown_ret = shutdown.clone();
@@ -1403,12 +1520,14 @@ where
       sync.shutdown().await;
     }
     let released = supervisor_task.drain(Duration::from_secs(5)).await;
+    state_shutdown.stop_metrics_listener().await;
     tracing::info!(released_locks = released, "affine-server drained");
     serve_res.map_err(ServerError::Io)
   });
 
   Ok(RunningServer {
     addr: local_addr,
+    metrics_addr,
     state: state_ret,
     supervisor: supervisor_ret,
     session_mutex: session_mutex_ret,

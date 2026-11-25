@@ -86,6 +86,12 @@ impl RequestPrincipal {
       Self::Cookie { user, .. } | Self::Bearer { user, .. } => user,
     }
   }
+
+  pub fn session_id(&self) -> &str {
+    match self {
+      Self::Cookie { session_id, .. } | Self::Bearer { session_id, .. } => session_id,
+    }
+  }
 }
 
 pub(crate) fn format_http_date(dt: DateTime<Utc>) -> String {

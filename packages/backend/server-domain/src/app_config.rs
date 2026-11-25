@@ -467,7 +467,6 @@ impl AppConfigService {
   pub fn cache_generation(&self) -> u64 {
     self.generation.load(Ordering::Acquire)
   }
-
   /// Internal backend-only lookup for a single `app_configs` key (including
   /// secret keys such as `storages.blob.storage` or `telemetry.ga4.apiSecret`).
   /// Never expose the returned value over GraphQL or HTTP responses.

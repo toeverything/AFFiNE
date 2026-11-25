@@ -57,8 +57,11 @@ pub struct RuntimeConfig {
   pub refresh_retention_secs: i64,
   pub smtp_password: String,
   pub app_config_baseline: RuntimeAppConfigBaseline,
+  pub static_dir: Option<std::path::PathBuf>,
   pub multipart_part_size: i64,
   pub multipart_threshold: i64,
+  pub telemetry_allowed_origins: Vec<String>,
+  pub worker_proxy_allow_private_origins: Vec<String>,
 }
 
 impl std::fmt::Debug for RuntimeConfig {
@@ -77,6 +80,7 @@ impl std::fmt::Debug for RuntimeConfig {
       .field("graphql_playground", &self.graphql_playground)
       .field("refresh_retention_secs", &self.refresh_retention_secs)
       .field("smtp_password", &"[REDACTED]")
+      .field("static_dir", &self.static_dir)
       .field("multipart_part_size", &self.multipart_part_size)
       .field("multipart_threshold", &self.multipart_threshold)
       .finish()
@@ -100,8 +104,11 @@ impl Default for RuntimeConfig {
       refresh_retention_secs: server_domain::auth::DEFAULT_REFRESH_RETENTION_SECS,
       smtp_password: String::new(),
       app_config_baseline: RuntimeAppConfigBaseline::default(),
+      static_dir: None,
       multipart_part_size: server_blob::MULTIPART_PART_SIZE,
       multipart_threshold: server_blob::MULTIPART_THRESHOLD,
+      telemetry_allowed_origins: Vec::new(),
+      worker_proxy_allow_private_origins: Vec::new(),
     }
   }
 }
@@ -137,6 +144,34 @@ pub struct AppState {
   pub mcp_throttler: Arc<crate::rest::mcp::McpDefaultThrottler>,
   avatars_dynamic: Arc<server_blob::DynamicBlobStorage>,
   boot_avatars: Arc<dyn BlobStorageBackend>,
+  pub worker_proxy_sem: Arc<tokio::sync::Semaphore>,
+  pub telemetry_deduper: Arc<std::sync::Mutex<rest::telemetry::TelemetryDeduper>>,
+  pub throttle_redis_conn: Arc<tokio::sync::Mutex<Option<redis::aio::MultiplexedConnection>>>,
+  pub pending_doc_updates_gauge: Arc<std::sync::atomic::AtomicI64>,
+  metrics_ctrl: std::sync::OnceLock<MetricsController>,
+}
+
+type MetricsRunning = (
+  std::net::SocketAddr,
+  u16,
+  Arc<tokio::sync::Notify>,
+  tokio::task::JoinHandle<()>,
+);
+struct MetricsController {
+  host: std::net::IpAddr,
+  cli_port: Option<u16>,
+  allow_role: bool,
+  stopped: std::sync::atomic::AtomicBool,
+  running: tokio::sync::Mutex<Option<MetricsRunning>>,
+}
+async fn stop_metrics_guard(slot: &mut Option<MetricsRunning>) {
+  if let Some((_, _, s, mut h)) = slot.take() {
+    s.notify_one();
+    if tokio::time::timeout(Duration::from_millis(500), &mut h).await.is_err() {
+      h.abort();
+      let _ = h.await;
+    }
+  }
 }
 
 /// Pre-wired domain services passed into [`AppState::with_services`].
@@ -301,6 +336,14 @@ impl AppState {
       mcp_throttler,
       avatars_dynamic,
       boot_avatars,
+      worker_proxy_sem: Arc::new(tokio::sync::Semaphore::new(8)),
+      telemetry_deduper: Arc::new(std::sync::Mutex::new(rest::telemetry::TelemetryDeduper::new(
+        std::time::Duration::from_secs(24 * 3600),
+        10_000,
+      ))),
+      throttle_redis_conn: Arc::new(tokio::sync::Mutex::new(None)),
+      pending_doc_updates_gauge: Arc::new(std::sync::atomic::AtomicI64::new(0)),
+      metrics_ctrl: std::sync::OnceLock::new(),
     })
   }
 
@@ -335,17 +378,111 @@ impl AppState {
     Ok(true)
   }
 
+  pub fn configure_metrics_listener(&self, host: std::net::IpAddr, cli_port: Option<u16>, allow_role: bool) {
+    let _ = self.metrics_ctrl.set(MetricsController {
+      host,
+      cli_port,
+      allow_role,
+      stopped: false.into(),
+      running: tokio::sync::Mutex::new(None),
+    });
+  }
+  pub async fn stop_metrics_listener(&self) {
+    if let Some(c) = self.metrics_ctrl.get() {
+      let mut g = c.running.lock().await;
+      c.stopped.store(true, std::sync::atomic::Ordering::Release);
+      stop_metrics_guard(&mut g).await;
+    }
+  }
+  pub async fn reconcile_metrics_listener(&self) -> Result<Option<std::net::SocketAddr>, server_types::DomainError> {
+    let Some(c) = self.metrics_ctrl.get() else {
+      return Ok(None);
+    };
+    let mut g = c.running.lock().await;
+    if c.stopped.load(std::sync::atomic::Ordering::Acquire) {
+      return Ok(None);
+    }
+    let eff = self.app_config.refresh_effective_app_config().await?;
+    let m = eff.pointer("/metrics");
+    let on = c.allow_role && (c.cli_port.is_some() || m.and_then(|v| v.get("enabled")?.as_bool()).unwrap_or(false));
+    let port = c
+      .cli_port
+      .or_else(|| m.and_then(|v| u16::try_from(v.get("port")?.as_u64()?).ok()))
+      .or_else(|| self.app_config.file_metrics_port())
+      .unwrap_or(9464);
+    if on
+      && let Some((a, p, _, _)) = g.as_ref()
+      && *p == port
+    {
+      return Ok(Some(*a));
+    }
+    stop_metrics_guard(&mut g).await;
+    if !on {
+      return Ok(None);
+    }
+    let io_e = |e: std::io::Error| server_types::DomainError::Internal(format!("metrics listener: {e}"));
+    let l = tokio::net::TcpListener::bind(std::net::SocketAddr::new(c.host, port))
+      .await
+      .map_err(io_e)?;
+    let addr = l.local_addr().map_err(io_e)?;
+    let (gauge, stop) = (
+      Arc::clone(&self.pending_doc_updates_gauge),
+      Arc::new(tokio::sync::Notify::new()),
+    );
+    let srx = Arc::clone(&stop);
+    let r = Router::new().route("/metrics", get(move || {
+      let v = gauge.load(std::sync::atomic::Ordering::Relaxed);
+      async move {
+        let b = format!("# HELP doc_pending_updates Pending uncompacted document update rows\n# TYPE doc_pending_updates gauge\ndoc_pending_updates {v}\n");
+        ([(header::CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8")], b)
+      }
+    }));
+    let h = tokio::spawn(async move {
+      let _ = axum::serve(l, r)
+        .with_graceful_shutdown(async move { srx.notified().await })
+        .await;
+    });
+    *g = Some((addr, port, stop, h));
+    Ok(Some(addr))
+  }
+
   pub async fn init_blob_storage_from_app_config(&self) -> Result<bool, server_types::DomainError> {
     self.reload_blob_storage_from_app_config().await?;
     self.reload_avatar_storage_from_app_config().await
   }
 
+  async fn apply_dirty_reloads(&self, d: &mut (bool, bool, bool)) {
+    let err = |r: Result<bool, server_types::DomainError>, w: &str| {
+      r.inspect_err(|e| tracing::warn!(error = %e, "{w} failed")).is_err()
+    };
+    if d.0 {
+      d.0 = err(self.reload_blob_storage_from_app_config().await, "blob");
+    }
+    if d.1 {
+      d.1 = err(self.reload_avatar_storage_from_app_config().await, "avatar");
+    }
+    if d.2 {
+      d.2 = err(self.reconcile_metrics_listener().await.map(|_| true), "metrics");
+    }
+  }
+
   pub async fn run_blob_storage_config_subscriber(self: Arc<Self>, shutdown: Arc<tokio::sync::Notify>) {
+    self
+      .run_config_subscriber_on_channel("affine:eventbus:v1", shutdown)
+      .await;
+  }
+
+  pub async fn run_config_subscriber_on_channel(self: Arc<Self>, channel: &str, shutdown: Arc<tokio::sync::Notify>) {
     use futures_util::StreamExt as _;
     let Some(redis) = self.redis.clone() else {
       return;
     };
     let backoff = || tokio::time::timeout(Duration::from_millis(200), shutdown.notified());
+    let mk_retry = |d: Duration| {
+      let mut iv = tokio::time::interval_at(tokio::time::Instant::now() + d, d);
+      iv.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+      iv
+    };
     loop {
       let Ok(mut pubsub) = redis.get_async_pubsub().await else {
         if backoff().await.is_ok() {
@@ -353,22 +490,29 @@ impl AppState {
         }
         continue;
       };
-      if pubsub.subscribe("affine:eventbus:v1").await.is_err() {
+      if pubsub.subscribe(channel).await.is_err() {
         if backoff().await.is_ok() {
           return;
         }
         continue;
       }
-      if let Err(err) = self.reload_blob_storage_from_app_config().await {
-        tracing::warn!(error = %err, "catch-up blob storage reload failed");
-      }
-      if let Err(err) = self.reload_avatar_storage_from_app_config().await {
-        tracing::warn!(error = %err, "catch-up avatar storage reload failed");
-      }
+      let mut dirty = (true, true, true);
+      let mut delay = Duration::from_millis(200);
+      let mut retry = mk_retry(delay);
+      self.app_config.invalidate_cache();
+      self.apply_dirty_reloads(&mut dirty).await;
       let mut stream = pubsub.on_message();
       loop {
         let msg = tokio::select! {
           () = shutdown.notified() => return,
+          _ = retry.tick(), if dirty.0 || dirty.1 || dirty.2 => {
+            self.apply_dirty_reloads(&mut dirty).await;
+            if dirty.0 || dirty.1 || dirty.2 {
+              delay = (delay * 2).min(Duration::from_secs(30));
+              retry = mk_retry(delay);
+            }
+            continue;
+          }
           m = stream.next() => match m { Some(m) => m, None => break },
         };
         let keys: Vec<String> = msg
@@ -379,15 +523,27 @@ impl AppState {
           .and_then(|e| e.pointer("/payload/keys")?.as_array().cloned())
           .map(|ks| ks.into_iter().filter_map(|v| v.as_str().map(str::to_owned)).collect())
           .unwrap_or_default();
-        if keys.iter().any(|k| k == "storages" || k.starts_with("storages.blob"))
-          && let Err(err) = self.reload_blob_storage_from_app_config().await
-        {
-          tracing::warn!(error = %err, "broadcast blob storage reload failed");
+        if keys.is_empty() {
+          continue;
         }
-        if keys.iter().any(|k| k == "storages" || k.starts_with("storages.avatar"))
-          && let Err(err) = self.reload_avatar_storage_from_app_config().await
-        {
-          tracing::warn!(error = %err, "broadcast avatar storage reload failed");
+        self.app_config.invalidate_cache();
+        let mut run = (
+          keys.iter().any(|k| k == "storages" || k.starts_with("storages.blob")),
+          keys.iter().any(|k| k == "storages" || k.starts_with("storages.avatar")),
+          keys.iter().any(|k| k == "metrics" || k.starts_with("metrics.")),
+        );
+        if run.0 || run.1 || run.2 {
+          let hit = run;
+          self.apply_dirty_reloads(&mut run).await;
+          dirty = (
+            if hit.0 { run.0 } else { dirty.0 },
+            if hit.1 { run.1 } else { dirty.1 },
+            if hit.2 { run.2 } else { dirty.2 },
+          );
+          if run.0 || run.1 || run.2 {
+            delay = Duration::from_millis(200);
+            retry = mk_retry(delay);
+          }
         }
       }
       if backoff().await.is_ok() {
@@ -539,14 +695,80 @@ async fn handle_readyz(State(state): State<RouterState>) -> (StatusCode, Json<Re
   )
 }
 
+const MAX_GRAPHQL_BRACKET_DEPTH: usize = 64;
+
+/// Linear `O(n)` lexical pre-scan rejecting deeply nested unquoted `{`/`[`/`(`
+/// before handing a query to `async-graphql`'s recursive-descent parser.
+pub fn graphql_query_exceeds_depth(query: &str, max_depth: usize) -> bool {
+  let (b, mut i, mut depth) = (query.as_bytes(), 0usize, 0usize);
+  while i < b.len() {
+    match b[i] {
+      b'#' => {
+        i += 1;
+        while i < b.len() && b[i] != b'\n' && b[i] != b'\r' {
+          i += 1;
+        }
+      }
+      b'"' if b[i..].starts_with(b"\"\"\"") => {
+        i += 3;
+        while i + 2 < b.len() {
+          if b[i..].starts_with(b"\\\"\"\"") {
+            i += 4;
+          } else if b[i..].starts_with(b"\"\"\"") {
+            i += 3;
+            break;
+          } else {
+            i += 1;
+          }
+        }
+      }
+      b'"' => {
+        i += 1;
+        while i < b.len() {
+          if b[i] == b'\\' {
+            i = (i + 2).min(b.len());
+          } else if b[i] == b'"' {
+            i += 1;
+            break;
+          } else {
+            i += 1;
+          }
+        }
+      }
+      b'{' | b'[' | b'(' => {
+        depth += 1;
+        if depth > max_depth {
+          return true;
+        }
+        i += 1;
+      }
+      b'}' | b']' | b')' => {
+        depth = depth.saturating_sub(1);
+        i += 1;
+      }
+      _ => i += 1,
+    }
+  }
+  false
+}
+
 async fn handle_graphql_post(
   State(state): State<RouterState>,
   rest::throttle::PeerAddr(peer): rest::throttle::PeerAddr,
   headers: HeaderMap,
   req: GraphQLRequest,
 ) -> Response {
+  let inner = req.into_inner();
+  if graphql_query_exceeds_depth(&inner.query, MAX_GRAPHQL_BRACKET_DEPTH) {
+    return (
+      StatusCode::BAD_REQUEST,
+      [(header::CONTENT_TYPE, "application/json; charset=utf-8")],
+      r#"{"errors":[{"message":"Query exceeds maximum nesting depth"}]}"#,
+    )
+      .into_response();
+  }
   let lazy = LazyGraphqlPrincipal::new(state.clone(), headers.clone(), peer);
-  let gql_req = req.into_inner().data(lazy.clone()).data(headers);
+  let gql_req = inner.data(lazy.clone()).data(headers);
   let gql_resp: GraphQLResponse = state.schema.execute(gql_req).await.into();
   if let Some(http_err) = lazy.take_http_error() {
     return http_err;
@@ -754,11 +976,10 @@ pub fn build_router(app: Arc<AppState>) -> Router {
   if matrix.telemetry {
     router = router.merge(rest::telemetry::router());
   }
-  if matrix.selfhost_static {
-    router = router.merge(rest::static_files::selfhost_router());
-  }
   if matrix.front_static {
-    router = router.merge(rest::static_files::front_router());
+    router = router.merge(rest::static_files::static_router(true));
+  } else if matrix.selfhost_static {
+    router = router.merge(rest::static_files::static_router(false));
   }
 
   let mut router = router.with_state(state);

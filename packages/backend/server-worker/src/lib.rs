@@ -3,6 +3,8 @@
 //! - `v2:` private keyspace helper for shared logical DB isolation
 //! - [`CancellationToken`] and [`WorkerSupervisor`] for graceful lease drain on shutdown.
 
+pub mod maintenance;
+
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::time::Duration;
