@@ -1462,7 +1462,14 @@ export async function bootSignInPage(env = {}) {
   let captchaRequired = false;
   /** @type {(() => void) | null} */
   let resetTurnstile = null;
-  let otpSendingInFlight = false;
+  /** @type {'email' | 'password' | 'otp'} */
+  let currentStep = 'email';
+  let passwordAvailable = false;
+  let preflightSeq = 0;
+  let stepEpoch = 0;
+  let stepBoundEmail = '';
+  /** @type {Map<string, number>} */
+  const otpSendingCountByEmail = new Map();
   let resendCooldown = 0;
   /** @type {string} */
   let activeCooldownEmail = '';
@@ -1489,6 +1496,11 @@ export async function bootSignInPage(env = {}) {
       .toLowerCase();
   }
 
+  function isOtpSendInFlightFor(emailVal) {
+    const key = normalizeEmailKey(emailVal);
+    return key ? (otpSendingCountByEmail.get(key) || 0) > 0 : false;
+  }
+
   function remainingCooldownSeconds(emailVal) {
     const key = normalizeEmailKey(emailVal);
     if (!key) {
@@ -1505,18 +1517,21 @@ export async function bootSignInPage(env = {}) {
 
   function syncSubmitButtonsDisabled() {
     const waitingForCaptcha = captchaRequired && !captchaToken;
-    for (const btn of [
-      submitButtonEl,
-      passwordSubmitButtonEl,
-      switchToOtpBtn,
-    ]) {
-      if (btn) {
-        btn.disabled = waitingForCaptcha || otpSendingInFlight;
-      }
+    const stepOtpInFlight =
+      (currentStep === 'otp' || currentStep === 'password') &&
+      isOtpSendInFlightFor(stepBoundEmail);
+    if (submitButtonEl) {
+      submitButtonEl.disabled = waitingForCaptcha;
+    }
+    if (passwordSubmitButtonEl) {
+      passwordSubmitButtonEl.disabled = waitingForCaptcha;
+    }
+    if (switchToOtpBtn) {
+      switchToOtpBtn.disabled = waitingForCaptcha || stepOtpInFlight;
     }
     if (resendOtpBtn) {
       resendOtpBtn.disabled =
-        waitingForCaptcha || otpSendingInFlight || resendCooldown > 0;
+        waitingForCaptcha || stepOtpInFlight || resendCooldown > 0;
     }
   }
 
@@ -1569,7 +1584,7 @@ export async function bootSignInPage(env = {}) {
     }
   }
 
-  function startResendCooldown(
+  function recordCooldownDeadline(
     emailVal,
     seconds = OTP_RESEND_COOLDOWN_SECONDS
   ) {
@@ -1580,7 +1595,7 @@ export async function bootSignInPage(env = {}) {
         nowImpl() + Math.floor(seconds) * 1000
       );
     }
-    runResendCountdown(key);
+    return key;
   }
 
   const container = doc.getElementById('turnstile-container');
@@ -1633,17 +1648,12 @@ export async function bootSignInPage(env = {}) {
     ? `/magic-link?${magicLinkQuery}`
     : '/magic-link';
 
-  /** @type {'email' | 'password' | 'otp'} */
-  let currentStep = 'email';
-  let passwordAvailable = false;
-  let preflightSeq = 0;
-  let stepBoundEmail = '';
-
   /**
    * @param {'email' | 'password' | 'otp'} nextStep
    * @param {string} [emailText]
    */
   function setStep(nextStep, emailText) {
+    stepEpoch += 1;
     currentStep = nextStep;
     if (nextStep === 'email') {
       stepBoundEmail = '';
@@ -1673,6 +1683,7 @@ export async function bootSignInPage(env = {}) {
     if (switchToPasswordBtn) {
       switchToPasswordBtn.hidden = !passwordAvailable;
     }
+    syncSubmitButtonsDisabled();
   }
 
   if (oauthContainer || legalNoticeEl) {
@@ -1722,8 +1733,8 @@ export async function bootSignInPage(env = {}) {
     resetTurnstile?.();
   });
   doc.getElementById('email')?.addEventListener?.('input', () => {
-    preflightSeq += 1;
     if (currentStep === 'email') {
+      preflightSeq += 1;
       clearStepSecrets();
     }
   });
@@ -1740,11 +1751,18 @@ export async function bootSignInPage(env = {}) {
   });
 
   async function triggerMagicLinkSend(emailVal) {
-    if (otpSendingInFlight) {
+    const boundEmail = String(emailVal || '').trim();
+    const emailKey = normalizeEmailKey(boundEmail);
+    if (!emailKey || isOtpSendInFlightFor(emailKey)) {
       return { ok: false, status: 0, method: 'magic-link-send' };
     }
-    if (remainingCooldownSeconds(emailVal) > 0) {
-      runResendCountdown(emailVal);
+    if (remainingCooldownSeconds(emailKey) > 0) {
+      if (
+        currentStep === 'otp' &&
+        normalizeEmailKey(stepBoundEmail) === emailKey
+      ) {
+        runResendCountdown(emailKey);
+      }
       return {
         ok: true,
         status: 200,
@@ -1752,13 +1770,17 @@ export async function bootSignInPage(env = {}) {
         skipped: true,
       };
     }
-    const sendSeq = preflightSeq;
-    const boundEmail = String(emailVal || '').trim();
-    const isActiveOtp = () =>
-      sendSeq === preflightSeq &&
+    const sendEpoch = stepEpoch;
+    const isSameStepAttempt = () =>
+      sendEpoch === stepEpoch &&
       currentStep === 'otp' &&
-      stepBoundEmail === boundEmail;
-    otpSendingInFlight = true;
+      normalizeEmailKey(stepBoundEmail) === emailKey;
+    const isCurrentEmailOtpStep = () =>
+      currentStep === 'otp' && normalizeEmailKey(stepBoundEmail) === emailKey;
+    otpSendingCountByEmail.set(
+      emailKey,
+      (otpSendingCountByEmail.get(emailKey) || 0) + 1
+    );
     syncSubmitButtonsDisabled();
     try {
       const sendRes = await submitSignInForm({
@@ -1772,8 +1794,13 @@ export async function bootSignInPage(env = {}) {
         clientVersion,
         clientNonce: readClientNonce(win.sessionStorage, win.localStorage),
       });
-      resetTurnstile?.();
-      if (!isActiveOtp()) {
+      if (sendRes.ok) {
+        recordCooldownDeadline(emailKey);
+      }
+      if (isSameStepAttempt()) {
+        resetTurnstile?.();
+      }
+      if (!isCurrentEmailOtpStep()) {
         return {
           ok: false,
           status: sendRes.status,
@@ -1784,18 +1811,25 @@ export async function bootSignInPage(env = {}) {
       if (!sendRes.ok) {
         setStatus(`Failed to send code (${sendRes.status}).`, 'error');
       } else {
-        startResendCooldown(boundEmail);
+        runResendCountdown(emailKey);
         setStatus('');
       }
       return sendRes;
     } catch {
-      resetTurnstile?.();
-      if (isActiveOtp()) {
+      if (isSameStepAttempt()) {
+        resetTurnstile?.();
+      }
+      if (isCurrentEmailOtpStep()) {
         setStatus('Network error. Please try again.', 'error');
       }
       return { ok: false, status: 0, method: 'magic-link-send' };
     } finally {
-      otpSendingInFlight = false;
+      const remainingInFlight = (otpSendingCountByEmail.get(emailKey) || 1) - 1;
+      if (remainingInFlight <= 0) {
+        otpSendingCountByEmail.delete(emailKey);
+      } else {
+        otpSendingCountByEmail.set(emailKey, remainingInFlight);
+      }
       syncSubmitButtonsDisabled();
     }
   }

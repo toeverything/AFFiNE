@@ -1397,3 +1397,250 @@ void test('sign-in initial OTP send network failure shows error for immediate re
 
   page.dispose();
 });
+
+void test('sign-in Back during in-flight OTP send isolates Turnstile token, button busy state, and late per-email cooldown', async () => {
+  const els = new Map();
+  for (const id of [
+    'auth-card',
+    'auth-status',
+    'auth-legal-notice',
+    'sign-in-form',
+    'step-email',
+    'step-password',
+    'step-otp',
+    'step-email-display',
+    'otp-email-display',
+    'turnstile-container',
+    'email',
+    'password',
+    'otp',
+    'submit-button',
+    'password-submit-button',
+    'switch-to-otp-btn',
+    'switch-to-password-btn',
+    'resend-otp-btn',
+    'back-from-password-btn',
+    'back-from-otp-btn',
+  ]) {
+    const el = createMockElement(id.endsWith('-btn') ? 'button' : 'div');
+    el.hidden =
+      id === 'step-password' || id === 'step-otp' || id === 'auth-legal-notice';
+    els.set(id, el);
+  }
+  els.get('sign-in-form').getAttribute = name =>
+    name === 'action' ? '/api/auth/sign-in' : null;
+
+  let nowMs = 10_000;
+  let turnstileResets = 0;
+  /** @type {((token: string) => void) | null} */
+  let deliverCaptchaToken = null;
+  /** @type {Array<{ email: string, token: string, resolve: (v: { ok: boolean, status: number }) => void, reject: (e: Error) => void }>} */
+  const pendingSends = [];
+
+  const page = await bootSignInPage({
+    nowImpl: () => nowMs,
+    setIntervalImpl: () => ({ unref() {} }),
+    clearIntervalImpl: () => {},
+    win: {
+      location: {
+        href: 'https://app.affine.pro/sign-in',
+        pathname: '/sign-in',
+        replace() {},
+      },
+      turnstile: {
+        render(_el, opts) {
+          deliverCaptchaToken = opts.callback;
+          opts.callback('tok-a1');
+          return 'wid-inflight';
+        },
+        reset(wid) {
+          assert.equal(wid, 'wid-inflight');
+          turnstileResets += 1;
+        },
+      },
+    },
+    doc: {
+      head: createMockElement('head'),
+      querySelectorAll: () => [],
+      getElementById: id => els.get(id) || null,
+      createElement: tag => createMockElement(tag),
+    },
+    fetchImpl: async (url, init) => {
+      if (url === '/api/auth/captcha') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            provider: 'turnstile',
+            siteKey: '0x4AAAAAA',
+            action: 'sign-in',
+          }),
+        };
+      }
+      if (url === '/graphql') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            data: {
+              serverConfig: {
+                name: 'AFFiNE Cloud',
+                features: [],
+                oauthProviders: [],
+              },
+            },
+          }),
+        };
+      }
+      if (url === '/api/auth/preflight') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            registered: true,
+            methods: {
+              password: { available: false },
+              magicLink: { available: true },
+            },
+          }),
+        };
+      }
+      if (url === '/api/auth/sign-in') {
+        const body = JSON.parse(init.body);
+        return await new Promise((resolve, reject) => {
+          pendingSends.push({
+            email: body.email,
+            token: init.headers['x-captcha-token'],
+            resolve,
+            reject,
+          });
+        });
+      }
+      return { ok: true, status: 200 };
+    },
+  });
+
+  // 1. Start OTP send for A; while A is in flight, click Back, enter B, and solve Turnstile.
+  els.get('email').value = 'a@affine.pro';
+  const submitA = els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  for (let i = 0; i < 6 && pendingSends.length < 1; i += 1) {
+    await Promise.resolve();
+  }
+  assert.equal(pendingSends.length, 1);
+  assert.equal(pendingSends[0].email, 'a@affine.pro');
+  assert.equal(pendingSends[0].token, 'tok-a1');
+  assert.equal(els.get('resend-otp-btn').disabled, true);
+
+  els.get('back-from-otp-btn').listeners.get('click')();
+  assert.equal(page.getStep(), 'email');
+  assert.equal(turnstileResets, 1);
+  assert.equal(els.get('submit-button').disabled, true);
+
+  els.get('email').value = 'b@affine.pro';
+  els.get('email').listeners.get('input')();
+  deliverCaptchaToken?.('tok-b1');
+  // Continue button for B must be enabled immediately even while A's send is still in flight.
+  assert.equal(els.get('submit-button').disabled, false);
+  assert.equal(page.getCaptchaToken(), 'tok-b1');
+
+  // 2. Submit B while A is still in flight: B sends its own OTP with tok-b1, and A finishing
+  // late must neither reset Turnstile nor clear B's in-flight resend lock, yet MUST record A's 60s cooldown.
+  const submitB = els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  for (let i = 0; i < 6 && pendingSends.length < 2; i += 1) {
+    await Promise.resolve();
+  }
+  assert.equal(pendingSends.length, 2);
+  assert.equal(pendingSends[1].email, 'b@affine.pro');
+  assert.equal(pendingSends[1].token, 'tok-b1');
+  assert.equal(page.getStep(), 'otp');
+  assert.equal(els.get('resend-otp-btn').disabled, true);
+
+  deliverCaptchaToken?.('tok-b2');
+  pendingSends[0].resolve({ ok: true, status: 200 });
+  await submitA;
+  assert.equal(turnstileResets, 1);
+  assert.equal(page.getCaptchaToken(), 'tok-b2');
+  assert.equal(els.get('resend-otp-btn').disabled, true);
+  assert.equal(page.getResendCooldown(), 0);
+
+  pendingSends[1].resolve({ ok: false, status: 500 });
+  await submitB;
+  assert.equal(turnstileResets, 2);
+  assert.equal(page.getResendCooldown(), 0);
+  assert.equal(
+    els.get('auth-status').textContent,
+    'Failed to send code (500).'
+  );
+
+  // 3. Re-enter A within 60s: A's late success recorded cooldown so NO second /api/auth/sign-in is sent.
+  els.get('back-from-otp-btn').listeners.get('click')();
+  assert.equal(turnstileResets, 3);
+  deliverCaptchaToken?.('tok-a2');
+  assert.equal(els.get('submit-button').disabled, false);
+
+  els.get('email').value = 'a@affine.pro';
+  els.get('email').listeners.get('input')();
+  await els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  assert.equal(page.getStep(), 'otp');
+  assert.equal(pendingSends.length, 2);
+  assert.equal(page.getResendCooldown(), 60);
+  assert.equal(els.get('resend-otp-btn').textContent, 'Resend in 60s');
+  assert.equal(els.get('resend-otp-btn').disabled, true);
+  assert.equal(turnstileResets, 3);
+  assert.equal(page.getCaptchaToken(), 'tok-a2');
+
+  // 4. Late failure after Back does NOT record cooldown: start C, click Back, reject C, re-enter C -> sends again.
+  els.get('back-from-otp-btn').listeners.get('click')();
+  assert.equal(turnstileResets, 4);
+  deliverCaptchaToken?.('tok-c1');
+  els.get('email').value = 'c@affine.pro';
+  els.get('email').listeners.get('input')();
+  const submitC1 = els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  for (let i = 0; i < 6 && pendingSends.length < 3; i += 1) {
+    await Promise.resolve();
+  }
+  assert.equal(pendingSends.length, 3);
+  els.get('back-from-otp-btn').listeners.get('click')();
+  assert.equal(turnstileResets, 5);
+  deliverCaptchaToken?.('tok-c2');
+  pendingSends[2].reject(new Error('offline-c'));
+  await submitC1;
+  assert.equal(turnstileResets, 5);
+  assert.equal(page.getCaptchaToken(), 'tok-c2');
+
+  const submitC2 = els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  for (let i = 0; i < 6 && pendingSends.length < 4; i += 1) {
+    await Promise.resolve();
+  }
+  assert.equal(pendingSends.length, 4);
+  assert.equal(pendingSends[3].email, 'c@affine.pro');
+
+  // 5. Click Back from C2 while C2 is STILL in flight, and immediately re-enter C BEFORE C2 settles:
+  // C2 finishing must preserve tok-c3 while starting C's 60s countdown.
+  els.get('back-from-otp-btn').listeners.get('click')();
+  assert.equal(turnstileResets, 6);
+  deliverCaptchaToken?.('tok-c3');
+  await els.get('sign-in-form').listeners.get('submit')({
+    preventDefault() {},
+  });
+  assert.equal(page.getStep(), 'otp');
+  assert.equal(pendingSends.length, 4);
+  assert.equal(els.get('resend-otp-btn').disabled, true);
+  pendingSends[3].resolve({ ok: true, status: 200 });
+  await submitC2;
+  assert.equal(turnstileResets, 6);
+  assert.equal(page.getCaptchaToken(), 'tok-c3');
+  assert.equal(page.getResendCooldown(), 60);
+
+  page.dispose();
+});
