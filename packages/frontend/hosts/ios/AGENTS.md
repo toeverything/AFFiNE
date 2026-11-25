@@ -1,7 +1,7 @@
 # Working in `packages/frontend/hosts/ios/` (for agents)
 
 This directory holds the zero-CocoaPods iOS thin host for AFFiNE.
-It bridges `UIKit`, `CAMetalLayer`, ProMotion `CADisplayLink`, and `UITextInput` to the Rust client workspace through a C ABI.
+It bridges `UIKit`, `CAMetalLayer`, ProMotion `CADisplayLink`, `UITextInput`, native teardrop selection handles and magnifier loupe (`SelectionOverlayView`), per-frame keyboard avoidance (`KeyboardAvoidanceCoordinator`), system `PDFKit` page rasterization (`PdfRendererBridge`), and UIKit haptics (`HapticsBridge`) to the Rust client workspace through a C ABI.
 
 ## Hard boundaries
 
@@ -10,6 +10,9 @@ It bridges `UIKit`, `CAMetalLayer`, ProMotion `CADisplayLink`, and `UITextInput`
 - Use `LegacyLocalStorageProbe.swift` only as a one-shot sentinel and rollback writer under `capacitor://localhost` for whitelisted `localStorage` keys. Keep the `window.indexedDB` runtime trap active so IndexedDB access stays strictly zero.
 - Share `<Documents>/workspaces/<spaceType>/<sanitizedPeer>/<spaceId>.db` in place through `affine-store` and mount local workspaces strictly from the `affine-local-workspace` allowlist without scanning disk for `*.db` files.
 - Keep `LegacyAuthBridge.swift` and `src/auth.rs` aligned with Keychain service `app.affine.pro.auth-token` (2001 reference epoch `f64` timestamps) and `UserDefaults` key `app.affine.pro.auth-installation-id`.
+- Keep `SelectionOverlayView.swift` pure `UIView`/`CALayer` (zero `WKWebView`), drive all handle/loupe geometry from Rust `src/selection.rs`, and drive shaped CoreText `CTTypesetter`/`CTLine` text geometry, BiDi selection rects, and whole-line `CTLineDraw` loupe rendering through `TextRenderingBridge.swift` / `src/ffi_text.rs` (with headless Rust fallback in `src/text_layout.rs`). `HostTextPreviewView` is an S3 thin-host transition preview layer and will be removed when S4 attaches the GPU `blocksuite-editor` renderer to avoid double-drawing.
+- Keep `KeyboardAvoidanceCoordinator.swift` aligned with `ui::WindowInsets::effective()` (`ime_bottom` is the absolute docked keyboard overlap from the window bottom edge, `effective_bottom = max(safe_bottom, ime_bottom)`, and `affine_ios_host_ime_above_safe_bottom` exposes `max(0, ime_bottom - safe_bottom)` to avoid double-deducting safe area), returning `0` for floating, split, and external hardware keyboards.
+- Keep `PdfRendererBridge.swift` backed by Apple's system `PDFKit` framework (zero C++ PDFium) with explicit `affine_ios_host_pdf_open`/`close` document handles (zero persistent cache) and enforce the shared Rust header, page-bounds, and pixel-budget limits in `src/pdf.rs`.
 - Pin Rust builds in `scripts/build-rust-ios.sh` to `rustup run 1.98.1`, `--manifest-path packages/frontend/Cargo.toml`, and `CARGO_ENCODED_RUSTFLAGS=""`. Never modify `packages/frontend/apps/ios/` (`1.97.1`).
 
 ## Verification

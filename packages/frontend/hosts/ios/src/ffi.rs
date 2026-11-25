@@ -20,8 +20,12 @@ use super::{
 
 /// Opaque C-ABI handle matching `typedef struct AffineIosHost AffineIosHost`.
 pub struct AffineIosHost {
-    state: IosHostState,
+    pub(crate) state: IosHostState,
     _metal_layer: *mut c_void,
+    pub(crate) haptics_callback: Option<extern "C" fn(u8, *mut c_void)>,
+    pub(crate) haptics_user_data: *mut c_void,
+    pub(crate) pdf_provider: Option<super::ffi_s3::AffinePdfProvider>,
+    pub(crate) text_provider: Option<super::ffi_text::AffineTextProvider>,
 }
 
 /// Opaque C-ABI handle matching `typedef struct AffineIosWorkspace AffineIosWorkspace`.
@@ -38,14 +42,14 @@ pub struct AffineIosByteBuffer {
 }
 
 impl AffineIosByteBuffer {
-    fn empty() -> Self {
+    pub(crate) fn empty() -> Self {
         Self {
             ptr: core::ptr::null_mut(),
             len: 0,
         }
     }
 
-    fn from_vec(bytes: Vec<u8>) -> Self {
+    pub(crate) fn from_vec(bytes: Vec<u8>) -> Self {
         if bytes.is_empty() {
             return Self::empty();
         }
@@ -103,6 +107,10 @@ pub extern "C" fn affine_ios_host_create(
     let host = Box::new(AffineIosHost {
         state: IosHostState::new(width_pt, height_pt, scale_factor),
         _metal_layer: metal_layer,
+        haptics_callback: None,
+        haptics_user_data: core::ptr::null_mut(),
+        pdf_provider: None,
+        text_provider: None,
     });
     Box::into_raw(host)
 }

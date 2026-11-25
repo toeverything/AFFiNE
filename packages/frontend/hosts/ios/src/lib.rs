@@ -10,7 +10,14 @@
 
 pub mod auth;
 pub mod ffi;
+pub mod ffi_s3;
+pub mod ffi_text;
+pub mod haptics;
+pub mod keyboard_insets;
 pub mod legacy_storage;
+pub mod pdf;
+pub mod selection;
+pub mod text_layout;
 pub mod workspace_store;
 
 /// C-ABI window insets matching `AffineWindowInsets` in `include/affine_mobile_host.h`.
@@ -47,6 +54,9 @@ pub struct IosHostState {
     utf16_text: Vec<u16>,
     selected_range: AffineUtf16Range,
     marked_range: Option<AffineUtf16Range>,
+    selection_overlay: selection::SelectionOverlayController,
+    keyboard_transition: keyboard_insets::KeyboardFrameTransition,
+    haptics: haptics::HapticsState,
 }
 
 impl IosHostState {
@@ -91,7 +101,122 @@ impl IosHostState {
         self.insets
     }
 
-    pub const DEFAULT_CLEAR_COLOR_RGBA: u32 = 0x1414_14FF;
+    /// Additional keyboard height above `safe_bottom` (`(ime_bottom - safe_bottom).max(0.0)`),
+    /// for containers that already apply `safe_bottom` separately.
+    pub fn ime_above_safe_bottom(&self) -> f32 {
+        (self.insets.ime_bottom - self.insets.safe_bottom).max(0.0)
+    }
+
+    pub fn viewport_size_pt(&self) -> (f32, f32) {
+        (self.width_pt, self.height_pt)
+    }
+
+    pub fn selection_overlay(&self) -> &selection::SelectionOverlayController {
+        &self.selection_overlay
+    }
+
+    pub fn selection_overlay_mut(&mut self) -> &mut selection::SelectionOverlayController {
+        self.dirty = true;
+        &mut self.selection_overlay
+    }
+
+    pub fn selection_overlay_state(&self) -> selection::AffineSelectionOverlayState {
+        self.selection_overlay
+            .layout(self.width_pt, self.height_pt, self.insets)
+    }
+
+    pub fn text_writing_direction(&self) -> selection::AffineWritingDirection {
+        text_layout::detect_paragraph_writing_direction(
+            &self.utf16_text,
+            self.selected_range().location as usize,
+        )
+    }
+
+    pub fn text_caret_rect(&self, utf16_offset: u32) -> selection::AffineRect {
+        text_layout::caret_rect_for_offset(
+            &self.utf16_text,
+            utf16_offset,
+            self.width_pt,
+            self.insets,
+        )
+    }
+
+    pub fn text_closest_offset(&self, point: selection::AffinePoint) -> u32 {
+        text_layout::closest_offset_for_point(&self.utf16_text, point, self.width_pt, self.insets)
+    }
+
+    pub fn render_loupe_rgba8(
+        &self,
+        focus_x: f32,
+        focus_y: f32,
+        diameter_px: u32,
+        zoom_scale: f32,
+    ) -> Vec<u8> {
+        text_layout::render_loupe_rgba8(
+            &self.utf16_text,
+            self.selected_range(),
+            self.width_pt,
+            self.insets,
+            focus_x,
+            focus_y,
+            diameter_px,
+            zoom_scale,
+        )
+    }
+
+    pub fn begin_keyboard_transition(
+        &mut self,
+        target_ime_bottom_pt: f32,
+        start_timestamp_sec: f64,
+        duration_sec: f64,
+    ) {
+        self.keyboard_transition = keyboard_insets::KeyboardFrameTransition::begin(
+            self.insets.ime_bottom,
+            target_ime_bottom_pt,
+            start_timestamp_sec,
+            duration_sec,
+        );
+        if !self.keyboard_transition.active {
+            let mut next = self.insets;
+            next.ime_bottom = self.keyboard_transition.target_ime_bottom_pt;
+            self.set_insets(next);
+        }
+    }
+
+    pub fn sample_keyboard_frame(
+        &mut self,
+        safe_top: f32,
+        safe_right: f32,
+        safe_bottom: f32,
+        safe_left: f32,
+        frame_timestamp_sec: f64,
+    ) -> AffineWindowInsets {
+        let sampled_ime = if self.keyboard_transition.active {
+            self.keyboard_transition.sample(frame_timestamp_sec)
+        } else {
+            self.insets.ime_bottom
+        };
+        let next = keyboard_insets::build_window_insets(
+            safe_top,
+            safe_right,
+            safe_bottom,
+            safe_left,
+            sampled_ime,
+        );
+        self.set_insets(next);
+        self.insets
+    }
+
+    pub fn haptics(&self) -> &haptics::HapticsState {
+        &self.haptics
+    }
+
+    pub fn record_haptic(&mut self, pattern: haptics::AffineHapticPattern) {
+        self.haptics.record(pattern);
+    }
+
+    /// AFFiNE light canvas clear color (`#FAFAFC`, contrast > 16:1 against `#1A1A1A` text).
+    pub const DEFAULT_CLEAR_COLOR_RGBA: u32 = 0xFAFA_FCFF;
 
     /// Mark the host surface dirty so the next `render_frame` tick draws.
     pub fn request_frame(&mut self) {
@@ -146,6 +271,7 @@ impl IosHostState {
             length: 0,
         };
         self.marked_range = None;
+        self.selection_overlay.clear();
         self.dirty = true;
     }
 
@@ -162,6 +288,7 @@ impl IosHostState {
                 length: 0,
             };
             self.shrink_marked_range(start, end);
+            self.selection_overlay.clear();
             self.dirty = true;
             return;
         }
@@ -183,6 +310,7 @@ impl IosHostState {
             length: 0,
         };
         self.shrink_marked_range(start, end);
+        self.selection_overlay.clear();
         self.dirty = true;
     }
 
@@ -202,12 +330,19 @@ impl IosHostState {
             length: 0,
         };
         self.shrink_marked_range(start, end);
+        self.selection_overlay.clear();
         self.dirty = true;
     }
 
     /// Updates the active UTF-16 selection range (clamped to current buffer bounds).
     pub fn set_selected_range(&mut self, range: AffineUtf16Range) {
         let next = self.clamp_range(range);
+        if next.length == 0
+            && self.selection_overlay.active_drag_handle()
+                == selection::AffineSelectionHandleKind::None
+        {
+            self.selection_overlay.clear();
+        }
         if next != self.selected_range {
             self.selected_range = next;
             self.dirty = true;
@@ -227,6 +362,7 @@ impl IosHostState {
             length: 0,
         };
         self.marked_range = None;
+        self.selection_overlay.clear();
         self.dirty = true;
     }
 

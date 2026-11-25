@@ -32,6 +32,39 @@ final class AffineTextRange: UITextRange {
   }
 }
 
+final class AffineTextSelectionRect: UITextSelectionRect {
+  private let selectionRect: CGRect
+  private let isStart: Bool
+  private let isEnd: Bool
+
+  init(rect: CGRect, containsStart: Bool, containsEnd: Bool) {
+    self.selectionRect = rect
+    self.isStart = containsStart
+    self.isEnd = containsEnd
+    super.init()
+  }
+
+  override var rect: CGRect {
+    selectionRect
+  }
+
+  override var writingDirection: NSWritingDirection {
+    .natural
+  }
+
+  override var containsStart: Bool {
+    isStart
+  }
+
+  override var containsEnd: Bool {
+    isEnd
+  }
+
+  override var isVertical: Bool {
+    false
+  }
+}
+
 private final class DisplayLinkProxy: NSObject {
   weak var target: MetalHostViewController?
 
@@ -61,10 +94,85 @@ final class MetalHostView: UIView, UITextInput {
   lazy var tokenizer: UITextInputTokenizer = UITextInputStringTokenizer(textInput: self)
 
   var hostHandle: OpaquePointer?
+  var onSelectedRangeChanged: ((NSRange) -> Void)?
+  private(set) var lastCopiedText: String?
 
   private var backingText: NSString = ""
   private var selectedUtf16Range = NSRange(location: 0, length: 0)
   private var markedUtf16Range: NSRange?
+
+  var currentBackingUtf16Units: [UInt16] {
+    let len = backingText.length
+    guard len > 0 else { return [] }
+    var buf = Array(repeating: UInt16(0), count: len)
+    backingText.getCharacters(&buf, range: NSRange(location: 0, length: len))
+    return buf
+  }
+
+  var currentSelectedUtf16Range: NSRange {
+    clampRange(selectedUtf16Range)
+  }
+
+  var currentWritingDirection: UInt8 {
+    guard let handle = hostHandle else {
+      return 0
+    }
+    return affine_ios_host_text_writing_direction(handle)
+  }
+
+  func updateSelectedRangeFromOverlay(_ range: NSRange) {
+    let clamped = clampRange(range)
+    selectedUtf16Range = clamped
+    if let handle = hostHandle {
+      affine_ios_host_set_selected_range(
+        handle,
+        AffineUtf16Range(location: UInt32(clamped.location), length: UInt32(clamped.length))
+      )
+    }
+  }
+
+  override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+    if action == #selector(copy(_:)) || action == #selector(cut(_:)) {
+      return selectedUtf16Range.length > 0
+    }
+    if action == #selector(paste(_:)) {
+      return UIPasteboard.general.hasStrings
+    }
+    if action == #selector(selectAll(_:)) {
+      return backingText.length > 0
+    }
+    return super.canPerformAction(action, withSender: sender)
+  }
+
+  override func copy(_ sender: Any?) {
+    let clamped = clampRange(selectedUtf16Range)
+    guard clamped.length > 0 else {
+      return
+    }
+    let copied = backingText.substring(with: clamped)
+    lastCopiedText = copied
+    UIPasteboard.general.string = copied
+  }
+
+  override func cut(_ sender: Any?) {
+    let clamped = clampRange(selectedUtf16Range)
+    guard clamped.length > 0 else {
+      return
+    }
+    copy(sender)
+    deleteBackward()
+  }
+
+  override func paste(_ sender: Any?) {
+    guard let text = UIPasteboard.general.string, !text.isEmpty else {
+      return
+    }
+    insertText(text)
+  }
+
+  override func selectAll(_ sender: Any?) {
+    selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: backingText.length))
+  }
 
   override var canBecomeFirstResponder: Bool {
     true
@@ -85,6 +193,7 @@ final class MetalHostView: UIView, UITextInput {
         affine_ios_host_insert_text(handle, buf.baseAddress, buf.count)
       }
     }
+    onSelectedRangeChanged?(selectedUtf16Range)
   }
 
   func deleteBackward() {
@@ -109,6 +218,9 @@ final class MetalHostView: UIView, UITextInput {
         handle,
         AffineUtf16Range(location: UInt32(del.location), length: UInt32(del.length))
       )
+    }
+    if deletedRange != nil {
+      onSelectedRangeChanged?(selectedUtf16Range)
     }
   }
 
@@ -158,6 +270,7 @@ final class MetalHostView: UIView, UITextInput {
         affine_ios_host_replace_range(handle, cRange, buf.baseAddress, buf.count)
       }
     }
+    onSelectedRangeChanged?(selectedUtf16Range)
   }
 
   var selectedTextRange: UITextRange? {
@@ -174,6 +287,7 @@ final class MetalHostView: UIView, UITextInput {
             AffineUtf16Range(location: UInt32(clamped.location), length: UInt32(clamped.length))
           )
         }
+        onSelectedRangeChanged?(clamped)
       }
     }
   }
@@ -208,6 +322,7 @@ final class MetalHostView: UIView, UITextInput {
         affine_ios_host_set_marked_text(handle, buf.baseAddress, buf.count, cRange)
       }
     }
+    onSelectedRangeChanged?(selectedUtf16Range)
   }
 
   func unmarkText() {
@@ -325,33 +440,116 @@ final class MetalHostView: UIView, UITextInput {
     for position: UITextPosition,
     in direction: UITextStorageDirection
   ) -> NSWritingDirection {
-    .natural
+    currentWritingDirection == 1 ? .rightToLeft : .leftToRight
   }
 
   func setBaseWritingDirection(_ writingDirection: NSWritingDirection, for range: UITextRange) {}
 
   func firstRect(for range: UITextRange) -> CGRect {
-    .zero
+    guard let affineRange = range as? AffineTextRange else {
+      return .zero
+    }
+    let clamped = clampRange(affineRange.utf16Range)
+    let startRect = caretRect(for: AffineTextPosition(utf16Offset: clamped.location))
+    if clamped.length == 0 {
+      return startRect
+    }
+    let endRect = caretRect(for: AffineTextPosition(utf16Offset: clamped.location + clamped.length))
+    if abs(startRect.minY - endRect.minY) < 1.0 {
+      return CGRect(
+        x: min(startRect.minX, endRect.minX),
+        y: startRect.minY,
+        width: max(2.0, abs(endRect.maxX - startRect.minX)),
+        height: startRect.height
+      )
+    }
+    return startRect
   }
 
   func caretRect(for position: UITextPosition) -> CGRect {
-    .zero
+    guard
+      let pos = position as? AffineTextPosition,
+      let handle = hostHandle
+    else {
+      return .zero
+    }
+    let cRect = affine_ios_host_text_caret_rect(handle, UInt32(max(0, pos.utf16Offset)))
+    return CGRect(
+      x: CGFloat(cRect.x),
+      y: CGFloat(cRect.y),
+      width: CGFloat(cRect.width),
+      height: CGFloat(cRect.height)
+    )
   }
 
   func selectionRects(for range: UITextRange) -> [UITextSelectionRect] {
-    []
+    guard
+      let affineRange = range as? AffineTextRange,
+      let handle = hostHandle
+    else {
+      return []
+    }
+    let clamped = clampRange(affineRange.utf16Range)
+    guard clamped.length > 0 else {
+      return []
+    }
+    let cRange = AffineUtf16Range(location: UInt32(clamped.location), length: UInt32(clamped.length))
+    let count = affine_ios_host_text_selection_rects(handle, cRange, nil, 0)
+    guard count > 0 else {
+      return []
+    }
+    var rawRects = Array(repeating: AffineSelectionRect(), count: count)
+    _ = rawRects.withUnsafeMutableBufferPointer { buf in
+      affine_ios_host_text_selection_rects(handle, cRange, buf.baseAddress, count)
+    }
+    return rawRects.map { item in
+      AffineTextSelectionRect(
+        rect: CGRect(
+          x: CGFloat(item.rect.x),
+          y: CGFloat(item.rect.y),
+          width: CGFloat(item.rect.width),
+          height: CGFloat(item.rect.height)
+        ),
+        containsStart: item.contains_start,
+        containsEnd: item.contains_end
+      )
+    }
   }
 
   func closestPosition(to point: CGPoint) -> UITextPosition? {
-    endOfDocument
+    guard let handle = hostHandle else {
+      return AffineTextPosition(utf16Offset: 0)
+    }
+    let offset = affine_ios_host_text_closest_offset(
+      handle,
+      AffinePoint(x: Float(point.x), y: Float(point.y))
+    )
+    return AffineTextPosition(utf16Offset: Int(offset))
   }
 
   func closestPosition(to point: CGPoint, within range: UITextRange) -> UITextPosition? {
-    range.end
+    guard let affineRange = range as? AffineTextRange else {
+      return closestPosition(to: point)
+    }
+    let clamped = clampRange(affineRange.utf16Range)
+    guard let pos = closestPosition(to: point) as? AffineTextPosition else {
+      return affineRange.end
+    }
+    let bounded = max(clamped.location, min(pos.utf16Offset, clamped.location + clamped.length))
+    return AffineTextPosition(utf16Offset: bounded)
   }
 
   func characterRange(at point: CGPoint) -> UITextRange? {
-    nil
+    guard let pos = closestPosition(to: point) as? AffineTextPosition else {
+      return nil
+    }
+    let len = backingText.length
+    guard len > 0 else {
+      return AffineTextRange(utf16Range: NSRange(location: 0, length: 0))
+    }
+    let idx = min(pos.utf16Offset, len - 1)
+    let cluster = backingText.rangeOfComposedCharacterSequence(at: idx)
+    return AffineTextRange(utf16Range: cluster)
   }
 
   private func clampRange(_ range: NSRange) -> NSRange {
@@ -362,9 +560,24 @@ final class MetalHostView: UIView, UITextInput {
   }
 }
 
-final class MetalHostViewController: UIViewController {
+final class MetalHostViewController: UIViewController, UIEditMenuInteractionDelegate {
   private let hostView = MetalHostView()
+  private let textPreviewView = HostTextPreviewView()
+  private let selectionOverlayView = SelectionOverlayView()
+  private let keyboardAvoidanceCoordinator = KeyboardAvoidanceCoordinator()
+  private let pdfRendererBridge = PdfRendererBridge()
+  private let textRenderingBridge = TextRenderingBridge()
+  private let hapticsBridge = HapticsBridge()
   private let bootstrapCoordinator = HostBootstrapCoordinator()
+  private var editMenuInteraction: UIEditMenuInteraction?
+  private(set) var presentedMenuAnchorRect: CGRect?
+  private var lastSyncedInsets = AffineWindowInsets(
+    safe_top: 0,
+    safe_right: 0,
+    safe_bottom: 0,
+    safe_left: 0,
+    ime_bottom: 0
+  )
   private(set) var lastBootstrapError: Error?
   private var bootstrapCompleted = false
   private var hostHandle: OpaquePointer?
@@ -372,14 +585,30 @@ final class MetalHostViewController: UIViewController {
   private var commandQueue: MTLCommandQueue?
   private var displayLink: CADisplayLink?
   private var displayLinkProxy: DisplayLinkProxy?
-  private var keyboardOverlapHeight: CGFloat = 0
-  private var lastInsets = AffineWindowInsets(
-    safe_top: 0,
-    safe_right: 0,
-    safe_bottom: 0,
-    safe_left: 0,
-    ime_bottom: 0
-  )
+
+  var textHostView: MetalHostView {
+    hostView
+  }
+
+  var selectionOverlay: SelectionOverlayView {
+    selectionOverlayView
+  }
+
+  var keyboardCoordinator: KeyboardAvoidanceCoordinator {
+    keyboardAvoidanceCoordinator
+  }
+
+  var haptics: HapticsBridge {
+    hapticsBridge
+  }
+
+  var textRenderer: TextRenderingBridge {
+    textRenderingBridge
+  }
+
+  var hostPointer: OpaquePointer? {
+    hostHandle
+  }
 
   override func loadView() {
     view = hostView
@@ -398,6 +627,60 @@ final class MetalHostViewController: UIViewController {
     )
     hostHandle = handle
     hostView.hostHandle = handle
+    applyClearColor(TextRenderingBridge.defaultClearColorRgba)
+    textPreviewView.renderer = textRenderingBridge
+    textPreviewView.frame = hostView.bounds
+    textPreviewView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    hostView.addSubview(textPreviewView)
+
+    selectionOverlayView.hostHandle = handle
+    selectionOverlayView.frame = hostView.bounds
+    selectionOverlayView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    hostView.addSubview(selectionOverlayView)
+
+    let menuInteraction = UIEditMenuInteraction(delegate: self)
+    hostView.addInteraction(menuInteraction)
+    editMenuInteraction = menuInteraction
+
+    hostView.onSelectedRangeChanged = { [weak self] range in
+      self?.syncSelectionOverlay(for: range)
+    }
+    selectionOverlayView.onSelectionDragResolved = { [weak self] probePoint in
+      guard let self else {
+        let fallback = CGRect(x: probePoint.x, y: probePoint.y, width: 2, height: 22)
+        return (0, fallback, fallback)
+      }
+      return self.resolveSelectionDrag(at: probePoint)
+    }
+    selectionOverlayView.onMenuAnchorChanged = { [weak self] anchorRect in
+      guard let self else {
+        return
+      }
+      self.presentedMenuAnchorRect = anchorRect
+      guard let interaction = self.editMenuInteraction else {
+        return
+      }
+      if let rect = anchorRect {
+        let config = UIEditMenuConfiguration(
+          identifier: nil,
+          sourcePoint: CGPoint(x: rect.midX, y: rect.minY)
+        )
+        interaction.presentEditMenu(with: config)
+      } else {
+        interaction.dismissMenu()
+      }
+    }
+
+    keyboardAvoidanceCoordinator.hostView = hostView
+    keyboardAvoidanceCoordinator.hostHandle = handle
+    keyboardAvoidanceCoordinator.startObserving()
+
+    if let handle {
+      textRenderingBridge.attach(to: handle)
+      pdfRendererBridge.attach(to: handle)
+      hapticsBridge.attach(to: handle)
+      hapticsBridge.prepareAll()
+    }
     observeNotifications()
     startDisplayLink()
     retryBootstrapIfNeeded()
@@ -425,7 +708,7 @@ final class MetalHostViewController: UIViewController {
 
   override func viewSafeAreaInsetsDidChange() {
     super.viewSafeAreaInsetsDidChange()
-    publishInsetsIfChanged()
+    sampleInsets(timestamp: CACurrentMediaTime())
   }
 
   override func viewDidLayoutSubviews() {
@@ -436,6 +719,8 @@ final class MetalHostViewController: UIViewController {
       width: view.bounds.width * scale,
       height: view.bounds.height * scale
     )
+    textPreviewView.frame = hostView.bounds
+    selectionOverlayView.frame = hostView.bounds
     if let handle = hostHandle {
       affine_ios_host_resize(
         handle,
@@ -444,17 +729,146 @@ final class MetalHostViewController: UIViewController {
         Float(scale)
       )
     }
-    publishInsetsIfChanged()
+    sampleInsets(timestamp: CACurrentMediaTime())
+    refreshTextPreview()
+    let currentRange = hostView.currentSelectedUtf16Range
+    if currentRange.length > 0 {
+      syncSelectionOverlay(for: currentRange)
+    } else {
+      selectionOverlayView.refreshFromHost()
+    }
   }
 
   deinit {
     displayLink?.invalidate()
+    keyboardAvoidanceCoordinator.stopObserving()
+    keyboardAvoidanceCoordinator.hostHandle = nil
     NotificationCenter.default.removeObserver(self)
     hostView.hostHandle = nil
+    selectionOverlayView.hostHandle = nil
     if let handle = hostHandle {
+      textRenderingBridge.detach()
+      pdfRendererBridge.detach(from: handle)
+      hapticsBridge.detach(from: handle)
       affine_ios_host_destroy(handle)
       hostHandle = nil
     }
+  }
+
+  private func applyClearColor(_ rgba: UInt32) {
+    let bg = textRenderingBridge.applyClearColorRgba(rgba)
+    if hostView.backgroundColor != bg {
+      hostView.backgroundColor = bg
+      textPreviewView.setNeedsDisplay()
+    }
+  }
+
+  private func refreshTextPreview() {
+    textPreviewView.utf16Units = hostView.currentBackingUtf16Units
+    textPreviewView.selectedRange = hostView.currentSelectedUtf16Range
+    textPreviewView.hostInsets = lastSyncedInsets
+  }
+
+  private func syncSelectionOverlay(for range: NSRange) {
+    refreshTextPreview()
+    guard let handle = hostHandle else {
+      return
+    }
+    let cRange = AffineUtf16Range(location: UInt32(range.location), length: UInt32(range.length))
+    var cStart = AffineRect()
+    var cEnd = AffineRect()
+    if !affine_ios_host_text_selection_endpoint_carets(handle, cRange, &cStart, &cEnd) {
+      let startRect = hostView.caretRect(for: AffineTextPosition(utf16Offset: range.location))
+      let endRect = hostView.caretRect(
+        for: AffineTextPosition(utf16Offset: range.location + range.length)
+      )
+      cStart = AffineRect(
+        x: Float(startRect.origin.x),
+        y: Float(startRect.origin.y),
+        width: Float(max(startRect.size.width, 2.0)),
+        height: Float(max(startRect.size.height, 22.0))
+      )
+      cEnd = AffineRect(
+        x: Float(endRect.origin.x),
+        y: Float(endRect.origin.y),
+        width: Float(max(endRect.size.width, 2.0)),
+        height: Float(max(endRect.size.height, 22.0))
+      )
+    }
+    let state = affine_ios_host_selection_set(
+      handle,
+      cStart,
+      cEnd,
+      cRange,
+      hostView.currentWritingDirection
+    )
+    selectionOverlayView.applyOverlayState(state)
+  }
+
+  func editMenuInteraction(
+    _ interaction: UIEditMenuInteraction,
+    targetRectFor configuration: UIEditMenuConfiguration
+  ) -> CGRect {
+    presentedMenuAnchorRect ?? .null
+  }
+
+  private func resolveSelectionDrag(
+    at probePoint: CGPoint
+  ) -> (targetOffset: UInt32, startCaret: CGRect, endCaret: CGRect) {
+    let fallback = CGRect(x: probePoint.x - 1.0, y: probePoint.y - 11.0, width: 2.0, height: 22.0)
+    guard let handle = hostHandle else {
+      return (0, fallback, fallback)
+    }
+    let previousRange = selectionOverlayView.currentState.range
+    let rawAnchor = affine_ios_host_selection_drag_anchor(handle)
+    let anchor: UInt32
+    if rawAnchor != UInt32.max {
+      anchor = rawAnchor
+    } else if selectionOverlayView.currentState.active_drag_handle == 1 {
+      anchor = previousRange.location + previousRange.length
+    } else {
+      anchor = previousRange.location
+    }
+
+    let activeCurrentOffset: UInt32 =
+      selectionOverlayView.currentState.active_drag_handle == 1
+        ? previousRange.location
+        : (previousRange.location + previousRange.length)
+    let targetOffset = affine_ios_host_text_closest_offset_preferred(
+      handle,
+      AffinePoint(x: Float(probePoint.x), y: Float(probePoint.y)),
+      activeCurrentOffset
+    )
+    let newStart = min(anchor, targetOffset)
+    let newEnd = max(anchor, targetOffset)
+    let nextRange = AffineUtf16Range(location: newStart, length: newEnd - newStart)
+    if nextRange.location != previousRange.location || nextRange.length != previousRange.length {
+      hostView.updateSelectedRangeFromOverlay(
+        NSRange(location: Int(nextRange.location), length: Int(nextRange.length))
+      )
+      refreshTextPreview()
+      _ = affine_ios_host_trigger_haptic(handle, AffineHapticPatternSwift.selectionChanged.rawValue)
+    }
+    var cStart = AffineRect()
+    var cEnd = AffineRect()
+    if affine_ios_host_text_selection_endpoint_carets(handle, nextRange, &cStart, &cEnd) {
+      let startCaret = CGRect(
+        x: CGFloat(cStart.x),
+        y: CGFloat(cStart.y),
+        width: CGFloat(cStart.width),
+        height: CGFloat(cStart.height)
+      )
+      let endCaret = CGRect(
+        x: CGFloat(cEnd.x),
+        y: CGFloat(cEnd.y),
+        width: CGFloat(cEnd.width),
+        height: CGFloat(cEnd.height)
+      )
+      return (targetOffset, startCaret, endCaret)
+    }
+    let startCaret = hostView.caretRect(for: AffineTextPosition(utf16Offset: Int(newStart)))
+    let endCaret = hostView.caretRect(for: AffineTextPosition(utf16Offset: Int(newEnd)))
+    return (targetOffset, startCaret, endCaret)
   }
 
   private func configureMetalLayer() {
@@ -477,7 +891,7 @@ final class MetalHostViewController: UIViewController {
   }
 
   func handleDisplayLinkTick(_ link: CADisplayLink) {
-    publishInsetsIfChanged()
+    sampleInsets(timestamp: link.timestamp)
     guard
       let handle = hostHandle,
       affine_ios_host_is_dirty(handle),
@@ -491,6 +905,7 @@ final class MetalHostViewController: UIViewController {
     guard clearRgba != 0 else {
       return
     }
+    applyClearColor(clearRgba)
     let red = Double((clearRgba >> 24) & 0xFF) / 255.0
     let green = Double((clearRgba >> 16) & 0xFF) / 255.0
     let blue = Double((clearRgba >> 8) & 0xFF) / 255.0
@@ -518,12 +933,6 @@ final class MetalHostViewController: UIViewController {
     let center = NotificationCenter.default
     center.addObserver(
       self,
-      selector: #selector(handleKeyboardFrameChange(_:)),
-      name: UIResponder.keyboardWillChangeFrameNotification,
-      object: nil
-    )
-    center.addObserver(
-      self,
       selector: #selector(handleDidEnterBackground),
       name: UIApplication.didEnterBackgroundNotification,
       object: nil
@@ -548,43 +957,24 @@ final class MetalHostViewController: UIViewController {
     displayLink?.isPaused = false
   }
 
-  @objc private func handleKeyboardFrameChange(_ notification: Notification) {
-    guard
-      let userInfo = notification.userInfo,
-      let endFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
-    else {
-      return
-    }
-    let converted: CGRect
-    if let window = view.window {
-      converted = view.convert(endFrame, from: window.screen.coordinateSpace)
-    } else {
-      converted = view.convert(endFrame, from: nil)
-    }
-    let intersection = view.bounds.intersection(converted)
-    keyboardOverlapHeight = intersection.isNull ? 0 : max(0, intersection.height)
-    publishInsetsIfChanged()
-  }
-
-  private func publishInsetsIfChanged() {
-    let safe = view.safeAreaInsets
-    let absoluteImeBottom = max(0, keyboardOverlapHeight)
-    let next = AffineWindowInsets(
-      safe_top: Float(safe.top),
-      safe_right: Float(safe.right),
-      safe_bottom: Float(safe.bottom),
-      safe_left: Float(safe.left),
-      ime_bottom: Float(absoluteImeBottom)
+  func sampleInsets(timestamp: Double) {
+    let next = keyboardAvoidanceCoordinator.sampleDisplayLinkFrame(
+      timestamp: timestamp,
+      safeAreaInsets: view.safeAreaInsets
     )
-    if next.safe_top != lastInsets.safe_top
-      || next.safe_right != lastInsets.safe_right
-      || next.safe_bottom != lastInsets.safe_bottom
-      || next.safe_left != lastInsets.safe_left
-      || next.ime_bottom != lastInsets.ime_bottom
-    {
-      lastInsets = next
-      if let handle = hostHandle {
-        affine_ios_host_set_insets(handle, next)
+    let changed = next.safe_top != lastSyncedInsets.safe_top
+      || next.safe_right != lastSyncedInsets.safe_right
+      || next.safe_bottom != lastSyncedInsets.safe_bottom
+      || next.safe_left != lastSyncedInsets.safe_left
+      || next.ime_bottom != lastSyncedInsets.ime_bottom
+    if changed {
+      lastSyncedInsets = next
+      refreshTextPreview()
+      if let handle = hostHandle,
+        selectionOverlayView.currentState.has_selection
+          || selectionOverlayView.lastMenuAnchorRect != nil
+      {
+        selectionOverlayView.applyOverlayState(affine_ios_host_selection_state(handle))
       }
     }
   }
