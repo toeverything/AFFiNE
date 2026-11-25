@@ -20,14 +20,18 @@ fn enabled_search_config() -> SearchConfig {
   }
 }
 
+#[path = "support/test_doc.rs"]
+mod test_doc;
+
+use test_doc::{TestDoc, TestValue, build_test_doc};
+
 use server_db::{DbConfig, ServerDb};
-use server_search::doc_extract::build_test_doc;
 use server_search::generation::{config_hash, provider_identity};
 use server_search::worker::{OrphanGcFence, capture_orphan_gc_high_water};
 use server_search::{
-  AggregateHitsOptions, AggregateOptions, AggregateRequest, SearchConfig, SearchError, SearchOptions, SearchPagination,
-  SearchQuery, SearchRequest, SearchRuntime, SearchTable, expire_lockless_v2_lease, is_lockless_v2_active,
-  renew_lockless_v2_lease, renew_lockless_v2_lease_for,
+  AggregateHitsOptions, AggregateOptions, AggregateRequest, SCHEMA_FINGERPRINT, SearchConfig, SearchError,
+  SearchOptions, SearchPagination, SearchQuery, SearchRequest, SearchRuntime, SearchTable, expire_lockless_v2_lease,
+  is_lockless_v2_active, renew_lockless_v2_lease, renew_lockless_v2_lease_for,
 };
 use server_spi::CommunityQuotaGate;
 use server_types::ServerRole;
@@ -728,11 +732,12 @@ fn two_beat_fence_xid_closes_gap_a_and_gap_b() {
     let mut tx_gen = pool.begin().await.unwrap();
     sqlx::query(
       "INSERT INTO search_projection.generations (id, provider, state, config_hash, schema_version, manifest)
-       VALUES ($1, $2, 'building', $3, 1, $4)",
+       VALUES ($1, $2, 'building', $3, $4, $5)",
     )
     .bind(gen_id)
     .bind(&cfg.provider)
     .bind(config_hash(&cfg))
+    .bind(SCHEMA_FINGERPRINT)
     .bind(&manifest)
     .execute(&mut *tx_gen)
     .await
@@ -860,8 +865,13 @@ fn two_beat_fence_xid_closes_gap_a_and_gap_b() {
       )
       .await
       .unwrap();
-    assert_eq!(res_a["nodes"].as_array().unwrap().len(), 1);
-    assert_eq!(res_a["nodes"][0]["fields"]["doc_id"][0], "doc-gap-a");
+    let docs_a: std::collections::BTreeSet<&str> = res_a["nodes"]
+      .as_array()
+      .unwrap()
+      .iter()
+      .map(|n| n["fields"]["doc_id"][0].as_str().unwrap())
+      .collect();
+    assert_eq!(docs_a, std::collections::BTreeSet::from(["doc-gap-a"]));
 
     // Verify Gap B workspace has BOTH doc-1 (from T_w) and doc-2 (from T_2).
     let res_b = runtime
@@ -1144,7 +1154,16 @@ fn admin_demotion_with_restricted_doc_excluded_from_search_and_aggregate() {
       .search_authorized(&actor_id, &ws_id, make_search())
       .await
       .unwrap();
-    assert_eq!(before_search["nodes"].as_array().unwrap().len(), 2);
+    let before_docs: std::collections::BTreeSet<&str> = before_search["nodes"]
+      .as_array()
+      .unwrap()
+      .iter()
+      .map(|n| n["fields"]["doc_id"][0].as_str().unwrap())
+      .collect();
+    assert_eq!(
+      before_docs,
+      std::collections::BTreeSet::from(["doc-public", "doc-secret"])
+    );
 
     // Demote actor from owner to member (transferring ownership to owner_id) and insert a new restricted doc-secret-2.
     let mut transfer_tx = pool.begin().await.unwrap();
@@ -1215,6 +1234,349 @@ fn admin_demotion_with_restricted_doc_excluded_from_search_and_aggregate() {
       .map(|b| b["key"].as_str().unwrap().to_owned())
       .collect();
     assert_eq!(agg_keys, std::collections::BTreeSet::from(["doc-public".to_owned()]));
+
+    db.pool().close().await;
+  });
+}
+
+const INLINE_REF: &str = r#"{"docId":"doc-target","mode":"page"}"#;
+
+/// Seeds a workspace where `doc-inline` mentions `doc-target` inline and
+/// `doc-embed` embeds it, and returns `(owner_id, workspace_id)`.
+async fn seed_backlink_workspace(pool: &sqlx::PgPool) -> (String, String) {
+  let owner_id = format!("owner-b-{}", Uuid::new_v4().simple());
+  sqlx::query("INSERT INTO users(id, name, email, registered, disabled) VALUES ($1, 'Owner', $2, true, false)")
+    .bind(&owner_id)
+    .bind(format!("{owner_id}@affine.test"))
+    .execute(pool)
+    .await
+    .unwrap();
+  let ws_id = format!("ws-backlinks-{}", Uuid::new_v4().simple());
+  sqlx::query("INSERT INTO workspaces(id) VALUES ($1)")
+    .bind(&ws_id)
+    .execute(pool)
+    .await
+    .unwrap();
+  sqlx::query(
+    "INSERT INTO workspace_members(id, workspace_id, user_id, role, source, state)
+     VALUES ($1, $2, $3, 'owner', 'legacy', 'active')",
+  )
+  .bind(format!("m-b-{}", Uuid::new_v4().simple()))
+  .bind(&ws_id)
+  .bind(&owner_id)
+  .execute(pool)
+  .await
+  .unwrap();
+
+  let mut inline_doc = TestDoc::new("doc-inline", "Inline Doc");
+  inline_doc.block(
+    "para-inline",
+    "affine:paragraph",
+    None,
+    vec![(
+      "prop:text",
+      TestValue::rich(&[
+        ("quasar mention ", None),
+        (
+          "Target Doc",
+          Some(TestValue::reference(
+            "doc-target",
+            vec![("mode", y_octo::Any::String("page".to_owned()))],
+          )),
+        ),
+      ]),
+    )],
+  );
+  inline_doc.block(
+    "code-empty",
+    "affine:code",
+    None,
+    vec![
+      ("prop:text", TestValue::text("")),
+      ("prop:language", TestValue::string("rust")),
+    ],
+  );
+  let mut embed_doc = TestDoc::new("doc-embed", "Embed Doc");
+  embed_doc.block(
+    "embed-linked",
+    "affine:embed-linked-doc",
+    None,
+    vec![
+      ("prop:pageId", TestValue::string("doc-target")),
+      ("prop:text", TestValue::text("extra")),
+    ],
+  );
+  sqlx::query(
+    "INSERT INTO snapshots(workspace_id, guid, blob, updated_at)
+     VALUES ($1, 'doc-target', $2, now()), ($1, 'doc-inline', $3, now()), ($1, 'doc-embed', $4, now())",
+  )
+  .bind(&ws_id)
+  .bind(build_test_doc("Target Doc", "target body", "doc-target"))
+  .bind(inline_doc.encode())
+  .bind(embed_doc.encode())
+  .execute(pool)
+  .await
+  .unwrap();
+  activate_workspace_lifecycle(pool, &[&ws_id]).await;
+  (owner_id, ws_id)
+}
+
+fn match_query(field: &str, value: &str) -> SearchQuery {
+  SearchQuery {
+    query_type: "match".to_owned(),
+    field: Some(field.to_owned()),
+    match_value: Some(value.to_owned()),
+    query: None,
+    queries: None,
+    occur: None,
+    boost: None,
+  }
+}
+
+fn first_page() -> SearchPagination {
+  SearchPagination {
+    limit: Some(10),
+    skip: None,
+    cursor: None,
+  }
+}
+
+/// A bucket key, its count, and its `(doc_id, block_id, ref)` hits.
+type BacklinkBucket = (String, u64, std::collections::BTreeSet<(String, String, String)>);
+
+/// Runs the backlink query for `doc-target`: an `aggregate` on `ref_doc_id`.
+async fn backlink_buckets(runtime: &SearchRuntime, owner_id: &str, ws_id: &str) -> Vec<BacklinkBucket> {
+  let aggregate = runtime
+    .aggregate_authorized(
+      owner_id,
+      ws_id,
+      AggregateRequest {
+        table: SearchTable::Block,
+        field: "ref_doc_id".to_owned(),
+        query: match_query("refDocId", "doc-target"),
+        options: AggregateOptions {
+          pagination: first_page(),
+          hits: AggregateHitsOptions {
+            fields: ["docId", "blockId", "ref"].map(str::to_owned).to_vec(),
+            highlights: vec![],
+            pagination: first_page(),
+          },
+        },
+      },
+    )
+    .await
+    .unwrap();
+  aggregate["buckets"]
+    .as_array()
+    .unwrap()
+    .iter()
+    .map(|bucket| {
+      let hits = bucket["hits"]["nodes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|hit| {
+          let field = |name: &str| hit["fields"][name][0].as_str().unwrap().to_owned();
+          (field("doc_id"), field("block_id"), field("ref"))
+        })
+        .collect();
+      (
+        bucket["key"].as_str().unwrap().to_owned(),
+        bucket["count"].as_u64().unwrap(),
+        hits,
+      )
+    })
+    .collect()
+}
+
+fn expected_backlinks() -> Vec<BacklinkBucket> {
+  vec![(
+    "doc-target".to_owned(),
+    2,
+    std::collections::BTreeSet::from([
+      (
+        "doc-embed".to_owned(),
+        "embed-linked".to_owned(),
+        r#"{"docId":"doc-target"}"#.to_owned(),
+      ),
+      ("doc-inline".to_owned(), "para-inline".to_owned(), INLINE_REF.to_owned()),
+    ]),
+  )]
+}
+
+#[test]
+fn inline_reference_backlinks_match_embed_linked_doc_in_search_and_aggregate() {
+  let _xmin_guard = PRIVATE_CLUSTER_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+  let cluster = private_cluster();
+  let empty = EmptyDbGuard::create(&cluster, "s_backlinks");
+
+  test_runtime().block_on(async {
+    let db = setup_db(&empty.url).await;
+    let pool = db.pool().clone();
+    renew_lockless_v2_lease(&pool).await.unwrap();
+    let (owner_id, ws_id) = seed_backlink_workspace(&pool).await;
+
+    let runtime = SearchRuntime::new(
+      pool.clone(),
+      Arc::new(CommunityQuotaGate::new()),
+      enabled_search_config(),
+    )
+    .expect("build search runtime");
+    runtime.initialize().await.unwrap();
+    for _ in 0..10 {
+      runtime.reconcile_pending(50).await.unwrap();
+    }
+
+    let search_content = |keyword: &'static str| {
+      runtime.search_authorized(
+        &owner_id,
+        &ws_id,
+        SearchRequest {
+          table: SearchTable::Block,
+          query: match_query("content", keyword),
+          options: SearchOptions {
+            fields: ["docId", "blockId", "refDocId", "ref"].map(str::to_owned).to_vec(),
+            highlights: vec![],
+            pagination: first_page(),
+          },
+        },
+      )
+    };
+    // The embed indexes no text. Its note joins the `block_text` of its
+    // children, which reads any `prop:text`, as the v0.27.5 server does.
+    let search = search_content("extra").await.unwrap();
+    let extra_blocks: Vec<&str> = search["nodes"]
+      .as_array()
+      .unwrap()
+      .iter()
+      .map(|node| node["fields"]["block_id"][0].as_str().unwrap())
+      .collect();
+    assert_eq!(extra_blocks, ["note-doc-embed"], "search extra: {search}");
+    // The empty code block is not indexed, and its language is not text.
+    let search = search_content("rust").await.unwrap();
+    assert_eq!(search["nodes"], serde_json::json!([]), "search rust: {search}");
+    let search = search_content("quasar").await.unwrap();
+    // The paragraph matches, and so does its note, which indexes the text
+    // of its direct children.
+    let blocks: std::collections::BTreeMap<&str, &serde_json::Value> = search["nodes"]
+      .as_array()
+      .unwrap()
+      .iter()
+      .map(|node| (node["fields"]["block_id"][0].as_str().unwrap(), &node["fields"]))
+      .collect();
+    assert_eq!(
+      blocks.keys().copied().collect::<Vec<_>>(),
+      ["note-doc-inline", "para-inline"],
+      "search nodes: {search}"
+    );
+    let fields = blocks["para-inline"];
+    assert_eq!(fields["doc_id"], serde_json::json!(["doc-inline"]));
+    assert_eq!(fields["ref_doc_id"], serde_json::json!(["doc-target"]));
+    assert_eq!(fields["ref"], serde_json::json!([INLINE_REF]));
+    assert_eq!(blocks["note-doc-inline"]["doc_id"], serde_json::json!(["doc-inline"]));
+
+    assert_eq!(
+      backlink_buckets(&runtime, &owner_id, &ws_id).await,
+      expected_backlinks()
+    );
+
+    db.pool().close().await;
+  });
+}
+
+#[test]
+fn schema_upgrade_reprojects_unchanged_docs_and_retires_previous_generation() {
+  let _xmin_guard = PRIVATE_CLUSTER_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+  let cluster = private_cluster();
+  let empty = EmptyDbGuard::create(&cluster, "s_schema_upgrade");
+
+  test_runtime().block_on(async {
+    let db = setup_db(&empty.url).await;
+    let pool = db.pool().clone();
+    renew_lockless_v2_lease(&pool).await.unwrap();
+    let (owner_id, ws_id) = seed_backlink_workspace(&pool).await;
+
+    let runtime = SearchRuntime::new(
+      pool.clone(),
+      Arc::new(CommunityQuotaGate::new()),
+      enabled_search_config(),
+    )
+    .expect("build search runtime");
+    runtime.initialize().await.unwrap();
+    for _ in 0..10 {
+      runtime.reconcile_pending(50).await.unwrap();
+    }
+    let previous: Uuid = sqlx::query_scalar("SELECT id FROM search_projection.generations WHERE state = 'active'")
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+
+    // Mark the active generation as written by the previous projection schema.
+    // No doc changes after this point.
+    sqlx::query("UPDATE search_projection.generations SET schema_version = $2 WHERE id = $1")
+      .bind(previous)
+      .bind(SCHEMA_FINGERPRINT - 1)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let error = runtime
+      .aggregate_authorized(
+        &owner_id,
+        &ws_id,
+        AggregateRequest {
+          table: SearchTable::Block,
+          field: "ref_doc_id".to_owned(),
+          query: match_query("refDocId", "doc-target"),
+          options: AggregateOptions::default(),
+        },
+      )
+      .await
+      .unwrap_err();
+    assert!(matches!(error, SearchError::IndexNotReady), "got {error:?}");
+
+    for _ in 0..10 {
+      runtime.reconcile_pending(50).await.unwrap();
+    }
+    let generations: Vec<(Uuid, String, i32)> =
+      sqlx::query_as("SELECT id, state, schema_version FROM search_projection.generations ORDER BY created_at")
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+    let active: Vec<_> = generations.iter().filter(|(_, state, _)| state == "active").collect();
+    assert_eq!(active.len(), 1, "generations: {generations:?}");
+    let (current, _, schema_version) = active[0];
+    assert_ne!(*current, previous, "generations: {generations:?}");
+    assert_eq!(*schema_version, SCHEMA_FINGERPRINT);
+
+    let published: i64 = sqlx::query_scalar(
+      "SELECT count(*) FROM search_projection.document_states
+       WHERE generation_id = $1 AND doc_id IN ('doc-inline', 'doc-embed')
+         AND published_source_version = target_source_version",
+    )
+    .bind(current)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(published, 2, "the new generation reprojects both unchanged docs");
+    assert_eq!(
+      backlink_buckets(&runtime, &owner_id, &ws_id).await,
+      expected_backlinks()
+    );
+
+    // The drained generation of the previous schema is still retired.
+    sqlx::query("UPDATE search_projection.generations SET drained_at = now() - interval '25 hours' WHERE id = $1")
+      .bind(previous)
+      .execute(&pool)
+      .await
+      .unwrap();
+    runtime.reconcile_pending(50).await.unwrap();
+    let previous_left: bool =
+      sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM search_projection.generations WHERE id = $1)")
+        .bind(previous)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(!previous_left, "the previous schema generation is dropped");
 
     db.pool().close().await;
   });

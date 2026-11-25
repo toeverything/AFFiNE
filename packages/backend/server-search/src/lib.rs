@@ -33,7 +33,9 @@ use server_domain::acl::{ReservedDocClass, classify_reserved_doc};
 use sha2::{Digest, Sha256};
 use sqlx::PgConnection;
 
-pub(crate) const SCHEMA_FINGERPRINT: i32 = 1;
+/// The search projection schema. Raise it when extraction changes indexed
+/// fields, so that startup builds a new generation and reprojects every doc.
+pub const SCHEMA_FINGERPRINT: i32 = 2;
 pub(crate) const WORKSPACE_RECONCILE_FAILED: &str = "search_workspace_reconcile_failed";
 pub(crate) const DOCUMENT_PROJECTION_FAILED: &str = "search_document_projection_failed";
 pub(crate) const EMBEDDED_GENERATION_LOST: &str = "search_embedded_generation_lost";

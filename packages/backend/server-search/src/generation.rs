@@ -196,6 +196,9 @@ pub async fn load_active_in(
   row.map(decode).transpose()
 }
 
+/// Drops one retired generation of this provider. It does not filter on
+/// `schema_version`, so generations of an earlier projection schema are
+/// dropped too.
 pub async fn cleanup_retired_generation(
   pool: &PgPool,
   embedded: &EmbeddedSearchIndex,
@@ -205,7 +208,7 @@ pub async fn cleanup_retired_generation(
   let row = sqlx::query(
     r#"SELECT id, manifest,
               generation.state = 'failed'
-                AND generation.last_error IS DISTINCT FROM $5
+                AND generation.last_error IS DISTINCT FROM $4
                 AND NOT EXISTS (SELECT 1 FROM search_projection.generations active
                                 WHERE active.state = 'active' AND active.provider = generation.provider
                                   AND active.config_hash = generation.config_hash
@@ -217,16 +220,15 @@ pub async fn cleanup_retired_generation(
                                   AND newer.created_at > generation.created_at)
                 AS retain_failure_marker
        FROM search_projection.generations generation
-       WHERE provider = $1 AND schema_version = $2
-         AND (manifest->>'providerIdentity' = $3
-           OR (NOT manifest ? 'providerIdentity' AND config_hash = $4))
+       WHERE provider = $1
+         AND (manifest->>'providerIdentity' = $2
+           OR (NOT manifest ? 'providerIdentity' AND config_hash = $3))
          AND ((state = 'failed' AND created_at < now() - interval '1 hour'
                AND manifest <> '{}'::jsonb)
            OR (state = 'draining' AND drained_at < now() - interval '24 hours'))
        ORDER BY COALESCE(drained_at, created_at), id LIMIT 1"#,
   )
   .bind(&config.provider)
-  .bind(SCHEMA_FINGERPRINT)
   .bind(provider_identity(config))
   .bind(config_hash(config))
   .bind(EMBEDDED_GENERATION_LOST)
