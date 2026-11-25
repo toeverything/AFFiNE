@@ -5,6 +5,7 @@ members = [
     "../common/store",
     "../../blocksuite/crates/doc",
     "../../blocksuite/crates/playground",
+    "../../blocksuite/crates/preview",
 ]
 default-members = [
     "../ui/ui",

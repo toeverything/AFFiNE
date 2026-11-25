@@ -295,6 +295,11 @@ if ! grep -q '#!\[forbid(unsafe_code)\]' "$DOC_DIR/src/lib.rs"; then
   fail "blocksuite/crates/doc/src/lib.rs must declare #![forbid(unsafe_code)]"
 fi
 
+echo "==> Checking blocksuite/crates/preview zero host-font scanning"
+if grep -rn 'load_system_fonts' "$REPO_ROOT/blocksuite/crates/preview/src" 2>/dev/null; then
+  fail "load_system_fonts is forbidden in blocksuite/crates/preview/src"
+fi
+
 echo "==> Checking no wall-clock calls outside packages/ui/ui/src/platform"
 WALL_CLOCK_HITS=""
 while IFS=$'\t' read -r _pkg_name member_dir; do

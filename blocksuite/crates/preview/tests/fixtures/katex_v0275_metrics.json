@@ -1,0 +1,474 @@
+{
+  "katex_version": "0.18.10",
+  "count": 52,
+  "formulas": [
+    {
+      "name": "einstein",
+      "latex": "E = mc^2",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.814108,
+      "depth_em": 0,
+      "width_em": 3.84007
+    },
+    {
+      "name": "pythagoras",
+      "latex": "a^2 + b^2 = c^2",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.814108,
+      "depth_em": 0.08333,
+      "width_em": 5.146726
+    },
+    {
+      "name": "sub_sup_multi",
+      "latex": "x_{i,j}^{n+1} + y_k^{(2)}",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 1.0448,
+      "depth_em": 0.412972,
+      "width_em": 4.62939
+    },
+    {
+      "name": "complex_exp",
+      "latex": "e^{-i\\omega t} = \\cos(\\omega t) - i\\sin(\\omega t)",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.824664,
+      "depth_em": 0.25,
+      "width_em": 11.242978
+    },
+    {
+      "name": "binomial",
+      "latex": "\\binom{n}{k} = \\frac{n!}{k!(n-k)!}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.45,
+      "depth_em": 0.95003,
+      "width_em": 7.906928
+    },
+    {
+      "name": "tensor",
+      "latex": "T^{\\mu\\nu}_{\\alpha\\beta} = g^{\\mu\\rho} g^{\\nu\\sigma} T_{\\rho\\sigma\\alpha\\beta}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 0.7823,
+      "depth_em": 0.437416,
+      "width_em": 7.947282
+    },
+    {
+      "name": "simple_frac",
+      "latex": "\\frac{a+b}{c+d}",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.880108,
+      "depth_em": 0.403331,
+      "width_em": 1.454957
+    },
+    {
+      "name": "continued_frac",
+      "latex": "1 + \\frac{1}{1 + \\frac{1}{1 + \\frac{1}{x}}}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.32144,
+      "depth_em": 1.376928,
+      "width_em": 5.344864
+    },
+    {
+      "name": "partial_deriv",
+      "latex": "\\dfrac{\\partial f}{\\partial x} + \\dfrac{\\partial f}{\\partial y} = 0",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.37144,
+      "depth_em": 0.88044,
+      "width_em": 5.903562
+    },
+    {
+      "name": "tfrac_inline",
+      "latex": "\\tfrac{1}{2} m v^2",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.845108,
+      "depth_em": 0.345,
+      "width_em": 2.388543
+    },
+    {
+      "name": "sqrt_simple",
+      "latex": "\\sqrt{2}",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.90722,
+      "depth_em": 0.13278,
+      "width_em": 1.333089
+    },
+    {
+      "name": "nth_root",
+      "latex": "\\sqrt[3]{x^2 + y^2}",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.957834,
+      "depth_em": 0.282166,
+      "width_em": 4.092281
+    },
+    {
+      "name": "nested_root",
+      "latex": "\\sqrt{\\frac{a^2 + b^2}{2}}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.699429,
+      "depth_em": 0.740571,
+      "width_em": 4.220001
+    },
+    {
+      "name": "quadratic",
+      "latex": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.590389,
+      "depth_em": 0.686,
+      "width_em": 8.921221
+    },
+    {
+      "name": "pmatrix",
+      "latex": "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.45,
+      "depth_em": 0.95003,
+      "width_em": 3.521275
+    },
+    {
+      "name": "bmatrix_3x3",
+      "latex": "\\begin{bmatrix} 1 & 0 & 0 \\\\ 0 & 1 & 0 \\\\ 0 & 0 & 1 \\end{bmatrix}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 2.05,
+      "depth_em": 1.55002,
+      "width_em": 4.834186
+    },
+    {
+      "name": "vmatrix_det",
+      "latex": "\\begin{vmatrix} a & b \\\\ c & d \\end{vmatrix} = ad - bc",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.45,
+      "depth_em": 0.95002,
+      "width_em": 7.182173
+    },
+    {
+      "name": "smallmatrix",
+      "latex": "\\bigl(\\begin{smallmatrix} a & b \\\\ c & d \\end{smallmatrix}\\bigr)",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.916108,
+      "depth_em": 0.416108,
+      "width_em": 2.038877
+    },
+    {
+      "name": "sum_squares",
+      "latex": "\\sum_{i=1}^{n} i^2 = \\frac{n(n+1)(2n+1)}{6}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.651397,
+      "depth_em": 1.277669,
+      "width_em": 11.230065
+    },
+    {
+      "name": "product_k",
+      "latex": "\\prod_{k=1}^{n} (1 + x_k)",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.651397,
+      "depth_em": 1.302113,
+      "width_em": 4.790604
+    },
+    {
+      "name": "gaussian_integral",
+      "latex": "\\int_{0}^{\\infty} e^{-x^2}\\,dx = \\frac{\\sqrt{\\pi}}{2}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.47728,
+      "depth_em": 0.91195,
+      "width_em": 7.948694
+    },
+    {
+      "name": "contour_integral",
+      "latex": "\\oint_{C} \\vec{F}\\cdot d\\vec{r}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.36,
+      "depth_em": 0.91195,
+      "width_em": 3.826349
+    },
+    {
+      "name": "double_integral",
+      "latex": "\\iint_{D} f(x,y)\\,dx\\,dy",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.36,
+      "depth_em": 0.9117,
+      "width_em": 7.289313
+    },
+    {
+      "name": "sinc_limit",
+      "latex": "\\lim_{x \\to 0} \\frac{\\sin x}{x} = 1",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.34486,
+      "depth_em": 0.717108,
+      "width_em": 5.657202
+    },
+    {
+      "name": "euler_limit",
+      "latex": "\\lim_{n \\to \\infty} \\left(1 + \\frac{1}{n}\\right)^n = e",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.504292,
+      "depth_em": 0.95003,
+      "width_em": 8.290289
+    },
+    {
+      "name": "greek_lower",
+      "latex": "\\alpha + \\beta + \\gamma = \\pi",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.69444,
+      "depth_em": 0.19444,
+      "width_em": 6.219936
+    },
+    {
+      "name": "gamma_fn",
+      "latex": "\\Gamma(z) = \\int_0^\\infty t^{z-1} e^{-t}\\,dt",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.414292,
+      "depth_em": 0.91195,
+      "width_em": 9.185539
+    },
+    {
+      "name": "blackboard",
+      "latex": "f: \\mathbb{R}^n \\to \\mathbb{C}",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.69444,
+      "depth_em": 0.19444,
+      "width_em": 4.900568
+    },
+    {
+      "name": "calligraphic",
+      "latex": "\\mathcal{L}\\{f(t)\\} = F(s)",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.75,
+      "depth_em": 0.25,
+      "width_em": 6.789531
+    },
+    {
+      "name": "fraktur_bold",
+      "latex": "\\mathfrak{g} \\subset \\mathbf{GL}_n(\\mathbb{C})",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.75,
+      "depth_em": 0.25,
+      "width_em": 5.403579
+    },
+    {
+      "name": "text_cjk_frac",
+      "latex": "\\text{速度} = \\frac{\\text{距离}}{\\text{时间}}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.36033,
+      "depth_em": 0.686,
+      "width_em": 5.573266
+    },
+    {
+      "name": "text_cjk_inline",
+      "latex": "f(x) = \\text{最大值} + \\alpha",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.75,
+      "depth_em": 0.25,
+      "width_em": 8.147033
+    },
+    {
+      "name": "text_cjk_cond",
+      "latex": "\\text{当 } x > 0 \\text{ 时}",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.68333,
+      "depth_em": 0.0391,
+      "width_em": 4.906218
+    },
+    {
+      "name": "aligned_env",
+      "latex": "\\begin{aligned} a &= b + c \\\\ d &= e + f \\end{aligned}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.6,
+      "depth_em": 1.1,
+      "width_em": 4.148373
+    },
+    {
+      "name": "cases_env",
+      "latex": "f(x) = \\begin{cases} x^2 & x \\ge 0 \\\\ -x & x < 0 \\end{cases}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.75,
+      "depth_em": 1.25003,
+      "width_em": 8.962382
+    },
+    {
+      "name": "array_hline",
+      "latex": "\\begin{array}{c|c} a & b \\\\ \\hline c & d \\end{array}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.45,
+      "depth_em": 0.95,
+      "width_em": 3.060837
+    },
+    {
+      "name": "left_right_paren",
+      "latex": "\\left(\\frac{a}{b}\\right)^2",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 1.054008,
+      "depth_em": 0.35001,
+      "width_em": 1.925886
+    },
+    {
+      "name": "left_right_bracket",
+      "latex": "\\left[\\frac{1}{2}, \\frac{3}{4}\\right]",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.85,
+      "depth_em": 0.35001,
+      "width_em": 2.458355
+    },
+    {
+      "name": "left_right_brace",
+      "latex": "\\left\\{x \\in \\mathbb{R} \\mid x^2 < 2\\right\\}",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.85,
+      "depth_em": 0.35001,
+      "width_em": 7.321394
+    },
+    {
+      "name": "left_right_norm",
+      "latex": "\\left\\| \\mathbf{x} \\right\\|_2 = \\sqrt{\\sum_i x_i^2}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.520043,
+      "depth_em": 1.519957,
+      "width_em": 6.923304
+    },
+    {
+      "name": "left_right_angle",
+      "latex": "\\left\\langle u, v \\right\\rangle",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.75,
+      "depth_em": 0.25,
+      "width_em": 2.315502
+    },
+    {
+      "name": "left_dot_eval",
+      "latex": "\\left. \\frac{df}{dx} \\right|_{x=0}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.44998,
+      "depth_em": 0.99972,
+      "width_em": 3.155064
+    },
+    {
+      "name": "accents",
+      "latex": "\\hat{x} + \\bar{y} + \\tilde{z} + \\vec{v}",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.714,
+      "depth_em": 0.19444,
+      "width_em": 5.794607
+    },
+    {
+      "name": "over_under",
+      "latex": "\\overline{x + y} + \\underbrace{a + b + \\cdots + z}_{26}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 0.78333,
+      "depth_em": 1.382438,
+      "width_em": 9.848754
+    },
+    {
+      "name": "logic_quantifiers",
+      "latex": "\\forall x \\in X, \\exists y \\in Y : x \\le y",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.69444,
+      "depth_em": 0.19444,
+      "width_em": 10.073525
+    },
+    {
+      "name": "maxwell_div",
+      "latex": "\\nabla \\cdot \\mathbf{E} = \\frac{\\rho}{\\varepsilon_0}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.10756,
+      "depth_em": 0.836,
+      "width_em": 4.750452
+    },
+    {
+      "name": "color_boxed",
+      "latex": "\\boxed{\\color{blue}{x^2} + \\color{red}{y^2} = r^2}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 1.204108,
+      "depth_em": 0.53444,
+      "width_em": 5.931608
+    },
+    {
+      "name": "affine_nested_frac",
+      "latex": "a + \\left(\\frac{\\frac{a}{b}}{c}\\right)",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 1.15,
+      "depth_em": 0.65002,
+      "width_em": 3.689348
+    },
+    {
+      "name": "edge_def_arraystretch",
+      "latex": "\\def\\arraystretch{1.5}\\begin{array}{c:c:c} a & b & c \\\\ \\hline d & e & f \\\\ \\hdashline g & h & i \\end{array}",
+      "display_mode": true,
+      "katex_ok": true,
+      "height_em": 2.95,
+      "depth_em": 2.45,
+      "width_em": 4.726038
+    },
+    {
+      "name": "edge_vcenter_hbox",
+      "latex": "a+\\left(\\vcenter{\\hbox{$\\frac{\\frac a b}c$}}\\right)",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 1.15,
+      "depth_em": 0.65002,
+      "width_em": 3.689348
+    },
+    {
+      "name": "edge_newcommand_builtin",
+      "latex": "\\newcommand{\\R}{\\mathbb{R}} x \\in \\R",
+      "display_mode": false,
+      "katex_ok": false,
+      "height_em": 0,
+      "depth_em": 0,
+      "width_em": 0
+    },
+    {
+      "name": "edge_newcommand_custom",
+      "latex": "\\newcommand{\\myvec}[1]{\\mathbf{#1}} \\myvec{v} \\cdot \\myvec{w}",
+      "display_mode": false,
+      "katex_ok": true,
+      "height_em": 0.44445,
+      "depth_em": 0,
+      "width_em": 2.192423
+    }
+  ]
+}

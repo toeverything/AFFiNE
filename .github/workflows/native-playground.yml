@@ -278,6 +278,10 @@ jobs:
           cargo check --locked -p ui -p playground --target wasm32-unknown-unknown
           cargo check --locked -p blocksuite-playground-doc --no-default-features --target wasm32-unknown-unknown
           cargo check --locked -p affine-store --no-default-features --target wasm32-unknown-unknown
+          cargo check --locked -p blocksuite-preview --no-default-features --features mermaid,wasm-worker --target wasm32-unknown-unknown
+          cargo check --locked -p blocksuite-preview --no-default-features --features math,wasm-worker --target wasm32-unknown-unknown
+          cargo check --locked -p blocksuite-preview --no-default-features --features typst,wasm-worker --target wasm32-unknown-unknown
+          cargo check --locked -p blocksuite-preview --no-default-features --features pdf,wasm-worker --target wasm32-unknown-unknown
 
   headless-linux-and-perf:
     name: Headless Linux, Web Smoke & Perf

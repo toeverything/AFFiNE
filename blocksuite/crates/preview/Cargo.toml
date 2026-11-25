@@ -1,0 +1,66 @@
+[package]
+name = "blocksuite-preview"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+workspace = "../../../packages/frontend"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[features]
+default = ["mermaid", "math", "typst", "pdf"]
+mermaid = ["dep:merman"]
+math = [
+    "dep:ratex-parser",
+    "dep:ratex-layout",
+    "dep:ratex-katex-fonts",
+    "dep:ratex-types",
+]
+typst = [
+    "dep:comemo",
+    "dep:typst",
+    "dep:typst-layout",
+    "dep:typst-svg",
+]
+pdf = ["dep:hayro"]
+wasm-worker = ["dep:wasm-bindgen"]
+
+[dependencies]
+resvg = { version = "0.46.0", default-features = false, features = ["text", "raster-images"] }
+usvg = { version = "0.46.0", default-features = false, features = ["text"] }
+sha2 = "0.10"
+thiserror.workspace = true
+ttf-parser.workspace = true
+
+# Mermaid
+merman = { version = "0.11.0", optional = true }
+
+# LaTeX Math (pure in-memory RaTeX parser/layout + embedded KaTeX TTF bytes, zero ratex-unicode-font)
+ratex-parser = { version = "0.1.16", optional = true }
+ratex-layout = { version = "0.1.16", optional = true }
+ratex-katex-fonts = { version = "0.1.16", optional = true }
+ratex-types = { version = "0.1.16", optional = true }
+
+# Typst native block compiler
+comemo = { version = "0.5", optional = true }
+typst = { version = "0.15.1", optional = true }
+typst-layout = { version = "0.15.1", optional = true }
+typst-svg = { version = "0.15.1", optional = true }
+
+# PDF
+hayro = { version = "0.9.0", optional = true }
+
+# Wasm worker entry points
+wasm-bindgen = { workspace = true, optional = true }
+
+[dev-dependencies]
+mitex = "0.2.4"
+roxmltree = "0.21"
+serde.workspace = true
+serde_json.workspace = true
+typst-assets = { version = "0.15.1", features = ["fonts"] }
+
+[lints]
+workspace = true
