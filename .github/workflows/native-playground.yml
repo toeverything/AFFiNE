@@ -275,7 +275,7 @@ jobs:
 
       - name: Check WebAssembly target
         run: |
-          cargo check --locked -p ui -p playground --target wasm32-unknown-unknown
+          cargo check --locked -p ui-tokens -p ui -p ui-kit -p blocksuite-editor -p playground --target wasm32-unknown-unknown
           cargo check --locked -p blocksuite-playground-doc --no-default-features --target wasm32-unknown-unknown
           cargo check --locked -p affine-store --no-default-features --target wasm32-unknown-unknown
           cargo check --locked -p blocksuite-preview --no-default-features --features mermaid,wasm-worker --target wasm32-unknown-unknown
@@ -467,13 +467,13 @@ jobs:
       - name: Check iOS device and simulator targets
         run: |
           rustup target add aarch64-apple-ios aarch64-apple-ios-sim
-          CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p ui --target aarch64-apple-ios
-          CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p ui --target aarch64-apple-ios-sim
+          CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p ui-tokens -p ui -p ui-kit --target aarch64-apple-ios
+          CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p ui-tokens -p ui -p ui-kit --target aarch64-apple-ios-sim
 
-      - name: Run UI, doc, and playground tests (default and harness)
+      - name: Run UI, doc, editor, and playground tests (default and harness)
         run: |
-          cargo test --locked -p ui -p blocksuite-playground-doc -p playground
-          cargo test --locked -p ui -p blocksuite-playground-doc -p playground --features harness
+          cargo test --locked -p ui-tokens -p ui -p ui-kit -p blocksuite-playground-doc -p blocksuite-editor -p playground
+          cargo test --locked -p ui-tokens -p ui -p ui-kit -p blocksuite-playground-doc -p blocksuite-editor -p playground --features harness
 
       - name: Deterministic Metal headless render and audit
         run: |

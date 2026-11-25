@@ -1,12 +1,14 @@
 # Working in `packages/ui/` (for agents)
 
-`packages/ui/` holds the domain-neutral GPU UI library (`packages/ui/ui`) and generated design tokens (`packages/ui/tokens`).
+`packages/ui/` holds the zero-dependency token crate (`packages/ui/tokens`), the domain-neutral GPU UI library (`packages/ui/ui`), and the cross-platform component kit (`packages/ui/kit`).
 This directory belongs to the client Cargo workspace rooted at `packages/frontend/Cargo.toml`.
 
 ## Active Invariants (enforced now)
 
 ### Workspace boundaries
+- `packages/ui/tokens` (`ui-tokens`): Zero-dependency crate (`#![forbid(unsafe_code)]`) exposing generated `tokens` (`tokens.rs`), `icons` (`icons.rs`), and the five tracked repository font slices via `bundled_font_bytes()`, while keeping `extract-tokens.mjs --check` and standalone `rustc --edition 2024 --test` gates intact.
 - `packages/ui/ui`: Single fused internal GPU UI library (vendored once without upstream sync hooks, zero internal `proc-macro = true` crates, zero external UI-kit dependencies). It knows **nothing** about BlockSuite or AFFiNE (`packages/frontend/scripts/check-invariants.sh` rejects `blocksuite` and `affine` inside `packages/ui/ui`) and embeds zero fonts (fonts are registered by the application via `cx.text_system().add_fonts(...)`).
+- `packages/ui/kit` (`ui-kit`): Domain-neutral cross-platform component library (`#![forbid(unsafe_code)]`) depending only on `ui` and `ui-tokens`. Provides `LogicalEdges`, `LogicalStyled`, `SafeArea`, `VirtualList`, `SwipeDialog` (`Sheet`), and `SwipeMenu`. `packages/frontend/scripts/check-invariants.sh` rejects BlockSuite/AFFiNE terms and physical left/right layout helpers inside `packages/ui/kit/src`.
 
 ### Platform matrix
 `packages/ui/ui` compiles cleanly across four targets from one crate:

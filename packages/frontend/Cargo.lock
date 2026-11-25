@@ -473,6 +473,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "blocksuite-editor"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "blocksuite-playground-doc",
+ "image",
+ "serde",
+ "serde_json",
+ "ui",
+ "ui-tokens",
+ "unicode-bidi",
+ "unicode-linebreak",
+ "unicode-segmentation",
+ "wasm-bindgen",
+ "y-octo",
+]
+
+[[package]]
 name = "blocksuite-playground-doc"
 version = "0.1.0"
 dependencies = [
@@ -4256,6 +4274,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "axum",
+ "blocksuite-editor",
  "blocksuite-playground-doc",
  "console_error_panic_hook",
  "futures-util",
@@ -4267,9 +4286,6 @@ dependencies = [
  "tokio",
  "tokio-tungstenite 0.26.2",
  "ui",
- "unicode-bidi",
- "unicode-linebreak",
- "unicode-segmentation",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -6814,6 +6830,17 @@ dependencies = [
  "wgpu",
  "zed-font-kit",
 ]
+
+[[package]]
+name = "ui-kit"
+version = "0.1.0"
+dependencies = [
+ "ui",
+]
+
+[[package]]
+name = "ui-tokens"
+version = "0.1.0"
 
 [[package]]
 name = "unarray"

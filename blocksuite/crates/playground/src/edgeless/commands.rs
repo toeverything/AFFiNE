@@ -11,7 +11,7 @@ use crate::PlaygroundView;
 
 use super::{EdgelessGesture, EdgelessTool, SpatialItemInfo};
 #[cfg(test)]
-use super::{HandleKind, SpatialItemKind};
+use super::{HandleKind, SpatialItemKind, collect_frame_children};
 
 /// Helper to compute the highest existing fractional index across all spatial items in a snapshot.
 pub fn max_spatial_index(snapshot: &PageSnapshot) -> Option<String> {
@@ -125,12 +125,8 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) {
         if !commit.update.is_empty() {
-            if let (Some(room), Some(id)) = (&self.room, &self.page_id) {
-                room.link
-                    .send_binary(blocksuite_playground_doc::wire::RoomBinaryFrame::Doc {
-                        doc_id: id.clone(),
-                        message: blocksuite_playground_doc::wire::DocMessage::Update(commit.update),
-                    });
+            if let Some(id) = self.page_id.clone() {
+                self.send_page_update(&id, commit.update);
             }
             self.dirty_text = None;
             self.snapshot = self
@@ -453,14 +449,6 @@ impl PlaygroundView {
 }
 
 /// Collect `SpatialItemInfo` from a `PageSnapshot` in paint order (used by hit-testing & tests).
-pub fn collect_frame_children(node: &BlockNode) -> Vec<String> {
-    node.props
-        .get("prop:childElementIds")
-        .and_then(|v| v.as_object())
-        .map(|m| m.keys().cloned().collect())
-        .unwrap_or_default()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

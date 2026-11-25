@@ -526,6 +526,7 @@ impl PlaygroundView {
             images: &self.images,
             viewport_width,
             viewport_height,
+            direction: window.layout_direction(),
             editing_selection,
         };
         let layer = edgeless::build_edgeless_layer(

@@ -10,6 +10,33 @@ use super::*;
 use crate::overlays::LinkBar;
 use crate::rich_text::TextBiIndex;
 
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum HistoryRejectFault {
+    None,
+    NoopRevert,
+    ErrRevert,
+    FailMerge,
+}
+
+#[cfg(test)]
+std::thread_local! {
+    static HISTORY_REJECT_FAULT: std::cell::Cell<HistoryRejectFault> =
+        const { std::cell::Cell::new(HistoryRejectFault::None) };
+    static HISTORY_REJECT_FALLBACK_HITS: std::cell::Cell<usize> =
+        const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+pub(crate) fn set_history_reject_fault(fault: HistoryRejectFault) {
+    HISTORY_REJECT_FAULT.with(|slot| slot.set(fault));
+}
+
+#[cfg(test)]
+pub(crate) fn take_history_reject_fallback_hits() -> usize {
+    HISTORY_REJECT_FALLBACK_HITS.with(|slot| slot.replace(0))
+}
+
 impl PlaygroundView {
     pub(crate) fn fresh_block_id(&mut self) -> String {
         loop {
@@ -31,11 +58,144 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) -> DocResult {
         let sel = self.editor.selection.clone();
+        let root_id = self
+            .snapshot
+            .as_ref()
+            .and_then(|s| s.root.as_ref())
+            .map(|r| r.id.clone());
+        let previous_title = self
+            .snapshot
+            .as_ref()
+            .and_then(|s| s.root.as_ref())
+            .and_then(|r| text_content(r).map(str::to_owned));
         let page = self.page_mut()?;
-        let opposite = sel.and_then(|s| s.snapshot(page).ok());
+        let pre_sv = page.encode_state_vector_v1()?;
+        let prev_title_target_and_delta = root_id.as_deref().and_then(|rid| {
+            let target = y_octo::TypeTarget::Path(
+                y_octo::TypePath::root("blocks").key(rid).key("prop:title"),
+            );
+            page.inner()
+                .read_text_delta(&target)
+                .ok()
+                .map(|delta| (target, delta))
+        });
+        let opposite = sel.as_ref().and_then(|s| s.snapshot(page).ok());
         page.stop_capturing()?;
         let commit = if redo { page.redo()? } else { page.undo()? };
         let Some(commit) = commit else { return Ok(()) };
+        let restored_title = page
+            .read_page_snapshot()
+            .ok()
+            .and_then(|s| s.root)
+            .and_then(|r| text_content(&r).map(str::to_owned));
+        if let Some(page_id) = self.page_id.clone()
+            && let Some(prev) = previous_title.as_deref()
+            && let Some(next) = restored_title.as_deref()
+            && prev != next
+        {
+            match self
+                .doc_directory_mut()
+                .rename_doc_title(&crate::directory::EditorDocId::new(&page_id), next)
+            {
+                Ok(summary) => {
+                    self.preflight_renamed_title = Some((page_id, summary.title));
+                }
+                Err(_) => {
+                    #[cfg(test)]
+                    let injected_fault = HISTORY_REJECT_FAULT.with(|slot| slot.get());
+                    let revert_res: DocResult<Option<Commit>> = {
+                        #[cfg(test)]
+                        match injected_fault {
+                            HistoryRejectFault::NoopRevert => Ok(None),
+                            HistoryRejectFault::ErrRevert => {
+                                Err(DocError::InvalidState("injected revert error".into()))
+                            }
+                            _ => self
+                                .page_mut()
+                                .and_then(|page| if redo { page.undo() } else { page.redo() }),
+                        }
+                        #[cfg(not(test))]
+                        {
+                            self.page_mut()
+                                .and_then(|page| if redo { page.undo() } else { page.redo() })
+                        }
+                    };
+                    match revert_res {
+                        Ok(Some(rev)) => {
+                            let meta_ok = match commit.selection_meta {
+                                Some(meta) => {
+                                    let restored_stack = if redo {
+                                        y_octo::UndoStack::Redo
+                                    } else {
+                                        y_octo::UndoStack::Undo
+                                    };
+                                    self.page_mut()
+                                        .and_then(|page| {
+                                            Ok(page.inner().set_stack_selection_meta(
+                                                page.undo_stack_id(),
+                                                restored_stack,
+                                                meta,
+                                            )?)
+                                        })
+                                        .is_ok()
+                                }
+                                None => true,
+                            };
+                            #[cfg(test)]
+                            let force_merge_err = injected_fault == HistoryRejectFault::FailMerge;
+                            #[cfg(not(test))]
+                            let force_merge_err = false;
+                            let merged_bytes = if !meta_ok || force_merge_err {
+                                None
+                            } else {
+                                y_octo::merge_updates_v1([
+                                    commit.update.as_slice(),
+                                    rev.update.as_slice(),
+                                ])
+                                .and_then(|u| u.encode_v1())
+                                .ok()
+                            };
+                            if let Some(merged) = merged_bytes {
+                                self.send_page_update(&page_id, merged);
+                            } else {
+                                #[cfg(test)]
+                                HISTORY_REJECT_FALLBACK_HITS.with(|slot| slot.set(slot.get() + 1));
+                                self.pending_sync_since_sv.entry(page_id).or_insert(pre_sv);
+                            }
+                        }
+                        Ok(None) | Err(_) => {
+                            #[cfg(test)]
+                            HISTORY_REJECT_FALLBACK_HITS.with(|slot| slot.set(slot.get() + 1));
+                            if let Some((title_target, prev_delta)) = prev_title_target_and_delta
+                                && let Ok(page) = self.page_mut()
+                            {
+                                let inner = page.inner_mut();
+                                if inner.begin_tx(y_octo::SessionTxOrigin::Untracked).is_ok() {
+                                    if let Ok(cur_len) = inner.read_text_len(&title_target)
+                                        && cur_len > 0
+                                    {
+                                        let _ = inner.text_remove(&title_target, 0, cur_len);
+                                    }
+                                    if !prev_delta.is_empty() {
+                                        let _ = inner.text_apply_delta(&title_target, &prev_delta);
+                                    }
+                                    let _ = inner.commit_tx();
+                                }
+                            }
+                            self.pending_sync_since_sv.entry(page_id).or_insert(pre_sv);
+                        }
+                    }
+                    self.editor.selection = sel;
+                    self.editor.last_typing = None;
+                    self.editor.preedit = None;
+                    self.refresh_document();
+                    self.announce_selection(cx);
+                    cx.notify();
+                    return Ok(());
+                }
+            }
+        }
+        let page = self.page_mut()?;
         if let Some(other) = opposite {
             let stack = if redo {
                 y_octo::UndoStack::Undo
@@ -232,9 +392,12 @@ impl PlaygroundView {
                 }
             };
             let before = sel.snapshot(self.page_mut()?)?;
+            let rev_before = self.doc_rev;
             self.editor.last_typing = None;
             self.replace_selection(range, "", w, cx)?;
-            self.page_mut()?.set_undo_selection_snapshot(before)?;
+            if self.doc_rev != rev_before {
+                self.page_mut()?.set_undo_selection_snapshot(before)?;
+            }
             self.editor.last_typing = None;
             return Ok(());
         }
@@ -302,6 +465,12 @@ impl PlaygroundView {
                     .reparent_block(&id, &parent.id, dest, index as u64, now)?
             }
         } else if key == "enter" {
+            if matches!(node.content, BlockContent::Page { .. }) {
+                let split_byte = TextBiIndex::new(text).utf16_to_utf8_clamped(offset);
+                if !self.preflight_title_change(&text[..split_byte]) {
+                    return Ok(());
+                }
+            }
             let spec = match &node.content {
                 BlockContent::Paragraph { kind, .. } if offset < n => BlockSpec::Paragraph {
                     paragraph_type: *kind,
@@ -377,6 +546,14 @@ impl PlaygroundView {
                 } else {
                     (&id, &adjacent.block_id)
                 };
+                if snapshot.root.as_ref().is_some_and(|r| r.id == *target) {
+                    let target_text = snapshot.block(target).and_then(text_content).unwrap_or("");
+                    let source_text = snapshot.block(source).and_then(text_content).unwrap_or("");
+                    let next_title = format!("{target_text}{source_text}");
+                    if !self.preflight_title_change(&next_title) {
+                        return Ok(());
+                    }
+                }
                 let Some((parent, _)) = parent_of(&snapshot, source) else {
                     return Ok(());
                 };

@@ -279,12 +279,42 @@ while IFS=$'\t' read -r pkg_name member_dir; do
 done <<< "$MEMBER_LINES"
 
 UI_DIR="$REPO_ROOT/packages/ui/ui"
+UI_KIT_DIR="$REPO_ROOT/packages/ui/kit"
+UI_TOKENS_DIR="$REPO_ROOT/packages/ui/tokens"
 DOC_DIR="$REPO_ROOT/blocksuite/crates/doc"
+EDITOR_DIR="$REPO_ROOT/blocksuite/crates/editor"
 PLAYGROUND_DIR="$REPO_ROOT/blocksuite/crates/playground"
+
+echo "==> Checking packages/ui/tokens self-contained isolation (no frontend/ or blocksuite)"
+if grep -rniE 'frontend/|blocksuite' "$UI_TOKENS_DIR/src" 2>/dev/null; then
+  fail "packages/ui/tokens/src must stay self-contained without frontend/ or blocksuite references"
+fi
+LEGACY_FONTS_DIR="$REPO_ROOT/packages/frontend/component/src/fonts"
+if [ -d "$LEGACY_FONTS_DIR" ]; then
+  for rel in \
+    "inter/Inter-VariableFont_slnt,wght.ttf" \
+    "ibm-plex-mono/IBMPlexMono-Regular.ttf" \
+    "ibm-plex-mono/IBMPlexMono-Bold.ttf" \
+    "ibm-plex-mono/IBMPlexMono-Italic.ttf" \
+    "ibm-plex-mono/IBMPlexMono-BoldItalic.ttf"; do
+    if [ -f "$LEGACY_FONTS_DIR/$rel" ]; then
+      cmp -s "$UI_TOKENS_DIR/fonts/$rel" "$LEGACY_FONTS_DIR/$rel" \
+        || fail "packages/ui/tokens/fonts/$rel drifted from $LEGACY_FONTS_DIR/$rel"
+    fi
+  done
+fi
 
 echo "==> Checking packages/ui/ui domain isolation (no blocksuite/affine words)"
 if grep -rniE '\b(blocksuite|affine)\b' "$UI_DIR/src" "$UI_DIR/Cargo.toml" 2>/dev/null; then
   fail "packages/ui/ui must not reference BlockSuite or AFFiNE domain terms"
+fi
+
+echo "==> Checking packages/ui/kit domain isolation and logical-geometry guard"
+if grep -rniE '\b(blocksuite|affine)\b' "$UI_KIT_DIR/src" "$UI_KIT_DIR/Cargo.toml" 2>/dev/null; then
+  fail "packages/ui/kit must not reference BlockSuite or AFFiNE domain terms"
+fi
+if grep -rnE '\.(left|right|pl|pr|ml|mr|border_l|border_r)(_[0-9a-z_]+)?\s*\(' "$UI_KIT_DIR/src" --include='*.rs' 2>/dev/null; then
+  fail "packages/ui/kit/src must use logical inline geometry instead of physical left/right layout helpers"
 fi
 
 echo "==> Checking blocksuite/crates/doc GUI isolation and forbid(unsafe_code)"
@@ -320,19 +350,21 @@ if [ -n "$WALL_CLOCK_HITS" ]; then
   fail "Instant::now() / SystemTime::now() / Zoned::now() / Timestamp::now() is forbidden outside packages/ui/ui/src/platform/"
 fi
 
-echo "==> Checking zero tester branches inside shipping playground view modules"
-if grep -rn 'is_headless' "$PLAYGROUND_DIR/src" 2>/dev/null; then
-  fail "is_headless branches are forbidden in blocksuite/crates/playground/src"
-fi
-TESTER_CFG_HITS=$(
-  grep -rnE '#\[cfg\((any\(test|feature\s*=\s*"harness")' "$PLAYGROUND_DIR/src" 2>/dev/null \
-    | grep -Ev "^$PLAYGROUND_DIR/src/(bin/|rich_text/mod\.rs:)" \
-    || true
-)
-if [ -n "$TESTER_CFG_HITS" ]; then
-  echo "$TESTER_CFG_HITS" >&2
-  fail "Inline harness/test cfg branches are forbidden in shipping blocksuite/crates/playground/src modules"
-fi
+echo "==> Checking zero tester branches inside shipping editor and playground view modules"
+for view_dir in "$EDITOR_DIR" "$PLAYGROUND_DIR"; do
+  if grep -rn 'is_headless' "$view_dir/src" 2>/dev/null; then
+    fail "is_headless branches are forbidden in $view_dir/src"
+  fi
+  TESTER_CFG_HITS=$(
+    grep -rnE '#\[cfg\((any\(test|feature\s*=\s*"harness")' "$view_dir/src" 2>/dev/null \
+      | grep -Ev "^$view_dir/src/(bin/|rich_text/mod\.rs:)" \
+      || true
+  )
+  if [ -n "$TESTER_CFG_HITS" ]; then
+    echo "$TESTER_CFG_HITS" >&2
+    fail "Inline harness/test cfg branches are forbidden in shipping $view_dir/src modules"
+  fi
+done
 
 echo "==> Checking Rust module structure, visibility, orphaned files, and per-file LOC"
 MEMBER_LINES="$MEMBER_LINES" python3 - <<'PY'

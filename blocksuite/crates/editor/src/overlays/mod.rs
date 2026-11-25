@@ -1,0 +1,698 @@
+//! Screen-space overlays and interactive block controls of the Page view.
+//!
+//! [`Overlays`] owns what floats above or reacts inside the page: the slash menu, the
+//! formatting toolbar of the text selection, the gutter drag handle with its drop
+//! indicator, and the clickable parts of blocks (to-do boxes, toggle and heading chevrons,
+//! the code block's copy button and sideways scroll). The text selection itself is the
+//! editor's (`editor_session`); the overlays read it.
+//!
+//! The state machine is data in, commands out: an [`OverlayScene`] and an
+//! [`OverlayEvent`] or key go in, [`OverlayEffects`] come out (document edits, clipboard
+//! text, a timer to start). It reads no clock: every transition is an [`EaseOut`]
+//! evaluated at the scheduler time passed in. The `PlaygroundView` glue at the end of the
+//! module feeds it input and carries each edit out through the editor's document session
+//! as one undo step.
+//!
+//! Popovers are placed by the pure [`place_popover`]. Opening popovers mount on frame 1
+//! with opacity clamped to at least `0.01` so interactive controls are immediately clickable
+//! without triggering `zero-opacity-hit-through`; a popover that is fully closed is not
+//! mounted at all, and one that is fading out carries no handlers, so nothing invisible can
+//! be clicked.
+
+mod paint_linked_doc;
+mod paint_page;
+mod paint_popovers;
+mod slash;
+mod state;
+mod toolbar;
+
+pub use paint_page::{block_text, bounding_rect, find_parent, shared_alignment};
+pub use slash::{
+    SLASH_ITEMS, SlashCommand, SlashItem, SlashMenu, SlashRow, filter_slash_items, slash_rows,
+};
+pub use state::normalize_url;
+pub use toolbar::LinkBar;
+pub use toolbar::{ActiveSelection, FormatAction, MarkState, SelectionFormat, marks_in_range};
+
+use paint_page::{
+    align_glyph, caret_world_rect, drag_handle_rect, drop_slot, emit, hover_block, icon, place,
+    text_len,
+};
+use toolbar::{FormatToolbar, utf16_to_byte};
+
+use std::collections::HashMap;
+
+use blocksuite_playground_doc::read::{PageSnapshot, TextAlign as BlockAlign};
+use ui::{Context, Motion, MotionCurve, Window};
+
+/// Host callbacks required by [`Overlays`] page-layer and popover builders.
+pub trait OverlayHost: 'static + Sized {
+    fn dispatch_overlay(
+        &mut self,
+        event: OverlayEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    );
+}
+use y_octo::Any;
+
+use crate::{
+    TOPBAR_HEIGHT,
+    block_flow::{CodeScroll, FlowLayout, FlowRect, PageGeometry, PageViewport, ScrolledCode},
+    editor_session::DocumentSelection,
+};
+
+/// Duration of every overlay transition.
+pub const OVERLAY_MOTION_MS: f64 = 150.0;
+/// How long a code block's copy button reads `Copied`.
+pub const COPIED_MS: u64 = 1_500;
+
+/// Gap between a popover and the text it is anchored to.
+pub const POPOVER_GAP: f32 = 8.0;
+/// Closest a popover comes to the edges of its viewport.
+pub const POPOVER_EDGE_MARGIN: f32 = 8.0;
+
+/// Width of the slash menu on viewports that have room for it.
+pub const SLASH_MENU_WIDTH: f32 = 280.0;
+/// Tallest the slash menu's list grows before it scrolls. The fold then cuts through a
+/// row, which together with the scroll thumb says there is more.
+pub const SLASH_LIST_MAX_HEIGHT: f32 = 332.0;
+/// Corner radius of the slash menu, as in BlockSuite. The menu has no border; its shadow
+/// lifts it off the page.
+pub const SLASH_MENU_RADIUS: f32 = 8.0;
+/// Padding between the slash menu's edge and its rows. BlockSuite pads `8px 4px 8px 8px`;
+/// 4 px all around keeps the 4 px row radius concentric with the menu's 8 px.
+pub const SLASH_MENU_PADDING: f32 = 4.0;
+/// Height of an item row: its 28 px icon box with 2 px above and below.
+pub const SLASH_ITEM_HEIGHT: f32 = 32.0;
+/// Side of the bordered box around an item's icon.
+pub(super) const SLASH_ICON_BOX: f32 = 28.0;
+/// Gap between an item's icon box and its title.
+pub(super) const SLASH_ICON_GAP: f32 = 10.0;
+pub(super) const SLASH_HEADER_HEIGHT: f32 = 28.0;
+pub(super) const SLASH_GROUP_GAP: f32 = 4.0;
+pub(super) const SLASH_QUERY_HEIGHT: f32 = 28.0;
+pub(super) const SLASH_SCROLL_GUTTER: f32 = 6.0;
+
+/// Side of a formatting toolbar button.
+pub const TOOLBAR_BUTTON: f32 = 28.0;
+/// Corner radius of the formatting toolbar.
+pub const TOOLBAR_RADIUS: f32 = 8.0;
+/// Padding between the toolbar's edge and its buttons.
+pub const TOOLBAR_PADDING: f32 = 4.0;
+pub(super) const TOOLBAR_GAP: f32 = 2.0;
+pub(super) const TOOLBAR_ROW_GAP: f32 = 4.0;
+/// Space on either side of the line between the mark buttons and the alignment buttons.
+pub(super) const TOOLBAR_SEPARATOR_MARGIN: f32 = 8.0;
+pub(super) const LINK_APPLY_WIDTH: f32 = 52.0;
+pub(super) const LINK_REMOVE_WIDTH: f32 = 64.0;
+pub(super) const LINK_GAP: f32 = 4.0;
+pub(super) const POPOVER_BORDER: f32 = 1.0;
+
+/// Side of the gutter drag handle's hit target.
+pub const DRAG_HANDLE_SIZE: f32 = 24.0;
+/// The Page-mode handle at rest: BlockSuite's 4 × 12 px upright grabber bar.
+pub(super) const DRAG_GRABBER_WIDTH: f32 = 4.0;
+/// The Page-mode handle under the pointer or in a drag: narrows to a 2 × 12 px vertical bar
+/// (the 2 × 3 six-dot pill is reserved for Edgeless `gfx` drag handles).
+pub(super) const DRAG_GRABBER_HOT_WIDTH: f32 = 2.0;
+pub(super) const DRAG_GRABBER_HEIGHT: f32 = 12.0;
+/// Closest the drag handle comes to the left window edge.
+pub const DRAG_HANDLE_MIN_X: f32 = 4.0;
+/// Thickness of the drop indicator line.
+pub const DROP_INDICATOR_THICKNESS: f32 = 2.0;
+/// Side of the hit target of a to-do box, a toggle chevron and a heading chevron.
+pub const CONTROL_HIT_SIZE: f32 = 24.0;
+pub(super) const COPY_BUTTON_SIZE: f32 = 28.0;
+pub(super) const COPY_BUTTON_INSET: f32 = 4.0;
+pub(super) const COPIED_LABEL_WIDTH: f32 = 64.0;
+/// A pointer this close to a block's row still counts as hovering it.
+pub(super) const HOVER_SLACK: f32 = 9.0;
+
+/// Ease-out cubic of a normalized time `t`.
+pub fn ease_out_cubic(t: f64) -> f64 {
+    let t = t.clamp(0.0, 1.0);
+    1.0 - (1.0 - t).powi(3)
+}
+
+/// A scalar transition from `from` to `to` over [`OVERLAY_MOTION_MS`], eased out cubically
+/// and evaluated as a pure function of scheduler time.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct EaseOut {
+    from: f64,
+    to: f64,
+    clock: Motion,
+}
+
+impl EaseOut {
+    pub fn new(from: f64, to: f64, start_ms: f64) -> Self {
+        Self {
+            from,
+            to,
+            clock: Motion::new(0.0, 1.0, MotionCurve::Linear, start_ms, OVERLAY_MOTION_MS),
+        }
+    }
+
+    pub fn value_at(&self, now_ms: f64) -> f64 {
+        if self.clock.is_finished(now_ms) {
+            return self.to;
+        }
+        self.from + (self.to - self.from) * ease_out_cubic(self.clock.value_at(now_ms))
+    }
+
+    pub fn is_finished(&self, now_ms: f64) -> bool {
+        self.clock.is_finished(now_ms)
+    }
+}
+
+/// Fade of a popover: in while it opens, out once it is dismissed.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Presence {
+    pub fade: EaseOut,
+    pub closing: bool,
+}
+
+impl Presence {
+    pub fn opening(now_ms: f64) -> Self {
+        Self {
+            fade: EaseOut::new(0.0, 1.0, now_ms),
+            closing: false,
+        }
+    }
+
+    /// Open again from wherever a fade-out got to.
+    pub fn reopened(self, now_ms: f64) -> Self {
+        if self.closing {
+            Self {
+                fade: EaseOut::new(self.fade.value_at(now_ms), 1.0, now_ms),
+                closing: false,
+            }
+        } else {
+            self
+        }
+    }
+
+    pub fn close(&mut self, now_ms: f64) {
+        if !self.closing {
+            *self = Self {
+                fade: EaseOut::new(self.fade.value_at(now_ms), 0.0, now_ms),
+                closing: true,
+            };
+        }
+    }
+
+    pub fn progress(&self, now_ms: f64) -> f32 {
+        self.fade.value_at(now_ms) as f32
+    }
+
+    pub fn in_flight(&self, now_ms: f64) -> bool {
+        !self.fade.is_finished(now_ms)
+    }
+
+    pub fn gone(&self, now_ms: f64) -> bool {
+        self.closing && self.fade.is_finished(now_ms)
+    }
+}
+
+/// Side and alignment a popover prefers relative to its anchor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Placement {
+    /// Above the anchor, centered on it.
+    Above,
+    /// Below the anchor, starting at its left edge.
+    BelowStart,
+}
+
+/// Side of the anchor a popover ended up on.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PopoverSide {
+    Above,
+    Below,
+}
+
+/// Result of [`place_popover`], on the pixel grid.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PlacedPopover {
+    pub rect: FlowRect,
+    pub side: PopoverSide,
+    /// Whether the popover left its preferred side.
+    pub flipped: bool,
+}
+
+/// Place a popover of `popover_size` next to `anchor` inside `viewport`, all in screen
+/// space.
+///
+/// The popover sits `gap` away from the anchor on its preferred side. When that side would
+/// bring it closer than `edge_margin` to the viewport's top or bottom it flips to the other
+/// side; when neither side has room it takes the roomier one and is held inside the
+/// viewport. Horizontally it is clamped to
+/// `[viewport.x + edge_margin, viewport.right() - edge_margin - width]`.
+pub fn place_popover(
+    anchor: FlowRect,
+    popover_size: (f32, f32),
+    viewport: FlowRect,
+    preferred: Placement,
+    gap: f32,
+    edge_margin: f32,
+) -> PlacedPopover {
+    let (width, height) = popover_size;
+    let top_limit = viewport.y + edge_margin;
+    let bottom_limit = viewport.bottom() - edge_margin;
+    let above_y = anchor.y - gap - height;
+    let below_y = anchor.bottom() + gap;
+    let fits_above = above_y >= top_limit;
+    let fits_below = below_y + height <= bottom_limit;
+
+    let preferred_side = match preferred {
+        Placement::Above => PopoverSide::Above,
+        Placement::BelowStart => PopoverSide::Below,
+    };
+    let side = match (preferred_side, fits_above, fits_below) {
+        (PopoverSide::Above, true, _) | (PopoverSide::Below, true, false) => PopoverSide::Above,
+        (PopoverSide::Below, _, true) | (PopoverSide::Above, false, true) => PopoverSide::Below,
+        // Neither side has room: the roomier one, preferred side on a tie.
+        (preferred_side, false, false) => {
+            let room_above = anchor.y - viewport.y;
+            let room_below = viewport.bottom() - anchor.bottom();
+            if room_above > room_below {
+                PopoverSide::Above
+            } else if room_below > room_above {
+                PopoverSide::Below
+            } else {
+                preferred_side
+            }
+        }
+    };
+    let y = match side {
+        PopoverSide::Above => above_y,
+        PopoverSide::Below => below_y,
+    };
+    let y = y.min(bottom_limit - height).max(top_limit);
+
+    let x = match preferred {
+        Placement::Above => anchor.x + (anchor.w - width) / 2.0,
+        Placement::BelowStart => anchor.x,
+    };
+    let left_limit = viewport.x + edge_margin;
+    let x = x
+        .min(viewport.right() - edge_margin - width)
+        .max(left_limit);
+
+    PlacedPopover {
+        rect: FlowRect::new(x.round(), y.round(), width, height),
+        side,
+        flipped: side != preferred_side,
+    }
+}
+
+/// Where a dragged block would land.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DropSlot {
+    pub parent_id: String,
+    /// Index in the parent's children the block would be inserted before, counted with the
+    /// block still in place.
+    pub insert_index: usize,
+    /// The dragged block's current index in the parent's children.
+    pub old_index: usize,
+    /// World y of the indicator line's center.
+    pub indicator_world_y: f32,
+    /// World x of the indicator line's left end.
+    pub indicator_world_x: f32,
+    /// World width of the sibling column spanned by the indicator line.
+    pub indicator_world_width: f32,
+}
+
+impl DropSlot {
+    /// Index of the block among its siblings once it is taken out and put back, `None`
+    /// when the slot leaves the block where it is.
+    pub fn reorder_index(&self) -> Option<u64> {
+        if self.insert_index == self.old_index || self.insert_index == self.old_index + 1 {
+            return None;
+        }
+        let index = if self.insert_index > self.old_index {
+            self.insert_index - 1
+        } else {
+            self.insert_index
+        };
+        Some(index as u64)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(super) struct BlockDrag {
+    pub(super) block_id: String,
+    pub(super) slot: Option<DropSlot>,
+}
+
+/// A document edit an overlay asks the view for. The view carries each out through the
+/// editor's document session as one undo step.
+#[derive(Clone, Debug, PartialEq)]
+pub enum DocEdit {
+    SetProp {
+        block_id: String,
+        key: &'static str,
+        value: Any,
+    },
+    Reorder {
+        parent_id: String,
+        child_id: String,
+        new_index: u64,
+    },
+    Slash {
+        block_id: String,
+        command: SlashCommand,
+        /// Whether the command was typed into the block after a `/`, which goes first.
+        typed: bool,
+    },
+    /// Toggle an inline mark over the text selection.
+    Mark(&'static str),
+    /// Align the selected blocks.
+    Align(BlockAlign),
+    /// Link the text selection to a URL, or clear its link.
+    Link(Option<String>),
+}
+
+/// Something that happened to the overlays: input routed by the view, or a call of the
+/// public API (`PlaygroundView::dispatch_overlay`). Pointer positions are in window space.
+#[derive(Clone, Debug, PartialEq)]
+pub enum OverlayEvent {
+    PointerMoved {
+        x: f32,
+        y: f32,
+        /// Whether the primary button is held.
+        pressed: bool,
+    },
+    PointerUp,
+    /// Open the slash menu for a block with a filter of its own. `anchor` is a
+    /// screen-space rectangle to hang the menu from; the caret of `utf16_offset` when
+    /// absent.
+    OpenSlashMenu {
+        block_id: String,
+        utf16_offset: usize,
+        anchor: Option<FlowRect>,
+    },
+    /// Replace the slash menu's filter. `in_document` says the filter is text typed into
+    /// the block after its `/`.
+    SetSlashQuery {
+        query: String,
+        in_document: bool,
+    },
+    CloseSlashMenu,
+    SlashHover(usize),
+    SlashExecute(usize),
+    SlashScroll(f32),
+    /// Set or clear the editor's text selection.
+    SetSelection(Option<ActiveSelection>),
+    Format(FormatAction),
+    LinkApply,
+    LinkRemove,
+    /// Text pasted into the link field.
+    Paste(String),
+    ToggleChecked(String),
+    ToggleCollapsed(String),
+    CopyCode(String),
+    DragStart(String),
+    /// Open the `@` linked-document picker with an initial query.
+    OpenLinkedDocMenu {
+        block_id: String,
+        query: String,
+    },
+    /// Update the open `@` linked-document picker query.
+    SetLinkedDocQuery(String),
+    /// Hover a row in the open `@` linked-document picker (`0..items.len()` or `items.len()` for Create).
+    LinkedDocHover(usize),
+    /// Select a row in the open `@` linked-document picker (`0..items.len()` inserts existing doc chip;
+    /// `items.len()` creates a new linked doc and inserts its chip).
+    LinkedDocSelect(usize),
+    /// Dismiss the `@` linked-document picker.
+    CloseLinkedDocMenu,
+    /// Create a linked document (or convert a line to a linked doc) through the host directory
+    /// and insert its `LinkedPage` inline reference chip into `block_id` as one undo step.
+    CreateLinkedDoc {
+        block_id: String,
+        title: String,
+        mode: crate::directory::EditorDocMode,
+        intent_id: Option<String>,
+    },
+}
+
+/// Active `@` linked-document menu state populated from [`crate::directory::WorkspaceDocDirectory`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct LinkedDocMenuState {
+    pub block_id: String,
+    pub utf16_offset: usize,
+    pub query: String,
+    pub query_in_document: bool,
+    pub selected: usize,
+    pub results: crate::directory::DocQueryPage,
+    pub presence: Presence,
+    pub rect: Option<FlowRect>,
+}
+
+impl LinkedDocMenuState {
+    /// Total selectable rows: matched documents plus the bottom Create row.
+    pub fn row_count(&self) -> usize {
+        self.results.items.len() + 1
+    }
+}
+
+/// What the view has to do after an [`OverlayEvent`] or a key.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct OverlayEffects {
+    /// Edits to carry out, in order.
+    pub edits: Vec<DocEdit>,
+    /// Text to put on the clipboard.
+    pub clipboard: Option<String>,
+    /// Start a [`COPIED_MS`] timer on the scheduler clock and report its end with
+    /// [`Overlays::copied_expired`] and this generation.
+    pub copied_timer: Option<u64>,
+    /// Read the clipboard into the link field.
+    pub paste: bool,
+    pub redraw: bool,
+    /// Whether a key was consumed.
+    pub handled: bool,
+}
+
+/// Everything the overlays read about the page for one event or frame.
+#[derive(Clone, Copy)]
+pub struct OverlayScene<'a> {
+    pub snapshot: &'a PageSnapshot,
+    pub layout: &'a FlowLayout,
+    pub geometry: PageGeometry,
+    /// Window size in logical pixels.
+    pub window: (f32, f32),
+    pub scroll_y: f32,
+    /// Explicit layout direction supplied by the host shell.
+    pub direction: ui::Direction,
+    /// The editor's finished, formattable text selection, for frames.
+    pub selection: Option<&'a SelectionFormat>,
+}
+
+impl OverlayScene<'_> {
+    /// The page viewport below the top bar.
+    pub fn page_viewport(&self) -> PageViewport {
+        PageViewport {
+            column_x: self.geometry.column_x,
+            height: (self.window.1 - TOPBAR_HEIGHT).max(0.0),
+            scroll_y: self.scroll_y,
+        }
+    }
+
+    /// Screen-space area popovers may cover: the window below the top bar.
+    pub fn popover_viewport(&self) -> FlowRect {
+        FlowRect::new(
+            0.0,
+            TOPBAR_HEIGHT,
+            self.window.0,
+            (self.window.1 - TOPBAR_HEIGHT).max(0.0),
+        )
+    }
+
+    pub(super) fn world_to_screen(&self, rect: &FlowRect) -> FlowRect {
+        rect.translated(self.geometry.column_x, TOPBAR_HEIGHT - self.scroll_y)
+    }
+
+    pub(super) fn screen_to_world(&self, x: f32, y: f32) -> (f32, f32) {
+        (
+            x - self.geometry.column_x,
+            y - TOPBAR_HEIGHT + self.scroll_y,
+        )
+    }
+}
+
+/// Marks and alignment of one editor selection at one document revision.
+pub(super) type FormatCache = (
+    u64,
+    DocumentSelection,
+    Option<(MarkState, Option<BlockAlign>)>,
+);
+
+/// Overlay and block-control state of the Page view.
+#[derive(Default)]
+pub struct Overlays {
+    pub(super) hovered: Option<String>,
+    /// Whether the pointer is on the hovered block's drag handle itself.
+    pub(super) handle_hot: bool,
+    pub(super) slash: Option<SlashMenu>,
+    toolbar: Option<FormatToolbar>,
+    pub(super) drag: Option<BlockDrag>,
+    /// Chevrons in flight by block id: `0.0` collapsed to `1.0` expanded.
+    pub(super) chevrons: HashMap<String, EaseOut>,
+    /// Sideways scroll of unwrapped code blocks by block id.
+    pub(super) code_scroll: HashMap<String, f32>,
+    /// Code block whose copy button reads `Copied`, with the generation of its timer.
+    pub(super) copied: Option<(String, u64)>,
+    pub(super) copied_generation: u64,
+    pub(super) linked_doc: Option<LinkedDocMenuState>,
+    pub format_cache: Option<FormatCache>,
+}
+
+impl Overlays {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Active `@` linked-document menu state, if open (not closing).
+    pub fn linked_doc_menu(&self) -> Option<&LinkedDocMenuState> {
+        self.linked_doc
+            .as_ref()
+            .filter(|menu| !menu.presence.closing)
+    }
+
+    /// Mutable access to the open `@` linked-document menu state.
+    pub fn linked_doc_menu_mut(&mut self) -> Option<&mut LinkedDocMenuState> {
+        self.linked_doc
+            .as_mut()
+            .filter(|menu| !menu.presence.closing)
+    }
+
+    /// Updates or clears the `@` linked-document menu state.
+    pub fn set_linked_doc_menu(&mut self, state: Option<LinkedDocMenuState>) {
+        self.linked_doc = state;
+    }
+
+    /// Dismiss the `@` linked-document menu with a fade-out transition.
+    pub fn close_linked_doc(&mut self, now_ms: f64) -> bool {
+        match self.linked_doc_menu_mut() {
+            Some(menu) => {
+                menu.presence.close(now_ms);
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// The slash menu, while it is open.
+    pub fn slash_menu(&self) -> Option<&SlashMenu> {
+        self.slash.as_ref().filter(|menu| !menu.presence.closing)
+    }
+
+    /// Whether the formatting toolbar is open.
+    pub fn format_toolbar_open(&self) -> bool {
+        self.open_toolbar().is_some()
+    }
+
+    /// Text of the toolbar's link field, while that field is open.
+    pub fn link_url(&self) -> Option<&str> {
+        self.link_field().map(LinkBar::url)
+    }
+
+    /// The toolbar's link field, while it is open.
+    pub fn link_field(&self) -> Option<&LinkBar> {
+        self.open_toolbar()?.link.as_ref()
+    }
+
+    pub fn link_field_mut(&mut self) -> Option<&mut LinkBar> {
+        self.open_toolbar_mut()?.link.as_mut()
+    }
+
+    /// Whether the pointer is on the drag handle itself, not just on its block's row.
+    pub fn drag_handle_hot(&self) -> bool {
+        self.handle_hot
+    }
+
+    /// Block whose row the pointer is on.
+    pub fn hovered_block(&self) -> Option<&str> {
+        self.hovered.as_deref()
+    }
+
+    /// Block being dragged by its handle.
+    pub fn dragged_block(&self) -> Option<&str> {
+        self.drag.as_ref().map(|drag| drag.block_id.as_str())
+    }
+
+    /// Where the dragged block would land.
+    pub fn drop_slot(&self) -> Option<&DropSlot> {
+        self.drag.as_ref()?.slot.as_ref()
+    }
+
+    /// Sideways scroll of a code block.
+    pub fn code_scroll_x(&self, block_id: &str) -> f32 {
+        self.code_scroll.get(block_id).copied().unwrap_or(0.0)
+    }
+
+    /// The code blocks of `layout` that are scrolled sideways.
+    pub fn scrolled_code(&self, layout: &FlowLayout) -> Vec<ScrolledCode> {
+        self.code_scroll
+            .iter()
+            .filter_map(|(block_id, scroll)| {
+                ScrolledCode::of_block(layout.block(block_id)?, *scroll)
+            })
+            .collect()
+    }
+
+    /// Scroll a code block sideways so the caret at `caret_x` (relative to its code area,
+    /// unscrolled) is in view.
+    pub fn reveal_code_x(&mut self, block_id: &str, caret_x: f32, code: CodeScroll) {
+        let current = self.code_scroll_x(block_id);
+        let next = if caret_x < current {
+            caret_x
+        } else if caret_x > current + code.area.w - 2.0 {
+            caret_x - code.area.w + 2.0
+        } else {
+            current
+        };
+        let next = next.clamp(0.0, code.max_x).round();
+        if next > 0.0 {
+            self.code_scroll.insert(block_id.to_string(), next);
+        } else {
+            self.code_scroll.remove(block_id);
+        }
+    }
+
+    /// Whether a block's disclosure chevron is turning between its two states.
+    pub fn chevron_turning(&self, block_id: &str) -> bool {
+        self.chevrons.contains_key(block_id)
+    }
+
+    /// Code block whose copy button currently reads `Copied`.
+    pub fn copied_block(&self) -> Option<&str> {
+        self.copied.as_ref().map(|(block_id, _)| block_id.as_str())
+    }
+
+    /// The `Copied` timer of `generation` ran out. Returns whether a label went away.
+    pub fn copied_expired(&mut self, generation: u64) -> bool {
+        if self
+            .copied
+            .as_ref()
+            .is_some_and(|(_, current)| *current == generation)
+        {
+            self.copied = None;
+            return true;
+        }
+        false
+    }
+
+    /// Drop every popover, hover and gesture at once, e.g. when the page is hidden or
+    /// replaced.
+    pub fn reset(&mut self) {
+        self.hovered = None;
+        self.handle_hot = false;
+        self.slash = None;
+        self.toolbar = None;
+        self.drag = None;
+        self.chevrons.clear();
+        self.linked_doc = None;
+        self.format_cache = None;
+    }
+}

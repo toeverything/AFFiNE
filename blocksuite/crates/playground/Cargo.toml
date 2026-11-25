@@ -14,7 +14,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
-harness = ["ui/harness"]
+harness = ["ui/harness", "blocksuite-editor/harness"]
 
 [[bin]]
 name = "native-playground"
@@ -28,14 +28,12 @@ required-features = ["harness"]
 [dependencies]
 anyhow.workspace = true
 async-channel.workspace = true
+blocksuite-editor = { path = "../editor" }
 blocksuite-playground-doc = { path = "../doc", default-features = false }
 image.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 ui = { path = "../../../packages/ui/ui" }
-unicode-bidi.workspace = true
-unicode-linebreak = "0.1"
-unicode-segmentation.workspace = true
 y-octo = { version = "0.4.0", default-features = false, features = ["session"] }
 
 [dev-dependencies]

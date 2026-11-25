@@ -30,6 +30,7 @@ impl PlaygroundView {
         &self,
         snapshot: &'a PageSnapshot,
         layout: &'a FlowLayout,
+        direction: ui::Direction,
         selection: Option<&'a SelectionFormat>,
     ) -> OverlayScene<'a> {
         OverlayScene {
@@ -38,6 +39,7 @@ impl PlaygroundView {
             geometry: crate::block_flow::page_geometry(self.window_size.0),
             window: self.window_size,
             scroll_y: self.scroll_y,
+            direction,
             selection,
         }
     }
@@ -117,6 +119,7 @@ impl PlaygroundView {
                 return;
             }
             OverlayEvent::DragStart(_) => self.editor.dragging = false,
+            _ if self.handle_linked_doc_event(&event, window, cx) => return,
             _ => {}
         }
         let now_ms = self.now_ms(cx);
@@ -124,9 +127,10 @@ impl PlaygroundView {
             PlaygroundMode::Page => self.snapshot.clone().zip(self.flow_layout()),
             PlaygroundMode::Edgeless => None,
         };
+        let direction = window.layout_direction();
         let effects = match &page {
             Some((snapshot, layout)) => {
-                let scene = self.overlay_scene(snapshot, layout, None);
+                let scene = self.overlay_scene(snapshot, layout, direction, None);
                 self.overlays.handle(event, Some(&scene), now_ms)
             }
             None => self.overlays.handle(event, None, now_ms),
@@ -250,13 +254,38 @@ impl PlaygroundView {
         self.dispatch_overlay(OverlayEvent::PointerUp, window, cx);
     }
 
-    /// Offer a key to the open link field or slash menu before the document gets it.
+    /// Offer a key to the open link field, linked-doc menu, or slash menu before the document gets it.
     pub(crate) fn overlay_key_down(
         &mut self,
         event: &KeyDownEvent,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
+        if let Some(menu) = self.overlays.linked_doc_menu() {
+            let row_count = menu.results.items.len().min(6) + 1;
+            let selected = menu.selected;
+            match event.keystroke.key.as_str() {
+                "down" => {
+                    let next = (selected + 1) % row_count;
+                    self.dispatch_overlay(OverlayEvent::LinkedDocHover(next), window, cx);
+                    return true;
+                }
+                "up" => {
+                    let next = (selected + row_count - 1) % row_count;
+                    self.dispatch_overlay(OverlayEvent::LinkedDocHover(next), window, cx);
+                    return true;
+                }
+                "enter" => {
+                    self.dispatch_overlay(OverlayEvent::LinkedDocSelect(selected), window, cx);
+                    return true;
+                }
+                "escape" => {
+                    self.dispatch_overlay(OverlayEvent::CloseLinkedDocMenu, window, cx);
+                    return true;
+                }
+                _ => {}
+            }
+        }
         let now_ms = self.now_ms(cx);
         let secondary = event.keystroke.modifiers.secondary(cx);
         let input = self.link_input_state();
@@ -496,7 +525,12 @@ impl PlaygroundView {
         let selection = self
             .selection_format(layout)
             .filter(|_| !self.editor.dragging);
-        let scene = self.overlay_scene(&snapshot, layout, selection.as_ref());
+        let scene = self.overlay_scene(
+            &snapshot,
+            layout,
+            window.layout_direction(),
+            selection.as_ref(),
+        );
         let input = self.link_input_state();
         let layer = self
             .overlays
@@ -526,7 +560,7 @@ impl PlaygroundView {
             return Vec::new();
         };
         let now_ms = self.now_ms(cx);
-        let scene = self.overlay_scene(&snapshot, &layout, None);
+        let scene = self.overlay_scene(&snapshot, &layout, window.layout_direction(), None);
         self.overlays.popovers(&scene, palette, now_ms, window, cx)
     }
 }

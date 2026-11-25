@@ -1,16 +1,22 @@
 [workspace]
 resolver = "3"
 members = [
+    "../ui/tokens",
     "../ui/ui",
+    "../ui/kit",
     "../common/store",
     "../../blocksuite/crates/doc",
+    "../../blocksuite/crates/editor",
     "../../blocksuite/crates/playground",
     "../../blocksuite/crates/preview",
 ]
 default-members = [
+    "../ui/tokens",
     "../ui/ui",
+    "../ui/kit",
     "../common/store",
     "../../blocksuite/crates/doc",
+    "../../blocksuite/crates/editor",
     "../../blocksuite/crates/playground",
 ]
 exclude = ["native", "mobile-native"]

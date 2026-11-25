@@ -5,7 +5,7 @@ It uses `resolver = "3"`, edition 2024, and its own `rust-toolchain.toml` (`1.98
 
 ## Workspace boundaries and four-domain guards
 
-- `packages/frontend/Cargo.toml` lists every client member crate explicitly (`../ui/ui`, `../common/store`, `../../blocksuite/crates/doc`, `../../blocksuite/crates/playground`, and `../../blocksuite/crates/preview`).
+- `packages/frontend/Cargo.toml` lists every client member crate explicitly (`../ui/tokens`, `../ui/ui`, `../ui/kit`, `../common/store`, `../../blocksuite/crates/doc`, `../../blocksuite/crates/editor`, `../../blocksuite/crates/playground`, and `../../blocksuite/crates/preview`).
   Never use directory wildcards that can scan asset directories.
 - `packages/frontend/Cargo.toml` excludes `native` and `mobile-native`.
   Those legacy crates remain members of the root `Cargo.toml` workspace.
@@ -26,7 +26,7 @@ Always clear inherited root rustflags:
 ```sh
 CARGO_ENCODED_RUSTFLAGS="" cargo fmt --all -- --check
 CARGO_ENCODED_RUSTFLAGS="" cargo clippy --locked --workspace --all-targets --features harness -- -D warnings
-CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p ui -p playground --target wasm32-unknown-unknown
+CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p ui-tokens -p ui -p ui-kit -p blocksuite-editor -p playground --target wasm32-unknown-unknown
 CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p blocksuite-playground-doc --no-default-features --target wasm32-unknown-unknown
 CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p affine-store --no-default-features --target wasm32-unknown-unknown
 CARGO_ENCODED_RUSTFLAGS="" cargo test --locked --workspace

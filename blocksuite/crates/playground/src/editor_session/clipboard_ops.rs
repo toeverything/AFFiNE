@@ -123,6 +123,34 @@ impl PlaygroundView {
             .ok_or_else(|| DocError::InvalidState("selection outside page content".into()))?;
         let keep_suffix =
             slice.content.len() == 1 && use_existing && slice.content[0].children.is_empty();
+        if title {
+            let current = text_content(node).unwrap_or("");
+            let from_byte = crate::rich_text::TextBiIndex::new(current).utf16_to_utf8_clamped(from);
+            let suffix = if !keep_suffix {
+                ""
+            } else if a == b {
+                let end_byte =
+                    crate::rich_text::TextBiIndex::new(current).utf16_to_utf8_clamped(end.offset());
+                &current[end_byte..]
+            } else {
+                let end_text = snapshot
+                    .block(&end.block_id)
+                    .and_then(text_content)
+                    .unwrap_or("");
+                let end_byte = crate::rich_text::TextBiIndex::new(end_text)
+                    .utf16_to_utf8_clamped(end.offset());
+                &end_text[end_byte..]
+            };
+            let inserted = if use_existing {
+                slice.content[0].plain()
+            } else {
+                String::new()
+            };
+            let next_title = format!("{}{}{}", &current[..from_byte], inserted, suffix);
+            if !self.preflight_title_change(&next_title) {
+                return Ok(());
+            }
+        }
         let count = slice
             .content
             .iter()

@@ -203,6 +203,9 @@ impl PlaygroundView {
                 .map_or(0, |selection| selection.focus.offset())
         });
 
+        if command == SlashCommand::LinkedPage {
+            return self.run_linked_page_slash_command(block_id, strip, window, cx);
+        }
         let fresh = self.fresh_block_id();
         let trailing = self.fresh_block_id();
         let text_block =
@@ -290,6 +293,104 @@ impl PlaygroundView {
         self.editor.selection = Some(DocumentSelection::caret(caret));
         self.editor.last_typing = None;
         self.did_edit(commit, None, window, cx);
+        Ok(())
+    }
+
+    /// Converts a block's remaining text (excluding any typed `/linked...` trigger) into a new
+    /// linked document and replaces the block's text with a standard BlockSuite `LinkedPage`
+    /// inline reference chip in a single undoable step.
+    pub(super) fn run_linked_page_slash_command(
+        &mut self,
+        block_id: &str,
+        strip: Option<(u64, u64)>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
+        let current_plain = self
+            .page()
+            .and_then(|page| page.read_editable_text(block_id).ok())
+            .map(|(rich, _)| rich.plain)
+            .unwrap_or_default();
+        let total_u16 = current_plain.encode_utf16().count() as u64;
+        let remaining = if let Some((slash, len)) = strip {
+            let units: Vec<u16> = current_plain.encode_utf16().collect();
+            let s = (slash as usize).min(units.len());
+            let e = ((slash + len) as usize).min(units.len());
+            let mut kept = Vec::with_capacity(units.len());
+            kept.extend_from_slice(&units[..s]);
+            kept.extend_from_slice(&units[e..]);
+            String::from_utf16(&kept).unwrap_or_default()
+        } else {
+            current_plain
+        };
+        let title = if remaining.trim().is_empty() {
+            "Untitled".to_string()
+        } else {
+            remaining.trim().to_string()
+        };
+        let summary = self
+            .doc_directory_mut()
+            .create_linked_doc(&title, crate::directory::EditorDocMode::Page, None)
+            .map_err(|err| DocError::InvalidState(err.to_string()))?;
+        let now = self.now_ms(cx) as u64;
+        self.ensure_workspace_page_and_broadcast(&summary, now)
+            .map_err(|err| DocError::InvalidState(err.to_string()))?;
+        self.insert_inline_reference_chip(block_id, 0, total_u16, summary.id.as_str(), window, cx)
+    }
+
+    /// Inserts a standard BlockSuite `LinkedPage` inline reference chip (single space with
+    /// `reference: { type: "LinkedPage", pageId }`) into `block_id` at UTF-16 `offset`,
+    /// optionally deleting `delete_len` UTF-16 code units first, as one undo step.
+    pub(crate) fn insert_inline_reference_chip(
+        &mut self,
+        block_id: &str,
+        offset: u64,
+        delete_len: u64,
+        doc_id: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
+        let now = self.now_ms(cx) as u64;
+        let before = self.selection_snapshot();
+        let attrs = TextAttributes::from([(
+            "reference".to_string(),
+            Any::Object(Box::new(
+                [
+                    ("type".to_string(), Any::String("LinkedPage".to_string())),
+                    ("pageId".to_string(), Any::String(doc_id.to_string())),
+                ]
+                .into_iter()
+                .collect(),
+            )),
+        )]);
+        let mut delta = Vec::new();
+        if offset > 0 {
+            delta.push(y_octo::TextDeltaOp::Retain {
+                retain: offset,
+                format: None,
+            });
+        }
+        if delete_len > 0 {
+            delta.push(y_octo::TextDeltaOp::Delete { delete: delete_len });
+        }
+        delta.push(y_octo::TextDeltaOp::Insert {
+            insert: y_octo::TextInsert::Text(" ".into()),
+            format: Some(attrs),
+        });
+        let page = self.page_mut()?;
+        page.stop_capturing()?;
+        let commit = page.apply_text_delta(block_id, "prop:text", &delta, now)?;
+        if commit.is_some()
+            && let Some(before) = before
+        {
+            page.set_undo_selection_snapshot(before)?;
+        }
+        self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(
+            block_id,
+            offset + 1,
+        )));
+        self.editor.last_typing = None;
+        self.did_edit(commit, Some(block_id), window, cx);
         Ok(())
     }
 }

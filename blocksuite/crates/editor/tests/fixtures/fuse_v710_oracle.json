@@ -1,0 +1,689 @@
+{
+  "fuse_version": "7.1.0",
+  "options": {
+    "keys": [
+      "title"
+    ],
+    "includeMatches": true,
+    "includeScore": true,
+    "ignoreLocation": true,
+    "threshold": 0
+  },
+  "cases": [
+    {
+      "label": "highlight-engineering",
+      "titles": [
+        "Engineering"
+      ],
+      "query": "gin",
+      "results": [
+        {
+          "title": "Engineering",
+          "ref_index": 0,
+          "score": 0.001,
+          "indices": [
+            [
+              1,
+              5
+            ],
+            [
+              8,
+              11
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "highlight-cool-doc",
+      "titles": [
+        "A cool doc"
+      ],
+      "query": "doc",
+      "results": [
+        {
+          "title": "A cool doc",
+          "ref_index": 0,
+          "score": 0.01857804455091699,
+          "indices": [
+            [
+              2,
+              5
+            ],
+            [
+              7,
+              10
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "highlight-roadmap",
+      "titles": [
+        "Project Roadmap"
+      ],
+      "query": "roadmap",
+      "results": [
+        {
+          "title": "Project Roadmap",
+          "ref_index": 0,
+          "score": 0.007568328950209746,
+          "indices": [
+            [
+              0,
+              3
+            ],
+            [
+              8,
+              15
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "highlight-banana",
+      "titles": [
+        "banana"
+      ],
+      "query": "an",
+      "results": [
+        {
+          "title": "banana",
+          "ref_index": 0,
+          "score": 0.001,
+          "indices": [
+            [
+              1,
+              6
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "highlight-alpha",
+      "titles": [
+        "Alpha Beta Alpha"
+      ],
+      "query": "ALPHA",
+      "results": [
+        {
+          "title": "Alpha Beta Alpha",
+          "ref_index": 0,
+          "score": 0.01857804455091699,
+          "indices": [
+            [
+              0,
+              5
+            ],
+            [
+              9,
+              10
+            ],
+            [
+              11,
+              16
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "highlight-emoji",
+      "titles": [
+        "🚀 Launch Plan"
+      ],
+      "query": "launch",
+      "results": [
+        {
+          "title": "🚀 Launch Plan",
+          "ref_index": 0,
+          "score": 0.01857804455091699,
+          "indices": [
+            [
+              3,
+              9
+            ],
+            [
+              11,
+              14
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "highlight-zwj-emoji",
+      "titles": [
+        "👨‍👩‍👧‍👦 Family"
+      ],
+      "query": "family",
+      "results": [
+        {
+          "title": "👨‍👩‍👧‍👦 Family",
+          "ref_index": 0,
+          "score": 0.007568328950209746,
+          "indices": [
+            [
+              12,
+              18
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "highlight-shared-surrogate",
+      "titles": [
+        "🔥 🚀"
+      ],
+      "query": "🚀",
+      "results": [
+        {
+          "title": "🔥 🚀",
+          "ref_index": 0,
+          "score": 0.007568328950209746,
+          "indices": [
+            [
+              0,
+              1
+            ],
+            [
+              3,
+              5
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "rank-design",
+      "titles": [
+        "Mobile Design Spec",
+        "Design System",
+        "Design"
+      ],
+      "query": "design",
+      "results": [
+        {
+          "title": "Design",
+          "ref_index": 2,
+          "score": 2.220446049250313e-16,
+          "indices": [
+            [
+              0,
+              6
+            ]
+          ]
+        },
+        {
+          "title": "Design System",
+          "ref_index": 1,
+          "score": 0.007568328950209746,
+          "indices": [
+            [
+              0,
+              6
+            ],
+            [
+              7,
+              8
+            ],
+            [
+              9,
+              10
+            ],
+            [
+              11,
+              12
+            ]
+          ]
+        },
+        {
+          "title": "Mobile Design Spec",
+          "ref_index": 0,
+          "score": 0.01857804455091699,
+          "indices": [
+            [
+              3,
+              4
+            ],
+            [
+              5,
+              6
+            ],
+            [
+              7,
+              13
+            ],
+            [
+              14,
+              15
+            ],
+            [
+              16,
+              17
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "rank-tokens",
+      "titles": [
+        "a b c",
+        "abcdefgh"
+      ],
+      "query": "a",
+      "results": [
+        {
+          "title": "abcdefgh",
+          "ref_index": 1,
+          "score": 0.001,
+          "indices": [
+            [
+              0,
+              1
+            ]
+          ]
+        },
+        {
+          "title": "a b c",
+          "ref_index": 0,
+          "score": 0.01857804455091699,
+          "indices": [
+            [
+              0,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "rank-same-tokens",
+      "titles": [
+        "abcdefghijkl",
+        "ab"
+      ],
+      "query": "ab",
+      "results": [
+        {
+          "title": "ab",
+          "ref_index": 1,
+          "score": 2.220446049250313e-16,
+          "indices": [
+            [
+              0,
+              2
+            ]
+          ]
+        },
+        {
+          "title": "abcdefghijkl",
+          "ref_index": 0,
+          "score": 0.001,
+          "indices": [
+            [
+              0,
+              2
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "sigma-final-miss",
+      "titles": [
+        "ΟΔΟΣ"
+      ],
+      "query": "οσ",
+      "results": []
+    },
+    {
+      "label": "sigma-upper-hit",
+      "titles": [
+        "ΟΔΟΣ"
+      ],
+      "query": "ΟΣ",
+      "results": [
+        {
+          "title": "ΟΔΟΣ",
+          "ref_index": 0,
+          "score": 0.001,
+          "indices": [
+            [
+              0,
+              1
+            ],
+            [
+              2,
+              4
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "sigma-os-lower-final-hit",
+      "titles": [
+        "ΟΣ"
+      ],
+      "query": "ος",
+      "results": [
+        {
+          "title": "ΟΣ",
+          "ref_index": 0,
+          "score": 2.220446049250313e-16,
+          "indices": [
+            [
+              0,
+              2
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "sigma-os-lower-medial-miss",
+      "titles": [
+        "ΟΣ"
+      ],
+      "query": "οσ",
+      "results": []
+    },
+    {
+      "label": "sigma-final-vs-medial",
+      "titles": [
+        "ς"
+      ],
+      "query": "σ",
+      "results": []
+    },
+    {
+      "label": "dotted-i",
+      "titles": [
+        "İstanbul"
+      ],
+      "query": "i",
+      "results": [
+        {
+          "title": "İstanbul",
+          "ref_index": 0,
+          "score": 0.001,
+          "indices": [
+            [
+              0,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "dotted-i-bul",
+      "titles": [
+        "İstanbul"
+      ],
+      "query": "bul",
+      "results": [
+        {
+          "title": "İstanbul",
+          "ref_index": 0,
+          "score": 0.001,
+          "indices": [
+            [
+              6,
+              9
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "dotted-i-ab",
+      "titles": [
+        "İab"
+      ],
+      "query": "a",
+      "results": [
+        {
+          "title": "İab",
+          "ref_index": 0,
+          "score": 0.001,
+          "indices": [
+            [
+              2,
+              3
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "dotted-i-x",
+      "titles": [
+        "İx"
+      ],
+      "query": "x",
+      "results": [
+        {
+          "title": "İx",
+          "ref_index": 0,
+          "score": 0.001,
+          "indices": [
+            [
+              2,
+              3
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "trailing-space",
+      "titles": [
+        "Foo Bar",
+        "Foobar"
+      ],
+      "query": "Foo ",
+      "results": [
+        {
+          "title": "Foo Bar",
+          "ref_index": 0,
+          "score": 0.007568328950209746,
+          "indices": [
+            [
+              0,
+              4
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "spaces-only",
+      "titles": [
+        "Anything",
+        "Any thing"
+      ],
+      "query": "   ",
+      "results": []
+    },
+    {
+      "label": "empty-query",
+      "titles": [
+        "Alpha",
+        "Beta"
+      ],
+      "query": "",
+      "results": []
+    },
+    {
+      "label": "long-exact-32",
+      "titles": [
+        "xx abcdefghijklmnopqrstuvwxyz012345 yy"
+      ],
+      "query": "abcdefghijklmnopqrstuvwxyz012345",
+      "results": [
+        {
+          "title": "xx abcdefghijklmnopqrstuvwxyz012345 yy",
+          "ref_index": 0,
+          "score": 0.01857804455091699,
+          "indices": [
+            [
+              0,
+              2
+            ],
+            [
+              3,
+              35
+            ],
+            [
+              36,
+              38
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "long-exact-33",
+      "titles": [
+        "xx abcdefghijklmnopqrstuvwxyz0123456 yy"
+      ],
+      "query": "abcdefghijklmnopqrstuvwxyz0123456",
+      "results": [
+        {
+          "title": "xx abcdefghijklmnopqrstuvwxyz0123456 yy",
+          "ref_index": 0,
+          "score": 0.01857804455091699,
+          "indices": [
+            [
+              0,
+              2
+            ],
+            [
+              3,
+              35
+            ],
+            [
+              37,
+              39
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              4,
+              36
+            ],
+            [
+              37,
+              39
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "long-full",
+      "titles": [
+        "xx abcdefghijklmnopqrstuvwxyz0123456789 yy"
+      ],
+      "query": "abcdefghijklmnopqrstuvwxyz0123456789",
+      "results": [
+        {
+          "title": "xx abcdefghijklmnopqrstuvwxyz0123456789 yy",
+          "ref_index": 0,
+          "score": 0.01857804455091699,
+          "indices": [
+            [
+              0,
+              2
+            ],
+            [
+              3,
+              35
+            ],
+            [
+              40,
+              42
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              7,
+              39
+            ],
+            [
+              40,
+              42
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "long-first-chunk-only",
+      "titles": [
+        "xx abcdefghijklmnopqrstuvwxyz012345 yy"
+      ],
+      "query": "abcdefghijklmnopqrstuvwxyz0123456789",
+      "results": [
+        {
+          "title": "xx abcdefghijklmnopqrstuvwxyz012345 yy",
+          "ref_index": 0,
+          "score": 0.6707430096043533,
+          "indices": [
+            [
+              0,
+              2
+            ],
+            [
+              3,
+              35
+            ],
+            [
+              36,
+              38
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "label": "long-no-chunk",
+      "titles": [
+        "unrelated title"
+      ],
+      "query": "abcdefghijklmnopqrstuvwxyz0123456789",
+      "results": []
+    },
+    {
+      "label": "long-exact-full-field",
+      "titles": [
+        "abcdefghijklmnopqrstuvwxyz0123456789"
+      ],
+      "query": "abcdefghijklmnopqrstuvwxyz0123456789",
+      "results": [
+        {
+          "title": "abcdefghijklmnopqrstuvwxyz0123456789",
+          "ref_index": 0,
+          "score": 2.220446049250313e-16,
+          "indices": [
+            [
+              0,
+              36
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

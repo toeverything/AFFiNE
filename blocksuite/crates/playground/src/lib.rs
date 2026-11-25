@@ -4,16 +4,14 @@
 //! chrome (top bar, mode switcher, theme toggle, presence) around the world-space page
 //! rendered by [`block_flow`], with the popovers and block controls of [`overlays`] on top.
 
-pub mod block_flow;
+pub use blocksuite_editor::{
+    TOPBAR_HEIGHT, block_flow, clipboard, directory, rich_text, surface, theme,
+};
 mod chrome;
-pub mod clipboard;
 pub mod edgeless;
 pub mod editor_session;
 pub mod overlays;
-pub mod rich_text;
 pub mod room_client;
-pub mod surface;
-pub mod theme;
 
 mod showcase;
 mod view_room;
@@ -43,9 +41,6 @@ use crate::{
 };
 
 pub use crate::theme::{PlaygroundTheme, register_bundled_fonts};
-
-/// Height of the top bar, including its bottom border.
-pub const TOPBAR_HEIGHT: f32 = 53.0;
 
 /// Room id of the built-in showcase workspace.
 pub const SHOWCASE_ROOM: &str = "showcase";
@@ -134,7 +129,7 @@ pub(crate) const THEME_TOGGLE_SIZE: f32 = 32.0;
 pub(crate) const TOPBAR_EDGE: f32 = 12.0;
 const SCROLL_LINE: f32 = 20.0;
 
-type LayoutKey = (u64, u32, PlaygroundTheme, u64);
+type LayoutKey = (u64, u32, PlaygroundTheme, u64, bool);
 
 /// Interactive GPUI root view for desktop, Web canvas, and headless verification sessions.
 pub struct PlaygroundView {
@@ -150,6 +145,10 @@ pub struct PlaygroundView {
     pub(crate) page_id: Option<String>,
     pub(crate) snapshot: Option<Rc<PageSnapshot>>,
     pub(crate) page_titles: BTreeMap<String, String>,
+    pub(crate) default_doc_directory: directory::InMemoryDocDirectory,
+    pub(crate) custom_doc_directory: Option<Box<dyn directory::WorkspaceDocDirectory>>,
+    pub(crate) preflight_renamed_title: Option<(String, String)>,
+    pub(crate) pending_sync_since_sv: BTreeMap<String, Vec<u8>>,
     /// What each referenced image shows. An entry without a pending fetch was decoded
     /// from its blob and is final.
     pub(crate) images: HashMap<String, ImageSlot>,
@@ -227,6 +226,10 @@ impl PlaygroundView {
             ),
         };
 
+        let default_doc_directory = directory::InMemoryDocDirectory::with_namespace(format!(
+            "doc:{:x}",
+            state.awareness.local_client_id()
+        ));
         let mut view = Self {
             mode: options.mode,
             theme: options.theme,
@@ -240,6 +243,10 @@ impl PlaygroundView {
             page_id: None,
             snapshot: None,
             page_titles: BTreeMap::new(),
+            default_doc_directory,
+            custom_doc_directory: None,
+            preflight_renamed_title: None,
+            pending_sync_since_sv: BTreeMap::new(),
             images: HashMap::new(),
             blob_fetches: BTreeMap::new(),
             dirty_text: None,
@@ -257,6 +264,47 @@ impl PlaygroundView {
         };
         view.refresh_document();
         view
+    }
+
+    pub(crate) fn doc_directory(&self) -> &dyn directory::WorkspaceDocDirectory {
+        self.custom_doc_directory
+            .as_deref()
+            .unwrap_or(&self.default_doc_directory)
+    }
+
+    pub(crate) fn doc_directory_mut(&mut self) -> &mut dyn directory::WorkspaceDocDirectory {
+        match self.custom_doc_directory.as_deref_mut() {
+            Some(custom) => custom,
+            None => &mut self.default_doc_directory,
+        }
+    }
+
+    /// Replaces the host [`directory::WorkspaceDocDirectory`] adapter used by this view.
+    pub fn set_doc_directory(&mut self, dir: Box<dyn directory::WorkspaceDocDirectory>) {
+        self.custom_doc_directory = Some(dir);
+    }
+
+    /// Queries linked documents through the active [`directory::WorkspaceDocDirectory`] adapter.
+    pub fn query_linked_docs(
+        &self,
+        req: &directory::DocQueryRequest,
+    ) -> Result<directory::DocQueryPage, directory::DirectoryError> {
+        self.doc_directory().query_linked_docs(req)
+    }
+
+    /// Creates a linked document through the active [`directory::WorkspaceDocDirectory`] adapter.
+    pub fn create_linked_doc(
+        &mut self,
+        title: &str,
+        mode: directory::EditorDocMode,
+        intent_id: Option<&str>,
+    ) -> Result<directory::EditorDocSummary, directory::DirectoryError> {
+        let summary = self
+            .doc_directory_mut()
+            .create_linked_doc(title, mode, intent_id)?;
+        let now_ms = summary.updated_at_ms.max(1) as u64;
+        self.ensure_workspace_page_and_broadcast(&summary, now_ms)?;
+        Ok(summary)
     }
 
     pub fn mode(&self) -> PlaygroundMode {
@@ -371,6 +419,12 @@ impl PlaygroundView {
         self.flow = BlockFlow::new();
         self.layout = None;
         self.state = state;
+        self.default_doc_directory = directory::InMemoryDocDirectory::with_namespace(format!(
+            "doc:{:x}",
+            self.state.awareness.local_client_id()
+        ));
+        self.preflight_renamed_title = None;
+        self.pending_sync_since_sv.clear();
         self.images.clear();
         self.blob_fetches.clear();
         self.scroll_y = 0.0;
@@ -426,21 +480,41 @@ impl PlaygroundView {
     /// Re-read the shown page from the workspace and bring images in line with the blobs.
     pub(crate) fn refresh_document(&mut self) {
         self.dirty_text = None;
-        let pages = self.state.workspace.list_pages().unwrap_or_default();
-        let titles: BTreeMap<String, String> = pages
-            .iter()
-            .map(|page| (page.id.clone(), page.title.clone()))
-            .collect();
-        if titles != self.page_titles {
-            self.page_titles = titles;
-            self.env_rev += 1;
-        }
+        if let Ok(pages) = self.state.workspace.list_pages() {
+            let titles: BTreeMap<String, String> = pages
+                .iter()
+                .map(|page| (page.id.clone(), page.title.clone()))
+                .collect();
+            if titles != self.page_titles {
+                self.page_titles = titles;
+                self.env_rev += 1;
+            }
+            if self.custom_doc_directory.is_none() {
+                let mode = match self.mode {
+                    PlaygroundMode::Page => directory::EditorDocMode::Page,
+                    PlaygroundMode::Edgeless => directory::EditorDocMode::Edgeless,
+                };
+                let docs = pages.iter().map(|page| directory::EditorDocSummary {
+                    id: directory::EditorDocId::new(&page.id),
+                    title: page.title.clone(),
+                    mode,
+                    updated_at_ms: 0,
+                });
+                self.default_doc_directory.retain_and_upsert_docs(docs);
+            }
 
-        self.page_id = pages
-            .iter()
-            .find(|page| page.id == HOME_PAGE_ID)
-            .or(pages.first())
-            .map(|page| page.id.clone());
+            self.page_id = pages
+                .iter()
+                .find(|page| page.id == HOME_PAGE_ID)
+                .or(pages.first())
+                .map(|page| page.id.clone());
+        } else if self
+            .page_id
+            .as_deref()
+            .is_some_and(|id| self.state.workspace.page(id).is_none())
+        {
+            self.page_id = None;
+        }
         self.snapshot = self
             .page_id
             .as_deref()
@@ -548,13 +622,13 @@ impl PlaygroundView {
     pub(crate) fn on_scroll(
         &mut self,
         event: &ScrollEvent,
-        _: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         let delta = event.delta.pixel_delta(px(SCROLL_LINE));
         // A sideways scroll over an unwrapped code block scrolls its lines, not the page.
         if let Some((snapshot, layout)) = self.snapshot.clone().zip(self.flow_layout()) {
-            let scene = self.overlay_scene(&snapshot, &layout, None);
+            let scene = self.overlay_scene(&snapshot, &layout, window.layout_direction(), None);
             if self.overlays.scroll_code(
                 &scene,
                 f32::from(event.position.x),
@@ -576,7 +650,14 @@ impl PlaygroundView {
 
     pub(crate) fn ensure_layout(&mut self, width: f32, window: &Window) -> Option<Rc<FlowLayout>> {
         let snapshot = self.snapshot.clone()?;
-        let key = (self.doc_rev, width.to_bits(), self.theme, self.env_rev);
+        let is_rtl = window.layout_direction().is_rtl();
+        let key = (
+            self.doc_rev,
+            width.to_bits(),
+            self.theme,
+            self.env_rev,
+            is_rtl,
+        );
         if let Some((cached, layout)) = &self.layout
             && *cached == key
         {
@@ -584,9 +665,9 @@ impl PlaygroundView {
         }
         let snapshot = self.preedit_snapshot().map(Rc::new).unwrap_or(snapshot);
         let dirty = self.dirty_text.take().filter(|_| {
-            self.layout
-                .as_ref()
-                .is_some_and(|(old, _)| old.1 == key.1 && old.2 == key.2 && old.3 == key.3)
+            self.layout.as_ref().is_some_and(|(old, _)| {
+                old.1 == key.1 && old.2 == key.2 && old.3 == key.3 && old.4 == key.4
+            })
         });
         let layout = Rc::new(self.flow.layout_changed(
             &FlowInput {
@@ -596,6 +677,7 @@ impl PlaygroundView {
                 page_titles: &self.page_titles,
                 images: &self.images,
                 env_rev: self.env_rev,
+                direction: window.layout_direction(),
             },
             window,
             dirty.as_ref(),
@@ -3173,7 +3255,9 @@ mod tests {
         let cached = |v: &mut PlaygroundView, _: &mut Context<PlaygroundView>| {
             (
                 v.snapshot.as_ref().unwrap().clone(),
-                v.edgeless.cached_surface_layouts(),
+                v.edgeless
+                    .cached_surface_layouts()
+                    .expect("cached surface layouts"),
             )
         };
         let (page, layouts) = session.view(cached);
@@ -3530,5 +3614,3221 @@ mod tests {
                 "collapsed note leaked {leaked_dark} dark text pixels below its clamped height"
             );
         }
+    }
+
+    #[test]
+    fn injected_doc_directory_receives_title_edits_queries_and_idempotent_creates() {
+        use std::cell::RefCell;
+
+        struct RecordingDocDirectory {
+            inner: directory::InMemoryDocDirectory,
+            log: Rc<RefCell<Vec<String>>>,
+        }
+
+        impl directory::WorkspaceDocDirectory for RecordingDocDirectory {
+            fn query_linked_docs(
+                &self,
+                req: &directory::DocQueryRequest,
+            ) -> Result<directory::DocQueryPage, directory::DirectoryError> {
+                self.log.borrow_mut().push(format!("query:{}", req.query));
+                self.inner.query_linked_docs(req)
+            }
+
+            fn rename_doc_title(
+                &mut self,
+                id: &directory::EditorDocId,
+                title: &str,
+            ) -> Result<directory::EditorDocSummary, directory::DirectoryError> {
+                self.log
+                    .borrow_mut()
+                    .push(format!("rename:{}:{title}", id.as_str()));
+                self.inner.rename_doc_title(id, title)
+            }
+
+            fn create_linked_doc(
+                &mut self,
+                title: &str,
+                mode: directory::EditorDocMode,
+                intent_id: Option<&str>,
+            ) -> Result<directory::EditorDocSummary, directory::DirectoryError> {
+                self.log
+                    .borrow_mut()
+                    .push(format!("create:{title}:{}", intent_id.unwrap_or("none")));
+                self.inner.create_linked_doc(title, mode, intent_id)
+            }
+
+            fn has_create_intent(&self, intent_id: &str) -> bool {
+                self.inner.has_create_intent(intent_id)
+            }
+
+            fn is_create_intent_linked(&self, intent_id: &str) -> bool {
+                self.inner.is_create_intent_linked(intent_id)
+            }
+
+            fn mark_create_intent_linked(&mut self, intent_id: &str) {
+                self.inner.mark_create_intent_linked(intent_id);
+            }
+
+            fn mark_doc_root_registered(&mut self, id: &directory::EditorDocId) {
+                self.inner.mark_doc_root_registered(id);
+            }
+        }
+
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let (snap, _) = session.frame();
+        let log = Rc::new(RefCell::new(Vec::new()));
+        let inner = directory::InMemoryDocDirectory::with_docs([directory::EditorDocSummary {
+            id: directory::EditorDocId::from(HOME_PAGE_ID),
+            title: "Native BlockSuite Playground".into(),
+            mode: directory::EditorDocMode::Page,
+            updated_at_ms: 1,
+        }]);
+        session.view(|view, _| {
+            view.set_doc_directory(Box::new(RecordingDocDirectory {
+                inner,
+                log: log.clone(),
+            }));
+        });
+
+        // Edit the page title through normal editor input so `did_edit` fires.
+        session.click(&snap, "page.title_block");
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    ui::EntityInputHandler::replace_text_in_range(
+                        view, None, " Edited", window, cx,
+                    );
+                })
+                .expect("replace title text");
+        });
+        let _ = session.frame();
+
+        let (queried, created_first, created_retry) = session.view(|view, _| {
+            let queried = view
+                .query_linked_docs(&directory::DocQueryRequest::new("Edited", 10))
+                .expect("query linked docs");
+            let first = view
+                .create_linked_doc(
+                    "Linked Spec",
+                    directory::EditorDocMode::Page,
+                    Some("retry-1"),
+                )
+                .expect("first create");
+            let retry = view
+                .create_linked_doc(
+                    "Linked Spec",
+                    directory::EditorDocMode::Page,
+                    Some("retry-1"),
+                )
+                .expect("idempotent retry");
+            (queried, first, retry)
+        });
+
+        assert_eq!(queried.items.len(), 1);
+        assert_eq!(
+            queried.items[0].doc.id,
+            directory::EditorDocId::from(HOME_PAGE_ID)
+        );
+        assert!(queried.items[0].doc.title.contains("Edited"));
+        assert_eq!(created_first, created_retry);
+
+        let calls = log.borrow();
+        assert!(
+            calls.iter().any(
+                |entry| entry.starts_with(&format!("rename:{HOME_PAGE_ID}:"))
+                    && entry.contains("Edited")
+            ),
+            "expected rename_doc_title call on injected adapter, got {calls:?}"
+        );
+        assert!(
+            calls.iter().any(|entry| entry == "query:Edited"),
+            "expected query_linked_docs call on injected adapter, got {calls:?}"
+        );
+        assert_eq!(
+            calls
+                .iter()
+                .filter(|entry| entry.as_str() == "create:Linked Spec:retry-1")
+                .count(),
+            2,
+            "expected both create_linked_doc calls to hit injected adapter, got {calls:?}"
+        );
+        drop(calls);
+
+        // User-facing OverlayEvent commands (`@` query + CreateLinkedDoc) also route through
+        // the injected WorkspaceDocDirectory and insert `[title](page:<id>)` into the block.
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::OpenLinkedDocMenu {
+                            block_id: "showcase-intro".to_string(),
+                            query: "Edited".to_string(),
+                        },
+                        window,
+                        cx,
+                    );
+                    assert_eq!(
+                        view.overlays()
+                            .linked_doc_menu()
+                            .expect("linked doc menu open")
+                            .results
+                            .items
+                            .len(),
+                        1
+                    );
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::SetLinkedDocQuery("Spec".to_string()),
+                        window,
+                        cx,
+                    );
+                    assert_eq!(
+                        view.overlays()
+                            .linked_doc_menu()
+                            .expect("linked doc menu updated")
+                            .results
+                            .items
+                            .len(),
+                        1
+                    );
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::CreateLinkedDoc {
+                            block_id: "showcase-intro".to_string(),
+                            title: "Line Converted Doc".to_string(),
+                            mode: directory::EditorDocMode::Page,
+                            intent_id: Some("line-intent-1".to_string()),
+                        },
+                        window,
+                        cx,
+                    );
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::CreateLinkedDoc {
+                            block_id: "showcase-intro".to_string(),
+                            title: "Line Converted Doc".to_string(),
+                            mode: directory::EditorDocMode::Page,
+                            intent_id: Some("line-intent-1".to_string()),
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .expect("dispatch linked doc overlay events");
+        });
+        let _ = session.frame();
+        let ref_count = session.view(|view, _| {
+            view.page_snapshot()
+                .and_then(|s| s.block("showcase-intro"))
+                .and_then(overlays::block_text)
+                .map(|t| {
+                    t.delta
+                        .iter()
+                        .filter(|op| {
+                            matches!(
+                                op,
+                                y_octo::TextDeltaOp::Insert { format: Some(attrs), .. }
+                                if matches!(
+                                    attrs.get("reference"),
+                                    Some(y_octo::Any::Object(obj))
+                                        if matches!(
+                                            obj.get("pageId"),
+                                            Some(y_octo::Any::String(pid)) if pid == "doc:linked-2"
+                                        )
+                                )
+                            )
+                        })
+                        .count()
+                })
+                .unwrap_or(0)
+        });
+        assert_eq!(
+            ref_count, 1,
+            "replayed CreateLinkedDoc with same intent_id must insert exactly one LinkedPage InlineReference chip"
+        );
+    }
+
+    #[test]
+    fn rejecting_doc_directory_preserves_peer_crdt_clock_and_continuous_typing_undo() {
+        struct ConditionalRenameDirectory {
+            inner: directory::InMemoryDocDirectory,
+        }
+
+        impl directory::WorkspaceDocDirectory for ConditionalRenameDirectory {
+            fn query_linked_docs(
+                &self,
+                req: &directory::DocQueryRequest,
+            ) -> Result<directory::DocQueryPage, directory::DirectoryError> {
+                self.inner.query_linked_docs(req)
+            }
+
+            fn rename_doc_title(
+                &mut self,
+                id: &directory::EditorDocId,
+                title: &str,
+            ) -> Result<directory::EditorDocSummary, directory::DirectoryError> {
+                if title.contains("Forbidden") {
+                    return Err(directory::DirectoryError::Other("forbidden title".into()));
+                }
+                self.inner.rename_doc_title(id, title)
+            }
+
+            fn create_linked_doc(
+                &mut self,
+                title: &str,
+                mode: directory::EditorDocMode,
+                intent_id: Option<&str>,
+            ) -> Result<directory::EditorDocSummary, directory::DirectoryError> {
+                self.inner.create_linked_doc(title, mode, intent_id)
+            }
+
+            fn has_create_intent(&self, intent_id: &str) -> bool {
+                self.inner.has_create_intent(intent_id)
+            }
+
+            fn is_create_intent_linked(&self, intent_id: &str) -> bool {
+                self.inner.is_create_intent_linked(intent_id)
+            }
+
+            fn mark_create_intent_linked(&mut self, intent_id: &str) {
+                self.inner.mark_create_intent_linked(intent_id);
+            }
+
+            fn mark_doc_root_registered(&mut self, id: &directory::EditorDocId) {
+                self.inner.mark_doc_root_registered(id);
+            }
+        }
+
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        // Sync a real remote peer workspace + page from the initial showcase state.
+        let (room_name, initial_root_update, initial_page_update, original_title) =
+            session.view(|view, _| {
+                let ws = &view.document().workspace;
+                let root_u = ws.encode_diff_v1(ws.room(), &[0]).expect("root update");
+                let page_u = ws
+                    .page(HOME_PAGE_ID)
+                    .expect("home page")
+                    .encode_update_v1()
+                    .expect("page update");
+                let title = ws
+                    .list_pages()
+                    .expect("pages")
+                    .into_iter()
+                    .find(|p| p.id == HOME_PAGE_ID)
+                    .expect("home")
+                    .title;
+                (ws.room().to_string(), root_u, page_u, title)
+            });
+
+        let peer_ws = Rc::new(RefCell::new(
+            WorkspaceSession::new(&room_name, client_id_from_seed(0xBEEF)).expect("peer ws"),
+        ));
+        {
+            let mut peer = peer_ws.borrow_mut();
+            peer.apply_root_update_v1(&initial_root_update)
+                .expect("peer apply root");
+            peer.ensure_page(HOME_PAGE_ID)
+                .expect("peer page")
+                .apply_remote_update_v1(&initial_page_update)
+                .expect("peer apply page");
+        }
+
+        let peer_sink = peer_ws.clone();
+        let room_for_sink = room_name.clone();
+        let (_tx, rx) = async_channel::unbounded();
+        let capture_link = room_client::RoomLink::from_parts(rx, move |cmd| {
+            if let RoomCommand::Send(RoomFrame::Binary(bytes)) = cmd
+                && let Ok(RoomBinaryFrame::Doc {
+                    doc_id,
+                    message: DocMessage::Update(update),
+                }) = decode_binary_frame(&bytes)
+            {
+                let mut peer = peer_sink.borrow_mut();
+                if doc_id == room_for_sink {
+                    peer.apply_root_update_v1(&update)
+                        .expect("peer apply root update");
+                } else {
+                    peer.ensure_page(&doc_id)
+                        .expect("peer page")
+                        .apply_remote_update_v1(&update)
+                        .expect("peer apply page update");
+                }
+            }
+        });
+
+        session.view(|view, _| {
+            view.room = Some(RoomRuntime {
+                protocol: RoomProtocol::new(room_name.clone()),
+                config: RoomConfig::new(&room_name, None),
+                link: capture_link,
+                error: None,
+            });
+            let inner = directory::InMemoryDocDirectory::with_docs([directory::EditorDocSummary {
+                id: directory::EditorDocId::from(HOME_PAGE_ID),
+                title: original_title.clone(),
+                mode: directory::EditorDocMode::Page,
+                updated_at_ms: 1,
+            }]);
+            view.set_doc_directory(Box::new(ConditionalRenameDirectory { inner }));
+        });
+
+        // Continuous typing (< 500ms, same caret session): allowed " A", then rejected " Forbidden".
+        let root_id = session.view(|view, _| {
+            view.page_snapshot()
+                .and_then(|s| s.root.as_ref())
+                .map(|r| r.id.clone())
+                .expect("root id")
+        });
+        let title_end = original_title.encode_utf16().count();
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::SetSelection(Some(
+                            overlays::ActiveSelection::caret(root_id.clone(), title_end),
+                        )),
+                        window,
+                        cx,
+                    );
+                    ui::EntityInputHandler::replace_text_in_range(view, None, " A", window, cx);
+                    ui::EntityInputHandler::replace_text_in_range(
+                        view,
+                        None,
+                        " Forbidden",
+                        window,
+                        cx,
+                    );
+                })
+                .expect("continuous title edits");
+        });
+        let _ = session.frame();
+
+        // Subsequent body edit must apply cleanly on peer (zero CRDT clock gap!).
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::SetSelection(Some(
+                            overlays::ActiveSelection::caret("showcase-intro", 0),
+                        )),
+                        window,
+                        cx,
+                    );
+                    ui::EntityInputHandler::replace_text_in_range(view, None, " more", window, cx);
+                })
+                .expect("body edit");
+        });
+        let _ = session.frame();
+
+        let expected_title = format!("{original_title} A");
+        let (local_title, local_body) = session.view(|view, _| {
+            let snap = view.page_snapshot().expect("snap");
+            let t = snap
+                .root
+                .as_ref()
+                .and_then(|r| match &r.content {
+                    BlockContent::Page { title } => Some(title.plain.clone()),
+                    _ => None,
+                })
+                .unwrap_or_default();
+            let b = snap
+                .block("showcase-intro")
+                .and_then(overlays::block_text)
+                .map(|rt| rt.plain.clone())
+                .unwrap_or_default();
+            (t, b)
+        });
+        let (peer_meta_title, peer_page_title, peer_body) = {
+            let peer = peer_ws.borrow();
+            let meta = peer
+                .list_pages()
+                .expect("peer pages")
+                .into_iter()
+                .find(|p| p.id == HOME_PAGE_ID)
+                .expect("peer home")
+                .title;
+            let snap = peer
+                .page(HOME_PAGE_ID)
+                .expect("peer page")
+                .read_page_snapshot()
+                .expect("peer snap");
+            let pt = snap
+                .root
+                .as_ref()
+                .and_then(|r| match &r.content {
+                    BlockContent::Page { title } => Some(title.plain.clone()),
+                    _ => None,
+                })
+                .unwrap_or_default();
+            let pb = snap
+                .block("showcase-intro")
+                .and_then(overlays::block_text)
+                .map(|rt| rt.plain.clone())
+                .unwrap_or_default();
+            (meta, pt, pb)
+        };
+        assert_eq!(local_title, expected_title);
+        assert_eq!(peer_meta_title, expected_title);
+        assert_eq!(peer_page_title, expected_title);
+        assert!(local_body.starts_with(" more"), "local body={local_body:?}");
+        assert!(
+            peer_body.starts_with(" more"),
+            "peer body missed later edit (CRDT clock gap!): {peer_body:?}"
+        );
+
+        // Redo must not resurrect " Forbidden"; undo cleanly unwinds " more" then " A".
+        session.view(|view, _| {
+            let page = view
+                .state
+                .workspace
+                .page_mut(HOME_PAGE_ID)
+                .expect("home page");
+            assert!(page.redo().expect("redo").is_none());
+            assert!(page.undo().expect("undo body").is_some());
+            assert!(page.undo().expect("undo title").is_some());
+            let snap = page.read_page_snapshot().expect("snap after undo");
+            let reverted = snap
+                .root
+                .as_ref()
+                .and_then(|r| match &r.content {
+                    BlockContent::Page { title } => Some(title.plain.clone()),
+                    _ => None,
+                })
+                .unwrap_or_default();
+            assert_eq!(reverted, original_title);
+        });
+    }
+
+    #[test]
+    fn default_doc_directory_preserves_intents_and_edgeless_metadata_across_refresh() {
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        let first = session.view(|view, _| {
+            view.create_linked_doc(
+                "Edgeless Spec",
+                directory::EditorDocMode::Edgeless,
+                Some("intent-x"),
+            )
+            .expect("first create")
+        });
+        assert_eq!(first.mode, directory::EditorDocMode::Edgeless);
+        assert!(first.updated_at_ms > 0);
+
+        // Structural edit triggers `refresh_document()` while the view is in Page mode.
+        session.view(|view, cx| {
+            view.edit_document(cx, |state| {
+                let page = state.workspace.page_mut(HOME_PAGE_ID).expect("home page");
+                page.add_block(
+                    "structural-divider",
+                    BlockSpec::Divider,
+                    Some("showcase-note"),
+                    None,
+                    3_000_000,
+                )
+                .expect("add divider");
+            });
+        });
+        let _ = session.frame();
+
+        let (replayed, queried) = session.view(|view, _| {
+            let replayed = view
+                .create_linked_doc(
+                    "Edgeless Spec",
+                    directory::EditorDocMode::Edgeless,
+                    Some("intent-x"),
+                )
+                .expect("replayed create");
+            let queried = view
+                .query_linked_docs(&directory::DocQueryRequest::new("Edgeless Spec", 10))
+                .expect("query edgeless");
+            (replayed, queried)
+        });
+        assert_eq!(replayed.id, first.id);
+        assert_eq!(queried.items.len(), 1);
+        assert_eq!(
+            queried.items[0].doc.mode,
+            directory::EditorDocMode::Edgeless
+        );
+        assert_eq!(queried.items[0].doc.updated_at_ms, first.updated_at_ms);
+    }
+
+    #[test]
+    fn typed_at_opens_linked_doc_menu_and_slash_linked_converts_line_to_reference_chip() {
+        let capture_dir = std::env::var("W2_CAPTURE_LINKED_DOC_PNG_DIR").ok();
+        for theme in [PlaygroundTheme::Light, PlaygroundTheme::Dark] {
+            let session = open(
+                1280,
+                800,
+                PlaygroundOptions {
+                    theme,
+                    ..PlaygroundOptions::default()
+                },
+            );
+            let _ = session.frame();
+
+            // Seed an additional linked doc so the `@` menu displays multiple items + Create row.
+            session.view(|view, _| {
+                let _ = view
+                    .create_linked_doc("Project Roadmap", directory::EditorDocMode::Page, None)
+                    .expect("seed roadmap");
+            });
+
+            // Place caret at the start of `showcase-intro` and type `@Project` to open `@` menu.
+            session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |view, window, cx| {
+                        view.dispatch_overlay(
+                            overlays::OverlayEvent::SetSelection(Some(
+                                overlays::ActiveSelection::caret("showcase-intro", 0),
+                            )),
+                            window,
+                            cx,
+                        );
+                        ui::EntityInputHandler::replace_text_in_range(view, None, "@", window, cx);
+                        ui::EntityInputHandler::replace_text_in_range(
+                            view, None, "Project", window, cx,
+                        );
+                    })
+                    .expect("type @Project");
+            });
+            session.platform.advance_clock(Duration::from_millis(200));
+            let (menu_snap, menu_img) = session.frame();
+            assert_no_violations(&menu_snap, "linked doc menu open");
+            assert!(
+                menu_snap.elements.contains_key("overlay.linked_doc_menu"),
+                "expected overlay.linked_doc_menu in FrameSnapshot"
+            );
+            assert!(
+                menu_snap
+                    .elements
+                    .contains_key("overlay.linked_doc_menu.item.0"),
+                "expected matched item row in linked doc menu"
+            );
+            assert!(
+                menu_snap
+                    .elements
+                    .contains_key("overlay.linked_doc_menu.create"),
+                "expected create row in linked doc menu"
+            );
+            if let Some(dir) = &capture_dir {
+                let _ = std::fs::create_dir_all(dir);
+                let path = format!("{dir}/linked_doc_menu_{}.png", theme.as_str());
+                menu_img.save(&path).expect("save linked doc menu png");
+            }
+
+            // Select the first matched doc: removes `@Project` and inserts LinkedPage ReferenceChip.
+            session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |view, window, cx| {
+                        view.dispatch_overlay(
+                            overlays::OverlayEvent::LinkedDocSelect(0),
+                            window,
+                            cx,
+                        );
+                    })
+                    .expect("select linked doc");
+            });
+            session.platform.advance_clock(Duration::from_millis(200));
+            let (after_snap, _) = session.frame();
+            assert_no_violations(&after_snap, "after linked doc reference chip");
+            let has_chip = session.view(|view, _| {
+                view.page_snapshot()
+                    .and_then(|s| s.block("showcase-intro"))
+                    .and_then(overlays::block_text)
+                    .is_some_and(|t| {
+                        !t.plain.contains("@Project")
+                            && t.delta.iter().any(|op| {
+                                matches!(
+                                    op,
+                                    y_octo::TextDeltaOp::Insert { format: Some(attrs), .. }
+                                    if attrs.contains_key("reference")
+                                )
+                            })
+                    })
+            });
+            assert!(has_chip, "expected InlineReference chip after @ selection");
+
+            // Also verify `/linked` (`SlashCommand::LinkedPage`) converts a line into a linked doc
+            // + InlineReference chip.
+            if matches!(theme, PlaygroundTheme::Light) {
+                let docs_before = session.view(|view, _| {
+                    view.query_linked_docs(&directory::DocQueryRequest::new("", 50))
+                        .expect("docs before /linked")
+                        .items
+                        .len()
+                });
+                session.app.update(|cx| {
+                    session
+                        .window
+                        .update(cx, |view, window, cx| {
+                            view.dispatch_overlay(
+                                overlays::OverlayEvent::SetSelection(Some(
+                                    overlays::ActiveSelection::caret("showcase-intro", 0),
+                                )),
+                                window,
+                                cx,
+                            );
+                            ui::EntityInputHandler::replace_text_in_range(
+                                view, None, "/", window, cx,
+                            );
+                            ui::EntityInputHandler::replace_text_in_range(
+                                view, None, "linked", window, cx,
+                            );
+                            view.dispatch_overlay(
+                                overlays::OverlayEvent::SlashExecute(0),
+                                window,
+                                cx,
+                            );
+                        })
+                        .expect("execute /linked");
+                });
+                let (docs_after, slash_chip) = session.view(|view, _| {
+                    let count = view
+                        .query_linked_docs(&directory::DocQueryRequest::new("", 50))
+                        .expect("docs after /linked")
+                        .items
+                        .len();
+                    let chip = view
+                        .page_snapshot()
+                        .and_then(|s| s.block("showcase-intro"))
+                        .and_then(overlays::block_text)
+                        .is_some_and(|t| {
+                            t.plain == " "
+                                && t.delta.iter().any(|op| {
+                                    matches!(
+                                        op,
+                                        y_octo::TextDeltaOp::Insert { format: Some(attrs), .. }
+                                        if attrs.contains_key("reference")
+                                    )
+                                })
+                        });
+                    (count, chip)
+                });
+                assert_eq!(docs_after, docs_before + 1);
+                assert!(slash_chip, "expected InlineReference chip after /linked");
+            }
+        }
+    }
+
+    #[test]
+    fn default_doc_directory_syncs_on_workspace_switch() {
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        let mut fresh_doc = DocState::new("fresh-ws", client_id_from_seed(0x9999)).expect("doc");
+        fresh_doc.workspace.initialize_meta().expect("meta");
+        fresh_doc
+            .workspace
+            .create_page("doc:alpha", "Fresh Workspace Alpha", 1)
+            .expect("create alpha");
+        let page = fresh_doc
+            .workspace
+            .ensure_page("doc:alpha")
+            .expect("ensure alpha");
+        let mut seed = ShowcaseSeed { page, now_ms: 0 };
+        seed.add(
+            "alpha-page",
+            BlockSpec::Page {
+                title: "Fresh Workspace Alpha".to_string(),
+            },
+            None,
+        )
+        .expect("page block");
+
+        session.view(|view, cx| view.set_document(fresh_doc, cx));
+        let _ = session.frame();
+
+        let (old_hits, new_hits) = session.view(|view, _| {
+            let old = view
+                .query_linked_docs(&directory::DocQueryRequest::new("Playground", 10))
+                .expect("query old");
+            let new = view
+                .query_linked_docs(&directory::DocQueryRequest::new("Fresh Workspace", 10))
+                .expect("query new");
+            (old, new)
+        });
+        assert!(
+            old_hits.items.is_empty(),
+            "stale showcase pages must not remain after set_document: {old_hits:?}"
+        );
+        assert_eq!(new_hits.items.len(), 1);
+        assert_eq!(
+            new_hits.items[0].doc.id,
+            directory::EditorDocId::from("doc:alpha")
+        );
+    }
+
+    #[test]
+    fn edgeless_note_layout_cache_invalidates_on_rtl_direction_switch() {
+        let build_doc = || {
+            let mut doc = DocState::new("rtl-edgeless", client_id_from_seed(0x4171)).expect("doc");
+            doc.workspace.initialize_meta().expect("meta");
+            doc.workspace
+                .create_page(HOME_PAGE_ID, "RTL Edgeless", 1)
+                .expect("page");
+            let page = doc.workspace.ensure_page(HOME_PAGE_ID).expect("page");
+            let mut seed = ShowcaseSeed { page, now_ms: 0 };
+            seed.add(
+                "r-page",
+                BlockSpec::Page {
+                    title: "RTL Edgeless".to_string(),
+                },
+                None,
+            )
+            .expect("page");
+            seed.add(
+                "r-note",
+                BlockSpec::Note {
+                    xywh: Some("[40,40,420,240]".to_string()),
+                },
+                Some("r-page"),
+            )
+            .expect("note");
+            seed.add(
+                "r-todo",
+                BlockSpec::List {
+                    list_type: ListType::Todo,
+                    text: "Parent todo item".to_string(),
+                    checked: false,
+                    order: None,
+                },
+                Some("r-note"),
+            )
+            .expect("todo");
+            seed.paragraph(
+                "r-child",
+                ParagraphType::Text,
+                "Indented child paragraph",
+                "r-todo",
+            )
+            .expect("child");
+            doc
+        };
+
+        let snapshot_blocks = |layout: &FlowLayout| -> Vec<(String, f32, f32, f32, f32)> {
+            layout
+                .blocks
+                .iter()
+                .map(|b| (b.block_id.clone(), b.x, b.y, b.body.width, b.body.height))
+                .collect()
+        };
+
+        // Session A: render LTR first, then switch direction to RTL without mutating doc/theme/size.
+        let switched = open(
+            1280,
+            800,
+            PlaygroundOptions {
+                mode: PlaygroundMode::Edgeless,
+                ..PlaygroundOptions::default()
+            },
+        );
+        switched.view(|view, cx| {
+            view.set_document(build_doc(), cx);
+            view.set_edgeless_camera(0.0, 0.0, 1.0, cx);
+        });
+        let _ = switched.frame();
+        let ltr_layout = switched.view(|view, _| {
+            view.edgeless
+                .cached_note_layout("r-note")
+                .expect("ltr note layout")
+        });
+        assert_eq!(ltr_layout.direction, ui::Direction::Ltr);
+
+        switched.app.update(|cx| {
+            switched
+                .window
+                .update(cx, |_, window, cx| {
+                    window.set_root_layout_direction(ui::Direction::Rtl);
+                    cx.notify();
+                })
+                .expect("switch to rtl");
+        });
+        let _ = switched.frame();
+        let switched_rtl = switched.view(|view, _| {
+            view.edgeless
+                .cached_note_layout("r-note")
+                .expect("rtl note layout")
+        });
+        assert_eq!(switched_rtl.direction, ui::Direction::Rtl);
+
+        // Session B: fresh Edgeless session created directly in RTL.
+        let fresh_rtl_session = open(
+            1280,
+            800,
+            PlaygroundOptions {
+                mode: PlaygroundMode::Edgeless,
+                ..PlaygroundOptions::default()
+            },
+        );
+        fresh_rtl_session.app.update(|cx| {
+            fresh_rtl_session
+                .window
+                .update(cx, |view, window, cx| {
+                    window.set_root_layout_direction(ui::Direction::Rtl);
+                    view.set_document(build_doc(), cx);
+                    view.set_edgeless_camera(0.0, 0.0, 1.0, cx);
+                })
+                .expect("init fresh rtl");
+        });
+        let _ = fresh_rtl_session.frame();
+        let fresh_rtl = fresh_rtl_session.view(|view, _| {
+            view.edgeless
+                .cached_note_layout("r-note")
+                .expect("fresh rtl note layout")
+        });
+        assert_eq!(fresh_rtl.direction, ui::Direction::Rtl);
+        assert_eq!(snapshot_blocks(&switched_rtl), snapshot_blocks(&fresh_rtl));
+    }
+
+    #[test]
+    fn keyboard_undo_title_rejection_keeps_root_page_and_peer_consistent() {
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        let (room_name, initial_root_update, initial_page_update, original_title, root_id) =
+            session.view(|view, _| {
+                let ws = &view.document().workspace;
+                let root_u = ws.encode_diff_v1(ws.room(), &[0]).expect("root update");
+                let page_u = ws
+                    .page(HOME_PAGE_ID)
+                    .expect("home page")
+                    .encode_update_v1()
+                    .expect("page update");
+                let title = ws
+                    .list_pages()
+                    .expect("pages")
+                    .into_iter()
+                    .find(|p| p.id == HOME_PAGE_ID)
+                    .expect("home")
+                    .title;
+                let rid = view
+                    .page_snapshot()
+                    .and_then(|s| s.root.as_ref())
+                    .map(|r| r.id.clone())
+                    .expect("root id");
+                (ws.room().to_string(), root_u, page_u, title, rid)
+            });
+
+        let peer_ws = Rc::new(RefCell::new(
+            WorkspaceSession::new(&room_name, client_id_from_seed(0xCAFE)).expect("peer ws"),
+        ));
+        {
+            let mut peer = peer_ws.borrow_mut();
+            peer.apply_root_update_v1(&initial_root_update)
+                .expect("peer root");
+            peer.ensure_page(HOME_PAGE_ID)
+                .expect("peer page")
+                .apply_remote_update_v1(&initial_page_update)
+                .expect("peer apply page");
+        }
+
+        let outbox: Rc<RefCell<Vec<(String, Vec<u8>)>>> = Rc::new(RefCell::new(Vec::new()));
+        let sink = outbox.clone();
+        let (_tx, rx) = async_channel::unbounded();
+        let capture_link = room_client::RoomLink::from_parts(rx, move |cmd| {
+            if let RoomCommand::Send(RoomFrame::Binary(bytes)) = cmd
+                && let Ok(RoomBinaryFrame::Doc {
+                    doc_id,
+                    message: DocMessage::Update(update),
+                }) = decode_binary_frame(&bytes)
+            {
+                sink.borrow_mut().push((doc_id, update));
+            }
+        });
+
+        let blocked_title = Rc::new(RefCell::new(Option::<String>::None));
+        let blocked_for_dir = blocked_title.clone();
+        struct PolicyRejectDirectory {
+            inner: directory::InMemoryDocDirectory,
+            blocked_title: Rc<RefCell<Option<String>>>,
+        }
+        impl directory::WorkspaceDocDirectory for PolicyRejectDirectory {
+            fn query_linked_docs(
+                &self,
+                req: &directory::DocQueryRequest,
+            ) -> Result<directory::DocQueryPage, directory::DirectoryError> {
+                self.inner.query_linked_docs(req)
+            }
+            fn rename_doc_title(
+                &mut self,
+                id: &directory::EditorDocId,
+                title: &str,
+            ) -> Result<directory::EditorDocSummary, directory::DirectoryError> {
+                if self.blocked_title.borrow().as_deref() == Some(title) {
+                    return Err(directory::DirectoryError::Other(
+                        "title rejected by policy".into(),
+                    ));
+                }
+                self.inner.rename_doc_title(id, title)
+            }
+            fn create_linked_doc(
+                &mut self,
+                title: &str,
+                mode: directory::EditorDocMode,
+                intent_id: Option<&str>,
+            ) -> Result<directory::EditorDocSummary, directory::DirectoryError> {
+                self.inner.create_linked_doc(title, mode, intent_id)
+            }
+
+            fn has_create_intent(&self, intent_id: &str) -> bool {
+                self.inner.has_create_intent(intent_id)
+            }
+
+            fn is_create_intent_linked(&self, intent_id: &str) -> bool {
+                self.inner.is_create_intent_linked(intent_id)
+            }
+
+            fn mark_create_intent_linked(&mut self, intent_id: &str) {
+                self.inner.mark_create_intent_linked(intent_id);
+            }
+
+            fn mark_doc_root_registered(&mut self, id: &directory::EditorDocId) {
+                self.inner.mark_doc_root_registered(id);
+            }
+        }
+        session.view(|view, _| {
+            view.room = Some(RoomRuntime {
+                config: room_client::RoomConfig::new(&room_name, Some("ws://127.0.0.1:1")),
+                link: capture_link,
+                protocol: RoomProtocol::new(&room_name),
+                error: None,
+            });
+            let inner = directory::InMemoryDocDirectory::with_docs([directory::EditorDocSummary {
+                id: directory::EditorDocId::from(HOME_PAGE_ID),
+                title: original_title.clone(),
+                mode: directory::EditorDocMode::Page,
+                updated_at_ms: 1,
+            }]);
+            view.set_doc_directory(Box::new(PolicyRejectDirectory {
+                inner,
+                blocked_title: blocked_for_dir,
+            }));
+        });
+
+        let drain_and_assert_peer_never_sees = |forbidden: Option<&str>| {
+            let frames: Vec<(String, Vec<u8>)> = outbox.borrow_mut().drain(..).collect();
+            for (doc_id, update) in frames {
+                let mut peer = peer_ws.borrow_mut();
+                if doc_id == room_name {
+                    peer.apply_root_update_v1(&update)
+                        .expect("peer apply root update");
+                } else {
+                    peer.ensure_page(&doc_id)
+                        .expect("peer page")
+                        .apply_remote_update_v1(&update)
+                        .expect("peer apply page update");
+                }
+                if let Some(bad) = forbidden {
+                    let page_t = peer
+                        .page(HOME_PAGE_ID)
+                        .expect("peer home page")
+                        .read_page_snapshot()
+                        .expect("peer snap")
+                        .root
+                        .as_ref()
+                        .and_then(|r| match &r.content {
+                            BlockContent::Page { title } => Some(title.plain.clone()),
+                            _ => None,
+                        })
+                        .unwrap_or_default();
+                    assert_ne!(
+                        page_t, bad,
+                        "peer observed forbidden intermediate title {bad:?} after a single frame"
+                    );
+                }
+            }
+        };
+
+        let make_key = |shift: bool| ui::KeyDownEvent {
+            keystroke: ui::Keystroke {
+                modifiers: ui::Modifiers {
+                    control: true,
+                    platform: true,
+                    shift,
+                    ..Default::default()
+                },
+                key: "z".to_string(),
+                key_char: None,
+            },
+            is_held: false,
+            prefer_character_input: false,
+        };
+
+        // 1. Allow Base -> Base A, drain frames to peer.
+        let title_end = original_title.encode_utf16().count();
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::SetSelection(Some(
+                            overlays::ActiveSelection::caret(root_id.clone(), title_end),
+                        )),
+                        window,
+                        cx,
+                    );
+                    ui::EntityInputHandler::replace_text_in_range(view, None, " A", window, cx);
+                })
+                .expect("append A");
+        });
+        let _ = session.frame();
+        drain_and_assert_peer_never_sees(None);
+
+        // 2. Reject keyboard Undo (`Base A -> Base`): peer must NEVER see `Base` on any frame.
+        *blocked_title.borrow_mut() = Some(original_title.clone());
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.editor_key_down(&make_key(false), window, cx);
+                })
+                .expect("rejected keyboard undo");
+        });
+        drain_and_assert_peer_never_sees(Some(&original_title));
+
+        // 3. Allow Undo (`Base A -> Base`), then reject keyboard Redo (`Base -> Base A`):
+        // peer must NEVER see `Base A` on any frame.
+        *blocked_title.borrow_mut() = None;
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.editor_key_down(&make_key(false), window, cx);
+                })
+                .expect("allowed keyboard undo");
+        });
+        drain_and_assert_peer_never_sees(None);
+
+        let title_a = format!("{original_title} A");
+        *blocked_title.borrow_mut() = Some(title_a.clone());
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.editor_key_down(&make_key(true), window, cx);
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::SetSelection(Some(
+                            overlays::ActiveSelection::caret("showcase-intro", 0),
+                        )),
+                        window,
+                        cx,
+                    );
+                    ui::EntityInputHandler::replace_text_in_range(view, None, " next", window, cx);
+                })
+                .expect("rejected keyboard redo + body edit");
+        });
+        let _ = session.frame();
+        drain_and_assert_peer_never_sees(Some(&title_a));
+
+        let (local_root_title, local_page_title) = session.view(|view, _| {
+            let root_t = view
+                .document()
+                .workspace
+                .list_pages()
+                .expect("local pages")
+                .into_iter()
+                .find(|p| p.id == HOME_PAGE_ID)
+                .expect("local home")
+                .title;
+            let page_t = view
+                .page_snapshot()
+                .and_then(|s| s.root.as_ref())
+                .and_then(|r| match &r.content {
+                    BlockContent::Page { title } => Some(title.plain.clone()),
+                    _ => None,
+                })
+                .unwrap_or_default();
+            (root_t, page_t)
+        });
+        let (peer_root_title, peer_page_title, peer_body) = {
+            let peer = peer_ws.borrow();
+            let root_t = peer
+                .list_pages()
+                .expect("peer pages")
+                .into_iter()
+                .find(|p| p.id == HOME_PAGE_ID)
+                .expect("peer home")
+                .title;
+            let snap = peer
+                .page(HOME_PAGE_ID)
+                .expect("peer home page")
+                .read_page_snapshot()
+                .expect("peer snap");
+            let page_t = snap
+                .root
+                .as_ref()
+                .and_then(|r| match &r.content {
+                    BlockContent::Page { title } => Some(title.plain.clone()),
+                    _ => None,
+                })
+                .unwrap_or_default();
+            let body = snap
+                .block("showcase-intro")
+                .and_then(overlays::block_text)
+                .map(|rt| rt.plain.clone())
+                .unwrap_or_default();
+            (root_t, page_t, body)
+        };
+        assert_eq!(local_root_title, original_title);
+        assert_eq!(local_page_title, original_title);
+        assert_eq!(peer_root_title, original_title);
+        assert_eq!(peer_page_title, original_title);
+        assert!(
+            peer_body.starts_with(" next"),
+            "peer missed body edit after rejected keyboard undo/redo: {peer_body:?}"
+        );
+
+        // 4. Fault-injection checks: run each fault (`NoopRevert`, `ErrRevert`, and `FailMerge`)
+        // in its own fresh isolated session + peer + outbox with deterministic `Undo = [pre-body]`,
+        // `Redo = [Base A]`, proving fallback hit == 1, 0 outbound frames on rejection, full
+        // preservation of both Redo (title) and Undo (prior body edit), gapless peer sync, and
+        // zero title leak if the user edits body while title rejection is still active.
+        for fault in [
+            editor_session::HistoryRejectFault::NoopRevert,
+            editor_session::HistoryRejectFault::ErrRevert,
+            editor_session::HistoryRejectFault::FailMerge,
+        ] {
+            let iso = open(1280, 800, PlaygroundOptions::default());
+            let _ = iso.frame();
+
+            // Write `"!"` via `PageDocSession::inner_mut()` before syncing to peer and clearing
+            // history, proving direct `inner_mut()` writes and `Untracked` initial showcase blocks
+            // survive all 3 fault paths without any persistent replay journal.
+            iso.view(|view, _| {
+                let page = view
+                    .state
+                    .workspace
+                    .page_mut(HOME_PAGE_ID)
+                    .expect("home page");
+                let intro_target = y_octo::TypeTarget::Path(
+                    y_octo::TypePath::root("blocks")
+                        .key("showcase-intro")
+                        .key("prop:text"),
+                );
+                let _ = page
+                    .inner_mut()
+                    .text_insert(&intro_target, 0, "!")
+                    .expect("inner_mut text_insert");
+                let history = page.undo_stack_id();
+                page.inner_mut()
+                    .clear_stack_history(history, true, true)
+                    .expect("clear history after inner_mut");
+                view.refresh_document();
+            });
+
+            let (
+                iso_room,
+                iso_init_root,
+                iso_init_page,
+                iso_base_title,
+                iso_root_id,
+                iso_orig_body,
+            ) = iso.view(|view, _| {
+                let ws = &view.document().workspace;
+                let r = ws.encode_diff_v1(ws.room(), &[0]).expect("root u");
+                let p = ws
+                    .page(HOME_PAGE_ID)
+                    .expect("home")
+                    .encode_update_v1()
+                    .expect("page u");
+                let t = ws
+                    .list_pages()
+                    .expect("pages")
+                    .into_iter()
+                    .find(|pg| pg.id == HOME_PAGE_ID)
+                    .expect("home")
+                    .title;
+                let snap = view.page_snapshot().expect("snap");
+                let rid = snap.root.as_ref().expect("root").id.clone();
+                let body = snap
+                    .block("showcase-intro")
+                    .and_then(overlays::block_text)
+                    .map(|rt| rt.plain.clone())
+                    .unwrap_or_default();
+                (ws.room().to_string(), r, p, t, rid, body)
+            });
+            let iso_peer = Rc::new(RefCell::new(
+                WorkspaceSession::new(&iso_room, client_id_from_seed(0xC0DE)).expect("iso peer"),
+            ));
+            {
+                let mut peer = iso_peer.borrow_mut();
+                peer.apply_root_update_v1(&iso_init_root)
+                    .expect("peer init root");
+                peer.ensure_page(HOME_PAGE_ID)
+                    .expect("peer home")
+                    .apply_remote_update_v1(&iso_init_page)
+                    .expect("peer init page");
+            }
+            let iso_outbox: Rc<RefCell<Vec<(String, Vec<u8>)>>> = Rc::new(RefCell::new(Vec::new()));
+            let iso_sink = iso_outbox.clone();
+            let (_tx2, rx2) = async_channel::unbounded();
+            let iso_link = room_client::RoomLink::from_parts(rx2, move |cmd| {
+                if let RoomCommand::Send(RoomFrame::Binary(bytes)) = cmd
+                    && let Ok(RoomBinaryFrame::Doc {
+                        doc_id,
+                        message: DocMessage::Update(update),
+                    }) = decode_binary_frame(&bytes)
+                {
+                    iso_sink.borrow_mut().push((doc_id, update));
+                }
+            });
+            let iso_blocked = Rc::new(RefCell::new(Option::<String>::None));
+            let iso_blocked_dir = iso_blocked.clone();
+            iso.view(|view, _| {
+                view.room = Some(RoomRuntime {
+                    config: room_client::RoomConfig::new(&iso_room, Some("ws://127.0.0.1:1")),
+                    link: iso_link,
+                    protocol: RoomProtocol::new(&iso_room),
+                    error: None,
+                });
+                let inner =
+                    directory::InMemoryDocDirectory::with_docs([directory::EditorDocSummary {
+                        id: directory::EditorDocId::from(HOME_PAGE_ID),
+                        title: iso_base_title.clone(),
+                        mode: directory::EditorDocMode::Page,
+                        updated_at_ms: 1,
+                    }]);
+                view.set_doc_directory(Box::new(PolicyRejectDirectory {
+                    inner,
+                    blocked_title: iso_blocked_dir,
+                }));
+            });
+            let drain_iso = |forbidden: Option<&str>| {
+                let frames: Vec<(String, Vec<u8>)> = iso_outbox.borrow_mut().drain(..).collect();
+                for (doc_id, update) in frames {
+                    let mut peer = iso_peer.borrow_mut();
+                    if doc_id == iso_room {
+                        peer.apply_root_update_v1(&update)
+                            .expect("iso peer apply root");
+                    } else {
+                        peer.ensure_page(&doc_id)
+                            .expect("iso peer page")
+                            .apply_remote_update_v1(&update)
+                            .expect("iso peer apply page");
+                    }
+                    if let Some(bad) = forbidden {
+                        let pt = peer
+                            .page(HOME_PAGE_ID)
+                            .expect("peer home")
+                            .read_page_snapshot()
+                            .expect("peer snap")
+                            .root
+                            .as_ref()
+                            .and_then(|r| match &r.content {
+                                BlockContent::Page { title } => Some(title.plain.clone()),
+                                _ => None,
+                            })
+                            .unwrap_or_default();
+                        assert_ne!(pt, bad, "{fault:?}: peer observed forbidden title {bad:?}");
+                    }
+                }
+            };
+
+            // Step 1: insert `" pre-body "` in body -> Undo = [pre-body].
+            iso.app.update(|cx| {
+                iso.window
+                    .update(cx, |view, window, cx| {
+                        view.dispatch_overlay(
+                            overlays::OverlayEvent::SetSelection(Some(
+                                overlays::ActiveSelection::caret("showcase-intro", 0),
+                            )),
+                            window,
+                            cx,
+                        );
+                        ui::EntityInputHandler::replace_text_in_range(
+                            view,
+                            None,
+                            " pre-body ",
+                            window,
+                            cx,
+                        );
+                    })
+                    .expect("insert pre-body");
+            });
+            drain_iso(None);
+
+            // Step 2: append `" A"` to title -> Undo = [pre-body, Base A].
+            iso.platform.advance_clock(Duration::from_millis(600));
+            let iso_title_end = iso_base_title.encode_utf16().count();
+            iso.app.update(|cx| {
+                iso.window
+                    .update(cx, |view, window, cx| {
+                        view.dispatch_overlay(
+                            overlays::OverlayEvent::SetSelection(Some(
+                                overlays::ActiveSelection::caret(
+                                    iso_root_id.clone(),
+                                    iso_title_end,
+                                ),
+                            )),
+                            window,
+                            cx,
+                        );
+                        ui::EntityInputHandler::replace_text_in_range(view, None, " A", window, cx);
+                    })
+                    .expect("append A");
+            });
+            drain_iso(None);
+
+            // Step 3: allow Undo -> Undo = [pre-body], Redo = [Base A].
+            iso.app.update(|cx| {
+                iso.window
+                    .update(cx, |view, window, cx| {
+                        view.editor_key_down(&make_key(false), window, cx);
+                    })
+                    .expect("undo Base A");
+            });
+            drain_iso(None);
+
+            // Step 4: reject Redo under injected `fault` -> fallback hits == 1, outbox empty!
+            let iso_title_a = format!("{iso_base_title} A");
+            let _ = editor_session::take_history_reject_fallback_hits();
+            iso_outbox.borrow_mut().clear();
+            *iso_blocked.borrow_mut() = Some(iso_title_a.clone());
+            editor_session::set_history_reject_fault(fault);
+            iso.app.update(|cx| {
+                iso.window
+                    .update(cx, |view, window, cx| {
+                        view.editor_key_down(&make_key(true), window, cx);
+                    })
+                    .expect("fault-injected rejected redo");
+            });
+            editor_session::set_history_reject_fault(editor_session::HistoryRejectFault::None);
+            assert_eq!(
+                editor_session::take_history_reject_fallback_hits(),
+                1,
+                "{fault:?}: fallback branch must be hit exactly once"
+            );
+            assert!(
+                iso_outbox.borrow().is_empty(),
+                "{fault:?}: rejected fallback must emit 0 outbound frames"
+            );
+
+            let read_titles = || {
+                let local = iso.view(|view, _| {
+                    view.page_snapshot()
+                        .and_then(|s| s.root.as_ref())
+                        .and_then(|r| match &r.content {
+                            BlockContent::Page { title } => Some(title.plain.clone()),
+                            _ => None,
+                        })
+                        .unwrap_or_default()
+                });
+                let peer = iso_peer
+                    .borrow()
+                    .page(HOME_PAGE_ID)
+                    .expect("peer home")
+                    .read_page_snapshot()
+                    .expect("peer snap")
+                    .root
+                    .as_ref()
+                    .and_then(|r| match &r.content {
+                        BlockContent::Page { title } => Some(title.plain.clone()),
+                        _ => None,
+                    })
+                    .unwrap_or_default();
+                (local, peer)
+            };
+            assert_eq!(
+                read_titles(),
+                (iso_base_title.clone(), iso_base_title.clone())
+            );
+            let root_title_after_reject = iso.view(|view, _| {
+                view.document()
+                    .workspace
+                    .list_pages()
+                    .expect("root pages")
+                    .into_iter()
+                    .find(|pg| pg.id == HOME_PAGE_ID)
+                    .expect("root home")
+                    .title
+            });
+            assert_eq!(
+                root_title_after_reject, iso_base_title,
+                "{fault:?}: root meta.pages title must stay at Base"
+            );
+
+            // Step 5: for `FailMerge` (where reverse undo succeeded), verify Redo still restores
+            // `Base A` once rejection is lifted, then Undo returns to `Base` and re-reject under
+            // `FailMerge` before testing edits while blocked.
+            if fault == editor_session::HistoryRejectFault::FailMerge {
+                *iso_blocked.borrow_mut() = None;
+                iso.app.update(|cx| {
+                    iso.window
+                        .update(cx, |view, window, cx| {
+                            view.editor_key_down(&make_key(true), window, cx);
+                        })
+                        .expect("redo Base A after FailMerge fallback");
+                });
+                drain_iso(None);
+                assert_eq!(
+                    read_titles(),
+                    (iso_title_a.clone(), iso_title_a.clone()),
+                    "FailMerge: title Redo must remain intact after fallback"
+                );
+
+                iso.app.update(|cx| {
+                    iso.window
+                        .update(cx, |view, window, cx| {
+                            view.editor_key_down(&make_key(false), window, cx);
+                        })
+                        .expect("undo #1 back to Base");
+                });
+                drain_iso(None);
+                assert_eq!(
+                    read_titles(),
+                    (iso_base_title.clone(), iso_base_title.clone())
+                );
+
+                let _ = editor_session::take_history_reject_fallback_hits();
+                iso_outbox.borrow_mut().clear();
+                *iso_blocked.borrow_mut() = Some(iso_title_a.clone());
+                editor_session::set_history_reject_fault(fault);
+                iso.app.update(|cx| {
+                    iso.window
+                        .update(cx, |view, window, cx| {
+                            view.editor_key_down(&make_key(true), window, cx);
+                        })
+                        .expect("second FailMerge rejected redo");
+                });
+                editor_session::set_history_reject_fault(editor_session::HistoryRejectFault::None);
+                assert_eq!(editor_session::take_history_reject_fallback_hits(), 1);
+                assert!(iso_outbox.borrow().is_empty());
+            }
+
+            // Step 5b: while rejection is STILL active, insert `" while-blocked "` in body —
+            // peer must receive `" while-blocked "` (and preserve `inner_mut()` `"!"`) while
+            // NEVER observing the rejected title `Base A`!
+            iso.platform.advance_clock(Duration::from_millis(600));
+            iso.app.update(|cx| {
+                iso.window
+                    .update(cx, |view, window, cx| {
+                        view.dispatch_overlay(
+                            overlays::OverlayEvent::SetSelection(Some(
+                                overlays::ActiveSelection::caret("showcase-intro", 0),
+                            )),
+                            window,
+                            cx,
+                        );
+                        ui::EntityInputHandler::replace_text_in_range(
+                            view,
+                            None,
+                            " while-blocked ",
+                            window,
+                            cx,
+                        );
+                    })
+                    .expect("while-blocked body edit");
+            });
+            drain_iso(Some(&iso_title_a));
+            assert_eq!(
+                read_titles(),
+                (iso_base_title.clone(), iso_base_title.clone()),
+                "{fault:?}: titles must remain Base after while-blocked edit"
+            );
+            let peer_body_while_blocked = iso_peer
+                .borrow()
+                .page(HOME_PAGE_ID)
+                .expect("peer home")
+                .read_page_snapshot()
+                .expect("peer snap")
+                .block("showcase-intro")
+                .and_then(overlays::block_text)
+                .map(|rt| rt.plain.clone())
+                .unwrap_or_default();
+            assert!(
+                peer_body_while_blocked.starts_with(" while-blocked "),
+                "{fault:?}: peer missed while-blocked edit: {peer_body_while_blocked:?}"
+            );
+            assert!(
+                peer_body_while_blocked.contains('!'),
+                "{fault:?}: inner_mut() write '!' must survive fallback: {peer_body_while_blocked:?}"
+            );
+
+            // Step 5c: lift rejection and undo all the way to the bottom of the undo stack —
+            // initial `Untracked` showcase skeleton and `inner_mut()` `"!"` MUST remain intact!
+            *iso_blocked.borrow_mut() = None;
+            for _ in 0..8 {
+                let can_undo = iso.view(|view, _| view.page().is_some_and(|p| p.can_undo()));
+                if !can_undo {
+                    break;
+                }
+                iso.app.update(|cx| {
+                    iso.window
+                        .update(cx, |view, window, cx| {
+                            view.editor_key_down(&make_key(false), window, cx);
+                        })
+                        .expect("undo to bottom of stack");
+                });
+                drain_iso(None);
+            }
+            let local_body_undone = iso.view(|view, _| {
+                view.page_snapshot()
+                    .and_then(|s| s.block("showcase-intro"))
+                    .and_then(overlays::block_text)
+                    .map(|rt| rt.plain.clone())
+                    .unwrap_or_default()
+            });
+            let peer_body_undone = iso_peer
+                .borrow()
+                .page(HOME_PAGE_ID)
+                .expect("peer home")
+                .read_page_snapshot()
+                .expect("peer snap")
+                .block("showcase-intro")
+                .and_then(overlays::block_text)
+                .map(|rt| rt.plain.clone())
+                .unwrap_or_default();
+            assert_eq!(
+                local_body_undone, iso_orig_body,
+                "{fault:?}: initial Untracked skeleton and inner_mut '!' must remain intact at undo bottom"
+            );
+            assert_eq!(
+                peer_body_undone, iso_orig_body,
+                "{fault:?}: peer must match undone body at stack bottom"
+            );
+
+            iso.app.update(|cx| {
+                iso.window
+                    .update(cx, |view, window, cx| {
+                        view.dispatch_overlay(
+                            overlays::OverlayEvent::SetSelection(Some(
+                                overlays::ActiveSelection::caret("showcase-intro", 0),
+                            )),
+                            window,
+                            cx,
+                        );
+                        ui::EntityInputHandler::replace_text_in_range(
+                            view,
+                            None,
+                            " post-check",
+                            window,
+                            cx,
+                        );
+                    })
+                    .expect("post-check body edit");
+            });
+            drain_iso(None);
+            let peer_body_post = iso_peer
+                .borrow()
+                .page(HOME_PAGE_ID)
+                .expect("peer home")
+                .read_page_snapshot()
+                .expect("peer snap")
+                .block("showcase-intro")
+                .and_then(overlays::block_text)
+                .map(|rt| rt.plain.clone())
+                .unwrap_or_default();
+            assert!(
+                peer_body_post.starts_with(" post-check"),
+                "{fault:?}: peer missed post-check edit: {peer_body_post:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn send_page_update_preserves_pending_checkpoint_on_corrupted_sv() {
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        let outbox: Rc<RefCell<Vec<(String, Vec<u8>)>>> = Rc::new(RefCell::new(Vec::new()));
+        let sink = outbox.clone();
+        let (_tx, rx) = async_channel::unbounded();
+        let link = room_client::RoomLink::from_parts(rx, move |cmd| {
+            if let RoomCommand::Send(RoomFrame::Binary(bytes)) = cmd
+                && let Ok(RoomBinaryFrame::Doc {
+                    doc_id,
+                    message: DocMessage::Update(update),
+                }) = decode_binary_frame(&bytes)
+            {
+                sink.borrow_mut().push((doc_id, update));
+            }
+        });
+
+        let bad_sv = vec![0xff, 0xff];
+        session.view(|view, _| {
+            let room_name = view.document().workspace.room().to_string();
+            view.room = Some(RoomRuntime {
+                config: room_client::RoomConfig::new(&room_name, Some("ws://127.0.0.1:1")),
+                link,
+                protocol: RoomProtocol::new(&room_name),
+                error: None,
+            });
+            view.pending_sync_since_sv
+                .insert(HOME_PAGE_ID.to_string(), bad_sv.clone());
+            view.send_page_update(HOME_PAGE_ID, vec![1, 2, 3, 4]);
+            assert_eq!(
+                view.pending_sync_since_sv.get(HOME_PAGE_ID),
+                Some(&bad_sv),
+                "failed encode_diff_v1 must preserve pending_sync_since_sv"
+            );
+        });
+        assert!(
+            outbox.borrow().is_empty(),
+            "failed encode_diff_v1 must NOT fall back to sending fragmented commit.update"
+        );
+    }
+
+    #[test]
+    fn deleted_linked_doc_cannot_be_revived_by_replaying_create_intent_e2e() {
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        let (room_name, init_root, init_home) = session.view(|view, _| {
+            let ws = &view.document().workspace;
+            let root = ws.encode_diff_v1(ws.room(), &[0]).expect("init root");
+            let home = ws
+                .page(HOME_PAGE_ID)
+                .expect("home")
+                .encode_update_v1()
+                .expect("init home");
+            (ws.room().to_string(), root, home)
+        });
+
+        let mut peer_ws =
+            WorkspaceSession::new(&room_name, client_id_from_seed(0xBEEF)).expect("peer ws");
+        peer_ws
+            .apply_root_update_v1(&init_root)
+            .expect("peer init root");
+        peer_ws
+            .ensure_page(HOME_PAGE_ID)
+            .expect("peer home")
+            .apply_remote_update_v1(&init_home)
+            .expect("peer init home");
+
+        let outbox: Rc<RefCell<Vec<(String, Vec<u8>)>>> = Rc::new(RefCell::new(Vec::new()));
+        let sink = outbox.clone();
+        let (_tx, rx) = async_channel::unbounded();
+        let link = room_client::RoomLink::from_parts(rx, move |cmd| {
+            if let RoomCommand::Send(RoomFrame::Binary(bytes)) = cmd
+                && let Ok(RoomBinaryFrame::Doc {
+                    doc_id,
+                    message: DocMessage::Update(update),
+                }) = decode_binary_frame(&bytes)
+            {
+                sink.borrow_mut().push((doc_id, update));
+            }
+        });
+        session.view(|view, _| {
+            view.room = Some(RoomRuntime {
+                config: room_client::RoomConfig::new(&room_name, Some("ws://127.0.0.1:1")),
+                link,
+                protocol: RoomProtocol::new(&room_name),
+                error: None,
+            });
+        });
+
+        let create_event = overlays::OverlayEvent::CreateLinkedDoc {
+            block_id: "showcase-intro".to_string(),
+            title: "Ephemeral Child".to_string(),
+            mode: directory::EditorDocMode::Page,
+            intent_id: Some("intent-del-e2e".to_string()),
+        };
+
+        // 1. Create linked doc and drain outbound frames to peer.
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(create_event.clone(), window, cx);
+                })
+                .expect("create linked doc");
+        });
+        for (doc_id, update) in outbox.borrow_mut().drain(..) {
+            if doc_id == room_name {
+                peer_ws
+                    .apply_root_update_v1(&update)
+                    .expect("peer apply root");
+            } else {
+                peer_ws
+                    .ensure_page(&doc_id)
+                    .expect("peer page")
+                    .apply_remote_update_v1(&update)
+                    .expect("peer apply page");
+            }
+        }
+        let child_id = session.view(|view, _| {
+            view.document()
+                .workspace
+                .list_pages()
+                .expect("list pages")
+                .into_iter()
+                .find(|p| p.title == "Ephemeral Child")
+                .expect("child created in root")
+                .id
+        });
+        assert!(
+            peer_ws
+                .list_pages()
+                .expect("peer pages")
+                .iter()
+                .any(|p| p.id == child_id),
+            "peer must receive created child page"
+        );
+
+        // Confirm the created child in the directory from the valid root list before deletion.
+        session.view(|view, _| {
+            view.refresh_document();
+        });
+
+        // 2. Delete the child from workspace root `meta.pages` and refresh document.
+        session.view(|view, _| {
+            let pages_target =
+                y_octo::TypeTarget::Path(y_octo::TypePath::root("meta").key("pages"));
+            let pages = view
+                .state
+                .workspace
+                .list_pages()
+                .expect("list pages before delete");
+            let idx = pages
+                .iter()
+                .position(|p| p.id == child_id)
+                .expect("child index in meta.pages") as u64;
+            view.state
+                .workspace
+                .root_mut()
+                .array_remove(&pages_target, idx, 1)
+                .expect("remove child from meta.pages");
+            view.refresh_document();
+        });
+        outbox.borrow_mut().clear();
+
+        // 3. Replay the exact same CreateLinkedDoc intent — must NOT revive in picker, root, or room.
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(create_event.clone(), window, cx);
+                })
+                .expect("replay create linked doc");
+        });
+
+        let (picker_hits, root_has_child) = session.view(|view, _| {
+            let hits = view
+                .doc_directory()
+                .query_linked_docs(&directory::DocQueryRequest::new("Ephemeral Child", 10))
+                .expect("query picker")
+                .items
+                .len();
+            let in_root = view
+                .document()
+                .workspace
+                .list_pages()
+                .expect("root pages")
+                .iter()
+                .any(|p| p.id == child_id);
+            (hits, in_root)
+        });
+        assert_eq!(
+            picker_hits, 0,
+            "picker must remain empty after replaying deleted intent"
+        );
+        assert!(
+            !root_has_child,
+            "root meta.pages must not revive deleted child"
+        );
+        assert!(
+            outbox.borrow().is_empty(),
+            "replaying deleted create intent must emit 0 outbound frames, got {}",
+            outbox.borrow().len()
+        );
+
+        // 4. No-intermediate-refresh branch: call public `view.create_linked_doc(...)`,
+        // delete from root `meta.pages` WITHOUT any intermediate `refresh_document()`, then
+        // call `refresh_document()` once -> picker MUST be empty, replay MUST return NotFound,
+        // root MUST have 0 revived entries, and outbox MUST have 0 frames.
+        let direct_id = session.view(|view, _| {
+            let summary = view
+                .create_linked_doc(
+                    "No-Mid-Refresh Child",
+                    directory::EditorDocMode::Page,
+                    Some("intent-no-mid-refresh"),
+                )
+                .expect("direct create_linked_doc");
+            let pages_target =
+                y_octo::TypeTarget::Path(y_octo::TypePath::root("meta").key("pages"));
+            let pages = view
+                .state
+                .workspace
+                .list_pages()
+                .expect("list pages before immediate delete");
+            let idx = pages
+                .iter()
+                .position(|p| p.id == summary.id.as_str())
+                .expect("direct child index in meta.pages") as u64;
+            view.state
+                .workspace
+                .root_mut()
+                .array_remove(&pages_target, idx, 1)
+                .expect("remove direct child from meta.pages");
+            view.refresh_document();
+            summary.id
+        });
+        outbox.borrow_mut().clear();
+
+        let (direct_picker_hits, direct_replay_err, direct_in_root) = session.view(|view, _| {
+            let hits = view
+                .doc_directory()
+                .query_linked_docs(&directory::DocQueryRequest::new("No-Mid-Refresh Child", 10))
+                .expect("query picker after immediate delete")
+                .items
+                .len();
+            let err = view
+                .create_linked_doc(
+                    "No-Mid-Refresh Child",
+                    directory::EditorDocMode::Page,
+                    Some("intent-no-mid-refresh"),
+                )
+                .expect_err("replaying deleted direct intent must fail with NotFound");
+            let in_root = view
+                .document()
+                .workspace
+                .list_pages()
+                .expect("root pages after direct replay")
+                .iter()
+                .any(|p| p.id == direct_id.as_str());
+            (hits, err, in_root)
+        });
+        assert_eq!(direct_picker_hits, 0);
+        assert_eq!(
+            direct_replay_err,
+            directory::DirectoryError::NotFound(direct_id)
+        );
+        assert!(!direct_in_root);
+        assert!(outbox.borrow().is_empty());
+    }
+
+    #[test]
+    fn concurrent_replicas_create_linked_docs_without_page_id_collision() {
+        // Seed one shared room state, then clone it into replica B via initial V1 updates so both
+        // replicas share the same `meta.pages` Y.Array and `"shared-para"` Y.Text before diverging.
+        let mut doc_a = DocState::new("shared-room", client_id_from_seed(0x1111)).expect("doc a");
+        doc_a.workspace.initialize_meta().expect("meta");
+        doc_a
+            .workspace
+            .create_page(HOME_PAGE_ID, "Shared Home", 1)
+            .expect("create home");
+        doc_a
+            .workspace
+            .ensure_page(HOME_PAGE_ID)
+            .expect("home")
+            .structural_edit(1, |p| {
+                p.add_block(
+                    "root-page",
+                    BlockSpec::Page {
+                        title: "Shared Home".into(),
+                    },
+                    None,
+                    None,
+                    1,
+                )?;
+                p.add_block(
+                    "root-note",
+                    BlockSpec::Note { xywh: None },
+                    Some("root-page"),
+                    None,
+                    1,
+                )?;
+                p.add_block(
+                    "shared-para",
+                    BlockSpec::Paragraph {
+                        paragraph_type: ParagraphType::Text,
+                        text: "hello".into(),
+                    },
+                    Some("root-note"),
+                    None,
+                    1,
+                )?;
+                Ok(())
+            })
+            .expect("seed");
+        let init_root = doc_a
+            .workspace
+            .encode_diff_v1(doc_a.workspace.room(), &[0])
+            .expect("init root");
+        let init_home = doc_a
+            .workspace
+            .page(HOME_PAGE_ID)
+            .expect("home")
+            .encode_update_v1()
+            .expect("init home");
+
+        let mut doc_b = DocState::new("shared-room", client_id_from_seed(0x2222)).expect("doc b");
+        doc_b
+            .workspace
+            .apply_root_update_v1(&init_root)
+            .expect("b root");
+        doc_b
+            .workspace
+            .ensure_page(HOME_PAGE_ID)
+            .expect("b home")
+            .apply_remote_update_v1(&init_home)
+            .expect("b home update");
+
+        let mount_replica = |doc: DocState| {
+            let session = open(1280, 800, PlaygroundOptions::default());
+            let outbox: Rc<RefCell<Vec<(String, Vec<u8>)>>> = Rc::new(RefCell::new(Vec::new()));
+            let sink = outbox.clone();
+            let (_tx, rx) = async_channel::unbounded();
+            let link = room_client::RoomLink::from_parts(rx, move |cmd| {
+                if let RoomCommand::Send(RoomFrame::Binary(bytes)) = cmd
+                    && let Ok(RoomBinaryFrame::Doc {
+                        doc_id,
+                        message: DocMessage::Update(update),
+                    }) = decode_binary_frame(&bytes)
+                {
+                    sink.borrow_mut().push((doc_id, update));
+                }
+            });
+            session.view(|view, cx| {
+                view.set_document(doc, cx);
+                view.room = Some(RoomRuntime {
+                    config: room_client::RoomConfig::new("shared-room", Some("ws://127.0.0.1:1")),
+                    link,
+                    protocol: RoomProtocol::new("shared-room"),
+                    error: None,
+                });
+            });
+            let _ = session.frame();
+            (session, outbox)
+        };
+
+        let (session_a, out_a) = mount_replica(doc_a);
+        let (session_b, out_b) = mount_replica(doc_b);
+
+        // Concurrently create distinct linked docs before exchanging any frames.
+        session_a.app.update(|cx| {
+            session_a
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::CreateLinkedDoc {
+                            block_id: "shared-para".into(),
+                            title: "Alpha".into(),
+                            mode: directory::EditorDocMode::Page,
+                            intent_id: Some("intent-a".into()),
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .expect("create Alpha");
+        });
+        session_b.app.update(|cx| {
+            session_b
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::CreateLinkedDoc {
+                            block_id: "shared-para".into(),
+                            title: "Beta".into(),
+                            mode: directory::EditorDocMode::Page,
+                            intent_id: Some("intent-b".into()),
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .expect("create Beta");
+        });
+
+        let frames_a = out_a.borrow().clone();
+        let frames_b = out_b.borrow().clone();
+        let apply_frames = |target: &Session, frames: &[(String, Vec<u8>)]| {
+            target.view(|view, cx| {
+                view.edit_document(cx, |doc| {
+                    for (doc_id, update) in frames {
+                        if doc_id == doc.workspace.room() {
+                            doc.workspace
+                                .apply_root_update_v1(update)
+                                .expect("apply root");
+                        } else {
+                            doc.workspace
+                                .ensure_page(doc_id)
+                                .expect("ensure subdoc")
+                                .apply_remote_update_v1(update)
+                                .expect("apply subdoc");
+                        }
+                    }
+                });
+            });
+        };
+        apply_frames(&session_a, &frames_b);
+        apply_frames(&session_b, &frames_a);
+
+        for (label, s) in [("A", &session_a), ("B", &session_b)] {
+            s.view(|view, _| {
+                let pages = view.document().workspace.list_pages().expect("pages");
+                let alpha = pages
+                    .iter()
+                    .find(|p| p.title == "Alpha")
+                    .expect("Alpha page");
+                let beta = pages.iter().find(|p| p.title == "Beta").expect("Beta page");
+                assert_ne!(
+                    alpha.id, beta.id,
+                    "replica {label}: Alpha and Beta collided on page ID"
+                );
+                for id in [&alpha.id, &beta.id] {
+                    let snap = view
+                        .document()
+                        .workspace
+                        .page(id)
+                        .expect("subdoc present")
+                        .read_page_snapshot()
+                        .expect("subdoc snapshot");
+                    assert!(snap.root.is_some(), "replica {label}: subdoc {id} has root");
+                }
+                let ref_ids: BTreeSet<String> = view
+                    .page_snapshot()
+                    .and_then(|s| s.block("shared-para"))
+                    .and_then(overlays::block_text)
+                    .map(|t| {
+                        t.delta
+                            .iter()
+                            .filter_map(|op| match op {
+                                y_octo::TextDeltaOp::Insert {
+                                    format: Some(attrs),
+                                    ..
+                                } => match attrs.get("reference") {
+                                    Some(y_octo::Any::Object(obj)) => match obj.get("pageId") {
+                                        Some(y_octo::Any::String(pid)) => Some(pid.clone()),
+                                        _ => None,
+                                    },
+                                    _ => None,
+                                },
+                                _ => None,
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                assert!(
+                    ref_ids.contains(&alpha.id) && ref_ids.contains(&beta.id),
+                    "replica {label}: expected chips for both distinct subdocs, got {ref_ids:?}"
+                );
+            });
+        }
+    }
+
+    #[test]
+    fn late_arriving_block_create_linked_doc_retries_and_inserts_once() {
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        // Dispatch before `"late-block"` exists: chip write fails, intent must stay retryable.
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::CreateLinkedDoc {
+                            block_id: "late-block".into(),
+                            title: "Late Target".into(),
+                            mode: directory::EditorDocMode::Page,
+                            intent_id: Some("intent-late".into()),
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .expect("first create before block arrives");
+        });
+
+        // Now `"late-block"` arrives in the document.
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                let page = doc.workspace.page_mut(HOME_PAGE_ID).expect("home");
+                let note_id = page
+                    .read_page_snapshot()
+                    .expect("snap")
+                    .root
+                    .as_ref()
+                    .expect("root")
+                    .children
+                    .iter()
+                    .find(|b| matches!(b.content, BlockContent::Note { .. }))
+                    .expect("note")
+                    .id
+                    .clone();
+                page.structural_edit(500, |p| {
+                    p.add_block(
+                        "late-block",
+                        BlockSpec::Paragraph {
+                            paragraph_type: ParagraphType::Text,
+                            text: "arrived".into(),
+                        },
+                        Some(&note_id),
+                        None,
+                        500,
+                    )?;
+                    Ok(())
+                })
+                .expect("add late-block");
+            });
+        });
+
+        // Replay twice with the same `intent-late`: second succeeds, third is idempotent no-op.
+        for _ in 0..2 {
+            session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |view, window, cx| {
+                        view.dispatch_overlay(
+                            overlays::OverlayEvent::CreateLinkedDoc {
+                                block_id: "late-block".into(),
+                                title: "Late Target".into(),
+                                mode: directory::EditorDocMode::Page,
+                                intent_id: Some("intent-late".into()),
+                            },
+                            window,
+                            cx,
+                        );
+                    })
+                    .expect("replay create");
+            });
+        }
+
+        let (chip_count, root_matches) = session.view(|view, _| {
+            let chips = view
+                .page_snapshot()
+                .and_then(|s| s.block("late-block"))
+                .and_then(overlays::block_text)
+                .map(|t| {
+                    t.delta
+                        .iter()
+                        .filter(|op| {
+                            matches!(
+                                op,
+                                y_octo::TextDeltaOp::Insert { format: Some(attrs), .. }
+                                if attrs.contains_key("reference")
+                            )
+                        })
+                        .count()
+                })
+                .unwrap_or(0);
+            let roots = view
+                .document()
+                .workspace
+                .list_pages()
+                .expect("pages")
+                .into_iter()
+                .filter(|p| p.title == "Late Target")
+                .count();
+            (chips, roots)
+        });
+        assert_eq!(chip_count, 1, "expected exactly one retried reference chip");
+        assert_eq!(root_matches, 1, "expected unique root metadata entry");
+    }
+
+    #[test]
+    fn preexisting_root_page_entry_completes_four_block_child_page_without_duplicating_root() {
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        session.view(|view, _| {
+            view.state
+                .workspace
+                .create_page("doc:pre", "Pre", 1)
+                .expect("seed root entry only");
+            let summary = directory::EditorDocSummary {
+                id: directory::EditorDocId::new("doc:pre"),
+                title: "Pre".into(),
+                mode: directory::EditorDocMode::Page,
+                updated_at_ms: 2,
+            };
+            view.ensure_workspace_page_and_broadcast(&summary, 2)
+                .expect("complete child page");
+            // Replay a second time to verify idempotency.
+            view.ensure_workspace_page_and_broadcast(&summary, 3)
+                .expect("idempotent replay");
+
+            let root_entries = view
+                .document()
+                .workspace
+                .list_pages()
+                .expect("pages")
+                .into_iter()
+                .filter(|p| p.id == "doc:pre")
+                .count();
+            assert_eq!(root_entries, 1, "must not duplicate existing root entry");
+
+            let snap = view
+                .document()
+                .workspace
+                .page("doc:pre")
+                .expect("child page exists")
+                .read_page_snapshot()
+                .expect("child page snapshot");
+            let root = snap.root.as_ref().expect("expected affine:page root");
+            assert!(
+                root.children
+                    .iter()
+                    .any(|b| matches!(b.content, BlockContent::Surface { .. })),
+                "expected affine:surface block"
+            );
+            let note = root
+                .children
+                .iter()
+                .find(|b| matches!(b.content, BlockContent::Note { .. }))
+                .expect("expected affine:note block");
+            assert!(
+                note.children
+                    .iter()
+                    .any(|b| matches!(b.content, BlockContent::Paragraph { .. })),
+                "expected initial affine:paragraph block"
+            );
+        });
+    }
+
+    fn reference_chip_utf16_len(
+        snap: Option<&PageSnapshot>,
+        block_id: &str,
+        page_id: &str,
+    ) -> usize {
+        snap.and_then(|s| s.block(block_id))
+            .and_then(overlays::block_text)
+            .map(|t| {
+                t.delta
+                    .iter()
+                    .filter_map(|op| match op {
+                        y_octo::TextDeltaOp::Insert {
+                            insert: y_octo::TextInsert::Text(text),
+                            format: Some(attrs),
+                        } if matches!(
+                            attrs.get("reference"),
+                            Some(y_octo::Any::Object(obj))
+                                if matches!(
+                                    obj.get("pageId"),
+                                    Some(y_octo::Any::String(pid)) if pid == page_id
+                                )
+                        ) =>
+                        {
+                            Some(text.encode_utf16().count())
+                        }
+                        _ => None,
+                    })
+                    .sum()
+            })
+            .unwrap_or(0)
+    }
+
+    #[test]
+    fn replaying_completed_create_intent_past_4096_boundary_does_not_duplicate_chip() {
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        // Spread the 4,100 intermediate real `OverlayEvent::CreateLinkedDoc` chips across 64
+        // paragraphs so each `Y.Text` stays <= 65 runs (O(N) in debug builds instead of O(N^2)),
+        // while `intent-0` and its post-4096 replay both target `"showcase-intro"`.
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                let page = doc.workspace.page_mut(HOME_PAGE_ID).expect("home");
+                let note_id = page
+                    .read_page_snapshot()
+                    .expect("snap")
+                    .root
+                    .as_ref()
+                    .expect("root")
+                    .children
+                    .iter()
+                    .find(|b| matches!(b.content, BlockContent::Note { .. }))
+                    .expect("note")
+                    .id
+                    .clone();
+                page.structural_edit(100, |p| {
+                    for b in 0..64 {
+                        p.add_block(
+                            &format!("chip-bucket-{b}"),
+                            BlockSpec::Paragraph {
+                                paragraph_type: ParagraphType::Text,
+                                text: String::new(),
+                            },
+                            Some(&note_id),
+                            None,
+                            100,
+                        )?;
+                    }
+                    Ok(())
+                })
+                .expect("add chip buckets");
+            });
+        });
+
+        // Dispatch 4,101 real `OverlayEvent::CreateLinkedDoc` events (`intent-0..=intent-4100`),
+        // each inserting a real source reference chip, then replay `intent-0`.
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::CreateLinkedDoc {
+                            block_id: "showcase-intro".into(),
+                            title: "Intent Zero".into(),
+                            mode: directory::EditorDocMode::Page,
+                            intent_id: Some("intent-0".into()),
+                        },
+                        window,
+                        cx,
+                    );
+                    for i in 1..=4100 {
+                        view.dispatch_overlay(
+                            overlays::OverlayEvent::CreateLinkedDoc {
+                                block_id: format!("chip-bucket-{}", i % 64),
+                                title: format!("Doc {i}"),
+                                mode: directory::EditorDocMode::Page,
+                                intent_id: Some(format!("intent-{i}")),
+                            },
+                            window,
+                            cx,
+                        );
+                    }
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::CreateLinkedDoc {
+                            block_id: "showcase-intro".into(),
+                            title: "Intent Zero".into(),
+                            mode: directory::EditorDocMode::Page,
+                            intent_id: Some("intent-0".into()),
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .expect("4101 creates + replay intent-0");
+        });
+
+        let (doc0_id, chip_utf16_len) = session.view(|view, _| {
+            let id = view
+                .query_linked_docs(&directory::DocQueryRequest::new("Intent Zero", 5))
+                .expect("query intent-0")
+                .items[0]
+                .doc
+                .id
+                .as_str()
+                .to_string();
+            let len = reference_chip_utf16_len(view.page_snapshot(), "showcase-intro", &id);
+            (id, len)
+        });
+        assert_eq!(
+            chip_utf16_len, 1,
+            "replaying intent-0 ({doc0_id}) after 4,100 real CreateLinkedDoc events must keep UTF-16 chip length == 1"
+        );
+    }
+
+    #[test]
+    fn transient_root_write_failure_returns_err_skips_chip_and_recovers_on_retry() {
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        let (room_name, init_root, init_home) = session.view(|view, _| {
+            let ws = &view.document().workspace;
+            let r = ws.encode_diff_v1(ws.room(), &[0]).expect("init root");
+            let h = ws
+                .page(HOME_PAGE_ID)
+                .expect("home")
+                .encode_update_v1()
+                .expect("init home");
+            (ws.room().to_string(), r, h)
+        });
+
+        let peer_ws = Rc::new(RefCell::new(
+            WorkspaceSession::new(&room_name, client_id_from_seed(0x5555)).expect("peer ws"),
+        ));
+        {
+            let mut peer = peer_ws.borrow_mut();
+            peer.apply_root_update_v1(&init_root).expect("peer root");
+            peer.ensure_page(HOME_PAGE_ID)
+                .expect("peer home")
+                .apply_remote_update_v1(&init_home)
+                .expect("peer home update");
+        }
+
+        let outbox: Rc<RefCell<Vec<(String, Vec<u8>)>>> = Rc::new(RefCell::new(Vec::new()));
+        let sink = outbox.clone();
+        let (_tx, rx) = async_channel::unbounded();
+        let link = room_client::RoomLink::from_parts(rx, move |cmd| {
+            if let RoomCommand::Send(RoomFrame::Binary(bytes)) = cmd
+                && let Ok(RoomBinaryFrame::Doc {
+                    doc_id,
+                    message: DocMessage::Update(update),
+                }) = decode_binary_frame(&bytes)
+            {
+                sink.borrow_mut().push((doc_id, update));
+            }
+        });
+        session.view(|view, _| {
+            view.room = Some(RoomRuntime {
+                config: room_client::RoomConfig::new(&room_name, Some("ws://127.0.0.1:1")),
+                link,
+                protocol: RoomProtocol::new(&room_name),
+                error: None,
+            });
+        });
+
+        // Temporarily corrupt root `meta.pages` to a non-Array value so `create_page` fails.
+        let corrupt_commit = session.view(|view, _| {
+            let root = view.state.workspace.root_mut();
+            let meta = y_octo::TypeTarget::Path(y_octo::TypePath::root("meta"));
+            let commit = root
+                .map_set(
+                    &meta,
+                    "pages".to_string(),
+                    y_octo::SessionValue::Any(y_octo::Any::Integer(42)),
+                )
+                .expect("corrupt meta.pages")
+                .expect("corrupt commit");
+
+            assert!(
+                view.create_linked_doc(
+                    "Direct Fail",
+                    directory::EditorDocMode::Page,
+                    Some("intent-direct-fail"),
+                )
+                .is_err(),
+                "create_linked_doc must surface Err when root write fails"
+            );
+            assert_eq!(
+                view.document().workspace.root().tx_depth(),
+                0,
+                "failed create_page must not leak an open root transaction"
+            );
+            commit
+        });
+        peer_ws
+            .borrow_mut()
+            .apply_root_update_v1(&corrupt_commit.update)
+            .expect("peer apply corrupt");
+
+        // Dispatch `OverlayEvent::CreateLinkedDoc` while corrupted: must NOT insert a chip,
+        // and must leave `root.tx_depth() == 0`.
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::CreateLinkedDoc {
+                            block_id: "showcase-intro".into(),
+                            title: "Recoverable Doc".into(),
+                            mode: directory::EditorDocMode::Page,
+                            intent_id: Some("intent-recover".into()),
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .expect("corrupted create");
+        });
+
+        let rec_id = session.view(|view, _| {
+            assert_eq!(view.document().workspace.root().tx_depth(), 0);
+            view.query_linked_docs(&directory::DocQueryRequest::new("Recoverable Doc", 5))
+                .expect("query")
+                .items[0]
+                .doc
+                .id
+                .as_str()
+                .to_string()
+        });
+        assert_eq!(
+            session.view(|view, _| reference_chip_utf16_len(
+                view.page_snapshot(),
+                "showcase-intro",
+                &rec_id
+            )),
+            0,
+            "failed root write must not insert a dangling reference chip"
+        );
+
+        // Trigger normal `refresh_document` via `edit_document` BEFORE repair, then repair
+        // `meta.pages` via `edit_document` (triggering another `refresh_document`). Unlinked
+        // pending intent must keep the exact same `rec_id`, and zero orphan child pages exist.
+        session.view(|view, cx| {
+            view.edit_document(cx, |_| {});
+            assert!(
+                view.document().workspace.page(&rec_id).is_none(),
+                "failed root write must not create an orphan child page"
+            );
+            let preserved = view
+                .query_linked_docs(&directory::DocQueryRequest::new(
+                    "Native BlockSuite Playground",
+                    10,
+                ))
+                .expect("query under corrupted meta.pages");
+            assert!(
+                preserved
+                    .items
+                    .iter()
+                    .any(|item| item.doc.id.as_str() == HOME_PAGE_ID),
+                "refresh_document must preserve existing directory entries when list_pages returns Err"
+            );
+        });
+        let repair_commits = session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                let root = doc.workspace.root_mut();
+                let meta = y_octo::TypeTarget::Path(y_octo::TypePath::root("meta"));
+                let c1 = root
+                    .map_set(
+                        &meta,
+                        "pages".to_string(),
+                        y_octo::SessionValue::Array(Vec::new()),
+                    )
+                    .expect("repair meta.pages")
+                    .expect("repair commit");
+                let c2 = doc
+                    .workspace
+                    .create_page(HOME_PAGE_ID, "Native BlockSuite Playground", 1)
+                    .expect("restore home page meta")
+                    .expect("home meta commit");
+                (c1, c2)
+            })
+        });
+        peer_ws
+            .borrow_mut()
+            .apply_root_update_v1(&repair_commits.0.update)
+            .expect("peer apply repair");
+        peer_ws
+            .borrow_mut()
+            .apply_root_update_v1(&repair_commits.1.update)
+            .expect("peer apply restored home meta");
+
+        for _ in 0..2 {
+            session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |view, window, cx| {
+                        view.dispatch_overlay(
+                            overlays::OverlayEvent::CreateLinkedDoc {
+                                block_id: "showcase-intro".into(),
+                                title: "Recoverable Doc".into(),
+                                mode: directory::EditorDocMode::Page,
+                                intent_id: Some("intent-recover".into()),
+                            },
+                            window,
+                            cx,
+                        );
+                    })
+                    .expect("replay after repair");
+            });
+        }
+
+        let mut peer_child_ids_seen = BTreeSet::new();
+        let drain_to_peer = |seen: &mut BTreeSet<String>| {
+            let frames: Vec<(String, Vec<u8>)> = outbox.borrow_mut().drain(..).collect();
+            for (doc_id, update) in frames {
+                let mut peer = peer_ws.borrow_mut();
+                if doc_id == room_name {
+                    peer.apply_root_update_v1(&update)
+                        .expect("peer apply root update");
+                } else {
+                    if doc_id != HOME_PAGE_ID {
+                        seen.insert(doc_id.clone());
+                    }
+                    peer.ensure_page(&doc_id)
+                        .expect("peer page")
+                        .apply_remote_update_v1(&update)
+                        .expect("peer apply page update");
+                }
+            }
+        };
+        drain_to_peer(&mut peer_child_ids_seen);
+
+        assert_eq!(
+            peer_child_ids_seen.len(),
+            1,
+            "peer must receive exactly 1 child page ID (no orphan child pages): {peer_child_ids_seen:?}"
+        );
+        assert!(
+            peer_child_ids_seen.contains(&rec_id),
+            "recovered child page must keep original rec_id {rec_id}, got {peer_child_ids_seen:?}"
+        );
+
+        assert_eq!(
+            session.view(|view, _| reference_chip_utf16_len(
+                view.page_snapshot(),
+                "showcase-intro",
+                &rec_id
+            )),
+            1,
+            "local HOME_PAGE_ID must have exactly 1 chip UTF-16 unit on retry"
+        );
+        assert_eq!(
+            reference_chip_utf16_len(
+                peer_ws
+                    .borrow()
+                    .page(HOME_PAGE_ID)
+                    .expect("peer home")
+                    .read_page_snapshot()
+                    .ok()
+                    .as_ref(),
+                "showcase-intro",
+                &rec_id
+            ),
+            1,
+            "peer HOME_PAGE_ID must have exactly 1 chip UTF-16 unit on retry"
+        );
+        for (who, ws_pages, snap) in [
+            (
+                "local",
+                session.view(|view, _| view.document().workspace.list_pages().expect("pages")),
+                session.view(|view, _| {
+                    view.document()
+                        .workspace
+                        .page(&rec_id)
+                        .expect("local child")
+                        .read_page_snapshot()
+                        .expect("local child snap")
+                }),
+            ),
+            (
+                "peer",
+                peer_ws.borrow().list_pages().expect("peer pages"),
+                peer_ws
+                    .borrow()
+                    .page(&rec_id)
+                    .expect("peer child")
+                    .read_page_snapshot()
+                    .expect("peer child snap"),
+            ),
+        ] {
+            let entries = ws_pages.iter().filter(|p| p.id == rec_id).count();
+            assert_eq!(entries, 1, "{who}: expected unique root metadata entry");
+            let root = snap.root.as_ref().expect("root");
+            assert!(
+                root.children
+                    .iter()
+                    .any(|b| matches!(b.content, BlockContent::Surface { .. })),
+                "{who}: surface"
+            );
+            let note = root
+                .children
+                .iter()
+                .find(|b| matches!(b.content, BlockContent::Note { .. }))
+                .expect("note");
+            assert!(
+                note.children
+                    .iter()
+                    .any(|b| matches!(b.content, BlockContent::Paragraph { .. })),
+                "{who}: paragraph"
+            );
+        }
+
+        // Subsequent independent root mutation must still emit a root update frame to `peer_ws`.
+        let second = session.view(|view, _| {
+            view.create_linked_doc("Post Recovery Doc", directory::EditorDocMode::Page, None)
+                .expect("post recovery create")
+        });
+        drain_to_peer(&mut peer_child_ids_seen);
+        assert!(
+            peer_ws
+                .borrow()
+                .list_pages()
+                .expect("peer pages")
+                .iter()
+                .any(|p| p.id == second.id.as_str() && p.title == "Post Recovery Doc"),
+            "peer must receive subsequent root updates after recovery (zero leaked tx)"
+        );
+    }
+
+    #[test]
+    fn create_intent_tracks_source_chip_across_direct_create_and_view_recovery() {
+        // Case A: direct `create_linked_doc` (page only, 0 chips) followed by first
+        // `OverlayEvent::CreateLinkedDoc` with same `intent_id` -> 1 chip, replay -> still 1 chip.
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        let pre = session.view(|view, _| {
+            view.create_linked_doc(
+                "Pre Created",
+                directory::EditorDocMode::Page,
+                Some("intent-pre"),
+            )
+            .expect("direct create")
+        });
+        assert_eq!(
+            session.view(|view, _| reference_chip_utf16_len(
+                view.page_snapshot(),
+                "showcase-intro",
+                pre.id.as_str()
+            )),
+            0
+        );
+
+        for _ in 0..2 {
+            session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |view, window, cx| {
+                        view.dispatch_overlay(
+                            overlays::OverlayEvent::CreateLinkedDoc {
+                                block_id: "showcase-intro".into(),
+                                title: "Pre Created".into(),
+                                mode: directory::EditorDocMode::Page,
+                                intent_id: Some("intent-pre".into()),
+                            },
+                            window,
+                            cx,
+                        );
+                    })
+                    .expect("overlay create for pre-created intent");
+            });
+        }
+        assert_eq!(
+            session.view(|view, _| reference_chip_utf16_len(
+                view.page_snapshot(),
+                "showcase-intro",
+                pre.id.as_str()
+            )),
+            1,
+            "first overlay CreateLinkedDoc after direct create must insert 1 chip; replay must stay 1"
+        );
+
+        // Case B: shared persistent directory across view recreation after late-block failure.
+        struct SharedDirectory(Rc<RefCell<directory::InMemoryDocDirectory>>);
+        impl directory::WorkspaceDocDirectory for SharedDirectory {
+            fn query_linked_docs(
+                &self,
+                req: &directory::DocQueryRequest,
+            ) -> Result<directory::DocQueryPage, directory::DirectoryError> {
+                self.0.borrow().query_linked_docs(req)
+            }
+            fn rename_doc_title(
+                &mut self,
+                id: &directory::EditorDocId,
+                title: &str,
+            ) -> Result<directory::EditorDocSummary, directory::DirectoryError> {
+                self.0.borrow_mut().rename_doc_title(id, title)
+            }
+            fn create_linked_doc(
+                &mut self,
+                title: &str,
+                mode: directory::EditorDocMode,
+                intent_id: Option<&str>,
+            ) -> Result<directory::EditorDocSummary, directory::DirectoryError> {
+                self.0
+                    .borrow_mut()
+                    .create_linked_doc(title, mode, intent_id)
+            }
+            fn has_create_intent(&self, intent_id: &str) -> bool {
+                self.0.borrow().has_create_intent(intent_id)
+            }
+            fn is_create_intent_linked(&self, intent_id: &str) -> bool {
+                self.0.borrow().is_create_intent_linked(intent_id)
+            }
+            fn mark_create_intent_linked(&mut self, intent_id: &str) {
+                self.0.borrow_mut().mark_create_intent_linked(intent_id);
+            }
+            fn mark_doc_root_registered(&mut self, id: &directory::EditorDocId) {
+                self.0.borrow_mut().mark_doc_root_registered(id);
+            }
+        }
+
+        let shared_dir = Rc::new(RefCell::new(directory::InMemoryDocDirectory::new()));
+        let view1 = open(1280, 800, PlaygroundOptions::default());
+        let _ = view1.frame();
+        view1.view(|view, _| view.set_doc_directory(Box::new(SharedDirectory(shared_dir.clone()))));
+
+        // Fail chip insertion in view1 because `"late-block"` does not exist yet.
+        view1.app.update(|cx| {
+            view1
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::CreateLinkedDoc {
+                            block_id: "late-block".into(),
+                            title: "Recovered Across Views".into(),
+                            mode: directory::EditorDocMode::Page,
+                            intent_id: Some("intent-recover-view".into()),
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .expect("view1 late block create");
+        });
+
+        let recovered_id = directory::WorkspaceDocDirectory::query_linked_docs(
+            &*shared_dir.borrow(),
+            &directory::DocQueryRequest::new("Recovered Across Views", 5),
+        )
+        .expect("query")
+        .items[0]
+            .doc
+            .id
+            .as_str()
+            .to_string();
+
+        // Add `"late-block"` and export full state into a brand-new view2 with the same directory.
+        let (root_u, home_u, child_u) = view1.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                let page = doc.workspace.page_mut(HOME_PAGE_ID).expect("home");
+                let note_id = page
+                    .read_page_snapshot()
+                    .expect("snap")
+                    .root
+                    .as_ref()
+                    .expect("root")
+                    .children
+                    .iter()
+                    .find(|b| matches!(b.content, BlockContent::Note { .. }))
+                    .expect("note")
+                    .id
+                    .clone();
+                page.structural_edit(500, |p| {
+                    p.add_block(
+                        "late-block",
+                        BlockSpec::Paragraph {
+                            paragraph_type: ParagraphType::Text,
+                            text: "ready".into(),
+                        },
+                        Some(&note_id),
+                        None,
+                        500,
+                    )?;
+                    Ok(())
+                })
+                .expect("add late-block");
+            });
+            let ws = &view.document().workspace;
+            (
+                ws.encode_diff_v1(ws.room(), &[0]).expect("root u"),
+                ws.page(HOME_PAGE_ID)
+                    .expect("home")
+                    .encode_update_v1()
+                    .expect("home u"),
+                ws.page(&recovered_id)
+                    .expect("child")
+                    .encode_update_v1()
+                    .expect("child u"),
+            )
+        });
+
+        let view2 = open(1280, 800, PlaygroundOptions::default());
+        let mut doc2 = DocState::new("recovered-room", client_id_from_seed(0x8888)).expect("doc2");
+        doc2.workspace.apply_root_update_v1(&root_u).expect("root2");
+        doc2.workspace
+            .ensure_page(HOME_PAGE_ID)
+            .expect("home2")
+            .apply_remote_update_v1(&home_u)
+            .expect("home2 u");
+        doc2.workspace
+            .ensure_page(&recovered_id)
+            .expect("child2")
+            .apply_remote_update_v1(&child_u)
+            .expect("child2 u");
+        view2.view(|view, cx| {
+            view.set_document(doc2, cx);
+            view.set_doc_directory(Box::new(SharedDirectory(shared_dir.clone())));
+        });
+        let _ = view2.frame();
+
+        for _ in 0..2 {
+            view2.app.update(|cx| {
+                view2
+                    .window
+                    .update(cx, |view, window, cx| {
+                        view.dispatch_overlay(
+                            overlays::OverlayEvent::CreateLinkedDoc {
+                                block_id: "late-block".into(),
+                                title: "Recovered Across Views".into(),
+                                mode: directory::EditorDocMode::Page,
+                                intent_id: Some("intent-recover-view".into()),
+                            },
+                            window,
+                            cx,
+                        );
+                    })
+                    .expect("view2 replay");
+            });
+        }
+        assert_eq!(
+            view2.view(|view, _| reference_chip_utf16_len(
+                view.page_snapshot(),
+                "late-block",
+                &recovered_id
+            )),
+            1,
+            "replaying after view recreation must insert exactly 1 chip and remain idempotent"
+        );
+
+        // Case C: same `client_id` + same `SharedDirectory` across view recreation: typing `@First`
+        // in `v_a`, then replaying its intent and typing `@Second` in `v_b` must never collide on
+        // the old `at-...` intent key.
+        let same_cid = client_id_from_seed(0x4242);
+        let shared_c = Rc::new(RefCell::new(directory::InMemoryDocDirectory::new()));
+        let mut init_doc = DocState::new("same-cid-room", same_cid).expect("init doc");
+        init_doc.workspace.initialize_meta().expect("meta");
+        init_doc
+            .workspace
+            .create_page(HOME_PAGE_ID, "Home", 1)
+            .expect("home");
+        init_doc
+            .workspace
+            .ensure_page(HOME_PAGE_ID)
+            .expect("home page")
+            .structural_edit(1, |p| {
+                p.add_block(
+                    "p-root",
+                    BlockSpec::Page {
+                        title: "Home".into(),
+                    },
+                    None,
+                    None,
+                    1,
+                )?;
+                p.add_block(
+                    "p-note",
+                    BlockSpec::Note { xywh: None },
+                    Some("p-root"),
+                    None,
+                    1,
+                )?;
+                p.add_block(
+                    "p-body",
+                    BlockSpec::Paragraph {
+                        paragraph_type: ParagraphType::Text,
+                        text: String::new(),
+                    },
+                    Some("p-note"),
+                    None,
+                    1,
+                )?;
+                Ok(())
+            })
+            .expect("seed home");
+
+        let v_a = open(1280, 800, PlaygroundOptions::default());
+        v_a.view(|view, cx| {
+            view.set_document(init_doc, cx);
+            view.set_doc_directory(Box::new(SharedDirectory(shared_c.clone())));
+        });
+        let _ = v_a.frame();
+
+        let first_intent = v_a.app.update(|cx| {
+            v_a.window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::SetSelection(Some(
+                            overlays::ActiveSelection::caret("p-body", 0),
+                        )),
+                        window,
+                        cx,
+                    );
+                    ui::EntityInputHandler::replace_text_in_range(view, None, "@", window, cx);
+                    ui::EntityInputHandler::replace_text_in_range(view, None, "First", window, cx);
+                    let intent = view
+                        .editor
+                        .linked_doc_trigger
+                        .as_ref()
+                        .expect("trigger")
+                        .2
+                        .clone();
+                    let create_idx = view
+                        .overlays
+                        .linked_doc_menu()
+                        .map_or(0, |m| m.results.items.len());
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::LinkedDocSelect(create_idx),
+                        window,
+                        cx,
+                    );
+                    intent
+                })
+                .expect("create @First")
+        });
+
+        let first_id = directory::WorkspaceDocDirectory::query_linked_docs(
+            &*shared_c.borrow(),
+            &directory::DocQueryRequest::new("First", 5),
+        )
+        .expect("query First")
+        .items[0]
+            .doc
+            .id
+            .as_str()
+            .to_string();
+
+        // Recreate a fresh `PlaygroundView` (`v_b`, resetting `editor.next_id = 0`) with the
+        // exact same `DocState` (same `client_id`) and same `SharedDirectory`.
+        let moved_doc = v_a.view(|view, _| {
+            let dummy = DocState::new("dummy", client_id_from_seed(0x9999)).expect("dummy");
+            std::mem::replace(&mut view.state, dummy)
+        });
+        let v_b = open(1280, 800, PlaygroundOptions::default());
+        v_b.view(|view, cx| {
+            view.set_document(moved_doc, cx);
+            view.set_doc_directory(Box::new(SharedDirectory(shared_c.clone())));
+        });
+        let _ = v_b.frame();
+
+        // Replay old `first_intent` (must be no-op), then type `@Second` and create it.
+        v_b.app.update(|cx| {
+            v_b.window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::CreateLinkedDoc {
+                            block_id: "p-body".into(),
+                            title: "First".into(),
+                            mode: directory::EditorDocMode::Page,
+                            intent_id: Some(first_intent.clone()),
+                        },
+                        window,
+                        cx,
+                    );
+                    let end = view
+                        .page_snapshot()
+                        .and_then(|s| s.block("p-body"))
+                        .and_then(overlays::block_text)
+                        .map_or(0, |t| t.plain.encode_utf16().count());
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::SetSelection(Some(
+                            overlays::ActiveSelection::caret("p-body", end),
+                        )),
+                        window,
+                        cx,
+                    );
+                    ui::EntityInputHandler::replace_text_in_range(view, None, " ", window, cx);
+                    ui::EntityInputHandler::replace_text_in_range(view, None, "@", window, cx);
+                    ui::EntityInputHandler::replace_text_in_range(view, None, "Second", window, cx);
+                    let create_idx = view
+                        .overlays
+                        .linked_doc_menu()
+                        .map_or(0, |m| m.results.items.len());
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::LinkedDocSelect(create_idx),
+                        window,
+                        cx,
+                    );
+                })
+                .expect("replay First + create @Second");
+        });
+
+        let second_id = directory::WorkspaceDocDirectory::query_linked_docs(
+            &*shared_c.borrow(),
+            &directory::DocQueryRequest::new("Second", 5),
+        )
+        .expect("query Second")
+        .items[0]
+            .doc
+            .id
+            .as_str()
+            .to_string();
+        assert_ne!(
+            first_id, second_id,
+            "@Second must allocate a distinct doc ID"
+        );
+        v_b.view(|view, _| {
+            assert_eq!(
+                reference_chip_utf16_len(view.page_snapshot(), "p-body", &first_id),
+                1,
+                "First chip count must stay 1"
+            );
+            assert_eq!(
+                reference_chip_utf16_len(view.page_snapshot(), "p-body", &second_id),
+                1,
+                "Second chip count must be 1"
+            );
+        });
+    }
+
+    #[test]
+    fn newly_created_child_page_excludes_four_block_skeleton_from_user_undo_stack() {
+        let session = open(1280, 800, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        let summary = session.view(|view, _| {
+            view.create_linked_doc("Fresh Child", directory::EditorDocMode::Page, None)
+                .expect("create child")
+        });
+        let child_id = summary.id.as_str().to_string();
+
+        // Sync initial child page state to a peer.
+        let mut peer_page = blocksuite_playground_doc::session::PageDocSession::new(
+            &child_id,
+            client_id_from_seed(0x7777),
+        )
+        .expect("peer child");
+        let para_id = session.view(|view, _| {
+            let page = view.document().workspace.page(&child_id).expect("child");
+            assert!(
+                !page.can_undo(),
+                "4-block skeleton must not sit on user undo stack"
+            );
+            assert!(!page.can_redo());
+            let init_u = page.encode_update_v1().expect("init update");
+            peer_page
+                .apply_remote_update_v1(&init_u)
+                .expect("peer init");
+
+            let snap = page.read_page_snapshot().expect("snap");
+            let root = snap.root.as_ref().expect("root");
+            let note = root
+                .children
+                .iter()
+                .find(|b| matches!(b.content, BlockContent::Note { .. }))
+                .expect("note");
+            assert_eq!(
+                note.props.get("prop:xywh").and_then(|v| v.as_str()),
+                Some("[0, 0, 800, 92]")
+            );
+            note.children
+                .iter()
+                .find(|b| matches!(b.content, BlockContent::Paragraph { .. }))
+                .expect("para")
+                .id
+                .clone()
+        });
+
+        // Type into the initial paragraph, sync to peer, then undo and sync to peer.
+        session.view(|view, _| {
+            let page = view.state.workspace.page_mut(&child_id).expect("child mut");
+            let write_commit = page
+                .insert_text(&para_id, "prop:text", 0, "hello", 1000)
+                .expect("insert text")
+                .expect("commit");
+            peer_page
+                .apply_remote_update_v1(&write_commit.update)
+                .expect("peer write");
+            assert!(page.can_undo());
+
+            let undo_commit = page.undo().expect("undo").expect("undo commit");
+            peer_page
+                .apply_remote_update_v1(&undo_commit.update)
+                .expect("peer undo");
+            assert!(
+                !page.can_undo(),
+                "after undoing user text, skeleton must still be excluded from undo stack"
+            );
+
+            for (who, snap) in [
+                ("local", page.read_page_snapshot().expect("local snap")),
+                ("peer", peer_page.read_page_snapshot().expect("peer snap")),
+            ] {
+                let root = snap.root.as_ref().expect("root intact");
+                assert!(
+                    root.children
+                        .iter()
+                        .any(|b| matches!(b.content, BlockContent::Surface { .. })),
+                    "{who}: surface intact"
+                );
+                let note = root
+                    .children
+                    .iter()
+                    .find(|b| matches!(b.content, BlockContent::Note { .. }))
+                    .expect("note intact");
+                let para = note
+                    .children
+                    .iter()
+                    .find(|b| b.id == para_id)
+                    .expect("para intact");
+                assert_eq!(
+                    overlays::block_text(para).map(|t| t.plain.as_str()),
+                    Some(""),
+                    "{who}: user text undone cleanly"
+                );
+            }
+        });
     }
 }

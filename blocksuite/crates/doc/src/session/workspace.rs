@@ -61,34 +61,50 @@ impl WorkspaceSession {
 
     /// Initialize workspace `meta` with `pages: YArray` and `blockVersions` matching `AffineSchemas`.
     pub fn initialize_meta(&mut self) -> DocResult<Option<SessionCommit<()>>> {
+        let pages_val = self.root.get_map_value(&self.meta_target, "pages")?;
+        if let Some(val) = &pages_val
+            && !matches!(val, SessionReadValue::Array(_))
+        {
+            return Err(DocError::InvalidState("meta.pages is not a Y.Array".into()));
+        }
+        let versions_val = self
+            .root
+            .get_map_value(&self.meta_target, "blockVersions")?;
+        if let Some(val) = &versions_val
+            && !matches!(val, SessionReadValue::Map(_))
+        {
+            return Err(DocError::InvalidState(
+                "meta.blockVersions is not a Y.Map".into(),
+            ));
+        }
+
         self.root.begin_tx(SessionTxOrigin::Untracked)?;
-        if self
-            .root
-            .get_map_value(&self.meta_target, "pages")?
-            .is_none()
-        {
-            self.root.map_set(
-                &self.meta_target,
-                "pages".to_string(),
-                SessionValue::Array(Vec::new()),
-            )?;
-        }
-        if self
-            .root
-            .get_map_value(&self.meta_target, "blockVersions")?
-            .is_none()
-        {
-            let version_entries = affine_block_versions()
-                .into_iter()
-                .map(|(flavour, ver)| (flavour.to_string(), SessionValue::Any(Any::Integer(ver))))
-                .collect();
-            self.root.map_set(
-                &self.meta_target,
-                "blockVersions".to_string(),
-                SessionValue::Map(version_entries),
-            )?;
-        }
-        Ok(self.root.commit_tx()?)
+        let res: DocResult<()> = (|| {
+            if pages_val.is_none() {
+                self.root.map_set(
+                    &self.meta_target,
+                    "pages".to_string(),
+                    SessionValue::Array(Vec::new()),
+                )?;
+            }
+            if versions_val.is_none() {
+                let version_entries = affine_block_versions()
+                    .into_iter()
+                    .map(|(flavour, ver)| {
+                        (flavour.to_string(), SessionValue::Any(Any::Integer(ver)))
+                    })
+                    .collect();
+                self.root.map_set(
+                    &self.meta_target,
+                    "blockVersions".to_string(),
+                    SessionValue::Map(version_entries),
+                )?;
+            }
+            Ok(())
+        })();
+        let commit = self.root.commit_tx();
+        res?;
+        Ok(commit?)
     }
 
     /// Register a new page in root `meta.pages` and `spaces`, and create its local [`PageDocSession`].
@@ -101,41 +117,49 @@ impl WorkspaceSession {
         let page_id = page_id.into();
         let title = title.into();
 
-        self.root.begin_tx(SessionTxOrigin::Untracked)?;
-        if self
-            .root
-            .get_map_value(&self.meta_target, "pages")?
-            .is_none()
+        let pages_val = self.root.get_map_value(&self.meta_target, "pages")?;
+        if let Some(val) = &pages_val
+            && !matches!(val, SessionReadValue::Array(_))
         {
-            self.root.map_set(
-                &self.meta_target,
-                "pages".to_string(),
-                SessionValue::Array(Vec::new()),
-            )?;
+            return Err(DocError::InvalidState("meta.pages is not a Y.Array".into()));
         }
-        let pages_target = TypeTarget::Path(TypePath::root("meta").key("pages"));
-        let page_meta_map = SessionValue::Map(vec![
-            (
-                "id".to_string(),
-                SessionValue::Any(Any::String(page_id.clone())),
-            ),
-            ("title".to_string(), SessionValue::Any(Any::String(title))),
-            (
-                "createDate".to_string(),
-                SessionValue::Any(Any::Float64((create_date as f64).into())),
-            ),
-            ("tags".to_string(), SessionValue::Array(Vec::new())),
-        ]);
-        self.root.array_push(&pages_target, vec![page_meta_map])?;
-        self.root.map_set(
-            &self.spaces_target,
-            page_id.clone(),
-            SessionValue::Doc {
-                guid: page_id.clone(),
-                gc: true,
-            },
-        )?;
-        let commit = self.root.commit_tx()?;
+
+        self.root.begin_tx(SessionTxOrigin::Untracked)?;
+        let res: DocResult<()> = (|| {
+            if pages_val.is_none() {
+                self.root.map_set(
+                    &self.meta_target,
+                    "pages".to_string(),
+                    SessionValue::Array(Vec::new()),
+                )?;
+            }
+            let pages_target = TypeTarget::Path(TypePath::root("meta").key("pages"));
+            let page_meta_map = SessionValue::Map(vec![
+                (
+                    "id".to_string(),
+                    SessionValue::Any(Any::String(page_id.clone())),
+                ),
+                ("title".to_string(), SessionValue::Any(Any::String(title))),
+                (
+                    "createDate".to_string(),
+                    SessionValue::Any(Any::Float64((create_date as f64).into())),
+                ),
+                ("tags".to_string(), SessionValue::Array(Vec::new())),
+            ]);
+            self.root.array_push(&pages_target, vec![page_meta_map])?;
+            self.root.map_set(
+                &self.spaces_target,
+                page_id.clone(),
+                SessionValue::Doc {
+                    guid: page_id.clone(),
+                    gc: true,
+                },
+            )?;
+            Ok(())
+        })();
+        let commit = self.root.commit_tx();
+        res?;
+        let commit = commit?;
 
         if !self.pages.contains_key(&page_id) {
             let page_session = PageDocSession::new(page_id.clone(), self.client_id)?;
@@ -215,10 +239,27 @@ impl WorkspaceSession {
         Ok(None)
     }
     pub fn list_pages(&self) -> DocResult<Vec<PageMeta>> {
-        let pages_target = TypeTarget::Path(TypePath::root("meta").key("pages"));
-        let Ok(items) = self.root.read_array(&pages_target) else {
+        let Some(meta_id) = self.root.resolve_path(&TypePath::root("meta")) else {
             return Ok(Vec::new());
         };
+        if self.root.type_status(&meta_id).kind != Some(YTypeKind::Map) {
+            return Err(DocError::InvalidState(
+                "workspace meta is not a Y.Map".into(),
+            ));
+        }
+        let pages_id = match self
+            .root
+            .get_map_value(&TypeTarget::Identity(meta_id), "pages")?
+        {
+            None => return Ok(Vec::new()),
+            Some(SessionReadValue::Array(pages_id)) => pages_id,
+            Some(_) => {
+                return Err(DocError::InvalidState(
+                    "workspace meta.pages is not a Y.Array".into(),
+                ));
+            }
+        };
+        let items = self.root.read_array(&TypeTarget::Identity(pages_id))?;
         let mut result = Vec::new();
         for item in items {
             if let SessionReadValue::Map(map_id) = item {
@@ -289,5 +330,32 @@ impl WorkspaceSession {
                 .ok_or_else(|| DocError::PageNotFound(doc_id.to_string()))?
                 .encode_diff_v1(remote_sv)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn list_pages_distinguishes_uninitialized_from_corrupted_meta() {
+        let mut ws = WorkspaceSession::new("ws-list-pages", 101).expect("ws");
+        assert!(ws.list_pages().expect("uninitialized ok").is_empty());
+
+        ws.initialize_meta().expect("init meta");
+        assert!(ws.list_pages().expect("empty pages ok").is_empty());
+
+        let meta = TypeTarget::Path(TypePath::root("meta"));
+        ws.root_mut()
+            .map_set(
+                &meta,
+                "pages".to_string(),
+                SessionValue::Any(Any::Integer(42)),
+            )
+            .expect("corrupt meta.pages");
+        assert!(
+            ws.list_pages().is_err(),
+            "corrupted meta.pages = 42 must return Err, not Ok(vec![])"
+        );
     }
 }

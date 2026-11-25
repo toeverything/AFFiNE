@@ -1,0 +1,20 @@
+[package]
+name = "ui-kit"
+workspace = "../../frontend"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+harness = ["ui/harness"]
+
+[dependencies]
+ui = { path = "../ui" }
+
+[dev-dependencies]
+ui = { path = "../ui", features = ["harness"] }

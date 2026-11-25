@@ -1,43 +1,78 @@
-//! Edgeless spatial whiteboard subsystem: camera, paint ordering, canvas rendering,
-//! interactive authoring toolbar, hit-testing, overlays, inline IME editing, and gestures.
+//! PlaygroundView glue for `blocksuite_editor::edgeless`.
 
-mod camera;
-mod canvas;
-mod canvas_paint;
 mod commands;
 mod commit;
 mod gestures;
-mod hit_test;
 mod inline_edit;
-mod label_editor;
-mod order;
-mod overlay;
-mod scene;
-mod toolbar;
 
-pub use camera::{EdgelessCamera, WorldRect, bg_grid_gap, parse_xywh};
-pub use canvas::{
-    EDGELESS_VIEWPORT_ID, EdgelessCanvasState, EdgelessRenderInput, NOTE_CARD_PADDING,
-    resolve_edgeless_color,
-};
-pub use canvas_paint::build_edgeless_layer;
-pub use hit_test::EdgelessAuthoringState;
-pub use label_editor::{EdgelessInlineEdit, EdgelessLabelEditor};
-pub use toolbar::{EdgelessTool, build_edgeless_toolbar, build_zoom_controls};
+pub use blocksuite_editor::edgeless::*;
 
-use canvas::{
-    CachedNoteFlow, CachedSurfaces, FRAME_RADIUS, FRAME_TITLE_GAP, FRAME_TITLE_HEIGHT,
-    PaintEdgelessText, PaintFrame, PaintNote, ZOOM_BAR_MARGIN, ZOOM_BAR_PAD, ZOOM_BAR_RADIUS,
-    ZOOM_BTN_HEIGHT, ZOOM_BTN_RADIUS, note_border_radius, note_border_style, note_collapse,
-    note_scale, note_shadow_type, prop_bool, prop_f32, rotated_bounds, spatial_blocks,
-    world_bounds, world_rect,
-};
-use commands::{collect_frame_children, find_block, find_surface_element, max_spatial_index};
-use hit_test::{
-    DragItemInitial, EdgelessGesture, HandleKind, SpatialItemInfo, SpatialItemKind,
-    normalized_rect, point_in_rotated_rect, resized_rect, rotate_point_around,
-};
-use label_editor::{LabelSplice, LabelTarget, utf16_len, utf16_to_byte};
-use order::{Layers, PaintItem};
-use overlay::{build_edgeless_authoring_overlay, layout_label_editor_paragraph};
-use scene::{PreparedEdgelessScene, prepare_edgeless_scene};
+use blocksuite_playground_doc::read::ShapeType;
+use commands::{find_block, find_surface_element, max_spatial_index};
+
+impl EdgelessToolbarHost for crate::PlaygroundView {
+    fn edgeless_active_tool(&self) -> EdgelessTool {
+        self.edgeless.authoring.tool
+    }
+
+    fn edgeless_active_shape_type(&self) -> ShapeType {
+        self.edgeless.authoring.active_shape_type()
+    }
+
+    fn edgeless_select_tool(
+        &mut self,
+        tool: EdgelessTool,
+        window: &mut ui::Window,
+        cx: &mut ui::Context<Self>,
+    ) {
+        crate::PlaygroundView::edgeless_select_tool(self, tool, window, cx);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ui::AppContext;
+
+    #[test]
+    fn frame_one_zoom_badge_matches_fitted_camera_zoom() {
+        let platform = ui::HeadlessPlatform::new(1280, 800, 1.0);
+        let app = ui::Application::with_platform(platform.clone()).run_embedded(|cx| {
+            crate::register_bundled_fonts(cx).unwrap();
+        });
+        let win = app
+            .update(|cx| {
+                cx.open_window(ui::WindowOptions::default(), |_window, cx| {
+                    cx.new(|cx| {
+                        crate::PlaygroundView::with_options(
+                            crate::PlaygroundOptions {
+                                mode: crate::PlaygroundMode::Edgeless,
+                                ..Default::default()
+                            },
+                            cx,
+                        )
+                    })
+                })
+            })
+            .unwrap();
+        let hw = platform.windows().into_iter().next().unwrap();
+        hw.request_frame();
+        // Frame 1 must already display the fitted zoom percentage (not stale "100%").
+        let snap = app
+            .update(|cx| win.update(cx, |_, window, _| window.frame_snapshot().clone()))
+            .unwrap();
+        let badge = snap
+            .elements
+            .get("chrome.edgeless_zoom.reset")
+            .expect("chrome.edgeless_zoom.reset missing on frame 1");
+        let text = badge.text.as_deref().unwrap_or("");
+        assert_ne!(
+            text, "100%",
+            "Frame 1 zoom badge must reflect fitted camera, got {text}"
+        );
+        assert!(text.ends_with('%'), "expected percentage badge, got {text}");
+        assert!(
+            snap.elements.contains_key("chrome.edgeless_toolbar"),
+            "chrome.edgeless_toolbar must be mounted on Frame 1"
+        );
+    }
+}

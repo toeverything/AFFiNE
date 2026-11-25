@@ -479,6 +479,23 @@ impl PlaygroundView {
         } else {
             "prop:text"
         };
+        if key == "prop:title" {
+            let current = layout.blocks[a].body.plain.as_str();
+            let start_byte = TextBiIndex::new(current).utf16_to_utf8_clamped(start.offset());
+            let tail = if cross {
+                let end_text = layout.blocks[b].body.plain.as_str();
+                let end_byte = TextBiIndex::new(end_text).utf16_to_utf8_clamped(end.offset());
+                &end_text[end_byte..]
+            } else {
+                let end_byte = TextBiIndex::new(current).utf16_to_utf8_clamped(end.offset());
+                &current[end_byte..]
+            };
+            let next_title = format!("{}{}{}", &current[..start_byte], text, tail);
+            if !self.preflight_title_change(&next_title) {
+                self.editor.preedit = None;
+                return Ok(());
+            }
+        }
         let mut marks = self.insertion_marks(start)?;
         for (key, value) in &self.editor.pending_marks {
             if let Some(v) = value {
@@ -496,6 +513,24 @@ impl PlaygroundView {
                 block_flow::FlowKind::Paragraph(_) | block_flow::FlowKind::List(_)
             )
             && marks.get("code") != Some(&Any::True))
+        .then(|| (id.clone(), start.offset()));
+        // An `@` typed at the start of a block or after whitespace in paragraph or list text,
+        // outside inline code, opens the linked-document menu at that character.
+        let linked_doc = (text == "@"
+            && sel.empty()
+            && matches!(
+                layout.blocks[a].body.kind,
+                block_flow::FlowKind::Paragraph(_) | block_flow::FlowKind::List(_)
+            )
+            && marks.get("code") != Some(&Any::True)
+            && {
+                let before_byte = TextBiIndex::new(layout.blocks[a].body.plain.as_str())
+                    .utf16_to_utf8_clamped(start.offset());
+                layout.blocks[a].body.plain[..before_byte]
+                    .chars()
+                    .next_back()
+                    .is_none_or(char::is_whitespace)
+            })
         .then(|| (id.clone(), start.offset()));
         let group = self
             .editor
@@ -559,6 +594,9 @@ impl PlaygroundView {
         self.did_edit(commit, (!cross).then_some(&id), w, cx);
         if let Some((block_id, offset)) = slash {
             self.open_typed_slash_menu(block_id, offset, cx);
+        }
+        if let Some((block_id, offset)) = linked_doc {
+            self.open_typed_linked_doc_menu(block_id, offset, cx);
         }
         Ok(())
     }
