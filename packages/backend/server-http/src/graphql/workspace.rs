@@ -342,6 +342,25 @@ impl WorkspaceType {
     Ok(perms.role.into())
   }
 
+  /// The team subscription of the workspace, if exists.
+  async fn subscription(&self, ctx: &Context<'_>) -> Result<Option<super::billing::SubscriptionType>> {
+    super::billing::resolve_workspace_subscription(ctx, &self.record.id).await
+  }
+
+  /// Get user invoice count
+  async fn invoice_count(&self, ctx: &Context<'_>) -> Result<i32> {
+    super::billing::resolve_workspace_invoice_count(ctx, &self.record.id).await
+  }
+
+  async fn invoices(
+    &self,
+    ctx: &Context<'_>,
+    #[graphql(default_with = "Some(8)")] take: Option<i32>,
+    skip: Option<i32>,
+  ) -> Result<Vec<super::billing::InvoiceType>> {
+    super::billing::resolve_workspace_invoices(ctx, &self.record.id, take, skip).await
+  }
+
   async fn permissions(&self, ctx: &Context<'_>) -> Result<WorkspacePermissions> {
     let user = require_authenticated_user(ctx).await?;
     let state = ctx.data_unchecked::<Arc<AppState>>();

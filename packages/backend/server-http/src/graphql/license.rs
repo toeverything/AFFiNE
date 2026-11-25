@@ -34,7 +34,7 @@ pub enum SubscriptionPlan {
 }
 
 impl SubscriptionPlan {
-  fn parse(s: &str) -> Self {
+  pub(crate) fn parse(s: &str) -> Self {
     match s.to_ascii_lowercase().as_str() {
       "enterprise" => Self::Enterprise,
       "selfhostedteam" | "selfhost_team" => Self::SelfHostedTeam,
@@ -43,6 +43,18 @@ impl SubscriptionPlan {
       "ai" => Self::Ai,
       "free" => Self::Free,
       _ => Self::SelfHosted,
+    }
+  }
+
+  pub(crate) fn as_str(self) -> &'static str {
+    match self {
+      Self::Free => "free",
+      Self::Pro => "pro",
+      Self::Ai => "ai",
+      Self::Team => "team",
+      Self::Enterprise => "enterprise",
+      Self::SelfHosted => "selfhosted",
+      Self::SelfHostedTeam => "selfhostedteam",
     }
   }
 }
@@ -59,13 +71,21 @@ pub enum SubscriptionRecurring {
 }
 
 impl SubscriptionRecurring {
-  fn parse(s: &str) -> Self {
+  pub(crate) fn parse(s: &str) -> Self {
     if s.eq_ignore_ascii_case("monthly") {
       Self::Monthly
     } else if s.eq_ignore_ascii_case("yearly") {
       Self::Yearly
     } else {
       Self::Lifetime
+    }
+  }
+
+  pub(crate) fn as_str(self) -> &'static str {
+    match self {
+      Self::Monthly => "monthly",
+      Self::Yearly => "yearly",
+      Self::Lifetime => "lifetime",
     }
   }
 }
@@ -75,6 +95,22 @@ impl SubscriptionRecurring {
 pub enum SubscriptionVariant {
   #[graphql(name = "Onetime")]
   Onetime,
+}
+
+impl SubscriptionVariant {
+  pub(crate) fn parse(s: &str) -> Option<Self> {
+    if s.eq_ignore_ascii_case("onetime") {
+      Some(Self::Onetime)
+    } else {
+      None
+    }
+  }
+
+  pub(crate) fn as_str(self) -> &'static str {
+    match self {
+      Self::Onetime => "onetime",
+    }
+  }
 }
 
 #[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]

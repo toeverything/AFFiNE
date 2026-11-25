@@ -243,6 +243,41 @@ impl LazyGraphqlPrincipal {
   }
 }
 
+pub(crate) async fn enforce_default_throttle_if_anonymous_graphql(ctx: &Context<'_>) -> Result<()> {
+  let lazy = ctx.data_opt::<LazyGraphqlPrincipal>();
+  if let Some(lazy) = lazy {
+    if let Ok(resolved) = lazy.resolve_once().await
+      && resolved.auth.is_some()
+    {
+      return Ok(());
+    }
+  } else if ctx.data_opt::<AuthenticatedUser>().is_some() {
+    return Ok(());
+  }
+  let Some(state) = ctx.data_opt::<Arc<AppState>>() else {
+    return Ok(());
+  };
+  let peer_addr = lazy.and_then(LazyGraphqlPrincipal::peer_addr);
+  let headers = ctx.data_opt::<axum::http::HeaderMap>();
+  let outcome = crate::rest::throttle::check_throttle_for_app(
+    state,
+    headers,
+    peer_addr,
+    None,
+    crate::rest::throttle::ThrottleSpec::Default,
+  )
+  .await;
+  if let Some(lazy) = lazy {
+    lazy.record_throttle_outcome(outcome);
+  }
+  match outcome {
+    crate::rest::throttle::ThrottleOutcome::Limited { .. } => {
+      Err(envelope_to_graphql(crate::rest::throttle::too_many_requests_envelope()))
+    }
+    _ => Ok(()),
+  }
+}
+
 pub(crate) async fn enforce_strict_throttle_graphql(ctx: &Context<'_>) -> Result<()> {
   let Some(state) = ctx.data_opt::<Arc<AppState>>() else {
     return Ok(());
@@ -416,7 +451,7 @@ pub(crate) async fn require_admin_user(ctx: &Context<'_>) -> Result<CurrentUserV
   let user = require_authenticated_user(ctx).await?;
   if !user.is_admin() {
     return Err(domain_error_to_graphql(&DomainError::Forbidden(
-      "Admin privileges required".into(),
+      "You are not allowed to perform this action.".into(),
     )));
   }
   Ok(user)

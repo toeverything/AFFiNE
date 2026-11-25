@@ -5,15 +5,22 @@
 
 pub mod billing;
 pub mod copilot;
+pub mod disposition;
 
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex, OnceLock};
 
-pub use billing::{BillingSpi, CommunityBillingSpi};
+pub use billing::{
+  AdminPaymentAttemptRecord, AdminPaymentCaseRecord, AdminPaymentLookupSpiInput, AdminPaymentResolutionRecord,
+  AdminPaymentSourceRecord, BillingAppStorePurchaseInput, BillingAppStorePurchaseResult, BillingCheckoutInput,
+  BillingCheckoutResult, BillingGroupRecord, BillingInvoiceRecord, BillingPriceRecord, BillingSourceRecord, BillingSpi,
+  BillingSubscriptionList, BillingSubscriptionRecord, CommunityBillingSpi, ReconcileAdminPaymentSpiInput,
+};
 use chrono::{DateTime, Utc};
 pub use copilot::{CommunityCopilotPolicySpi, CommunityCopilotRuntime, CopilotPolicySpi, CopilotRuntimeSpi};
+pub use disposition::DomainDispositionHandler;
 pub use server_types::BillingSubject;
 use server_types::{AccessGrant, DomainError};
 use sha2::{Digest, Sha256};

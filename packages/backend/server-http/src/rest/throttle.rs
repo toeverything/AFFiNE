@@ -66,6 +66,7 @@ pub enum ThrottleOutcome {
 }
 #[derive(Clone, Copy)]
 pub(crate) enum ThrottleSpec {
+  Default,
   Strict,
   DefaultCustom {
     handler: &'static str,
@@ -218,6 +219,11 @@ pub(crate) async fn check_throttle_for_app(
   }
   let tracker = resolve_throttle_tracker(headers, peer_addr, session_id);
   let (key, limit, ttl_ms) = match spec {
+    ThrottleSpec::Default => (
+      format!("throttler:{tracker};default"),
+      get_u64("/throttle/throttlers/default/limit", DEFAULT_LIMIT),
+      get_u64("/throttle/throttlers/default/ttl", DEFAULT_TTL_MS),
+    ),
     ThrottleSpec::Strict => (
       format!("throttler:{tracker};strict"),
       get_u64("/throttle/throttlers/strict/limit", DEFAULT_STRICT_LIMIT),

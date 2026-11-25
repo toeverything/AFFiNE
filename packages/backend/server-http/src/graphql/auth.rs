@@ -15,7 +15,7 @@ use super::user::{UserType, publish_user_updated_realtime};
 use super::{enforce_strict_throttle_graphql, require_admin_user, require_authenticated_user};
 use crate::AppState;
 use crate::legacy_compat::errors::{LegacyErrorEnvelope, domain_error_to_graphql, envelope_to_graphql};
-use crate::rest::{resolve_auth_request_source_for_app, validate_safe_link_callback_url};
+use crate::rest::{resolve_auth_request_source_for_app, validate_safe_link_callback_url_for_request};
 
 #[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
 #[graphql(name = "AuthSigningKeyType")]
@@ -420,9 +420,9 @@ fn decode_uri_component(input: &str) -> std::result::Result<String, ()> {
   String::from_utf8(out).map_err(|_| ())
 }
 
-fn safe_callback_url(state: &AppState, raw: &str) -> Result<String> {
-  let cfg = state.config.load();
-  validate_safe_link_callback_url(raw, &cfg.external_url, &cfg.app_config_baseline.server.hosts)
+async fn safe_callback_url(ctx: &Context<'_>, state: &AppState, raw: &str) -> Result<String> {
+  validate_safe_link_callback_url_for_request(state, ctx.data_opt::<HeaderMap>(), raw)
+    .await
     .map_err(|e| domain_error_to_graphql(&e))
 }
 
@@ -481,7 +481,7 @@ impl AuthMutation {
     let user = require_authenticated_user(ctx).await?;
     enforce_strict_throttle_graphql(ctx).await?;
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let url = safe_callback_url(state, &callback_url)?;
+    let url = safe_callback_url(ctx, state, &callback_url).await?;
     let source = graphql_request_source(ctx, state).await;
     state
       .auth
@@ -514,7 +514,7 @@ impl AuthMutation {
     let user = require_authenticated_user(ctx).await?;
     enforce_strict_throttle_graphql(ctx).await?;
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let url = safe_callback_url(state, &callback_url)?;
+    let url = safe_callback_url(ctx, state, &callback_url).await?;
     let source = graphql_request_source(ctx, state).await;
     state
       .auth
@@ -533,7 +533,7 @@ impl AuthMutation {
     let user = require_authenticated_user(ctx).await?;
     enforce_strict_throttle_graphql(ctx).await?;
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let url = safe_callback_url(state, &callback_url)?;
+    let url = safe_callback_url(ctx, state, &callback_url).await?;
     let source = graphql_request_source(ctx, state).await;
     state
       .auth
@@ -573,7 +573,7 @@ impl AuthMutation {
     enforce_strict_throttle_graphql(ctx).await?;
     let _admin = require_admin_user(ctx).await?;
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let url = safe_callback_url(state, &callback_url)?;
+    let url = safe_callback_url(ctx, state, &callback_url).await?;
     state
       .auth
       .create_security_url(SecurityChallengeKind::ChangePassword, &user_id, &url)
@@ -585,7 +585,7 @@ impl AuthMutation {
     let user = require_authenticated_user(ctx).await?;
     enforce_strict_throttle_graphql(ctx).await?;
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let url = safe_callback_url(state, &callback_url)?;
+    let url = safe_callback_url(ctx, state, &callback_url).await?;
     let source = graphql_request_source(ctx, state).await;
     state
       .auth
@@ -607,7 +607,7 @@ impl AuthMutation {
       return Err(email_token_not_found_error());
     }
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let url = safe_callback_url(state, &callback_url)?;
+    let url = safe_callback_url(ctx, state, &callback_url).await?;
     let source = graphql_request_source(ctx, state).await;
     state
       .auth

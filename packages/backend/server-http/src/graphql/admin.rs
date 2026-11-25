@@ -727,19 +727,14 @@ pub(crate) async fn resolve_server_config(ctx: &Context<'_>) -> Result<ServerCon
     DeploymentMode::Cloud => ServerDeploymentType::Affine,
   };
 
-  let mut features = match cfg.deployment_mode {
-    DeploymentMode::Selfhosted => vec![
-      ServerFeature::Comment,
-      ServerFeature::LocalWorkspace,
-      ServerFeature::CopilotEmbedding,
-    ],
-    DeploymentMode::Cloud => vec![
-      ServerFeature::Comment,
-      ServerFeature::LocalWorkspace,
-      ServerFeature::CopilotEmbedding,
-      ServerFeature::Payment,
-    ],
-  };
+  let mut features = vec![
+    ServerFeature::Comment,
+    ServerFeature::LocalWorkspace,
+    ServerFeature::CopilotEmbedding,
+  ];
+  if state.extension.billing_spi().payment_enabled() {
+    features.push(ServerFeature::Payment);
+  }
   if state.search.enabled() {
     features.push(ServerFeature::Indexer);
   }

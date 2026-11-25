@@ -295,6 +295,28 @@ impl UserType {
   async fn calendar_accounts(&self, ctx: &Context<'_>) -> Result<Vec<super::calendar::CalendarAccountObjectType>> {
     super::calendar::resolve_user_calendar_accounts(ctx, &self.view.id).await
   }
+
+  async fn subscriptions(&self, ctx: &Context<'_>) -> Result<Vec<super::billing::SubscriptionType>> {
+    super::billing::resolve_user_subscriptions(ctx, &self.view.id).await
+  }
+
+  async fn subscription_billing(&self, ctx: &Context<'_>) -> Result<super::billing::SubscriptionBillingInfo> {
+    super::billing::resolve_user_subscription_billing(ctx, &self.view.id).await
+  }
+
+  /// Get user invoice count
+  async fn invoice_count(&self, ctx: &Context<'_>) -> Result<i32> {
+    super::billing::resolve_user_invoice_count(ctx, &self.view.id).await
+  }
+
+  async fn invoices(
+    &self,
+    ctx: &Context<'_>,
+    #[graphql(default_with = "Some(8)")] take: Option<i32>,
+    skip: Option<i32>,
+  ) -> Result<Vec<super::billing::InvoiceType>> {
+    super::billing::resolve_user_invoices(ctx, &self.view.id, take, skip).await
+  }
 }
 
 pub(crate) fn resolve_current_user(ctx: &Context<'_>) -> Option<UserType> {

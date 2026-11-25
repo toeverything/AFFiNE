@@ -668,6 +668,22 @@ pub fn validate_and_build_magic_link_callback_url(
   Ok(parsed.into())
 }
 
+fn safe_link_forbidden() -> DomainError {
+  DomainError::Forbidden("You are not allowed to perform this action.".to_owned())
+}
+
+fn parse_safe_link_url(input: &str, base_url: &str) -> Result<url::Url, DomainError> {
+  if input.is_empty() {
+    return Err(safe_link_forbidden());
+  }
+  let base = url::Url::parse(base_url).map_err(|_| safe_link_forbidden())?;
+  let parsed = base.join(input).map_err(|_| safe_link_forbidden())?;
+  if !matches!(parsed.scheme(), "http" | "https") || !parsed.username().is_empty() || parsed.password().is_some() {
+    return Err(safe_link_forbidden());
+  }
+  Ok(parsed)
+}
+
 /// Validates ONLY the outer `callbackUrl` origin against allowed origins
 /// (matching `v0.27.5` `url.safeLink`, without rewriting inner query parameters).
 pub fn validate_safe_link_callback_url(
@@ -676,9 +692,48 @@ pub fn validate_safe_link_callback_url(
   server_hosts: &[String],
 ) -> Result<String, DomainError> {
   let allowed_origins = build_allowed_origins(external_url, server_hosts);
-  let parsed = parse_http_url_with_base(callback_url, external_url)?;
+  let parsed = parse_safe_link_url(callback_url, external_url)?;
   if !has_allowed_origin(&parsed, &allowed_origins) {
-    return Err(DomainError::Forbidden("callbackUrl origin is not allowed".to_owned()));
+    return Err(safe_link_forbidden());
+  }
+  Ok(parsed.into())
+}
+
+pub(crate) fn extract_request_host(headers: Option<&HeaderMap>) -> Option<&str> {
+  headers?
+    .get(header::HOST)
+    .and_then(|v| v.to_str().ok())
+    .map(str::trim)
+    .filter(|s| !s.is_empty())
+}
+
+/// Request-aware `url.safeLink` validation using effective `/server/hosts`,
+/// `server_port`, and `host` for multi-host base origin resolution.
+pub(crate) async fn validate_safe_link_callback_url_for_request(
+  app: &crate::AppState,
+  headers: Option<&HeaderMap>,
+  callback_url: &str,
+) -> Result<String, DomainError> {
+  let cfg = app.config.load();
+  let effective = app.app_config.get_effective_app_config().await.ok();
+  let server_hosts: Vec<String> = effective
+    .as_ref()
+    .and_then(|v| v.pointer("/server/hosts").and_then(|h| h.as_array()))
+    .map(|arr| arr.iter().filter_map(|item| item.as_str().map(str::to_owned)).collect())
+    .unwrap_or_else(|| cfg.app_config_baseline.server.hosts.clone());
+  let server_port = effective
+    .as_ref()
+    .and_then(|v| v.pointer("/server/port").and_then(|p| p.as_u64()))
+    .and_then(|p| u16::try_from(p).ok())
+    .unwrap_or(cfg.app_config_baseline.server.port);
+  let request_host = extract_request_host(headers);
+  let base_origin = calendar_request_origin(&cfg.external_url, &server_hosts, server_port, request_host)
+    .map(|(origin, _)| origin)
+    .unwrap_or_else(|| cfg.external_url.clone());
+  let allowed_origins = build_allowed_origins_with_port(&cfg.external_url, &server_hosts, Some(server_port));
+  let parsed = parse_safe_link_url(callback_url, &base_origin)?;
+  if !has_allowed_origin(&parsed, &allowed_origins) {
+    return Err(safe_link_forbidden());
   }
   Ok(parsed.into())
 }

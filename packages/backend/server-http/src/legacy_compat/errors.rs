@@ -108,6 +108,53 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           data: None,
         };
       }
+      if msg == "access_denied" {
+        return LegacyErrorEnvelope {
+          status: StatusCode::FORBIDDEN.as_u16(),
+          code: "Forbidden".into(),
+          error_type: "NO_PERMISSION".into(),
+          name: "ACCESS_DENIED".into(),
+          message: "You do not have permission to access this resource.".into(),
+          data: None,
+        };
+      }
+      if let Some((name, message)) = match msg.as_str() {
+        "managed_by_app_store_or_play" => Some((
+          "MANAGED_BY_APP_STORE_OR_PLAY",
+          "This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.",
+        )),
+        "cant_update_onetime_payment_subscription" => Some((
+          "CANT_UPDATE_ONETIME_PAYMENT_SUBSCRIPTION",
+          "You cannot update an onetime payment subscription.",
+        )),
+        "subscription_has_been_canceled" => Some((
+          "SUBSCRIPTION_HAS_BEEN_CANCELED",
+          "Your subscription has already been canceled.",
+        )),
+        "subscription_has_not_been_canceled" => Some((
+          "SUBSCRIPTION_HAS_NOT_BEEN_CANCELED",
+          "Your subscription has not been canceled.",
+        )),
+        "purchase_in_progress" => Some(("PURCHASE_IN_PROGRESS", "A purchase for this plan is still in progress.")),
+        "purchase_needs_verification" => Some((
+          "PURCHASE_NEEDS_VERIFICATION",
+          "This plan has a purchase that needs verification. Review your subscriptions before trying again.",
+        )),
+        "license_revealed" => Some((
+          "LICENSE_REVEALED",
+          "License key has been revealed. Please check your mail box of the one provided during checkout.",
+        )),
+        _ => None,
+      } {
+        return LegacyErrorEnvelope {
+          status: StatusCode::FORBIDDEN.as_u16(),
+          code: "Forbidden".into(),
+          error_type: "ACTION_FORBIDDEN".into(),
+          name: name.into(),
+          message: message.into(),
+          data: None,
+        };
+      }
       LegacyErrorEnvelope {
         status: StatusCode::FORBIDDEN.as_u16(),
         code: "Forbidden".into(),
@@ -159,12 +206,35 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           })),
         };
       }
+      if let Some(plan) = msg.strip_prefix("subscription_not_exists:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::NOT_FOUND.as_u16(),
+          code: "Not Found".into(),
+          error_type: "RESOURCE_NOT_FOUND".into(),
+          name: "SUBSCRIPTION_NOT_EXISTS".into(),
+          message: format!("You didn't subscribe to the {plan} plan."),
+          data: Some(serde_json::json!({ "plan": plan })),
+        };
+      }
+      if let Some(rest) = msg.strip_prefix("subscription_plan_not_found:")
+        && let Some((plan, recurring)) = parse_two_part(rest)
+      {
+        return LegacyErrorEnvelope {
+          status: StatusCode::NOT_FOUND.as_u16(),
+          code: "Not Found".into(),
+          error_type: "RESOURCE_NOT_FOUND".into(),
+          name: "SUBSCRIPTION_PLAN_NOT_FOUND".into(),
+          message: "You are trying to access a unknown subscription plan.".into(),
+          data: Some(serde_json::json!({ "plan": plan, "recurring": recurring })),
+        };
+      }
       let (name, message) = match msg.as_str() {
         "doc_not_found" => ("DOC_NOT_FOUND", "Doc not found."),
         "doc_history_not_found" => ("DOC_HISTORY_NOT_FOUND", "Doc history not found."),
         "comment_not_found" => ("COMMENT_NOT_FOUND", "Comment not found."),
         "reply_not_found" => ("REPLY_NOT_FOUND", "Reply not found."),
         "license_not_found" => ("LICENSE_NOT_FOUND", "License not found."),
+        "user_not_found" => ("USER_NOT_FOUND", "User not found."),
         _ => ("RESOURCE_NOT_FOUND", msg.as_str()),
       };
       LegacyErrorEnvelope {
@@ -185,6 +255,16 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           name: "EMAIL_ALREADY_USED".into(),
           message: "This email has already been registered.".into(),
           data: None,
+        };
+      }
+      if let Some(plan) = msg.strip_prefix("subscription_already_exists:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "RESOURCE_ALREADY_EXISTS".into(),
+          name: "SUBSCRIPTION_ALREADY_EXISTS".into(),
+          message: format!("You have already subscribed to the {plan} plan."),
+          data: Some(serde_json::json!({ "plan": plan })),
         };
       }
       LegacyErrorEnvelope {
@@ -333,6 +413,16 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           data: Some(serde_json::json!({ "spaceId": space_id, "docId": doc_id })),
         };
       }
+      if let Some(recurring) = msg.strip_prefix("same_subscription_recurring:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "BAD_REQUEST".into(),
+          name: "SAME_SUBSCRIPTION_RECURRING".into(),
+          message: format!("Your subscription has already been in {recurring} recurring state."),
+          data: Some(serde_json::json!({ "recurring": recurring })),
+        };
+      }
       let (name, message) = match msg.as_str() {
         "expect_to_publish_doc" => ("EXPECT_TO_PUBLISH_DOC", "Expected to publish a doc, not a Space."),
         "expect_to_revoke_public_doc" => (
@@ -342,6 +432,19 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
         "doc_default_role_can_not_be_owner" => (
           "DOC_DEFAULT_ROLE_CAN_NOT_BE_OWNER",
           "Doc default role can not be owner.",
+        ),
+        "workspace_id_required_to_update_team_subscription" => (
+          "WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION",
+          "Workspace id is required to update team subscription.",
+        ),
+        "invalid_checkout_parameters" => ("INVALID_CHECKOUT_PARAMETERS", "Invalid checkout parameters provided."),
+        "invalid_license_session_id" => (
+          "INVALID_LICENSE_SESSION_ID",
+          "Invalid session id to generate license key.",
+        ),
+        "invalid_subscription_parameters" => (
+          "INVALID_SUBSCRIPTION_PARAMETERS",
+          "Invalid subscription parameters provided.",
         ),
         _ => ("INVALID_INPUT", msg.as_str()),
       };
@@ -382,15 +485,25 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
       message: msg.clone(),
       data: None,
     },
-    DomainError::Internal(_) => LegacyErrorEnvelope {
-      status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
-      code: "Internal Server Error".into(),
-      error_type: "INTERNAL_SERVER_ERROR".into(),
-      name: "INTERNAL_SERVER_ERROR".into(),
-      // Never leak internal error details to clients (matches v0.27.5 def.ts:248-251).
-      message: "An internal error occurred.".into(),
-      data: None,
-    },
+    DomainError::Internal(msg) => {
+      let (name, message) = match msg.as_str() {
+        "failed_to_checkout" => ("FAILED_TO_CHECKOUT", "Failed to create checkout session."),
+        "customer_portal_create_failed" => (
+          "CUSTOMER_PORTAL_CREATE_FAILED",
+          "Failed to create customer portal session.",
+        ),
+        // Never leak internal error details to clients (matches v0.27.5 def.ts:248-251).
+        _ => ("INTERNAL_SERVER_ERROR", "An internal error occurred."),
+      };
+      LegacyErrorEnvelope {
+        status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+        code: "Internal Server Error".into(),
+        error_type: "INTERNAL_SERVER_ERROR".into(),
+        name: name.into(),
+        message: message.into(),
+        data: None,
+      }
+    }
   }
 }
 
