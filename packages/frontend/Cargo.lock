@@ -32,8 +32,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "affine-client"
+version = "0.1.0"
+dependencies = [
+ "affine-legacy-import",
+ "affine-store",
+ "blocksuite-editor",
+ "getrandom 0.3.4",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "y-octo",
+]
+
+[[package]]
 name = "affine-ios-host"
 version = "0.1.0"
+
+[[package]]
+name = "affine-legacy-import"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
 
 [[package]]
 name = "affine-store"

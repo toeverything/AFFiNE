@@ -130,6 +130,16 @@ impl IdConverter {
         &self.space_id
     }
 
+    /// Return all registered `(page_id, subdoc_guid)` mappings (excluding the root workspace ID),
+    /// including modern pages where `page_id == subdoc_guid`.
+    pub fn page_mappings(&self) -> Vec<(&str, &str)> {
+        self.new_to_old
+            .iter()
+            .filter(|(page_id, _)| page_id.as_str() != self.space_id)
+            .map(|(page_id, subdoc_guid)| (page_id.as_str(), subdoc_guid.as_str()))
+            .collect()
+    }
+
     /// Convert a local normalized document ID to the legacy/wire document ID.
     pub fn new_id_to_old_id(&self, new_id: &str) -> String {
         if let Some(rest) = new_id.strip_prefix("db$") {

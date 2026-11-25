@@ -334,6 +334,68 @@ impl SqliteDocStorage {
         tx.commit().await?;
         Ok(())
     }
+    /// Persist inbound `SpaceSyncEvent` document updates atomically inside a single
+    /// `BEGIN IMMEDIATE` transaction via [`Self::push_updates_batch`], then advance both
+    /// `remote_clock` and `pulled_remote_clock` in `peer_clocks` using each event's server
+    /// `timestamp` (distinct from `local_now_ms`).
+    pub async fn persist_inbound_sync_events(
+        &self,
+        peer: &str,
+        events: &[crate::sync::SpaceSyncEvent],
+        local_now_ms: i64,
+    ) -> StoreResult<Vec<(String, NaiveDateTime)>> {
+        let mut batch = Vec::new();
+        let mut remote_clocks: HashMap<String, i64> = HashMap::new();
+        for event in events {
+            match event {
+                crate::sync::SpaceSyncEvent::DocLoaded {
+                    doc_id,
+                    missing,
+                    timestamp,
+                    ..
+                } => {
+                    remote_clocks
+                        .entry(doc_id.clone())
+                        .and_modify(|ts| *ts = (*ts).max(*timestamp))
+                        .or_insert(*timestamp);
+                    if !missing.is_empty() && missing.as_slice() != [0, 0] {
+                        batch.push(crate::workspace_db::PendingDocUpdate {
+                            doc_id: doc_id.clone(),
+                            update: missing.clone(),
+                        });
+                    }
+                }
+                crate::sync::SpaceSyncEvent::RemoteDocUpdates {
+                    doc_id,
+                    updates,
+                    timestamp,
+                    ..
+                } => {
+                    remote_clocks
+                        .entry(doc_id.clone())
+                        .and_modify(|ts| *ts = (*ts).max(*timestamp))
+                        .or_insert(*timestamp);
+                    for update in updates {
+                        if !update.is_empty() && update.as_slice() != [0, 0] {
+                            batch.push(crate::workspace_db::PendingDocUpdate {
+                                doc_id: doc_id.clone(),
+                                update: update.clone(),
+                            });
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        let persisted = self.push_updates_batch(&batch, None, local_now_ms).await?;
+        for (doc_id, remote_ms) in remote_clocks {
+            let remote_dt = millis_to_naive_utc(remote_ms);
+            self.set_peer_remote_clock(peer, &doc_id, remote_dt).await?;
+            self.set_peer_pulled_remote_clock(peer, &doc_id, remote_dt)
+                .await?;
+        }
+        Ok(persisted)
+    }
 }
 
 #[cfg(test)]
@@ -402,5 +464,36 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(cleared.docs.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn persist_inbound_sync_events_updates_doc_and_peer_remote_clocks() {
+        let storage = SqliteDocStorage::new(":memory:");
+        storage.connect().await.unwrap();
+        let mut ws = crate::workspace_db::WorkspaceDb::new("ws-sync", "u1", 1);
+        let init = ws.initialize_meta().unwrap().unwrap();
+        let events = vec![crate::sync::SpaceSyncEvent::DocLoaded {
+            doc_id: "ws-sync".into(),
+            missing: init.clone(),
+            state: vec![],
+            timestamp: 42_000,
+        }];
+        let persisted = storage
+            .persist_inbound_sync_events("cloud", &events, 50_000)
+            .await
+            .unwrap();
+        assert_eq!(persisted.len(), 1);
+        let remote = storage
+            .get_peer_remote_clock("cloud", "ws-sync")
+            .await
+            .unwrap()
+            .unwrap();
+        let pulled = storage
+            .get_peer_pulled_remote_clock("cloud", "ws-sync")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(naive_utc_to_millis(remote.timestamp), 42_000);
+        assert_eq!(naive_utc_to_millis(pulled.timestamp), 42_000);
     }
 }

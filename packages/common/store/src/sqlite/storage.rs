@@ -25,7 +25,8 @@ impl SqliteDocStorage {
         let base_options = SqliteConnectOptions::new()
             .filename(&path)
             .foreign_keys(true)
-            .synchronous(SqliteSynchronous::Full);
+            .synchronous(SqliteSynchronous::Full)
+            .busy_timeout(std::time::Duration::from_millis(5_000));
 
         if path == ":memory:" {
             let pool = SqlitePoolOptions::new()
@@ -82,9 +83,17 @@ impl SqliteDocStorage {
         self.pool.is_closed()
     }
 
-    /// Flush the WAL journal into the main database file.
+    /// Flush the WAL journal into the main database file (`FULL` mode).
     pub async fn checkpoint(&self) -> StoreResult<()> {
         sqlx::query("PRAGMA wal_checkpoint(FULL);")
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    /// Perform a non-blocking `PASSIVE` WAL checkpoint.
+    pub async fn checkpoint_passive(&self) -> StoreResult<()> {
+        sqlx::query("PRAGMA wal_checkpoint(PASSIVE);")
             .execute(&self.pool)
             .await?;
         Ok(())

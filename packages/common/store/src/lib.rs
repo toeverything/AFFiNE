@@ -1,10 +1,12 @@
 #![forbid(unsafe_code)]
 
+pub mod api_client;
 pub mod blob_api;
 pub mod clock;
 pub mod directory;
 pub mod error;
 pub mod id_converter;
+pub mod idb;
 #[cfg(not(target_family = "wasm"))]
 pub mod sqlite;
 pub mod sync;

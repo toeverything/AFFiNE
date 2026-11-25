@@ -31,12 +31,14 @@ pub enum SocketAuthMode {
     WebCookie,
     /// Native iOS / Android: send `{"token": ..., "tokenType": "jwt"}` in Socket.IO `40` CONNECT.
     NativeJwt { token: String },
+    /// Native host with no stored session credentials (never falls back to Web cookies).
+    Unauthenticated,
 }
 
 impl SocketAuthMode {
     pub(super) fn to_connect_payload(&self) -> Value {
         match self {
-            Self::WebCookie => json!({}),
+            Self::WebCookie | Self::Unauthenticated => json!({}),
             Self::NativeJwt { token } => json!({
                 "token": token,
                 "tokenType": "jwt",
