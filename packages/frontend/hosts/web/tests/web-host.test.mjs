@@ -58,7 +58,7 @@ void test('static gate: zero package.json, wasm-safe CSP, and DOM whitelist', ()
 
   const importRe = /^\s*import\s+[^'"]*from\s+['"]([^'"]+)['"]/gm;
   const createElRe = /createElement\(\s*['"]([^'"]+)['"]\s*\)/g;
-  const allowedTags = new Set(['canvas', 'iframe', 'script']);
+  const allowedTags = new Set(['canvas', 'iframe', 'script', 'div', 'button']);
 
   for (const file of srcFiles) {
     const text = readFileSync(file, 'utf8');
@@ -72,10 +72,16 @@ void test('static gate: zero package.json, wasm-safe CSP, and DOM whitelist', ()
     for (const match of text.matchAll(createElRe)) {
       const tag = match[1].toLowerCase();
       assert.ok(allowedTags.has(tag), `${file}: unexpected created tag ${tag}`);
-      if (tag === 'script') {
+      if (tag === 'script' || tag === 'button') {
         assert.ok(
           file.endsWith('/sign-in.js'),
-          `script injection is only allowed in sign-in.js, found in ${file}`
+          `${tag} creation is only allowed in sign-in.js, found in ${file}`
+        );
+      }
+      if (tag === 'div') {
+        assert.ok(
+          file.endsWith('/a11y.js'),
+          `non-visual semantic div creation is only allowed in a11y.js, found in ${file}`
         );
       }
     }
@@ -449,9 +455,10 @@ void test('sign-in real /api/auth/captcha contract and JSON submit with captcha 
     captchaProvider: 'turnstile',
     captchaToken: capturedToken,
   });
-  assert.deepEqual(res, { ok: true, status: 200 });
+  assert.deepEqual(res, { ok: true, status: 200, method: 'password' });
   assert.equal(requests.length, 1);
   assert.equal(requests[0].init.headers['content-type'], 'application/json');
+  assert.equal(requests[0].init.headers['x-affine-client-kind'], 'web');
   assert.equal(requests[0].init.headers['x-captcha-provider'], 'turnstile');
   assert.equal(
     requests[0].init.headers['x-captcha-token'],

@@ -154,6 +154,9 @@ jobs:
           node hosts/web/scripts/stage-preview-workers.mjs /tmp/preview-wasm dev-local
           node hosts/web/scripts/verify-preview-workers-e2e.mjs
 
+      - name: Verify real-browser IndexedDB storage and V1 Yjs extraction
+        run: node hosts/web/scripts/verify-idb-real-browser.mjs
+
   android-host:
     name: Android Thin Host (NDK .so Link & kotlinc)
     runs-on: ubuntu-24.04

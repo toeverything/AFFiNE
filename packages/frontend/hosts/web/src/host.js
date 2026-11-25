@@ -1,5 +1,16 @@
 // @ts-check
 
+import { createA11yTree } from './a11y.js';
+import {
+  createIdbV1ReadonlyReader,
+  createIdbWorkspaceStorage,
+  createPendingWriteFlusher,
+  getLocalWorkspaceIds,
+  getWebPreference,
+  LOCAL_WORKSPACE_CHANGED_CHANNEL,
+  setLocalWorkspaceIds,
+  setWebPreference,
+} from './idb-storage.js';
 import { createWorkerLoader, readEmbeddedManifest } from './worker-loader.js';
 
 /**
@@ -326,7 +337,13 @@ export async function flushBeforeNavigation(options) {
   try {
     const result = await options.flushPendingWrites();
     const ok =
-      typeof result === 'boolean' ? result : Boolean(result && result.ok);
+      typeof result === 'boolean'
+        ? result
+        : Boolean(
+            result &&
+            result.ok &&
+            (result.pendingCount === undefined || result.pendingCount === 0)
+          );
     if (!ok) {
       options.resumeInput?.();
       return { navigated: false, reason: 'flush-rejected' };
@@ -396,6 +413,11 @@ export function showBootFatal(doc, message) {
  * @param {() => Promise<boolean | { ok: boolean }>} [env.flushPendingWrites]
  * @param {(insets: SafeAreaInsets) => void} [env.onSafeAreaChange]
  * @param {(specifier: string) => Promise<unknown>} [env.importModule]
+ * @param {{ flavour: string, type: 'workspace' | 'userspace', id: string }} [env.space]
+ * @param {IDBFactory} [env.indexedDB]
+ * @param {typeof BroadcastChannel} [env.BroadcastChannelImpl]
+ * @param {ReturnType<typeof createIdbWorkspaceStorage>} [env.workspaceStorage]
+ * @param {() => number} [env.now]
  */
 export async function bootWebHost(env = {}) {
   const win = env.win || globalThis.window;
@@ -412,6 +434,42 @@ export async function bootWebHost(env = {}) {
   );
   const probe = doc.getElementById('safe-area-probe');
   const embedLayer = doc.getElementById('embed-layer');
+  const a11yRoot = doc.getElementById('a11y-tree');
+
+  let workspaceStorage =
+    env.workspaceStorage ||
+    (env.space
+      ? createIdbWorkspaceStorage({
+          ...env.space,
+          indexedDB: env.indexedDB || win.indexedDB,
+          BroadcastChannelImpl:
+            env.BroadcastChannelImpl || win.BroadcastChannel,
+          now: env.now,
+        })
+      : null);
+  let pendingWrites = workspaceStorage
+    ? createPendingWriteFlusher(workspaceStorage)
+    : null;
+  let v1Reader = env.space
+    ? createIdbV1ReadonlyReader({
+        workspaceId: env.space.id,
+        indexedDB: env.indexedDB || win.indexedDB,
+      })
+    : null;
+  const resolveFlush = () => {
+    if (env.flushPendingWrites) {
+      return env.flushPendingWrites();
+    }
+    if (pendingWrites) {
+      return pendingWrites.flush();
+    }
+    return Promise.resolve({
+      ok: true,
+      unbound: true,
+      flushedCount: 0,
+      pendingCount: 0,
+    });
+  };
 
   const graphics = detectGraphicsSupport(doc, win.navigator);
   if (!graphics.supported) {
@@ -429,9 +487,14 @@ export async function bootWebHost(env = {}) {
           ime.readOnly = true;
         }
       },
-      flushPendingWrites: env.flushPendingWrites || (async () => true),
+      flushPendingWrites: resolveFlush,
       navigate: url => win.location.assign(url),
       targetUrl: fallback.url,
+      resumeInput() {
+        if (ime) {
+          ime.readOnly = false;
+        }
+      },
     });
     return { fallback: true, fatal: false, graphics };
   }
@@ -449,9 +512,37 @@ export async function bootWebHost(env = {}) {
       )
     : null;
 
+  const a11yTree = a11yRoot
+    ? createA11yTree({
+        doc,
+        root: a11yRoot,
+        ime,
+        embedLayer,
+      })
+    : null;
+
   let oauthCodeConsumed = false;
   /** @type {HTMLCanvasElement | null} */
   let boundCanvas = null;
+
+  /** @param {string} targetUrl */
+  async function navigateWithFlush(targetUrl) {
+    return flushBeforeNavigation({
+      pauseInput() {
+        if (ime) {
+          ime.readOnly = true;
+        }
+      },
+      flushPendingWrites: resolveFlush,
+      navigate: url => win.location.assign(url),
+      targetUrl,
+      resumeInput() {
+        if (ime) {
+          ime.readOnly = false;
+        }
+      },
+    });
+  }
 
   async function handleRuntimeGpuLoss() {
     if (isLegacyShellUrl(win.location.href)) {
@@ -461,16 +552,7 @@ export async function bootWebHost(env = {}) {
     const fallback = buildLegacyFallbackUrl(win.location.href, {
       codeConsumed: oauthCodeConsumed,
     });
-    return flushBeforeNavigation({
-      pauseInput() {
-        if (ime) {
-          ime.readOnly = true;
-        }
-      },
-      flushPendingWrites: env.flushPendingWrites || (async () => true),
-      navigate: url => win.location.assign(url),
-      targetUrl: fallback.url,
-    });
+    return navigateWithFlush(fallback.url);
   }
 
   /** @param {Event} event */
@@ -504,6 +586,26 @@ export async function bootWebHost(env = {}) {
     }
   }
 
+  const BroadcastChannelCtor = env.BroadcastChannelImpl || win.BroadcastChannel;
+  const localWorkspaceChannel =
+    typeof BroadcastChannelCtor === 'function'
+      ? new BroadcastChannelCtor(LOCAL_WORKSPACE_CHANGED_CHANNEL)
+      : null;
+  /** @type {Set<(ids: string[], changedId: string | null) => void>} */
+  const localWorkspaceListeners = new Set();
+  /** @param {MessageEvent} event */
+  function handleLocalWorkspaceChanged(event) {
+    const ids = getLocalWorkspaceIds(win.localStorage);
+    const changedId = typeof event?.data === 'string' ? event.data : null;
+    for (const listener of localWorkspaceListeners) {
+      listener(ids, changedId);
+    }
+  }
+  localWorkspaceChannel?.addEventListener(
+    'message',
+    handleLocalWorkspaceChanged
+  );
+
   bindCanvas(canvas);
 
   const hostHandle = {
@@ -513,17 +615,159 @@ export async function bootWebHost(env = {}) {
     canvas,
     ime,
     embedLayer,
+    a11yTree,
+    get workspaceStorage() {
+      return workspaceStorage;
+    },
+    get pendingWrites() {
+      return pendingWrites;
+    },
+    get v1Reader() {
+      return v1Reader;
+    },
+    get workspaceBound() {
+      return Boolean(workspaceStorage);
+    },
+    attachWorkspace: space => {
+      if (pendingWrites && pendingWrites.pendingCount() > 0) {
+        throw new Error(
+          'Cannot switch workspace while pending writes are unflushed; flush pendingWrites first'
+        );
+      }
+      const normalized = {
+        flavour: space.flavour || space.peer || 'local',
+        type: space.type || space.spaceType || 'workspace',
+        id: space.id || space.spaceId,
+      };
+      workspaceStorage?.close();
+      workspaceStorage = createIdbWorkspaceStorage({
+        ...normalized,
+        indexedDB: env.indexedDB || win.indexedDB,
+        BroadcastChannelImpl: env.BroadcastChannelImpl || win.BroadcastChannel,
+        now: env.now,
+      });
+      pendingWrites = createPendingWriteFlusher(workspaceStorage);
+      v1Reader = createIdbV1ReadonlyReader({
+        workspaceId: normalized.id,
+        indexedDB: env.indexedDB || win.indexedDB,
+      });
+      return { workspaceStorage, pendingWrites, v1Reader };
+    },
+    switchWorkspace: async space => {
+      if (pendingWrites && pendingWrites.pendingCount() > 0) {
+        const flushResult = await pendingWrites.flush();
+        if (!flushResult.ok) {
+          throw new Error(
+            flushResult.error ||
+              'Failed to flush pending writes before switching workspace'
+          );
+        }
+      }
+      const normalized = {
+        flavour: space.flavour || space.peer || 'local',
+        type: space.type || space.spaceType || 'workspace',
+        id: space.id || space.spaceId,
+      };
+      workspaceStorage?.close();
+      workspaceStorage = createIdbWorkspaceStorage({
+        ...normalized,
+        indexedDB: env.indexedDB || win.indexedDB,
+        BroadcastChannelImpl: env.BroadcastChannelImpl || win.BroadcastChannel,
+        now: env.now,
+      });
+      pendingWrites = createPendingWriteFlusher(workspaceStorage);
+      v1Reader = createIdbV1ReadonlyReader({
+        workspaceId: normalized.id,
+        indexedDB: env.indexedDB || win.indexedDB,
+      });
+      return { workspaceStorage, pendingWrites, v1Reader };
+    },
     workerLoader,
     safeAreaObserver,
+    navigateWithFlush,
     handleRuntimeGpuLoss,
     markOAuthCodeConsumed: () => {
       oauthCodeConsumed = true;
     },
     bindCanvas,
     bindWebGpuDevice,
-    focusImeInGesture: options =>
-      ime ? focusImeInGesture(ime, options) : false,
+    focusImeInGesture: options => {
+      if (!ime) {
+        return false;
+      }
+      a11yTree?.setFocusOwner('ime');
+      return focusImeInGesture(ime, options);
+    },
+    mountSandboxedEmbed: options => {
+      if (!embedLayer) {
+        return null;
+      }
+      const iframe = createSandboxedEmbedIframe(doc, embedLayer, options);
+      if (a11yTree && a11yTree.getFocusOwner() !== 'embed') {
+        iframe.setAttribute('tabindex', '-1');
+      }
+      /** @type {'none' | 'a11y' | 'ime' | 'embed'} */
+      let previousOwner = 'a11y';
+      let activating = false;
+      const activate = (fromFocusEvent = false) => {
+        if (activating || !a11yTree) {
+          return;
+        }
+        activating = true;
+        try {
+          const current = a11yTree.getFocusOwner();
+          if (current !== 'embed') {
+            previousOwner = current;
+          }
+          a11yTree.setFocusOwner('embed');
+          iframe.removeAttribute?.('tabindex');
+          if (!fromFocusEvent) {
+            iframe.focus?.();
+          }
+        } finally {
+          activating = false;
+        }
+      };
+      const onIframeFocus = () => activate(true);
+      const unmount = () => {
+        iframe.removeEventListener?.('focus', onIframeFocus);
+        iframe.remove?.();
+        if (a11yTree && a11yTree.getFocusOwner() === 'embed') {
+          a11yTree.setFocusOwner(previousOwner);
+        }
+      };
+      iframe.addEventListener?.('focus', onIframeFocus);
+      return { iframe, activate: () => activate(false), unmount };
+    },
+    getLocalWorkspaceIds: () => getLocalWorkspaceIds(win.localStorage),
+    setLocalWorkspaceIds: (ids, changedId = null) =>
+      setLocalWorkspaceIds(
+        ids,
+        win.localStorage,
+        localWorkspaceChannel,
+        changedId
+      ),
+    subscribeLocalWorkspaceIds: listener => {
+      localWorkspaceListeners.add(listener);
+      return () => {
+        localWorkspaceListeners.delete(listener);
+      };
+    },
+    getWebPreference: key => getWebPreference(key, win.localStorage),
+    setWebPreference: (key, value) =>
+      setWebPreference(key, value, win.localStorage),
     markFirstFrameReady: () => removeBootSkeleton(doc),
+    dispose: () => {
+      localWorkspaceChannel?.removeEventListener(
+        'message',
+        handleLocalWorkspaceChanged
+      );
+      localWorkspaceChannel?.close();
+      localWorkspaceListeners.clear();
+      workspaceStorage?.close();
+      safeAreaObserver?.dispose();
+      bindCanvas(null);
+    },
   };
 
   /** @type {{ __AFFINE_WEB_HOST__?: unknown }} */ (

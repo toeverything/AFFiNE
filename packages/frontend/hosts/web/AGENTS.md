@@ -27,4 +27,5 @@ After building the four `blocksuite-preview` `wasm32-unknown-unknown` workers, s
 ```sh
 node hosts/web/scripts/stage-preview-workers.mjs /tmp/preview-wasm dev-local
 node hosts/web/scripts/verify-preview-workers-e2e.mjs
+node hosts/web/scripts/verify-idb-real-browser.mjs
 ```
