@@ -21,10 +21,12 @@ pub type JSize = i32;
 pub type JChar = u16;
 
 // Standard JNI `JNINativeInterface` function table indices (JNI 1.1+ spec).
+const JNI_NEW_STRING_INDEX: usize = 163;
 const JNI_GET_STRING_LENGTH_INDEX: usize = 164;
 const JNI_GET_STRING_CHARS_INDEX: usize = 165;
 const JNI_RELEASE_STRING_CHARS_INDEX: usize = 166;
 
+type NewStringFn = unsafe extern "C" fn(JniEnvPtr, *const JChar, JSize) -> JString;
 type GetStringLengthFn = unsafe extern "C" fn(JniEnvPtr, JString) -> JSize;
 type GetStringCharsFn = unsafe extern "C" fn(JniEnvPtr, JString, *mut JBoolean) -> *const JChar;
 type ReleaseStringCharsFn = unsafe extern "C" fn(JniEnvPtr, JString, *const JChar);
@@ -32,11 +34,17 @@ type ReleaseStringCharsFn = unsafe extern "C" fn(JniEnvPtr, JString, *const JCha
 static HOST_REGISTRY: OnceLock<Mutex<BTreeMap<i64, AndroidHostState>>> = OnceLock::new();
 static NEXT_HOST_HANDLE: AtomicI64 = AtomicI64::new(1);
 
+#[cfg(target_os = "android")]
+use crate::android_window;
+
 pub(crate) fn registry() -> &'static Mutex<BTreeMap<i64, AndroidHostState>> {
     HOST_REGISTRY.get_or_init(|| Mutex::new(BTreeMap::new()))
 }
 
-fn with_host_mut<R>(handle: JLong, f: impl FnOnce(&mut AndroidHostState) -> R) -> Option<R> {
+pub(crate) fn with_host_mut<R>(
+    handle: JLong,
+    f: impl FnOnce(&mut AndroidHostState) -> R,
+) -> Option<R> {
     if handle == 0 {
         return None;
     }
@@ -46,7 +54,7 @@ fn with_host_mut<R>(handle: JLong, f: impl FnOnce(&mut AndroidHostState) -> R) -
     map.get_mut(&handle).map(f)
 }
 
-fn with_host_ref<R>(handle: JLong, f: impl FnOnce(&AndroidHostState) -> R) -> Option<R> {
+pub(crate) fn with_host_ref<R>(handle: JLong, f: impl FnOnce(&AndroidHostState) -> R) -> Option<R> {
     if handle == 0 {
         return None;
     }
@@ -70,7 +78,7 @@ fn normalize_jint_range(start: JInt, end: JInt) -> (usize, usize) {
 ///
 /// # Safety
 /// `env` must be null or a valid `JNIEnv*`; `jstr` must be null or a valid `jstring`.
-unsafe fn read_jstring_utf16(env: JniEnvPtr, jstr: JString) -> Option<Vec<u16>> {
+pub(crate) unsafe fn read_jstring_utf16(env: JniEnvPtr, jstr: JString) -> Option<Vec<u16>> {
     if env.is_null() || jstr.is_null() {
         return None;
     }
@@ -102,6 +110,37 @@ unsafe fn read_jstring_utf16(env: JniEnvPtr, jstr: JString) -> Option<Vec<u16>> 
     let out = unsafe { core::slice::from_raw_parts(chars_ptr, len as usize) }.to_vec();
     unsafe { rel_chars(env, jstr, chars_ptr) };
     Some(out)
+}
+
+/// Reads a JNI `jstring` as a Rust `String` (lossy UTF-16 decode).
+///
+/// # Safety
+/// `env` must be null or a valid `JNIEnv*`; `jstr` must be null or a valid `jstring`.
+pub(crate) unsafe fn read_jstring_utf8(env: JniEnvPtr, jstr: JString) -> Option<String> {
+    let units = unsafe { read_jstring_utf16(env, jstr) }?;
+    Some(String::from_utf16_lossy(&units))
+}
+
+/// Allocates a new JNI `jstring` from a Rust `&str` using `NewString` (vtable slot 163).
+///
+/// # Safety
+/// `env` must be null or a valid `JNIEnv*`.
+pub(crate) unsafe fn new_jstring(env: JniEnvPtr, text: &str) -> JString {
+    if env.is_null() {
+        return core::ptr::null_mut();
+    }
+    let vtable = unsafe { *(env as *const *const *const c_void) };
+    if vtable.is_null() {
+        return core::ptr::null_mut();
+    }
+    let new_str_ptr = unsafe { *vtable.add(JNI_NEW_STRING_INDEX) };
+    if new_str_ptr.is_null() {
+        return core::ptr::null_mut();
+    }
+    let new_str: NewStringFn = unsafe { core::mem::transmute(new_str_ptr) };
+    let units: Vec<u16> = text.encode_utf16().collect();
+    let len = units.len().min(i32::MAX as usize) as JSize;
+    unsafe { new_str(env, units.as_ptr(), len) }
 }
 
 #[unsafe(no_mangle)]
@@ -140,10 +179,14 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeDestroyHost(
     if handle == 0 {
         return;
     }
+    #[cfg(target_os = "android")]
+    android_window::release(handle);
     let mut map = registry()
         .lock()
         .unwrap_or_else(|poison| poison.into_inner());
-    let _ = map.remove(&handle);
+    if let Some(mut host) = map.remove(&handle) {
+        host.sqlite.close_all();
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -160,14 +203,27 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSetHasBackDestinat
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceCreated(
-    _env: JniEnvPtr,
+    env: JniEnvPtr,
     _class: JClass,
     handle: JLong,
     surface: JObject,
 ) {
+    #[cfg(target_os = "android")]
+    let (bound, vk_ok, gles3_ok) = {
+        let b = unsafe { android_window::attach(env, handle, surface) };
+        let (vk, gl) = android_window::probe_backends();
+        (b, vk, gl)
+    };
+    #[cfg(not(target_os = "android"))]
+    let (bound, vk_ok, gles3_ok) = {
+        let _ = env;
+        (!surface.is_null(), false, true)
+    };
     let _ = with_host_mut(handle, |host| {
-        host.surface_active = true;
-        host.surface_bound = !surface.is_null();
+        if host.surface.backend == crate::AndroidRenderBackend::Unselected {
+            host.surface.select_backend(vk_ok, gles3_ok);
+        }
+        host.surface.on_created(bound);
     });
 }
 
@@ -176,12 +232,18 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceChanged(
     _env: JniEnvPtr,
     _class: JClass,
     handle: JLong,
+    format: JInt,
     width_px: JInt,
     height_px: JInt,
 ) {
+    #[cfg(target_os = "android")]
+    android_window::set_geometry(handle, width_px, height_px);
     let _ = with_host_mut(handle, |host| {
-        host.surface_width_px = u32::try_from(width_px).unwrap_or(0);
-        host.surface_height_px = u32::try_from(height_px).unwrap_or(0);
+        host.surface.on_changed(
+            format,
+            u32::try_from(width_px).unwrap_or(0),
+            u32::try_from(height_px).unwrap_or(0),
+        );
     });
 }
 
@@ -191,10 +253,67 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceDestroyed
     _class: JClass,
     handle: JLong,
 ) {
+    #[cfg(target_os = "android")]
+    android_window::release(handle);
     let _ = with_host_mut(handle, |host| {
-        host.surface_active = false;
-        host.surface_bound = false;
+        host.surface.on_destroyed();
     });
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeRequestFrame(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) {
+    let _ = with_host_mut(handle, |host| {
+        host.surface.request_frame();
+    });
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeGetSurfaceGeneration(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) -> JLong {
+    with_host_ref(handle, |host| host.surface.generation as JLong).unwrap_or(0)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeIsSurfaceReady(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) -> JBoolean {
+    with_host_ref(handle, |host| u8::from(host.surface.is_ready())).unwrap_or(0)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeHasPendingFrame(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) -> JBoolean {
+    with_host_ref(handle, |host| u8::from(host.surface.pending_frame)).unwrap_or(0)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeGetFrameCount(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) -> JLong {
+    with_host_ref(handle, |host| host.surface.frame_count as JLong).unwrap_or(0)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeGetRenderBackend(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) -> JInt {
+    with_host_ref(handle, |host| host.surface.backend as JInt).unwrap_or(0)
 }
 
 #[unsafe(no_mangle)]
@@ -228,12 +347,28 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnFrameTick(
     handle: JLong,
     frame_time_nanos: JLong,
 ) -> JInt {
-    with_host_mut(handle, |host| {
-        host.frame_count = host.frame_count.saturating_add(1);
-        host.last_frame_nanos = frame_time_nanos;
-        host.clear_color_argb as JInt
+    let Some((argb, backend)) = with_host_ref(handle, |host| {
+        host.surface
+            .begin_frame()
+            .map(|c| (c, host.surface.backend))
     })
-    .unwrap_or(0)
+    .flatten() else {
+        return 0;
+    };
+    #[cfg(target_os = "android")]
+    let present_result = android_window::present_frame(handle, backend, argb);
+    #[cfg(not(target_os = "android"))]
+    let present_result: Result<(), crate::SurfacePresentError> = {
+        let _ = backend;
+        Ok(())
+    };
+
+    let presented = with_host_mut(handle, |host| {
+        host.surface
+            .complete_frame(frame_time_nanos, present_result)
+    })
+    .unwrap_or(false);
+    if presented { argb as JInt } else { 0 }
 }
 
 #[unsafe(no_mangle)]
@@ -472,20 +607,4 @@ pub(crate) fn snapshot_text(handle: JLong) -> Option<String> {
         .lock()
         .unwrap_or_else(|poison| poison.into_inner());
     map.get(&handle).map(AndroidHostState::text_string)
-}
-
-#[cfg(test)]
-pub(crate) fn snapshot_selection(handle: JLong) -> Option<(usize, usize)> {
-    let map = registry()
-        .lock()
-        .unwrap_or_else(|poison| poison.into_inner());
-    map.get(&handle).map(AndroidHostState::selection_range)
-}
-
-#[cfg(test)]
-pub(crate) fn snapshot_composing(handle: JLong) -> Option<Option<(usize, usize)>> {
-    let map = registry()
-        .lock()
-        .unwrap_or_else(|poison| poison.into_inner());
-    map.get(&handle).map(AndroidHostState::composing_range)
 }

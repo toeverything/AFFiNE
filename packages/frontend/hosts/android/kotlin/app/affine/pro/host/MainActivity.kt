@@ -38,8 +38,14 @@ object NativeBridge {
   external fun nativeDestroyHost(handle: Long)
   external fun nativeSetHasBackDestination(handle: Long, hasDestination: Boolean)
   external fun nativeOnSurfaceCreated(handle: Long, surface: Surface)
-  external fun nativeOnSurfaceChanged(handle: Long, widthPx: Int, heightPx: Int)
+  external fun nativeOnSurfaceChanged(handle: Long, format: Int, widthPx: Int, heightPx: Int)
   external fun nativeOnSurfaceDestroyed(handle: Long)
+  external fun nativeRequestFrame(handle: Long)
+  external fun nativeGetSurfaceGeneration(handle: Long): Long
+  external fun nativeIsSurfaceReady(handle: Long): Boolean
+  external fun nativeHasPendingFrame(handle: Long): Boolean
+  external fun nativeGetFrameCount(handle: Long): Long
+  external fun nativeGetRenderBackend(handle: Long): Int
   external fun nativeOnSurfaceInsetsPx(
     handle: Long,
     safeTopPx: Int,
@@ -79,17 +85,90 @@ object NativeBridge {
   external fun nativeGetSelectionEnd(handle: Long): Int
   external fun nativeGetComposingStart(handle: Long): Int
   external fun nativeGetComposingEnd(handle: Long): Int
+
+  // Legacy localStorage upgrade import & rollback write-back (zero IndexedDB).
+  external fun nativeImportLegacyLocalStorageProbe(
+    handle: Long,
+    payloadJson: String,
+    allowedKeysCsv: String,
+  ): Boolean
+  external fun nativeCanCreateDefaultWorkspace(handle: Long): Boolean
+  external fun nativeGetAllowlistedWorkspaceIdsJson(handle: Long): String
+  external fun nativeGetPreservedLocalWorkspaceRaw(handle: Long): String?
+  external fun nativePlanLegacyLocalStorageWriteBack(handle: Long): String?
+  external fun nativeVerifyLegacyWriteBack(
+    expectedSetJson: String,
+    expectedRemoveJson: String,
+    readbackJson: String,
+  ): Boolean
+
+  // In-place SQLite WAL co-storage (allowlist-only, never scans disk *.db).
+  external fun nativeConnectWorkspace(
+    handle: Long,
+    filesDir: String,
+    peer: String,
+    spaceId: String,
+  ): String?
+  external fun nativeOpenUserspace(
+    handle: Long,
+    filesDir: String,
+    peer: String,
+    userId: String,
+  ): String?
+  external fun nativeStoragePushUpdateB64(
+    handle: Long,
+    connectionKey: String,
+    docId: String,
+    updateB64: String,
+    nowMs: Long,
+  ): Long
+  external fun nativeStorageGetDocB64(
+    handle: Long,
+    connectionKey: String,
+    docId: String,
+  ): String?
+  external fun nativeStorageCheckpoint(handle: Long, connectionKey: String): Boolean
+  external fun nativeStorageCheckpointAllPassive(handle: Long): Int
+  external fun nativeStorageClose(handle: Long, connectionKey: String): Boolean
+
+  // Jetpack Preferences DataStore (`auth-sessions`) & `v1:` AES-GCM auth contract.
+  external fun nativeCanonicalEndpoint(endpoint: String): String
+  external fun nativeKeystoreAlias(endpoint: String): String
+  external fun nativeDataStoreGetString(filesDir: String, key: String): String?
+  external fun nativeDataStoreReadResult(filesDir: String, key: String): String
+  external fun nativeDataStoreGetOrCreateString(
+    filesDir: String,
+    key: String,
+    candidateValue: String,
+  ): String
+  external fun nativeDataStoreSetString(filesDir: String, key: String, value: String): Boolean
+  external fun nativeDataStoreDeleteKey(filesDir: String, key: String): Boolean
+  external fun nativeLegacyAppDataStoreDeleteKey(filesDir: String, key: String): Boolean
+  external fun nativeLegacyAppDataStoreSetString(filesDir: String, key: String, value: String): Boolean
+  external fun nativeLegacyAppDataStoreGetString(filesDir: String, key: String): String?
+  external fun nativePrepareAuthSessionJson(responseJson: String, nowMs: Long): String?
+  external fun nativeValidateAuthSessionJson(storedJson: String): Boolean
+  external fun nativeValidateV1Ciphertext(encoded: String): Boolean
+  external fun nativeIsPermanentAuthErrorCode(code: String): Boolean
+  external fun nativeExtractJsonStringField(json: String, field: String): String?
+  external fun nativeJsonStringArrayLen(json: String): Int
+  external fun nativeJsonStringArrayGet(json: String, index: Int): String?
 }
 
 /**
  * Pure Kotlin IME controller backed directly by `AndroidHostState` over JNI as
  * the single source of truth for text, selection, and composing spans.
  */
-class AffineImeController(private val handleProvider: () -> Long) {
+class AffineImeController(
+  private val handleProvider: () -> Long,
+  private val onMutated: () -> Unit,
+) {
+  constructor(handleProvider: () -> Long) : this(handleProvider, {})
   fun commitText(text: String, newCursorPosition: Int): Boolean {
     val handle = handleProvider()
     if (handle == 0L) return false
     NativeBridge.nativeOnCommitText(handle, text, newCursorPosition)
+    onMutated()
     return true
   }
 
@@ -97,6 +176,7 @@ class AffineImeController(private val handleProvider: () -> Long) {
     val handle = handleProvider()
     if (handle == 0L) return false
     NativeBridge.nativeOnSetComposingText(handle, text, newCursorPosition)
+    onMutated()
     return true
   }
 
@@ -104,6 +184,7 @@ class AffineImeController(private val handleProvider: () -> Long) {
     val handle = handleProvider()
     if (handle == 0L) return false
     NativeBridge.nativeOnSetComposingRegion(handle, start, end)
+    onMutated()
     return true
   }
 
@@ -111,6 +192,7 @@ class AffineImeController(private val handleProvider: () -> Long) {
     val handle = handleProvider()
     if (handle == 0L) return false
     NativeBridge.nativeOnFinishComposingText(handle)
+    onMutated()
     return true
   }
 
@@ -118,6 +200,7 @@ class AffineImeController(private val handleProvider: () -> Long) {
     val handle = handleProvider()
     if (handle == 0L) return false
     NativeBridge.nativeOnSetSelection(handle, start, end)
+    onMutated()
     return true
   }
 
@@ -125,19 +208,24 @@ class AffineImeController(private val handleProvider: () -> Long) {
     val handle = handleProvider()
     if (handle == 0L || beforeLength < 0 || afterLength < 0) return false
     NativeBridge.nativeOnDeleteSurroundingText(handle, beforeLength, afterLength)
+    onMutated()
     return true
   }
 
   fun deleteSurroundingTextInCodePoints(beforeLength: Int, afterLength: Int): Boolean {
     val handle = handleProvider()
     if (handle == 0L || beforeLength < 0 || afterLength < 0) return false
-    return NativeBridge.nativeOnDeleteSurroundingTextInCodePoints(handle, beforeLength, afterLength)
+    val ok = NativeBridge.nativeOnDeleteSurroundingTextInCodePoints(handle, beforeLength, afterLength)
+    if (ok) onMutated()
+    return ok
   }
 
   fun replaceText(start: Int, end: Int, text: String, newCursorPosition: Int): Boolean {
     val handle = handleProvider()
     if (handle == 0L || start < 0 || end < 0) return false
-    return NativeBridge.nativeOnReplaceText(handle, start, end, text, newCursorPosition)
+    val ok = NativeBridge.nativeOnReplaceText(handle, start, end, text, newCursorPosition)
+    if (ok) onMutated()
+    return ok
   }
 
   fun readText(): String {
@@ -299,6 +387,7 @@ class AffineInputConnection(private val ime: AffineImeController) : InputConnect
 internal class AffineSurfaceView(
   context: Context,
   private val handleProvider: () -> Long,
+  private val onMutated: () -> Unit = {},
 ) : SurfaceView(context) {
   init {
     isFocusable = true
@@ -308,14 +397,15 @@ internal class AffineSurfaceView(
   override fun onCheckIsTextEditor(): Boolean = true
 
   override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection =
-    createInputConnection(handleProvider, outAttrs)
+    createInputConnection(handleProvider, outAttrs, onMutated)
 
   companion object {
     internal fun createInputConnection(
       handleProvider: () -> Long,
       outAttrs: EditorInfo? = null,
+      onMutated: () -> Unit = {},
     ): InputConnection {
-      val ime = AffineImeController(handleProvider)
+      val ime = AffineImeController(handleProvider, onMutated)
       if (outAttrs != null) {
         outAttrs.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
         outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI
@@ -330,7 +420,12 @@ internal class AffineSurfaceView(
 class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCallback {
   private var nativeHandle: Long = 0L
   private lateinit var surfaceView: AffineSurfaceView
+  private lateinit var bootstrapCoordinator: AndroidBootstrapCoordinator
+  @Volatile
+  var lastBootstrapOutcome: BootstrapOutcome? = null
+    private set
   private var frameLoopActive: Boolean = false
+  private var frameCallbackPosted: Boolean = false
   private var surfaceReady: Boolean = false
   private var backCallback: OnBackInvokedCallback? = null
 
@@ -341,7 +436,11 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     }
 
     nativeHandle = NativeBridge.nativeCreateHost()
-    surfaceView = AffineSurfaceView(this) { nativeHandle }.apply {
+    surfaceView = AffineSurfaceView(
+      context = this,
+      handleProvider = { nativeHandle },
+      onMutated = { requestFrameAndSchedule() },
+    ).apply {
       holder.addCallback(this@MainActivity)
     }
     setContentView(surfaceView)
@@ -349,19 +448,53 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     installInsetsBridge(surfaceView)
     installPredictiveBackBridge()
     configureAutofillIfSupported()
+
+    bootstrapCoordinator = AndroidBootstrapCoordinator(
+      handleProvider = { nativeHandle },
+      filesDirProvider = { filesDir.absolutePath },
+    )
+    bootstrapCoordinator.start(LegacyLocalStorageProbe(this)) { outcome ->
+      lastBootstrapOutcome = outcome
+      requestFrameAndSchedule()
+    }
+  }
+
+  fun retryBootstrapIfNeeded(onComplete: (BootstrapOutcome) -> Unit = {}) {
+    if (nativeHandle == 0L) return
+    val current = lastBootstrapOutcome
+    if (current?.isComplete == true) {
+      onComplete(current)
+      return
+    }
+    if (current == null || !current.imported) {
+      bootstrapCoordinator.start(LegacyLocalStorageProbe(this)) { outcome ->
+        lastBootstrapOutcome = outcome
+        requestFrameAndSchedule()
+        onComplete(outcome)
+      }
+      return
+    }
+    val updated = bootstrapCoordinator.retryFailedWorkspaces(current)
+    lastBootstrapOutcome = updated
+    requestFrameAndSchedule()
+    onComplete(updated)
   }
 
   override fun onStart() {
     super.onStart()
-    if (!frameLoopActive) {
-      frameLoopActive = true
-      Choreographer.getInstance().postFrameCallback(this)
-    }
+    frameLoopActive = true
+    scheduleFrameIfNeeded()
   }
 
   override fun onStop() {
     frameLoopActive = false
-    Choreographer.getInstance().removeFrameCallback(this)
+    if (frameCallbackPosted) {
+      Choreographer.getInstance().removeFrameCallback(this)
+      frameCallbackPosted = false
+    }
+    if (nativeHandle != 0L) {
+      NativeBridge.nativeStorageCheckpointAllPassive(nativeHandle)
+    }
     super.onStop()
   }
 
@@ -378,41 +511,51 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
   }
 
   override fun doFrame(frameTimeNanos: Long) {
-    if (!frameLoopActive) return
-    if (nativeHandle != 0L) {
-      NativeBridge.nativeOnFrameTick(nativeHandle, frameTimeNanos)
-    }
-    Choreographer.getInstance().postFrameCallback(this)
+    frameCallbackPosted = false
+    if (!frameLoopActive || !surfaceReady || nativeHandle == 0L) return
+    NativeBridge.nativeOnFrameTick(nativeHandle, frameTimeNanos)
+    scheduleFrameIfNeeded()
   }
 
   override fun surfaceCreated(holder: SurfaceHolder) {
     surfaceReady = true
     if (nativeHandle != 0L) {
       NativeBridge.nativeOnSurfaceCreated(nativeHandle, holder.surface)
-      // One-shot S1 observable first-frame clear; S2 removes lockCanvas when wgpu Surface takes over.
-      val clearColorArgb = NativeBridge.nativeOnFrameTick(nativeHandle, 0L)
-      if (clearColorArgb != 0) {
-        presentClearFrame(holder, clearColorArgb)
-      }
+      requestFrameAndSchedule()
     }
   }
 
   override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
     if (nativeHandle != 0L) {
-      NativeBridge.nativeOnSurfaceChanged(nativeHandle, width, height)
-      if (surfaceReady) {
-        val clearColorArgb = NativeBridge.nativeOnFrameTick(nativeHandle, 0L)
-        if (clearColorArgb != 0) {
-          presentClearFrame(holder, clearColorArgb)
-        }
+      NativeBridge.nativeOnSurfaceChanged(nativeHandle, format, width, height)
+      if (surfaceReady && width > 0 && height > 0) {
+        requestFrameAndSchedule()
       }
     }
   }
 
   override fun surfaceDestroyed(holder: SurfaceHolder) {
     surfaceReady = false
+    if (frameCallbackPosted) {
+      Choreographer.getInstance().removeFrameCallback(this)
+      frameCallbackPosted = false
+    }
     if (nativeHandle != 0L) {
       NativeBridge.nativeOnSurfaceDestroyed(nativeHandle)
+    }
+  }
+
+  private fun requestFrameAndSchedule() {
+    if (nativeHandle == 0L) return
+    NativeBridge.nativeRequestFrame(nativeHandle)
+    scheduleFrameIfNeeded()
+  }
+
+  private fun scheduleFrameIfNeeded() {
+    if (!frameLoopActive || !surfaceReady || frameCallbackPosted || nativeHandle == 0L) return
+    if (NativeBridge.nativeHasPendingFrame(nativeHandle)) {
+      frameCallbackPosted = true
+      Choreographer.getInstance().postFrameCallback(this)
     }
   }
 
@@ -421,15 +564,6 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     val consumed = nativeHandle != 0L && NativeBridge.nativeOnBackGesturePhase(nativeHandle, 3, 1f)
     if (!consumed) {
       super.onBackPressed()
-    }
-  }
-
-  private fun presentClearFrame(holder: SurfaceHolder, argb: Int) {
-    val canvas = holder.lockCanvas() ?: return
-    try {
-      canvas.drawColor(argb)
-    } finally {
-      holder.unlockCanvasAndPost(canvas)
     }
   }
 
@@ -482,6 +616,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
         density,
       )
     }
+    requestFrameAndSchedule()
   }
 
   private fun installPredictiveBackBridge() {
@@ -490,24 +625,29 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
         override fun onBackStarted(backEvent: BackEvent) {
           if (nativeHandle != 0L) {
             NativeBridge.nativeOnBackGesturePhase(nativeHandle, 0, backEvent.progress)
+            requestFrameAndSchedule()
           }
         }
 
         override fun onBackProgressed(backEvent: BackEvent) {
           if (nativeHandle != 0L) {
             NativeBridge.nativeOnBackGesturePhase(nativeHandle, 1, backEvent.progress)
+            requestFrameAndSchedule()
           }
         }
 
         override fun onBackCancelled() {
           if (nativeHandle != 0L) {
             NativeBridge.nativeOnBackGesturePhase(nativeHandle, 2, 0f)
+            requestFrameAndSchedule()
           }
         }
 
         override fun onBackInvoked() {
           val consumed = nativeHandle != 0L && NativeBridge.nativeOnBackGesturePhase(nativeHandle, 3, 1f)
-          if (!consumed) {
+          if (consumed) {
+            requestFrameAndSchedule()
+          } else {
             finish()
           }
         }

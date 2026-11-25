@@ -183,6 +183,10 @@ jobs:
           NDK_BIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
           export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDK_BIN/aarch64-linux-android24-clang"
           export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER="$NDK_BIN/x86_64-linux-android24-clang"
+          export CC_aarch64_linux_android="$NDK_BIN/aarch64-linux-android24-clang"
+          export AR_aarch64_linux_android="$NDK_BIN/llvm-ar"
+          export CC_x86_64_linux_android="$NDK_BIN/x86_64-linux-android24-clang"
+          export AR_x86_64_linux_android="$NDK_BIN/llvm-ar"
           cargo build --locked -p affine-android-host --target aarch64-linux-android
           cargo build --locked -p affine-android-host --target x86_64-linux-android
           test -s target/aarch64-linux-android/debug/libaffine_android_host.so
@@ -199,11 +203,16 @@ jobs:
             -d /tmp/affine-android-kotlin \
             packages/frontend/hosts/android/kotlin/app/affine/pro/host/MainActivity.kt \
             packages/frontend/hosts/android/kotlin/app/affine/pro/host/LegacyLocalStorageProbe.kt \
+            packages/frontend/hosts/android/kotlin/app/affine/pro/host/AndroidBootstrapCoordinator.kt \
+            packages/frontend/hosts/android/kotlin/app/affine/pro/host/AuthDataStore.kt \
             packages/frontend/hosts/android/tests/ImeHostParityCheck.kt
           test -s /tmp/affine-android-kotlin/app/affine/pro/host/MainActivity.class
           test -s /tmp/affine-android-kotlin/app/affine/pro/host/AffineImeController.class
           test -s /tmp/affine-android-kotlin/app/affine/pro/host/AffineInputConnection.class
           test -s /tmp/affine-android-kotlin/app/affine/pro/host/LegacyLocalStorageProbe.class
+          test -s /tmp/affine-android-kotlin/app/affine/pro/host/AndroidBootstrapCoordinator.class
+          test -s /tmp/affine-android-kotlin/app/affine/pro/host/AuthSessionStore.class
+          test -s /tmp/affine-android-kotlin/app/affine/pro/host/AuthTokenCipher.class
           kotlin -J-Djava.library.path="$PWD/packages/frontend/target/debug" \
             -cp "/tmp/affine-android-kotlin:$ANDROID_JAR" \
             ImeHostParityCheckKt

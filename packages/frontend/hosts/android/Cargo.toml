@@ -13,8 +13,16 @@ crate-type = ["rlib", "cdylib"]
 host-jni = []
 
 [dependencies]
+affine-store = { path = "../../../common/store" }
+base64.workspace = true
+chrono.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+url.workspace = true
+y-octo.workspace = true
 
 [lints]
 workspace = true

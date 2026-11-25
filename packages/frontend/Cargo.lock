@@ -27,8 +27,16 @@ checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 name = "affine-android-host"
 version = "0.1.0"
 dependencies = [
+ "affine-store",
+ "base64 0.22.1",
+ "chrono",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "tokio",
+ "url",
+ "y-octo",
 ]
 
 [[package]]

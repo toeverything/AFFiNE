@@ -4,18 +4,75 @@
 //!
 //! Provides cross-platform testable host state machines (four-phase predictive
 //! and legacy single-commit back gesture handling, API 26+ Autofill gating,
-//! physical-px to logical-dp inset conversion, and legacy `https://localhost`
-//! `localStorage` whitelist sentinel parsing) alongside hand-written thin JNI
-//! exports compiled on Android and unit tests.
+//! physical-px to logical-dp inset conversion, `SurfaceHolder.Callback`
+//! lifecycle, in-place SQLite WAL co-storage, Jetpack Preferences DataStore
+//! `v1:` AES-GCM credential contract, and legacy `https://localhost`
+//! `localStorage` whitelist import/rollback with zero IndexedDB access)
+//! alongside hand-written thin JNI exports.
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(target_os = "android")]
+mod android_window;
+pub mod datastore;
 mod ime;
+pub mod storage;
+pub mod surface;
+
+#[cfg(any(target_os = "android", test, feature = "host-jni"))]
+pub mod jni_bridge;
+#[cfg(any(target_os = "android", test, feature = "host-jni"))]
+pub mod jni_storage;
+
+pub use storage::{
+    AndroidSqliteBridge, AndroidWorkspaceCatalog, LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
+};
+pub use surface::{
+    AndroidRenderBackend, DEFAULT_CLEAR_COLOR_ARGB, SurfaceLifecycleState, SurfacePresentError,
+};
 
 /// Legacy Capacitor Android WebView origin used for one-shot `localStorage` probing.
 pub const LEGACY_ANDROID_ORIGIN: &str = "https://localhost";
+
+/// Exact allowlisted `localStorage` keys imported on upgrade from `0.27.5`
+/// (`local.ts:58`, `storage.ts:83,91`, `auth.ts:59`).
+pub const LEGACY_EXACT_ALLOWED_KEYS: &[&str] = &[
+    LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
+    "global-state:serverList",
+    "global-cache:i18n_lng",
+    "last_workspace_id",
+    "last_workspace_flavour",
+    "affine-settings",
+    "theme",
+];
+
+/// Returns `true` when `key` matches the `0.27.5` Capacitor Android WebView
+/// `localStorage` allowlist (exact keys + dynamic server/auth/flag keys).
+pub fn is_allowed_legacy_local_storage_key(key: &str) -> bool {
+    if LEGACY_EXACT_ALLOWED_KEYS.contains(&key) {
+        return true;
+    }
+    if let Some(id) = key.strip_prefix("global-state:serverConfig:") {
+        return !id.is_empty();
+    }
+    if let Some(rest) = key.strip_prefix("global-state:affine-flag:") {
+        return !rest.is_empty();
+    }
+    if let Some(rest) = key.strip_prefix("affine-flag:") {
+        return !rest.is_empty();
+    }
+    if let Some(rest) = key.strip_prefix("global-state:")
+        && let Some(server_id) = rest.strip_suffix("-auth")
+    {
+        return !server_id.is_empty();
+    }
+    if let Some(server_id) = key.strip_suffix("-auth") {
+        return !server_id.is_empty() && !server_id.contains(':');
+    }
+    false
+}
 
 /// Minimum Android API level that provides `android.view.autofill.AutofillManager`.
 pub const AUTOFILL_MIN_SDK_INT: u32 = 26;
@@ -38,10 +95,6 @@ pub struct LogicalWindowInsets {
 }
 
 /// Converts Android `WindowInsets` physical pixel measurements into logical `dp`.
-///
-/// Supports any positive finite density (including `0.75` `ldpi`) and preserves
-/// `ime_bottom_px` as an absolute bottom overlap height so Rust
-/// `ui::WindowInsets::effective()` can merge `safe_area.bottom.max(ime.bottom)`.
 pub fn physical_insets_to_logical_dp(
     safe_top_px: i32,
     safe_right_px: i32,
@@ -110,9 +163,6 @@ pub enum BackGestureError {
 }
 
 /// Deterministic four-phase state machine for Android back navigation.
-///
-/// Supports both Android 14+ predictive gestures (`Start -> Progress* -> Commit|Cancel`)
-/// and legacy/hardware single-shot back key commits (`Idle|Committed|Cancelled -> Commit`).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BackGestureMachine {
     state: BackGestureState,
@@ -178,69 +228,6 @@ impl BackGestureMachine {
     }
 }
 
-/// Default observable first-frame clear color (opaque `#141414` ARGB).
-pub const DEFAULT_CLEAR_COLOR_ARGB: u32 = 0xFF14_1414;
-
-/// Pure safe-Rust state held behind an Android JNI host handle.
-#[derive(Debug, Clone)]
-pub struct AndroidHostState {
-    pub back_gesture: BackGestureMachine,
-    pub has_back_destination: bool,
-    pub insets: LogicalWindowInsets,
-    pub surface_active: bool,
-    pub surface_bound: bool,
-    pub surface_width_px: u32,
-    pub surface_height_px: u32,
-    pub frame_count: u64,
-    pub last_frame_nanos: i64,
-    pub clear_color_argb: u32,
-    pub utf16_text: Vec<u16>,
-    pub selected_start: usize,
-    pub selected_len: usize,
-    pub composing_start: Option<usize>,
-    pub composing_len: usize,
-}
-
-impl Default for AndroidHostState {
-    fn default() -> Self {
-        Self {
-            back_gesture: BackGestureMachine::new(),
-            has_back_destination: false,
-            insets: LogicalWindowInsets::default(),
-            surface_active: false,
-            surface_bound: false,
-            surface_width_px: 0,
-            surface_height_px: 0,
-            frame_count: 0,
-            last_frame_nanos: 0,
-            clear_color_argb: DEFAULT_CLEAR_COLOR_ARGB,
-            utf16_text: Vec::new(),
-            selected_start: 0,
-            selected_len: 0,
-            composing_start: None,
-            composing_len: 0,
-        }
-    }
-}
-
-impl AndroidHostState {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Decodes the authoritative UTF-16 buffer into a Rust `String`.
-    /// Handles a back gesture phase; returns `true` only when the host consumed
-    /// the event (an unconsumed `Commit` at the navigation root returns `false`
-    /// so Android delegates to the system back action).
-    pub fn handle_back_phase(&mut self, phase: BackGesturePhase, progress: f32) -> bool {
-        if phase == BackGesturePhase::Commit && !self.has_back_destination {
-            let _ = self.back_gesture.transition(phase, progress);
-            return false;
-        }
-        self.back_gesture.transition(phase, progress).is_ok()
-    }
-}
-
 /// Positive sentinel payload parsed from the legacy Android `https://localhost`
 /// `localStorage` probe.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -249,6 +236,10 @@ pub struct LegacyLocalStorageSnapshot {
     pub length: usize,
     pub keys: Vec<String>,
     pub entries: BTreeMap<String, String>,
+    #[serde(default, rename = "removedKeys")]
+    pub removed_keys: Vec<String>,
+    #[serde(default, rename = "idbTouchCount")]
+    pub idb_touch_count: u32,
 }
 
 /// Error returned while validating a legacy `localStorage` sentinel payload.
@@ -256,14 +247,39 @@ pub struct LegacyLocalStorageSnapshot {
 pub enum LegacyProbeError {
     InvalidJson(String),
     UnexpectedOrigin(String),
+    IndexedDbTouched(u32),
+    InconsistentSentinel(String),
+}
+
+/// Upgrade import gate distinguishing genuine fresh installs from probe failures.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum LegacyUpgradeImportState {
+    #[default]
+    Pending,
+    FreshInstall,
+    Imported(LegacyLocalStorageSnapshot),
+    Failed(LegacyProbeError),
+}
+
+impl LegacyUpgradeImportState {
+    /// Returns `true` only when the probe positively confirmed zero allowlisted
+    /// AFFiNE keys on `https://localhost` with zero IndexedDB touches.
+    pub const fn can_create_default_workspace(&self) -> bool {
+        matches!(self, Self::FreshInstall)
+    }
 }
 
 /// Parses and validates a legacy `https://localhost` `localStorage` probe JSON
-/// payload, retaining only explicitly whitelisted keys in deterministic order.
+/// payload matching the cross-slice `WebViewStorageSentinel` contract:
+/// 1. `origin == "https://localhost"`
+/// 2. `idbTouchCount == 0` (Iron Rule F12)
+/// 3. `keys.len() == length` (`keys` holds every key name in `localStorage`)
+/// 4. `keys` has no duplicates
+/// 5. every key in `entries` is present in `keys` and satisfies the allowlist
+/// 6. every key in `keys` that satisfies the allowlist is present in `entries`
 ///
-/// Accepts both direct JSON objects (from `WebView.evaluateJavascript` returning
-/// a JS object) and JSON-encoded JSON strings (double-encoded `JSON.stringify`
-/// results from `WebView.evaluateJavascript`).
+/// Pass an empty `allowed_keys` slice to apply the full `0.27.5` allowlist rules
+/// (`is_allowed_legacy_local_storage_key`), or a non-empty slice for an explicit subset.
 pub fn parse_legacy_local_storage_probe(
     payload_json: &str,
     allowed_keys: &[&str],
@@ -283,26 +299,295 @@ pub fn parse_legacy_local_storage_probe(
     if raw.origin != LEGACY_ANDROID_ORIGIN {
         return Err(LegacyProbeError::UnexpectedOrigin(raw.origin));
     }
+    if raw.idb_touch_count > 0 {
+        return Err(LegacyProbeError::IndexedDbTouched(raw.idb_touch_count));
+    }
+    if raw.keys.len() != raw.length {
+        return Err(LegacyProbeError::InconsistentSentinel(format!(
+            "keys.len() ({}) != localStorage.length ({})",
+            raw.keys.len(),
+            raw.length
+        )));
+    }
 
-    let allow_set: BTreeSet<&str> = allowed_keys.iter().copied().collect();
-    let mut entries = BTreeMap::new();
-    for (k, v) in raw.entries {
-        if allow_set.contains(k.as_str()) {
-            entries.insert(k, v);
+    let custom_allow: Option<BTreeSet<&str>> = if allowed_keys.is_empty() {
+        None
+    } else {
+        Some(allowed_keys.iter().copied().collect())
+    };
+    let is_allowed = |k: &str| match &custom_allow {
+        Some(set) => set.contains(k),
+        None => is_allowed_legacy_local_storage_key(k),
+    };
+
+    let mut seen_keys = BTreeSet::new();
+    for k in &raw.keys {
+        if !seen_keys.insert(k.as_str()) {
+            return Err(LegacyProbeError::InconsistentSentinel(format!(
+                "duplicate key in sentinel: {k:?}"
+            )));
         }
     }
-    let keys: Vec<String> = entries.keys().cloned().collect();
+
+    let mut entries = BTreeMap::new();
+    for (k, v) in raw.entries {
+        if !seen_keys.contains(k.as_str()) {
+            return Err(LegacyProbeError::InconsistentSentinel(format!(
+                "entry key {k:?} missing from sentinel keys"
+            )));
+        }
+        if !is_allowed(&k) {
+            return Err(LegacyProbeError::InconsistentSentinel(format!(
+                "non-allowlisted key in sentinel entries: {k:?}"
+            )));
+        }
+        entries.insert(k, v);
+    }
+
+    for k in &seen_keys {
+        if is_allowed(k) && !entries.contains_key(*k) {
+            return Err(LegacyProbeError::InconsistentSentinel(format!(
+                "allowlisted key {k:?} present in keys but missing from entries"
+            )));
+        }
+    }
+
+    let mut keys: Vec<String> = seen_keys.into_iter().map(str::to_string).collect();
+    keys.sort();
 
     Ok(LegacyLocalStorageSnapshot {
         origin: raw.origin,
         length: raw.length,
         keys,
         entries,
+        removed_keys: raw.removed_keys,
+        idb_touch_count: 0,
     })
 }
 
-#[cfg(any(target_os = "android", test, feature = "host-jni"))]
-pub mod jni_bridge;
+/// Verifies a rollback `writeBackLegacyLocalStorage` read-back sentinel against
+/// expected `set_entries` and `remove_keys`, ensuring zero IndexedDB touches.
+///
+/// Rejects removing `affine-local-workspace` (per `local.ts:126-129`, empty
+/// local workspace lists must be written as `"[]"` rather than removed).
+pub fn verify_legacy_writeback_result(
+    expected_set: &BTreeMap<String, String>,
+    expected_remove: &[String],
+    readback_json: &str,
+) -> Result<(), LegacyProbeError> {
+    if expected_remove
+        .iter()
+        .any(|k| k == LOCAL_WORKSPACE_LOCAL_STORAGE_KEY)
+    {
+        return Err(LegacyProbeError::InconsistentSentinel(
+            "affine-local-workspace must be written as \"[]\", never removed".into(),
+        ));
+    }
+    let snapshot = parse_legacy_local_storage_probe(readback_json, &[])?;
+    for (key, expected_val) in expected_set {
+        if !is_allowed_legacy_local_storage_key(key) {
+            return Err(LegacyProbeError::InconsistentSentinel(format!(
+                "expected set key {key:?} is not allowlisted"
+            )));
+        }
+        if snapshot.entries.get(key) != Some(expected_val) {
+            return Err(LegacyProbeError::InconsistentSentinel(format!(
+                "write-back readback mismatch for key {key:?}"
+            )));
+        }
+    }
+    for key in expected_remove {
+        if !is_allowed_legacy_local_storage_key(key) {
+            return Err(LegacyProbeError::InconsistentSentinel(format!(
+                "expected remove key {key:?} is not allowlisted"
+            )));
+        }
+        if snapshot.entries.contains_key(key) || snapshot.keys.iter().any(|k| k == key) {
+            return Err(LegacyProbeError::InconsistentSentinel(format!(
+                "removed key {key:?} still present in readback"
+            )));
+        }
+        if !snapshot.removed_keys.iter().any(|k| k == key) {
+            return Err(LegacyProbeError::InconsistentSentinel(format!(
+                "removed key {key:?} not confirmed in removedKeys"
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// Pure safe-Rust state held behind an Android JNI host handle.
+#[derive(Debug)]
+pub struct AndroidHostState {
+    pub back_gesture: BackGestureMachine,
+    pub has_back_destination: bool,
+    pub insets: LogicalWindowInsets,
+    pub surface: SurfaceLifecycleState,
+    pub upgrade_import: LegacyUpgradeImportState,
+    pub workspace_catalog: AndroidWorkspaceCatalog,
+    /// Losslessly preserves the raw `affine-local-workspace` value read on upgrade
+    /// (including malformed JSON like `"{broken"`) so untouched rollback write-back
+    /// never silently overwrites it with `"[]"`.
+    pub raw_local_workspace_value: Option<String>,
+    /// Local workspace IDs that failed `connect_workspace` during bootstrap or retry.
+    pub failed_local_workspace_mounts: BTreeSet<String>,
+    pub sqlite: AndroidSqliteBridge,
+    pub utf16_text: Vec<u16>,
+    pub selected_start: usize,
+    pub selected_len: usize,
+    pub composing_start: Option<usize>,
+    pub composing_len: usize,
+}
+
+impl Default for AndroidHostState {
+    fn default() -> Self {
+        Self {
+            back_gesture: BackGestureMachine::new(),
+            has_back_destination: false,
+            insets: LogicalWindowInsets::default(),
+            surface: SurfaceLifecycleState::new(),
+            upgrade_import: LegacyUpgradeImportState::Pending,
+            workspace_catalog: AndroidWorkspaceCatalog::default(),
+            raw_local_workspace_value: None,
+            failed_local_workspace_mounts: BTreeSet::new(),
+            sqlite: AndroidSqliteBridge::new(),
+            utf16_text: Vec::new(),
+            selected_start: 0,
+            selected_len: 0,
+            composing_start: None,
+            composing_len: 0,
+        }
+    }
+}
+
+impl AndroidHostState {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns `true` once the legacy `localStorage` probe has completed
+    /// (either `Imported` or `FreshInstall`), guarding local workspace opens.
+    pub const fn is_local_workspace_import_ready(&self) -> bool {
+        matches!(
+            self.upgrade_import,
+            LegacyUpgradeImportState::Imported(_) | LegacyUpgradeImportState::FreshInstall
+        )
+    }
+
+    /// Handles a back gesture phase; returns `true` only when the host consumed
+    /// the event (an unconsumed `Commit` at the navigation root returns `false`
+    /// so Android delegates to the system back action).
+    pub fn handle_back_phase(&mut self, phase: BackGesturePhase, progress: f32) -> bool {
+        if phase == BackGesturePhase::Commit && !self.has_back_destination {
+            let _ = self.back_gesture.transition(phase, progress);
+            return false;
+        }
+        self.back_gesture.transition(phase, progress).is_ok()
+    }
+
+    /// Imports a legacy `https://localhost` `localStorage` probe result, updating
+    /// the upgrade gate and allowlisted workspace catalog (never scanning disk).
+    pub fn import_legacy_local_storage_probe(
+        &mut self,
+        payload_json: &str,
+        allowed_keys: &[&str],
+    ) -> Result<&LegacyLocalStorageSnapshot, LegacyProbeError> {
+        match parse_legacy_local_storage_probe(payload_json, allowed_keys) {
+            Ok(snapshot) => {
+                if let Some(raw_ids) = snapshot.entries.get(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) {
+                    self.raw_local_workspace_value = Some(raw_ids.clone());
+                    self.workspace_catalog =
+                        AndroidWorkspaceCatalog::from_local_storage_json(raw_ids);
+                } else {
+                    self.raw_local_workspace_value = None;
+                    self.workspace_catalog = AndroidWorkspaceCatalog::default();
+                }
+                let _ = self
+                    .sqlite
+                    .evict_unlisted_local_workspaces(&self.workspace_catalog);
+                self.failed_local_workspace_mounts
+                    .retain(|id| self.workspace_catalog.contains(id));
+
+                if snapshot.entries.is_empty() {
+                    self.upgrade_import = LegacyUpgradeImportState::FreshInstall;
+                } else {
+                    self.upgrade_import = LegacyUpgradeImportState::Imported(snapshot);
+                }
+                match &self.upgrade_import {
+                    LegacyUpgradeImportState::Imported(snap) => Ok(snap),
+                    LegacyUpgradeImportState::FreshInstall => {
+                        static EMPTY: std::sync::OnceLock<LegacyLocalStorageSnapshot> =
+                            std::sync::OnceLock::new();
+                        Ok(EMPTY.get_or_init(|| LegacyLocalStorageSnapshot {
+                            origin: LEGACY_ANDROID_ORIGIN.to_string(),
+                            length: 0,
+                            keys: Vec::new(),
+                            entries: BTreeMap::new(),
+                            removed_keys: Vec::new(),
+                            idb_touch_count: 0,
+                        }))
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            Err(err) => {
+                self.upgrade_import = LegacyUpgradeImportState::Failed(err.clone());
+                Err(err)
+            }
+        }
+    }
+
+    /// Records the mount outcome for an allowlisted local workspace ID.
+    pub fn record_local_workspace_mount_outcome(&mut self, space_id: &str, connected: bool) {
+        if connected {
+            self.failed_local_workspace_mounts.remove(space_id);
+        } else if self.workspace_catalog.contains(space_id) {
+            self.failed_local_workspace_mounts
+                .insert(space_id.to_string());
+        }
+    }
+
+    /// Returns `true` when any allowlisted local workspace failed to mount or has
+    /// not yet been connected.
+    pub fn has_unresolved_local_workspace_mounts(&self) -> bool {
+        if !self.failed_local_workspace_mounts.is_empty() {
+            return true;
+        }
+        if !self.is_local_workspace_import_ready() {
+            return false;
+        }
+        self.workspace_catalog
+            .ids()
+            .iter()
+            .any(|id| !self.sqlite.is_local_workspace_connected(id))
+    }
+
+    /// Plans a rollback `localStorage` write-back JSON payload (`setEntries` +
+    /// `removeKeys`). Returns `None` while upgrade import is incomplete or any
+    /// allowlisted local workspace has an unresolved mount failure.
+    pub fn plan_legacy_local_storage_writeback(&self) -> Option<String> {
+        if !self.is_local_workspace_import_ready() || self.has_unresolved_local_workspace_mounts() {
+            return None;
+        }
+        let local_ws_value = if !self.workspace_catalog.ids().is_empty() {
+            serde_json::to_string(self.workspace_catalog.ids()).ok()?
+        } else if let Some(raw) = &self.raw_local_workspace_value {
+            raw.clone()
+        } else {
+            "[]".to_string()
+        };
+        let mut set_entries = BTreeMap::new();
+        set_entries.insert(
+            LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string(),
+            local_ws_value,
+        );
+        let plan = serde_json::json!({
+            "setEntries": set_entries,
+            "removeKeys": Vec::<String>::new(),
+        });
+        Some(plan.to_string())
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -335,13 +620,10 @@ mod tests {
             machine.transition(BackGesturePhase::Cancel, 0.0),
             Err(BackGestureError::NotActive)
         );
-        // Non-predictive / hardware back key commits directly from Idle.
         assert_eq!(
             machine.transition(BackGesturePhase::Commit, 1.0),
             Ok(BackGestureState::Committed)
         );
-
-        // Predictive 4-phase flow.
         assert_eq!(
             machine.transition(BackGesturePhase::Start, 0.0),
             Ok(BackGestureState::Active { progress: 0.0 })
@@ -358,7 +640,6 @@ mod tests {
             machine.transition(BackGesturePhase::Cancel, 0.0),
             Ok(BackGestureState::Cancelled)
         );
-        // Legacy single-shot Commit after Cancel also succeeds.
         assert_eq!(
             machine.transition(BackGesturePhase::Commit, 1.0),
             Ok(BackGestureState::Committed)
@@ -409,53 +690,181 @@ mod tests {
     }
 
     #[test]
-    fn legacy_local_storage_probe_validates_origin_and_filters_allowlist() {
-        let payload = r#"{
+    fn legacy_local_storage_probe_distinguishes_fresh_install_failure_and_idb_violation() {
+        // Real 0.27.5 allowlist rules (exact + dynamic keys) and rejection of fictional keys.
+        for allowed in [
+            "affine-local-workspace",
+            "global-state:serverList",
+            "global-cache:i18n_lng",
+            "last_workspace_id",
+            "last_workspace_flavour",
+            "affine-settings",
+            "theme",
+            "global-state:serverConfig:self-host-1",
+            "global-state:cloud-auth",
+            "cloud-auth",
+            "affine-flag:enable_ai",
+            "global-state:affine-flag:enable_ai",
+        ] {
+            assert!(
+                is_allowed_legacy_local_storage_key(allowed),
+                "expected allowed key: {allowed}"
+            );
+        }
+        for rejected in [
+            "affine_theme",
+            "affine_server_url",
+            "secret_token",
+            "global-state:serverConfig:",
+            "global-state:-auth",
+            "-auth",
+            "affine-flag:",
+            "global-state:affine-flag:",
+        ] {
+            assert!(
+                !is_allowed_legacy_local_storage_key(rejected),
+                "expected rejected key: {rejected}"
+            );
+        }
+
+        let mut host = AndroidHostState::new();
+        assert!(!host.upgrade_import.can_create_default_workspace());
+
+        // Probe failure blocks default workspace creation.
+        assert!(host.import_legacy_local_storage_probe("null", &[]).is_err());
+        assert!(!host.upgrade_import.can_create_default_workspace());
+
+        // Sentinel consistency failures: keys.len() != length, duplicate keys, non-allowlisted entry,
+        // entry not in keys, and allowlisted key in keys missing from entries.
+        let bad_payloads = [
+            r#"{"origin":"https://localhost","length":0,"keys":["theme"],"entries":{"theme":"dark"},"idbTouchCount":0}"#,
+            r#"{"origin":"https://localhost","length":2,"keys":["theme"],"entries":{"theme":"dark"},"idbTouchCount":0}"#,
+            r#"{"origin":"https://localhost","length":2,"keys":["theme","theme"],"entries":{"theme":"dark"},"idbTouchCount":0}"#,
+            r#"{"origin":"https://localhost","length":1,"keys":["affine_theme"],"entries":{"affine_theme":"dark"},"idbTouchCount":0}"#,
+            r#"{"origin":"https://localhost","length":0,"keys":[],"entries":{"theme":"dark"},"idbTouchCount":0}"#,
+            r#"{"origin":"https://localhost","length":1,"keys":["affine-local-workspace"],"entries":{},"idbTouchCount":0}"#,
+        ];
+        for bad in bad_payloads {
+            assert!(
+                matches!(
+                    host.import_legacy_local_storage_probe(bad, &[]),
+                    Err(LegacyProbeError::InconsistentSentinel(_))
+                ),
+                "expected InconsistentSentinel for {bad}"
+            );
+            assert!(!host.upgrade_import.can_create_default_workspace());
+        }
+
+        // Any IndexedDB touch is rejected.
+        let idb_payload = r#"{
             "origin": "https://localhost",
-            "length": 3,
-            "keys": ["affine_theme", "secret_token", "affine_server_url"],
-            "entries": {
-                "affine_theme": "dark",
-                "secret_token": "must-not-pass",
-                "affine_server_url": "https://app.affine.pro"
-            }
+            "length": 1,
+            "keys": ["affine-local-workspace"],
+            "entries": { "affine-local-workspace": "[\"ws-1\"]" },
+            "idbTouchCount": 1
         }"#;
-
-        let snapshot =
-            parse_legacy_local_storage_probe(payload, &["affine_theme", "affine_server_url"])
-                .expect("valid https://localhost probe should parse");
-
-        assert_eq!(snapshot.origin, "https://localhost");
-        assert_eq!(snapshot.length, 3);
         assert_eq!(
-            snapshot.keys,
-            vec!["affine_server_url".to_string(), "affine_theme".to_string()]
+            host.import_legacy_local_storage_probe(idb_payload, &[]),
+            Err(LegacyProbeError::IndexedDbTouched(1))
         );
-        assert!(!snapshot.entries.contains_key("secret_token"));
+        assert!(!host.upgrade_import.can_create_default_workspace());
 
+        // Genuine fresh install with an unrelated non-allowlisted third-party key (length == 1, keys == ["__cap_noise__"], entries == {}).
+        let fresh_with_noise = r#"{
+            "origin": "https://localhost",
+            "length": 1,
+            "keys": ["__cap_noise__"],
+            "entries": {},
+            "idbTouchCount": 0
+        }"#;
+        host.import_legacy_local_storage_probe(fresh_with_noise, &[])
+            .unwrap();
+        assert!(host.upgrade_import.can_create_default_workspace());
+
+        // Existing user who deleted all local workspaces still has "affine-local-workspace": "[]" -> Imported, NOT FreshInstall.
+        let deleted_all_payload = r#"{
+            "origin": "https://localhost",
+            "length": 1,
+            "keys": ["affine-local-workspace"],
+            "entries": { "affine-local-workspace": "[]" },
+            "idbTouchCount": 0
+        }"#;
+        host.import_legacy_local_storage_probe(deleted_all_payload, &[])
+            .unwrap();
+        assert!(!host.upgrade_import.can_create_default_workspace());
+        assert!(host.workspace_catalog.ids().is_empty());
+
+        // Malformed affine-local-workspace JSON ("{broken") mounts zero workspaces
+        // while losslessly preserving the raw string for untouched rollback write-back.
+        let corrupt_ws_payload = r#"{
+            "origin": "https://localhost",
+            "length": 1,
+            "keys": ["affine-local-workspace"],
+            "entries": { "affine-local-workspace": "{broken" },
+            "idbTouchCount": 0
+        }"#;
+        host.import_legacy_local_storage_probe(corrupt_ws_payload, &[])
+            .unwrap();
+        assert!(!host.upgrade_import.can_create_default_workspace());
+        assert!(host.workspace_catalog.ids().is_empty());
+        assert_eq!(host.raw_local_workspace_value.as_deref(), Some("{broken"));
+
+        // Upgrade with allowlisted workspaces + dynamic keys + 1 unrelated noise key (length == 4, keys.len() == 4).
+        let upgrade_payload = r#"{
+            "origin": "https://localhost",
+            "length": 4,
+            "keys": ["__cap_noise__", "affine-local-workspace", "global-state:serverConfig:self-host", "theme"],
+            "entries": {
+                "affine-local-workspace": "[\"ws-b\",\"ws-a\"]",
+                "global-state:serverConfig:self-host": "{\"url\":\"https://self.example\"}",
+                "theme": "dark"
+            },
+            "removedKeys": ["last_workspace_id"],
+            "idbTouchCount": 0
+        }"#;
+        let snap = host
+            .import_legacy_local_storage_probe(upgrade_payload, &[])
+            .unwrap();
         assert_eq!(
-            parse_legacy_local_storage_probe(
-                r#"{"origin":"https://evil.example","length":1,"keys":[],"entries":{}}"#,
-                &["affine_theme"]
-            ),
-            Err(LegacyProbeError::UnexpectedOrigin(
-                "https://evil.example".to_string()
-            ))
+            snap.keys,
+            vec![
+                "__cap_noise__",
+                "affine-local-workspace",
+                "global-state:serverConfig:self-host",
+                "theme"
+            ]
+        );
+        assert!(!snap.entries.contains_key("__cap_noise__"));
+        assert!(!host.upgrade_import.can_create_default_workspace());
+        assert_eq!(
+            host.workspace_catalog.ids(),
+            &["ws-b".to_string(), "ws-a".to_string()]
         );
 
-        // WebView.evaluateJavascript double-encoded string literal and "null".
-        let double_encoded = serde_json::to_string(payload).unwrap();
-        let snapshot2 = parse_legacy_local_storage_probe(&double_encoded, &["affine_theme"])
-            .expect("double-encoded evaluateJavascript payload should unwrap and parse");
-        assert_eq!(snapshot2.keys, vec!["affine_theme".to_string()]);
-        assert_eq!(
-            snapshot2.entries.get("affine_theme").map(String::as_str),
-            Some("dark")
+        // Rollback write-back verification checks setEntries + removeKeys and forbids removing affine-local-workspace.
+        let mut expected_set = BTreeMap::new();
+        expected_set.insert(
+            LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string(),
+            r#"["ws-b","ws-a"]"#.to_string(),
         );
-        assert!(matches!(
-            parse_legacy_local_storage_probe("null", &["affine_theme"]),
-            Err(LegacyProbeError::InvalidJson(_))
-        ));
+        expected_set.insert("theme".to_string(), "dark".to_string());
+        let expected_remove = vec!["last_workspace_id".to_string()];
+        assert!(
+            verify_legacy_writeback_result(&expected_set, &expected_remove, upgrade_payload)
+                .is_ok()
+        );
+        assert!(
+            verify_legacy_writeback_result(
+                &expected_set,
+                &[LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string()],
+                upgrade_payload
+            )
+            .is_err()
+        );
+        assert!(
+            verify_legacy_writeback_result(&expected_set, &["theme".to_string()], upgrade_payload)
+                .is_err()
+        );
     }
 
     #[test]
@@ -526,19 +935,11 @@ mod tests {
             1
         );
 
-        // Zero handle is a safe no-op.
         assert_eq!(
             jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnFrameTick(env, null, 0, 1),
             0
         );
-        assert_eq!(
-            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnBackGesturePhase(
-                env, null, 0, 3, 1.0
-            ),
-            0
-        );
 
-        // Exercise both a normal positive handle and an ARM64 TBI negative handle.
         let pos_handle =
             jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeCreateHost(env, null);
         assert_ne!(pos_handle, 0);
@@ -558,7 +959,13 @@ mod tests {
                 fake_surface,
             );
             jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceChanged(
-                env, null, handle, 1080, 2400,
+                env, null, handle, 1, 1080, 2400,
+            );
+            assert_eq!(
+                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeIsSurfaceReady(
+                    env, null, handle
+                ),
+                1
             );
             jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceInsetsPx(
                 env, null, handle, 96, 0, 48, 0, 648, 3.0,
@@ -568,7 +975,47 @@ mod tests {
             );
             assert_eq!(clear_argb as u32, DEFAULT_CLEAR_COLOR_ARGB);
 
-            // At root (has_back_destination = false), Commit returns 0 so system handles back.
+            // Surface destroyed -> ticks return 0 and pending frame stays queued.
+            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceDestroyed(
+                env, null, handle,
+            );
+            assert_eq!(
+                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnFrameTick(
+                    env, null, handle, 33_333_334
+                ),
+                0
+            );
+            assert_eq!(
+                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeHasPendingFrame(
+                    env, null, handle
+                ),
+                1
+            );
+
+            // Recreate surface -> generation increments to 2 and frame resumes.
+            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceCreated(
+                env,
+                null,
+                handle,
+                fake_surface,
+            );
+            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceChanged(
+                env, null, handle, 1, 1080, 2400,
+            );
+            assert_eq!(
+                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeGetSurfaceGeneration(
+                    env, null, handle
+                ),
+                2
+            );
+            assert_eq!(
+                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnFrameTick(
+                    env, null, handle, 50_000_000
+                ) as u32,
+                DEFAULT_CLEAR_COLOR_ARGB
+            );
+
+            // Back gesture root check.
             assert_eq!(
                 jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnBackGesturePhase(
                     env, null, handle, 3, 1.0
@@ -585,15 +1032,12 @@ mod tests {
                 1
             );
 
-            // Real UTF-16 JNI string decoding: distinguish "中" vs "文" and preserve Emoji surrogate pairs.
+            // Real UTF-16 JNI string decoding + surrogate-pair safe deletion.
             let mut zhong = FakeJString {
                 units: "中".encode_utf16().collect(),
             };
             let mut wen_emoji = FakeJString {
                 units: "文😀".encode_utf16().collect(),
-            };
-            let mut composing = FakeJString {
-                units: "ni".encode_utf16().collect(),
             };
             unsafe {
                 jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnCommitText(
@@ -603,7 +1047,6 @@ mod tests {
                     (&mut zhong as *mut FakeJString).cast(),
                     1,
                 );
-                assert_eq!(jni_bridge::snapshot_text(handle).as_deref(), Some("中"));
                 jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnCommitText(
                     env,
                     null,
@@ -612,554 +1055,14 @@ mod tests {
                     1,
                 );
                 assert_eq!(jni_bridge::snapshot_text(handle).as_deref(), Some("中文😀"));
-                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSetComposingText(
-                    env,
-                    null,
-                    handle,
-                    (&mut composing as *mut FakeJString).cast(),
-                    1,
-                );
-                assert_eq!(
-                    jni_bridge::snapshot_text(handle).as_deref(),
-                    Some("中文😀ni")
-                );
-                // Commit replaces active composing span.
-                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnCommitText(
-                    env,
-                    null,
-                    handle,
-                    (&mut zhong as *mut FakeJString).cast(),
-                    1,
-                );
-                assert_eq!(
-                    jni_bridge::snapshot_text(handle).as_deref(),
-                    Some("中文😀中")
-                );
             }
-
-            // Delete 1 char before caret ("中"), then delete 1 UTF-16 unit before caret which
-            // expands to the entire surrogate pair ("😀") so no lone surrogate remains.
-            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnDeleteSurroundingText(
-                env, null, handle, 1, 0,
-            );
-            assert_eq!(jni_bridge::snapshot_text(handle).as_deref(), Some("中文😀"));
             jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnDeleteSurroundingText(
                 env, null, handle, 1, 0,
             );
             assert_eq!(jni_bridge::snapshot_text(handle).as_deref(), Some("中文"));
 
-            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceDestroyed(
-                env, null, handle,
-            );
             jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeDestroyHost(env, null, handle);
-
-            // Post-destroy dangling handle is a safe no-op (never dereferences freed memory).
-            assert_eq!(
-                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnFrameTick(
-                    env, null, handle, 33_333_334
-                ),
-                0
-            );
             assert_eq!(jni_bridge::snapshot_text(handle), None);
         }
-    }
-
-    #[test]
-    #[allow(unsafe_code)]
-    fn android_ime_jni_bridge_matches_host_ime_model() {
-        use core::ffi::c_void;
-
-        const GET_STRING_LENGTH_INDEX: usize = 164;
-        const GET_STRING_CHARS_INDEX: usize = 165;
-        const RELEASE_STRING_CHARS_INDEX: usize = 166;
-
-        struct FakeJString {
-            units: Vec<u16>,
-        }
-
-        unsafe extern "C" fn fake_len(
-            _env: jni_bridge::JniEnvPtr,
-            s: jni_bridge::JString,
-        ) -> jni_bridge::JInt {
-            if s.is_null() {
-                0
-            } else {
-                unsafe { &*(s as *const FakeJString) }.units.len() as jni_bridge::JInt
-            }
-        }
-        unsafe extern "C" fn fake_chars(
-            _env: jni_bridge::JniEnvPtr,
-            s: jni_bridge::JString,
-            is_copy: *mut jni_bridge::JBoolean,
-        ) -> *const u16 {
-            if !is_copy.is_null() {
-                unsafe { *is_copy = 0 };
-            }
-            if s.is_null() {
-                core::ptr::null()
-            } else {
-                unsafe { &*(s as *const FakeJString) }.units.as_ptr()
-            }
-        }
-        unsafe extern "C" fn fake_release(
-            _env: jni_bridge::JniEnvPtr,
-            _s: jni_bridge::JString,
-            _c: *const u16,
-        ) {
-        }
-
-        /// Mirror of AOSP `BaseInputConnection` (`Editable` + `Selection` + `ComposingText`)
-        /// that drives both platform `Editable` state and `jni_bridge` in lockstep.
-        struct TestInputConnection {
-            editable: Vec<u16>,
-            sel_start: usize,
-            sel_end: usize,
-            composing: Option<(usize, usize)>,
-            handle: jni_bridge::JLong,
-            vtable: [*const c_void; 170],
-        }
-
-        impl TestInputConnection {
-            fn new() -> Self {
-                let mut vtable = [core::ptr::null::<c_void>(); 170];
-                vtable[GET_STRING_LENGTH_INDEX] = fake_len as *const () as *const c_void;
-                vtable[GET_STRING_CHARS_INDEX] = fake_chars as *const () as *const c_void;
-                vtable[RELEASE_STRING_CHARS_INDEX] = fake_release as *const () as *const c_void;
-                let null = core::ptr::null_mut();
-                let handle =
-                    jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeCreateHost(null, null);
-                Self {
-                    editable: Vec::new(),
-                    sel_start: 0,
-                    sel_end: 0,
-                    composing: None,
-                    handle,
-                    vtable,
-                }
-            }
-
-            fn env_ptr(&self) -> *const *const c_void {
-                self.vtable.as_ptr()
-            }
-
-            fn assert_lockstep(&self) {
-                let aosp_text = String::from_utf16_lossy(&self.editable);
-                assert_eq!(jni_bridge::snapshot_text(self.handle), Some(aosp_text));
-                assert_eq!(
-                    jni_bridge::snapshot_selection(self.handle),
-                    Some((self.sel_start, self.sel_end))
-                );
-                assert_eq!(
-                    jni_bridge::snapshot_composing(self.handle),
-                    Some(self.composing)
-                );
-            }
-
-            fn replace_aosp(&mut self, text: &str, new_cursor_pos: i32, composing: bool) {
-                let units: Vec<u16> = text.encode_utf16().collect();
-                let (a, b) = self.composing.unwrap_or((self.sel_start, self.sel_end));
-                self.editable.splice(a..b, units.iter().copied());
-                self.composing = if composing && !units.is_empty() {
-                    Some((a, a + units.len()))
-                } else {
-                    None
-                };
-                let cursor = if new_cursor_pos > 0 {
-                    a.saturating_add(units.len())
-                        .saturating_add((new_cursor_pos - 1) as usize)
-                        .min(self.editable.len())
-                } else {
-                    a.saturating_sub(new_cursor_pos.unsigned_abs() as usize)
-                        .min(self.editable.len())
-                };
-                self.sel_start = cursor;
-                self.sel_end = cursor;
-            }
-
-            fn commit_text(&mut self, text: &str, new_cursor_pos: i32) {
-                let mut env_p = self.env_ptr();
-                let env: jni_bridge::JniEnvPtr = (&mut env_p as *mut *const *const c_void).cast();
-                let mut js = FakeJString {
-                    units: text.encode_utf16().collect(),
-                };
-                unsafe {
-                    jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnCommitText(
-                        env,
-                        core::ptr::null_mut(),
-                        self.handle,
-                        (&mut js as *mut FakeJString).cast(),
-                        new_cursor_pos,
-                    );
-                }
-                self.replace_aosp(text, new_cursor_pos, false);
-                self.assert_lockstep();
-            }
-
-            fn set_composing_text(&mut self, text: &str, new_cursor_pos: i32) {
-                let mut env_p = self.env_ptr();
-                let env: jni_bridge::JniEnvPtr = (&mut env_p as *mut *const *const c_void).cast();
-                let mut js = FakeJString {
-                    units: text.encode_utf16().collect(),
-                };
-                unsafe {
-                    jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSetComposingText(
-                        env,
-                        core::ptr::null_mut(),
-                        self.handle,
-                        (&mut js as *mut FakeJString).cast(),
-                        new_cursor_pos,
-                    );
-                }
-                self.replace_aosp(text, new_cursor_pos, true);
-                self.assert_lockstep();
-            }
-
-            fn finish_composing_text(&mut self) {
-                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnFinishComposingText(
-                    core::ptr::null_mut(),
-                    core::ptr::null_mut(),
-                    self.handle,
-                );
-                self.composing = None;
-                self.assert_lockstep();
-            }
-
-            fn set_selection(&mut self, start: i32, end: i32) {
-                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSetSelection(
-                    core::ptr::null_mut(),
-                    core::ptr::null_mut(),
-                    self.handle,
-                    start,
-                    end,
-                );
-                let len = self.editable.len();
-                let a = usize::try_from(start).unwrap_or(0).min(len);
-                let b = usize::try_from(end).unwrap_or(0).min(len);
-                self.sel_start = a.min(b);
-                self.sel_end = a.max(b);
-                self.assert_lockstep();
-            }
-
-            fn delete_surrounding_text(&mut self, before_len: i32, after_len: i32) -> bool {
-                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnDeleteSurroundingText(
-                    core::ptr::null_mut(),
-                    core::ptr::null_mut(),
-                    self.handle,
-                    before_len,
-                    after_len,
-                );
-                if before_len < 0 || after_len < 0 {
-                    self.assert_lockstep();
-                    return false;
-                }
-                let (mut a, mut b) = (self.sel_start, self.sel_end);
-                if let Some((cs, ce)) = self.composing {
-                    a = a.min(cs);
-                    b = b.max(ce);
-                }
-                let after = after_len as usize;
-                if after > 0 && b < self.editable.len() {
-                    let mut end = b.saturating_add(after).min(self.editable.len());
-                    if end > b
-                        && end < self.editable.len()
-                        && (0xD800..=0xDBFF).contains(&self.editable[end - 1])
-                        && (0xDC00..=0xDFFF).contains(&self.editable[end])
-                    {
-                        end += 1;
-                    }
-                    self.editable.drain(b..end);
-                }
-                let before = before_len as usize;
-                if before > 0 && a > 0 {
-                    let mut start = a.saturating_sub(before);
-                    if start > 0
-                        && start < a
-                        && (0xD800..=0xDBFF).contains(&self.editable[start - 1])
-                        && (0xDC00..=0xDFFF).contains(&self.editable[start])
-                    {
-                        start -= 1;
-                    }
-                    let removed = a - start;
-                    self.editable.drain(start..a);
-                    self.sel_start -= removed;
-                    self.sel_end -= removed;
-                    if let Some((cs, ce)) = self.composing {
-                        self.composing = Some((cs - removed, ce - removed));
-                    }
-                }
-                self.assert_lockstep();
-                true
-            }
-        }
-
-        impl Drop for TestInputConnection {
-            fn drop(&mut self) {
-                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeDestroyHost(
-                    core::ptr::null_mut(),
-                    core::ptr::null_mut(),
-                    self.handle,
-                );
-            }
-        }
-
-        // 1. Empty editor: setComposingText("ab", 1) -> deleteSurroundingText(1, 0) keeps "ab" & composing (0, 2).
-        let mut ic1 = TestInputConnection::new();
-        ic1.set_composing_text("ab", 1);
-        assert!(ic1.delete_surrounding_text(1, 0));
-        assert_eq!(jni_bridge::snapshot_text(ic1.handle).as_deref(), Some("ab"));
-        assert_eq!(jni_bridge::snapshot_selection(ic1.handle), Some((2, 2)));
-        assert_eq!(
-            jni_bridge::snapshot_composing(ic1.handle),
-            Some(Some((0, 2)))
-        );
-
-        // 2. "x" + composing "ab" -> deleteSurroundingText(1, 0) removes "x" before composing, commit "中" => "中".
-        let mut ic2 = TestInputConnection::new();
-        ic2.commit_text("x", 1);
-        ic2.set_composing_text("ab", 1);
-        assert!(ic2.delete_surrounding_text(1, 0));
-        assert_eq!(jni_bridge::snapshot_text(ic2.handle).as_deref(), Some("ab"));
-        assert_eq!(jni_bridge::snapshot_selection(ic2.handle), Some((2, 2)));
-        assert_eq!(
-            jni_bridge::snapshot_composing(ic2.handle),
-            Some(Some((0, 2)))
-        );
-        ic2.commit_text("中", 1);
-        assert_eq!(jni_bridge::snapshot_text(ic2.handle).as_deref(), Some("中"));
-        assert_eq!(jni_bridge::snapshot_selection(ic2.handle), Some((1, 1)));
-        assert_eq!(jni_bridge::snapshot_composing(ic2.handle), Some(None));
-
-        // 3. setComposingText("中", 1) -> finishComposingText() -> commitText("文", 1) => "中文".
-        let mut ic3 = TestInputConnection::new();
-        ic3.set_composing_text("中", 1);
-        ic3.finish_composing_text();
-        ic3.commit_text("文", 1);
-        assert_eq!(
-            jni_bridge::snapshot_text(ic3.handle).as_deref(),
-            Some("中文")
-        );
-        assert_eq!(jni_bridge::snapshot_selection(ic3.handle), Some((2, 2)));
-
-        // 4. commitText("AB", 1) -> setSelection(0, 1) -> commitText("X", 1) => "XB".
-        let mut ic4 = TestInputConnection::new();
-        ic4.commit_text("AB", 1);
-        ic4.set_selection(0, 1);
-        ic4.commit_text("X", 1);
-        assert_eq!(jni_bridge::snapshot_text(ic4.handle).as_deref(), Some("XB"));
-        assert_eq!(jni_bridge::snapshot_selection(ic4.handle), Some((1, 1)));
-
-        // 5. Emoji surrogate-pair boundary + negative deleteSurroundingText(-1, 1) rejected with zero side effects.
-        let mut ic5 = TestInputConnection::new();
-        ic5.commit_text("a😀b", 1);
-        assert!(!ic5.delete_surrounding_text(-1, 1));
-        assert_eq!(
-            jni_bridge::snapshot_text(ic5.handle).as_deref(),
-            Some("a😀b")
-        );
-        ic5.set_selection(3, 3); // Right after "😀" (UTF-16 indices 1..3)
-        assert!(ic5.delete_surrounding_text(1, 0));
-        assert_eq!(jni_bridge::snapshot_text(ic5.handle).as_deref(), Some("ab"));
-        assert_eq!(jni_bridge::snapshot_selection(ic5.handle), Some((1, 1)));
-    }
-
-    #[test]
-    #[allow(unsafe_code)]
-    fn ime_composing_region_code_points_and_replace_text_jni_contract() {
-        use core::ffi::c_void;
-
-        const GET_STRING_LENGTH_INDEX: usize = 164;
-        const GET_STRING_CHARS_INDEX: usize = 165;
-        const RELEASE_STRING_CHARS_INDEX: usize = 166;
-
-        struct FakeJString {
-            units: Vec<u16>,
-        }
-
-        unsafe extern "C" fn fake_len(
-            _env: jni_bridge::JniEnvPtr,
-            s: jni_bridge::JString,
-        ) -> jni_bridge::JInt {
-            if s.is_null() {
-                0
-            } else {
-                unsafe { &*(s as *const FakeJString) }.units.len() as jni_bridge::JInt
-            }
-        }
-        unsafe extern "C" fn fake_chars(
-            _env: jni_bridge::JniEnvPtr,
-            s: jni_bridge::JString,
-            is_copy: *mut jni_bridge::JBoolean,
-        ) -> *const u16 {
-            if !is_copy.is_null() {
-                unsafe { *is_copy = 0 };
-            }
-            if s.is_null() {
-                core::ptr::null()
-            } else {
-                unsafe { &*(s as *const FakeJString) }.units.as_ptr()
-            }
-        }
-        unsafe extern "C" fn fake_release(
-            _env: jni_bridge::JniEnvPtr,
-            _s: jni_bridge::JString,
-            _c: *const u16,
-        ) {
-        }
-
-        let mut vtable = [core::ptr::null::<c_void>(); 170];
-        vtable[GET_STRING_LENGTH_INDEX] = fake_len as *const () as *const c_void;
-        vtable[GET_STRING_CHARS_INDEX] = fake_chars as *const () as *const c_void;
-        vtable[RELEASE_STRING_CHARS_INDEX] = fake_release as *const () as *const c_void;
-        let mut env_ptr: *const *const c_void = vtable.as_ptr();
-        let env: jni_bridge::JniEnvPtr = (&mut env_ptr as *mut *const *const c_void).cast();
-        let null = core::ptr::null_mut();
-
-        // 1. setComposingRegion: normal, commit over region, reversed, empty clear, negative clamping.
-        let h1 = jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeCreateHost(env, null);
-        let mut ab = FakeJString {
-            units: "AB".encode_utf16().collect(),
-        };
-        let mut x = FakeJString {
-            units: "X".encode_utf16().collect(),
-        };
-        unsafe {
-            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnCommitText(
-                env,
-                null,
-                h1,
-                (&mut ab as *mut FakeJString).cast(),
-                1,
-            );
-        }
-        jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSetComposingRegion(
-            env, null, h1, 0, 1,
-        );
-        assert_eq!(jni_bridge::snapshot_composing(h1), Some(Some((0, 1))));
-        assert_eq!(jni_bridge::snapshot_selection(h1), Some((2, 2)));
-        unsafe {
-            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnCommitText(
-                env,
-                null,
-                h1,
-                (&mut x as *mut FakeJString).cast(),
-                1,
-            );
-        }
-        assert_eq!(jni_bridge::snapshot_text(h1).as_deref(), Some("XB"));
-        assert_eq!(jni_bridge::snapshot_selection(h1), Some((1, 1)));
-        assert_eq!(jni_bridge::snapshot_composing(h1), Some(None));
-        jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSetComposingRegion(
-            env, null, h1, 2, -3,
-        );
-        assert_eq!(jni_bridge::snapshot_composing(h1), Some(Some((0, 2))));
-        jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSetComposingRegion(
-            env, null, h1, 1, 1,
-        );
-        assert_eq!(jni_bridge::snapshot_composing(h1), Some(None));
-        jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeDestroyHost(env, null, h1);
-
-        // 2. deleteSurroundingTextInCodePoints: valid emoji backward/forward + negative rejection.
-        let h2 = jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeCreateHost(env, null);
-        let mut emoji = FakeJString {
-            units: "a😀b".encode_utf16().collect(),
-        };
-        unsafe {
-            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnCommitText(
-                env,
-                null,
-                h2,
-                (&mut emoji as *mut FakeJString).cast(),
-                1,
-            );
-        }
-        assert_eq!(
-            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnDeleteSurroundingTextInCodePoints(
-                env, null, h2, -1, 0,
-            ),
-            0
-        );
-        jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSetSelection(env, null, h2, 3, 3);
-        assert_eq!(
-            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnDeleteSurroundingTextInCodePoints(
-                env, null, h2, 1, 0,
-            ),
-            1
-        );
-        assert_eq!(jni_bridge::snapshot_text(h2).as_deref(), Some("ab"));
-        assert_eq!(jni_bridge::snapshot_selection(h2), Some((1, 1)));
-        jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeDestroyHost(env, null, h2);
-
-        // 3. Unpaired surrogate in delete_surrounding_text_in_code_points returns false with zero mutation.
-        let mut lone_high = AndroidHostState::new();
-        lone_high.utf16_text = vec!['a' as u16, 0xD83D, 'b' as u16];
-        lone_high.selected_start = 2;
-        lone_high.selected_len = 0;
-        let orig_units = lone_high.utf16_text.clone();
-        assert!(!lone_high.delete_surrounding_text_in_code_points(1, 0));
-        assert_eq!(lone_high.utf16_text, orig_units);
-        assert_eq!(lone_high.selection_range(), (2, 2));
-
-        let mut lone_low = AndroidHostState::new();
-        lone_low.utf16_text = vec!['a' as u16, 0xDE00, 'b' as u16];
-        lone_low.selected_start = 1;
-        lone_low.selected_len = 0;
-        let orig_low = lone_low.utf16_text.clone();
-        assert!(!lone_low.delete_surrounding_text_in_code_points(0, 1));
-        assert_eq!(lone_low.utf16_text, orig_low);
-        assert_eq!(lone_low.selection_range(), (1, 1));
-
-        // 4. replaceText clears composing, updates text/cursor, and rejects negative indices.
-        let h3 = jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeCreateHost(env, null);
-        let mut hello = FakeJString {
-            units: "hello".encode_utf16().collect(),
-        };
-        let mut rep = FakeJString {
-            units: "i".encode_utf16().collect(),
-        };
-        unsafe {
-            jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnCommitText(
-                env,
-                null,
-                h3,
-                (&mut hello as *mut FakeJString).cast(),
-                1,
-            );
-        }
-        jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnSetComposingRegion(
-            env, null, h3, 0, 2,
-        );
-        unsafe {
-            assert_eq!(
-                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnReplaceText(
-                    env,
-                    null,
-                    h3,
-                    -1,
-                    2,
-                    (&mut rep as *mut FakeJString).cast(),
-                    1,
-                ),
-                0
-            );
-            assert_eq!(jni_bridge::snapshot_text(h3).as_deref(), Some("hello"));
-            assert_eq!(jni_bridge::snapshot_composing(h3), Some(Some((0, 2))));
-
-            assert_eq!(
-                jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeOnReplaceText(
-                    env,
-                    null,
-                    h3,
-                    1,
-                    4,
-                    (&mut rep as *mut FakeJString).cast(),
-                    1,
-                ),
-                1
-            );
-        }
-        assert_eq!(jni_bridge::snapshot_text(h3).as_deref(), Some("hio"));
-        assert_eq!(jni_bridge::snapshot_composing(h3), Some(None));
-        assert_eq!(jni_bridge::snapshot_selection(h3), Some((2, 2)));
-        jni_bridge::Java_app_affine_pro_host_NativeBridge_nativeDestroyHost(env, null, h3);
     }
 }
