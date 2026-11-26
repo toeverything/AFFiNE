@@ -16,6 +16,10 @@
 //      repository references stay in release workflows, and the native
 //      playground workflows run on pinned runners and test images.
 //   5. .gitignore ignores test output directories.
+//   6. Phase A SQL ordered manifest matches the SQL files on disk.
+//   7. compat-backlog: every `// compat(<kind>): <slug> -- <reason>` marker in
+//      packages/backend/ production Rust has a `### <slug>` entry in
+//      docs/post-cutover-ablation-backlog.md, and every entry has a marker.
 
 import { createHash } from 'node:crypto';
 import {
@@ -178,7 +182,7 @@ function skipRustNonCodeOrLiteral(source, i) {
   return null;
 }
 
-function stripCfgTestItems(source) {
+function stripCfgTestItems(source, { keepComments = false } = {}) {
   const out = source.split('');
   const n = source.length;
   const blank = (from, to) => {
@@ -190,7 +194,7 @@ function stripCfgTestItems(source) {
   while (i < n) {
     const skipped = skipRustNonCodeOrLiteral(source, i);
     if (skipped) {
-      if (skipped.isComment) blank(i, skipped.next);
+      if (skipped.isComment && !keepComments) blank(i, skipped.next);
       i = skipped.next;
       continue;
     }
@@ -680,6 +684,78 @@ if (!existsSync(SQL_MANIFEST_PATH)) {
       fail(
         'sql-manifest',
         `SHA-256 mismatch for ${actualPath}: manifest ${entry.sha256}, actual ${actualHash}`
+      );
+    }
+  }
+}
+
+// 7. compat-backlog -----------------------------------------------------------
+
+const COMPAT_BACKLOG_PATH = join(ROOT, 'docs/post-cutover-ablation-backlog.md');
+const COMPAT_MARKER = /\/\/\s*compat\(([^)]*)\):\s*(.*)$/gm;
+const COMPAT_LINE =
+  /^(coexist|client|data|parity)\): ([a-z0-9]+(?:-[a-z0-9]+)*) -- (\S.*)$/;
+const markerSlugs = new Map();
+for (const abs of walk(CRATES)) {
+  const path = rel(abs);
+  const [crate] = path.split('/').slice(2);
+  if (
+    !path.endsWith('.rs') ||
+    LEGACY_BACKEND_DIRS.has(crate) ||
+    path.includes('/tests/') ||
+    path.endsWith('_tests.rs')
+  ) {
+    continue;
+  }
+  const text = stripCfgTestItems(read(abs), { keepComments: true });
+  for (const m of text.matchAll(COMPAT_MARKER)) {
+    const at = `${path}:${lineOf(text, m.index)}`;
+    const parsed = COMPAT_LINE.exec(`${m[1]}): ${m[2].trim()}`);
+    if (!parsed || /[\u2013\u2014]/.test(m[0])) {
+      fail(
+        'compat-backlog',
+        `${at}: expected "// compat(coexist|client|data|parity): <slug> -- <reason>" with ASCII "--"`
+      );
+      continue;
+    }
+    const slug = parsed[2];
+    if (markerSlugs.has(slug)) {
+      fail(
+        'compat-backlog',
+        `${at}: slug ${slug} is already used at ${markerSlugs.get(slug)}`
+      );
+    } else {
+      markerSlugs.set(slug, at);
+    }
+  }
+}
+if (!existsSync(COMPAT_BACKLOG_PATH)) {
+  fail('compat-backlog', 'missing docs/post-cutover-ablation-backlog.md');
+} else {
+  const docSlugs = new Set();
+  for (const m of read(COMPAT_BACKLOG_PATH).matchAll(/^### (.+)$/gm)) {
+    const slug = m[1].trim();
+    if (docSlugs.has(slug)) {
+      fail(
+        'compat-backlog',
+        `docs/post-cutover-ablation-backlog.md: duplicate entry ${slug}`
+      );
+    }
+    docSlugs.add(slug);
+  }
+  for (const [slug, at] of markerSlugs) {
+    if (!docSlugs.has(slug)) {
+      fail(
+        'compat-backlog',
+        `${at}: ${slug} has no entry in docs/post-cutover-ablation-backlog.md`
+      );
+    }
+  }
+  for (const slug of docSlugs) {
+    if (!markerSlugs.has(slug)) {
+      fail(
+        'compat-backlog',
+        `docs/post-cutover-ablation-backlog.md: ${slug} has no compat marker in packages/backend/`
       );
     }
   }

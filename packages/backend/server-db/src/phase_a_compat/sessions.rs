@@ -1,3 +1,4 @@
+// compat(coexist): auth-dual-session-tables -- dual-reads and syncs legacy user_sessions with native_sessions
 //! Dual-table session repository (`multiple_users_sessions`,
 //! `user_sessions`, `auth_sessions`, `auth_refresh_tokens`) compatible
 //! with `v0.27.5` rolling co-existence.

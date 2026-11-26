@@ -655,13 +655,7 @@ pub(crate) async fn handle_get_comment_attachment(
       return resp;
     }
   };
-  let shared_key = format!("comment-attachments/{}/{}/{}", meta.workspace_id, meta.doc_id, meta.key);
-  let legacy_key = format!("{}/{}/{}", meta.workspace_id, meta.doc_id, meta.key);
-  let loaded = match state.app.blobs.storage().get(&shared_key).await {
-    Ok(Some(v)) => Ok(Some(v)),
-    Ok(None) => state.app.comment_attachments.get(&legacy_key).await,
-    Err(err) => Err(err),
-  };
+  let loaded = load_comment_attachment(&state.app, &meta.workspace_id, &meta.doc_id, &meta.key).await;
   let (bytes, obj_meta) = match loaded {
     Ok(Some(v)) => v,
     Ok(None) => {
@@ -705,4 +699,23 @@ pub(crate) async fn handle_get_comment_attachment(
   apply_blob_security_headers(h, Some(ct), Some(&meta.name));
   resolved.cookie_action.apply_to(resp.headers_mut(), https);
   resp
+}
+
+// compat(data): comment-attachment-legacy-bucket-fallback -- falls back to legacy comment-attachments bucket when shared blobs key is absent
+async fn load_comment_attachment(
+  app: &crate::AppState,
+  workspace_id: &str,
+  doc_id: &str,
+  key: &str,
+) -> Result<Option<(Vec<u8>, server_blob::ObjectMetadata)>, server_blob::StorageError> {
+  let shared_key = format!("comment-attachments/{workspace_id}/{doc_id}/{key}");
+  match app.blobs.storage().get(&shared_key).await? {
+    Some(found) => Ok(Some(found)),
+    None => {
+      app
+        .comment_attachments
+        .get(&format!("{workspace_id}/{doc_id}/{key}"))
+        .await
+    }
+  }
 }

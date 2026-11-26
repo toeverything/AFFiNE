@@ -1,3 +1,4 @@
+// compat(coexist): db-0275-cutover-prerequisite-checks -- enforces v0.27.5 _data_migrations and cutover invariant markers
 //! Fresh-DB `v0.27.5` bootstrap markers so freshly initialized databases match
 //! a `v0.27.5` cutover database 1:1.
 

@@ -1,3 +1,4 @@
+// compat(coexist): sync-legacy-updates-seq-compat -- preserves v0.27.5 updates sequence and row layout assumptions
 //! Monotonic millisecond timestamp insertion helper for `public.updates`
 //! (primary key `(workspace_id, guid, created_at)` at `TIMESTAMPTZ(3)`).
 

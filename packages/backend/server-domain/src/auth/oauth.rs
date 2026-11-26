@@ -558,6 +558,7 @@ async fn find_connected_account(
   {
     return Ok(Some((row.get("id"), row.get("user_id"), false)));
   }
+  // compat(data): oauth-legacy-null-provider-namespace-backfill -- matches and backfills pre-0.27.5 user_connected_accounts rows with NULL provider_namespace
   let legacy = sqlx::query(
     "SELECT id, user_id FROM user_connected_accounts WHERE provider = $1 AND provider_account_id = $2 AND provider_namespace IS NULL ORDER BY id FOR UPDATE",
   )
@@ -641,6 +642,7 @@ fn build_authorization_url(
   Ok(url.into())
 }
 fn parse_state_parameter(raw: &str) -> Result<(String, Option<StateEnvelope>), DomainError> {
+  // compat(coexist): oauth-bare-state-token-fallback -- accepts v0.27.5 bare OAuth state tokens alongside prefixed tokens
   if raw.len() == 36 && Uuid::parse_str(raw).is_ok() {
     return Ok((raw.to_owned(), None));
   }

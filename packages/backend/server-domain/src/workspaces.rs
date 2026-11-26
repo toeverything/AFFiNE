@@ -693,6 +693,7 @@ impl WorkspaceService {
       return Err(DomainError::Validation("cannot invite directly as owner".to_owned()));
     }
 
+    // compat(parity): workspace-invite-0275-preflight-order -- preserves v0.27.5 batch invite preflight validation order
     // 1. Pre-flight read gate (matching `v0.27.5` `member.ts:98-105, 179-199`):
     //    verify workspace existence, actor authorization (even for empty or
     //    oversized batches), workspace name domain policy, and the 512 batch
