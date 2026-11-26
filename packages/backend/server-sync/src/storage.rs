@@ -465,7 +465,12 @@ pub struct SyncStorage {
   users: server_domain::users::UserService,
   notifications: server_domain::notifications::NotificationService,
   comments: server_domain::comments::CommentService,
+  /// `SEARCH_PROJECTION_READY` once the search projection table and its write
+  /// lock function exist, so later writes skip the catalog probes.
+  search_projection_ready: Arc<std::sync::atomic::AtomicU8>,
 }
+
+const SEARCH_PROJECTION_READY: u8 = 1;
 
 impl SyncStorage {
   pub fn new(db: ServerDb) -> Self {
@@ -498,6 +503,7 @@ impl SyncStorage {
       users,
       notifications,
       comments,
+      search_projection_ready: Arc::new(std::sync::atomic::AtomicU8::new(0)),
     }
   }
 
@@ -742,7 +748,7 @@ impl SyncStorage {
       .await?;
     }
 
-    invalidate_workspace_inventory_in(tx.tx_mut(), workspace_id).await?;
+    invalidate_workspace_inventory_in(tx.tx_mut(), workspace_id, &self.search_projection_ready).await?;
 
     let metadata = json!({
       "protocolVersion": 2,
@@ -1070,7 +1076,7 @@ impl SyncStorage {
       .bind(actor_user_id)
       .execute(&mut **tx.tx_mut())
       .await?;
-      invalidate_workspace_inventory_in(tx.tx_mut(), space_id).await?;
+      invalidate_workspace_inventory_in(tx.tx_mut(), space_id, &self.search_projection_ready).await?;
     }
 
     tx.commit().await?;
@@ -1613,7 +1619,7 @@ impl SyncStorage {
     }
 
     if !pending_ids.is_empty() {
-      invalidate_workspace_inventory_in(tx.tx_mut(), workspace_id).await?;
+      invalidate_workspace_inventory_in(tx.tx_mut(), workspace_id, &self.search_projection_ready).await?;
     }
 
     let max_ts = timestamps
@@ -2157,17 +2163,11 @@ async fn lock_workspace_doc_update(
 }
 
 async fn lock_domain_workspace(tx: &mut Transaction<'_, Postgres>, workspace_id: &str) -> Result<(), SyncError> {
-  let lock_key = format!("domain:workspace:{workspace_id}");
-  loop {
-    let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0))")
-      .bind(&lock_key)
-      .fetch_one(&mut **tx)
-      .await?;
-    if locked {
-      return Ok(());
-    }
-    tokio::time::sleep(std::time::Duration::from_millis(25)).await;
-  }
+  sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+    .bind(format!("domain:workspace:{workspace_id}"))
+    .execute(&mut **tx)
+    .await?;
+  Ok(())
 }
 
 async fn lock_permission_facts_in(
@@ -2273,17 +2273,27 @@ async fn next_workspace_doc_update_timestamp_in(
 async fn invalidate_workspace_inventory_in(
   tx: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
+  ready: &std::sync::atomic::AtomicU8,
 ) -> Result<(), SyncError> {
-  let exists: bool = sqlx::query_scalar("SELECT to_regclass('search_projection.workspace_states') IS NOT NULL")
-    .fetch_one(&mut **tx)
-    .await?;
-  if !exists {
-    return Ok(());
-  }
-  let has_lock_fn: bool =
-    sqlx::query_scalar("SELECT to_regprocedure('search_projection.acquire_workspace_write_lock(text)') IS NOT NULL")
+  use std::sync::atomic::Ordering;
+  let has_lock_fn = if ready.load(Ordering::Relaxed) == SEARCH_PROJECTION_READY {
+    true
+  } else {
+    let exists: bool = sqlx::query_scalar("SELECT to_regclass('search_projection.workspace_states') IS NOT NULL")
       .fetch_one(&mut **tx)
       .await?;
+    if !exists {
+      return Ok(());
+    }
+    let has_lock_fn: bool =
+      sqlx::query_scalar("SELECT to_regprocedure('search_projection.acquire_workspace_write_lock(text)') IS NOT NULL")
+        .fetch_one(&mut **tx)
+        .await?;
+    if has_lock_fn {
+      ready.store(SEARCH_PROJECTION_READY, Ordering::Relaxed);
+    }
+    has_lock_fn
+  };
   if has_lock_fn {
     sqlx::query("SELECT search_projection.acquire_workspace_write_lock($1)")
       .bind(workspace_id)

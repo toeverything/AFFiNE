@@ -38,14 +38,6 @@ else
 end
 "#;
 
-const RENEW_LOCK_SCRIPT: &str = r#"
-if redis.call("get", KEYS[1]) == ARGV[1] then
-  return redis.call("expire", KEYS[1], tonumber(ARGV[2]))
-else
-  return 0
-end
-"#;
-
 const RENEW_LOCK_MS_SCRIPT: &str = r#"
 if redis.call("get", KEYS[1]) == ARGV[1] then
   return redis.call("pexpire", KEYS[1], tonumber(ARGV[2]))
@@ -415,16 +407,16 @@ impl RedisMutex {
   /// Attempts to extend a lock key using an explicit owner token.
   pub async fn renew_with_token(&self, resource: &str, owner_token: &str, ttl_secs: u64) -> Result<bool, WorkerError> {
     let lock_key = self.lock_key(resource);
-    let ttl_secs = ttl_secs.max(1);
+    let ttl_ms = ttl_secs.max(1).saturating_mul(1_000);
     let renewed: i32 = self
       .exec_with_retry("RENEW", |mut conn| {
         let lock_key = lock_key.clone();
         let owner_token = owner_token.to_owned();
         async move {
-          Script::new(RENEW_LOCK_SCRIPT)
+          Script::new(RENEW_LOCK_MS_SCRIPT)
             .key(&lock_key)
             .arg(&owner_token)
-            .arg(ttl_secs)
+            .arg(ttl_ms)
             .invoke_async(&mut conn)
             .await
         }

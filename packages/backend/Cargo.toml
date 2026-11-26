@@ -50,6 +50,7 @@ lettre             = { version = "0.11", default-features = false, features = ["
 lru                = "0.12"
 mailparse          = "0.16"
 memory-indexer     = "0.4.1"
+multer             = "3.1"
 p256               = { version = "0.13", features = ["ecdsa", "pem"] }
 postgres           = "0.19"
 rand               = "0.9"
@@ -64,6 +65,7 @@ assetpack-core     = { version = "0.4.2", default-features = false, features = [
 assetpack-transform-precomp2 = "0.4.4"
 sqlx               = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "sqlite", "chrono", "uuid", "json"] }
 subtle             = "2"
+tempfile           = "3"
 thiserror          = "2"
 tokio              = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time", "process"] }
 tower              = "0.5"

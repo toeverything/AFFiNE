@@ -149,11 +149,6 @@ async fn assert_copilot_enabled(state: &AppState) -> Result<()> {
     .pointer("/copilot/enabled")
     .and_then(|v| v.as_bool())
     .unwrap_or(true);
-  if !cfg_enabled {
-    return Err(domain_error_to_graphql(&DomainError::Forbidden(
-      "copilot_disabled".into(),
-    )));
-  }
   state
     .extension
     .copilot_runtime()
@@ -498,7 +493,7 @@ mod tests {
   impl server_spi::CopilotRuntimeSpi for EnabledCopilotRuntime {
     async fn assert_enabled(&self, app_config_copilot_enabled: bool) -> std::result::Result<(), DomainError> {
       if !app_config_copilot_enabled {
-        return Err(DomainError::Forbidden("copilot_disabled".into()));
+        return Err(DomainError::Forbidden("Copilot is disabled.".into()));
       }
       Ok(())
     }
@@ -781,7 +776,7 @@ mod tests {
         );
       }
 
-      // (c) Authenticated user with copilot.enabled = false -> 403 COPILOT_DISABLED.
+      // (c) Authenticated user with copilot.enabled = false -> 403 ACTION_FORBIDDEN.
       let disabled_resp = schema
         .execute(
           async_graphql::Request::new(
@@ -793,7 +788,7 @@ mod tests {
       assert_eq!(disabled_resp.errors.len(), 1);
       assert_eq!(
         disabled_resp.errors[0].extensions.as_ref().and_then(|e| e.get("name")),
-        Some(&async_graphql::Value::String("COPILOT_DISABLED".into()))
+        Some(&async_graphql::Value::String("ACTION_FORBIDDEN".into()))
       );
 
       // Re-enable copilot in app_configs.

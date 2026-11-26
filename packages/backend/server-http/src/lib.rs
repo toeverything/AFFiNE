@@ -1,6 +1,7 @@
 //! HTTP + GraphQL transport (`axum 0.8` + `async-graphql 7`).
 
 pub mod graphql;
+mod graphql_multipart;
 pub mod legacy_compat;
 pub mod rest;
 
@@ -9,7 +10,7 @@ use std::time::Duration;
 
 use arc_swap::ArcSwap;
 use async_graphql::http::GraphiQLSource;
-use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
+use async_graphql_axum::GraphQLResponse;
 use axum::extract::{Query, State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{Html, IntoResponse, Response};
@@ -797,13 +798,53 @@ pub fn graphql_query_exceeds_depth(query: &str, max_depth: usize) -> bool {
   false
 }
 
+/// Largest JSON `/graphql` request body.
+const MAX_GRAPHQL_JSON_BODY_BYTES: usize = 16 * 1024 * 1024;
+
+/// Reads a `/graphql` POST body. A multipart body goes through
+/// [`graphql_multipart::receive_graphql_multipart`]. Any other body must fit
+/// in `MAX_GRAPHQL_JSON_BODY_BYTES`.
+async fn read_graphql_post(
+  headers: &HeaderMap,
+  body: axum::body::Body,
+) -> std::result::Result<async_graphql::Request, Box<Response>> {
+  use async_graphql::http::{MultipartOptions, receive_body};
+
+  let content_type = headers.get(header::CONTENT_TYPE).and_then(|v| v.to_str().ok());
+  let rejected = |err: async_graphql::ParseRequestError| {
+    Box::new(async_graphql_axum::rejection::GraphQLRejection(err).into_response())
+  };
+  if let Some(ct) = content_type.filter(|ct| {
+    ct.trim_start()
+      .get(..19)
+      .is_some_and(|p| p.eq_ignore_ascii_case("multipart/form-data"))
+  }) {
+    return graphql_multipart::receive_graphql_multipart(ct, body)
+      .await
+      .map_err(rejected);
+  }
+  let bytes = axum::body::to_bytes(body, MAX_GRAPHQL_JSON_BODY_BYTES)
+    .await
+    .map_err(|_| Box::new(StatusCode::PAYLOAD_TOO_LARGE.into_response()))?;
+  receive_body(
+    content_type,
+    async_graphql::futures_util::io::Cursor::new(bytes),
+    MultipartOptions::default(),
+  )
+  .await
+  .map_err(rejected)
+}
+
 async fn handle_graphql_post(
   State(state): State<RouterState>,
   rest::throttle::PeerAddr(peer): rest::throttle::PeerAddr,
   headers: HeaderMap,
-  req: GraphQLRequest,
+  body: axum::body::Body,
 ) -> Response {
-  let inner = req.into_inner();
+  let inner = match read_graphql_post(&headers, body).await {
+    Ok(inner) => inner,
+    Err(resp) => return *resp,
+  };
   if graphql_query_exceeds_depth(&inner.query, MAX_GRAPHQL_BRACKET_DEPTH) {
     return (
       StatusCode::BAD_REQUEST,
@@ -935,7 +976,9 @@ pub fn build_router(app: Arc<AppState>) -> Router {
   if matrix.graphql {
     let graphql_route = Router::new()
       .route("/graphql", get(handle_graphql_get).post(handle_graphql_post))
-      .layer(axum::extract::DefaultBodyLimit::max(105 * 1024 * 1024));
+      .layer(axum::extract::DefaultBodyLimit::max(
+        graphql_multipart::MAX_GRAPHQL_MULTIPART_BODY_BYTES,
+      ));
     router = router.merge(graphql_route);
   }
   if matrix.auth_and_avatar_api {
@@ -1155,6 +1198,166 @@ mod tests {
   }
 
   #[test]
+  fn graphql_post_enforces_v0275_upload_limits_at_http_layer() {
+    use crate::graphql_multipart::{
+      MAX_GRAPHQL_MULTIPART_FIELD_BYTES, MAX_GRAPHQL_MULTIPART_FILE_BYTES, MAX_GRAPHQL_MULTIPART_FILES,
+    };
+
+    const BOUNDARY: &str = "affine-upload-limits";
+    const MIB: usize = 1024 * 1024;
+    enum Part {
+      Field(&'static str, String),
+      File(String, usize),
+    }
+    fn multipart(parts: Vec<Part>) -> Body {
+      let mut chunks: Vec<bytes::Bytes> = Vec::new();
+      for part in parts {
+        match part {
+          Part::Field(name, value) => chunks
+            .push(format!("--{BOUNDARY}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n").into()),
+          Part::File(name, len) => {
+            chunks.push(
+              format!(
+                "--{BOUNDARY}\r\nContent-Disposition: form-data; name=\"{name}\"; filename=\"{name}.bin\"\r\n\r\n"
+              )
+              .into(),
+            );
+            // Streams the zero bytes in 1 MiB chunks to keep memory flat.
+            let zeros = bytes::Bytes::from(vec![0u8; MIB]);
+            chunks.extend(std::iter::repeat_n(zeros, len / MIB));
+            chunks.push(vec![0u8; len % MIB].into());
+            chunks.push(bytes::Bytes::from_static(b"\r\n"));
+          }
+        }
+      }
+      chunks.push(format!("--{BOUNDARY}--\r\n").into());
+      Body::from_stream(futures_util::stream::iter(
+        chunks.into_iter().map(Ok::<_, std::convert::Infallible>),
+      ))
+    }
+    let operations = |files: usize| {
+      let variables: serde_json::Map<_, _> = (0..files).map(|i| (format!("f{i}"), serde_json::Value::Null)).collect();
+      Part::Field(
+        "operations",
+        serde_json::json!({ "query": "{ __typename }", "variables": variables }).to_string(),
+      )
+    };
+    let map = |entries: usize| {
+      let map: serde_json::Map<_, _> = (0..entries)
+        .map(|i| (i.to_string(), serde_json::json!([format!("variables.f{i}")])))
+        .collect();
+      Part::Field("map", serde_json::Value::Object(map).to_string())
+    };
+    let files = |count: usize, len: usize| (0..count).map(move |i| Part::File(i.to_string(), len));
+
+    with_test_db(|db_url| async move {
+      let db = test_db(&db_url, ServerRole::Allinone).await;
+      let state = AppState::new(db, None, RuntimeConfig::default(), Arc::new(CommunityExtension::new()));
+      let app = build_router(state);
+      let multipart_type = format!("multipart/form-data; boundary={BOUNDARY}");
+      let oversized_json = format!(
+        r#"{{"query":"{{ __typename }}","variables":{{"pad":"{}"}}}}"#,
+        "x".repeat(MAX_GRAPHQL_JSON_BODY_BYTES)
+      );
+      let oversized_operations = Part::Field(
+        "operations",
+        format!(
+          r#"{{"query":"{{ __typename }}","variables":{{"pad":"{}"}}}}"#,
+          "x".repeat(MAX_GRAPHQL_MULTIPART_FIELD_BYTES)
+        ),
+      );
+      let n = MAX_GRAPHQL_MULTIPART_FILES;
+      let cases: Vec<(&str, &str, Body, StatusCode)> = vec![
+        (
+          "JSON body over 16 MiB",
+          "application/json",
+          Body::from(oversized_json),
+          StatusCode::PAYLOAD_TOO_LARGE,
+        ),
+        (
+          "32 files of 1 KiB",
+          &multipart_type,
+          multipart([operations(n), map(n)].into_iter().chain(files(n, 1024)).collect()),
+          StatusCode::OK,
+        ),
+        (
+          "one 100 MiB file",
+          &multipart_type,
+          multipart(
+            [operations(1), map(1)]
+              .into_iter()
+              .chain(files(1, MAX_GRAPHQL_MULTIPART_FILE_BYTES))
+              .collect(),
+          ),
+          StatusCode::OK,
+        ),
+        (
+          "operations over 1000000 bytes",
+          &multipart_type,
+          multipart(vec![oversized_operations, map(1), Part::File("0".into(), 1)]),
+          StatusCode::PAYLOAD_TOO_LARGE,
+        ),
+        (
+          "map with 33 entries",
+          &multipart_type,
+          multipart(
+            [operations(n + 1), map(n + 1)]
+              .into_iter()
+              .chain(files(n + 1, 1))
+              .collect(),
+          ),
+          StatusCode::PAYLOAD_TOO_LARGE,
+        ),
+        (
+          "33 files",
+          &multipart_type,
+          multipart([operations(n), map(n)].into_iter().chain(files(n + 1, 1)).collect()),
+          StatusCode::PAYLOAD_TOO_LARGE,
+        ),
+        (
+          "one 100 MiB + 1 B file",
+          &multipart_type,
+          multipart(
+            [operations(1), map(1)]
+              .into_iter()
+              .chain(files(1, MAX_GRAPHQL_MULTIPART_FILE_BYTES + 1))
+              .collect(),
+          ),
+          StatusCode::PAYLOAD_TOO_LARGE,
+        ),
+        (
+          "missing map",
+          &multipart_type,
+          multipart([operations(1)].into_iter().chain(files(1, 1)).collect()),
+          StatusCode::BAD_REQUEST,
+        ),
+      ];
+      for (name, content_type, body, expected) in cases {
+        let resp = app
+          .clone()
+          .oneshot(
+            Request::builder()
+              .method("POST")
+              .uri("/graphql")
+              .header("content-type", content_type)
+              .body(body)
+              .unwrap(),
+          )
+          .await
+          .unwrap();
+        assert_eq!(resp.status(), expected, "{name}");
+        let body = axum::body::to_bytes(resp.into_body(), 64 * 1024).await.unwrap();
+        if expected == StatusCode::OK {
+          let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+          assert_eq!(json["data"]["__typename"], "Query", "{name}");
+        } else if expected == StatusCode::PAYLOAD_TOO_LARGE {
+          assert!(body.is_empty(), "{name}: 413 carries no GraphQL envelope");
+        }
+      }
+    });
+  }
+
+  #[test]
   fn role_route_isolation_enforces_endpoint_boundaries() {
     with_test_db(|db_url| async move {
       let setup_db = test_db(&db_url, ServerRole::Allinone).await;
@@ -1254,7 +1457,6 @@ mod tests {
           },
           "role={role:?} POST /graphql"
         );
-
         let auth_session = app
           .clone()
           .oneshot(Request::builder().uri("/api/auth/session").body(Body::empty()).unwrap())

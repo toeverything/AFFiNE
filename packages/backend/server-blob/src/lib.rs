@@ -230,8 +230,10 @@ const STORAGE_LOCK_POLL: Duration = Duration::from_millis(25);
 /// The locks live on a dedicated session outside the `PgPool`, admitted by
 /// the service's own lock permits, so an operation holding them can still
 /// take pooled connections for its queries without exhausting the pool.
-/// Dropping the lock without [`StorageObjectLock::release`] (cancellation,
-/// timeout, unlock failure) drops the session, which ends its locks.
+/// A timeout or a failed lock closes the session. Dropping the lock without
+/// [`StorageObjectLock::release`] (cancellation) drops the session, which
+/// ends its locks.
+// compat(coexist): blob-storage-operation-session-lock -- v0.27.5 storage-workspace and storage-object session advisory locks
 pub(crate) struct StorageObjectLock {
   connection: PgConnection,
   workspace_key: String,
@@ -246,7 +248,9 @@ impl StorageObjectLock {
     workspace_id: &str,
     object_key: &str,
   ) -> Result<Self, DomainError> {
-    tokio::time::timeout(STORAGE_LOCK_TIMEOUT, async {
+    let deadline = tokio::time::Instant::now() + STORAGE_LOCK_TIMEOUT;
+    let timed_out = || DomainError::Unavailable("storage_lifecycle_lock_timeout".into());
+    let (permit, connection) = tokio::time::timeout_at(deadline, async {
       let permit = Arc::clone(permits)
         .acquire_owned()
         .await
@@ -255,39 +259,55 @@ impl StorageObjectLock {
         .dedicated_session_conn()
         .await
         .map_err(|err| DomainError::Unavailable(format!("storage lock session: {err}")))?;
-      let mut lock = Self {
-        connection,
-        workspace_key: format!("storage-workspace:{workspace_id}"),
-        object_key: format!("storage-object:{object_key}"),
-        _permit: permit,
-      };
-      for (statement, name) in [
-        (
-          "SELECT pg_try_advisory_lock_shared(hashtextextended($1,0))",
-          lock.workspace_key.clone(),
-        ),
-        (
-          "SELECT pg_try_advisory_lock(hashtextextended($1,0))",
-          lock.object_key.clone(),
-        ),
-      ] {
-        while !sqlx::query_scalar::<_, bool>(statement)
-          .bind(&name)
-          .fetch_one(&mut lock.connection)
-          .await
-          .map_err(db_error("take storage lifecycle lock"))?
-        {
-          tokio::time::sleep(STORAGE_LOCK_POLL).await;
-        }
-      }
-      Ok(lock)
+      Ok::<_, DomainError>((permit, connection))
     })
     .await
-    .map_err(|_| DomainError::Unavailable("storage_lifecycle_lock_timeout".into()))?
+    .map_err(|_| timed_out())??;
+    let mut lock = Self {
+      connection,
+      workspace_key: format!("storage-workspace:{workspace_id}"),
+      object_key: format!("storage-object:{object_key}"),
+      _permit: permit,
+    };
+    let locked = tokio::time::timeout_at(deadline, lock.take_locks()).await;
+    match locked {
+      Ok(Ok(())) => Ok(lock),
+      Ok(Err(err)) => {
+        let _ = lock.connection.close().await;
+        Err(err)
+      }
+      Err(_) => {
+        let _ = lock.connection.close().await;
+        Err(timed_out())
+      }
+    }
   }
 
-  /// Unlocks object then workspace and closes the session; on an unlock
-  /// failure the session is dropped, which ends its locks.
+  async fn take_locks(&mut self) -> Result<(), DomainError> {
+    for (statement, name) in [
+      (
+        "SELECT pg_try_advisory_lock_shared(hashtextextended($1,0))",
+        self.workspace_key.clone(),
+      ),
+      (
+        "SELECT pg_try_advisory_lock(hashtextextended($1,0))",
+        self.object_key.clone(),
+      ),
+    ] {
+      while !sqlx::query_scalar::<_, bool>(statement)
+        .bind(&name)
+        .fetch_one(&mut self.connection)
+        .await
+        .map_err(db_error("take storage lifecycle lock"))?
+      {
+        tokio::time::sleep(STORAGE_LOCK_POLL).await;
+      }
+    }
+    Ok(())
+  }
+
+  /// Unlocks object then workspace and closes the session. The server ends
+  /// the locks of a closed session even when an unlock failed.
   pub(crate) async fn release(mut self) {
     let unlocked = async {
       sqlx::query("SELECT pg_advisory_unlock(hashtextextended($1,0))")
@@ -301,15 +321,11 @@ impl StorageObjectLock {
       Ok::<_, sqlx::Error>(())
     }
     .await;
-    match unlocked {
-      Ok(()) => {
-        if let Err(error) = self.connection.close().await {
-          tracing::debug!(error = %error, "storage lock session did not close cleanly");
-        }
-      }
-      Err(error) => {
-        tracing::warn!(error = %error, object_key = %self.object_key, "failed to release storage lifecycle lock");
-      }
+    if let Err(error) = unlocked {
+      tracing::warn!(error = %error, object_key = %self.object_key, "failed to release storage lifecycle lock");
+    }
+    if let Err(error) = self.connection.close().await {
+      tracing::debug!(error = %error, "storage lock session did not close cleanly");
     }
   }
 }

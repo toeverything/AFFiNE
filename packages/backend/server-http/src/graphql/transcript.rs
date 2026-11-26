@@ -1,15 +1,14 @@
 //! Copilot audio transcription GraphQL types, mutations, and deprecated
 //! `Copilot.transcriptTask` query resolver aligned with `v0.27.5` `schema.gql`.
 
-use std::io::Read as _;
 use std::sync::Arc;
 
 use async_graphql::{Context, Enum, ID, InputObject, Object, Result, SimpleObject, Upload};
 use server_spi::{
-  AudioSliceManifestItemRecord, AudioSliceUpload, MAX_TRANSCRIPT_SLICE_BYTES, MAX_TRANSCRIPT_SLICE_COUNT,
-  MAX_TRANSCRIPT_TOTAL_BYTES, MeetingActionItemRecord, MeetingSummaryV2Record, NormalizedTranscriptSegmentRecord,
-  SubmitTranscriptTaskSpiInput, TranscriptItemRecord, TranscriptJobStatus, TranscriptQualityRecord,
-  TranscriptSourceAudioInputRecord, TranscriptSourceAudioRecord, TranscriptTaskRecord,
+  AudioSliceManifestItemRecord, AudioSliceUpload, MAX_TRANSCRIPT_SLICE_COUNT, MeetingActionItemRecord,
+  MeetingSummaryV2Record, NormalizedTranscriptSegmentRecord, SubmitTranscriptTaskSpiInput, TranscriptItemRecord,
+  TranscriptJobStatus, TranscriptQualityRecord, TranscriptSourceAudioInputRecord, TranscriptSourceAudioRecord,
+  TranscriptTaskRecord,
 };
 use server_types::DomainError;
 
@@ -349,43 +348,19 @@ async fn enforce_copilot_enabled(state: &AppState) -> std::result::Result<(), Do
   Ok(())
 }
 
-fn read_bounded_upload(
-  ctx: &Context<'_>,
-  upload: Upload,
-  remaining_total: usize,
-) -> std::result::Result<AudioSliceUpload, DomainError> {
+/// Keeps the upload in its multipart temporary file. The transcript runtime
+/// checks the per-slice limit after its duplicate-task preflight.
+fn upload_slice(ctx: &Context<'_>, upload: Upload) -> std::result::Result<AudioSliceUpload, DomainError> {
   let value = upload
     .value(ctx)
     .map_err(|e| DomainError::Validation(format!("invalid transcript audio upload: {e}")))?;
-  let file_name = value.filename.clone();
   let mime_type = value
     .content_type
     .as_deref()
     .filter(|s| !s.trim().is_empty())
     .unwrap_or("application/octet-stream")
     .to_owned();
-  let max_read = MAX_TRANSCRIPT_SLICE_BYTES.min(remaining_total);
-  let mut bytes = Vec::new();
-  value
-    .content
-    .take((max_read as u64).saturating_add(1))
-    .read_to_end(&mut bytes)
-    .map_err(|e| DomainError::Validation(format!("failed to read transcript audio upload: {e}")))?;
-  if bytes.len() > MAX_TRANSCRIPT_SLICE_BYTES {
-    return Err(DomainError::Validation(format!(
-      "transcript audio slice exceeds maximum size of {MAX_TRANSCRIPT_SLICE_BYTES} bytes"
-    )));
-  }
-  if bytes.len() > remaining_total {
-    return Err(DomainError::Validation(format!(
-      "transcript audio total size exceeds maximum of {MAX_TRANSCRIPT_TOTAL_BYTES} bytes"
-    )));
-  }
-  Ok(AudioSliceUpload {
-    file_name,
-    mime_type,
-    bytes,
-  })
+  Ok(AudioSliceUpload::from_file(value.filename, mime_type, value.content))
 }
 
 fn normalize_optional_id(raw: Option<String>) -> Option<String> {
@@ -570,13 +545,11 @@ impl TranscriptMutation {
       validate_manifest(manifest).map_err(gql_err)?;
     }
 
-    let mut remaining_total = MAX_TRANSCRIPT_TOTAL_BYTES;
-    let mut slices = Vec::with_capacity(uploads.len());
-    for upload in uploads {
-      let slice = read_bounded_upload(ctx, upload, remaining_total).map_err(gql_err)?;
-      remaining_total = remaining_total.saturating_sub(slice.bytes.len());
-      slices.push(slice);
-    }
+    let slices = uploads
+      .into_iter()
+      .map(|upload| upload_slice(ctx, upload))
+      .collect::<std::result::Result<Vec<_>, _>>()
+      .map_err(gql_err)?;
 
     let (source_audio, quality, slice_manifest) = match input {
       Some(v) => (
@@ -1001,5 +974,191 @@ mod tests {
       assert_eq!(resp.errors.len(), 1, "expected fail-closed error for {q}");
     }
     assert_eq!(spi_calls.load(Ordering::SeqCst), 0);
+  }
+
+  #[tokio::test]
+  async fn transcript_uploads_forward_file_backed_slices_and_cap_the_count_at_32() {
+    use std::sync::Mutex;
+
+    use async_graphql::{Request, UploadValue, Value};
+    use server_db::{DbConfig, ServerDb};
+    use server_domain::users::CurrentUserView;
+    use server_spi::{CopilotTranscriptSpi, ServerExtension};
+
+    const MIB: usize = 1024 * 1024;
+
+    /// Records the byte length of every submitted slice.
+    #[derive(Default)]
+    struct RecordingTranscriptSpi(Mutex<Vec<Vec<usize>>>);
+    #[async_trait::async_trait]
+    impl CopilotTranscriptSpi for RecordingTranscriptSpi {
+      async fn authorize_transcript_submission(&self, _u: &str, _w: &str) -> std::result::Result<(), DomainError> {
+        Ok(())
+      }
+      async fn submit_transcript_task(
+        &self,
+        input: SubmitTranscriptTaskSpiInput,
+      ) -> std::result::Result<Option<TranscriptTaskRecord>, DomainError> {
+        let lens = input
+          .blobs
+          .iter()
+          .map(AudioSliceUpload::byte_len)
+          .collect::<std::result::Result<Vec<_>, _>>()?;
+        self.0.lock().unwrap().push(lens);
+        Ok(None)
+      }
+      async fn retry_transcript_task(
+        &self,
+        _u: &str,
+        _w: &str,
+        _t: &str,
+      ) -> std::result::Result<Option<TranscriptTaskRecord>, DomainError> {
+        Ok(None)
+      }
+      async fn settle_transcript_task(
+        &self,
+        _u: &str,
+        _w: &str,
+        _t: &str,
+      ) -> std::result::Result<Option<TranscriptTaskRecord>, DomainError> {
+        Ok(None)
+      }
+      async fn query_transcript_task(
+        &self,
+        _u: &str,
+        _w: &str,
+        _t: Option<&str>,
+        _b: Option<&str>,
+      ) -> std::result::Result<Option<TranscriptTaskRecord>, DomainError> {
+        Ok(None)
+      }
+    }
+
+    struct RecordingExt(Arc<RecordingTranscriptSpi>, server_spi::CommunityExtension);
+    impl ServerExtension for RecordingExt {
+      fn edition_name(&self) -> &'static str {
+        self.1.edition_name()
+      }
+      fn quota_gate(&self) -> Arc<dyn server_spi::QuotaGate> {
+        self.1.quota_gate()
+      }
+      fn session_policy(&self) -> Arc<dyn server_spi::SessionPolicyHook> {
+        self.1.session_policy()
+      }
+      fn copilot_policy(&self) -> Arc<dyn server_spi::CopilotPolicySpi> {
+        self.1.copilot_policy()
+      }
+      fn copilot_transcript_spi(&self) -> Arc<dyn CopilotTranscriptSpi> {
+        Arc::clone(&self.0) as Arc<dyn CopilotTranscriptSpi>
+      }
+    }
+
+    struct LeaseGuard(Option<(test_db_harness::pg::PgCluster, test_db_harness::pg::DbLease)>);
+    impl Drop for LeaseGuard {
+      fn drop(&mut self) {
+        if let Some(pair) = self.0.take() {
+          let _ = std::thread::spawn(move || drop(pair)).join();
+        }
+      }
+    }
+
+    let (cluster, lease) = tokio::task::spawn_blocking(|| {
+      let cluster = test_db_harness::pg::PgCluster::from_env_or_docker().expect("PG16 test cluster");
+      let migrations = test_db_harness::migrations::MigrationSet::from_migrations(Vec::new());
+      let template = cluster.ensure_template(&migrations).expect("template");
+      let lease = cluster
+        .lease(&template, test_db_harness::pg::DEFAULT_LEASE_TTL)
+        .expect("lease");
+      (cluster, lease)
+    })
+    .await
+    .unwrap();
+    let lease_url = lease.url().to_string();
+    let _lease_guard = LeaseGuard(Some((cluster, lease)));
+    let db = ServerDb::connect(DbConfig::new(lease_url)).await.unwrap();
+    sqlx::query("DROP TABLE IF EXISTS \"_prisma_migrations\"")
+      .execute(db.pool())
+      .await
+      .unwrap();
+    db.ensure_schema_ready().await.unwrap();
+
+    let spi = Arc::new(RecordingTranscriptSpi::default());
+    let mut cfg = crate::RuntimeConfig::default();
+    cfg.app_config_baseline.file_json = serde_json::json!({ "copilot": { "enabled": true } });
+    let state = AppState::new(
+      db,
+      None,
+      cfg,
+      Arc::new(RecordingExt(
+        Arc::clone(&spi),
+        server_spi::CommunityExtension::default(),
+      )),
+    );
+    let authed = crate::graphql::AuthenticatedUser {
+      user_id: "u1".into(),
+      user: Some(CurrentUserView {
+        id: "u1".into(),
+        name: "U1".into(),
+        email: "u1@example.test".into(),
+        avatar_url: None,
+        disabled: false,
+        has_password: true,
+        email_verified: true,
+        features: Vec::new(),
+      }),
+    };
+    let schema = Schema::build(TranscriptCopilotView::default(), TranscriptMutation, EmptySubscription)
+      .data(Arc::clone(&state))
+      .finish();
+    let dir = std::env::temp_dir().join(format!("transcript-upload-limits-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&dir).unwrap();
+
+    for (name, sizes, rejected) in [
+      ("26 MiB", vec![26 * MIB], None),
+      ("50 MiB", vec![50 * MIB], None),
+      // The transcript runtime rejects it after its duplicate-task preflight.
+      ("50 MiB + 1 B", vec![50 * MIB + 1], None),
+      ("3 x 40 MiB", vec![40 * MIB; 3], None),
+      ("32 slices", vec![1024; 32], None),
+      ("33 slices", vec![1024; 33], Some((400, "INVALID_INPUT"))),
+    ] {
+      let mut request = Request::new(
+        r#"mutation($blobs: [Upload!]) { submitTranscriptTask(workspaceId: "ws1", blobId: "b1", blobs: $blobs) { id } }"#,
+      )
+      .variables(async_graphql::Variables::from_json(serde_json::json!({
+        "blobs": vec![serde_json::Value::Null; sizes.len()],
+      })))
+      .data(authed.clone());
+      for (idx, size) in sizes.iter().enumerate() {
+        // Sparse files keep the test fast and its memory flat.
+        let path = dir.join(format!("{}-{idx}.ogg", name.replace(' ', "_")));
+        let file = std::fs::File::create(&path).unwrap();
+        file.set_len(*size as u64).unwrap();
+        request.set_upload(
+          &format!("variables.blobs.{idx}"),
+          UploadValue {
+            filename: format!("slice-{idx}.ogg"),
+            content_type: Some("audio/ogg".into()),
+            content: std::fs::File::open(&path).unwrap(),
+          },
+        );
+      }
+      let resp = schema.execute(request).await;
+      let submitted = spi.0.lock().unwrap().pop();
+      match rejected {
+        None => {
+          assert!(resp.errors.is_empty(), "{name}: {:?}", resp.errors);
+          assert_eq!(submitted, Some(sizes.clone()), "{name}");
+        }
+        Some((status, error_name)) => {
+          assert_eq!(resp.errors.len(), 1, "{name}");
+          let ext = resp.errors[0].extensions.as_ref().expect("error extensions");
+          assert_eq!(ext.get("status"), Some(&Value::from(status)), "{name}");
+          assert_eq!(ext.get("type"), Some(&Value::String(error_name.into())), "{name}");
+          assert_eq!(submitted, None, "{name}: nothing is submitted");
+        }
+      }
+    }
+    let _ = std::fs::remove_dir_all(&dir);
   }
 }

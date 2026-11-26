@@ -11,6 +11,7 @@ use server_types::{DeploymentMode, DomainError};
 
 use super::{JsonObjectScalar, require_authenticated_user};
 use crate::AppState;
+use crate::graphql_multipart::MAX_GRAPHQL_MULTIPART_FILE_BYTES;
 use crate::legacy_compat::errors::domain_error_to_graphql;
 
 #[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
@@ -261,8 +262,16 @@ pub(crate) async fn mutate_set_blob(ctx: &Context<'_>, workspace_id: String, blo
   let mut bytes = Vec::new();
   upload
     .content
+    .by_ref()
+    .take((MAX_GRAPHQL_MULTIPART_FILE_BYTES + 1) as u64)
     .read_to_end(&mut bytes)
     .map_err(|e| domain_error_to_graphql(&DomainError::Validation(format!("failed to read blob upload: {e}"))))?;
+  if bytes.len() > MAX_GRAPHQL_MULTIPART_FILE_BYTES {
+    return Err(domain_error_to_graphql(&DomainError::QuotaExceeded {
+      kind: "blob_limit",
+      message: "You have exceeded your blob size quota.".to_owned(),
+    }));
+  }
   let outcome = state
     .blobs
     .put_blob(&workspace_id, &filename, mime, bytes)

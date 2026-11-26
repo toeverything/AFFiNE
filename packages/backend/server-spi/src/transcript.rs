@@ -1,14 +1,15 @@
 //! Copilot audio transcription SPI and pure domain DTOs for community and
 //! commercial server editions.
 
+use std::sync::Arc;
+
 use server_types::DomainError;
 
+// compat(client): transcript-upload-slice-limits -- matches v0.27.5 50 MiB per-slice cap and 32-file multipart limit
 /// Maximum number of audio slices accepted in a single transcription submission.
-pub const MAX_TRANSCRIPT_SLICE_COUNT: usize = 64;
-/// Maximum byte size of a single uploaded audio slice (25 MiB).
-pub const MAX_TRANSCRIPT_SLICE_BYTES: usize = 25 * 1024 * 1024;
-/// Maximum combined byte size across all uploaded audio slices (50 MiB).
-pub const MAX_TRANSCRIPT_TOTAL_BYTES: usize = 50 * 1024 * 1024;
+pub const MAX_TRANSCRIPT_SLICE_COUNT: usize = 32;
+/// Maximum byte size of a single uploaded audio slice (50 MiB).
+pub const MAX_TRANSCRIPT_SLICE_BYTES: usize = 50 * 1024 * 1024;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TranscriptJobStatus {
@@ -19,11 +20,79 @@ pub enum TranscriptJobStatus {
   Claimed,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+/// Body of one uploaded audio slice: in memory, or in the temporary file of a
+/// multipart upload so that only one slice at a time is read into memory.
+#[derive(Clone, Debug)]
+pub enum AudioSlicePayload {
+  Bytes(Vec<u8>),
+  File(Arc<std::fs::File>),
+}
+
+#[derive(Clone, Debug)]
 pub struct AudioSliceUpload {
   pub file_name: String,
   pub mime_type: String,
-  pub bytes: Vec<u8>,
+  pub payload: AudioSlicePayload,
+}
+
+fn slice_io_error(err: std::io::Error) -> DomainError {
+  DomainError::Validation(format!("failed to read transcript audio upload: {err}"))
+}
+
+impl AudioSliceUpload {
+  pub fn from_bytes(file_name: impl Into<String>, mime_type: impl Into<String>, bytes: Vec<u8>) -> Self {
+    Self {
+      file_name: file_name.into(),
+      mime_type: mime_type.into(),
+      payload: AudioSlicePayload::Bytes(bytes),
+    }
+  }
+
+  pub fn from_file(file_name: impl Into<String>, mime_type: impl Into<String>, file: std::fs::File) -> Self {
+    Self {
+      file_name: file_name.into(),
+      mime_type: mime_type.into(),
+      payload: AudioSlicePayload::File(Arc::new(file)),
+    }
+  }
+
+  pub fn byte_len(&self) -> Result<usize, DomainError> {
+    match &self.payload {
+      AudioSlicePayload::Bytes(bytes) => Ok(bytes.len()),
+      AudioSlicePayload::File(file) => {
+        let len = file.metadata().map_err(slice_io_error)?.len();
+        usize::try_from(len).map_err(|_| DomainError::Validation("transcript audio slice is too large".into()))
+      }
+    }
+  }
+
+  /// Reads at most the first `max` bytes, for example to sniff the container.
+  pub fn read_prefix(&self, max: usize) -> Result<Vec<u8>, DomainError> {
+    match &self.payload {
+      AudioSlicePayload::Bytes(bytes) => Ok(bytes[..bytes.len().min(max)].to_vec()),
+      AudioSlicePayload::File(file) => read_file(file, Some(max)),
+    }
+  }
+
+  pub fn into_bytes(self) -> Result<Vec<u8>, DomainError> {
+    match self.payload {
+      AudioSlicePayload::Bytes(bytes) => Ok(bytes),
+      AudioSlicePayload::File(file) => read_file(&file, None),
+    }
+  }
+}
+
+fn read_file(file: &std::fs::File, max: Option<usize>) -> Result<Vec<u8>, DomainError> {
+  use std::io::{Read as _, Seek as _, SeekFrom};
+  let mut reader = file;
+  reader.seek(SeekFrom::Start(0)).map_err(slice_io_error)?;
+  let mut out = Vec::new();
+  match max {
+    Some(max) => reader.take(max as u64).read_to_end(&mut out),
+    None => reader.read_to_end(&mut out),
+  }
+  .map_err(slice_io_error)?;
+  Ok(out)
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -59,7 +128,7 @@ pub struct TranscriptQualityRecord {
   pub overflow_count: Option<i32>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct SubmitTranscriptTaskSpiInput {
   pub user_id: String,
   pub workspace_id: String,
@@ -205,6 +274,25 @@ impl CopilotTranscriptSpi for CommunityCopilotTranscriptSpi {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn file_backed_slices_read_their_length_prefix_and_body_from_the_file() {
+    use std::io::Write as _;
+    let path = std::env::temp_dir().join(format!("transcript-slice-{}", std::process::id()));
+    std::fs::File::create(&path)
+      .unwrap()
+      .write_all(b"OggS-file-backed-slice")
+      .unwrap();
+    let file_backed = AudioSliceUpload::from_file("a.ogg", "audio/ogg", std::fs::File::open(&path).unwrap());
+    let in_memory = AudioSliceUpload::from_bytes("a.ogg", "audio/ogg", b"OggS-file-backed-slice".to_vec());
+    for slice in [file_backed, in_memory] {
+      assert_eq!(slice.byte_len().unwrap(), 22);
+      assert_eq!(slice.read_prefix(4).unwrap(), b"OggS");
+      assert_eq!(slice.read_prefix(64).unwrap().len(), 22);
+      assert_eq!(slice.into_bytes().unwrap(), b"OggS-file-backed-slice");
+    }
+    let _ = std::fs::remove_file(&path);
+  }
 
   #[tokio::test]
   async fn community_transcript_spi_rejects_all_operations() {

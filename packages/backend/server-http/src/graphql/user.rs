@@ -714,6 +714,7 @@ async fn cleanup_deleted_workspace_objects(
   blob_keys: &[String],
   comment_attachments: &[(String, String)],
 ) {
+  use sqlx::Connection as _;
   if blob_keys.is_empty() && comment_attachments.is_empty() {
     return;
   }
@@ -727,6 +728,7 @@ async fn cleanup_deleted_workspace_objects(
     .await
     .is_err()
   {
+    let _ = conn.close().await;
     return;
   }
 
@@ -750,6 +752,7 @@ async fn cleanup_deleted_workspace_objects(
     .bind(&lock_key)
     .execute(&mut conn)
     .await;
+  let _ = conn.close().await;
 }
 
 #[derive(Default)]

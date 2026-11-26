@@ -15,7 +15,6 @@ struct Hook {
 
 static WRITE_HOOK: OnceLock<Mutex<Option<Arc<Hook>>>> = OnceLock::new();
 static READ_HOOK: OnceLock<Mutex<Option<Arc<Hook>>>> = OnceLock::new();
-static MANIFEST_CHECKED_HOOK: OnceLock<Mutex<Option<Arc<Hook>>>> = OnceLock::new();
 static HOOK_TEST_LOCK: Mutex<()> = Mutex::new(());
 
 pub(super) struct Guard(Option<Arc<Hook>>);
@@ -86,12 +85,6 @@ pub(super) fn enter_write_blocking_hook() -> Guard {
 
 pub(super) fn enter_read_blocking_hook() -> Guard {
   enter_slot(&READ_HOOK)
-}
-
-/// Runs right after a read checked its manifest snapshot and before it reads
-/// the recipe.
-pub(super) fn enter_manifest_checked_hook() -> Guard {
-  enter_slot(&MANIFEST_CHECKED_HOOK)
 }
 
 #[test]
@@ -407,12 +400,12 @@ fn get_limited_reads_one_manifest_snapshot_while_the_key_is_replaced() {
       .await
       .unwrap();
 
-    // Block the read after it checked its manifest snapshot and before it reads
-    // the recipe, then replace the key with a version over the limit.
+    // Block the read while it decodes its manifest snapshot, then replace the
+    // key with a version over the limit.
     let hook = new_hook();
-    *MANIFEST_CHECKED_HOOK.get_or_init(|| Mutex::new(None)).lock().unwrap() = Some(Arc::clone(&hook));
+    *READ_HOOK.get_or_init(|| Mutex::new(None)).lock().unwrap() = Some(Arc::clone(&hook));
     let cleanup = CleanupGuard {
-      slot: &MANIFEST_CHECKED_HOOK,
+      slot: &READ_HOOK,
       hook: Arc::clone(&hook),
     };
     let reader = {

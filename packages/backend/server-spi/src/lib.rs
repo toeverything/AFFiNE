@@ -52,8 +52,8 @@ use server_types::{AccessGrant, DomainError};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Transaction};
 pub use transcript::{
-  AudioSliceManifestItemRecord, AudioSliceUpload, CommunityCopilotTranscriptSpi, CopilotTranscriptSpi,
-  MAX_TRANSCRIPT_SLICE_BYTES, MAX_TRANSCRIPT_SLICE_COUNT, MAX_TRANSCRIPT_TOTAL_BYTES, MeetingActionItemRecord,
+  AudioSliceManifestItemRecord, AudioSlicePayload, AudioSliceUpload, CommunityCopilotTranscriptSpi,
+  CopilotTranscriptSpi, MAX_TRANSCRIPT_SLICE_BYTES, MAX_TRANSCRIPT_SLICE_COUNT, MeetingActionItemRecord,
   MeetingSummaryV2Record, NormalizedTranscriptSegmentRecord, SubmitTranscriptTaskSpiInput, TranscriptItemRecord,
   TranscriptJobStatus, TranscriptQualityRecord, TranscriptSourceAudioInputRecord, TranscriptSourceAudioRecord,
   TranscriptTaskRecord,

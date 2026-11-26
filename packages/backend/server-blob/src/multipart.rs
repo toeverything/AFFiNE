@@ -11,7 +11,7 @@ use sqlx::Row as _;
 
 use crate::storage::{
   BlobStorageBackend, LocalFsBlobStorage, MULTIPART_PART_SIZE, MULTIPART_THRESHOLD, PROXY_MULTIPART_PATH,
-  PROXY_UPLOAD_PATH, StorageError, UploadedPart,
+  PROXY_UPLOAD_PATH, StorageBackendIdentity, StorageError, UploadedPart, resolve_bucket_dir,
 };
 use crate::{
   Admission, AssetpackBlobStorage, BlobService, S3BlobStorage, S3Config, S3UploadOptions, StorageObjectLock,
@@ -166,6 +166,39 @@ impl StorageBackendSpec {
             .with_upload_options(upload_options.clone()),
         ))
       }
+    }
+  }
+  /// The identity `build()` would report, computed without building a client
+  /// or touching the file system.
+  pub fn backend_identity(&self) -> Result<StorageBackendIdentity, DomainError> {
+    let local = |kind: &str, root: &str, bucket: &str| -> Result<StorageBackendIdentity, DomainError> {
+      if root.trim().is_empty() {
+        return Err(DomainError::Validation("storage root must not be empty".into()));
+      }
+      Ok(StorageBackendIdentity {
+        kind: kind.into(),
+        bucket: bucket.to_owned(),
+        endpoint: Some(
+          resolve_bucket_dir(root, bucket)
+            .map_err(cfg_err)?
+            .to_string_lossy()
+            .into_owned(),
+        ),
+      })
+    };
+    match self {
+      Self::Fs { root, bucket, .. } => local("fs", root, bucket),
+      Self::Assetpack { root, bucket, .. } => local("assetpack", root, bucket),
+      Self::S3 { config, .. } => Ok(StorageBackendIdentity {
+        kind: "s3".into(),
+        bucket: config.bucket.clone(),
+        endpoint: Some(
+          config
+            .endpoint
+            .clone()
+            .unwrap_or_else(|| crate::s3::resolve_s3_endpoint(&config.region)),
+        ),
+      }),
     }
   }
   pub fn from_app_config_json(value: &Value, default_bucket: &str) -> Result<Option<Self>, DomainError> {
@@ -601,7 +634,7 @@ impl BlobService {
           }
           let latest_id = merged.pointer("/storages/blob/storage")
             .map(|r| StorageBackendSpec::from_app_config_json(r, "blobs")).transpose()?.flatten()
-            .map(|s| s.build().map(|b| b.backend_identity())).transpose()?
+            .map(|s| s.backend_identity()).transpose()?
             .unwrap_or_else(|| self.boot_storage.backend_identity());
           if latest_id != storage.backend_identity() { return Err(DomainError::Conflict("storage backend changed during upload init".into())); }
         }

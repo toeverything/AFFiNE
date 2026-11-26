@@ -249,11 +249,6 @@ impl AssetpackBlobStorage {
     if let Some(limit) = u64::try_from(meta.content_length).ok().and_then(too_large) {
       return Err(object_too_large(key, limit));
     }
-    // The hook waits on a condition variable, so it runs off the async workers.
-    #[cfg(test)]
-    tokio::task::spawn_blocking(|| drop(tests::enter_manifest_checked_hook()))
-      .await
-      .map_err(ap_err)?;
     let rhash = Hash32::from_hex(&hex).map_err(ap_err)?;
     let rlim = (0, MAX_RECIPE_BYTES, MAX_RECIPE_BYTES);
     let rrow = fetch_bounded_obj_row(pool, rhash, ObjectKind::Recipe, rlim, "recipe").await?;

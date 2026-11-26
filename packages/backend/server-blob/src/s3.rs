@@ -99,7 +99,7 @@ pub struct S3BlobStorage {
   presign_expires: Duration,
 }
 
-fn resolve_s3_endpoint(region: &str) -> String {
+pub(crate) fn resolve_s3_endpoint(region: &str) -> String {
   if region == "us-east-1" {
     "https://s3.amazonaws.com".to_owned()
   } else {
