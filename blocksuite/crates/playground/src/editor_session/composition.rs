@@ -58,6 +58,16 @@ impl PlaygroundView {
             .map(str::to_owned)
     }
     pub(crate) fn preedit_snapshot(&self) -> Option<PageSnapshot> {
+        if self
+            .table_cell
+            .as_ref()
+            .is_some_and(|c| c.input.composing())
+        {
+            let mut snapshot = self.page_snapshot()?.clone();
+            if self.apply_table_cell_preedit_to_snapshot(&mut snapshot) {
+                return Some(snapshot);
+            }
+        }
         let pre = self.editor.preedit.as_ref()?;
         let (start, end) = self.composition_endpoints()?;
         let mut snapshot = self.page_snapshot()?.clone();
@@ -300,8 +310,10 @@ impl PlaygroundView {
                 draw(r, palette.brand.opacity(0.22), false);
             }
         }
-        // While the link field takes the keys, its caret is the only one shown.
-        if self.overlays.link_url().is_none()
+        // While an overlay text field (link bar or equation editor) or in-place table cell
+        // takes keys, its caret is the only one shown.
+        if self.overlays.active_text_field().is_none()
+            && self.table_cell.is_none()
             && let Some(p) = self.visual_focus()
             && let Some(rect) = layout
                 .block(&p.block_id)
@@ -309,6 +321,7 @@ impl PlaygroundView {
         {
             draw(rect, palette.text_primary, true);
         }
+        el.extend(self.table_cell_selection_elements(layout, v, palette));
         el
     }
     pub(super) fn begin_input(&mut self) {
@@ -517,7 +530,7 @@ impl PlaygroundView {
         }
         Ok(())
     }
-    pub(super) fn screen_rect(&self, r: FlowRect, w: &Window) -> Bounds<Pixels> {
+    pub(crate) fn screen_rect(&self, r: FlowRect, w: &Window) -> Bounds<Pixels> {
         Bounds::new(
             point(
                 px(page_geometry(f32::from(w.viewport_size().width)).column_x + r.x),

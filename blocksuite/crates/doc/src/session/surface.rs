@@ -157,7 +157,6 @@ impl PageDocSession {
         insert: &str,
         now_ms: u64,
     ) -> DocResult<PageCommit> {
-        self.advance_time(now_ms);
         let elem_target = TypeTarget::Path(
             TypePath::root("blocks")
                 .key(surface_block_id)
@@ -168,33 +167,30 @@ impl PageDocSession {
         match self.session.get_map_value(&elem_target, field)? {
             Some(SessionReadValue::Text(identity)) => {
                 let target = TypeTarget::Identity(identity);
-                let len = self.session.read_text_len(&target)?;
-                let start = utf16_start.min(len);
-                let del = utf16_delete_len.min(len.saturating_sub(start));
-                if del > 0 && !insert.is_empty() {
-                    let insert = insert.to_string();
-                    self.structural_edit(now_ms, move |page| {
-                        page.session.text_remove(&target, start, del)?;
-                        page.session.text_insert(&target, start, &insert)?;
-                        Ok(())
-                    })
-                } else if del > 0 {
-                    Ok(self.session.text_remove(&target, start, del)?)
-                } else if !insert.is_empty() {
-                    Ok(self.session.text_insert(&target, start, insert)?)
-                } else {
-                    Ok(None)
-                }
+                self.splice_live_text(&target, utf16_start, utf16_delete_len, insert, now_ms)
             }
-            _ => {
-                let delta = if insert.is_empty() {
+            other => {
+                let old = match other {
+                    Some(SessionReadValue::Any(Any::String(s))) => s,
+                    _ => String::new(),
+                };
+                let mut u16_buf: Vec<u16> = old.encode_utf16().collect();
+                let start = (utf16_start as usize).min(u16_buf.len());
+                let del = (utf16_delete_len as usize).min(u16_buf.len() - start);
+                if del == 0 && insert.is_empty() {
+                    return Ok(None);
+                }
+                u16_buf.splice(start..start + del, insert.encode_utf16());
+                let upgraded = String::from_utf16_lossy(&u16_buf);
+                let delta = if upgraded.is_empty() {
                     Vec::new()
                 } else {
                     vec![TextDeltaOp::Insert {
-                        insert: TextInsert::Text(insert.to_string()),
+                        insert: TextInsert::Text(upgraded),
                         format: None,
                     }]
                 };
+                self.advance_time(now_ms);
                 Ok(self.session.map_set(
                     &elem_target,
                     field.to_string(),
@@ -214,25 +210,11 @@ impl PageDocSession {
         insert: &str,
         now_ms: u64,
     ) -> DocResult<PageCommit> {
-        self.advance_time(now_ms);
         let target = TypeTarget::Path(TypePath::root("blocks").key(block_id).key("prop:title"));
-        let len = self.session.read_text_len(&target).unwrap_or(0);
-        let start = utf16_start.min(len);
-        let del = utf16_delete_len.min(len.saturating_sub(start));
-        if del > 0 && !insert.is_empty() {
-            let insert = insert.to_string();
-            self.structural_edit(now_ms, move |page| {
-                page.session.text_remove(&target, start, del)?;
-                page.session.text_insert(&target, start, &insert)?;
-                Ok(())
-            })
-        } else if del > 0 {
-            Ok(self.session.text_remove(&target, start, del)?)
-        } else if !insert.is_empty() {
-            Ok(self.session.text_insert(&target, start, insert)?)
-        } else {
-            Ok(None)
+        if self.session.read_text_len(&target).is_err() {
+            return Ok(None);
         }
+        self.splice_live_text(&target, utf16_start, utf16_delete_len, insert, now_ms)
     }
 
     /// Encode a `RelativePosition` at UTF-16 `offset` on a surface element's `Y.Text` field.

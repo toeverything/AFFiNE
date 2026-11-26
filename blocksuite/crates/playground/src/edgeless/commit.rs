@@ -669,11 +669,12 @@ impl PlaygroundView {
                 true,
             );
             ed.created_new_text = true;
+            self.suppress_unselected_root_input = false;
             self.edgeless.authoring.inline_edit = Some(EdgelessInlineEdit::Label(ed));
             if let Ok(page) = self.page_mut() {
                 let _ = page.stop_capturing();
             }
-            self.edgeless_update_label_anchors(0..0);
+            self.edgeless_update_label_anchors();
             window.notify_text_input_changed(&self.editor_focus);
         }
     }

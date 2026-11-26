@@ -28,6 +28,12 @@ pub enum FlowKind {
     Image,
     Bookmark,
     Latex,
+    Callout,
+    Table,
+    Attachment,
+    EmbedLinkedDoc,
+    EmbedSyncedDoc,
+    SurfaceRef,
     Unknown,
 }
 
@@ -126,13 +132,68 @@ impl FlowTextLayout {
 }
 
 /// Primary text of a block, kept for caret and selection geometry.
+#[derive(Clone)]
 pub struct FlowText {
     pub x: f32,
     pub y: f32,
     pub layout: FlowTextLayout,
 }
 
+/// Interactive Prev/Next hit targets of an embedded PDF attachment block, relative to the block.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct AttachmentPdfControls {
+    pub prev: FlowRect,
+    pub next: FlowRect,
+    pub page_index: usize,
+    pub page_count: usize,
+}
+
+/// Interactive hit target and laid-out rich text geometry of one `affine:table` cell,
+/// relative to the table block.
+#[derive(Clone)]
+pub struct TableCellHit {
+    pub row_id: String,
+    pub column_id: String,
+    pub rect: FlowRect,
+    pub text_origin: (f32, f32),
+    pub text: FlowTextLayout,
+}
+
+impl TableCellHit {
+    /// Hit-test table-block-local `(x, y)` against this cell's laid-out text.
+    pub fn hit_text(&self, local_x: f32, local_y: f32, plain: &str) -> CaretPosition {
+        let x = local_x - self.text_origin.0;
+        let y = local_y - self.text_origin.1;
+        match &self.text {
+            FlowTextLayout::Rich(rich) => rich.hit_test(point(px(x), px(y))),
+            FlowTextLayout::Plain(p) => {
+                let line = ((y / p.line_height).floor().max(0.0) as usize)
+                    .min(p.line_count.saturating_sub(1));
+                let index = crate::rich_text::TextBiIndex::new(plain);
+                let mut offset = 0;
+                let mut best = (usize::MAX, f32::MAX, 0);
+                loop {
+                    let (at, row) = p.caret(offset as usize);
+                    let distance = (line.abs_diff(row), (at - x).abs(), offset);
+                    if distance < best {
+                        best = distance;
+                    }
+                    if offset == index.utf16_len() {
+                        break;
+                    }
+                    offset = index.next_grapheme_utf16(offset);
+                }
+                CaretPosition {
+                    utf16_offset: best.2,
+                    affinity: WrapAffinity::Downstream,
+                }
+            }
+        }
+    }
+}
+
 /// Position-independent layout of one block: size, margins and paint primitives.
+#[derive(Clone)]
 pub struct BlockBody {
     pub kind: FlowKind,
     pub width: f32,
@@ -146,6 +207,10 @@ pub struct BlockBody {
     pub prefix: Option<FlowRect>,
     /// Horizontal scroll range of an unwrapped code block whose lines overflow.
     pub code_scroll: Option<CodeScroll>,
+    /// Pagination buttons of an embedded PDF attachment block, if active.
+    pub pdf_controls: Option<AttachmentPdfControls>,
+    /// Cell hit boxes of an `affine:table` block.
+    pub table_cells: Vec<TableCellHit>,
     pub(super) prims: Vec<Prim>,
 }
 
@@ -437,7 +502,9 @@ pub struct FlowInput<'a> {
     pub page_titles: &'a BTreeMap<String, String>,
     /// Image blobs by `sourceId`; a missing entry is still loading.
     pub images: &'a HashMap<String, ImageSlot>,
-    /// Bumped whenever `page_titles` or `images` change.
+    /// Rasterized PDF attachment previews keyed by block id or `sourceId`.
+    pub pdf_previews: Option<&'a HashMap<String, super::PdfPreviewPage>>,
+    /// Bumped whenever `page_titles`, `images`, or `pdf_previews` change.
     pub env_rev: u64,
     /// Explicit layout direction supplied by the host shell.
     pub direction: ui::Direction,

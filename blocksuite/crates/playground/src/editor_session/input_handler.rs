@@ -16,6 +16,12 @@ impl EntityInputHandler for PlaygroundView {
             }
             return;
         }
+        if self.table_cell.is_some() {
+            if let Some(text) = item.text() {
+                let _ = self.table_cell_edit(w, cx, |cell| cell.input.replace(None, &text));
+            }
+            return;
+        }
         if self.edgeless.authoring.label_editor().is_some() {
             if let Some(text) = item.text() {
                 let _ = self.edgeless_label_edit(w, cx, |ed| ed.replace(None, &text));
@@ -25,6 +31,9 @@ impl EntityInputHandler for PlaygroundView {
         if self.mode == crate::PlaygroundMode::Edgeless
             && self.edgeless.authoring.editing_spatial_block().is_none()
         {
+            return;
+        }
+        if self.suppress_unselected_root_input && self.editor.selection.is_none() {
             return;
         }
         self.begin_input();
@@ -43,6 +52,11 @@ impl EntityInputHandler for PlaygroundView {
     ) -> Option<String> {
         if let Some(link) = self.overlays.active_text_field() {
             let (text, covered) = link.text_for_range(range);
+            *adjusted = Some(covered);
+            return Some(text);
+        }
+        if let Some(cell) = self.table_cell.as_ref() {
+            let (text, covered) = cell.input.text_for_range(range);
             *adjusted = Some(covered);
             return Some(text);
         }
@@ -66,6 +80,10 @@ impl EntityInputHandler for PlaygroundView {
     ) -> Option<UTF16Selection> {
         if let Some(link) = self.overlays.active_text_field() {
             let (range, reversed) = link.shown_selection();
+            return Some(UTF16Selection { range, reversed });
+        }
+        if let Some(cell) = self.table_cell.as_ref() {
+            let (range, reversed) = cell.input.shown_selection();
             return Some(UTF16Selection { range, reversed });
         }
         if let Some(ed) = self.edgeless.authoring.label_editor() {
@@ -96,6 +114,9 @@ impl EntityInputHandler for PlaygroundView {
         if let Some(link) = self.overlays.active_text_field() {
             return Some(link.text().encode_utf16().count());
         }
+        if let Some(cell) = self.table_cell.as_ref() {
+            return Some(cell.input.display_text().encode_utf16().count());
+        }
         if let Some(ed) = self.edgeless.authoring.label_editor() {
             return Some(ed.display_text().encode_utf16().count());
         }
@@ -104,6 +125,12 @@ impl EntityInputHandler for PlaygroundView {
     fn set_selected_text_range(&mut self, r: Range<usize>, w: &mut Window, cx: &mut Context<Self>) {
         if self
             .link_input(w, cx, |link| link.select(r.clone()))
+            .is_some()
+        {
+            return;
+        }
+        if self
+            .table_cell_input(w, cx, |cell| cell.input.select(r.clone()))
             .is_some()
         {
             return;
@@ -129,6 +156,9 @@ impl EntityInputHandler for PlaygroundView {
         if let Some(link) = self.overlays.active_text_field() {
             return link.marked_range();
         }
+        if let Some(cell) = self.table_cell.as_ref() {
+            return cell.input.marked_range();
+        }
         if let Some(ed) = self.edgeless.authoring.label_editor() {
             return ed.marked_range();
         }
@@ -138,6 +168,12 @@ impl EntityInputHandler for PlaygroundView {
     }
     fn unmark_text(&mut self, w: &mut Window, cx: &mut Context<Self>) {
         if self.link_input(w, cx, LinkBar::unmark).is_some() {
+            return;
+        }
+        if self
+            .table_cell_edit(w, cx, |cell| cell.input.unmark())
+            .is_some()
+        {
             return;
         }
         if self
@@ -170,6 +206,12 @@ impl EntityInputHandler for PlaygroundView {
             return;
         }
         if self
+            .table_cell_edit(w, cx, |cell| cell.input.replace(r.clone(), text))
+            .is_some()
+        {
+            return;
+        }
+        if self
             .edgeless_label_edit(w, cx, |ed| ed.replace(r.clone(), text))
             .is_some()
         {
@@ -178,6 +220,9 @@ impl EntityInputHandler for PlaygroundView {
         if self.mode == crate::PlaygroundMode::Edgeless
             && self.edgeless.authoring.editing_spatial_block().is_none()
         {
+            return;
+        }
+        if self.suppress_unselected_root_input && self.editor.selection.is_none() {
             return;
         }
         self.begin_input();
@@ -209,6 +254,14 @@ impl EntityInputHandler for PlaygroundView {
             return;
         }
         if self
+            .table_cell_input(w, cx, |cell| {
+                cell.input.mark(r.clone(), text, selected.clone())
+            })
+            .is_some()
+        {
+            return;
+        }
+        if self
             .edgeless_label_input(w, cx, |ed| ed.mark(r.clone(), text, selected.clone()))
             .is_some()
         {
@@ -217,6 +270,9 @@ impl EntityInputHandler for PlaygroundView {
         if self.mode == crate::PlaygroundMode::Edgeless
             && self.edgeless.authoring.editing_spatial_block().is_none()
         {
+            return;
+        }
+        if self.suppress_unselected_root_input && self.editor.selection.is_none() {
             return;
         }
         self.begin_input();
@@ -283,6 +339,15 @@ impl EntityInputHandler for PlaygroundView {
                 .map(|field| field.bounds(point(px(0.0), px(0.0))))
                 .into_iter()
                 .collect();
+        }
+        if self.table_cell.is_some() {
+            if let Some(layout) = self.ensure_layout(
+                page_geometry(f32::from(w.viewport_size().width)).column_width,
+                w,
+            ) {
+                return self.table_cell_selection_bounds(r, &layout, w);
+            }
+            return vec![];
         }
         if self.mode == crate::PlaygroundMode::Edgeless {
             if let Some(bounds) = self.edgeless_label_screen_bounds() {
@@ -356,6 +421,9 @@ impl EntityInputHandler for PlaygroundView {
                         selection.end
                     }
                 });
+        }
+        if self.table_cell.is_some() {
+            return self.table_cell_character_index_for_point(p, w);
         }
         let p = self.input_point(p, w)?;
         (self.editor.selection.as_ref()?.focus.block_id == p.block_id)

@@ -76,25 +76,42 @@ impl PlaygroundView {
             let inside_overlay = bounds.is_some_and(|b| b.contains(&event.position))
                 || point_in_rotated_rect(wx, wy, ed.world_rect, ed.rotate_deg);
             if inside_overlay {
-                let off = bounds
-                    .and_then(|b| {
-                        let laid_out = layout_label_editor_paragraph(
-                            ed,
-                            f32::from(b.size.width),
-                            self.theme,
-                            window,
-                        )?;
-                        let local_pt = point(
-                            event.position.x - b.origin.x - px(6.0),
-                            event.position.y - b.origin.y - px(6.0),
-                        );
-                        Some(laid_out.hit_test(local_pt).utf16_offset as usize)
+                if self
+                    .edgeless
+                    .authoring
+                    .label_editor()
+                    .is_some_and(|e| e.composing())
+                {
+                    let _ =
+                        self.edgeless_label_edit(window, cx, super::EdgelessLabelEditor::unmark);
+                }
+                let bounds = self.edgeless_label_screen_bounds();
+                let off = self
+                    .edgeless
+                    .authoring
+                    .label_editor()
+                    .map(|ed| {
+                        bounds
+                            .and_then(|b| {
+                                let laid_out = layout_label_editor_paragraph(
+                                    ed,
+                                    f32::from(b.size.width),
+                                    self.theme,
+                                    window,
+                                )?;
+                                let local_pt = point(
+                                    event.position.x - b.origin.x - px(6.0),
+                                    event.position.y - b.origin.y - px(6.0),
+                                );
+                                Some(laid_out.hit_test(local_pt).utf16_offset as usize)
+                            })
+                            .unwrap_or_else(|| ed.input.text.encode_utf16().count())
                     })
-                    .unwrap_or_else(|| ed.text.encode_utf16().count());
+                    .unwrap_or(0);
                 if let Some(ed_mut) = self.edgeless.authoring.label_editor_mut() {
                     ed_mut.select(off..off);
                 }
-                self.edgeless_update_label_anchors(off..off);
+                self.edgeless_update_label_anchors();
                 window.notify_text_input_changed(&self.editor_focus);
                 cx.notify();
                 return;

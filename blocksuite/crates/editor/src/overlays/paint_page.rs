@@ -256,6 +256,118 @@ impl Overlays {
                         .on_click(emit(cx, move |_: &ClickEvent| event.clone()));
                     elements.push(element.into_any_element());
                 }
+                FlowKind::Table => {
+                    let table_cells = scene.snapshot.block(&block.block_id).and_then(|n| match &n
+                        .content
+                    {
+                        BlockContent::Table(t) => Some(&t.cells),
+                        _ => None,
+                    });
+                    for cell in &block.body.table_cells {
+                        let target = cell.rect.translated(rect.x, rect.y);
+                        if !viewport.intersects(&target) {
+                            continue;
+                        }
+                        let initial = table_cells
+                            .and_then(|cells| {
+                                cells
+                                    .get(&(cell.row_id.clone(), cell.column_id.clone()))
+                                    .map(|c| c.text.plain.clone())
+                            })
+                            .unwrap_or_default();
+                        let (bid, rid, cid) = (
+                            block.block_id.clone(),
+                            cell.row_id.clone(),
+                            cell.column_id.clone(),
+                        );
+                        let mut element = place(viewport.to_local(&target))
+                            .id(SharedString::from(format!("table-cell-{bid}-{rid}-{cid}")))
+                            .cursor(ui::CursorStyle::IBeam)
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |view: &mut V, ev: &MouseDownEvent, w, cx| {
+                                    cx.stop_propagation();
+                                    let pos = (f32::from(ev.position.x), f32::from(ev.position.y));
+                                    view.dispatch_overlay(
+                                        OverlayEvent::FocusTableCell {
+                                            block_id: bid.clone(),
+                                            row_id: rid.clone(),
+                                            column_id: cid.clone(),
+                                            screen_pos: Some(pos),
+                                        },
+                                        w,
+                                        cx,
+                                    );
+                                }),
+                            );
+                        if viewport.fully_visible(&target) {
+                            let id = format!(
+                                "{}.cell.{}.{}",
+                                block.snapshot_id, cell.row_id, cell.column_id
+                            );
+                            element = element
+                                .snapshot(SharedString::from(id), Some(PAGE_SURFACE_ID))
+                                .snapshot_text(initial);
+                        }
+                        elements.push(element.into_any_element());
+                    }
+                }
+                FlowKind::Attachment => {
+                    if let Some(pdf) = block.body.pdf_controls {
+                        for (suffix, local_rect, delta, label) in [
+                            ("pdf_prev", pdf.prev, -1, "Prev"),
+                            ("pdf_next", pdf.next, 1, "Next"),
+                        ] {
+                            let target = local_rect.translated(rect.x, rect.y);
+                            if !viewport.intersects(&target) {
+                                continue;
+                            }
+                            let event = OverlayEvent::AttachmentPdfPage {
+                                block_id: block.block_id.clone(),
+                                delta,
+                            };
+                            let mut element = place(viewport.to_local(&target))
+                                .id(SharedString::from(format!("{suffix}-{}", block.block_id)))
+                                .cursor_pointer()
+                                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                                .on_click(emit(cx, move |_: &ClickEvent| event.clone()));
+                            if viewport.fully_visible(&target) {
+                                element = element
+                                    .snapshot(
+                                        SharedString::from(format!(
+                                            "{}.{suffix}",
+                                            block.snapshot_id
+                                        )),
+                                        Some(PAGE_SURFACE_ID),
+                                    )
+                                    .snapshot_text(label);
+                            }
+                            elements.push(element.into_any_element());
+                        }
+                    }
+                }
+                FlowKind::EmbedLinkedDoc | FlowKind::EmbedSyncedDoc => {
+                    if let Some(page_id) =
+                        scene
+                            .snapshot
+                            .block(&block.block_id)
+                            .and_then(|n| match &n.content {
+                                BlockContent::EmbedLinkedDoc { page_id, .. }
+                                | BlockContent::EmbedSyncedDoc { page_id, .. } => {
+                                    Some(page_id.clone())
+                                }
+                                _ => None,
+                            })
+                    {
+                        let event = OverlayEvent::OpenEmbedDoc { page_id };
+                        let element = place(viewport.to_local(&rect))
+                            .id(SharedString::from(format!("embed-doc-{}", block.block_id)))
+                            .cursor_pointer()
+                            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                            .on_click(emit(cx, move |_: &ClickEvent| event.clone()));
+                        elements.push(element.into_any_element());
+                    }
+                }
                 _ => {}
             }
             if let Some(body_text) = &block.body.text {

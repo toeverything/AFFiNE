@@ -1,7 +1,5 @@
 //! Double-click inline rich-text & IME editing for Edgeless shapes, connectors, text, frames, and notes.
 
-use std::ops::Range;
-
 use blocksuite_playground_doc::read::{
     BlockContent, ConnectorMode, SurfaceConnector, SurfaceElementKind, TextAlign,
 };
@@ -17,7 +15,7 @@ use crate::{
 
 use super::{
     EdgelessInlineEdit, EdgelessLabelEditor, LabelSplice, LabelTarget, NOTE_CARD_PADDING,
-    SpatialItemKind, WorldRect, find_block, find_surface_element, rotate_point_around, utf16_len,
+    SpatialItemKind, WorldRect, find_block, find_surface_element, rotate_point_around,
 };
 
 /// Sample the routed connector polyline at `distance` (`0.0..=1.0`), matching
@@ -136,10 +134,10 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
         f: impl FnOnce(&mut EdgelessLabelEditor) -> Option<LabelSplice>,
     ) -> Option<()> {
-        let (target, splice, sel_after) = {
+        let (target, splice) = {
             let ed = self.edgeless.authoring.label_editor_mut()?;
             let splice = f(ed);
-            (ed.target.clone(), splice, ed.selection.clone())
+            (ed.target.clone(), splice)
         };
         if let Some(splice) = splice {
             let now_ms = self.now_ms(cx) as u64;
@@ -151,38 +149,35 @@ impl PlaygroundView {
                 self.did_edgeless_doc_commit(commit, cx);
             }
         }
-        self.edgeless_update_label_anchors(sel_after);
+        self.edgeless_update_label_anchors();
         window.notify_text_input_changed(&self.editor_focus);
         cx.notify();
         Some(())
     }
 
-    pub(crate) fn edgeless_update_label_anchors(&mut self, sel: Range<usize>) {
-        let Some((target, preedit_range)) = self.edgeless.authoring.label_editor().map(|ed| {
-            (
-                ed.target.clone(),
-                ed.preedit.as_ref().map(|p| p.replacement.clone()),
-            )
-        }) else {
+    pub(crate) fn edgeless_update_label_anchors(&mut self) {
+        let Some(target) = self
+            .edgeless
+            .authoring
+            .label_editor()
+            .map(|ed| ed.target.clone())
+        else {
             return;
         };
-        let (anchors, preedit_anchors) = match self.page() {
-            Some(page) => {
-                let a = target
-                    .encode_pos(page, sel.start)
-                    .zip(target.encode_pos(page, sel.end));
-                let pa = preedit_range.and_then(|r| {
-                    target
-                        .encode_pos(page, r.start)
-                        .zip(target.encode_pos(page, r.end))
-                });
-                (a, pa)
-            }
-            None => (None, None),
+        let mut anchored = match self.edgeless.authoring.label_editor() {
+            Some(ed) => ed.anchored.clone(),
+            None => return,
         };
+        match self.page() {
+            Some(page) => anchored.update_anchors(|off| target.encode_pos(page, off)),
+            None => {
+                anchored.anchors = None;
+                anchored.preedit_anchors = None;
+            }
+        }
         if let Some(ed) = self.edgeless.authoring.label_editor_mut() {
-            ed.anchors = anchors;
-            ed.preedit_anchors = preedit_anchors;
+            ed.anchored.anchors = anchored.anchors;
+            ed.anchored.preedit_anchors = anchored.preedit_anchors;
         }
     }
 
@@ -190,14 +185,11 @@ impl PlaygroundView {
     /// resolving its `RelativePosition` selection and preedit anchors so the local caret and
     /// active composition track remote insertions.
     pub(crate) fn edgeless_refresh_label_editor_from_snapshot(&mut self) {
-        let Some((target, anchors, preedit_anchors)) =
-            self.edgeless.authoring.label_editor().map(|ed| {
-                (
-                    ed.target.clone(),
-                    ed.anchors.clone(),
-                    ed.preedit_anchors.clone(),
-                )
-            })
+        let Some(target) = self
+            .edgeless
+            .authoring
+            .label_editor()
+            .map(|ed| ed.target.clone())
         else {
             return;
         };
@@ -223,31 +215,22 @@ impl PlaygroundView {
             }
         };
         let Some(latest_text) = latest else {
-            self.edgeless.authoring.inline_edit = None;
+            self.finish_inline_targets(
+                crate::overlays::InlineTargetEnd::DiscardPreedit,
+                None,
+                None,
+            );
             return;
         };
-        let resolve_pair = |pair: Option<(y_octo::RelativePosition, y_octo::RelativePosition)>| {
-            let (a, b) = pair?;
-            let page = self.page()?;
-            let s = target.resolve_pos(page, &a)?;
-            let e = target.resolve_pos(page, &b)?;
-            Some(s.min(e)..s.max(e))
+        let mut anchored = match self.edgeless.authoring.label_editor() {
+            Some(ed) => ed.anchored.clone(),
+            None => return,
         };
-        let resolved_sel = resolve_pair(anchors);
-        let resolved_preedit = resolve_pair(preedit_anchors);
+        anchored.reconcile_from_text(latest_text, |pos| {
+            self.page().and_then(|page| target.resolve_pos(page, pos))
+        });
         if let Some(ed) = self.edgeless.authoring.label_editor_mut() {
-            ed.text = latest_text;
-            let len = utf16_len(&ed.text);
-            ed.selection = match resolved_sel {
-                Some(r) => r.start.min(len)..r.end.min(len),
-                None => ed.selection.start.min(len)..ed.selection.end.min(len),
-            };
-            if let Some(pre) = &mut ed.preedit {
-                pre.replacement = match resolved_preedit {
-                    Some(r) => r.start.min(len)..r.end.min(len),
-                    None => pre.replacement.start.min(len)..pre.replacement.end.min(len),
-                };
-            }
+            ed.anchored = anchored;
         }
     }
 
@@ -272,7 +255,7 @@ impl PlaygroundView {
             }
         }
 
-        if ed.created_new_text && ed.text.trim().is_empty() {
+        if ed.created_new_text && ed.input.text.trim().is_empty() {
             if let LabelTarget::SurfaceText { surface_id, id } = &ed.target {
                 let sid = surface_id.clone();
                 let eid = id.clone();
@@ -292,7 +275,7 @@ impl PlaygroundView {
         } else if let LabelTarget::Connector { surface_id, id } = &ed.target
             && ed.dirty
         {
-            let trimmed = ed.text.trim();
+            let trimmed = ed.input.text.trim();
             let label_xywh = if trimmed.is_empty() {
                 [0.0; 4]
             } else {
@@ -463,7 +446,7 @@ impl PlaygroundView {
                     ),
                     _ => return false,
                 };
-                let len = utf16_len(&initial);
+                self.suppress_unselected_root_input = false;
                 self.edgeless.authoring.selection.clear();
                 self.edgeless
                     .authoring
@@ -480,7 +463,7 @@ impl PlaygroundView {
                 if let Ok(page) = self.page_mut() {
                     let _ = page.stop_capturing();
                 }
-                self.edgeless_update_label_anchors(len..len);
+                self.edgeless_update_label_anchors();
                 self.editor_focus.focus(window, cx);
                 window.notify_text_input_changed(&self.editor_focus);
                 cx.notify();
@@ -493,10 +476,10 @@ impl PlaygroundView {
                         _ => None,
                     })
                     .unwrap_or_default();
-                let len = utf16_len(&initial);
                 let rect = info.title_pill_rect.unwrap_or_else(|| {
                     WorldRect::new(info.rect.x, info.rect.y - 28.0, 140.0, 24.0)
                 });
+                self.suppress_unselected_root_input = false;
                 self.edgeless.authoring.selection.clear();
                 self.edgeless
                     .authoring
@@ -515,7 +498,7 @@ impl PlaygroundView {
                 if let Ok(page) = self.page_mut() {
                     let _ = page.stop_capturing();
                 }
-                self.edgeless_update_label_anchors(len..len);
+                self.edgeless_update_label_anchors();
                 self.editor_focus.focus(window, cx);
                 window.notify_text_input_changed(&self.editor_focus);
                 cx.notify();
@@ -531,12 +514,11 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
         f: impl FnOnce(&mut EdgelessLabelEditor) -> R,
     ) -> Option<R> {
-        let (out, sel) = {
+        let out = {
             let ed = self.edgeless.authoring.label_editor_mut()?;
-            let out = f(ed);
-            (out, ed.selection.clone())
+            f(ed)
         };
-        self.edgeless_update_label_anchors(sel);
+        self.edgeless_update_label_anchors();
         window.notify_text_input_changed(&self.editor_focus);
         cx.notify();
         Some(out)

@@ -4,7 +4,7 @@ use blocksuite_playground_doc::{
     session::split_delta,
 };
 use ui::{EntityInputHandler, KeyDownEvent};
-use y_octo::{Any, TextAttributes, TextDeltaOp, TextInsert};
+use y_octo::{Any, TextAttributes, TextDeltaOp};
 
 use super::*;
 use crate::overlays::LinkBar;
@@ -51,7 +51,7 @@ impl PlaygroundView {
             }
         }
     }
-    pub(super) fn history(
+    pub(crate) fn history(
         &mut self,
         redo: bool,
         w: &mut Window,
@@ -231,31 +231,10 @@ impl PlaygroundView {
             .page()
             .ok_or_else(|| DocError::InvalidState("missing page".into()))?
             .read_editable_text(&point.block_id)?;
-        let mut cursor = 0;
-        for op in rich.delta {
-            if let TextDeltaOp::Insert { insert, format } = op {
-                cursor += match &insert {
-                    TextInsert::Text(s) => s.encode_utf16().count(),
-                    TextInsert::Embed(v) => v.len(),
-                } as u64;
-                if offset <= cursor {
-                    if matches!(insert, TextInsert::Embed(_))
-                        || format.as_ref().is_some_and(|attrs| {
-                            attrs.contains_key("reference") || attrs.contains_key("latex")
-                        })
-                    {
-                        break;
-                    }
-                    let mut marks = format.unwrap_or_default();
-                    if offset == cursor {
-                        marks.remove("code");
-                        marks.remove("link");
-                    }
-                    return Ok(marks);
-                }
-            }
-        }
-        Ok(TextAttributes::new())
+        Ok(blocksuite_playground_doc::session::insertion_marks_at(
+            &rich.delta,
+            offset,
+        ))
     }
 
     pub(crate) fn format_mark(
@@ -339,7 +318,7 @@ impl PlaygroundView {
         self.did_edit(commit, (a == b).then_some(&start.block_id), w, cx);
         Ok(())
     }
-    pub(super) fn edit_key(
+    pub(crate) fn edit_key(
         &mut self,
         key: &str,
         shift: bool,
@@ -644,6 +623,15 @@ impl PlaygroundView {
             .active_text_field()
             .is_some_and(LinkBar::composing)
         {
+            return;
+        }
+        // Focused in-place table cell intercepts keys before document commands.
+        if self.table_cell_key_down(e, w, cx) {
+            w.prevent_default();
+            cx.stop_propagation();
+            return;
+        }
+        if self.table_cell.is_some() {
             return;
         }
         // Active whole-block selection intercepts navigation/edit/clipboard keys first.

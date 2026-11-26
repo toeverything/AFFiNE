@@ -40,7 +40,30 @@ use crate::{
     room_client::{DocState, RoomCommand, RoomConfig, RoomProtocol},
 };
 
-pub use crate::theme::{PlaygroundTheme, register_bundled_fonts};
+pub use crate::theme::PlaygroundTheme;
+
+/// Registers the tracked repository fonts via `blocksuite-editor` and adds Linux headless
+/// Emoji fallback fonts at the host layer so `blocksuite-editor` reads zero host filesystem paths.
+pub fn register_bundled_fonts(cx: &ui::App) -> anyhow::Result<()> {
+    crate::theme::register_bundled_fonts(cx)?;
+    #[cfg(all(target_os = "linux", not(target_arch = "wasm32")))]
+    {
+        let mut extra: Vec<std::borrow::Cow<'static, [u8]>> = Vec::new();
+        for path in [
+            "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
+            "/usr/share/fonts/truetype/noto/NotoEmoji-Regular.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        ] {
+            if let Ok(bytes) = std::fs::read(path) {
+                extra.push(std::borrow::Cow::Owned(bytes));
+            }
+        }
+        if !extra.is_empty() {
+            cx.text_system().add_fonts(extra)?;
+        }
+    }
+    Ok(())
+}
 
 /// Room id of the built-in showcase workspace.
 pub const SHOWCASE_ROOM: &str = "showcase";
@@ -152,6 +175,23 @@ pub struct PlaygroundView {
     /// What each referenced image shows. An entry without a pending fetch was decoded
     /// from its blob and is final.
     pub(crate) images: HashMap<String, ImageSlot>,
+    /// Rasterized PDF attachment previews keyed by attachment block id.
+    pub(crate) pdf_previews: HashMap<String, block_flow::PdfPreviewPage>,
+    /// Cache key `(source_id, page_index)` for each rendered PDF attachment block.
+    pub(crate) pdf_preview_keys: HashMap<String, (String, usize)>,
+    /// Failed PDF blobs `(source_id, byte_len)` skipped on subsequent frames.
+    pub(crate) failed_pdf_blobs: BTreeSet<(String, usize)>,
+    /// Active 0-based page index for each embedded PDF attachment block id.
+    pub(crate) pdf_page_indices: HashMap<String, usize>,
+    /// Whether the user explicitly dismissed the mobile keyboard toolbar for the current focus.
+    pub(crate) keyboard_toolbar_dismissed: bool,
+    /// Bottom software-keyboard inset height from the latest frame (logical px).
+    pub(crate) last_keyboard_inset: f32,
+    /// Focused in-place `affine:table` cell editor, if active.
+    pub(crate) table_cell: Option<overlays::InlineTableCell>,
+    pub(crate) suppress_unselected_root_input: bool,
+    /// Most recent document id opened via clicking an `embed-linked-doc` / `embed-synced-doc` card.
+    pub(crate) last_opened_embed_doc: Option<String>,
     pub(crate) blob_fetches: BTreeMap<String, BlobFetchState>,
     pub(crate) dirty_text: Option<BTreeSet<String>>,
     pub(crate) doc_rev: u64,
@@ -249,6 +289,15 @@ impl PlaygroundView {
             preflight_renamed_title: None,
             pending_sync_since_sv: BTreeMap::new(),
             images: HashMap::new(),
+            pdf_previews: HashMap::new(),
+            pdf_preview_keys: HashMap::new(),
+            failed_pdf_blobs: BTreeSet::new(),
+            pdf_page_indices: HashMap::new(),
+            keyboard_toolbar_dismissed: false,
+            last_keyboard_inset: 0.0,
+            table_cell: None,
+            suppress_unselected_root_input: false,
+            last_opened_embed_doc: None,
             blob_fetches: BTreeMap::new(),
             dirty_text: None,
             doc_rev: 0,
@@ -315,6 +364,16 @@ impl PlaygroundView {
 
     pub fn theme(&self) -> PlaygroundTheme {
         self.theme
+    }
+
+    /// Most recent document id opened by clicking an embedded linked/synced document card.
+    pub fn last_opened_embed_doc(&self) -> Option<&str> {
+        self.last_opened_embed_doc.as_deref()
+    }
+
+    /// Active 0-based PDF preview page index for an attachment block.
+    pub fn attachment_pdf_page_index(&self, block_id: &str) -> Option<usize> {
+        self.pdf_previews.get(block_id).map(|p| p.page_index)
     }
 
     pub fn edgeless_camera(&self) -> edgeless::EdgelessCamera {
@@ -415,6 +474,21 @@ impl PlaygroundView {
 
     /// Replace the shown document, e.g. with one prepared by a host or a test.
     pub fn set_document(&mut self, state: DocState, cx: &mut Context<Self>) {
+        let had_composing = self.editor.composing()
+            || self
+                .overlays
+                .active_text_field()
+                .is_some_and(|f| f.composing())
+            || self
+                .table_cell
+                .as_ref()
+                .is_some_and(|c| c.input.composing())
+            || self
+                .edgeless
+                .authoring
+                .label_editor()
+                .is_some_and(|e| e.composing());
+        self.finish_inline_targets(overlays::InlineTargetEnd::DiscardPreedit, None, None);
         self.editor = Default::default();
         self.overlays.reset();
         self.reading_anchor = None;
@@ -428,6 +502,14 @@ impl PlaygroundView {
         self.preflight_renamed_title = None;
         self.pending_sync_since_sv.clear();
         self.images.clear();
+        self.pdf_previews.clear();
+        self.pdf_preview_keys.clear();
+        self.failed_pdf_blobs.clear();
+        self.pdf_page_indices.clear();
+        self.keyboard_toolbar_dismissed = false;
+        self.last_keyboard_inset = 0.0;
+        self.suppress_unselected_root_input = had_composing;
+        self.last_opened_embed_doc = None;
         self.blob_fetches.clear();
         self.scroll_y = 0.0;
         self.refresh_document();
@@ -526,20 +608,39 @@ impl PlaygroundView {
             .map(Rc::new);
         self.doc_rev += 1;
         self.edgeless_refresh_label_editor_from_snapshot();
+        self.sync_table_cell_from_snapshot();
 
         let mut referenced = BTreeSet::new();
+        let mut pdf_attachments: Vec<(String, String)> = Vec::new();
         for node in self
             .snapshot
             .iter()
             .flat_map(|snapshot| snapshot.root.iter())
             .flat_map(|root| root.walk())
         {
-            if let BlockContent::Image { source_id, .. } = &node.content
-                && !source_id.is_empty()
-            {
-                referenced.insert(source_id.clone());
+            match &node.content {
+                BlockContent::Image { source_id, .. } if !source_id.is_empty() => {
+                    referenced.insert(source_id.clone());
+                }
+                BlockContent::Attachment {
+                    name,
+                    mime_type,
+                    source_id,
+                    embed,
+                    ..
+                } if !source_id.is_empty() => {
+                    referenced.insert(source_id.clone());
+                    if *embed
+                        && (mime_type.eq_ignore_ascii_case("application/pdf")
+                            || name.to_ascii_lowercase().ends_with(".pdf"))
+                    {
+                        pdf_attachments.push((node.id.clone(), source_id.clone()));
+                    }
+                }
+                _ => {}
             }
         }
+        self.refresh_pdf_previews(&pdf_attachments);
         // Fetches of blobs the page no longer references stop. An ordinary document
         // update never restarts a fetch that is already tracked.
         let images = &mut self.images;
@@ -600,8 +701,12 @@ impl PlaygroundView {
         }
         let now_ms = self.now_ms(cx);
         let current_x = self.indicator_x(now_ms);
-        // Commit any pending inline Edgeless edit cleanly before switching modes.
-        self.edgeless_flush_label_edit(window, cx);
+        // Commit any pending inline edit (table cell or Edgeless label) cleanly before switching modes.
+        self.finish_inline_targets(
+            overlays::InlineTargetEnd::CommitPreedit,
+            Some(window),
+            Some(cx),
+        );
         if self.edgeless.authoring.editing_spatial_block().is_some() {
             self.edgeless.authoring.inline_edit = None;
             self.editor.clear_preedit_state();
@@ -678,6 +783,7 @@ impl PlaygroundView {
                 theme: self.theme,
                 page_titles: &self.page_titles,
                 images: &self.images,
+                pdf_previews: Some(&self.pdf_previews),
                 env_rev: self.env_rev,
                 direction: window.layout_direction(),
             },
@@ -8511,5 +8617,1215 @@ mod tests {
                 BlockContent::Latex { latex: "y".into() }
             );
         });
+    }
+
+    #[test]
+    fn touch_long_press_selects_word_before_lift_and_soft_keyboard_hide_dismisses_toolbar() {
+        let session = open(390, 844, PlaygroundOptions::default());
+        let _ = session.frame();
+
+        let target_pos = session.view(|view, _| {
+            let layout = view.flow_layout().expect("layout");
+            let block = layout.block("showcase-intro").expect("intro");
+            let geo = block_flow::page_geometry(390.0);
+            point(
+                px(geo.column_x + block.x + 24.0),
+                px(TOPBAR_HEIGHT + block.y + 10.0),
+            )
+        });
+        // Dispatch TouchPhase::Started and advance 550ms WITHOUT TouchPhase::Ended.
+        session
+            .headless
+            .dispatch_input(ui::PlatformInput::Touch(ui::TouchEvent {
+                id: ui::TouchId(7),
+                phase: ui::TouchPhase::Started,
+                position: target_pos,
+                predicted_position: None,
+                force: None,
+            }));
+        session.platform.advance_clock(Duration::from_millis(550));
+        let _ = session.frame();
+
+        let sel = session
+            .view(|view, _| view.document_selection().cloned())
+            .expect("selection after 500ms touch long-press before lift");
+        assert_eq!(sel.focus.block_id, "showcase-intro");
+        assert!(
+            sel.anchor.offset() != sel.focus.offset(),
+            "expected non-empty word selection before finger lift, got {sel:?}"
+        );
+        assert!(
+            session.view(|view, _| view.overlays().keyboard_toolbar_visible()),
+            "expected keyboard toolbar visible on narrow viewport with active selection"
+        );
+
+        // System soft-keyboard dismissal hides KeyboardToolbar while preserving selection.
+        session.view(|view, cx| view.set_software_keyboard_visible(false, cx));
+        let _ = session.frame();
+        assert!(
+            !session.view(|view, _| view.overlays().keyboard_toolbar_visible()),
+            "expected keyboard toolbar hidden after software keyboard dismissal"
+        );
+        assert!(session.view(|view, _| view.document_selection().is_some()));
+
+        // Desktop MouseDown held > 500ms must NOT trigger touch long-press word selection.
+        session.view(|view, cx| {
+            view.editor.selection = None;
+            cx.notify();
+        });
+        let _ = session.frame();
+        session
+            .headless
+            .dispatch_input(ui::PlatformInput::MouseDown(ui::MouseDownEvent {
+                button: ui::MouseButton::Left,
+                position: target_pos,
+                modifiers: ui::Modifiers::none(),
+                click_count: 1,
+                first_mouse: false,
+            }));
+        session.platform.advance_clock(Duration::from_millis(550));
+        let _ = session.frame();
+        let desktop_sel = session
+            .view(|view, _| view.document_selection().cloned())
+            .expect("caret placed on desktop mouse down");
+        assert!(
+            desktop_sel.empty(),
+            "desktop mouse hold >500ms must keep collapsed caret instead of touch word selection, got {desktop_sel:?}"
+        );
+    }
+
+    #[cfg(feature = "preview-engine")]
+    #[test]
+    fn set_document_reloads_pdf_preview_and_source_id_change_invalidates_stale_texture() {
+        fn minimal_pdf() -> Vec<u8> {
+            let mut out = b"%PDF-1.4\n".to_vec();
+            let mut offsets = vec![0usize];
+            let objs: [&[u8]; 4] = [
+                b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+                b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+                b"3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R >>\nendobj\n",
+                b"4 0 obj\n<< /Length 0 >>\nstream\n\nendstream\nendobj\n",
+            ];
+            for obj in objs {
+                offsets.push(out.len());
+                out.extend_from_slice(obj);
+            }
+            let xref = out.len();
+            out.extend_from_slice(format!("xref\n0 {}\n", offsets.len()).as_bytes());
+            out.extend_from_slice(b"0000000000 65535 f \n");
+            for off in offsets.iter().skip(1) {
+                out.extend_from_slice(format!("{off:010} 00000 n \n").as_bytes());
+            }
+            out.extend_from_slice(
+                format!(
+                    "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
+                    offsets.len()
+                )
+                .as_bytes(),
+            );
+            out
+        }
+
+        let make_pdf_doc = |blob_id: &str| {
+            let mut state = DocState::new("doc:pdf-reload", 33).unwrap();
+            state.workspace.create_page(HOME_PAGE_ID, "PDF", 1).unwrap();
+            state.blobs.insert(blob_id.into(), minimal_pdf().into());
+            let page = state.workspace.ensure_page(HOME_PAGE_ID).unwrap();
+            page.add_block(
+                "root",
+                BlockSpec::Page {
+                    title: "PDF".into(),
+                },
+                None,
+                None,
+                1,
+            )
+            .unwrap();
+            page.add_block(
+                "note",
+                BlockSpec::Note { xywh: None },
+                Some("root"),
+                None,
+                2,
+            )
+            .unwrap();
+            page.add_block(
+                "b-pdf",
+                BlockSpec::Attachment {
+                    name: "spec.pdf".into(),
+                    size: 1024,
+                    mime_type: "application/pdf".into(),
+                    source_id: blob_id.into(),
+                    caption: String::new(),
+                    embed: true,
+                },
+                Some("note"),
+                None,
+                3,
+            )
+            .unwrap();
+            state
+        };
+
+        let session = open(800, 600, PlaygroundOptions::default());
+        session.view(|view, cx| view.set_document(make_pdf_doc("blob-a"), cx));
+        assert!(session.view(|view, _| view.pdf_previews.contains_key("b-pdf")));
+
+        // Re-opening a fresh DocState with the same (block_id, source_id) must still render.
+        session.view(|view, cx| view.set_document(make_pdf_doc("blob-a"), cx));
+        assert!(session.view(|view, _| view.pdf_previews.contains_key("b-pdf")));
+
+        // Switching sourceId from "blob-a" to not-yet-downloaded "blob-b" invalidates stale "blob-a".
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                doc.workspace
+                    .page_mut(HOME_PAGE_ID)
+                    .unwrap()
+                    .set_block_prop(
+                        "b-pdf",
+                        "prop:sourceId",
+                        y_octo::SessionValue::Any(Any::String("blob-b".into())),
+                        10,
+                    )
+                    .unwrap();
+            });
+        });
+        assert!(!session.view(|view, _| view.pdf_previews.contains_key("b-pdf")));
+
+        // Once "blob-b" bytes arrive, preview renders for "blob-b".
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                doc.blobs.insert("blob-b".into(), minimal_pdf().into());
+            });
+        });
+        assert!(session.view(|view, _| view.pdf_previews.contains_key("b-pdf")));
+        assert_eq!(
+            session.view(|view, _| view.pdf_preview_keys.get("b-pdf").map(|(s, _)| s.clone())),
+            Some("blob-b".to_string())
+        );
+
+        // Switching to "blob-c" and delivering bytes via real RoomEvent::Blob (without edit_document)
+        // must immediately rasterize Page 1 for "blob-c".
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                doc.workspace
+                    .page_mut(HOME_PAGE_ID)
+                    .unwrap()
+                    .set_block_prop(
+                        "b-pdf",
+                        "prop:sourceId",
+                        y_octo::SessionValue::Any(Any::String("blob-c".into())),
+                        12,
+                    )
+                    .unwrap();
+            });
+        });
+        assert!(!session.view(|view, _| view.pdf_previews.contains_key("b-pdf")));
+        session.view(|view, cx| {
+            let (_, ev_rx) = async_channel::unbounded();
+            let link = room_client::RoomLink::from_parts(ev_rx, |_| {});
+            view.room = Some(view_room::RoomRuntime {
+                config: room_client::RoomConfig::new("doc:pdf-reload", Some("ws://127.0.0.1:1")),
+                protocol: room_client::RoomProtocol::new("doc:pdf-reload"),
+                link,
+                error: None,
+            });
+            view.handle_room_event(
+                room_client::RoomEvent::Blob {
+                    source_id: "blob-c".into(),
+                    bytes: Some(minimal_pdf()),
+                },
+                cx,
+            );
+        });
+        assert!(session.view(|view, _| view.pdf_previews.contains_key("b-pdf")));
+        assert_eq!(
+            session.view(|view, _| view.pdf_preview_keys.get("b-pdf").map(|(s, _)| s.clone())),
+            Some("blob-c".to_string())
+        );
+    }
+
+    #[test]
+    fn table_cell_inline_focus_live_edit_undo_empty_preserves_focus_and_remote_delete_closes() {
+        use ui::EntityInputHandler;
+
+        let mut state = DocState::new("doc:inline-table", 44).unwrap();
+        state
+            .workspace
+            .create_page(HOME_PAGE_ID, "Inline Table", 1)
+            .unwrap();
+        {
+            let page = state.workspace.ensure_page(HOME_PAGE_ID).unwrap();
+            page.add_block(
+                "root",
+                BlockSpec::Page {
+                    title: "Inline Table".into(),
+                },
+                None,
+                None,
+                1,
+            )
+            .unwrap();
+            page.add_block(
+                "note",
+                BlockSpec::Note { xywh: None },
+                Some("root"),
+                None,
+                2,
+            )
+            .unwrap();
+            page.add_block(
+                "tbl",
+                BlockSpec::Table {
+                    rows: vec![
+                        vec!["Col A".into(), "Col B".into()],
+                        vec![String::new(), "Existing".into()],
+                    ],
+                },
+                Some("note"),
+                None,
+                3,
+            )
+            .unwrap();
+            page.stop_capturing().unwrap();
+        }
+
+        let session = open(800, 600, PlaygroundOptions::default());
+        session.view(|view, cx| view.set_document(state, cx));
+        let _ = session.frame();
+
+        // 1. Focusing an empty cell produces zero CRDT writeback.
+        let sv_before =
+            session.view(|view, _| view.page().unwrap().encode_state_vector_v1().unwrap());
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::FocusTableCell {
+                            block_id: "tbl".into(),
+                            row_id: "row-1".into(),
+                            column_id: "col-0".into(),
+                            screen_pos: None,
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .unwrap();
+        });
+        let _ = session.frame();
+        assert!(session.view(|view, _| view.active_table_cell().is_some()));
+        let sv_after_focus =
+            session.view(|view, _| view.page().unwrap().encode_state_vector_v1().unwrap());
+        assert_eq!(
+            sv_before, sv_after_focus,
+            "focus-only must be zero writeback"
+        );
+
+        // 2. Typing splices live Y.Text directly and relayouts only the single table block.
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.replace_text_in_range(None, "X", window, cx);
+                })
+                .unwrap();
+        });
+        let _ = session.frame();
+        let read_r1c0 = || {
+            session.view(|view, _| {
+                let snap = view.page_snapshot().unwrap();
+                let BlockContent::Table(t) = &snap.block("tbl").unwrap().content else {
+                    panic!("expected table");
+                };
+                t.cells[&("row-1".into(), "col-0".into())]
+                    .text
+                    .plain
+                    .clone()
+            })
+        };
+        assert_eq!(read_r1c0(), "X");
+
+        // 3. Undoing the first character back to empty keeps cell focus alive with caret at 0.
+        send_key(&session, "z", cmd_mod());
+        let _ = session.frame();
+        assert_eq!(read_r1c0(), "");
+        let focused_sel =
+            session.view(|view, _| view.active_table_cell().map(|c| c.input.selection.clone()));
+        assert_eq!(
+            focused_sel,
+            Some(0..0),
+            "undoing back to empty must keep table cell focused with caret at 0"
+        );
+
+        // 4. Remote deletion of the focused row silently closes focus.
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                let page = doc.workspace.page_mut(HOME_PAGE_ID).unwrap();
+                let blk = y_octo::TypeTarget::Path(y_octo::TypePath::root("blocks").key("tbl"));
+                page.inner_mut()
+                    .map_remove(&blk, "prop:rows.row-1.rowId")
+                    .unwrap();
+                page.inner_mut()
+                    .map_remove(&blk, "prop:rows.row-1.order")
+                    .unwrap();
+            });
+        });
+        let _ = session.frame();
+        assert!(
+            session.view(|view, _| view.active_table_cell().is_none()),
+            "remote deletion of focused row must silently close cell focus"
+        );
+    }
+
+    #[cfg(not(feature = "preview-engine"))]
+    #[test]
+    fn default_build_uses_registered_pdf_page_provider_and_falls_back_when_absent() {
+        use std::sync::Mutex;
+
+        static PDF_PROVIDER_LOCK: Mutex<()> = Mutex::new(());
+        struct TestPdfProvider;
+        impl block_flow::PdfPageProvider for TestPdfProvider {
+            fn page_count(&self, _bytes: &[u8]) -> Option<usize> {
+                Some(2)
+            }
+            fn render_pdf_page(
+                &self,
+                _bytes: &[u8],
+                page_index: usize,
+                _scale: f32,
+            ) -> Option<block_flow::PdfPreviewPage> {
+                let frame = image::Frame::new(image::RgbaImage::from_pixel(
+                    4,
+                    4,
+                    image::Rgba([0, 0, 0, 255]),
+                ));
+                Some(block_flow::PdfPreviewPage {
+                    page_index,
+                    page_count: 2,
+                    image: Arc::new(ui::RenderImage::new(vec![frame])),
+                    width_pt: 200.0,
+                    height_pt: 100.0,
+                })
+            }
+        }
+        struct ResetGuard;
+        impl Drop for ResetGuard {
+            fn drop(&mut self) {
+                block_flow::register_pdf_page_provider(None);
+            }
+        }
+
+        let _lock = PDF_PROVIDER_LOCK.lock().unwrap();
+        let _guard = ResetGuard;
+        block_flow::register_pdf_page_provider(None);
+
+        let make_doc = || {
+            let mut state = DocState::new("doc:pdf-provider", 55).unwrap();
+            state.workspace.create_page(HOME_PAGE_ID, "PDF", 1).unwrap();
+            state
+                .blobs
+                .insert("blob-host".into(), Arc::new(b"%PDF-1.4\n%%EOF\n".to_vec()));
+            let page = state.workspace.ensure_page(HOME_PAGE_ID).unwrap();
+            page.add_block(
+                "root",
+                BlockSpec::Page {
+                    title: "PDF".into(),
+                },
+                None,
+                None,
+                1,
+            )
+            .unwrap();
+            page.add_block(
+                "note",
+                BlockSpec::Note { xywh: None },
+                Some("root"),
+                None,
+                2,
+            )
+            .unwrap();
+            page.add_block(
+                "b-pdf",
+                BlockSpec::Attachment {
+                    name: "host.pdf".into(),
+                    size: 512,
+                    mime_type: "application/pdf".into(),
+                    source_id: "blob-host".into(),
+                    caption: String::new(),
+                    embed: true,
+                },
+                Some("note"),
+                None,
+                3,
+            )
+            .unwrap();
+            state
+        };
+
+        let session = open(800, 600, PlaygroundOptions::default());
+        // (a) Without a registered provider, no preview is generated (file card fallback).
+        session.view(|view, cx| view.set_document(make_doc(), cx));
+        assert!(!session.view(|view, _| view.pdf_previews.contains_key("b-pdf")));
+
+        // (b) With a host-registered PdfPageProvider, Page 1 texture is generated.
+        block_flow::register_pdf_page_provider(Some(Arc::new(TestPdfProvider)));
+        session.view(|view, cx| view.set_document(make_doc(), cx));
+        assert!(session.view(|view, _| view.pdf_previews.contains_key("b-pdf")));
+    }
+
+    #[test]
+    fn paste_markdown_only_clipboard_item_inserts_h1_heading_block() {
+        use ui::EntityInputHandler;
+
+        let session = open(800, 600, PlaygroundOptions::default());
+        let _ = session.frame();
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    let intro_end = view
+                        .page_snapshot()
+                        .and_then(|snap| snap.block("showcase-intro"))
+                        .and_then(|node| match &node.content {
+                            BlockContent::Paragraph { text, .. } => {
+                                Some(text.plain.encode_utf16().count() as u64)
+                            }
+                            _ => None,
+                        })
+                        .unwrap_or(0);
+                    view.select_document_range(
+                        editor_session::DocumentSelection::caret(editor_session::DocPoint::new(
+                            "showcase-intro",
+                            intro_end,
+                        )),
+                        window,
+                        cx,
+                    );
+                    let item = ui::ClipboardItem::new_string_with_json_metadata(
+                        String::new(),
+                        serde_json::json!({ "text/markdown": "Lead\n\n# Title" }),
+                    );
+                    view.paste(item, window, cx);
+                })
+                .unwrap();
+        });
+        let has_h1_title = session.view(|view, _| {
+            view.page_snapshot()
+                .unwrap()
+                .root
+                .iter()
+                .flat_map(|root| root.walk())
+                .any(|node| match &node.content {
+                    BlockContent::Paragraph {
+                        kind: blocksuite_playground_doc::schema::ParagraphType::H1,
+                        text,
+                        ..
+                    } => text.plain == "Title",
+                    _ => false,
+                })
+        });
+        assert!(has_h1_title, "expected H1 heading block with text 'Title'");
+    }
+
+    fn make_table_doc_state(
+        doc_id: &str,
+        title: &str,
+        rows: Vec<Vec<String>>,
+        para: Option<&str>,
+    ) -> DocState {
+        let mut state = DocState::new(doc_id, 44).unwrap();
+        state.workspace.create_page(HOME_PAGE_ID, title, 1).unwrap();
+        {
+            let page = state.workspace.ensure_page(HOME_PAGE_ID).unwrap();
+            page.add_block(
+                "root",
+                BlockSpec::Page {
+                    title: title.into(),
+                },
+                None,
+                None,
+                1,
+            )
+            .unwrap();
+            page.add_block(
+                "note",
+                BlockSpec::Note { xywh: None },
+                Some("root"),
+                None,
+                2,
+            )
+            .unwrap();
+            page.add_block("tbl", BlockSpec::Table { rows }, Some("note"), None, 3)
+                .unwrap();
+            if let Some(text) = para {
+                page.add_block(
+                    "p1",
+                    BlockSpec::Paragraph {
+                        paragraph_type: ParagraphType::Text,
+                        text: text.to_string(),
+                    },
+                    Some("note"),
+                    None,
+                    4,
+                )
+                .unwrap();
+            }
+            page.stop_capturing().unwrap();
+        }
+        state
+    }
+
+    fn focus_table_cell_at(session: &Session, row: &str, col: &str) {
+        let (row, col) = (row.to_string(), col.to_string());
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |view, window, cx| {
+                    view.dispatch_overlay(
+                        overlays::OverlayEvent::FocusTableCell {
+                            block_id: "tbl".into(),
+                            row_id: row,
+                            column_id: col,
+                            screen_pos: None,
+                        },
+                        window,
+                        cx,
+                    );
+                })
+                .unwrap();
+        });
+    }
+
+    #[test]
+    fn table_cell_trailing_marks_match_paragraph_and_preedit_preserves_pixels() {
+        use ui::EntityInputHandler;
+
+        let reference = y_octo::Any::Object(Box::new(
+            [
+                ("type".to_string(), y_octo::Any::String("LinkedPage".into())),
+                (
+                    "pageId".to_string(),
+                    y_octo::Any::String("doc:other".into()),
+                ),
+            ]
+            .into_iter()
+            .collect(),
+        ));
+        for (name, text, attr) in [
+            ("bold", "see word", ("bold".to_string(), y_octo::Any::True)),
+            ("code", "see code", ("code".to_string(), y_octo::Any::True)),
+            (
+                "link",
+                "see site",
+                (
+                    "link".to_string(),
+                    y_octo::Any::String("https://affine.pro".into()),
+                ),
+            ),
+            ("reference", "see  ", ("reference".to_string(), reference)),
+            (
+                "latex",
+                "see  ",
+                ("latex".to_string(), y_octo::Any::String("x^2".into())),
+            ),
+        ] {
+            let mut state = make_table_doc_state(
+                "doc:cell-marks",
+                "Marks",
+                vec![vec!["H".into()], vec![text.into()]],
+                Some(text),
+            );
+            {
+                let page = state.workspace.ensure_page(HOME_PAGE_ID).unwrap();
+                let run = (text.encode_utf16().count() - 4) as u64;
+                let ops = vec![
+                    y_octo::TextDeltaOp::Retain {
+                        retain: 4,
+                        format: None,
+                    },
+                    y_octo::TextDeltaOp::Retain {
+                        retain: run,
+                        format: Some(y_octo::TextAttributes::from([attr])),
+                    },
+                ];
+                page.apply_text_delta("tbl", "prop:cells.row-1:col-0.text", &ops, 5)
+                    .unwrap();
+                page.apply_text_delta("p1", "prop:text", &ops, 6).unwrap();
+                page.stop_capturing().unwrap();
+            }
+            let session = open(800, 500, PlaygroundOptions::default());
+            session.view(|v, cx| v.set_document(state, cx));
+            let _ = session.frame();
+            set_caret(&session, "p1", text.encode_utf16().count() as u64);
+            type_text(&session, "XY");
+            let para_delta =
+                session.view(|v, _| v.page().unwrap().read_editable_text("p1").unwrap().0.delta);
+            focus_table_cell_at(&session, "row-1", "col-0");
+            let _ = session.frame();
+            type_text(&session, "XY");
+            let cell_delta = session.view(|v, _| {
+                v.page()
+                    .unwrap()
+                    .read_table_block("tbl")
+                    .unwrap()
+                    .unwrap()
+                    .cells[&("row-1".into(), "col-0".into())]
+                    .text
+                    .delta
+                    .clone()
+            });
+            assert_eq!(
+                cell_delta, para_delta,
+                "table cell delta must match paragraph delta after {name}"
+            );
+        }
+
+        let text = "Plan for the launch review ";
+        let mut state = make_table_doc_state(
+            "doc:cell-preedit-px",
+            "Preedit",
+            vec![
+                vec!["Task".into(), "Owner".into()],
+                vec![text.into(), "Ann".into()],
+            ],
+            None,
+        );
+        {
+            let page = state.workspace.ensure_page(HOME_PAGE_ID).unwrap();
+            page.apply_text_delta(
+                "tbl",
+                "prop:cells.row-1:col-0.text",
+                &[
+                    y_octo::TextDeltaOp::Retain {
+                        retain: 4,
+                        format: Some(y_octo::TextAttributes::from([(
+                            "bold".to_string(),
+                            y_octo::Any::True,
+                        )])),
+                    },
+                    y_octo::TextDeltaOp::Retain {
+                        retain: 9,
+                        format: None,
+                    },
+                    y_octo::TextDeltaOp::Retain {
+                        retain: 6,
+                        format: Some(y_octo::TextAttributes::from([(
+                            "link".to_string(),
+                            y_octo::Any::String("https://affine.pro".into()),
+                        )])),
+                    },
+                ],
+                5,
+            )
+            .unwrap();
+            page.stop_capturing().unwrap();
+        }
+        let session = open(800, 420, PlaygroundOptions::default());
+        session.view(|v, cx| v.set_document(state, cx));
+        let _ = session.frame();
+        focus_table_cell_at(&session, "row-1", "col-0");
+        let (s0, i0) = session.frame();
+        let caret0 = s0.elements["page.table_cell_caret"].bounds.x;
+        let sv0 = session.view(|v, _| v.page().unwrap().encode_state_vector_v1().unwrap());
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |v, w, cx| {
+                    v.replace_and_mark_text_in_range(None, "ni", None, w, cx);
+                })
+                .unwrap();
+        });
+        let (_, i1) = session.frame();
+        let sv1 = session.view(|v, _| v.page().unwrap().encode_state_vector_v1().unwrap());
+        assert_eq!(sv0, sv1, "preedit must not write to CRDT");
+        let cell_b = s0.elements["page.block.tbl.cell.row-1.col-0"].bounds;
+        let (x0, x1) = (cell_b.x as u32 + 2, (caret0 as u32).saturating_sub(2));
+        let (y0, y1) = (cell_b.y as u32 + 2, (cell_b.y + cell_b.height) as u32 - 2);
+        let mut changed = 0u32;
+        for y in y0..y1 {
+            for x in x0..x1 {
+                if i0.get_pixel(x, y) != i1.get_pixel(x, y) {
+                    changed += 1;
+                }
+            }
+        }
+        assert_eq!(
+            changed, 0,
+            "existing formatted text pixels left of caret must not change during IME preedit"
+        );
+        let hit_idx = session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |v, w, cx| {
+                    v.character_index_for_point(
+                        point(px(cell_b.x + 12.0), px(cell_b.y + cell_b.height * 0.5)),
+                        w,
+                        cx,
+                    )
+                })
+                .unwrap()
+        });
+        assert!(
+            hit_idx.is_some(),
+            "character_index_for_point must resolve inside focused cell"
+        );
+    }
+
+    #[test]
+    fn table_cell_exit_preserves_editor_focus_and_suppresses_unselected_root_input() {
+        use ui::EntityInputHandler;
+
+        let assert_editor_focused = |session: &Session, ctx: &str| {
+            let ok = session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |v, w, cx| w.focused(cx) == Some(v.editor_focus.clone()))
+                    .unwrap()
+            });
+            assert!(ok, "{ctx}: window.focused(cx) must stay on editor_focus");
+        };
+
+        // Switching to Edgeless closes the focused cell, preserves editor_focus across two
+        // consecutive frames, and prevents typing/pasting from mutating the table cell.
+        {
+            let state = make_table_doc_state(
+                "doc:cell-mode-switch",
+                "Mode",
+                vec![vec!["H".into()], vec!["cell".into()]],
+                None,
+            );
+            let session = open(1280, 800, PlaygroundOptions::default());
+            session.view(|v, cx| v.set_document(state, cx));
+            let _ = session.frame();
+            focus_table_cell_at(&session, "row-1", "col-0");
+            let (snap, _) = session.frame();
+            session.click(&snap, "chrome.mode_switcher.edgeless");
+            let _ = session.frame();
+            assert_editor_focused(&session, "edgeless switch frame 1");
+            let _ = session.frame();
+            assert_editor_focused(&session, "edgeless switch frame 2");
+            assert!(session.view(|v, _| v.active_table_cell().is_none()));
+            let sv0 = session.view(|v, _| v.page().unwrap().encode_state_vector_v1().unwrap());
+            type_text(&session, "q");
+            session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |v, w, cx| {
+                        v.paste(ui::ClipboardItem::new_string("PASTED".into()), w, cx);
+                    })
+                    .unwrap();
+            });
+            let sv1 = session.view(|v, _| v.page().unwrap().encode_state_vector_v1().unwrap());
+            assert_eq!(
+                sv0, sv1,
+                "typing/pasting in Edgeless must not mutate table cell"
+            );
+        }
+
+        // Shift+Enter newline, tab-to-space paste, and Enter/Escape/remote row delete keep
+        // editor_focus on both frames while suppressing residual typing into the page title.
+        for how in ["enter", "escape", "peer deletes the row"] {
+            let state = make_table_doc_state(
+                "doc:cell-exit",
+                "Probe",
+                vec![vec!["H".into()], vec!["cell".into()]],
+                Some("para"),
+            );
+            let session = open(800, 420, PlaygroundOptions::default());
+            session.view(|v, cx| v.set_document(state, cx));
+            let (snap, _) = session.frame();
+            session.click(&snap, "page.block.tbl.cell.row-1.col-0");
+            let _ = session.frame();
+            if how == "enter" {
+                send_key(
+                    &session,
+                    "enter",
+                    ui::Modifiers {
+                        shift: true,
+                        ..Default::default()
+                    },
+                );
+                assert!(session.view(|v, _| v.active_table_cell().is_some()));
+                session.app.update(|cx| {
+                    session
+                        .window
+                        .update(cx, |v, w, cx| {
+                            v.paste(ui::ClipboardItem::new_string("a\tb".into()), w, cx);
+                        })
+                        .unwrap();
+                });
+                let cell_text = session.view(|v, _| {
+                    v.page()
+                        .unwrap()
+                        .read_table_block("tbl")
+                        .unwrap()
+                        .unwrap()
+                        .cells[&("row-1".into(), "col-0".into())]
+                        .text
+                        .plain
+                        .clone()
+                });
+                assert_eq!(cell_text, "cell\na b");
+            }
+            type_text(&session, "A");
+            match how {
+                "peer deletes the row" => {
+                    session.app.update(|cx| {
+                        session
+                            .window
+                            .update(cx, |v, w, cx| {
+                                v.replace_and_mark_text_in_range(None, "hao", None, w, cx);
+                            })
+                            .unwrap();
+                    });
+                    session.view(|v, cx| {
+                        v.edit_document(cx, |doc| {
+                            let page = doc.workspace.page_mut(HOME_PAGE_ID).unwrap();
+                            let blk = y_octo::TypeTarget::Path(
+                                y_octo::TypePath::root("blocks").key("tbl"),
+                            );
+                            page.inner_mut()
+                                .map_remove(&blk, "prop:rows.row-1.rowId")
+                                .unwrap();
+                            page.inner_mut()
+                                .map_remove(&blk, "prop:rows.row-1.order")
+                                .unwrap();
+                        });
+                    });
+                }
+                key => send_key(&session, key, ui::Modifiers::default()),
+            }
+            let _ = session.frame();
+            assert_editor_focused(&session, &format!("{how} frame 1"));
+            let _ = session.frame();
+            assert_editor_focused(&session, &format!("{how} frame 2"));
+            let sv0 = session.view(|v, _| v.page().unwrap().encode_state_vector_v1().unwrap());
+            type_text(&session, "B");
+            type_text(&session, "C");
+            let _ = session.frame();
+            let sv1 = session.view(|v, _| v.page().unwrap().encode_state_vector_v1().unwrap());
+            let title = session.view(|v, _| v.page_snapshot().unwrap().title().to_string());
+            assert_eq!(title, "Probe", "({how}) must never write into page title");
+            assert_eq!(
+                sv0, sv1,
+                "({how}) residual typing must produce zero CRDT writeback"
+            );
+        }
+    }
+
+    #[test]
+    fn set_document_discards_preedit_and_suppresses_late_input_only_when_composing() {
+        use blocksuite_playground_doc::schema::SurfaceElementSpec;
+        use ui::EntityInputHandler;
+
+        let make_doc_a = || {
+            let mut state = make_table_doc_state(
+                "doc:switch-a",
+                "DocA",
+                vec![vec!["H".into()], vec!["cell".into()]],
+                Some("hello world"),
+            );
+            {
+                let page = state.workspace.ensure_page(HOME_PAGE_ID).unwrap();
+                page.add_block("surf", BlockSpec::Surface, Some("root"), None, 5)
+                    .unwrap();
+                page.add_surface_element(
+                    "surf",
+                    "sh-1",
+                    "a0",
+                    SurfaceElementSpec::Shape {
+                        shape_type: "rect".into(),
+                        xywh: "[80,80,180,90]".into(),
+                        seed: 1,
+                        filled: true,
+                        text: Some("shape".into()),
+                    },
+                    6,
+                )
+                .unwrap();
+                page.add_block(
+                    "eq-1",
+                    BlockSpec::Latex {
+                        latex: "x^2".into(),
+                    },
+                    Some("note"),
+                    None,
+                    7,
+                )
+                .unwrap();
+                page.stop_capturing().unwrap();
+            }
+            state
+        };
+
+        let cases = [
+            ("paragraph_composing", true),
+            ("link_bar_composing", true),
+            ("equation_bar_composing", true),
+            ("table_cell_composing", true),
+            ("edgeless_label_composing", true),
+            ("no_active_target", false),
+            ("table_cell_focused_idle", false),
+        ];
+
+        for (case, expect_suppressed) in cases {
+            let session = open(1280, 800, PlaygroundOptions::default());
+            session.view(|v, cx| v.set_document(make_doc_a(), cx));
+            let _ = session.frame();
+
+            match case {
+                "paragraph_composing" => {
+                    set_caret(&session, "p1", 5);
+                    session.app.update(|cx| {
+                        session
+                            .window
+                            .update(cx, |v, w, cx| {
+                                v.replace_and_mark_text_in_range(None, "ni", None, w, cx);
+                            })
+                            .unwrap();
+                    });
+                }
+                "link_bar_composing" => {
+                    session.app.update(|cx| {
+                        session
+                            .window
+                            .update(cx, |v, w, cx| {
+                                v.dispatch_overlay(
+                                    overlays::OverlayEvent::SetSelection(Some(
+                                        overlays::ActiveSelection {
+                                            block_id: "p1".into(),
+                                            start_utf16: 0,
+                                            end_utf16: 5,
+                                        },
+                                    )),
+                                    w,
+                                    cx,
+                                );
+                                v.dispatch_overlay(
+                                    overlays::OverlayEvent::Format(overlays::FormatAction::Link),
+                                    w,
+                                    cx,
+                                );
+                                v.replace_and_mark_text_in_range(None, "ni", None, w, cx);
+                            })
+                            .unwrap();
+                    });
+                }
+                "equation_bar_composing" => {
+                    session.app.update(|cx| {
+                        session
+                            .window
+                            .update(cx, |v, w, cx| {
+                                v.dispatch_overlay(
+                                    overlays::OverlayEvent::OpenEquationEditor {
+                                        target: overlays::EquationTarget::Block {
+                                            block_id: "eq-1".into(),
+                                        },
+                                        initial: "x^2".into(),
+                                    },
+                                    w,
+                                    cx,
+                                );
+                                v.replace_and_mark_text_in_range(None, "ni", None, w, cx);
+                            })
+                            .unwrap();
+                    });
+                }
+                "table_cell_composing" => {
+                    focus_table_cell_at(&session, "row-1", "col-0");
+                    session.app.update(|cx| {
+                        session
+                            .window
+                            .update(cx, |v, w, cx| {
+                                v.replace_and_mark_text_in_range(None, "ni", None, w, cx);
+                            })
+                            .unwrap();
+                    });
+                }
+                "edgeless_label_composing" => {
+                    session.app.update(|cx| {
+                        session
+                            .window
+                            .update(cx, |v, w, cx| {
+                                v.set_mode(PlaygroundMode::Edgeless, w, cx);
+                            })
+                            .unwrap();
+                    });
+                    let _ = session.frame();
+                    session.app.update(|cx| {
+                        session
+                            .window
+                            .update(cx, |v, w, cx| {
+                                assert!(v.edgeless_begin_inline_edit("sh-1", w, cx));
+                                v.replace_and_mark_text_in_range(None, "ni", None, w, cx);
+                            })
+                            .unwrap();
+                    });
+                }
+                "no_active_target" => {}
+                "table_cell_focused_idle" => {
+                    focus_table_cell_at(&session, "row-1", "col-0");
+                }
+                _ => unreachable!(),
+            }
+
+            let doc_b = make_table_doc_state("doc:switch-b", "DocB", vec![vec!["H".into()]], None);
+            session.view(|v, cx| v.set_document(doc_b, cx));
+            let _ = session.frame();
+            type_text(&session, "X");
+            let _ = session.frame();
+            let title_b = session.view(|v, _| v.page_snapshot().unwrap().title().to_string());
+            if expect_suppressed {
+                assert_eq!(
+                    title_b, "DocB",
+                    "case {case}: late input after composing set_document must not mutate new title"
+                );
+            } else {
+                assert_eq!(
+                    title_b, "XDocB",
+                    "case {case}: non-composing set_document must allow typing into new title"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn same_target_pointer_press_commits_preedit_before_repositioning_caret() {
+        use blocksuite_playground_doc::schema::SurfaceElementSpec;
+        use ui::EntityInputHandler;
+
+        // Table cell: select 3..5 in "abcdef", compose "ni", click near cell start, unmark.
+        {
+            let state = make_table_doc_state(
+                "doc:same-cell-press",
+                "SameCell",
+                vec![vec!["H".into()], vec!["abcdef".into()]],
+                None,
+            );
+            let session = open(800, 420, PlaygroundOptions::default());
+            session.view(|v, cx| v.set_document(state, cx));
+            let (snap, _) = session.frame();
+            focus_table_cell_at(&session, "row-1", "col-0");
+            session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |v, w, cx| {
+                        v.set_selected_text_range(3..5, w, cx);
+                        v.replace_and_mark_text_in_range(None, "ni", None, w, cx);
+                    })
+                    .unwrap();
+            });
+            let _ = session.frame();
+            let cell_b = snap.elements["page.block.tbl.cell.row-1.col-0"].bounds;
+            session.headless.simulate_click(point(
+                px(cell_b.x + 2.0),
+                px(cell_b.y + cell_b.height * 0.5),
+            ));
+            session.platform.run_until_parked();
+            let _ = session.frame();
+            session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |v, w, cx| v.unmark_text(w, cx))
+                    .unwrap();
+            });
+            let (plain, sel) = session.view(|v, _| {
+                let text = v
+                    .page()
+                    .unwrap()
+                    .read_table_block("tbl")
+                    .unwrap()
+                    .unwrap()
+                    .cells[&("row-1".into(), "col-0".into())]
+                    .text
+                    .plain
+                    .clone();
+                let sel = v.active_table_cell().unwrap().input.selection.clone();
+                (text, sel)
+            });
+            assert_eq!(
+                plain, "abcnif",
+                "table cell preedit must commit once into original 3..5 range"
+            );
+            assert_eq!(sel, 0..0, "caret must sit at clicked offset 0");
+        }
+
+        // Edgeless shape label: select 2..4 in "abcdef", compose "ni", click near start, unmark.
+        {
+            let mut state = make_table_doc_state(
+                "doc:same-label-press",
+                "SameLabel",
+                vec![vec!["H".into()]],
+                None,
+            );
+            {
+                let page = state.workspace.ensure_page(HOME_PAGE_ID).unwrap();
+                page.add_block("surf", BlockSpec::Surface, Some("root"), None, 5)
+                    .unwrap();
+                page.add_surface_element(
+                    "surf",
+                    "sh-1",
+                    "a0",
+                    SurfaceElementSpec::Shape {
+                        shape_type: "rect".into(),
+                        xywh: "[80,80,220,90]".into(),
+                        seed: 1,
+                        filled: true,
+                        text: Some("abcdef".into()),
+                    },
+                    6,
+                )
+                .unwrap();
+                page.stop_capturing().unwrap();
+            }
+            let session = open(1280, 800, PlaygroundOptions::default());
+            session.view(|v, cx| v.set_document(state, cx));
+            session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |v, w, cx| v.set_mode(PlaygroundMode::Edgeless, w, cx))
+                    .unwrap();
+            });
+            let _ = session.frame();
+            session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |v, w, cx| {
+                        assert!(v.edgeless_begin_inline_edit("sh-1", w, cx));
+                        v.set_selected_text_range(2..4, w, cx);
+                        v.replace_and_mark_text_in_range(None, "ni", None, w, cx);
+                    })
+                    .unwrap();
+            });
+            let _ = session.frame();
+            let bounds =
+                session.view(|v, _| v.edgeless_label_screen_bounds().expect("label bounds"));
+            session.headless.simulate_click(point(
+                bounds.origin.x + px(4.0),
+                bounds.origin.y + bounds.size.height * 0.5,
+            ));
+            session.platform.run_until_parked();
+            let _ = session.frame();
+            session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |v, w, cx| v.unmark_text(w, cx))
+                    .unwrap();
+            });
+            let (plain, sel) = session.view(|v, _| {
+                let ed = v.edgeless.authoring.label_editor().expect("label editor");
+                (ed.input.text.clone(), ed.input.selection.clone())
+            });
+            assert_eq!(
+                plain, "abnief",
+                "edgeless label preedit must commit once into original 2..4 range"
+            );
+            assert!(
+                sel.start == sel.end && sel.start < 2,
+                "caret must sit at clicked offset before 2, got {sel:?}"
+            );
+        }
     }
 }

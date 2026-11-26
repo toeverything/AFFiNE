@@ -249,6 +249,78 @@ pub const DRAG_HANDLE: IconDef = IconDef {
     ],
 };
 
+pub const UNDO: IconDef = IconDef {
+    name: "UndoIcon",
+    view_box: "0 0 24 24",
+    paths: &[
+        IconPath { d: "M8.53 4.47a.75.75 0 0 1 0 1.06L5.81 8.25h4.624c1.651 0 2.937 0 3.968.084 1.047.086 1.897.262 2.662.652a6.75 6.75 0 0 1 2.95 2.95c.39.765.566 1.615.652 2.662.084 1.031.084 2.317.084 3.968v.034a.75.75 0 0 1-1.5 0c0-1.693 0-2.917-.08-3.88-.077-.954-.228-1.585-.492-2.104a5.25 5.25 0 0 0-2.295-2.294c-.518-.264-1.15-.415-2.103-.493-.963-.078-2.187-.079-3.88-.079H5.81l2.72 2.72a.75.75 0 1 1-1.06 1.06l-4-4a.75.75 0 0 1 0-1.06l4-4a.75.75 0 0 1 1.06 0", fill_rule: "evenodd", clip_rule: "evenodd", fill: "currentColor", stroke: "", stroke_width: 0.0_f32, stroke_linecap: "", stroke_linejoin: "" },
+    ],
+};
+
+pub const REDO: IconDef = IconDef {
+    name: "RedoIcon",
+    view_box: "0 0 24 24",
+    paths: &[
+        IconPath { d: "M15.47 4.47a.75.75 0 0 1 1.06 0l4 4a.75.75 0 0 1 0 1.06l-4 4a.75.75 0 1 1-1.06-1.06l2.72-2.72H13.6c-1.692 0-2.917 0-3.88.08-.954.077-1.585.228-2.103.492a5.25 5.25 0 0 0-2.295 2.295c-.264.518-.415 1.15-.493 2.103-.078.963-.079 2.187-.079 3.88a.75.75 0 0 1-1.5 0v-.034c0-1.651 0-2.937.084-3.968.086-1.047.262-1.897.652-2.662a6.75 6.75 0 0 1 2.95-2.95c.765-.39 1.615-.566 2.662-.652 1.031-.084 2.317-.084 3.968-.084h4.623l-2.72-2.72a.75.75 0 0 1 0-1.06", fill_rule: "evenodd", clip_rule: "evenodd", fill: "currentColor", stroke: "", stroke_width: 0.0_f32, stroke_linecap: "", stroke_linejoin: "" },
+    ],
+};
+
+pub const RIGHT_TAB: IconDef = IconDef {
+    name: "RightTabIcon",
+    view_box: "0 0 24 24",
+    paths: &[
+        IconPath { d: "M9.09 5.884a.75.75 0 0 1 .75-.75h10.146a.75.75 0 0 1 0 1.5H9.84a.75.75 0 0 1-.75-.75M9.09 10.196a.75.75 0 0 1 .75-.75h10.146a.75.75 0 0 1 0 1.5H9.84a.75.75 0 0 1-.75-.75M9.84 13.758a.75.75 0 0 0 0 1.5h10.146a.75.75 0 0 0 0-1.5zM9.09 18.82a.75.75 0 0 1 .75-.75h5.099a.75.75 0 0 1 0 1.5H9.84a.75.75 0 0 1-.75-.75M3 10.514v3.597c0 .441.486.71.86.476l2.877-1.798a.562.562 0 0 0 0-.953L3.86 10.038a.562.562 0 0 0-.86.476", fill_rule: "nonzero", clip_rule: "nonzero", fill: "currentColor", stroke: "", stroke_width: 0.0_f32, stroke_linecap: "", stroke_linejoin: "" },
+    ],
+};
+
+pub const COLLAPSE_TAB: IconDef = IconDef {
+    name: "CollapseTabIcon",
+    view_box: "0 0 24 24",
+    paths: &[
+        IconPath { d: "M14.91 5.884a.75.75 0 0 0-.75-.75H4.014a.75.75 0 0 0 0 1.5H14.16a.75.75 0 0 0 .75-.75M14.91 10.196a.75.75 0 0 0-.75-.75H4.014a.75.75 0 0 0 0 1.5H14.16a.75.75 0 0 0 .75-.75M14.16 13.758a.75.75 0 1 1 0 1.5H4.014a.75.75 0 0 1 0-1.5zM9.91 18.82a.75.75 0 0 0-.75-.75H4.06a.75.75 0 0 0 0 1.5H9.16a.75.75 0 0 0 .75-.75M21 10.514v3.597c0 .441-.486.71-.86.476l-2.877-1.798a.562.562 0 0 1 0-.953l2.877-1.798a.562.562 0 0 1 .86.476", fill_rule: "nonzero", clip_rule: "nonzero", fill: "currentColor", stroke: "", stroke_width: 0.0_f32, stroke_linecap: "", stroke_linejoin: "" },
+    ],
+};
+
+pub const KEYBOARD: IconDef = IconDef {
+    name: "KeyboardIcon",
+    view_box: "0 0 24 24",
+    paths: &[
+        IconPath { d: "M6.997 8.92a1 1 0 1 0-1.993.16 1 1 0 0 0 1.993-.16m8.508 3.16a1 1 0 1 0 1.993-.16 1 1 0 0 0-1.993.16m-1.001-.16a1 1 0 1 0-1.993.16 1 1 0 0 0 1.993-.16M7.999 9.08a1 1 0 1 0 1.993-.16 1 1 0 0 0-1.993.16M2.25 7A2.75 2.75 0 0 1 5 4.25h14A2.75 2.75 0 0 1 21.75 7v10A2.75 2.75 0 0 1 19 19.75H5A2.75 2.75 0 0 1 2.25 17zM5 5.75c-.69 0-1.25.56-1.25 1.25v10c0 .69.56 1.25 1.25 1.25h14c.69 0 1.25-.56 1.25-1.25V7c0-.69-.56-1.25-1.25-1.25zm1 9.5a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H6.75a.75.75 0 0 1-.75-.75m5.213-3.958A1 1 0 1 0 9.8 12.708a1 1 0 0 0 1.414-1.416m-3 0a1 1 0 1 0-1.415 1.415 1 1 0 0 0 1.415-1.415m4.49-3a1 1 0 1 0-1.414 1.416 1 1 0 0 0 1.415-1.415m3.001 0a1 1 0 1 0-1.414 1.415 1 1 0 0 0 1.414-1.414m3.001 0a1 1 0 1 0-1.415 1.416 1 1 0 0 0 1.415-1.415", fill_rule: "evenodd", clip_rule: "evenodd", fill: "currentColor", stroke: "", stroke_width: 0.0_f32, stroke_linecap: "", stroke_linejoin: "" },
+    ],
+};
+
+pub const TEX: IconDef = IconDef {
+    name: "TeXIcon",
+    view_box: "0 0 24 24",
+    paths: &[
+        IconPath { d: "m21.63 7.299-2.115 3.107 3.142 4.671c.284.41.428.481 1.343.481v.351c-.347-.028-1.061-.028-1.43-.028-.472 0-1.17 0-1.628.028v-.35c.5-.03.628-.28.628-.395 0-.043 0-.087-.112-.247l-2.486-3.714-2.286 3.39a.62.62 0 0 0-.142.395c0 .234.128.524.57.568v.35c-.356-.027-1.027-.027-1.413-.027h-.106l-.446 3.187H7.713v-.35c1.014 0 1.174 0 1.174-.654v-7.837c0-.653-.162-.653-1.174-.653v-.4h.752c-.183-2.354-.412-2.766-2.58-2.766h-.784c-.257.06-.257.234-.257.554v7.906c0 .525.042.685 1.228.685h.399v.35h-.015c-.68-.013-1.392-.027-2.085-.027s-1.4.014-2.079.027H2.27v-.35h.405c1.204 0 1.247-.16 1.247-.685V6.96c0-.334 0-.51-.273-.554H2.86c-2.216 0-2.418.421-2.603 2.827H0L.241 6.02h8.251l.23 3.152h6.226l.343 3.212h-.257c-.2-1.92-.458-2.813-2.67-2.813h-1.953c-.57 0-.598.073-.598.563v3.6h1.349c1.347 0 1.476-.493 1.476-1.698h.23v3.778h-.23c0-1.226-.128-1.728-1.476-1.728H9.814v4.06c0 .5.026.573.597.573h1.984c2.318 0 2.655-.996 2.939-2.84-.294.002-.621.008-.846.027v-.351c.273 0 1.202-.016 1.815-.919l2.486-3.69-2.757-4.115c-.315-.451-.572-.481-1.357-.481V6c.345.028 1.06.028 1.43.028.47 0 1.17 0 1.627-.028v.35c-.473.014-.63.262-.63.392 0 .044.015.09.114.248l2.114 3.145 1.887-2.78c.1-.145.17-.262.17-.436 0-.234-.112-.525-.57-.568V6c.357.028.943.028 1.414.028.343 0 .886 0 1.213-.028v.35c-1.168.016-1.6.639-1.812.945z", fill_rule: "evenodd", clip_rule: "evenodd", fill: "currentColor", stroke: "", stroke_width: 0.0_f32, stroke_linecap: "", stroke_linejoin: "" },
+    ],
+};
+
+pub const MORE_HORIZONTAL: IconDef = IconDef {
+    name: "MoreHorizontalIcon",
+    view_box: "0 0 24 24",
+    paths: &[
+        IconPath { d: "M4.5 12a1.73 1.73 0 1 0 3.462 0A1.73 1.73 0 0 0 4.5 12m7.5 1.73a1.73 1.73 0 1 1 0-3.46 1.73 1.73 0 0 1 0 3.46m5.77 0a1.73 1.73 0 1 1 0-3.46 1.73 1.73 0 0 1 0 3.46", fill_rule: "evenodd", clip_rule: "evenodd", fill: "currentColor", stroke: "", stroke_width: 0.0_f32, stroke_linecap: "", stroke_linejoin: "" },
+    ],
+};
+
+pub const INFORMATION: IconDef = IconDef {
+    name: "InformationIcon",
+    view_box: "0 0 24 24",
+    paths: &[
+        IconPath { d: "M3.75 12a8.25 8.25 0 1 1 16.5 0 8.25 8.25 0 0 1-16.5 0M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25M13 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0m-1 2.75a.75.75 0 0 1 .75.75v5a.75.75 0 0 1-1.5 0v-5a.75.75 0 0 1 .75-.75", fill_rule: "evenodd", clip_rule: "evenodd", fill: "currentColor", stroke: "", stroke_width: 0.0_f32, stroke_linecap: "", stroke_linejoin: "" },
+    ],
+};
+
+pub const WARNING: IconDef = IconDef {
+    name: "WarningIcon",
+    view_box: "0 0 24 24",
+    paths: &[
+        IconPath { d: "M12 4.75a7.25 7.25 0 1 0 0 14.5 7.25 7.25 0 0 0 0-14.5M3.25 12a8.75 8.75 0 1 1 17.5 0 8.75 8.75 0 0 1-17.5 0M12 7.694a.75.75 0 0 1 .75.75V12a.75.75 0 0 1-1.5 0V8.444a.75.75 0 0 1 .75-.75m-.75 7.862a.75.75 0 0 1 .75-.75h.009a.75.75 0 1 1 0 1.5H12a.75.75 0 0 1-.75-.75", fill_rule: "evenodd", clip_rule: "evenodd", fill: "currentColor", stroke: "", stroke_width: 0.0_f32, stroke_linecap: "", stroke_linejoin: "" },
+    ],
+};
+
 pub const SHAPE: IconDef = IconDef {
     name: "ShapeIcon",
     view_box: "0 0 24 24",
@@ -422,6 +494,7 @@ pub const ALL_ICONS: &[IconDef] = &[
     CHECKBOX_UNCHECKED,
     CODE_BLOCK,
     INLINE_CODE,
+    COLLAPSE_TAB,
     CONNECTOR_CURVE,
     CONNECTOR_ELBOW,
     CONNECTOR_STRAIGHT,
@@ -439,26 +512,34 @@ pub const ALL_ICONS: &[IconDef] = &[
     HEADING_4,
     HEADING_5,
     HEADING_6,
+    INFORMATION,
     ITALIC,
+    KEYBOARD,
     LINK,
     LINKED_PAGE,
     MINUS,
+    MORE_HORIZONTAL,
     NOTE,
     NUMBERED_LIST,
     PAGE,
     PEN,
     PLUS,
     QUOTE,
+    REDO,
+    RIGHT_TAB,
     ROUNDED_RECTANGLE,
     SELECT,
     SHAPE,
     SQUARE,
     STRIKETHROUGH,
+    TEX,
     TEXT,
     TOGGLE_DOWN,
     TOGGLE_RIGHT,
     TRIANGLE,
     UNDERLINE,
+    UNDO,
+    WARNING,
     ZOOM_OUT,
     ZOOM_IN,
 ];

@@ -511,6 +511,7 @@ impl PageDocSession {
             spec,
             BlockSpec::Paragraph { .. }
                 | BlockSpec::List { .. }
+                | BlockSpec::Callout { .. }
                 | BlockSpec::Note { .. }
                 | BlockSpec::Frame { .. }
                 | BlockSpec::EdgelessText { .. }

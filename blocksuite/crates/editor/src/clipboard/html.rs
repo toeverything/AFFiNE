@@ -3,7 +3,11 @@ use std::collections::BTreeMap;
 use serde_json::json;
 use y_octo::{Any, TextAttributes, TextDeltaOp, TextInsert};
 
-use super::{BlockSpec, ListType, ParagraphType, Slice, SliceBlock, text_value};
+use super::{
+    BlockSpec, ListType, ParagraphType, Slice, SliceBlock,
+    sanitize::{decode_html_entities, sanitize_url, split_html_tag, strip_dangerous_html},
+    text_value,
+};
 
 pub(super) fn block_html(block: &SliceBlock) -> String {
     let mut inner = String::new();
@@ -28,8 +32,10 @@ pub(super) fn block_html(block: &SliceBlock) -> String {
                     s = format!("<{tag}>{s}</{tag}>");
                 }
             }
-            if let Some(Any::String(link)) = attrs.get("link") {
-                s = format!("<a href=\"{}\">{s}</a>", escape(link));
+            if let Some(Any::String(link)) = attrs.get("link")
+                && let Some(clean) = sanitize_url(link)
+            {
+                s = format!("<a href=\"{}\">{s}</a>", escape(&clean));
             }
         }
         inner += &s;
@@ -232,18 +238,29 @@ fn attr<'a>(mut attrs: &'a str, key: &str) -> Option<&'a str> {
     None
 }
 
-pub(super) fn parse_html_blocks(mut html: &str) -> Option<Slice> {
+pub(super) fn parse_html_blocks(raw_html: &str) -> Option<Slice> {
+    let cleaned = strip_dangerous_html(raw_html);
+    let mut html = cleaned.as_str();
     let mut blocks = Vec::new();
     let mut current = None;
     let mut delta = Vec::new();
     let mut marks: Vec<(String, Any)> = Vec::new();
     let mut lists = Vec::new();
     let mut pre = false;
+    let mut in_table = false;
+    let mut table_rows: Vec<Vec<String>> = Vec::new();
+    let mut current_row: Vec<String> = Vec::new();
+    let mut current_cell: Option<String> = None;
     let flush = |current: &mut Option<SliceBlock>,
                  delta: &mut Vec<TextDeltaOp>,
                  blocks: &mut Vec<SliceBlock>| {
         if let Some(mut b) = current.take() {
-            b.props.insert("text".into(), text_value(delta));
+            if !matches!(
+                b.flavour.as_str(),
+                "affine:divider" | "affine:latex" | "affine:table"
+            ) {
+                b.props.insert("text".into(), text_value(delta));
+            }
             blocks.push(b);
         }
         delta.clear();
@@ -253,6 +270,10 @@ pub(super) fn parse_html_blocks(mut html: &str) -> Option<Slice> {
             let len = html.find('<').unwrap_or(html.len());
             let raw = &html[..len];
             html = &html[len..];
+            if let Some(cell) = current_cell.as_mut() {
+                cell.push_str(&decode_html_entities(raw));
+                continue;
+            }
             if current.is_none() && raw.trim().is_empty() {
                 continue;
             }
@@ -264,15 +285,108 @@ pub(super) fn parse_html_blocks(mut html: &str) -> Option<Slice> {
             });
             continue;
         }
-        let (head, rest) = html[1..].split_once('>')?;
+        let Some((head, rest)) = split_html_tag(&html[1..]) else {
+            html = &html[1..];
+            if let Some(cell) = current_cell.as_mut() {
+                cell.push('<');
+            } else {
+                current.get_or_insert_with(|| SliceBlock::plain_block("", blocks.len()));
+                delta.push(TextDeltaOp::Insert {
+                    insert: TextInsert::Text("<".into()),
+                    format: (!marks.is_empty())
+                        .then(|| marks.iter().cloned().collect::<TextAttributes>()),
+                });
+            }
+            continue;
+        };
         html = rest;
         let close = head.starts_with('/');
         let head = head.trim_start_matches('/').trim().trim_end_matches('/');
         let (tag, attrs) = head.split_once(char::is_whitespace).unwrap_or((head, ""));
         let tag = tag.to_ascii_lowercase();
         match tag.as_str() {
-            "p" | "div" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "pre" | "blockquote" | "li"
-            | "hr" => {
+            "table" => {
+                flush(&mut current, &mut delta, &mut blocks);
+                if close {
+                    in_table = false;
+                    if !table_rows.is_empty() {
+                        let rows = table_rows
+                            .drain(..)
+                            .map(|row| {
+                                row.into_iter()
+                                    .map(|cell| {
+                                        vec![TextDeltaOp::Insert {
+                                            insert: TextInsert::Text(cell.trim().to_string()),
+                                            format: None,
+                                        }]
+                                    })
+                                    .collect()
+                            })
+                            .collect();
+                        blocks.push(super::table_slice_block(rows, blocks.len()));
+                    }
+                } else {
+                    in_table = true;
+                    table_rows.clear();
+                }
+            }
+            "tr" if in_table => {
+                if close {
+                    if !current_row.is_empty() {
+                        table_rows.push(std::mem::take(&mut current_row));
+                    }
+                } else {
+                    current_row.clear();
+                }
+            }
+            "td" | "th" if in_table => {
+                if close {
+                    if let Some(cell) = current_cell.take() {
+                        current_row.push(cell);
+                    }
+                } else {
+                    current_cell = Some(String::new());
+                }
+            }
+            "p" | "div" | "br" if in_table && current_cell.is_some() => {
+                if (tag == "br" || close)
+                    && let Some(cell) = current_cell.as_mut()
+                    && !cell.is_empty()
+                    && !cell.ends_with(' ')
+                {
+                    cell.push(' ');
+                }
+            }
+            "input" if !close => {
+                if let Some(cur) = current.as_mut()
+                    && cur.flavour == "affine:list"
+                    && attr(attrs, "type").is_some_and(|t| t.eq_ignore_ascii_case("checkbox"))
+                {
+                    cur.props.insert("type".into(), json!("todo"));
+                    let checked = attrs.to_ascii_lowercase().contains("checked");
+                    cur.props.insert("checked".into(), json!(checked));
+                }
+            }
+            "p" | "div" | "aside" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "pre"
+            | "blockquote" | "li" | "hr" => {
+                if tag == "div"
+                    && !close
+                    && let Some(latex) = attr(attrs, "data-latex")
+                {
+                    flush(&mut current, &mut delta, &mut blocks);
+                    let mut b = SliceBlock {
+                        kind: "block".into(),
+                        id: blocks.len().to_string(),
+                        flavour: "affine:latex".into(),
+                        version: Some(1),
+                        props: BTreeMap::new(),
+                        children: Vec::new(),
+                    };
+                    b.props
+                        .insert("latex".into(), json!(decode_html_entities(latex)));
+                    blocks.push(b);
+                    continue;
+                }
                 if tag == "div" && current.is_none() {
                     continue;
                 }
@@ -301,6 +415,15 @@ pub(super) fn parse_html_blocks(mut html: &str) -> Option<Slice> {
                         pre = true;
                     }
                     "hr" => b.flavour = "affine:divider".into(),
+                    "aside" => {
+                        b = super::callout_slice_block(
+                            "\u{1F4A1}",
+                            "grey",
+                            &[],
+                            Vec::new(),
+                            blocks.len(),
+                        );
+                    }
                     "blockquote" => {
                         b.props.insert("type".into(), json!("quote"));
                     }
@@ -325,6 +448,16 @@ pub(super) fn parse_html_blocks(mut html: &str) -> Option<Slice> {
                     format: None,
                 });
             }
+            "code" if pre && !close => {
+                if let Some(cur) = current.as_mut()
+                    && let Some(class) = attr(attrs, "class")
+                    && let Some(lang) = class
+                        .split_whitespace()
+                        .find_map(|c| c.strip_prefix("language-"))
+                {
+                    cur.props.insert("language".into(), json!(lang));
+                }
+            }
             _ => {
                 let key = match tag.as_str() {
                     "b" | "strong" => "bold",
@@ -340,8 +473,10 @@ pub(super) fn parse_html_blocks(mut html: &str) -> Option<Slice> {
                         marks.remove(i);
                     }
                 } else if key == "link" {
-                    if let Some(href) = attr(attrs, "href") {
-                        marks.push((key.into(), Any::String(unescape(href))));
+                    if let Some(href) = attr(attrs, "href")
+                        && let Some(clean) = sanitize_url(&decode_html_entities(href))
+                    {
+                        marks.push((key.into(), Any::String(clean)));
                     }
                 } else {
                     marks.push((key.into(), Any::True));

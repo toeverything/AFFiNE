@@ -349,6 +349,14 @@ impl PlaygroundView {
         let focus = self.editor_focus.clone();
         let entity = cx.entity();
         let marks = layout.presence_marks(presences, palette, window);
+        // Auto-show the mobile soft-keyboard toolbar on narrow viewports whenever an editable
+        // text block holds focus/selection, unless explicitly dismissed by the user.
+        if f32::from(window.viewport_size().width) < 600.0
+            && self.editor.selection.is_some()
+            && !self.keyboard_toolbar_dismissed
+        {
+            self.overlays.set_keyboard_toolbar_visible(true);
+        }
         let (paint, controls) = self.overlay_page_layer(&layout, palette, window, cx);
         surface
             .children(page_elements(
@@ -579,6 +587,26 @@ impl PlaygroundView {
 
 impl ui::Render for PlaygroundView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.overlays.set_keyboard_toolbar_marks_disabled(
+            self.table_cell.is_some() && self.editor.selection.is_none(),
+        );
+        window.set_touch_gestures_enabled(true);
+        for gesture in window.take_touch_gestures() {
+            if self.mode == PlaygroundMode::Page
+                && let ui::TouchGesture::LongPress { position } = gesture
+            {
+                self.long_press_word(f32::from(position.x), f32::from(position.y), window, cx);
+            }
+        }
+        let kb_inset = f32::from(window.insets().ime.bottom);
+        if self.last_keyboard_inset > 0.0 && kb_inset == 0.0 {
+            self.keyboard_toolbar_dismissed = true;
+            self.overlays.set_keyboard_toolbar_visible(false);
+        } else if kb_inset > 0.0 && self.last_keyboard_inset == 0.0 {
+            self.keyboard_toolbar_dismissed = false;
+        }
+        self.last_keyboard_inset = kb_inset;
+
         let palette = self.theme.palette();
         let viewport = window.viewport_size();
         let viewport_width = f32::from(viewport.width).floor();

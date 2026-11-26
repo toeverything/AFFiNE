@@ -77,6 +77,8 @@ impl FlowPass<'_> {
             }),
             prefix: None,
             code_scroll: None,
+            pdf_controls: None,
+            table_cells: Vec::new(),
         }
     }
 
@@ -200,6 +202,8 @@ impl FlowPass<'_> {
             }),
             prefix: Some(prefix),
             code_scroll: None,
+            pdf_controls: None,
+            table_cells: Vec::new(),
         }
     }
 
@@ -221,11 +225,13 @@ impl FlowPass<'_> {
             text: None,
             prefix: None,
             code_scroll: None,
+            pdf_controls: None,
+            table_cells: Vec::new(),
         }
     }
 
     /// Append a centered caption below a block body, if there is one.
-    fn push_caption(&self, body: &mut BlockBody, caption: &str) {
+    pub(super) fn push_caption(&self, body: &mut BlockBody, caption: &str) {
         if caption.is_empty() {
             return;
         }
@@ -243,6 +249,7 @@ impl FlowPass<'_> {
 
     pub(super) fn code_body(
         &mut self,
+        block_id: &str,
         language: &str,
         wrap: bool,
         text: &str,
@@ -272,14 +279,22 @@ impl FlowPass<'_> {
         let mut line_offset = 0;
         let mut source_offset = 0;
         let mut widest_line = 0.0_f32;
+        let highlighted_lines = crate::highlight::highlight_block_cached(block_id, language, text);
+        let theme_mode = self.input.theme.mode();
         for (index, line) in text.split('\n').enumerate() {
-            let layout = self.plain_inline(
+            let hl_spans = highlighted_lines
+                .get(index)
+                .map(|hl| hl.spans.as_slice())
+                .unwrap_or(&[]);
+            let layout = Rc::new(super::inline::layout_highlighted_code_line(
                 line,
-                code_style.clone(),
+                &code_style,
+                hl_spans,
+                theme_mode,
                 if wrap { code_width } else { f32::MAX },
                 line_height,
-                InlineAlign::Left,
-            );
+                self.window,
+            ));
             // Line numbers sit on the baseline of the code they count.
             let number = Rc::new(layout_inline(
                 &(index + 1).to_string(),
@@ -399,6 +414,8 @@ impl FlowPass<'_> {
             }),
             prefix: None,
             code_scroll,
+            pdf_controls: None,
+            table_cells: Vec::new(),
         };
         self.push_caption(&mut body, caption);
         body
@@ -529,6 +546,8 @@ impl FlowPass<'_> {
             text: None,
             prefix: None,
             code_scroll: None,
+            pdf_controls: None,
+            table_cells: Vec::new(),
         };
         self.push_caption(&mut body, caption);
         body
@@ -639,129 +658,11 @@ impl FlowPass<'_> {
             text: None,
             prefix: None,
             code_scroll: None,
+            pdf_controls: None,
+            table_cells: Vec::new(),
         };
         self.push_caption(&mut body, caption);
         body
-    }
-
-    pub(super) fn latex_body(&mut self, latex: &str, width: f32) -> BlockBody {
-        let pad_x = 16.0;
-        let pad_y = 14.0;
-        let inner = (width - 2.0 * pad_x).max(1.0);
-        let empty = latex.trim().is_empty();
-        let (display, style, line_height) = if empty {
-            (
-                "Add an equation",
-                InlineStyle::new(
-                    FONT_SANS,
-                    TYPOGRAPHY.font_sm_px,
-                    400.0,
-                    self.palette.text_secondary,
-                ),
-                22.0,
-            )
-        } else {
-            (
-                latex,
-                InlineStyle::new(
-                    FONT_CODE,
-                    TYPOGRAPHY.font_base_px,
-                    400.0,
-                    self.palette.text_primary,
-                ),
-                24.0,
-            )
-        };
-        let layout = self.plain_inline(display, style, inner, line_height, InlineAlign::Center);
-        let height = (layout.height() + 2.0 * pad_y).max(52.0);
-        let text_y = ((height - layout.height()) / 2.0).floor().max(pad_y);
-        BlockBody {
-            kind: FlowKind::Latex,
-            width,
-            height,
-            margin_top: CARD_BLOCK_MARGIN,
-            margin_bottom: CARD_BLOCK_MARGIN,
-            plain: if empty {
-                "Add an equation".to_string()
-            } else {
-                latex.to_string()
-            },
-            prims: vec![
-                Prim::Quad {
-                    rect: FlowRect::new(0.0, 0.0, width, height),
-                    fill: Some(self.palette.background_secondary),
-                    border: Some(self.palette.border),
-                    radius: 8.0,
-                    dashed: false,
-                },
-                Prim::Text {
-                    x: pad_x,
-                    y: text_y,
-                    layout,
-                    clip: Some(FlowRect::new(pad_x, pad_y, inner, height - 2.0 * pad_y)),
-                },
-            ],
-            text: None,
-            prefix: None,
-            code_scroll: None,
-        }
-    }
-
-    pub(super) fn unknown_body(&mut self, flavour: &str, block_id: &str, width: f32) -> BlockBody {
-        let pad = 12.0;
-        let inner = (width - 2.0 * pad).max(1.0);
-        let title_style = InlineStyle::new(
-            FONT_SANS,
-            TYPOGRAPHY.font_sm_px,
-            500.0,
-            self.palette.text_secondary,
-        );
-        let id_style = InlineStyle::new(
-            FONT_CODE,
-            TYPOGRAPHY.font_xs_px,
-            400.0,
-            self.palette.text_secondary,
-        );
-        let label = format!("Unsupported block: {flavour}");
-        let title = self.plain_inline(&label, title_style, inner, 22.0, InlineAlign::Left);
-        let id_text = truncate_to_width(self.window, block_id, &id_style, inner)
-            .text
-            .to_string();
-        let id = self.plain_inline(&id_text, id_style, inner, 20.0, InlineAlign::Left);
-        let height = pad + title.height() + id.height() + pad;
-        let id_y = pad + title.height();
-        BlockBody {
-            kind: FlowKind::Unknown,
-            width,
-            height,
-            margin_top: CARD_BLOCK_MARGIN,
-            margin_bottom: CARD_BLOCK_MARGIN,
-            plain: format!("[Unsupported block: {flavour}]"),
-            prims: vec![
-                Prim::Quad {
-                    rect: FlowRect::new(0.0, 0.0, width, height),
-                    fill: None,
-                    border: Some(self.palette.divider),
-                    radius: 8.0,
-                    dashed: true,
-                },
-                Prim::Text {
-                    x: pad,
-                    y: pad,
-                    layout: title,
-                    clip: None,
-                },
-                Prim::Text {
-                    x: pad,
-                    y: id_y,
-                    layout: id,
-                    clip: None,
-                },
-            ],
-            text: None,
-            prefix: None,
-            code_scroll: None,
-        }
     }
 }
 

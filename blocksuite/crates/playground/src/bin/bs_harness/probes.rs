@@ -441,11 +441,118 @@ pub(super) fn render_editor(dir: PathBuf) -> Result<()> {
     Ok(())
 }
 
+fn probe_table_cell_o1_keystroke() -> Result<()> {
+    let mut state = DocState::new("doc:probe-table-o1", 71)?;
+    state
+        .workspace
+        .create_page(playground::HOME_PAGE_ID, "Table O(1) Probe", 1)?;
+    {
+        let page = state.workspace.ensure_page(playground::HOME_PAGE_ID)?;
+        page.add_block(
+            "root",
+            BlockSpec::Page {
+                title: "Table O(1) Probe".into(),
+            },
+            None,
+            None,
+            1,
+        )?;
+        page.add_block(
+            "note",
+            BlockSpec::Note { xywh: None },
+            Some("root"),
+            None,
+            2,
+        )?;
+        let big_cell = "abcdefghij".repeat(10_000);
+        page.add_block(
+            "tbl",
+            BlockSpec::Table {
+                rows: vec![
+                    vec!["Header".into(), "Notes".into()],
+                    vec!["Row 1".into(), big_cell],
+                ],
+            },
+            Some("note"),
+            None,
+            3,
+        )?;
+        for i in 0..3_000 {
+            page.add_block(
+                format!("p-{i}"),
+                BlockSpec::Paragraph {
+                    paragraph_type: ParagraphType::Text,
+                    text: format!("Sibling paragraph {i}"),
+                },
+                Some("note"),
+                None,
+                4,
+            )?;
+        }
+        page.stop_capturing()?;
+    }
+
+    let s = start_headless_session(1280, 800, PlaygroundOptions::default())?;
+    s.view(|v, cx| v.set_document(state, cx))?;
+    s.frame()?;
+
+    // Verify single-block O(1) table read matches full snapshot.
+    let single_ok = s.view(|v, _| {
+        let page = v
+            .document()
+            .workspace
+            .page(playground::HOME_PAGE_ID)
+            .expect("page");
+        let t = page
+            .read_table_block("tbl")
+            .expect("read_table_block")
+            .expect("some table");
+        t.cells
+            .get(&("row-1".into(), "col-1".into()))
+            .is_some_and(|c| c.text.plain.len() == 100_000)
+    })?;
+    anyhow::ensure!(single_ok, "read_table_block must decode 100k-char cell");
+
+    s.overlay(OverlayEvent::FocusTableCell {
+        block_id: "tbl".into(),
+        row_id: "row-1".into(),
+        column_id: "col-1".into(),
+        screen_pos: None,
+    })?;
+    s.frame()?;
+    s.update(|v, w, cx| v.replace_text_in_range(None, "Z", w, cx))?;
+    s.frame()?;
+    let (laid_out, cell_len) = s.view(|v, _| {
+        let count = v.flow_layout().unwrap().stats.laid_out;
+        let len = v
+            .page_snapshot()
+            .and_then(|snap| snap.block("tbl"))
+            .and_then(|n| match &n.content {
+                BlockContent::Table(t) => t
+                    .cells
+                    .get(&("row-1".into(), "col-1".into()))
+                    .map(|c| c.text.plain.len()),
+                _ => None,
+            })
+            .unwrap_or(0);
+        (count, len)
+    })?;
+    anyhow::ensure!(
+        laid_out == 1 && cell_len == 100_001,
+        "expected single-block relayout (1) and 100001-char cell, got laid_out={laid_out}, len={cell_len}"
+    );
+    println!(
+        "P6 table cell O(1) keystroke over 3000 siblings + 100k-char cell: laid_out={laid_out}"
+    );
+    Ok(())
+}
+
 pub(super) fn run_probes() -> Result<()> {
     let s = start_headless_session(640, 720, Default::default())?;
     probe_geometry(&s)?;
     probe_selection(&s)?;
     probe_input(&s)?;
     probe_anchor(&s)?;
+    probe_table_cell_o1_keystroke()?;
     replay_editing()
 }

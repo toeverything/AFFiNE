@@ -90,7 +90,9 @@ impl TextAlign {
     }
 }
 
+mod rich_blocks;
 mod surface;
+pub use rich_blocks::{TableCell, TableColumn, TableData, TableRow};
 pub use surface::*;
 
 /// Typed content of a block, by `sys:flavour`.
@@ -157,6 +159,34 @@ pub enum BlockContent {
     },
     Latex {
         latex: String,
+    },
+    Callout {
+        icon: String,
+        text: RichText,
+        background_color: Option<String>,
+    },
+    Table(TableData),
+    Attachment {
+        name: String,
+        size: i64,
+        mime_type: String,
+        source_id: String,
+        caption: String,
+        embed: bool,
+    },
+    EmbedLinkedDoc {
+        page_id: String,
+        style: String,
+        caption: String,
+    },
+    EmbedSyncedDoc {
+        page_id: String,
+        caption: String,
+    },
+    SurfaceRef {
+        reference: String,
+        ref_flavour: String,
+        caption: String,
     },
     /// Any flavour without a typed reader, kept with its identity and property keys.
     Unknown(UnknownBlock),
@@ -453,6 +483,36 @@ impl SnapshotReader<'_> {
             },
             "affine:latex" => BlockContent::Latex {
                 latex: string(entries.get("prop:latex")).unwrap_or_default(),
+            },
+            "affine:callout" => BlockContent::Callout {
+                icon: self.callout_icon(entries, props),
+                text: self.rich_text(entries.get("prop:text"))?,
+                background_color: Self::callout_background(props),
+            },
+            "affine:table" => BlockContent::Table(self.read_table(entries)?),
+            "affine:attachment" => BlockContent::Attachment {
+                name: string(entries.get("prop:name")).unwrap_or_default(),
+                size: number(entries.get("prop:size")).map_or(0, |v| v as i64),
+                mime_type: string(entries.get("prop:type")).unwrap_or_default(),
+                source_id: string(entries.get("prop:sourceId")).unwrap_or_default(),
+                caption: string(entries.get("prop:caption")).unwrap_or_default(),
+                embed: boolean(entries.get("prop:embed")),
+            },
+            "affine:embed-linked-doc" => BlockContent::EmbedLinkedDoc {
+                page_id: string(entries.get("prop:pageId")).unwrap_or_default(),
+                style: string(entries.get("prop:style"))
+                    .unwrap_or_else(|| "horizontal".to_string()),
+                caption: string(entries.get("prop:caption")).unwrap_or_default(),
+            },
+            "affine:embed-synced-doc" => BlockContent::EmbedSyncedDoc {
+                page_id: string(entries.get("prop:pageId")).unwrap_or_default(),
+                caption: string(entries.get("prop:caption")).unwrap_or_default(),
+            },
+            "affine:surface-ref" => BlockContent::SurfaceRef {
+                reference: string(entries.get("prop:reference")).unwrap_or_default(),
+                ref_flavour: string(entries.get("prop:refFlavour"))
+                    .unwrap_or_else(|| "affine:frame".to_string()),
+                caption: string(entries.get("prop:caption")).unwrap_or_default(),
             },
             _ => BlockContent::Unknown(UnknownBlock {
                 id: id.to_string(),

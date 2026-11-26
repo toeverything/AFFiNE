@@ -73,22 +73,34 @@ impl Overlays {
         });
     }
 
-    /// Close the equation editor without committing.
+    /// Close the equation editor without committing (immediate drop).
     pub fn close_equation_editor(&mut self) {
         self.equation = None;
     }
 
-    pub(super) fn apply_equation(&mut self, effects: &mut OverlayEffects) {
-        let Some(editor) = self.equation.take() else {
+    /// Close the equation editor with a 150 ms fade-out transition.
+    pub fn close_equation_editor_at(&mut self, now_ms: f64) -> bool {
+        match self.equation_editor_mut() {
+            Some(editor) => {
+                editor.presence.close(now_ms);
+                true
+            }
+            None => false,
+        }
+    }
+
+    pub(super) fn apply_equation(&mut self, now_ms: f64, effects: &mut OverlayEffects) {
+        let Some(editor) = self.equation_editor_mut() else {
             return;
         };
-        let latex = editor.input.into_committed_text();
+        let latex = editor.input.clone().into_committed_text();
         if latex != editor.initial_latex {
             effects.edits.push(DocEdit::Equation {
-                target: editor.target,
+                target: editor.target.clone(),
                 latex,
             });
         }
+        editor.presence.close(now_ms);
         effects.redraw = true;
     }
 
@@ -161,17 +173,40 @@ impl Overlays {
         let mut font = ui::font(FONT_CODE);
         font.weight = FontWeight::NORMAL;
         let shown = SharedString::from(text.clone());
-        let line = window.text_system().shape_line(
-            shown.clone(),
-            px(TYPOGRAPHY.font_xs_px),
-            &[TextRun {
+        let latex_hl = crate::highlight::highlight_line(
+            crate::highlight::LanguageId::Latex,
+            &text,
+            crate::highlight::LineState::Normal,
+        );
+        let theme_mode = palette.theme.mode();
+        let latex_runs: Vec<TextRun> = if latex_hl.spans.is_empty() {
+            vec![TextRun {
                 len: shown.len(),
-                font,
+                font: font.clone(),
                 color: palette.text_primary,
                 background_color: None,
                 underline: None,
                 strikethrough: None,
-            }],
+            }]
+        } else {
+            latex_hl
+                .spans
+                .iter()
+                .filter(|s| s.bytes.end > s.bytes.start)
+                .map(|s| TextRun {
+                    len: s.bytes.end - s.bytes.start,
+                    font: font.clone(),
+                    color: crate::highlight::syntax_color(s.kind, theme_mode),
+                    background_color: None,
+                    underline: None,
+                    strikethrough: None,
+                })
+                .collect()
+        };
+        let line = window.text_system().shape_line(
+            shown.clone(),
+            px(TYPOGRAPHY.font_xs_px),
+            &latex_runs,
             None,
         );
         let x_at = |offset: usize| f32::from(line.x_for_index(utf16_to_byte(&text, offset)));
@@ -194,51 +229,59 @@ impl Overlays {
             .w(px(text_room))
             .h(px(inner_height))
             .overflow_hidden();
-        let strip = |from: usize, to: usize, top: f32, height: f32, color: Hsla| {
+        let make_strip = |x0: f32, x1: f32, top: f32, height: f32, color: Hsla| {
             div()
                 .absolute()
-                .left(px((x_at(from) - scroll).round()))
+                .left(px((x0 - scroll).round()))
                 .top(px(top))
-                .w(px((x_at(to) - x_at(from)).round().max(1.0)))
+                .w(px((x1 - x0).round().max(1.0)))
                 .h(px(height))
                 .bg(color)
         };
-        if marked.is_none() && !selection.is_empty() {
-            inner = inner.child(strip(
-                selection.start,
-                selection.end,
+        let sel_span = (marked.is_none() && !selection.is_empty())
+            .then(|| (x_at(selection.start), x_at(selection.end)));
+        let marked_span = marked.as_ref().map(|m| (x_at(m.start), x_at(m.end)));
+        if let Some((x0, x1)) = sel_span {
+            inner = inner.child(make_strip(
+                x0,
+                x1,
                 caret_top,
                 caret_height,
                 palette.brand.opacity(0.22),
             ));
         }
-        let caption = |left: f32, color: Hsla, font_family: &'static str, text: SharedString| {
-            div()
-                .absolute()
-                .left(px(left))
-                .top(px(0.0))
-                .h(px(inner_height))
-                .flex()
-                .items_center()
-                .whitespace_nowrap()
-                .font_family(font_family)
-                .text_color(color)
-                .child(text)
-        };
-        inner = inner.child(if text.is_empty() {
-            caption(
-                1.0,
-                palette.placeholder,
-                FONT_SANS,
-                "Enter LaTeX equation".into(),
-            )
+        if text.is_empty() {
+            inner = inner.child(
+                div()
+                    .absolute()
+                    .left(px(1.0))
+                    .top(px(0.0))
+                    .h(px(inner_height))
+                    .flex()
+                    .items_center()
+                    .whitespace_nowrap()
+                    .font_family(FONT_SANS)
+                    .text_color(palette.placeholder)
+                    .child("Enter LaTeX equation"),
+            );
         } else {
-            caption(-scroll, palette.text_primary, FONT_CODE, shown)
-        });
-        if let Some(marked) = &marked {
-            inner = inner.child(strip(
-                marked.start,
-                marked.end,
+            let line_h = px(inner_height);
+            inner = inner.child(
+                ui::canvas(
+                    |_, _, _| (),
+                    move |bounds, _, window, cx| {
+                        let origin = ui::point(bounds.origin.x - px(scroll), bounds.origin.y);
+                        let _ = line.paint(origin, line_h, ui::TextAlign::Left, None, window, cx);
+                    },
+                )
+                .absolute()
+                .size_full(),
+            );
+        }
+        if let Some((x0, x1)) = marked_span {
+            inner = inner.child(make_strip(
+                x0,
+                x1,
                 caret_top + caret_height - 1.0,
                 1.0,
                 palette.text_secondary,

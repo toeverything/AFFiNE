@@ -79,6 +79,7 @@ impl PlaygroundView {
         let Some(room) = self.room.as_mut() else {
             return;
         };
+        let mut blob_arrived = false;
         let effects = match event {
             RoomEvent::Opened => {
                 let effects = room.protocol.on_open(&mut self.state, now_ms);
@@ -110,6 +111,7 @@ impl PlaygroundView {
                 self.state.blobs.insert(source_id.clone(), Arc::new(bytes));
                 self.images.insert(source_id, slot);
                 self.env_rev += 1;
+                blob_arrived = true;
                 Ok(RoomEffects::default())
             }
             RoomEvent::Blob {
@@ -145,6 +147,10 @@ impl PlaygroundView {
                 }
             }
             Err(err) => room.error = Some(err.to_string()),
+        }
+        if blob_arrived {
+            let pdf_attachments = self.active_pdf_attachments();
+            self.refresh_pdf_previews(&pdf_attachments);
         }
         cx.notify();
     }
@@ -275,7 +281,6 @@ fn web_options() -> PlaygroundOptions {
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn wasm_main() {
     console_error_panic_hook::set_once();
-    clipboard::browser::install();
     let platform = std::rc::Rc::new(ui::WebPlatform::new(false));
     ui::Application::with_platform(platform).run(|cx| {
         if let Err(err) = register_bundled_fonts(cx) {

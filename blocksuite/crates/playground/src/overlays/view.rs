@@ -93,26 +93,34 @@ impl PlaygroundView {
         match &event {
             OverlayEvent::SetSelection(selection) => {
                 self.editor.dragging = false;
+                self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
                 self.overlays.close_link_field();
                 self.overlays.close_equation_editor();
                 self.equation_snapshot = None;
                 match selection {
-                    Some(selection) => self.select_document_range(
-                        DocumentSelection {
-                            anchor: DocPoint::new(
-                                &selection.block_id,
-                                selection.start_utf16 as u64,
-                            ),
-                            focus: DocPoint::new(&selection.block_id, selection.end_utf16 as u64),
-                        },
-                        window,
-                        cx,
-                    ),
+                    Some(selection) => {
+                        self.keyboard_toolbar_dismissed = false;
+                        self.select_document_range(
+                            DocumentSelection {
+                                anchor: DocPoint::new(
+                                    &selection.block_id,
+                                    selection.start_utf16 as u64,
+                                ),
+                                focus: DocPoint::new(
+                                    &selection.block_id,
+                                    selection.end_utf16 as u64,
+                                ),
+                            },
+                            window,
+                            cx,
+                        );
+                    }
                     None => {
                         // Peers stop showing the caret, and a typed slash menu has no
                         // caret left to filter by.
                         self.editor.selection = None;
                         self.editor.block_selection.clear();
+                        self.overlays.set_keyboard_toolbar_visible(false);
                         self.announce_selection(cx);
                         self.sync_slash_trigger(cx);
                         window.notify_text_selection_changed(&self.editor_focus);
@@ -123,6 +131,7 @@ impl PlaygroundView {
             }
             OverlayEvent::DragStart(_) => self.editor.dragging = false,
             _ if self.handle_linked_doc_event(&event, window, cx) => return,
+            _ if self.handle_mobile_and_rich_event(&event, window, cx) => return,
             _ => {}
         }
         let now_ms = self.now_ms(cx);
@@ -276,16 +285,17 @@ impl PlaygroundView {
         if self.overlays.equation_editor().is_some() {
             self.dispatch_overlay_event(OverlayEvent::EquationApply, window, cx);
         }
+        self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
         self.overlays.pointer_pressed(now_ms);
         if self.overlays.equation_editor().is_none() {
             self.equation_snapshot = None;
         }
         self.sync_link_input(input, window, cx);
+        self.keyboard_toolbar_dismissed = false;
         self.editor.slash_trigger = None;
         self.editor.block_selection.clear();
         self.editor_mouse_down(event, window, cx);
-        // A double or triple click selects at once; only a plain press starts a drag the
-        // formatting toolbar waits for.
+        // A double or triple click selects at once; only a plain press starts a drag.
         if event.click_count >= 2 {
             self.editor.dragging = false;
         }

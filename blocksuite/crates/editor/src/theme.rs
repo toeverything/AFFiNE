@@ -23,13 +23,12 @@ pub use ui_tokens::{
 ///
 /// Must be called before opening any window across macOS, Linux headless, and Web Wasm.
 pub fn register_bundled_fonts(cx: &App) -> anyhow::Result<()> {
-    cx.text_system().add_fonts(
-        bundled_font_bytes()
-            .into_iter()
-            .chain(bundled_script_font_bytes())
-            .map(Cow::Borrowed)
-            .collect(),
-    )
+    let fonts: Vec<Cow<'static, [u8]>> = bundled_font_bytes()
+        .into_iter()
+        .chain(bundled_script_font_bytes())
+        .map(Cow::Borrowed)
+        .collect();
+    cx.text_system().add_fonts(fonts)
 }
 
 /// Color theme of the playground chrome and document.
@@ -366,28 +365,28 @@ impl IconPaint {
         }
     }
 
-    /// Look a generated icon up by name; an unknown name paints nothing.
+    /// Look a generated icon up by name from `ui-tokens`.
     pub fn named(name: &str) -> Self {
         static CACHE: OnceLock<RwLock<HashMap<&'static str, IconPaint>>> = OnceLock::new();
-        let Some(icon) = icon_by_name(name) else {
-            return Self {
-                key: SharedString::from(format!("playground-icon:missing:{name}")),
-                svg: Arc::from(""),
-            };
-        };
-        let cache = CACHE.get_or_init(|| RwLock::new(HashMap::new()));
-        if let Some(hit) = cache
-            .read()
-            .ok()
-            .and_then(|map| map.get(icon.name).cloned())
-        {
-            return hit;
+        if let Some(icon) = icon_by_name(name) {
+            let cache = CACHE.get_or_init(|| RwLock::new(HashMap::new()));
+            if let Some(hit) = cache
+                .read()
+                .ok()
+                .and_then(|map| map.get(icon.name).cloned())
+            {
+                return hit;
+            }
+            let paint = Self::new(icon);
+            if let Ok(mut map) = cache.write() {
+                map.insert(icon.name, paint.clone());
+            }
+            return paint;
         }
-        let paint = Self::new(icon);
-        if let Ok(mut map) = cache.write() {
-            map.insert(icon.name, paint.clone());
+        Self {
+            key: SharedString::from(format!("playground-icon:missing:{name}")),
+            svg: Arc::from(""),
         }
-        paint
     }
 
     /// Paint the icon into `bounds`, tinted with `color`.

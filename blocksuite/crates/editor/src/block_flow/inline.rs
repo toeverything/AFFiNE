@@ -189,6 +189,161 @@ pub(super) fn shape(window: &Window, text: &str, style: &InlineStyle) -> ShapedL
     )
 }
 
+pub(super) fn shape_highlighted(
+    window: &Window,
+    text: &str,
+    style: &InlineStyle,
+    spans: &[crate::highlight::HighlightSpan],
+    mode: crate::theme::ThemeMode,
+) -> ShapedLine {
+    if text.is_empty() || spans.is_empty() {
+        return shape(window, text, style);
+    }
+    let font = style.font();
+    let mut runs = Vec::with_capacity(spans.len());
+    let mut cursor = 0usize;
+    for span in spans {
+        let start = span.bytes.start.min(text.len());
+        let end = span.bytes.end.min(text.len());
+        if start > cursor {
+            runs.push(TextRun {
+                len: start - cursor,
+                font: font.clone(),
+                color: style.color,
+                background_color: None,
+                underline: None,
+                strikethrough: None,
+            });
+        }
+        if end > start {
+            runs.push(TextRun {
+                len: end - start,
+                font: font.clone(),
+                color: crate::highlight::syntax_color(span.kind, mode),
+                background_color: None,
+                underline: None,
+                strikethrough: None,
+            });
+            cursor = end;
+        }
+    }
+    if cursor < text.len() {
+        runs.push(TextRun {
+            len: text.len() - cursor,
+            font,
+            color: style.color,
+            background_color: None,
+            underline: None,
+            strikethrough: None,
+        });
+    }
+    window.text_system().shape_line(
+        SharedString::from(text.to_string()),
+        px(style.size),
+        &runs,
+        None,
+    )
+}
+
+/// Lay out a single syntax-highlighted code line, optionally wrapping at `max_width`.
+pub(super) fn layout_highlighted_code_line(
+    line: &str,
+    style: &InlineStyle,
+    spans: &[crate::highlight::HighlightSpan],
+    mode: crate::theme::ThemeMode,
+    max_width: f32,
+    line_height: f32,
+    window: &Window,
+) -> InlineLayout {
+    let baseline = baseline_in_line(line_height, &shape(window, "Ag", style));
+    if line.is_empty() {
+        return InlineLayout {
+            pieces: Vec::new(),
+            line_count: 1,
+            line_height,
+            width: max_width,
+            baseline,
+        };
+    }
+    let shaped = shape_highlighted(window, line, style, spans, mode);
+    let visible_width = f32::from(shaped.width());
+    if visible_width <= max_width || !max_width.is_finite() {
+        let source_len = line.encode_utf16().count();
+        return InlineLayout {
+            pieces: vec![InlinePiece {
+                line: 0,
+                x: 0.0,
+                visible_width,
+                baseline_shift: baseline - baseline_in_line(line_height, &shaped),
+                shaped,
+                source_start: 0,
+                source_len,
+            }],
+            line_count: 1,
+            line_height,
+            width: max_width,
+            baseline,
+        };
+    }
+
+    // Wrap across visual lines while preserving per-byte syntax highlight spans.
+    let mut pieces = Vec::new();
+    let mut byte_start = 0usize;
+    let mut utf16_offset = 0usize;
+    let mut line_idx = 0usize;
+    while byte_start < line.len() {
+        let rem = &line[byte_start..];
+        let mut split = rem.len();
+        let mut best_space = None;
+        for (idx, ch) in rem.char_indices() {
+            let end = idx + ch.len_utf8();
+            let w = f32::from(shape(window, &rem[..end], style).width());
+            if w > max_width && idx > 0 {
+                split = best_space.unwrap_or(idx);
+                break;
+            }
+            if ch.is_whitespace() {
+                best_space = Some(end);
+            }
+        }
+        let seg = &rem[..split];
+        let seg_end = byte_start + split;
+        let sub_spans: Vec<crate::highlight::HighlightSpan> = spans
+            .iter()
+            .filter_map(|s| {
+                let s0 = s.bytes.start.max(byte_start);
+                let s1 = s.bytes.end.min(seg_end);
+                (s1 > s0).then(|| crate::highlight::HighlightSpan {
+                    bytes: (s0 - byte_start)..(s1 - byte_start),
+                    kind: s.kind,
+                })
+            })
+            .collect();
+        let piece_shaped = shape_highlighted(window, seg, style, &sub_spans, mode);
+        let piece_w = f32::from(piece_shaped.width());
+        let source_len = seg.encode_utf16().count();
+        pieces.push(InlinePiece {
+            line: line_idx,
+            x: 0.0,
+            visible_width: piece_w,
+            baseline_shift: baseline - baseline_in_line(line_height, &piece_shaped),
+            shaped: piece_shaped,
+            source_start: utf16_offset,
+            source_len,
+        });
+        byte_start = seg_end;
+        utf16_offset += source_len;
+        line_idx += 1;
+    }
+    InlineLayout {
+        pieces,
+        line_count: line_idx.max(1),
+        line_height,
+        width: max_width,
+        baseline,
+    }
+}
+
 /// Split text into words that keep their trailing whitespace; `None` marks a hard break.
 pub(super) fn inline_segments(text: &str) -> Vec<Option<&str>> {
     let mut segments = Vec::new();
@@ -411,6 +566,7 @@ pub fn decode_image(bytes: &[u8]) -> Option<Arc<RenderImage>> {
 }
 
 /// Paint primitive of a block, positioned relative to the block's own origin.
+#[derive(Clone)]
 pub(super) enum Prim {
     Quad {
         rect: FlowRect,

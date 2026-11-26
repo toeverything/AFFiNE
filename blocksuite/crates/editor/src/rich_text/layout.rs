@@ -16,6 +16,7 @@ use super::{
 pub(super) struct Fragment {
     pub(super) shaped: ShapedLine,
     pub(super) x: Pixels,
+    pub(super) math: Option<(std::sync::Arc<ui::RenderImage>, Size<Pixels>, Pixels)>,
 }
 
 #[derive(Debug)]
@@ -114,11 +115,16 @@ struct StyledFragment<'a> {
     shaped: ShapedLine,
     inset_start: Pixels,
     inset_end: Pixels,
+    math: Option<(std::sync::Arc<ui::RenderImage>, Size<Pixels>, Pixels)>,
 }
 
 impl StyledFragment<'_> {
     fn width(&self) -> Pixels {
-        self.inset_start + self.shaped.width() + self.inset_end
+        let body = self
+            .math
+            .as_ref()
+            .map_or_else(|| self.shaped.width(), |(_, sz, _)| sz.width);
+        self.inset_start + body + self.inset_end
     }
 
     fn cells(&self, index: &TextBiIndex, left: Pixels, right: Pixels) -> Vec<GraphemeCell> {
@@ -264,6 +270,18 @@ impl ParagraphLayout<'_> {
             } else {
                 style.font_size
             };
+            let display_text: std::borrow::Cow<'_, str> = if is_latex {
+                first
+                    .marks
+                    .latex
+                    .as_deref()
+                    .map(|tex| {
+                        std::borrow::Cow::Owned(crate::block_flow::format_inline_math_unicode(tex))
+                    })
+                    .unwrap_or(std::borrow::Cow::Borrowed(text))
+            } else {
+                std::borrow::Cow::Borrowed(text)
+            };
             let text_runs = group
                 .iter()
                 .map(|s| {
@@ -285,7 +303,7 @@ impl ParagraphLayout<'_> {
                     }
                     let color = span_color(style, s);
                     let len = if s.chip {
-                        text.len()
+                        display_text.len()
                     } else {
                         s.source_bytes.end.min(bytes.end) - s.source_bytes.start.max(bytes.start)
                     };
@@ -298,7 +316,7 @@ impl ParagraphLayout<'_> {
                 })
                 .collect::<Vec<_>>();
             let shaped = self.ts.shape_line_with_spacing(
-                text.to_owned().into(),
+                display_text.into_owned().into(),
                 px(font_size),
                 &text_runs,
                 style.letter_spacing,
@@ -311,12 +329,28 @@ impl ParagraphLayout<'_> {
             } else {
                 (Pixels::ZERO, Pixels::ZERO)
             };
+            let math = if is_latex {
+                first.marks.latex.as_deref().and_then(|tex| {
+                    let slot = crate::block_flow::render_math_cached(
+                        tex,
+                        false,
+                        style.font_size * 0.92,
+                        style.text_color,
+                    )?;
+                    let h = (slot.ascent_pt + slot.descent_pt).max(12.0);
+                    let w = slot.width_pt.max(8.0);
+                    Some((slot.image, size(px(w), px(h)), px(slot.ascent_pt)))
+                })
+            } else {
+                None
+            };
             Some(StyledFragment {
                 spans: group,
                 bytes,
                 shaped,
                 inset_start,
                 inset_end,
+                math,
             })
         })
     }
@@ -497,6 +531,7 @@ impl ParagraphLayout<'_> {
             fragments.push(Fragment {
                 x: text_x,
                 shaped: fragment.shaped,
+                math: fragment.math,
             });
             x = right;
         }

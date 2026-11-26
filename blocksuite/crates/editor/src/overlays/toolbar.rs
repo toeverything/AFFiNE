@@ -217,99 +217,47 @@ pub struct SelectionFormat {
     pub align: Option<BlockAlign>,
 }
 
-pub(super) fn utf16_len(text: &str) -> usize {
-    text.encode_utf16().count()
-}
+pub(super) use crate::inline_input::{Utf16ImeBuffer, utf16_to_byte};
 
-/// Byte index of a UTF-16 offset in `text`, clamped to the text and never inside a
-/// character.
-pub(super) fn utf16_to_byte(text: &str, offset: usize) -> usize {
-    let mut units = 0;
-    for (byte, ch) in text.char_indices() {
-        if units + ch.len_utf16() > offset {
-            return byte;
-        }
-        units += ch.len_utf16();
-    }
-    text.len()
-}
-
-/// A composition running in the link field. Offsets are UTF-16 units.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct LinkPreedit {
-    /// Range of the URL the composition replaces once it commits.
-    replacement: Range<usize>,
-    text: String,
-    /// Selected part of `text`.
-    selected: Range<usize>,
-}
-
-/// URL field attached to the formatting toolbar: a one-line text input of its own, with
-/// a selection and an input-method composition. While it is open it is the view's text
-/// input; the document's text, selection and composition stay untouched. Offsets are
-/// UTF-16 units.
+/// URL / single-line field attached to the formatting toolbar or equation editor.
+/// Delegates all UTF-16 and IME editing state to the shared [`Utf16ImeBuffer`].
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct LinkBar {
-    pub(super) url: String,
-    /// Selected range of `url`, empty at the caret.
-    pub selection: Range<usize>,
-    /// Whether the caret is at the start of the selection.
-    pub reversed: bool,
-    pub(super) preedit: Option<LinkPreedit>,
+    pub input: Utf16ImeBuffer,
     /// Screen-space box of the field as last laid out.
     pub(super) bounds: Option<FlowRect>,
 }
 
 impl LinkBar {
     pub fn new(url: String) -> Self {
-        let end = utf16_len(&url);
         Self {
-            url,
-            selection: end..end,
-            ..Self::default()
+            input: Utf16ImeBuffer::new(url, false),
+            bounds: None,
         }
     }
 
-    /// The URL as committed so far, without a running composition.
+    /// The text as committed so far, without a running composition.
     pub fn url(&self) -> &str {
-        &self.url
+        self.input.text()
     }
 
-    /// The field's text as shown: the URL with a running composition in place.
+    /// The field's text as shown: committed text with a running composition in place.
     pub fn text(&self) -> String {
-        match &self.preedit {
-            Some(preedit) => format!(
-                "{}{}{}",
-                &self.url[..utf16_to_byte(&self.url, preedit.replacement.start)],
-                preedit.text,
-                &self.url[utf16_to_byte(&self.url, preedit.replacement.end)..],
-            ),
-            None => self.url.clone(),
-        }
+        self.input.display_text()
     }
 
     /// The selection as shown, and whether its caret is at its start.
     pub fn shown_selection(&self) -> (Range<usize>, bool) {
-        match &self.preedit {
-            Some(preedit) => {
-                let start = preedit.replacement.start;
-                (
-                    start + preedit.selected.start..start + preedit.selected.end,
-                    false,
-                )
-            }
-            None => (self.selection.clone(), self.reversed),
-        }
+        self.input.shown_selection()
     }
 
     /// Range of the shown text a running composition covers.
     pub fn marked_range(&self) -> Option<Range<usize>> {
-        let preedit = self.preedit.as_ref()?;
-        Some(preedit.replacement.start..preedit.replacement.start + utf16_len(&preedit.text))
+        self.input.marked_range()
     }
 
     pub fn composing(&self) -> bool {
-        self.preedit.is_some()
+        self.input.composing()
     }
 
     /// Screen-space box of the field as last laid out.
@@ -319,185 +267,53 @@ impl LinkBar {
 
     /// A slice of the shown text and the range it really covers.
     pub fn text_for_range(&self, range: Range<usize>) -> (String, Range<usize>) {
-        let text = self.text();
-        let start = utf16_to_byte(&text, range.start);
-        let end = utf16_to_byte(&text, range.end).max(start);
-        let covered = utf16_len(&text[..start])..utf16_len(&text[..end]);
-        (text[start..end].to_string(), covered)
+        self.input.text_for_range(range)
     }
 
-    /// `range` ordered, inside the URL and on character boundaries.
-    fn clamped(&self, range: Range<usize>) -> Range<usize> {
-        let at = |offset: usize| utf16_len(&self.url[..utf16_to_byte(&self.url, offset)]);
-        let (start, end) = (
-            at(range.start.min(range.end)),
-            at(range.start.max(range.end)),
-        );
-        start..end
-    }
-
-    /// Abandon any running composition, restoring the original URL and selection.
+    /// Abandon any running composition, restoring the original text and selection.
     pub fn cancel_preedit(&mut self) {
-        self.preedit = None;
+        self.input.cancel_preedit();
     }
 
     /// Put `text` in place of a running composition, else of `range`, else of the
-    /// selection, and leave the caret behind it. Control characters are dropped: the
-    /// field is one line.
+    /// selection, and leave the caret behind it.
     pub fn replace(&mut self, range: Option<Range<usize>>, text: &str) {
-        if self.preedit.is_some() && text.is_empty() {
-            self.cancel_preedit();
-            return;
-        }
-        let target = match self.preedit.take() {
-            Some(preedit) => preedit.replacement,
-            None => range.map_or(self.selection.clone(), |range| self.clamped(range)),
-        };
-        let text: String = text.chars().filter(|ch| !ch.is_control()).collect();
-        let start = utf16_to_byte(&self.url, target.start);
-        let end = utf16_to_byte(&self.url, target.end);
-        self.url.replace_range(start..end, &text);
-        let caret = target.start + utf16_len(&text);
-        self.selection = caret..caret;
-        self.reversed = false;
+        let _ = self.input.replace(range, text);
     }
 
-    /// Show `text` as a composition over `range` (the selection when absent; the first
-    /// range for as long as the composition runs). The URL and its selection stay as they
-    /// are until the composition commits, and an empty `text` abandons it.
+    /// Show `text` as a composition over `range` (the selection when absent).
     pub fn mark(
         &mut self,
         range: Option<Range<usize>>,
         text: &str,
         selected: Option<Range<usize>>,
     ) {
-        if text.is_empty() {
-            self.preedit = None;
-            return;
-        }
-        let replacement = match &self.preedit {
-            Some(preedit) => preedit.replacement.clone(),
-            None => range.map_or(self.selection.clone(), |range| self.clamped(range)),
-        };
-        let text: String = text.chars().filter(|ch| !ch.is_control()).collect();
-        let len = utf16_len(&text);
-        let selected = selected.unwrap_or(len..len);
-        self.preedit = Some(LinkPreedit {
-            replacement,
-            text,
-            selected: selected.start.min(len)..selected.end.min(len),
-        });
+        self.input.mark(range, text, selected);
     }
 
     /// Commit a running composition as it stands.
     pub fn unmark(&mut self) {
-        if let Some(preedit) = &self.preedit {
-            let text = preedit.text.clone();
-            self.replace(None, &text);
-        }
+        let _ = self.input.unmark();
     }
 
     /// Commit any running IME composition into the field and return the final text.
-    pub fn into_committed_text(mut self) -> String {
-        self.unmark();
-        self.url
+    pub fn into_committed_text(self) -> String {
+        self.input.into_committed_text()
     }
 
-    /// Select `range` of the URL; a running composition is abandoned.
+    /// Select `range` of the text; a running composition is abandoned.
     pub fn select(&mut self, range: Range<usize>) {
-        self.preedit = None;
-        self.selection = self.clamped(range);
-        self.reversed = false;
+        self.input.select(range);
     }
 
     pub fn selected_text(&self) -> &str {
-        &self.url[utf16_to_byte(&self.url, self.selection.start)
-            ..utf16_to_byte(&self.url, self.selection.end)]
-    }
-
-    fn focus(&self) -> usize {
-        if self.reversed {
-            self.selection.start
-        } else {
-            self.selection.end
-        }
-    }
-
-    /// Move the caret to `to`; `extend` keeps the other end of the selection.
-    fn move_caret(&mut self, to: usize, extend: bool) {
-        let anchor = if !extend {
-            to
-        } else if self.reversed {
-            self.selection.end
-        } else {
-            self.selection.start
-        };
-        self.selection = anchor.min(to)..anchor.max(to);
-        self.reversed = to < anchor;
-    }
-
-    /// The offset one character before or after `from`.
-    fn step(&self, from: usize, forward: bool) -> usize {
-        let byte = utf16_to_byte(&self.url, from);
-        let next = if forward {
-            self.url[byte..]
-                .chars()
-                .next()
-                .map_or(byte, |ch| byte + ch.len_utf8())
-        } else {
-            self.url[..byte]
-                .chars()
-                .next_back()
-                .map_or(byte, |ch| byte - ch.len_utf8())
-        };
-        utf16_len(&self.url[..next])
+        self.input.selected_text()
     }
 
     /// An editing key of the field: caret movement (with `shift` extending the
     /// selection), deletion and select-all. Returns whether the key was one.
     pub fn key(&mut self, key: &str, shift: bool, secondary: bool) -> bool {
-        let end = utf16_len(&self.url);
-        let collapsed = self.selection.is_empty();
-        match key {
-            "left" | "right" | "home" | "end" | "up" | "down" => {
-                let forward = matches!(key, "right" | "end" | "down");
-                let to = if matches!(key, "left" | "right") && !secondary {
-                    if collapsed || shift {
-                        self.step(self.focus(), forward)
-                    } else if forward {
-                        self.selection.end
-                    } else {
-                        self.selection.start
-                    }
-                } else if forward {
-                    end
-                } else {
-                    0
-                };
-                self.move_caret(to, shift);
-            }
-            "backspace" | "delete" => {
-                let forward = key == "delete";
-                let range = if !collapsed {
-                    self.selection.clone()
-                } else {
-                    let caret = self.focus();
-                    let to = match (secondary, forward) {
-                        (true, true) => end,
-                        (true, false) => 0,
-                        (false, forward) => self.step(caret, forward),
-                    };
-                    caret.min(to)..caret.max(to)
-                };
-                self.replace(Some(range), "");
-            }
-            "a" if secondary => {
-                self.selection = 0..end;
-                self.reversed = false;
-            }
-            _ => return false,
-        }
-        true
+        self.input.key(key, shift, secondary).is_some()
     }
 }
 

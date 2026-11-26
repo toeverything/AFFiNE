@@ -146,6 +146,7 @@ impl PlaygroundView {
             self.dirty_text = None;
             self.doc_rev += 1;
         }
+        self.suppress_unselected_root_input = false;
         self.editor.selection = Some(sel);
         self.editor.block_selection.clear();
         self.editor.pending_marks.clear();

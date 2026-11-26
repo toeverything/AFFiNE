@@ -3,8 +3,11 @@
 mod view;
 mod view_edits;
 mod view_linked_doc;
+mod view_mobile;
+mod view_table_cell;
 
 pub use blocksuite_editor::overlays::*;
+pub(crate) use view_table_cell::InlineTargetEnd;
 
 impl OverlayHost for crate::PlaygroundView {
     fn dispatch_overlay(
@@ -749,6 +752,13 @@ mod tests {
         assert_eq!(normalize_url("http://a.b"), "http://a.b");
         assert_eq!(normalize_url("mailto:a@b.c"), "mailto:a@b.c");
         assert_eq!(normalize_url(""), "");
+        assert_eq!(normalize_url("javascript://foo"), "");
+        assert_eq!(normalize_url("javascript:alert(1)"), "");
+        assert_eq!(normalize_url("vbscript:msgbox(1)"), "");
+        assert_eq!(
+            normalize_url("data:text/html,<script>alert(1)</script>"),
+            ""
+        );
 
         let slot = |insert_index: usize| DropSlot {
             parent_id: "note".to_string(),
@@ -1985,7 +1995,10 @@ mod tests {
     #[test]
     fn link_field_edits_like_a_one_line_input() {
         let mut link = LinkBar::new("abc".to_string());
-        assert_eq!((link.selection.clone(), link.reversed), (3..3, false));
+        assert_eq!(
+            (link.input.selection.clone(), link.input.reversed),
+            (3..3, false)
+        );
 
         // A composition shows over the selection and leaves the URL alone until it
         // commits; abandoning it restores the selection.
@@ -1999,12 +2012,12 @@ mod tests {
         assert_eq!(link.text_for_range(1..4), ("wen".to_string(), 1..4));
         link.mark(None, "", None);
         assert_eq!(
-            (link.text().as_str(), link.selection.clone()),
+            (link.text().as_str(), link.input.selection.clone()),
             ("abc", 1..2)
         );
         link.mark(None, "wen", None);
         link.replace(None, "文");
-        assert_eq!((link.url(), link.selection.clone()), ("a文c", 2..2));
+        assert_eq!((link.url(), link.input.selection.clone()), ("a文c", 2..2));
         assert!(!link.composing());
         link.mark(None, "x", None);
         link.unmark();
@@ -2017,29 +2030,35 @@ mod tests {
 
         // Caret keys, with `Shift` extending and the command modifier jumping.
         assert!(link.key("home", false, false));
-        assert_eq!(link.selection, 0..0);
+        assert_eq!(link.input.selection, 0..0);
         assert!(link.key("right", false, false));
         assert!(link.key("right", true, false));
-        assert_eq!((link.selection.clone(), link.reversed), (1..2, false));
+        assert_eq!(
+            (link.input.selection.clone(), link.input.reversed),
+            (1..2, false)
+        );
         assert!(link.key("left", true, false));
         assert!(link.key("left", true, false));
-        assert_eq!((link.selection.clone(), link.reversed), (0..1, true));
+        assert_eq!(
+            (link.input.selection.clone(), link.input.reversed),
+            (0..1, true)
+        );
         // An arrow collapses a selection to the side it points at.
         assert!(link.key("right", false, false));
-        assert_eq!(link.selection, 1..1);
+        assert_eq!(link.input.selection, 1..1);
         assert!(link.key("end", true, false));
-        assert_eq!(link.selection, 1..3);
+        assert_eq!(link.input.selection, 1..3);
         assert!(link.key("backspace", false, false));
-        assert_eq!((link.url(), link.selection.clone()), ("a", 1..1));
+        assert_eq!((link.url(), link.input.selection.clone()), ("a", 1..1));
         link.replace(None, "😀b");
         assert!(link.key("left", false, false));
         // A character outside the basic plane is two units and one step.
         assert!(link.key("left", false, false));
-        assert_eq!(link.selection, 1..1);
+        assert_eq!(link.input.selection, 1..1);
         assert!(link.key("delete", false, false));
         assert_eq!(link.url(), "ab");
         assert!(link.key("a", false, true));
-        assert_eq!(link.selection, 0..2);
+        assert_eq!(link.input.selection, 0..2);
         assert!(link.key("delete", false, false));
         assert_eq!(link.url(), "");
         // Anything else is not the field's key.
@@ -2672,6 +2691,314 @@ mod tests {
         assert_eq!(
             rtl_handle.x,
             h_rtl_bounds.x + h_rtl_bounds.width + CONTROL_HIT_SIZE
+        );
+    }
+
+    #[test]
+    fn equation_editor_fades_in_and_out_on_scheduler_clock_and_suppresses_body_caret() {
+        let session = open(1280, 800, PlaygroundTheme::Light);
+        session.edit(|page| {
+            page.add_block(
+                "eq-block",
+                BlockSpec::Latex {
+                    latex: r"E = mc^2".into(),
+                },
+                Some("showcase-note"),
+                Some(1),
+                3_000_000,
+            )
+            .expect("add latex block");
+        });
+        session.select("showcase-intro", "bold");
+        let before = session.frame();
+        assert!(before.elements.contains_key("page.local_caret"));
+
+        // Open equation editor without sending any subsequent pointer or key events.
+        session.overlay(OverlayEvent::OpenEquationEditor {
+            target: EquationTarget::Block {
+                block_id: "eq-block".into(),
+            },
+            initial: r"E = mc^2".into(),
+        });
+        let first = session.frame();
+        let opened_first = element(&first, "overlay.equation_editor");
+        assert!(opened_first.opacity > 0.0 && opened_first.opacity <= 0.02);
+        // Body caret is suppressed while the equation editor owns the input caret.
+        assert!(
+            !first.elements.contains_key("page.local_caret"),
+            "body caret must be hidden while EquationEditor is open"
+        );
+
+        // Advance scheduler clock 150ms with zero input events: fade-in reaches opacity 1.0.
+        session.platform.advance_clock(Duration::from_millis(150));
+        session.platform.run_until_parked();
+        let settled = session.frame();
+        assert_eq!(element(&settled, "overlay.equation_editor").opacity, 1.0);
+        assert!(!settled.elements.contains_key("page.local_caret"));
+
+        // Close equation editor and advance 150ms with zero input events: unmounts cleanly.
+        session.overlay(OverlayEvent::CloseEquationEditor);
+        let closing = session.frame();
+        assert!(closing.elements.contains_key("page.local_caret"));
+        session.platform.advance_clock(Duration::from_millis(150));
+        session.platform.run_until_parked();
+        let closed = session.frame();
+        assert!(
+            !closed.elements.contains_key("overlay.equation_editor"),
+            "EquationEditor must unmount after 150ms fade-out"
+        );
+    }
+
+    #[test]
+    fn mobile_keyboard_toolbar_long_press_bidi_and_embed_doc_click_work_end_to_end() {
+        let session = open(390, 844, PlaygroundTheme::Light);
+        session.edit(|page| {
+            page.add_block(
+                "bidi-p",
+                BlockSpec::Paragraph {
+                    paragraph_type: ParagraphType::Text,
+                    text: "Hello \u{05E9}\u{05DC}\u{05D5}\u{05DD} \u{0645}\u{0631}\u{062D}\u{0628}\u{0627} world".into(),
+                },
+                Some("showcase-note"),
+                Some(0),
+                4_000_000,
+            )
+            .expect("add bidi paragraph");
+            page.add_block(
+                "embed-card",
+                BlockSpec::EmbedLinkedDoc {
+                    page_id: "doc:linked-target".into(),
+                    style: "horizontal".into(),
+                    caption: String::new(),
+                },
+                Some("showcase-note"),
+                Some(1),
+                4_000_001,
+            )
+            .expect("add embed card");
+        });
+
+        session.overlay(OverlayEvent::SetKeyboardToolbarVisible(true));
+        let frame = session.frame();
+        assert_no_violations(&frame, "mobile keyboard toolbar");
+        let bar = element(&frame, "overlay.keyboard_toolbar");
+        assert_eq!(bar.bounds.height, KEYBOARD_TOOLBAR_HEIGHT);
+        for id in [
+            "overlay.keyboard_toolbar.undo",
+            "overlay.keyboard_toolbar.bold",
+            "overlay.keyboard_toolbar.dismiss",
+        ] {
+            let btn = element(&frame, id);
+            assert!(
+                btn.bounds.width >= 44.0 && btn.bounds.height >= 44.0,
+                "{id} < 44x44"
+            );
+        }
+
+        // Long-press on the bidi paragraph selects an ICU word.
+        let bidi_bounds = element(&frame, "page.block.bidi-p").bounds;
+        session.overlay(OverlayEvent::LongPressWord {
+            x: bidi_bounds.x + 10.0,
+            y: bidi_bounds.y + 10.0,
+        });
+        let sel = session.selection().expect("word selection");
+        assert_eq!(sel.0, "bidi-p");
+        assert!(sel.3 > sel.1, "long-press must select a non-empty ICU word");
+
+        // Clicking Bold on KeyboardToolbar applies bold in one undoable step.
+        session.overlay(OverlayEvent::KeyboardToolbar(KeyboardToolbarAction::Bold));
+        let after_bold = session.text("bidi-p");
+        assert!(after_bold.delta.iter().any(|op| matches!(
+            op,
+            TextDeltaOp::Insert { format: Some(f), .. } if f.get("bold") == Some(&Any::True)
+        )));
+        session.overlay(OverlayEvent::KeyboardToolbar(KeyboardToolbarAction::Undo));
+        let after_undo = session.text("bidi-p");
+        assert!(after_undo.delta.iter().all(|op| !matches!(
+            op,
+            TextDeltaOp::Insert { format: Some(f), .. } if f.get("bold") == Some(&Any::True)
+        )));
+
+        // Clicking EmbedLinkedDoc triggers OpenEmbedDoc callback state.
+        session.overlay(OverlayEvent::OpenEmbedDoc {
+            page_id: "doc:linked-target".into(),
+        });
+        assert_eq!(
+            session.view(|v, _| v.last_opened_embed_doc().map(str::to_string)),
+            Some("doc:linked-target".to_string())
+        );
+
+        // Dismiss hides the keyboard toolbar.
+        session.overlay(OverlayEvent::KeyboardToolbar(
+            KeyboardToolbarAction::Dismiss,
+        ));
+        let dismissed = session.frame();
+        assert!(!dismissed.elements.contains_key("overlay.keyboard_toolbar"));
+    }
+
+    #[test]
+    fn mobile_keyboard_toolbar_pagination_reaches_all_18_actions_on_390px() {
+        let session = open(390, 844, PlaygroundTheme::Light);
+        session.edit(|page| {
+            page.add_block(
+                "mob-p",
+                BlockSpec::Paragraph {
+                    paragraph_type: ParagraphType::Text,
+                    text: "Tap toolbar".into(),
+                },
+                Some("showcase-note"),
+                Some(0),
+                4_100_000,
+            )
+            .expect("add mobile paragraph");
+        });
+        session.select("mob-p", "Tap");
+        session.overlay(OverlayEvent::SetKeyboardToolbarVisible(true));
+
+        let mut seen = std::collections::HashSet::new();
+        for _ in 0..6 {
+            let frame = session.frame();
+            assert_no_violations(&frame, "mobile toolbar page");
+            let more = element(&frame, "overlay.keyboard_toolbar.more");
+            let dismiss = element(&frame, "overlay.keyboard_toolbar.dismiss");
+            assert!(more.bounds.width >= 44.0 && more.bounds.height >= 44.0);
+            assert!(dismiss.bounds.width >= 44.0 && dismiss.bounds.height >= 44.0);
+            for action in KeyboardToolbarAction::ALL {
+                if action == KeyboardToolbarAction::Dismiss {
+                    continue;
+                }
+                let id = format!("overlay.keyboard_toolbar.{}", action.id());
+                if let Some(el) = frame.elements.get(id.as_str()) {
+                    assert!(
+                        el.bounds.width >= 44.0 && el.bounds.height >= 44.0,
+                        "{id} < 44x44"
+                    );
+                    seen.insert(action);
+                }
+            }
+            session.click(&frame, "overlay.keyboard_toolbar.more");
+        }
+        for action in KeyboardToolbarAction::ALL {
+            if action != KeyboardToolbarAction::Dismiss {
+                assert!(
+                    seen.contains(&action),
+                    "action {action:?} unreachable via More pagination on 390px viewport"
+                );
+            }
+        }
+
+        // Helper to page until `target_id` is visible and click it on canvas.
+        let click_paged = |target_id: &str| {
+            for _ in 0..6 {
+                let frame = session.frame();
+                if frame.elements.contains_key(target_id) {
+                    session.click(&frame, target_id);
+                    return;
+                }
+                session.click(&frame, "overlay.keyboard_toolbar.more");
+            }
+            panic!("could not find {target_id} on any toolbar page");
+        };
+
+        // Click H1 -> converts paragraph to h1, Undo -> reverts, Todo -> converts to todo,
+        // CodeBlock -> converts to code, Mention -> opens @ picker, Dismiss -> hides bar.
+        click_paged("overlay.keyboard_toolbar.h1");
+        let after_h1 = session.frame();
+        assert!(after_h1.elements.contains_key("page.block.mob-p"));
+        click_paged("overlay.keyboard_toolbar.undo");
+        click_paged("overlay.keyboard_toolbar.todo");
+        click_paged("overlay.keyboard_toolbar.undo");
+        click_paged("overlay.keyboard_toolbar.code_block");
+        click_paged("overlay.keyboard_toolbar.undo");
+        click_paged("overlay.keyboard_toolbar.mention");
+        session.platform.advance_clock(Duration::from_millis(160));
+        session.platform.run_until_parked();
+        let with_mention = session.frame();
+        assert!(
+            with_mention
+                .elements
+                .contains_key("overlay.linked_doc_menu")
+        );
+        let dismiss_frame = session.frame();
+        session.click(&dismiss_frame, "overlay.keyboard_toolbar.dismiss");
+        let dismissed = session.frame();
+        assert!(!dismissed.elements.contains_key("overlay.keyboard_toolbar"));
+    }
+
+    #[test]
+    fn table_cell_canvas_click_edits_cell_and_undoes_in_one_step() {
+        let session = open(1280, 800, PlaygroundTheme::Light);
+        session.edit(|page| {
+            page.add_block(
+                "tbl-edit",
+                BlockSpec::Table {
+                    rows: vec![
+                        vec!["Key".into(), "Value".into()],
+                        vec!["Engine".into(), "OldVal".into()],
+                    ],
+                },
+                Some("showcase-note"),
+                Some(0),
+                0,
+            )
+            .expect("add table");
+        });
+        session.platform.advance_clock(Duration::from_millis(700));
+        session.select("showcase-intro", "bold");
+        let frame = session.frame();
+        assert!(frame.elements.contains_key("page.local_caret"));
+
+        // Click table cell (row-1, col-1) on canvas to enter in-place live editing (no popover).
+        session.click(&frame, "page.block.tbl-edit.cell.row-1.col-1");
+        session.platform.advance_clock(Duration::from_millis(160));
+        session.platform.run_until_parked();
+        let opened = session.frame();
+        assert!(
+            session.view(|v, _| v.active_table_cell().is_some()),
+            "clicking a table cell must focus it in place"
+        );
+        assert!(
+            !opened.elements.contains_key("overlay.table_cell_editor"),
+            "legacy table cell popover must not exist"
+        );
+        assert!(
+            !opened.elements.contains_key("page.local_caret"),
+            "body caret must be hidden while table cell is focused"
+        );
+        assert!(
+            opened.elements.contains_key("page.table_cell_caret"),
+            "in-place table cell caret must be shown while table cell is focused"
+        );
+
+        // Replace cell text directly in place (splices live Y.Text immediately).
+        session.app.update(|cx| {
+            session
+                .window
+                .update(cx, |v, window, cx| {
+                    let len = v
+                        .active_table_cell()
+                        .map(|c| c.input.text.encode_utf16().count())
+                        .unwrap_or(0);
+                    v.replace_text_in_range(Some(0..len), "NewVal", window, cx);
+                })
+                .unwrap();
+        });
+        let committed = session.frame();
+        assert_eq!(
+            element(&committed, "page.block.tbl-edit.cell.row-1.col-1")
+                .text
+                .as_deref(),
+            Some("NewVal")
+        );
+
+        // Single-step undo restores "OldVal".
+        session.overlay(OverlayEvent::KeyboardToolbar(KeyboardToolbarAction::Undo));
+        let undone = session.frame();
+        assert_eq!(
+            element(&undone, "page.block.tbl-edit.cell.row-1.col-1")
+                .text
+                .as_deref(),
+            Some("OldVal")
         );
     }
 }

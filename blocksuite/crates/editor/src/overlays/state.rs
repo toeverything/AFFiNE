@@ -31,14 +31,39 @@ pub(super) fn typed_text(keystroke: &Keystroke, secondary: bool) -> Option<Strin
     }
 }
 
-/// A URL as typed, with `https://` in front when it names no scheme.
+/// Normalize a typed URL (prepending `https://` when it names no scheme) and
+/// validate it against the shared clipboard URL scheme allowlist. Returns an
+/// empty string when the input is empty or uses a disallowed scheme.
 pub fn normalize_url(input: &str) -> String {
     let url = input.trim();
-    if url.is_empty() || url.contains("://") || url.starts_with("mailto:") || url.starts_with('/') {
+    if url.is_empty() {
+        return String::new();
+    }
+    if url.starts_with('/') {
+        return url.to_string();
+    }
+    let decoded = crate::clipboard::sanitize::decode_html_entities(url);
+    let compact: String = decoded.chars().filter(|c| !c.is_whitespace()).collect();
+    let has_scheme = compact.contains("://")
+        || compact.starts_with('#')
+        || compact.split_once(':').is_some_and(|(scheme, rest)| {
+            !scheme.is_empty()
+                && !scheme.contains('.')
+                && scheme
+                    .chars()
+                    .next()
+                    .is_some_and(|c| c.is_ascii_alphabetic())
+                && scheme
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'-'))
+                && !rest.chars().next().is_some_and(|c| c.is_ascii_digit())
+        });
+    let candidate = if has_scheme {
         url.to_string()
     } else {
         format!("https://{url}")
-    }
+    };
+    crate::clipboard::sanitize::sanitize_url(&candidate).unwrap_or_default()
 }
 
 impl Overlays {
@@ -75,7 +100,7 @@ impl Overlays {
         self.close_slash(now_ms);
         self.close_linked_doc(now_ms);
         self.close_link_field();
-        self.close_equation_editor();
+        self.close_equation_editor_at(now_ms);
         self.drag = None;
     }
 
@@ -385,18 +410,28 @@ impl Overlays {
                 self.open_equation_editor(target, initial, now_ms);
                 effects.redraw = true;
             }
-            OverlayEvent::EquationApply => self.apply_equation(&mut effects),
+            OverlayEvent::EquationApply => self.apply_equation(now_ms, &mut effects),
             OverlayEvent::CloseEquationEditor => {
-                if self.equation.take().is_some() {
+                if self.close_equation_editor_at(now_ms) {
                     effects.redraw = true;
                 }
+            }
+            OverlayEvent::KeyboardToolbarNextPage => {
+                self.next_keyboard_toolbar_page();
+                effects.redraw = true;
             }
             OverlayEvent::OpenLinkedDocMenu { .. }
             | OverlayEvent::SetLinkedDocQuery(_)
             | OverlayEvent::LinkedDocHover(_)
             | OverlayEvent::LinkedDocSelect(_)
             | OverlayEvent::CloseLinkedDocMenu
-            | OverlayEvent::CreateLinkedDoc { .. } => {}
+            | OverlayEvent::CreateLinkedDoc { .. }
+            | OverlayEvent::SetKeyboardToolbarVisible(_)
+            | OverlayEvent::KeyboardToolbar(_)
+            | OverlayEvent::FocusTableCell { .. }
+            | OverlayEvent::AttachmentPdfPage { .. }
+            | OverlayEvent::OpenEmbedDoc { .. }
+            | OverlayEvent::LongPressWord { .. } => {}
         }
         effects
     }
@@ -415,10 +450,19 @@ impl Overlays {
         let key = keystroke.key.as_str();
         let shift = keystroke.modifiers.shift;
 
-        if let Some(equation) = self.equation_editor_mut() {
-            if equation.input.composing() {
-                if key == "escape" {
-                    equation.input.mark(None, "", None);
+        let active_kind = if self.equation_editor().is_some() {
+            Some(true)
+        } else if self.link_field().is_some() {
+            Some(false)
+        } else {
+            None
+        };
+        if let Some(is_equation) = active_kind {
+            if self.active_text_field().is_some_and(LinkBar::composing) {
+                if key == "escape"
+                    && let Some(field) = self.active_text_field_mut()
+                {
+                    field.mark(None, "", None);
                     effects.handled = true;
                     effects.redraw = true;
                 }
@@ -427,58 +471,36 @@ impl Overlays {
             effects.handled = true;
             effects.redraw = true;
             match key {
-                "enter" => self.apply_equation(&mut effects),
-                "escape" => self.close_equation_editor(),
+                "enter" => {
+                    if is_equation {
+                        self.apply_equation(now_ms, &mut effects);
+                    } else {
+                        self.apply_link(false, &mut effects);
+                    }
+                }
+                "escape" => {
+                    if is_equation {
+                        self.close_equation_editor_at(now_ms);
+                    } else {
+                        self.close_link_field();
+                    }
+                }
                 "v" if secondary => effects.paste = true,
                 "c" | "x" if secondary => {
-                    if !equation.input.selection.is_empty() {
-                        effects.clipboard = Some(equation.input.selected_text().to_string());
+                    if let Some(field) = self.active_text_field_mut()
+                        && !field.input.selection.is_empty()
+                    {
+                        effects.clipboard = Some(field.selected_text().to_string());
                         if key == "x" {
-                            equation.input.replace(None, "");
+                            field.replace(None, "");
                         }
                     }
                 }
                 _ => {
-                    if !equation.input.key(key, shift, secondary)
+                    if let Some(field) = self.active_text_field_mut()
+                        && !field.key(key, shift, secondary)
                         && typed_text(keystroke, secondary).is_some()
                     {
-                        effects.handled = false;
-                        effects.redraw = false;
-                    }
-                }
-            }
-            return effects;
-        }
-
-        if let Some(link) = self.link_field_mut() {
-            if link.composing() {
-                // The input method owns the keys of a composition; `Escape` abandons it.
-                if key == "escape" {
-                    link.mark(None, "", None);
-                    effects.handled = true;
-                    effects.redraw = true;
-                }
-                return effects;
-            }
-            effects.handled = true;
-            effects.redraw = true;
-            match key {
-                "enter" => self.apply_link(false, &mut effects),
-                "escape" => self.close_link_field(),
-                "v" if secondary => effects.paste = true,
-                "c" | "x" if secondary => {
-                    if !link.selection.is_empty() {
-                        effects.clipboard = Some(link.selected_text().to_string());
-                        if key == "x" {
-                            link.replace(None, "");
-                        }
-                    }
-                }
-                _ => {
-                    if !link.key(key, shift, secondary)
-                        && typed_text(keystroke, secondary).is_some()
-                    {
-                        // Typed text arrives through the input handler.
                         effects.handled = false;
                         effects.redraw = false;
                     }
@@ -681,6 +703,11 @@ impl Overlays {
         {
             self.toolbar = None;
         }
+        if self.equation.as_ref().is_some_and(|editor| {
+            editor.presence.gone(now_ms) || layout.block(editor.target.block_id()).is_none()
+        }) {
+            self.equation = None;
+        }
     }
 
     pub(super) fn in_flight(&self, now_ms: f64) -> bool {
@@ -696,5 +723,9 @@ impl Overlays {
             || self.toolbar.as_ref().is_some_and(|toolbar| {
                 toolbar.presence.in_flight(now_ms) || toolbar.presence.closing
             })
+            || self
+                .equation
+                .as_ref()
+                .is_some_and(|editor| editor.presence.in_flight(now_ms) || editor.presence.closing)
     }
 }

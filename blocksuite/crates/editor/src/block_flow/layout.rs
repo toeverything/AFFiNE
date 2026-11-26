@@ -259,6 +259,9 @@ impl<'a> FlowPass<'a> {
                 Some(previous) => previous.max(body.margin_top),
             };
             self.y += gap;
+            let block_idx = self.blocks.len();
+            let block_top = self.y;
+            let is_callout = matches!(node.content, BlockContent::Callout { .. });
             self.blocks.push(FlowBlock {
                 block_id: node.id.clone(),
                 snapshot_id: SharedString::from(format!("page.block.{}", node.id)),
@@ -282,9 +285,27 @@ impl<'a> FlowPass<'a> {
                 // The block's own row has no bottom margin; the last child's bottom margin
                 // collapses through the children container into the block's.
                 self.pending_margin = Some(0.0);
-                self.flow(&node.children, x + CHILD_INDENT, child_depth, align);
-                self.pending_margin =
-                    Some(self.pending_margin.unwrap_or(0.0).max(body.margin_bottom));
+                let child_x = if is_callout {
+                    x + 16.0
+                } else {
+                    x + CHILD_INDENT
+                };
+                self.flow(&node.children, child_x, child_depth, align);
+                if is_callout {
+                    let pad_bottom = 12.0;
+                    let wrapped_h = (self.y - block_top + pad_bottom).max(body.height);
+                    let mut wrapped = (*self.blocks[block_idx].body).clone();
+                    wrapped.height = wrapped_h;
+                    if let Some(Prim::Quad { rect, .. }) = wrapped.prims.first_mut() {
+                        rect.h = wrapped_h;
+                    }
+                    self.blocks[block_idx].body = Rc::new(wrapped);
+                    self.y = block_top + wrapped_h;
+                    self.pending_margin = Some(CARD_BLOCK_MARGIN);
+                } else {
+                    self.pending_margin =
+                        Some(self.pending_margin.unwrap_or(0.0).max(body.margin_bottom));
+                }
             }
 
             if let (
@@ -417,6 +438,8 @@ impl<'a> FlowPass<'a> {
             }),
             prefix: None,
             code_scroll: None,
+            pdf_controls: None,
+            table_cells: Vec::new(),
         }
     }
 
@@ -457,7 +480,7 @@ impl<'a> FlowPass<'a> {
                 wrap,
                 text,
                 caption,
-            } => self.code_body(language, *wrap, text, caption, width),
+            } => self.code_body(&node.id, language, *wrap, text, caption, width),
             BlockContent::Image {
                 source_id,
                 width: image_width,
@@ -477,6 +500,39 @@ impl<'a> FlowPass<'a> {
                 width,
             ),
             BlockContent::Latex { latex } => self.latex_body(latex, width),
+            BlockContent::Callout {
+                icon,
+                text,
+                background_color,
+            } => self.callout_body(
+                icon,
+                &text.plain,
+                background_color.as_deref(),
+                !node.children.is_empty(),
+                width,
+            ),
+            BlockContent::Table(table) => self.table_body(table, width),
+            BlockContent::Attachment {
+                name,
+                size,
+                mime_type,
+                source_id,
+                caption,
+                embed,
+            } => self.attachment_body(
+                &node.id, name, *size, mime_type, source_id, caption, *embed, width,
+            ),
+            BlockContent::EmbedLinkedDoc {
+                page_id, caption, ..
+            } => self.embed_linked_doc_body(page_id, caption, width),
+            BlockContent::EmbedSyncedDoc { page_id, caption } => {
+                self.embed_synced_doc_body(page_id, caption, width)
+            }
+            BlockContent::SurfaceRef {
+                reference,
+                ref_flavour,
+                caption,
+            } => self.surface_ref_body(reference, ref_flavour, caption, width),
             _ => self.unknown_body(&node.flavour, &node.id, width),
         }
     }

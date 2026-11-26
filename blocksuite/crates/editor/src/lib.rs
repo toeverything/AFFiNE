@@ -8,6 +8,8 @@ pub mod directory;
 pub mod edgeless;
 pub mod editor_session;
 pub mod fuse;
+pub mod highlight;
+pub mod inline_input;
 pub mod overlays;
 pub mod rich_text;
 pub mod surface;

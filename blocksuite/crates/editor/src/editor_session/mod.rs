@@ -182,14 +182,80 @@ impl EditorSession {
     }
 }
 
+/// Select the UAX #29 word boundary span (in UTF-16 code units) containing `offset`.
+///
+/// Uses `unicode_segmentation::UnicodeSegmentation::split_word_bound_indices` for zero-bloat
+/// Latin, Arabic, Hebrew, CJK, and mixed bidirectional word selection. When `offset` lands
+/// on inter-word whitespace, snaps to the nearest adjacent word rather than selecting spaces.
 pub fn word_range(text: &str, offset: u64) -> Range<u64> {
+    if text.is_empty() {
+        return 0..0;
+    }
     let index = TextBiIndex::new(text);
     let byte = index.utf16_to_utf8_clamped(offset);
-    text.split_word_bound_indices()
-        .find(|(i, s)| i + s.len() > byte)
-        .or_else(|| text.split_word_bound_indices().next_back())
-        .map(|(i, s)| index.utf8_to_utf16(i)..index.utf8_to_utf16(i + s.len()))
-        .unwrap_or(0..0)
+    let segments: Vec<(usize, usize, bool)> = text
+        .split_word_bound_indices()
+        .map(|(start, word)| {
+            (
+                start,
+                start + word.len(),
+                word.chars().all(char::is_whitespace),
+            )
+        })
+        .collect();
+    if segments.is_empty() {
+        return 0..0;
+    }
+    let hit_idx = segments
+        .iter()
+        .position(|&(_, end, _)| end > byte)
+        .unwrap_or(segments.len() - 1);
+    let chosen = if !segments[hit_idx].2 {
+        segments[hit_idx]
+    } else {
+        let prev = segments[..hit_idx].iter().rev().find(|s| !s.2).copied();
+        let next = segments[hit_idx + 1..].iter().find(|s| !s.2).copied();
+        match (prev, next) {
+            (Some(p), Some(n)) => {
+                let dist_prev = byte.saturating_sub(p.1);
+                let dist_next = n.0.saturating_sub(byte);
+                if dist_prev < dist_next { p } else { n }
+            }
+            (Some(p), None) => p,
+            (None, Some(n)) => n,
+            (None, None) => segments[hit_idx],
+        }
+    };
+    index.utf8_to_utf16(chosen.0)..index.utf8_to_utf16(chosen.1)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::word_range;
+
+    #[test]
+    fn uax29_word_range_handles_mixed_ltr_arabic_hebrew_and_whitespace_snap() {
+        let text =
+            "Hello \u{05E9}\u{05DC}\u{05D5}\u{05DD} \u{0645}\u{0631}\u{062D}\u{0628}\u{0627} world";
+        let slice_u16 = |range: std::ops::Range<u64>| -> String {
+            let units: Vec<u16> = text.encode_utf16().collect();
+            String::from_utf16(&units[range.start as usize..range.end as usize]).unwrap()
+        };
+        assert_eq!(slice_u16(word_range(text, 1)), "Hello");
+        // Pressing on whitespace snaps to the nearest word (offset 5 touches end of "Hello").
+        assert_eq!(slice_u16(word_range(text, 5)), "Hello");
+        assert_eq!(word_range("Hello   world", 5), 0..5);
+        assert_eq!(word_range("Hello   world", 7), 8..13);
+        assert_eq!(
+            slice_u16(word_range(text, 7)),
+            "\u{05E9}\u{05DC}\u{05D5}\u{05DD}"
+        );
+        assert_eq!(
+            slice_u16(word_range(text, 13)),
+            "\u{0645}\u{0631}\u{062D}\u{0628}\u{0627}"
+        );
+        assert_eq!(slice_u16(word_range(text, 18)), "world");
+    }
 }
 
 pub fn text_content(node: &BlockNode) -> Option<&str> {

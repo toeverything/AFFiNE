@@ -48,6 +48,19 @@ impl LaidOutRichParagraph {
         }
         for line in &self.lines {
             for fragment in &line.fragments {
+                if let Some((image, img_size, ascent)) = &fragment.math {
+                    let top_y = (line.baseline_y - *ascent).max(line.top);
+                    let bounds = Bounds::new(origin + point(fragment.x, top_y), *img_size);
+                    let _ = window.paint_image(
+                        bounds,
+                        bounds,
+                        ui::Corners::all(px(0.0)),
+                        image.clone(),
+                        0,
+                        false,
+                    );
+                    continue;
+                }
                 let shaped = &fragment.shaped;
                 let glyph_origin = origin + point(fragment.x, line.baseline_y - shaped.ascent);
                 shaped

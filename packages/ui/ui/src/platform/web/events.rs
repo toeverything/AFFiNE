@@ -1005,35 +1005,21 @@ impl WebWindowInner {
     /// Software keyboards (IMEs) express editing through `beforeinput`
     /// rather than key events: Android IMEs emit only a placeholder key
     /// event (`key: "Unidentified"`, `keyCode` 229). This handler only
-    /// intercepts the intents that must not mutate the mirror element;
-    /// ordinary edits deliberately proceed to the element and are imported
-    /// by `register_input`. Desktop keystrokes never reach this handler,
-    /// because `register_key_down` calls `preventDefault()` for every
-    /// keystroke it inserts, which cancels the corresponding `beforeinput`.
+    /// intercepts intents that must not mutate the mirror element; ordinary
+    /// edits proceed to the element and are imported by `register_input`.
     fn register_before_input(self: &Rc<Self>) -> EventListenerHandle {
         let this = Rc::clone(self);
         self.listen_input("beforeinput", move |event: JsValue| {
             let event: web_sys::InputEvent = event.unchecked_into();
-
-            // During composition the composition{update,end} handlers own
-            // the text.
             if this.is_composing.get() || event.is_composing() {
                 return;
             }
-
             match event.input_type().as_str() {
-                // Enter means "submit", not "insert a newline into the
-                // mirror": run it through the keybinding path instead of
-                // letting it mutate the element.
                 "insertLineBreak" | "insertParagraph" => {
                     event.prevent_default();
                     this.dispatch_synthetic_keystroke("enter", Modifiers::default());
                     this.schedule_ime_mirror_sync();
                 }
-                // Everything else (insertText, deleteContent*, autocorrect's
-                // insertReplacementText, ...) is left to the browser's
-                // default action on the mirror element; `register_input`
-                // imports the resulting element diff into the editor.
                 _ => {}
             }
         })
@@ -1042,14 +1028,9 @@ impl WebWindowInner {
     /// Paste is delivered through the DOM `paste` event rather than
     /// `Platform::read_from_clipboard`: the browser's asynchronous clipboard
     /// read API cannot fit that synchronous signature, while `ClipboardEvent`
-    /// exposes `clipboardData` synchronously inside the event. It fires for
-    /// any browser-initiated paste (keyboard, menu bar, context menu).
-    ///
-    /// Text-only pastes reach the input handler synchronously. Pasted image
-    /// files only expose their bytes through asynchronous blob reads, so
-    /// pastes containing images are delivered once those reads resolve — to
-    /// whichever input handler is focused at that point, matching how an
-    /// application-level paste action would behave.
+    /// exposes `clipboardData` synchronously inside the event. Text and
+    /// non-plain MIME payloads reach the input handler synchronously; pasted
+    /// image files are read asynchronously once their blobs resolve.
     fn register_paste(self: &Rc<Self>) -> EventListenerHandle {
         let this = Rc::clone(self);
         self.listen_input("paste", move |event: JsValue| {
@@ -1061,10 +1042,20 @@ impl WebWindowInner {
                 .get_data("text/plain")
                 .ok()
                 .filter(|text| !text.is_empty());
+            let mut rich_meta = serde_json::Map::new();
+            for mime in clipboard_data.types().iter().filter_map(|v| v.as_string()) {
+                if mime != "text/plain"
+                    && mime != "Files"
+                    && let Ok(data) = clipboard_data.get_data(&mime)
+                    && !data.is_empty()
+                {
+                    rich_meta.insert(mime, serde_json::Value::String(data));
+                }
+            }
 
-            // File handles must be collected synchronously: the browser
-            // clears `clipboardData`'s item list once this handler returns,
-            // while the `File`s themselves stay readable afterwards.
+            // File handles must be collected synchronously: the browser clears
+            // `clipboardData`'s item list once this handler returns, while the
+            // `File` objects themselves remain readable afterwards.
             let mut image_files = Vec::new();
             let items = clipboard_data.items();
             for index in 0..items.length() {
@@ -1082,19 +1073,24 @@ impl WebWindowInner {
                 }
             }
 
-            if text.is_none() && image_files.is_empty() {
+            if text.is_none() && rich_meta.is_empty() && image_files.is_empty() {
                 return;
             }
             event.prevent_default();
 
-            // prevent_default leaves the textarea untouched until the paste is mirrored.
             if image_files.is_empty() {
-                if let Some(text) = text {
-                    this.with_input_handler(|handler| {
-                        handler.paste(ClipboardItem::new_string(text));
-                    });
-                    this.schedule_ime_mirror_sync();
-                }
+                let item = if !rich_meta.is_empty() {
+                    ClipboardItem::new_string_with_json_metadata(
+                        text.unwrap_or_default(),
+                        serde_json::Value::Object(rich_meta),
+                    )
+                } else {
+                    ClipboardItem::new_string(text.unwrap_or_default())
+                };
+                this.with_input_handler(|handler| {
+                    handler.paste(item);
+                });
+                this.schedule_ime_mirror_sync();
                 return;
             }
 

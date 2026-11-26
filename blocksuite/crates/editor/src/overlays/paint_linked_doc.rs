@@ -138,14 +138,55 @@ impl Overlays {
                         OverlayEvent::LinkedDocSelect(idx)
                     }));
             }
+            let title_el = if matched.title_highlights.is_empty() || matched.doc.title.is_empty() {
+                div()
+                    .w(px(title_width))
+                    .overflow_hidden()
+                    .whitespace_nowrap()
+                    .child(label)
+            } else {
+                let mut row_text = div()
+                    .w(px(title_width))
+                    .overflow_hidden()
+                    .whitespace_nowrap()
+                    .flex()
+                    .items_center();
+                let u16_units: Vec<u16> = label.encode_utf16().collect();
+                let mut cursor = 0usize;
+                for span in &matched.title_highlights {
+                    let s = span.start.min(u16_units.len());
+                    let e = span.end.min(u16_units.len());
+                    if s > cursor
+                        && let Ok(plain_seg) = String::from_utf16(&u16_units[cursor..s])
+                    {
+                        row_text = row_text.child(div().flex_none().child(plain_seg));
+                    }
+                    if e > s
+                        && let Ok(hl_seg) = String::from_utf16(&u16_units[s..e])
+                    {
+                        row_text = row_text.child(
+                            div()
+                                .flex_none()
+                                .px(px(1.0))
+                                .rounded(px(2.0))
+                                .bg(palette.brand.opacity(0.18))
+                                .text_color(palette.brand)
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .child(hl_seg),
+                        );
+                    }
+                    cursor = cursor.max(e);
+                }
+                if cursor < u16_units.len()
+                    && let Ok(tail) = String::from_utf16(&u16_units[cursor..])
+                {
+                    row_text = row_text.child(div().flex_none().child(tail));
+                }
+                row_text
+            };
             panel = panel.child(
-                row.child(icon(icon_name, 16.0, palette.icon)).child(
-                    div()
-                        .w(px(title_width))
-                        .overflow_hidden()
-                        .whitespace_nowrap()
-                        .child(label),
-                ),
+                row.child(icon(icon_name, 16.0, palette.icon))
+                    .child(title_el),
             );
         }
 

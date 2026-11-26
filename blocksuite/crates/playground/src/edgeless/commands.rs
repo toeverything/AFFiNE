@@ -165,7 +165,7 @@ impl PlaygroundView {
                     self.edgeless_commit_inline_edit(window, cx);
                     return true;
                 }
-                "enter" if !ed.multiline || cmd => {
+                "enter" if !ed.input.multiline || cmd => {
                     self.edgeless_commit_inline_edit(window, cx);
                     return true;
                 }
@@ -191,24 +191,21 @@ impl PlaygroundView {
                 }
                 "left" => {
                     ed.move_caret(true, m.shift);
-                    let sel = ed.selection.clone();
-                    self.edgeless_update_label_anchors(sel);
+                    self.edgeless_update_label_anchors();
                     window.notify_text_input_changed(&self.editor_focus);
                     cx.notify();
                     return true;
                 }
                 "right" => {
                     ed.move_caret(false, m.shift);
-                    let sel = ed.selection.clone();
-                    self.edgeless_update_label_anchors(sel);
+                    self.edgeless_update_label_anchors();
                     window.notify_text_input_changed(&self.editor_focus);
                     cx.notify();
                     return true;
                 }
                 "a" if cmd => {
                     ed.select_all();
-                    let sel = ed.selection.clone();
-                    self.edgeless_update_label_anchors(sel);
+                    self.edgeless_update_label_anchors();
                     window.notify_text_input_changed(&self.editor_focus);
                     cx.notify();
                     return true;
@@ -640,7 +637,14 @@ mod tests {
                 assert!(view.edgeless_begin_inline_edit(&shape_id, window, cx));
                 view.edgeless_label_edit(window, cx, |ed| ed.replace(None, "KeepMe"));
                 view.edgeless_label_input(window, cx, |ed| ed.select(0..4));
-                let before_label = view.edgeless.authoring.label_editor().unwrap().text.clone();
+                let before_label = view
+                    .edgeless
+                    .authoring
+                    .label_editor()
+                    .unwrap()
+                    .input
+                    .text
+                    .clone();
                 let image_only = ui::ClipboardItem {
                     entries: vec![ui::ClipboardEntry::Image(ui::Image {
                         bytes: vec![1, 2, 3, 4],
@@ -650,7 +654,7 @@ mod tests {
                 };
                 view.paste(image_only, window, cx);
                 assert_eq!(
-                    view.edgeless.authoring.label_editor().unwrap().text,
+                    view.edgeless.authoring.label_editor().unwrap().input.text,
                     before_label,
                     "image-only paste must not erase selected label text"
                 );
@@ -1215,7 +1219,14 @@ mod tests {
                 let line1_y = f32::from(bounds.origin.y) + 14.0;
                 view.on_edgeless_left_down(&mouse_down(line1_x, line1_y, 1), window, cx);
                 view.replace_text_in_range(None, "*", window, cx);
-                let text = view.edgeless.authoring.label_editor().unwrap().text.clone();
+                let text = view
+                    .edgeless
+                    .authoring
+                    .label_editor()
+                    .unwrap()
+                    .input
+                    .text
+                    .clone();
                 let mut lines = text.lines();
                 let first = lines.next().unwrap_or("");
                 let second = lines.next().unwrap_or("");

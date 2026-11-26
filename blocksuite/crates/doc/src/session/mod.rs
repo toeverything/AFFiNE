@@ -1,7 +1,10 @@
 mod export;
 mod structure;
 mod surface;
+mod table_cell;
 mod workspace;
+
+pub use table_cell::LiveTableCell;
 
 pub use export::any_to_normalized_json;
 pub use workspace::WorkspaceSession;
@@ -72,6 +75,45 @@ pub(super) fn child_values(ids: &[String]) -> Vec<SessionValue> {
     ids.iter()
         .map(|id| SessionValue::Any(Any::String(id.clone())))
         .collect()
+}
+
+/// Compute the inline formatting attributes inherited by text inserted at `offset_utf16`
+/// within an insert-only `Y.Text` delta.
+///
+/// Mirrors BlockSuite's inline boundary rule:
+/// - `offset_utf16 == 0` inherits nothing.
+/// - Embeds and inline object marks (`"reference"`, `"latex"`) never extend to adjacent text.
+/// - At the right edge of a formatted run (`offset_utf16 == cursor`), `"code"` and `"link"`
+///   are stripped so subsequent typing exits inline code capsules and links.
+pub fn insertion_marks_at(delta: &[TextDeltaOp], offset_utf16: u64) -> TextAttributes {
+    if offset_utf16 == 0 {
+        return TextAttributes::new();
+    }
+    let mut cursor = 0u64;
+    for op in delta {
+        if let TextDeltaOp::Insert { insert, format } = op {
+            cursor += match insert {
+                TextInsert::Text(s) => s.encode_utf16().count(),
+                TextInsert::Embed(v) => v.len(),
+            } as u64;
+            if offset_utf16 <= cursor {
+                if matches!(insert, TextInsert::Embed(_))
+                    || format.as_ref().is_some_and(|attrs| {
+                        attrs.contains_key("reference") || attrs.contains_key("latex")
+                    })
+                {
+                    break;
+                }
+                let mut marks = format.clone().unwrap_or_default();
+                if offset_utf16 == cursor {
+                    marks.remove("code");
+                    marks.remove("link");
+                }
+                return marks;
+            }
+        }
+    }
+    TextAttributes::new()
 }
 
 /// Split an insert-only delta at a UTF-16 boundary without discarding attributes or embeds.
@@ -506,6 +548,46 @@ impl PageDocSession {
         self.advance_time(now_ms);
         let target = TypeTarget::Path(TypePath::root("blocks").key(block_id).key(prop_key));
         Ok(self.session.text_apply_delta(&target, delta)?)
+    }
+
+    /// Splice a UTF-16 range on an existing `Y.Text` target via a single tracked
+    /// `text_apply_delta` without calling `structural_edit`, preserving the 500 ms undo
+    /// merge window and applying [`insertion_marks_at`] so typing never leaks into adjacent
+    /// `"code"`, `"link"`, `"reference"`, or `"latex"` runs.
+    pub(super) fn splice_live_text(
+        &mut self,
+        target: &TypeTarget,
+        utf16_start: u64,
+        utf16_delete_len: u64,
+        insert: &str,
+        now_ms: u64,
+    ) -> DocResult<PageCommit> {
+        let len = self.session.read_text_len(target)?;
+        let start = utf16_start.min(len);
+        let del = utf16_delete_len.min(len.saturating_sub(start));
+        if del == 0 && insert.is_empty() {
+            return Ok(None);
+        }
+        let mut ops = Vec::with_capacity(3);
+        if start > 0 {
+            ops.push(TextDeltaOp::Retain {
+                retain: start,
+                format: None,
+            });
+        }
+        if del > 0 {
+            ops.push(TextDeltaOp::Delete { delete: del });
+        }
+        if !insert.is_empty() {
+            let existing_delta = self.session.read_text_delta(target)?;
+            let marks = insertion_marks_at(&existing_delta, start);
+            ops.push(TextDeltaOp::Insert {
+                insert: TextInsert::Text(insert.to_string()),
+                format: (!marks.is_empty()).then_some(marks),
+            });
+        }
+        self.advance_time(now_ms);
+        Ok(self.session.text_apply_delta(target, &ops)?)
     }
 
     /// Set a scalar or nested property on a block (`prop:*`).

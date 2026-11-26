@@ -20,20 +20,26 @@
 //! be clicked.
 
 mod equation;
+mod keyboard_toolbar;
 mod paint_linked_doc;
 mod paint_page;
 mod paint_popovers;
 mod slash;
 mod state;
+mod table_cell;
 mod toolbar;
 
 pub use equation::{EquationEditor, EquationTarget};
+pub use keyboard_toolbar::{
+    KEYBOARD_TOOLBAR_BUTTON, KEYBOARD_TOOLBAR_HEIGHT, KeyboardToolbarAction,
+};
 pub use paint_page::{block_text, bounding_rect, find_parent, shared_alignment};
 pub use slash::{
     SLASH_ITEMS, SlashCommand, SlashItem, SlashMenu, SlashRow, filter_slash_items, slash_rows,
     slash_rows_for_query,
 };
 pub use state::normalize_url;
+pub use table_cell::InlineTableCell;
 pub use toolbar::LinkBar;
 pub use toolbar::{ActiveSelection, FormatAction, MarkState, SelectionFormat, marks_in_range};
 
@@ -451,6 +457,33 @@ pub enum OverlayEvent {
     EquationApply,
     /// Dismiss the equation editor without committing.
     CloseEquationEditor,
+    /// Show or hide the mobile bottom keyboard toolbar.
+    SetKeyboardToolbarVisible(bool),
+    /// Cycle to the next action page on narrow mobile viewports.
+    KeyboardToolbarNextPage,
+    /// Trigger one action button on the mobile bottom keyboard toolbar.
+    KeyboardToolbar(KeyboardToolbarAction),
+    /// Focus an `affine:table` cell in place for live `Y.Text` CRDT editing.
+    FocusTableCell {
+        block_id: String,
+        row_id: String,
+        column_id: String,
+        screen_pos: Option<(f32, f32)>,
+    },
+    /// Step the active PDF page preview of an `affine:attachment` block by `delta` (`-1` / `+1`).
+    AttachmentPdfPage {
+        block_id: String,
+        delta: i32,
+    },
+    /// Open the target document of an `affine:embed-linked-doc` or `affine:embed-synced-doc` card.
+    OpenEmbedDoc {
+        page_id: String,
+    },
+    /// Touch long-press at window coordinates `(x, y)` to select the ICU word under the finger.
+    LongPressWord {
+        x: f32,
+        y: f32,
+    },
 }
 
 /// Active `@` linked-document menu state populated from [`crate::directory::WorkspaceDocDirectory`].
@@ -562,6 +595,9 @@ pub struct Overlays {
     pub(super) copied_generation: u64,
     pub(super) linked_doc: Option<LinkedDocMenuState>,
     pub(super) equation: Option<EquationEditor>,
+    pub(super) keyboard_toolbar_visible: bool,
+    pub(super) keyboard_toolbar_page: usize,
+    pub(super) keyboard_toolbar_marks_disabled: bool,
     pub format_cache: Option<FormatCache>,
 }
 

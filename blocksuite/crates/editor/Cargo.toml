@@ -12,10 +12,12 @@ workspace = true
 [features]
 default = []
 harness = ["ui/harness"]
+preview-engine = ["dep:blocksuite-preview"]
 
 [dependencies]
 anyhow.workspace = true
 blocksuite-playground-doc = { path = "../doc", default-features = false }
+blocksuite-preview = { path = "../preview", default-features = false, features = ["math", "pdf"], optional = true }
 image.workspace = true
 serde.workspace = true
 serde_json.workspace = true
