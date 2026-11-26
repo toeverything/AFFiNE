@@ -20,12 +20,13 @@ export async function importMindmap(bound: Bound): Promise<MindMapNode> {
   }
 
   let result;
+  const fileName = file.name.toLowerCase();
 
-  if (file.name.endsWith('.mm')) {
+  if (fileName.endsWith('.mm')) {
     result = await parseMmFile(file);
-  } else if (file.name.endsWith('.opml') || file.name.endsWith('.xml')) {
+  } else if (fileName.endsWith('.opml') || fileName.endsWith('.xml')) {
     result = await parseOPMLFile(file);
-  } else if (file.name.endsWith('.xmind')) {
+  } else if (fileName.endsWith('.xmind')) {
     result = await parseXmindFile(file);
   } else {
     throw new BlockSuiteError(ErrorCode.ParsingError, 'Unsupported file type');
