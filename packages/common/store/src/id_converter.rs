@@ -1,33 +1,13 @@
 use std::collections::BTreeMap;
 
-use y_octo::{
-    Any, DocOptions, DocSession, SessionConfig, SessionReadValue, SessionUndoConfig, TypePath,
-    TypeTarget, merge_updates_v1, validate_update_v1,
-};
+use blocksuite_playground_doc::crdt_v1;
 
 use crate::error::{StoreError, StoreResult};
 
-fn is_empty_crdt_update(bin: &[u8]) -> bool {
-    bin.is_empty() || bin == [0, 0]
-}
-
 /// Merge a slice of encoded Yjs v1 CRDT updates into a single v1 update (native + `wasm32`).
 pub fn merge_crdt_updates_v1(updates: &[&[u8]]) -> StoreResult<Vec<u8>> {
-    let non_empty: Vec<&[u8]> = updates
-        .iter()
-        .copied()
-        .filter(|u| !is_empty_crdt_update(u))
-        .collect();
-    match non_empty.as_slice() {
-        [] => Ok(vec![0, 0]),
-        [single] => {
-            validate_update_v1(single).map_err(|err| StoreError::InvalidBinary(err.to_string()))?;
-            Ok((*single).to_vec())
-        }
-        many => merge_updates_v1(many.iter().copied())
-            .and_then(|merged| merged.encode_v1())
-            .map_err(|err| StoreError::InvalidBinary(err.to_string())),
-    }
+    crdt_v1::merge_crdt_updates_v1(updates)
+        .map_err(|err| StoreError::InvalidBinary(err.to_string()))
 }
 
 /// Bidirectional document ID converter matching `packages/common/nbstore/src/utils/id-converter.ts`.
@@ -93,44 +73,10 @@ impl IdConverter {
         let Some(bytes) = root_doc_bytes else {
             return Ok(converter);
         };
-        if bytes.is_empty() || bytes == [0, 0] {
-            return Ok(converter);
-        }
-
-        let options = DocOptions::from_identity(1, effective_root_id.to_string());
-        let mut session = DocSession::<()>::with_config(
-            options,
-            SessionConfig {
-                undo: SessionUndoConfig::Disabled,
-            },
-        );
-        session
-            .apply_update_v1(bytes)
+        let mappings = crdt_v1::extract_page_subdoc_mappings(effective_root_id, bytes)
             .map_err(|err| StoreError::InvalidBinary(err.to_string()))?;
-
-        let pages_target = TypeTarget::Path(TypePath::root("meta").key("pages"));
-        let Ok(page_items) = session.read_array(&pages_target) else {
-            return Ok(converter);
-        };
-
-        let spaces_target = TypeTarget::Path(TypePath::root("spaces"));
-        for item in page_items {
-            let SessionReadValue::Map(map_id) = item else {
-                continue;
-            };
-            let Ok(Some(SessionReadValue::Any(Any::String(page_id)))) =
-                session.get_map_value(&TypeTarget::Identity(map_id), "id")
-            else {
-                continue;
-            };
-            if page_id.is_empty() {
-                continue;
-            }
-            if let Ok(Some(SessionReadValue::Doc { guid, .. })) =
-                session.get_map_value(&spaces_target, &page_id)
-            {
-                converter.register_page_mapping(page_id, guid);
-            }
+        for (page_id, guid) in mappings {
+            converter.register_page_mapping(page_id, guid);
         }
 
         Ok(converter)
@@ -139,21 +85,11 @@ impl IdConverter {
     /// Extract live `meta.pages -> spaces` subdoc GUIDs from one or more encoded Yjs v1 root
     /// document updates (merged via `y-octo`, rejecting malformed or truncated frames).
     pub fn extract_subdoc_guids_from_root_updates(
-        space_id: &str,
+        _space_id: &str,
         root_updates: &[&[u8]],
     ) -> StoreResult<Vec<String>> {
-        if root_updates.is_empty() {
-            return Ok(Vec::new());
-        }
-        let merged = merge_crdt_updates_v1(root_updates)?;
-        let converter = Self::from_root_doc_bytes(space_id, None, Some(&merged))?;
-        let mut guids = Vec::new();
-        for (_, guid) in converter.page_mappings() {
-            if !guids.iter().any(|existing| existing == guid) {
-                guids.push(guid.to_string());
-            }
-        }
-        Ok(guids)
+        crdt_v1::extract_subdoc_guids_from_root_updates(root_updates)
+            .map_err(|err| StoreError::InvalidBinary(err.to_string()))
     }
 
     /// Register a bidirectional alias between normalized `page_id` and legacy `subdoc_guid`.
@@ -248,7 +184,10 @@ fn convert_userdata_old_to_new(old_id: &str, space_id: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use y_octo::{SessionTxOrigin, SessionValue, YTypeKind};
+    use y_octo::{
+        Any, DocOptions, DocSession, SessionConfig, SessionTxOrigin, SessionUndoConfig,
+        SessionValue, TypePath, TypeTarget, YTypeKind,
+    };
 
     use super::*;
 

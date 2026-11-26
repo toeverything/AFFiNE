@@ -51,7 +51,7 @@ pub fn connect(config: RoomConfig) -> RoomLink {
 }
 
 /// Largest blob body accepted from the relay.
-const MAX_BLOB_BYTES: usize = 64 * 1024 * 1024;
+const MAX_BLOB_BYTES: usize = blocksuite_playground_doc::MAX_BLOB_BYTES;
 /// Longest wait for the relay to connect, finish a handshake, accept a request or send
 /// more bytes.
 const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
@@ -168,6 +168,76 @@ fn spawn_fetch(config: &RoomConfig, events: &async_channel::Sender<RoomEvent>, s
     });
 }
 
+async fn put_blob_once(url: &str, body: &[u8]) -> bool {
+    let Some(rest) = url.strip_prefix("http://") else {
+        return false;
+    };
+    let (authority, path) = match rest.find('/') {
+        Some(slash) => rest.split_at(slash),
+        None => (rest, "/"),
+    };
+    let has_port = authority
+        .rsplit_once(':')
+        .is_some_and(|(_, port)| !port.is_empty() && port.bytes().all(|b| b.is_ascii_digit()));
+    let address = if has_port {
+        authority.to_string()
+    } else {
+        format!("{authority}:80")
+    };
+    let Ok(Ok(mut stream)) = timeout(HTTP_TIMEOUT, TcpStream::connect(address)).await else {
+        return false;
+    };
+    let head = format!(
+        "PUT {path} HTTP/1.1\r\nHost: {authority}\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        body.len()
+    );
+    if timeout(HTTP_TIMEOUT, stream.write_all(head.as_bytes()))
+        .await
+        .ok()
+        .and_then(Result::ok)
+        .is_none()
+    {
+        return false;
+    }
+    if timeout(HTTP_TIMEOUT, stream.write_all(body))
+        .await
+        .ok()
+        .and_then(Result::ok)
+        .is_none()
+    {
+        return false;
+    }
+    let mut response = Vec::new();
+    let mut chunk = [0_u8; 4096];
+    loop {
+        let Ok(Ok(read)) = timeout(HTTP_TIMEOUT, stream.read(&mut chunk)).await else {
+            return false;
+        };
+        if read == 0 {
+            break;
+        }
+        response.extend_from_slice(&chunk[..read]);
+        if response.len() > 64 * 1024 {
+            break;
+        }
+    }
+    parse_http_response(&response).is_some()
+}
+
+fn spawn_upload(
+    config: &RoomConfig,
+    events: &async_channel::Sender<RoomEvent>,
+    source_id: String,
+    bytes: std::sync::Arc<Vec<u8>>,
+) {
+    let url = config.blob_url(&source_id);
+    let events = events.clone();
+    tokio::spawn(async move {
+        let ok = put_blob_once(&url, &bytes).await;
+        let _ = events.try_send(RoomEvent::BlobUploaded { source_id, ok });
+    });
+}
+
 /// Serve a command while no socket is open; `false` once the link is gone.
 fn serve_unconnected(
     command: Option<RoomCommand>,
@@ -177,6 +247,10 @@ fn serve_unconnected(
     match command {
         Some(RoomCommand::FetchBlob(source_id)) => {
             spawn_fetch(config, events, source_id);
+            true
+        }
+        Some(RoomCommand::UploadBlob { source_id, bytes }) => {
+            spawn_upload(config, events, source_id, bytes);
             true
         }
         // Frames addressed to a closed socket are dropped: the next handshake resends
@@ -247,6 +321,9 @@ async fn run(
                             }
                             Some(RoomCommand::FetchBlob(source_id)) => {
                                 spawn_fetch(&config, &events, source_id);
+                            }
+                            Some(RoomCommand::UploadBlob { source_id, bytes }) => {
+                                spawn_upload(&config, &events, source_id, bytes);
                             }
                             Some(RoomCommand::Close) | None => {
                                 let _ = sink.close().await;

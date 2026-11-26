@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 pub mod awareness;
+pub mod crdt_v1;
 pub mod fractional_index;
 pub mod read;
 pub mod refs;
@@ -14,6 +15,9 @@ use thiserror::Error;
 
 /// Maximum client ID representable exactly as a JavaScript IEEE-754 integer (`2^53 - 1`).
 pub const MAX_JS_CLIENT_ID: u64 = 0x001F_FFFF_FFFF_FFFF;
+
+/// Maximum blob body size accepted and served by the room relay (`64 MiB`).
+pub const MAX_BLOB_BYTES: usize = 64 * 1024 * 1024;
 
 /// Validate that a `client_id` is in the JavaScript-safe 53-bit range `1..=2^53-1`.
 pub fn validate_client_id(client_id: u64) -> Result<u64, DocError> {

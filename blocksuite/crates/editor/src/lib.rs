@@ -17,8 +17,8 @@ pub mod theme;
 
 pub use directory::{
     DirectoryError, DocQueryCancelToken, DocQueryPage, DocQueryRequest, EditorDocId, EditorDocMode,
-    EditorDocSummary, InMemoryDocDirectory, MatchedDocSummary, Utf16HighlightSpan,
-    WorkspaceDocDirectory, match_exact_substring_utf16,
+    EditorDocPreview, EditorDocSummary, InMemoryDocDirectory, MatchedDocSummary,
+    Utf16HighlightSpan, WorkspaceDocDirectory, match_exact_substring_utf16,
 };
 pub use fuse::{FuseHighlightMode, FuseMatch, fuse_search_utf16};
 pub use theme::{PlaygroundTheme, register_bundled_fonts};

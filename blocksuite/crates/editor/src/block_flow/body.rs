@@ -342,6 +342,29 @@ impl BlockBody {
         window: &mut Window,
         cx: &mut App,
     ) {
+        if self.kind == FlowKind::Table
+            && let Some(scroll_cfg) = self.code_scroll
+        {
+            let scroll = state.code_scroll_x.clamp(0.0, scroll_cfg.max_x);
+            let shifted = point(origin.x - px(scroll), origin.y);
+            window.with_local_paint_mask(
+                ui::ContentMask {
+                    bounds: scroll_cfg.area.bounds(origin),
+                },
+                |window| self.paint_prims(shifted, state, window, cx),
+            );
+            return;
+        }
+        self.paint_prims(origin, state, window, cx);
+    }
+
+    fn paint_prims(
+        &self,
+        origin: Point<Pixels>,
+        state: BlockPaint,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
         for prim in &self.prims {
             match prim {
                 Prim::CodeLine { x, y, layout, clip } => {
@@ -414,6 +437,19 @@ impl BlockBody {
                         0,
                         false,
                     );
+                }
+                Prim::Surface {
+                    rect,
+                    layout,
+                    world_origin: (wx, wy),
+                    scale,
+                } => {
+                    let bounds = rect.bounds(origin);
+                    let matrix = crate::edgeless::EdgelessCamera::new(*wx, *wy, *scale)
+                        .to_transformation_matrix(bounds.origin);
+                    window.with_local_paint_mask(ui::ContentMask { bounds }, |window| {
+                        crate::surface::paint_surface_transformed(layout, matrix, window, cx);
+                    });
                 }
             }
         }
@@ -492,6 +528,20 @@ impl FlowBlock {
     }
 }
 
+/// Transient committed draft of an open equation editor, used for live zero-writeback preview.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum EquationDraft {
+    Block {
+        block_id: String,
+        latex: String,
+    },
+    Inline {
+        block_id: String,
+        utf16_offset: u64,
+        latex: String,
+    },
+}
+
 /// Everything the layout pass reads besides the window's text system.
 pub struct FlowInput<'a> {
     pub snapshot: &'a PageSnapshot,
@@ -504,6 +554,10 @@ pub struct FlowInput<'a> {
     pub images: &'a HashMap<String, ImageSlot>,
     /// Rasterized PDF attachment previews keyed by block id or `sourceId`.
     pub pdf_previews: Option<&'a HashMap<String, super::PdfPreviewPage>>,
+    /// Host document directory providing read-only summaries and snapshots for embedded docs.
+    pub doc_directory: Option<&'a dyn crate::directory::WorkspaceDocDirectory>,
+    /// Transient committed draft from an open equation editor (zero CRDT writeback).
+    pub equation_draft: Option<&'a EquationDraft>,
     /// Bumped whenever `page_titles`, `images`, or `pdf_previews` change.
     pub env_rev: u64,
     /// Explicit layout direction supplied by the host shell.

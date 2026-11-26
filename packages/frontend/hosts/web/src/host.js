@@ -1,7 +1,6 @@
 // @ts-check
 
 import { createA11yTree } from './a11y.js';
-import { createCrdtWasmClient } from './crdt-wasm-client.js';
 import {
   createIdbV1ReadonlyReader,
   createIdbWorkspaceStorage,
@@ -1066,30 +1065,48 @@ export async function bootWebHost(env = {}) {
     assetBaseUrl: env.assetBaseUrl,
     buildId: env.buildId,
   });
-  const crdtCodecUrl = workerLoader.resolveCrdtCodecUrl();
-  const crdtCodecClient = crdtCodecUrl
-    ? createCrdtWasmClient(crdtCodecUrl, {
-        fetchImpl:
-          env.fetchImpl ||
-          (typeof win.fetch === 'function' ? win.fetch.bind(win) : undefined),
-      })
-    : null;
-  if (crdtCodecClient) {
+  win.__AFFINE_WEB_HOST__ = true;
+  const mainWasmJsUrl = workerLoader.resolveMainWasmJsUrl();
+  /** @type {Promise<{ merge_updates_v1: Function, extract_subdoc_ids: Function }> | null} */
+  let mainWasmModPromise = null;
+  function loadMainWasmExports() {
+    if (!mainWasmJsUrl) {
+      return Promise.reject(
+        new Error('Main Wasm JS module URL is not configured')
+      );
+    }
+    if (!mainWasmModPromise) {
+      mainWasmModPromise = (async () => {
+        const mod = await import(mainWasmJsUrl);
+        if (typeof mod.default === 'function') {
+          await mod.default();
+        }
+        return mod;
+      })().catch(err => {
+        mainWasmModPromise = null;
+        throw err;
+      });
+    }
+    return mainWasmModPromise;
+  }
+  if (mainWasmJsUrl) {
     if (!activeMergeUpdates) {
-      activeMergeUpdates = updates => crdtCodecClient.mergeUpdates(updates);
+      activeMergeUpdates = async updates => {
+        const mod = await loadMainWasmExports();
+        return mod.merge_updates_v1(updates);
+      };
     }
     if (!activeExtractSubdocIds) {
-      activeExtractSubdocIds = rootUpdates =>
-        crdtCodecClient.extractSubdocIds(rootUpdates);
+      activeExtractSubdocIds = async rootUpdates => {
+        const mod = await loadMainWasmExports();
+        return mod.extract_subdoc_ids(rootUpdates);
+      };
     }
     workspaceStorage?.setCrdtCodecs?.({ mergeUpdates: activeMergeUpdates });
     v1Reader?.setCrdtCodecs?.({
       mergeUpdates: activeMergeUpdates,
       extractSubdocIds: activeExtractSubdocIds,
     });
-    if (env.preloadCrdtCodec) {
-      await crdtCodecClient.ready();
-    }
   }
   const pdfClient = createPdfPreviewClient({
     workerLoader,
@@ -1362,7 +1379,6 @@ export async function bootWebHost(env = {}) {
       });
     },
     workerLoader,
-    crdtCodecClient,
     pdfClient,
     gpuRecovery,
     safeAreaObserver,

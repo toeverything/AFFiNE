@@ -164,6 +164,11 @@ pub enum RoomEvent {
         source_id: String,
         bytes: Option<Vec<u8>>,
     },
+    /// A blob upload attempt finished; `ok` is `true` when the relay stored it.
+    BlobUploaded {
+        source_id: String,
+        ok: bool,
+    },
 }
 
 /// Something the UI thread asks of the transport.
@@ -171,6 +176,10 @@ pub enum RoomEvent {
 pub enum RoomCommand {
     Send(RoomFrame),
     FetchBlob(String),
+    UploadBlob {
+        source_id: String,
+        bytes: Arc<Vec<u8>>,
+    },
     Close,
 }
 

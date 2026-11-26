@@ -1,18 +1,18 @@
-//! Layout and paint builders for the 7 rich Page block flavours:
-//! `affine:callout`, `affine:table`, `affine:attachment` (card + embedded PDF preview),
-//! `affine:embed-linked-doc`, `affine:embed-synced-doc`, and `affine:surface-ref`
-//! (with `affine:latex` upgraded to RaTeX vector math in `blocks.rs`).
-
-use blocksuite_playground_doc::read::TableData;
+//! Layout and paint builders for `affine:callout` and `affine:attachment` (card + embedded PDF).
 
 use crate::theme::{FONT_SANS, IconPaint, TYPOGRAPHY};
 
 use super::{
     BlockBody, CARD_BLOCK_MARGIN, FlowKind, FlowPass, FlowRect, InlineAlign, InlineStyle, Prim,
-    body::{AttachmentPdfControls, TableCellHit},
-    inline::truncate_to_width,
-    mirror_x_in_width,
+    body::AttachmentPdfControls, inline::truncate_to_width, mirror_x_in_width,
 };
+
+pub(super) const CALLOUT_MARGIN_Y: f32 = 8.0;
+pub(super) const CALLOUT_PAD_X: f32 = 10.0;
+pub(super) const CALLOUT_PAD_Y: f32 = 5.0;
+pub(super) const CALLOUT_ICON_SLOT: f32 = 24.0;
+pub(super) const CALLOUT_CONTENT_GAP: f32 = 10.0;
+pub(super) const CALLOUT_MIN_HEIGHT: f32 = 34.0;
 
 fn format_byte_size(bytes: i64) -> String {
     let b = bytes.max(0) as f64;
@@ -25,20 +25,33 @@ fn format_byte_size(bytes: i64) -> String {
     }
 }
 
-fn semantic_callout_color(name: &str, theme: crate::theme::PlaygroundTheme) -> Option<ui::Hsla> {
-    let var = match name.trim().to_ascii_lowercase().as_str() {
-        "red" => "--affine-tag-red",
-        "orange" => "--affine-tag-orange",
-        "yellow" => "--affine-tag-yellow",
-        "green" => "--affine-tag-green",
-        "teal" => "--affine-tag-teal",
-        "blue" => "--affine-tag-blue",
-        "purple" => "--affine-tag-purple",
-        "magenta" | "pink" => "--affine-tag-pink",
-        "grey" | "gray" => "--affine-tag-gray",
-        _ => return theme.css_color(name),
+/// Resolves BlockSuite callout background color names directly to the 9 semantic
+/// `--affine-v2-block-callout-background-*` tokens (`callout-block.ts:212-238`).
+///
+/// Empty / `"default"` normalizes to `"grey"`; unknown names fall back to `None` (transparent).
+fn semantic_callout_background(
+    raw: Option<&str>,
+    theme: crate::theme::PlaygroundTheme,
+) -> Option<ui::Hsla> {
+    let key = raw.map(str::trim).unwrap_or("");
+    let normalized = if key.is_empty() || key.eq_ignore_ascii_case("default") {
+        "grey"
+    } else {
+        key
     };
-    theme.css_var(var).or_else(|| theme.css_color(name))
+    let var = match normalized.to_ascii_lowercase().as_str() {
+        "blue" => "--affine-v2-block-callout-background-blue",
+        "green" => "--affine-v2-block-callout-background-green",
+        "grey" | "gray" => "--affine-v2-block-callout-background-grey",
+        "magenta" => "--affine-v2-block-callout-background-magenta",
+        "orange" => "--affine-v2-block-callout-background-orange",
+        "purple" => "--affine-v2-block-callout-background-purple",
+        "red" => "--affine-v2-block-callout-background-red",
+        "teal" => "--affine-v2-block-callout-background-teal",
+        "yellow" => "--affine-v2-block-callout-background-yellow",
+        _ => return None,
+    };
+    theme.css_var(var)
 }
 
 impl FlowPass<'_> {
@@ -50,34 +63,27 @@ impl FlowPass<'_> {
         has_children: bool,
         width: f32,
     ) -> BlockBody {
-        let pad_x = 14.0;
-        let pad_y = 12.0;
-        let icon_box = 24.0;
-        let resolved = background_color.and_then(|c| semantic_callout_color(c, self.input.theme));
-        let fill = resolved.unwrap_or_else(|| self.palette.background_secondary);
-        let tint = if fill.a > 0.35 {
-            fill.opacity(0.18)
-        } else {
-            fill
-        };
-        let border = resolved
-            .map(|c| c.opacity(0.32))
-            .unwrap_or(self.palette.border);
+        let fill = semantic_callout_background(background_color, self.input.theme);
 
         let icon_text = if icon.trim().is_empty() {
             "\u{1F4A1}"
         } else {
             icon.trim()
         };
-        let icon_x = mirror_x_in_width(pad_x, icon_box, width, self.direction);
+        let icon_x = mirror_x_in_width(CALLOUT_PAD_X, CALLOUT_ICON_SLOT, width, self.direction);
         let icon_style = InlineStyle::new(
             FONT_SANS,
-            TYPOGRAPHY.font_base_px,
-            600.0,
+            (TYPOGRAPHY.font_base_px * 1.2).round(),
+            400.0,
             self.palette.text_primary,
         );
-        let icon_layout =
-            self.plain_inline(icon_text, icon_style, icon_box, 22.0, InlineAlign::Center);
+        let icon_layout = self.plain_inline(
+            icon_text,
+            icon_style,
+            CALLOUT_ICON_SLOT,
+            CALLOUT_ICON_SLOT,
+            InlineAlign::Center,
+        );
         let mut glyph_count = 0usize;
         let mut has_notdef = false;
         for piece in &icon_layout.pieces {
@@ -93,7 +99,7 @@ impl FlowPass<'_> {
         let icon_prim = if glyph_count > 0 && !has_notdef {
             Prim::Text {
                 x: icon_x,
-                y: pad_y,
+                y: CALLOUT_PAD_Y,
                 layout: icon_layout,
                 clip: None,
             }
@@ -108,23 +114,24 @@ impl FlowPass<'_> {
                 _ => "QuoteIcon",
             };
             Prim::Icon {
-                rect: FlowRect::new(icon_x + 2.0, pad_y + 1.0, 20.0, 20.0),
+                rect: FlowRect::new(icon_x + 2.0, CALLOUT_PAD_Y + 2.0, 20.0, 20.0),
                 icon: IconPaint::named(fallback_name),
-                color: resolved.unwrap_or(self.palette.icon),
+                color: self.palette.icon,
             }
         };
 
         let title_trimmed = text.trim();
-        let text_w = (width - pad_x * 2.0 - icon_box - 8.0).max(1.0);
+        let content_offset_x = CALLOUT_PAD_X + CALLOUT_ICON_SLOT + CALLOUT_CONTENT_GAP;
+        let text_w = (width - content_offset_x - CALLOUT_PAD_X).max(1.0);
         let title_x = match self.direction {
-            ui::Direction::Ltr => pad_x + icon_box + 8.0,
-            ui::Direction::Rtl => pad_x,
+            ui::Direction::Ltr => content_offset_x,
+            ui::Direction::Rtl => CALLOUT_PAD_X,
         };
         let mut prims = vec![
             Prim::Quad {
-                rect: FlowRect::new(0.0, 0.0, width, pad_y * 2.0 + 22.0),
-                fill: Some(tint),
-                border: Some(border),
+                rect: FlowRect::new(0.0, 0.0, width, CALLOUT_MIN_HEIGHT),
+                fill,
+                border: None,
                 radius: 8.0,
                 dashed: false,
             },
@@ -133,31 +140,33 @@ impl FlowPass<'_> {
         let content_h = if !title_trimmed.is_empty() {
             let title_style = InlineStyle::new(
                 FONT_SANS,
-                TYPOGRAPHY.font_sm_px,
-                600.0,
+                TYPOGRAPHY.font_base_px,
+                400.0,
                 self.palette.text_primary,
             );
             let align = match self.direction {
                 ui::Direction::Ltr => InlineAlign::Left,
                 ui::Direction::Rtl => InlineAlign::Right,
             };
-            let title_layout = self.plain_inline(title_trimmed, title_style, text_w, 22.0, align);
-            let h = title_layout.height().max(22.0);
+            let title_layout = self.plain_inline(
+                title_trimmed,
+                title_style,
+                text_w,
+                TYPOGRAPHY.line_height_base_px,
+                align,
+            );
+            let h = title_layout.height().max(CALLOUT_ICON_SLOT);
             prims.push(Prim::Text {
                 x: title_x,
-                y: pad_y,
+                y: CALLOUT_PAD_Y,
                 layout: title_layout,
                 clip: None,
             });
             h
         } else {
-            22.0
+            CALLOUT_ICON_SLOT
         };
-        let height = if has_children && title_trimmed.is_empty() {
-            pad_y + 22.0
-        } else {
-            pad_y * 2.0 + content_h
-        };
+        let height = (content_h + 2.0 * CALLOUT_PAD_Y).max(CALLOUT_MIN_HEIGHT);
         if let Some(Prim::Quad { rect, .. }) = prims.first_mut() {
             rect.h = height;
         }
@@ -166,8 +175,8 @@ impl FlowPass<'_> {
             kind: FlowKind::Callout,
             width,
             height,
-            margin_top: CARD_BLOCK_MARGIN,
-            margin_bottom: if has_children { 4.0 } else { CARD_BLOCK_MARGIN },
+            margin_top: CALLOUT_MARGIN_Y,
+            margin_bottom: if has_children { 0.0 } else { CALLOUT_MARGIN_Y },
             plain: if title_trimmed.is_empty() {
                 icon_text.to_string()
             } else {
@@ -179,142 +188,6 @@ impl FlowPass<'_> {
             code_scroll: None,
             pdf_controls: None,
             table_cells: Vec::new(),
-        }
-    }
-
-    pub(super) fn table_body(&mut self, data: &TableData, width: f32) -> BlockBody {
-        let col_count = data.columns.len().max(1);
-        let row_count = data.rows.len().max(1);
-        // Logical inline-start to inline-end column ordering.
-        let ordered_cols: Vec<usize> = match self.direction {
-            ui::Direction::Ltr => (0..data.columns.len()).collect(),
-            ui::Direction::Rtl => (0..data.columns.len()).rev().collect(),
-        };
-        // Scale column weights proportionally so even 8+ column tables never overflow `width`.
-        let raw_weights: Vec<f32> = ordered_cols
-            .iter()
-            .map(|&idx| data.columns[idx].width.unwrap_or(160.0).max(20.0) as f32)
-            .collect();
-        let weight_sum: f32 = raw_weights.iter().sum::<f32>().max(1.0);
-        let col_widths: Vec<f32> = if raw_weights.is_empty() {
-            vec![width.max(1.0)]
-        } else {
-            let mut widths: Vec<f32> = raw_weights
-                .iter()
-                .map(|w| (width * (*w / weight_sum)).floor().max(1.0))
-                .collect();
-            let used: f32 = widths.iter().sum();
-            let rem = width - used;
-            if let Some(last) = widths.last_mut() {
-                *last = (*last + rem).max(1.0);
-            }
-            widths
-        };
-        let table_w = width.max(1.0);
-        let cell_pad_x = if (table_w / col_count as f32) < 52.0 {
-            4.0
-        } else {
-            10.0
-        };
-        let cell_pad_y = 8.0;
-        let line_h = 20.0;
-
-        let mut prims = Vec::new();
-        let mut table_cells = Vec::new();
-        let mut y = 0.0_f32;
-        let mut plain_rows = Vec::with_capacity(row_count);
-        let empty_rich = blocksuite_playground_doc::read::RichText::default();
-        let block_align = match self.direction {
-            ui::Direction::Ltr => blocksuite_playground_doc::read::TextAlign::Left,
-            ui::Direction::Rtl => blocksuite_playground_doc::read::TextAlign::Right,
-        };
-
-        for (r_idx, row) in data.rows.iter().enumerate() {
-            let is_header = r_idx == 0;
-            let spec = super::TextSpec {
-                font_size: TYPOGRAPHY.font_sm_px,
-                font_weight: if is_header { 600.0 } else { 400.0 },
-                line_height: line_h,
-                baseline: 15.0,
-                letter_spacing: 0.0,
-                margin_top: 0.0,
-                margin_bottom: 0.0,
-            };
-            let mut row_layouts = Vec::with_capacity(ordered_cols.len());
-            let mut row_h = line_h + 2.0 * cell_pad_y;
-            let mut row_texts = Vec::with_capacity(ordered_cols.len());
-
-            for (visual_col, &c_idx) in ordered_cols.iter().enumerate() {
-                let col = &data.columns[c_idx];
-                let col_w = col_widths[visual_col];
-                let inner_w = (col_w - 2.0 * cell_pad_x).max(1.0);
-                let rich = data
-                    .cells
-                    .get(&(row.row_id.clone(), col.column_id.clone()))
-                    .map(|c| &c.text)
-                    .unwrap_or(&empty_rich);
-                row_texts.push(rich.plain.clone());
-                let layout =
-                    self.block_text(rich, &spec, self.palette.text_primary, inner_w, block_align);
-                row_h = row_h.max(layout.height() + 2.0 * cell_pad_y);
-                row_layouts.push((col.column_id.clone(), col_w, layout));
-            }
-            plain_rows.push(row_texts.join(" | "));
-
-            let mut cell_x = 0.0_f32;
-            for (col_id, col_w, layout) in row_layouts {
-                let cell_rect = FlowRect::new(cell_x, y, col_w, row_h);
-                let fill = if is_header {
-                    Some(self.palette.background_secondary)
-                } else {
-                    Some(self.palette.background)
-                };
-                prims.push(Prim::Quad {
-                    rect: cell_rect,
-                    fill,
-                    border: Some(self.palette.border),
-                    radius: 0.0,
-                    dashed: false,
-                });
-                let text_x = cell_x + cell_pad_x;
-                let text_y = y + cell_pad_y;
-                prims.push(layout.prim(text_x, text_y));
-                table_cells.push(TableCellHit {
-                    row_id: row.row_id.clone(),
-                    column_id: col_id,
-                    rect: cell_rect,
-                    text_origin: (text_x, text_y),
-                    text: layout,
-                });
-                cell_x += col_w;
-            }
-            y += row_h;
-        }
-
-        let height = y.max(36.0);
-        if data.rows.is_empty() {
-            prims.push(Prim::Quad {
-                rect: FlowRect::new(0.0, 0.0, table_w, height),
-                fill: Some(self.palette.background_secondary),
-                border: Some(self.palette.border),
-                radius: 6.0,
-                dashed: false,
-            });
-        }
-
-        BlockBody {
-            kind: FlowKind::Table,
-            width,
-            height,
-            margin_top: CARD_BLOCK_MARGIN,
-            margin_bottom: CARD_BLOCK_MARGIN,
-            plain: plain_rows.join("\n"),
-            prims,
-            text: None,
-            prefix: None,
-            code_scroll: None,
-            pdf_controls: None,
-            table_cells,
         }
     }
 
@@ -421,7 +294,6 @@ impl FlowPass<'_> {
                 clip: None,
             });
 
-            // Rendered PDF page image framed on crisp white paper.
             let img_rect = FlowRect::new(img_x, header_h + pad, img_w, img_h);
             prims.push(Prim::Quad {
                 rect: img_rect,
@@ -435,7 +307,6 @@ impl FlowPass<'_> {
                 image: pdf.image.clone(),
             });
 
-            // Footer pagination bar: Prev | Page k / N | Next.
             let footer_y = total_h - footer_h;
             let btn_w = 64.0;
             let btn_h = 28.0;
@@ -526,7 +397,6 @@ impl FlowPass<'_> {
             return body;
         }
 
-        // Compact horizontal file card mode.
         let card_h = 64.0;
         let pad = 12.0;
         let inner_w = (width - pad * 2.0 - 36.0).max(40.0);
@@ -588,190 +458,6 @@ impl FlowPass<'_> {
                         meta_style,
                         inner_w,
                         18.0,
-                        InlineAlign::Left,
-                    ),
-                    clip: None,
-                },
-            ],
-            text: None,
-            prefix: None,
-            code_scroll: None,
-            pdf_controls: None,
-            table_cells: Vec::new(),
-        };
-        self.push_caption(&mut body, caption);
-        body
-    }
-
-    pub(super) fn embed_linked_doc_body(
-        &mut self,
-        page_id: &str,
-        caption: &str,
-        width: f32,
-    ) -> BlockBody {
-        let resolved_title = self
-            .input
-            .page_titles
-            .get(page_id)
-            .filter(|s| !s.is_empty())
-            .map(String::as_str)
-            .unwrap_or("Untitled");
-        let card_h = 72.0;
-        let pad = 14.0;
-        let inner_w = (width - pad * 2.0 - 32.0).max(40.0);
-        let title_style = InlineStyle::new(
-            FONT_SANS,
-            TYPOGRAPHY.font_sm_px,
-            600.0,
-            self.palette.text_primary,
-        );
-        let sub_style = InlineStyle::new(
-            FONT_SANS,
-            TYPOGRAPHY.font_xs_px,
-            400.0,
-            self.palette.text_secondary,
-        );
-        let title_str = truncate_to_width(self.window, resolved_title, &title_style, inner_w)
-            .text
-            .to_string();
-        let sub = format!("Linked doc  {page_id}");
-        let sub_str = truncate_to_width(self.window, &sub, &sub_style, inner_w)
-            .text
-            .to_string();
-        let mut body = BlockBody {
-            kind: FlowKind::EmbedLinkedDoc,
-            width,
-            height: card_h,
-            margin_top: CARD_BLOCK_MARGIN,
-            margin_bottom: CARD_BLOCK_MARGIN,
-            plain: resolved_title.to_string(),
-            prims: vec![
-                Prim::Quad {
-                    rect: FlowRect::new(0.0, 0.0, width, card_h),
-                    fill: Some(self.palette.background),
-                    border: Some(self.palette.card_border),
-                    radius: 8.0,
-                    dashed: false,
-                },
-                Prim::Icon {
-                    rect: FlowRect::new(pad, 16.0, 20.0, 20.0),
-                    icon: IconPaint::named("LinkedPageIcon"),
-                    color: self.palette.brand,
-                },
-                Prim::Text {
-                    x: pad + 28.0,
-                    y: 14.0,
-                    layout: self.plain_inline(
-                        &title_str,
-                        title_style,
-                        inner_w,
-                        22.0,
-                        InlineAlign::Left,
-                    ),
-                    clip: None,
-                },
-                Prim::Text {
-                    x: pad + 28.0,
-                    y: 38.0,
-                    layout: self.plain_inline(
-                        &sub_str,
-                        sub_style,
-                        inner_w,
-                        18.0,
-                        InlineAlign::Left,
-                    ),
-                    clip: None,
-                },
-            ],
-            text: None,
-            prefix: None,
-            code_scroll: None,
-            pdf_controls: None,
-            table_cells: Vec::new(),
-        };
-        self.push_caption(&mut body, caption);
-        body
-    }
-
-    pub(super) fn embed_synced_doc_body(
-        &mut self,
-        page_id: &str,
-        caption: &str,
-        width: f32,
-    ) -> BlockBody {
-        let resolved_title = self
-            .input
-            .page_titles
-            .get(page_id)
-            .filter(|s| !s.is_empty())
-            .map(String::as_str)
-            .unwrap_or("Untitled");
-        let card_h = 88.0;
-        let pad = 14.0;
-        let inner_w = (width - pad * 2.0 - 32.0).max(40.0);
-        let title_style = InlineStyle::new(
-            FONT_SANS,
-            TYPOGRAPHY.font_sm_px,
-            600.0,
-            self.palette.text_primary,
-        );
-        let body_style = InlineStyle::new(
-            FONT_SANS,
-            TYPOGRAPHY.font_xs_px,
-            400.0,
-            self.palette.text_secondary,
-        );
-        let title_str = truncate_to_width(self.window, resolved_title, &title_style, inner_w)
-            .text
-            .to_string();
-        let preview_line = format!("Synced document preview ({page_id})");
-        let mut body = BlockBody {
-            kind: FlowKind::EmbedSyncedDoc,
-            width,
-            height: card_h,
-            margin_top: CARD_BLOCK_MARGIN,
-            margin_bottom: CARD_BLOCK_MARGIN,
-            plain: resolved_title.to_string(),
-            prims: vec![
-                Prim::Quad {
-                    rect: FlowRect::new(0.0, 0.0, width, card_h),
-                    fill: Some(self.palette.background_secondary),
-                    border: Some(self.palette.brand.opacity(0.45)),
-                    radius: 8.0,
-                    dashed: false,
-                },
-                Prim::Quad {
-                    rect: FlowRect::new(0.0, 0.0, 3.0, card_h),
-                    fill: Some(self.palette.brand),
-                    border: None,
-                    radius: 1.5,
-                    dashed: false,
-                },
-                Prim::Icon {
-                    rect: FlowRect::new(pad, 14.0, 18.0, 18.0),
-                    icon: IconPaint::named("LinkedPageIcon"),
-                    color: self.palette.brand,
-                },
-                Prim::Text {
-                    x: pad + 26.0,
-                    y: 12.0,
-                    layout: self.plain_inline(
-                        &title_str,
-                        title_style,
-                        inner_w,
-                        22.0,
-                        InlineAlign::Left,
-                    ),
-                    clip: None,
-                },
-                Prim::Text {
-                    x: pad,
-                    y: 44.0,
-                    layout: self.plain_inline(
-                        &preview_line,
-                        body_style,
-                        (width - 2.0 * pad).max(40.0),
-                        20.0,
                         InlineAlign::Left,
                     ),
                     clip: None,

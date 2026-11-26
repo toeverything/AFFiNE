@@ -7,7 +7,6 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Worker as NodeWorker } from 'node:worker_threads';
 
-import { createCrdtWasmClient } from '../src/crdt-wasm-client.js';
 import { createWorkerLoader } from '../src/worker-loader.js';
 
 const WEB_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -249,7 +248,7 @@ try {
     'Mermaid dark SVG must apply AFFiNE Dark palette'
   );
 
-  // 3. Math (RaTeX) worker
+  // 3. Math (RaTeX) worker: both SVG (`op` omitted) and premultiplied RGBA (`op: 'rgba'`).
   const mathWorker = /** @type {any} */ (loader.loadWorker('math'));
   const mathRes = await mathWorker.rpc({
     id: 3,
@@ -257,6 +256,80 @@ try {
   });
   assert.equal(mathRes.ok, true, `math worker failed: ${mathRes.error}`);
   assert.ok(mathRes.result.svg.includes('<svg'));
+
+  const mathInlineRgba = await mathWorker.rpc({
+    id: 30,
+    op: 'rgba',
+    latex: String.raw`\frac{1}{2}`,
+    display: false,
+    fontSizePt: 14.72,
+    paddingPt: 1.5,
+    colorCss: '#121212',
+    scaleFactor: 2.0,
+  });
+  const mathDisplayRgba = await mathWorker.rpc({
+    id: 31,
+    op: 'rgba',
+    latex: String.raw`\frac{\sqrt{\pi}}{2}`,
+    display: true,
+    fontSizePt: 18.0,
+    paddingPt: 4.0,
+    colorCss: '#e6e6e6',
+    scaleFactor: 2.0,
+  });
+  assert.equal(
+    mathInlineRgba.ok,
+    true,
+    `math inline rgba failed: ${mathInlineRgba.error}`
+  );
+  assert.equal(
+    mathDisplayRgba.ok,
+    true,
+    `math display rgba failed: ${mathDisplayRgba.error}`
+  );
+  assert.ok(
+    mathDisplayRgba.result.ascentPt + mathDisplayRgba.result.descentPt >
+      mathInlineRgba.result.ascentPt + mathInlineRgba.result.descentPt + 8,
+    'Display 18pt fraction must be taller than Inline 14.72pt fraction'
+  );
+  const inlineTotalPt =
+    mathInlineRgba.result.ascentPt + mathInlineRgba.result.descentPt;
+  assert.ok(
+    Math.abs(mathInlineRgba.result.ascentPt / inlineTotalPt - 0.78) > 0.05,
+    `Inline fraction baseline must come from real KaTeX metrics, got ${mathInlineRgba.result.ascentPt}/${inlineTotalPt}`
+  );
+  // Premultiplied RGBA8 invariant (`R, G, B <= A`) + crisp >=250-alpha dark-mode fraction bar row.
+  const dPixels = mathDisplayRgba.result.rgba;
+  const dW = mathDisplayRgba.result.widthPx;
+  const dH = mathDisplayRgba.result.heightPx;
+  assert.equal(dPixels.byteLength, dW * dH * 4);
+  for (let i = 0; i < dPixels.byteLength; i += 4) {
+    const a = dPixels[i + 3];
+    assert.ok(
+      dPixels[i] <= a && dPixels[i + 1] <= a && dPixels[i + 2] <= a,
+      `math worker RGBA must be premultiplied (pixel ${i / 4}: rgba=${dPixels[i]},${dPixels[i + 1]},${dPixels[i + 2]},${a})`
+    );
+  }
+  let foundCrispBar = false;
+  for (let row = Math.floor(dH / 3); row < Math.floor((dH * 2) / 3); row += 1) {
+    let run = 0;
+    for (let col = 0; col < dW; col += 1) {
+      if (dPixels[(row * dW + col) * 4 + 3] >= 250) {
+        run += 1;
+        if (run >= Math.max(6, Math.floor(dW / 2))) {
+          foundCrispBar = true;
+          break;
+        }
+      } else {
+        run = 0;
+      }
+    }
+    if (foundCrispBar) break;
+  }
+  assert.ok(
+    foundCrispBar,
+    'Dark-mode math worker RGBA must have crisp >=250-alpha fraction bar'
+  );
 
   // 4. Typst worker: register fonts fetched via `loader.loadFont` and compile document.
   const typstWorker = /** @type {any} */ (loader.loadWorker('typst'));
@@ -347,28 +420,20 @@ try {
     `blue PDF center pixel mismatch: R=${blueR}, B=${blueB}`
   );
 
-  // 6. CRDT codec Wasm (`crdt-codec.dev-local.wasm`): strict import check, real Yjs v1 extract + merge + corrupt fail.
-  const crdtCodecUrl = loader.resolveCrdtCodecUrl();
+  // 6. Main playground Wasm bundle (`assets/pkg/playground.js`): real Yjs v1 extract + merge + corrupt fail.
+  const mainWasmJsUrl = loader.resolveMainWasmJsUrl();
   assert.ok(
-    crdtCodecUrl && crdtCodecUrl.includes('crdt-codec.dev-local.wasm'),
-    `unexpected crdtCodecUrl: ${crdtCodecUrl}`
+    mainWasmJsUrl && mainWasmJsUrl.includes('/assets/pkg/playground.js'),
+    `unexpected mainWasmJsUrl: ${mainWasmJsUrl}`
   );
-  const crdtWasmBytes = readFileSync(
-    join(ASSETS_DIR, 'crdt-codec.dev-local.wasm')
+  const playgroundWasmBytes = readFileSync(
+    join(ASSETS_DIR, 'pkg', 'playground_bg.wasm')
   );
-  const crdtClient = createCrdtWasmClient(crdtCodecUrl, {
-    fetchImpl: async () => /** @type {Response} */ (
-      /** @type {unknown} */ ({
-        ok: true,
-        status: 200,
-        arrayBuffer: async () =>
-          crdtWasmBytes.buffer.slice(
-            crdtWasmBytes.byteOffset,
-            crdtWasmBytes.byteOffset + crdtWasmBytes.byteLength
-          ),
-      })
-    ),
-  });
+  const playgroundMod = await import(
+    pathToFileURL(join(ASSETS_DIR, 'pkg', 'playground.js')).toString()
+  );
+  playgroundMod.initSync({ module: playgroundWasmBytes });
+
   const realYjsV1 = [
     new Uint8Array([
       1, 6, 105, 0, 39, 1, 4, 109, 101, 116, 97, 5, 112, 97, 103, 101, 115, 0,
@@ -384,22 +449,22 @@ try {
       118, 0, 1, 105, 1, 4, 1,
     ]),
   ];
-  assert.deepEqual(await crdtClient.extractSubdocIds(realYjsV1), ['live-guid']);
-  const mergedV1 = await crdtClient.mergeUpdates(realYjsV1);
+  assert.deepEqual(playgroundMod.extract_subdoc_ids(realYjsV1), ['live-guid']);
+  const mergedV1 = playgroundMod.merge_updates_v1(realYjsV1);
   assert.ok(mergedV1 instanceof Uint8Array && mergedV1.byteLength > 0);
-  assert.deepEqual(await crdtClient.extractSubdocIds([mergedV1]), [
-    'live-guid',
-  ]);
-  const emptyMerged = await crdtClient.mergeUpdates([]);
+  assert.deepEqual(playgroundMod.extract_subdoc_ids([mergedV1]), ['live-guid']);
+  const emptyMerged = playgroundMod.merge_updates_v1([]);
   assert.deepEqual(Array.from(emptyMerged), [0, 0]);
-  await assert.rejects(
+  assert.throws(
     () =>
-      crdtClient.extractSubdocIds([new Uint8Array([0xff, 0xff, 0xff, 0x80])]),
+      playgroundMod.extract_subdoc_ids([
+        new Uint8Array([0xff, 0xff, 0xff, 0x80]),
+      ]),
     /./
   );
 
   console.log(
-    `E2E 4-worker + crdt-codec + static-font verification passed: fonts(${Object.keys(loadedFonts).join(',')}), crdt-codec(${crdtWasmBytes.byteLength}B, merged=${mergedV1.byteLength}B), mermaid(light=${mermaidLight.result.svg.length}B vs dark=${mermaidDark.result.svg.length}B), math(${mathRes.result.svg.length}B), typst(1p ${typstRes.result.svg.length}B), pdf(red R=${redR}/B=${redB}, blue R=${blueR}/B=${blueB}, ${redRes.result.rgba.byteLength}B RGBA)`
+    `E2E 4-worker + main-wasm-crdt + static-font verification passed: fonts(${Object.keys(loadedFonts).join(',')}), playground_bg.wasm(${playgroundWasmBytes.byteLength}B, merged=${mergedV1.byteLength}B), mermaid(light=${mermaidLight.result.svg.length}B vs dark=${mermaidDark.result.svg.length}B), math(${mathRes.result.svg.length}B), typst(1p ${typstRes.result.svg.length}B), pdf(red R=${redR}/B=${redB}, blue R=${blueR}/B=${blueB}, ${redRes.result.rgba.byteLength}B RGBA)`
   );
 } finally {
   await Promise.all(activeWorkers.map(w => w.terminate()));

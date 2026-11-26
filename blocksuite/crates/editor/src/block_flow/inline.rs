@@ -545,24 +545,44 @@ pub enum ImageSlot {
     Ready(Arc<RenderImage>),
 }
 
-/// Decode PNG, JPEG, WebP, GIF (first frame) or BMP bytes into a renderable image; any
-/// other format is rejected.
-pub fn decode_image(bytes: &[u8]) -> Option<Arc<RenderImage>> {
+/// Maximum encoded image payload decoded on the UI thread, matching the room relay's
+/// 64 MiB blob limit so existing workspace images up to [`blocksuite_playground_doc::MAX_BLOB_BYTES`]
+/// remain readable (picker admission enforces its own stricter limit separately).
+const MAX_IMAGE_DECODE_BYTES: usize = blocksuite_playground_doc::MAX_BLOB_BYTES;
+
+/// Decode PNG, JPEG, WebP, GIF (first frame) or BMP bytes into a renderable image along
+/// with its intrinsic pixel `(width, height)` in a single pass; any other format or payload
+/// exceeding [`MAX_IMAGE_DECODE_BYTES`] is rejected.
+pub fn decode_image_with_dimensions(bytes: &[u8]) -> Option<(Arc<RenderImage>, u32, u32)> {
     use image::ImageFormat::{Bmp, Gif, Jpeg, Png, WebP};
+    if bytes.len() > MAX_IMAGE_DECODE_BYTES {
+        return None;
+    }
     let format = image::guess_format(bytes)
         .ok()
         .filter(|format| matches!(format, Png | Jpeg | WebP | Gif | Bmp))?;
     let mut buffer = image::load_from_memory_with_format(bytes, format)
         .ok()?
         .into_rgba8();
-    if buffer.width() == 0 || buffer.height() == 0 {
+    let (width, height) = (buffer.width(), buffer.height());
+    if width == 0 || height == 0 {
         return None;
     }
     // The renderer samples BGRA.
     for pixel in buffer.chunks_exact_mut(4) {
         pixel.swap(0, 2);
     }
-    Some(Arc::new(RenderImage::new(vec![image::Frame::new(buffer)])))
+    Some((
+        Arc::new(RenderImage::new(vec![image::Frame::new(buffer)])),
+        width,
+        height,
+    ))
+}
+
+/// Decode PNG, JPEG, WebP, GIF (first frame) or BMP bytes into a renderable image; any
+/// other format is rejected.
+pub fn decode_image(bytes: &[u8]) -> Option<Arc<RenderImage>> {
+    decode_image_with_dimensions(bytes).map(|(img, _, _)| img)
 }
 
 /// Paint primitive of a block, positioned relative to the block's own origin.
@@ -608,5 +628,11 @@ pub(super) enum Prim {
     Image {
         rect: FlowRect,
         image: Arc<RenderImage>,
+    },
+    Surface {
+        rect: FlowRect,
+        layout: Rc<crate::surface::SurfaceLayout>,
+        world_origin: (f32, f32),
+        scale: f32,
     },
 }

@@ -1283,7 +1283,7 @@ export function createIdbWorkspaceStorage(options) {
  *
  * Never creates an empty V1 database when none exists, and never mutates V1
  * data. Listing subdocs of a non-empty V1 root requires an `extractSubdocIds`
- * callback (wired to `crdt-codec.wasm` in `host.js`) or explicit `opts.subdocIds`.
+ * callback (wired to the main `playground` Wasm bundle in `host.js`) or explicit `opts.subdocIds`.
  *
  * @param {{
  *   workspaceId: string,

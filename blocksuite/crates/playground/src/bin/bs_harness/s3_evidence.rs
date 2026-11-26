@@ -8,123 +8,16 @@ use playground::{
     HOME_PAGE_ID, PlaygroundOptions, PlaygroundTheme,
     directory::{EditorDocId, EditorDocMode, EditorDocSummary, InMemoryDocDirectory},
     overlays::{ActiveSelection, OverlayEvent},
-    room_client::DocState,
 };
-use ui::{EntityInputHandler, audit_frame_snapshot, point, px};
+use ui::{EntityInputHandler, point, px};
 use y_octo::{Any, TextAttributes, TextDeltaOp, TextInsert};
 
-use super::{HeadlessSession, element_center, start_headless_session};
-
-/// Builds a valid 2-page PDF 1.4 fixture with distinct vector art and labels on each page.
-pub(crate) fn build_two_page_pdf_fixture() -> Vec<u8> {
-    let mut out = Vec::new();
-    out.extend_from_slice(b"%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
-    let mut offsets = vec![0usize];
-    let mut push_obj = |body: &str| {
-        offsets.push(out.len());
-        let id = offsets.len() - 1;
-        out.extend_from_slice(format!("{id} 0 obj\n{body}\nendobj\n").as_bytes());
-    };
-    push_obj("<< /Type /Catalog /Pages 2 0 R >>");
-    push_obj("<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>");
-    push_obj(
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 360 220] \
-         /Resources << /Font << /F1 5 0 R >> >> /Contents 6 0 R >>",
-    );
-    push_obj(
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 360 220] \
-         /Resources << /Font << /F1 5 0 R >> >> /Contents 7 0 R >>",
-    );
-    push_obj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-    let p1 = "0.12 0.42 0.88 rg 24 148 312 44 re f \
-              1 1 1 rg BT /F1 18 Tf 36 164 Td (AFFiNE Mobile Architecture) Tj ET \
-              0.92 0.95 0.99 rg 24 28 148 102 re f \
-              0.2 0.25 0.35 rg BT /F1 13 Tf 36 106 Td (Page 1: Overview) Tj ET \
-              0.2 0.25 0.35 rg BT /F1 11 Tf 36 82 Td (Pure Rust Hayro PDF) Tj ET \
-              0.12 0.65 0.42 rg 188 28 148 102 re f \
-              1 1 1 rg BT /F1 13 Tf 202 80 Td (Zero JS Runtime) Tj ET";
-    push_obj(&format!(
-        "<< /Length {} >>\nstream\n{p1}\nendstream",
-        p1.len()
-    ));
-    let p2 = "0.48 0.22 0.84 rg 24 148 312 44 re f \
-              1 1 1 rg BT /F1 18 Tf 36 164 Td (Page 2: Performance Budget) Tj ET \
-              0.96 0.93 1.0 rg 24 28 312 102 re f \
-              0.2 0.15 0.35 rg BT /F1 13 Tf 36 104 Td (Single-Keystroke Relayout = 1 Block) Tj ET \
-              0.2 0.15 0.35 rg BT /F1 11 Tf 36 78 Td (10k Blocks Interactive on Mobile) Tj ET";
-    push_obj(&format!(
-        "<< /Length {} >>\nstream\n{p2}\nendstream",
-        p2.len()
-    ));
-    let xref_pos = out.len();
-    out.extend_from_slice(format!("xref\n0 {}\n", offsets.len()).as_bytes());
-    out.extend_from_slice(b"0000000000 65535 f \n");
-    for offset in offsets.iter().skip(1) {
-        out.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
-    }
-    out.extend_from_slice(
-        format!(
-            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n",
-            offsets.len()
-        )
-        .as_bytes(),
-    );
-    out
-}
-
-fn save_session_png(session: &HeadlessSession, path: &Path, label: &str) -> Result<()> {
-    let snapshot = session.frame()?;
-    let violations = audit_frame_snapshot(&snapshot);
-    anyhow::ensure!(
-        violations.is_empty(),
-        "audit violations in {label}: {violations:#?}"
-    );
-    let image = session.app.update(|cx| {
-        session
-            .window_handle
-            .update(cx, |_, window, _| window.render_to_image())
-    })??;
-    image
-        .save(path)
-        .with_context(|| format!("saving {}", path.display()))?;
-    println!(
-        "saved {} ({}x{})",
-        path.display(),
-        image.width(),
-        image.height()
-    );
-    Ok(())
-}
-
-fn new_doc_state(title: &str) -> Result<DocState> {
-    let mut state = DocState::new("s3-evidence", 77)?;
-    state.workspace.create_page(HOME_PAGE_ID, title, 1)?;
-    state
-        .workspace
-        .create_page("doc:roadmap", "Mobile Rust Roadmap 2026", 2)?;
-    state
-        .workspace
-        .create_page("doc:synced-spec", "Synced Design Tokens", 3)?;
-    let page = state.workspace.ensure_page(HOME_PAGE_ID)?;
-    page.add_block(
-        "p-root",
-        BlockSpec::Page {
-            title: title.into(),
-        },
-        None,
-        None,
-        1,
-    )?;
-    page.add_block("p-surface", BlockSpec::Surface, Some("p-root"), None, 2)?;
-    page.add_block(
-        "p-note",
-        BlockSpec::Note { xywh: None },
-        Some("p-root"),
-        None,
-        3,
-    )?;
-    Ok(state)
-}
+pub(crate) use super::s3_evidence_fixtures::build_two_page_pdf_fixture;
+use super::{
+    element_center,
+    s3_evidence_fixtures::{new_doc_state, save_session_png},
+    start_headless_session,
+};
 
 pub(super) fn render_s3_evidence(out_dir: &Path) -> Result<()> {
     std::fs::create_dir_all(out_dir)?;
@@ -368,27 +261,20 @@ pub(super) fn render_s3_evidence(out_dir: &Path) -> Result<()> {
             &out_dir.join("03a-pdf-page-1.png"),
             "03a-pdf-page-1",
         )?;
-        if let Ok((nx, ny)) = element_center(&snap_p1, "page.block.b-pdf.pdf_next") {
-            session.headless_win.simulate_click(point(px(nx), px(ny)));
-            session.settle(200);
-            let page_idx = session.view(|v, _| v.attachment_pdf_page_index("b-pdf"))?;
-            anyhow::ensure!(
-                page_idx == Some(1),
-                "expected PDF page index 1, got {page_idx:?}"
-            );
-            save_session_png(
-                &session,
-                &out_dir.join("03-pdf-attachment-page-2.png"),
-                "03-pdf-attachment-page-2",
-            )?;
-        } else {
-            // Default build without `preview-engine`: renders honest attachment file card.
-            save_session_png(
-                &session,
-                &out_dir.join("03-pdf-attachment-fallback-card.png"),
-                "03-pdf-attachment-fallback-card",
-            )?;
-        }
+        let (nx, ny) = element_center(&snap_p1, "page.block.b-pdf.pdf_next")
+            .context("expected live Hayro PDF page controls on native")?;
+        session.headless_win.simulate_click(point(px(nx), px(ny)));
+        session.settle(200);
+        let page_idx = session.view(|v, _| v.attachment_pdf_page_index("b-pdf"))?;
+        anyhow::ensure!(
+            page_idx == Some(1),
+            "expected PDF page index 1, got {page_idx:?}"
+        );
+        save_session_png(
+            &session,
+            &out_dir.join("03-pdf-attachment-page-2.png"),
+            "03-pdf-attachment-page-2",
+        )?;
     }
 
     // 4. Mobile 390x844 narrow viewport: KeyboardToolbar (44x44pt) + @ exact-substring

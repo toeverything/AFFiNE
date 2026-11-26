@@ -15,7 +15,6 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = []
 harness = ["ui/harness", "blocksuite-editor/harness"]
-preview-engine = ["blocksuite-editor/preview-engine"]
 
 [[bin]]
 name = "native-playground"
@@ -34,6 +33,7 @@ blocksuite-playground-doc = { path = "../doc", default-features = false }
 image.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
 ui = { path = "../../../packages/ui/ui" }
 y-octo = { version = "0.4.0", default-features = false, features = ["session"] }
 
@@ -43,6 +43,7 @@ ui = { path = "../../../packages/ui/ui", features = ["harness"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+jiff.workspace = true
 tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "sync", "time"] }
 tokio-tungstenite = "0.26"
 
@@ -64,6 +65,7 @@ web-sys = { workspace = true, features = [
     "HtmlCanvasElement",
     "Location",
     "MessageEvent",
+    "RequestInit",
     "Response",
     "UrlSearchParams",
     "WebSocket",

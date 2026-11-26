@@ -37,6 +37,8 @@ pub(super) struct FlowPass<'a> {
     pub(super) y: f32,
     /// Bottom margin of the previous sibling, `None` at the start of a flow root.
     pub(super) pending_margin: Option<f32>,
+    pub(super) embed_depth: usize,
+    pub(super) visited_embeds: BTreeSet<String>,
 }
 
 impl BlockFlow {
@@ -75,6 +77,8 @@ impl BlockFlow {
             stats: FlowStats::default(),
             y: 0.0,
             pending_margin: None,
+            embed_depth: 0,
+            visited_embeds: BTreeSet::new(),
         };
 
         if let Some(root) = &input.snapshot.root {
@@ -103,8 +107,16 @@ impl BlockFlow {
                 pass.pending_margin = None;
                 match &child.content {
                     BlockContent::Note { hidden: true, .. } => continue,
-                    BlockContent::Note { .. } => pass.flow(&child.children, 0.0, 0, default_align),
-                    _ => pass.flow(std::slice::from_ref(child), 0.0, 0, default_align),
+                    BlockContent::Note { .. } => {
+                        pass.flow(&child.children, 0.0, input.width, 0, default_align)
+                    }
+                    _ => pass.flow(
+                        std::slice::from_ref(child),
+                        0.0,
+                        input.width,
+                        0,
+                        default_align,
+                    ),
                 }
                 pass.y += pass.pending_margin.take().unwrap_or(0.0);
             }
@@ -129,6 +141,17 @@ impl BlockFlow {
         input: &FlowInput<'_>,
         window: &Window,
     ) -> FlowLayout {
+        self.layout_nodes_nested(nodes, input, window, 0, BTreeSet::new())
+    }
+
+    pub(super) fn layout_nodes_nested(
+        &mut self,
+        nodes: &[BlockNode],
+        input: &FlowInput<'_>,
+        window: &Window,
+        embed_depth: usize,
+        visited_embeds: BTreeSet<String>,
+    ) -> FlowLayout {
         let direction = input.direction;
         let default_align = match direction {
             ui::Direction::Ltr => BlockAlign::Left,
@@ -146,8 +169,10 @@ impl BlockFlow {
             stats: FlowStats::default(),
             y: 0.0,
             pending_margin: None,
+            embed_depth,
+            visited_embeds,
         };
-        pass.flow(nodes, 0.0, 0, default_align);
+        pass.flow(nodes, 0.0, input.width, 0, default_align);
         pass.y += pass.pending_margin.take().unwrap_or(0.0);
         self.bodies = pass.next;
         FlowLayout {
@@ -213,12 +238,14 @@ impl<'a> FlowPass<'a> {
         body
     }
 
-    /// Place `nodes` as siblings at horizontal offset `x`, collapsing vertical margins.
-    /// `inherited_align` is the text alignment of the nearest ancestor that sets one.
+    /// Place `nodes` as siblings at horizontal offset `x` within `max_right`, collapsing
+    /// vertical margins. `inherited_align` is the text alignment of the nearest ancestor
+    /// that sets one.
     fn flow(
         &mut self,
         nodes: &[BlockNode],
         x: f32,
+        max_right: f32,
         list_depth: usize,
         inherited_align: BlockAlign,
     ) {
@@ -234,15 +261,40 @@ impl<'a> FlowPass<'a> {
                 continue;
             }
 
-            let width = (self.input.width - x).max(0.0);
+            let width = (max_right - x).max(0.0);
             let block_x = match self.direction {
                 ui::Direction::Ltr => x,
-                ui::Direction::Rtl => 0.0,
+                ui::Direction::Rtl => (self.input.width - max_right).max(0.0),
             };
             let align = match &node.content {
                 BlockContent::Paragraph { text_align, .. }
                 | BlockContent::List { text_align, .. } => text_align.unwrap_or(inherited_align),
                 _ => inherited_align,
+            };
+            let draft_for_node = self.input.equation_draft.filter(|d| match d {
+                EquationDraft::Block { block_id, .. } | EquationDraft::Inline { block_id, .. } => {
+                    block_id == &node.id
+                }
+            });
+            let preview_rev = super::preview::node_preview_fingerprint(
+                node,
+                draft_for_node,
+                self.input.pdf_previews,
+            );
+            let embed_preview = match &node.content {
+                BlockContent::EmbedLinkedDoc { page_id, .. }
+                | BlockContent::EmbedSyncedDoc { page_id, .. } => {
+                    self.input.doc_directory.and_then(|dir| {
+                        dir.doc_preview(&crate::directory::EditorDocId::from(page_id.as_str()))
+                    })
+                }
+                _ => None,
+            };
+            let surface_ref_sig = match &node.content {
+                BlockContent::SurfaceRef { reference, .. } => {
+                    super::surface_ref::surface_ref_fingerprint(self.input.snapshot, reference)
+                }
+                _ => 0,
             };
             let fingerprint = (
                 &node.content,
@@ -250,6 +302,10 @@ impl<'a> FlowPass<'a> {
                 width.to_bits(),
                 list_depth,
                 align,
+                preview_rev,
+                draft_for_node,
+                embed_preview,
+                surface_ref_sig,
             );
             let body = self.body(&node.id, &fingerprint, |pass| {
                 pass.block_body(node, width, list_depth, align)
@@ -262,6 +318,10 @@ impl<'a> FlowPass<'a> {
             let block_idx = self.blocks.len();
             let block_top = self.y;
             let is_callout = matches!(node.content, BlockContent::Callout { .. });
+            let callout_has_own_text = matches!(
+                &node.content,
+                BlockContent::Callout { text, .. } if !text.plain.trim().is_empty()
+            );
             self.blocks.push(FlowBlock {
                 block_id: node.id.clone(),
                 snapshot_id: SharedString::from(format!("page.block.{}", node.id)),
@@ -282,18 +342,44 @@ impl<'a> FlowPass<'a> {
                 _ => (true, 0),
             };
             if shows_children && !node.children.is_empty() {
-                // The block's own row has no bottom margin; the last child's bottom margin
-                // collapses through the children container into the block's.
-                self.pending_margin = Some(0.0);
-                let child_x = if is_callout {
-                    x + 16.0
-                } else {
-                    x + CHILD_INDENT
-                };
-                self.flow(&node.children, child_x, child_depth, align);
                 if is_callout {
-                    let pad_bottom = 12.0;
-                    let wrapped_h = (self.y - block_top + pad_bottom).max(body.height);
+                    // Horizontal callout layout (`callout-block-styles.ts`):
+                    // emoji sits at `(x + 10, block_top + 5)` and child content starts on the
+                    // SAME row at `(x + 44, block_top + 5)` with width `width - 54`.
+                    let pad_top = super::rich_blocks::CALLOUT_PAD_Y;
+                    let pad_x = super::rich_blocks::CALLOUT_PAD_X;
+                    let content_indent = pad_x
+                        + super::rich_blocks::CALLOUT_ICON_SLOT
+                        + super::rich_blocks::CALLOUT_CONTENT_GAP;
+                    let start_y = if callout_has_own_text {
+                        self.y
+                    } else {
+                        block_top + pad_top
+                    };
+                    self.y = start_y;
+                    self.pending_margin = None;
+                    let child_start_idx = self.blocks.len();
+                    let child_x = x + content_indent;
+                    let child_max_right = (x + width - pad_x).max(child_x + 1.0);
+                    self.flow(&node.children, child_x, child_max_right, child_depth, align);
+                    // Suppress top margin of the first child so it aligns directly with the emoji.
+                    if !callout_has_own_text
+                        && let Some(first_child) = self.blocks.get(child_start_idx)
+                    {
+                        let shift_up = first_child.y - start_y;
+                        if shift_up > 0.0 {
+                            for child_blk in &mut self.blocks[child_start_idx..] {
+                                child_blk.y -= shift_up;
+                            }
+                            self.y -= shift_up;
+                        }
+                    }
+                    let content_bottom = self.blocks[child_start_idx..]
+                        .iter()
+                        .map(|b| b.rect().bottom())
+                        .fold(start_y, f32::max);
+                    let wrapped_h = (content_bottom - block_top + pad_top)
+                        .max(super::rich_blocks::CALLOUT_MIN_HEIGHT);
                     let mut wrapped = (*self.blocks[block_idx].body).clone();
                     wrapped.height = wrapped_h;
                     if let Some(Prim::Quad { rect, .. }) = wrapped.prims.first_mut() {
@@ -301,8 +387,18 @@ impl<'a> FlowPass<'a> {
                     }
                     self.blocks[block_idx].body = Rc::new(wrapped);
                     self.y = block_top + wrapped_h;
-                    self.pending_margin = Some(CARD_BLOCK_MARGIN);
+                    self.pending_margin = Some(super::rich_blocks::CALLOUT_MARGIN_Y);
                 } else {
+                    // The block's own row has no bottom margin; the last child's bottom margin
+                    // collapses through the children container into the block's.
+                    self.pending_margin = Some(0.0);
+                    self.flow(
+                        &node.children,
+                        x + CHILD_INDENT,
+                        max_right,
+                        child_depth,
+                        align,
+                    );
                     self.pending_margin =
                         Some(self.pending_margin.unwrap_or(0.0).max(body.margin_bottom));
                 }
@@ -374,6 +470,7 @@ impl<'a> FlowPass<'a> {
                     BlockAlign::Right => TextAlign::Right,
                 };
                 style.text_color = ink;
+                style.dpr = self.window.scale_factor();
                 FlowTextLayout::Rich(Arc::new(paragraph.layout(
                     self.window.text_system(),
                     &style,
@@ -456,7 +553,19 @@ impl<'a> FlowPass<'a> {
                 text,
                 collapsed,
                 ..
-            } => self.paragraph_body(*kind, text, *collapsed, width, align),
+            } => {
+                if let Some(EquationDraft::Inline {
+                    block_id,
+                    utf16_offset,
+                    latex,
+                }) = self.input.equation_draft
+                    && block_id == &node.id
+                {
+                    let patched = patch_inline_latex_draft(text, *utf16_offset, latex);
+                    return self.paragraph_body(*kind, &patched, *collapsed, width, align);
+                }
+                self.paragraph_body(*kind, text, *collapsed, width, align)
+            }
             BlockContent::List {
                 kind,
                 checked,
@@ -464,16 +573,37 @@ impl<'a> FlowPass<'a> {
                 text,
                 numbered_index,
                 ..
-            } => self.list_body(
-                *kind,
-                *checked,
-                *collapsed && !node.children.is_empty(),
-                text,
-                numbered_index.unwrap_or(1),
-                list_depth,
-                width,
-                align,
-            ),
+            } => {
+                if let Some(EquationDraft::Inline {
+                    block_id,
+                    utf16_offset,
+                    latex,
+                }) = self.input.equation_draft
+                    && block_id == &node.id
+                {
+                    let patched = patch_inline_latex_draft(text, *utf16_offset, latex);
+                    return self.list_body(
+                        *kind,
+                        *checked,
+                        *collapsed && !node.children.is_empty(),
+                        &patched,
+                        numbered_index.unwrap_or(1),
+                        list_depth,
+                        width,
+                        align,
+                    );
+                }
+                self.list_body(
+                    *kind,
+                    *checked,
+                    *collapsed && !node.children.is_empty(),
+                    text,
+                    numbered_index.unwrap_or(1),
+                    list_depth,
+                    width,
+                    align,
+                )
+            }
             BlockContent::Divider => self.divider_body(width),
             BlockContent::Code {
                 language,
@@ -499,7 +629,16 @@ impl<'a> FlowPass<'a> {
                 caption,
                 width,
             ),
-            BlockContent::Latex { latex } => self.latex_body(latex, width),
+            BlockContent::Latex { latex } => {
+                let effective = match self.input.equation_draft {
+                    Some(EquationDraft::Block {
+                        block_id,
+                        latex: draft,
+                    }) if block_id == &node.id => draft.as_str(),
+                    _ => latex.as_str(),
+                };
+                self.latex_body(effective, width)
+            }
             BlockContent::Callout {
                 icon,
                 text,
@@ -535,5 +674,72 @@ impl<'a> FlowPass<'a> {
             } => self.surface_ref_body(reference, ref_flavour, caption, width),
             _ => self.unknown_body(&node.flavour, &node.id, width),
         }
+    }
+}
+
+/// Applies an in-flight committed equation draft to a single inline latex unit at `utf16_offset`
+/// without mutating the CRDT document.
+fn patch_inline_latex_draft(text: &RichText, target_utf16: u64, draft: &str) -> RichText {
+    let mut patched = Vec::with_capacity(text.delta.len() + 2);
+    let mut pos = 0u64;
+    for op in &text.delta {
+        match op {
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text(s),
+                format,
+            } => {
+                let len = s.encode_utf16().count() as u64;
+                if target_utf16 >= pos
+                    && target_utf16 < pos + len
+                    && format.as_ref().is_some_and(|f| f.contains_key("latex"))
+                {
+                    let rel = (target_utf16 - pos) as usize;
+                    let mut u16_cursor = 0usize;
+                    let mut byte_start = 0usize;
+                    let mut byte_end = s.len();
+                    for (b, ch) in s.char_indices() {
+                        if u16_cursor == rel {
+                            byte_start = b;
+                            byte_end = b + ch.len_utf8();
+                            break;
+                        }
+                        u16_cursor += ch.len_utf16();
+                    }
+                    if byte_start > 0 {
+                        patched.push(y_octo::TextDeltaOp::Insert {
+                            insert: y_octo::TextInsert::Text(s[..byte_start].to_string()),
+                            format: format.clone(),
+                        });
+                    }
+                    let mut new_fmt = format.clone().unwrap_or_default();
+                    new_fmt.insert("latex".to_string(), y_octo::Any::String(draft.to_string()));
+                    patched.push(y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(s[byte_start..byte_end].to_string()),
+                        format: Some(new_fmt),
+                    });
+                    if byte_end < s.len() {
+                        patched.push(y_octo::TextDeltaOp::Insert {
+                            insert: y_octo::TextInsert::Text(s[byte_end..].to_string()),
+                            format: format.clone(),
+                        });
+                    }
+                } else {
+                    patched.push(op.clone());
+                }
+                pos += len;
+            }
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Embed(v),
+                ..
+            } => {
+                patched.push(op.clone());
+                pos += v.len() as u64;
+            }
+            _ => patched.push(op.clone()),
+        }
+    }
+    RichText {
+        plain: text.plain.clone(),
+        delta: patched,
     }
 }

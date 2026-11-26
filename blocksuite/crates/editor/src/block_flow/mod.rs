@@ -13,27 +13,32 @@
 
 mod blocks;
 mod body;
+mod embed_blocks;
 mod inline;
 mod layout;
-mod math_layout;
 mod preview;
 mod rich_blocks;
+mod surface_ref;
+mod table_block;
 mod viewport;
 
 pub use body::{
-    AttachmentPdfControls, BlockBody, BlockPaint, CodeScroll, FlowBlock, FlowInput, FlowKind,
-    FlowLayout, FlowStats, FlowText, FlowTextLayout, PagePaint, ScrolledCode, TableCellHit,
-    paint_chevron,
+    AttachmentPdfControls, BlockBody, BlockPaint, CodeScroll, EquationDraft, FlowBlock, FlowInput,
+    FlowKind, FlowLayout, FlowStats, FlowText, FlowTextLayout, PagePaint, ScrolledCode,
+    TableCellHit, paint_chevron,
 };
+pub use embed_blocks::civil_from_days;
 pub use inline::{
-    ImageSlot, InlineAlign, InlineBaseline, InlineLayout, InlineStyle, decode_image, layout_inline,
+    ImageSlot, InlineAlign, InlineBaseline, InlineLayout, InlineStyle, decode_image,
+    decode_image_with_dimensions, layout_inline,
 };
 pub use layout::BlockFlow;
-pub use math_layout::format_inline_math_unicode;
 pub use preview::{
-    EmbeddedPdfDocument, MathPreviewProvider, MathRenderSlot, PdfPageProvider, PdfPreviewPage,
-    can_render_pdf_pages, parse_pdf_renderer, register_math_preview_provider,
-    register_pdf_page_provider, render_math_cached, render_pdf_page,
+    EmbeddedPdfDocument, MathPreviewProvider, MathRenderResult, MathRenderSlot, PdfPageCount,
+    PdfPageProvider, PdfParseResult, PdfPreviewPage, bump_latex_formula_revision,
+    bump_preview_revision, can_render_pdf_pages, hsla_to_css_hex, latex_formula_revision,
+    parse_pdf_document, parse_pdf_renderer, preview_revision, register_math_preview_provider,
+    register_pdf_page_provider, render_math_cached, render_pdf_page, rgba_pixels_to_render_image,
 };
 pub use viewport::{
     PAGE_SURFACE_ID, PageViewport, PresenceMark, RemotePoint, RemotePresence, RemoteSelection,
@@ -534,6 +539,8 @@ mod tests {
             page_titles: &titles,
             images: &images,
             pdf_previews: None,
+            doc_directory: None,
+            equation_draft: None,
             env_rev: 0,
             direction: Direction::Ltr,
         };

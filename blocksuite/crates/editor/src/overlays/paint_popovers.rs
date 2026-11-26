@@ -27,6 +27,7 @@ impl Overlays {
         elements.extend(self.render_slash(scene, palette, now_ms, cx));
         elements.extend(self.render_linked_doc(scene, palette, now_ms, cx));
         elements.extend(self.render_equation(scene, palette, now_ms, window, cx));
+        elements.extend(self.render_bookmark(scene, palette, now_ms, window, cx));
         elements.extend(self.render_keyboard_toolbar(scene, palette, cx));
         elements
     }

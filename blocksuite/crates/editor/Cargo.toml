@@ -12,12 +12,10 @@ workspace = true
 [features]
 default = []
 harness = ["ui/harness"]
-preview-engine = ["dep:blocksuite-preview"]
 
 [dependencies]
 anyhow.workspace = true
 blocksuite-playground-doc = { path = "../doc", default-features = false }
-blocksuite-preview = { path = "../preview", default-features = false, features = ["math", "pdf"], optional = true }
 image.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -27,6 +25,9 @@ unicode-bidi.workspace = true
 unicode-linebreak = "0.1"
 unicode-segmentation.workspace = true
 y-octo = { version = "0.4.0", default-features = false, features = ["session"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+blocksuite-preview = { path = "../preview", default-features = false, features = ["math", "pdf"] }
 
 [dev-dependencies]
 ui = { path = "../../../packages/ui/ui", features = ["harness"] }

@@ -17,7 +17,7 @@
  * @property {string} [buildId]
  * @property {string | null} [assetBaseUrl]
  * @property {string | null} [appEntryJs]
- * @property {string | null} [crdtCodecWasm]
+ * @property {string | null} [mainWasmJs]
  * @property {Record<PreviewWorkerKind, WorkerAssetSpec>} workers
  * @property {Record<string, string>} fonts
  */
@@ -63,9 +63,9 @@ export function freezeBuildManifest(raw) {
     typeof raw.assetBaseUrl === 'string' && raw.assetBaseUrl.trim()
       ? raw.assetBaseUrl.trim()
       : null;
-  const crdtCodecWasm =
-    typeof raw.crdtCodecWasm === 'string' && raw.crdtCodecWasm.trim()
-      ? raw.crdtCodecWasm.trim()
+  const mainWasmJs =
+    typeof raw.mainWasmJs === 'string' && raw.mainWasmJs.trim()
+      ? raw.mainWasmJs.trim()
       : null;
   return Object.freeze({
     shellVersion: String(raw.shellVersion || 'mobile-v1'),
@@ -73,7 +73,7 @@ export function freezeBuildManifest(raw) {
     buildId: effectiveBuildId,
     assetBaseUrl,
     appEntryJs: typeof raw.appEntryJs === 'string' ? raw.appEntryJs : null,
-    crdtCodecWasm,
+    mainWasmJs,
     workers: /** @type {Record<PreviewWorkerKind, WorkerAssetSpec>} */ (
       workers
     ),
@@ -230,16 +230,16 @@ export function createWorkerLoader(rawManifest, options = {}) {
   }
 
   /**
-   * Resolves the pinned CRDT codec `.wasm` URL when declared in the manifest.
+   * Resolves the pinned main Wasm JS glue URL (`playground.js`) when declared in the manifest.
    *
    * @returns {string | null}
    */
-  function resolveCrdtCodecUrl() {
-    if (!manifest.crdtCodecWasm) {
+  function resolveMainWasmJsUrl() {
+    if (!manifest.mainWasmJs) {
       return null;
     }
     return pinUrl(
-      manifest.crdtCodecWasm,
+      manifest.mainWasmJs,
       baseUrl,
       lockedBuildId,
       lockedAssetBaseUrl
@@ -332,7 +332,7 @@ export function createWorkerLoader(rawManifest, options = {}) {
     assetBaseUrl: lockedAssetBaseUrl,
     resolveWorkerAssets,
     resolveFontUrl,
-    resolveCrdtCodecUrl,
+    resolveMainWasmJsUrl,
     loadWorker,
     hasLoadedWorker,
     terminateWorker,

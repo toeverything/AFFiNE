@@ -229,6 +229,11 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
     ),
 ];
 
+/// Look up a built-in slash item by its stable `id` (shared by `KeyboardToolbar`).
+pub fn slash_item_by_id(id: &str) -> Option<&'static SlashItem> {
+    SLASH_ITEMS.iter().find(|item| item.id == id)
+}
+
 fn is_fuzzy_match(haystack: &str, needle: &str) -> bool {
     let mut chars = needle.chars();
     let Some(mut target) = chars.next() else {

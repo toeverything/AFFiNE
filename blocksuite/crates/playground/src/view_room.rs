@@ -37,6 +37,17 @@ pub(crate) struct BlobFetchState {
     pub(crate) next_retry_ms: u64,
 }
 
+/// Upload of a content-addressed blob referenced by a locally inserted image or attachment.
+/// Kept until the relay confirms storage (`2xx`), retrying on scheduler backoff or reconnect
+/// so transient `503` / network drops never strand remote peers on a missing `sourceId`.
+#[derive(Clone, Debug)]
+pub(crate) struct BlobUploadState {
+    pub(crate) bytes: Arc<Vec<u8>>,
+    pub(crate) in_flight: bool,
+    pub(crate) failures: u32,
+    pub(crate) next_retry_ms: u64,
+}
+
 pub(crate) struct RoomRuntime {
     pub(crate) config: RoomConfig,
     pub(crate) protocol: RoomProtocol,
@@ -74,6 +85,75 @@ impl PlaygroundView {
             * 1000.0
     }
 
+    /// Override the host calendar clock `(utc_epoch_ms, utc_offset_minutes)` used by user-facing
+    /// date insertion actions (such as KeyboardToolbar `Today` / `Yesterday` / `Tomorrow` / `Now`).
+    pub fn set_calendar_clock(&mut self, clock: Option<crate::CalendarClockFn>) {
+        self.calendar_clock = clock;
+    }
+
+    /// Override the host file-picker callback triggered by the KeyboardToolbar `Image` button.
+    pub fn set_image_picker(&mut self, picker: Option<crate::ImagePickerFn>) {
+        self.image_picker = picker;
+        self.sync_keyboard_toolbar_state();
+    }
+
+    /// Enqueue a content-addressed blob for room upload and retain it until the relay confirms
+    /// `2xx` storage, retrying on scheduler backoff or reconnect after transient failures.
+    pub(crate) fn queue_blob_upload(
+        &mut self,
+        source_id: String,
+        bytes: Arc<Vec<u8>>,
+        cx: &Context<Self>,
+    ) {
+        let now_ms = self.now_ms(cx) as u64;
+        let in_flight = if let Some(room) = &self.room {
+            room.link.send(RoomCommand::UploadBlob {
+                source_id: source_id.clone(),
+                bytes: bytes.clone(),
+            });
+            true
+        } else {
+            false
+        };
+        self.blob_uploads.insert(
+            source_id,
+            BlobUploadState {
+                bytes,
+                in_flight,
+                failures: 0,
+                next_retry_ms: now_ms,
+            },
+        );
+    }
+
+    /// Returns `(utc_epoch_ms, utc_offset_minutes)` from the configured override or host clock.
+    pub(crate) fn local_calendar_now(&self, _cx: &Context<Self>) -> (i64, i32) {
+        if let Some(clock) = &self.calendar_clock {
+            return clock();
+        }
+        #[cfg(target_family = "wasm")]
+        let (utc_ms, offset_min) = {
+            let d = js_sys::Date::new_0();
+            (
+                d.get_time().round() as i64,
+                -(d.get_timezone_offset().round() as i32),
+            )
+        };
+        #[cfg(not(target_family = "wasm"))]
+        let (utc_ms, offset_min) = {
+            let ms = ui::system_now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_millis() as i64)
+                .unwrap_or(0);
+            let off = jiff::Timestamp::from_millisecond(ms)
+                .ok()
+                .map(|ts| jiff::tz::TimeZone::system().to_offset(ts).seconds() / 60)
+                .unwrap_or(0);
+            (ms, off)
+        };
+        (utc_ms, offset_min)
+    }
+
     pub(crate) fn handle_room_event(&mut self, event: RoomEvent, cx: &mut Context<Self>) {
         let now_ms = self.now_ms(cx) as u64;
         let Some(room) = self.room.as_mut() else {
@@ -83,7 +163,18 @@ impl PlaygroundView {
         let effects = match event {
             RoomEvent::Opened => {
                 let effects = room.protocol.on_open(&mut self.state, now_ms);
-                // A fresh connection fetches every missing blob again right away.
+                // A fresh connection retries every pending upload and missing blob right away.
+                for (source_id, upload) in &mut self.blob_uploads {
+                    upload.failures = 0;
+                    upload.next_retry_ms = now_ms;
+                    if !upload.in_flight {
+                        upload.in_flight = true;
+                        room.link.send(RoomCommand::UploadBlob {
+                            source_id: source_id.clone(),
+                            bytes: upload.bytes.clone(),
+                        });
+                    }
+                }
                 for (source_id, fetch) in &mut self.blob_fetches {
                     fetch.misses = 0;
                     fetch.next_retry_ms = now_ms;
@@ -133,6 +224,17 @@ impl PlaygroundView {
                 }
                 Ok(RoomEffects::default())
             }
+            RoomEvent::BlobUploaded { source_id, ok } => {
+                if ok {
+                    self.blob_uploads.remove(&source_id);
+                } else if let Some(upload) = self.blob_uploads.get_mut(&source_id) {
+                    upload.in_flight = false;
+                    upload.failures = upload.failures.saturating_add(1);
+                    upload.next_retry_ms =
+                        now_ms.saturating_add(blob_retry_backoff_ms(upload.failures));
+                }
+                Ok(RoomEffects::default())
+            }
         };
         match effects {
             Ok(effects) => {
@@ -168,8 +270,18 @@ impl PlaygroundView {
                 cx.notify();
             }
         }
-        // Fetch missing blobs again once their backoff ran out, unless the room is offline.
+        // Retry unconfirmed blob uploads and missing blob fetches once their backoff ran out,
+        // unless the room is offline.
         if !matches!(room.protocol.status(), RoomStatus::Offline(_)) {
+            for (source_id, upload) in &mut self.blob_uploads {
+                if !upload.in_flight && now_ms >= upload.next_retry_ms {
+                    upload.in_flight = true;
+                    room.link.send(RoomCommand::UploadBlob {
+                        source_id: source_id.clone(),
+                        bytes: upload.bytes.clone(),
+                    });
+                }
+            }
             for (source_id, fetch) in &mut self.blob_fetches {
                 if !fetch.in_flight && now_ms >= fetch.next_retry_ms {
                     fetch.in_flight = true;
@@ -281,6 +393,21 @@ fn web_options() -> PlaygroundOptions {
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn wasm_main() {
     console_error_panic_hook::set_once();
+    let Some(window) = web_sys::window() else {
+        // Node / headless Wasm test environment: skip DOM canvas bootstrap so callers can
+        // invoke exported CRDT helpers directly without side effects.
+        return;
+    };
+    if js_sys::Reflect::get(
+        &window,
+        &wasm_bindgen::JsValue::from_str("__AFFINE_WEB_HOST__"),
+    )
+    .ok()
+    .is_some_and(|v| v.is_truthy())
+    {
+        // Web thin host (`/host/`): avoid mounting a second fullscreen playground window.
+        return;
+    }
     let platform = std::rc::Rc::new(ui::WebPlatform::new(false));
     ui::Application::with_platform(platform).run(|cx| {
         if let Err(err) = register_bundled_fonts(cx) {
@@ -288,7 +415,9 @@ pub fn wasm_main() {
         }
         let options = web_options();
         if let Err(err) = cx.open_window(ui::WindowOptions::default(), |_, cx| {
-            cx.new(|cx| PlaygroundView::with_options(options, cx))
+            let view = cx.new(|cx| PlaygroundView::with_options(options, cx));
+            crate::wasm_preview::install_wasm_preview_providers(view.downgrade(), cx);
+            view
         }) {
             panic!("failed to open playground web window: {err:#}");
         }

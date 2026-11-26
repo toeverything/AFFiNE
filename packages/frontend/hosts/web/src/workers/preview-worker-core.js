@@ -13,6 +13,7 @@ const OPCODE_TYPST_SVG = 4;
 const OPCODE_PDF_PAGE = 5;
 const OPCODE_PDF_PAGE_SCALED = 6;
 const OPCODE_PDF_PAGE_COUNT = 7;
+const OPCODE_MATH_RGBA = 8;
 
 const KIND_OPCODES = {
   mermaid: OPCODE_MERMAID_SVG,
@@ -102,6 +103,36 @@ function prependPageIndexAndScale(pageIndex, scale, body) {
   view.setUint32(0, pageIndex >>> 0, true);
   view.setFloat32(4, scale, true);
   buf.set(body, 8);
+  return buf;
+}
+
+/**
+ * Encodes a `math` RGBA rasterization request (`OPCODE_MATH_RGBA = 8`).
+ *
+ * @param {TextEncoder} encoder
+ * @param {{ display?: boolean, fontSizePt?: number, paddingPt?: number, scaleFactor?: number, colorCss?: string, latex?: string, source?: string }} msg
+ * @returns {Uint8Array}
+ */
+function encodeMathRgbaPayload(encoder, msg) {
+  const colorBytes = encoder.encode(String(msg.colorCss || '#000000'));
+  const latexBytes = encoder.encode(String(msg.latex ?? msg.source ?? ''));
+  const buf = new Uint8Array(15 + colorBytes.length + latexBytes.length);
+  const view = new DataView(buf.buffer);
+  buf[0] = msg.display ? 1 : 0;
+  view.setFloat32(1, Number(msg.fontSizePt) || 16.0, true);
+  view.setFloat32(
+    5,
+    Number.isFinite(Number(msg.paddingPt))
+      ? Number(msg.paddingPt)
+      : msg.display
+        ? 4.0
+        : 1.5,
+    true
+  );
+  view.setFloat32(9, Number(msg.scaleFactor) || 2.0, true);
+  view.setUint16(13, colorBytes.length, true);
+  buf.set(colorBytes, 15);
+  buf.set(latexBytes, 15 + colorBytes.length);
   return buf;
 }
 
@@ -202,6 +233,9 @@ export function startPreviewWorker(kind) {
         } else {
           payloadBytes = prependPageIndex(Number(msg.pageIndex ?? 0), pdfBytes);
         }
+      } else if (kind === 'math' && msg.op === 'rgba') {
+        opcode = OPCODE_MATH_RGBA;
+        payloadBytes = encodeMathRgbaPayload(encoder, msg);
       } else {
         payloadBytes = encoder.encode(String(msg.latex ?? msg.source ?? ''));
       }
@@ -209,6 +243,46 @@ export function startPreviewWorker(kind) {
       const frame = invokeRaw(exports, opcode, payloadBytes);
       if (frame.length === 0 || frame[0] !== 1) {
         throw new Error(decoder.decode(frame.subarray(1)) || 'worker error');
+      }
+
+      if (kind === 'math' && opcode === OPCODE_MATH_RGBA) {
+        if (frame.length < 21) {
+          throw new Error(`Truncated math RGBA response (${frame.length})`);
+        }
+        const view = new DataView(
+          frame.buffer,
+          frame.byteOffset,
+          frame.byteLength
+        );
+        const widthPt = view.getFloat32(1, true);
+        const ascentPt = view.getFloat32(5, true);
+        const descentPt = view.getFloat32(9, true);
+        const widthPx = view.getUint32(13, true);
+        const heightPx = view.getUint32(17, true);
+        const rgba = frame.slice(21);
+        const expectedBytes = widthPx * heightPx * 4;
+        if (rgba.byteLength !== expectedBytes) {
+          throw new Error(
+            `Math RGBA length mismatch: got ${rgba.byteLength}, expected ${expectedBytes}`
+          );
+        }
+        globalThis.postMessage(
+          {
+            id,
+            ok: true,
+            result: {
+              kind,
+              widthPt,
+              ascentPt,
+              descentPt,
+              widthPx,
+              heightPx,
+              rgba,
+            },
+          },
+          [rgba.buffer]
+        );
+        return;
       }
 
       if (kind === 'typst') {

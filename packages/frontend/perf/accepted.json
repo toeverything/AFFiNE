@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "metric": "artifacts_bytes.headless_bin",
+    "action": "ceiling",
+    "accepted_value": 155000000,
+    "reason": "Native non-wasm32 targets link blocksuite-preview (RaTeX KaTeX math fonts and Hayro PDF renderer) by default for zero-flag inline/block math and PDF rendering; wasm32 main bundle remains isolated via lazy workers."
+  }
+]

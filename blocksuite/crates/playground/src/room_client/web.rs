@@ -40,6 +40,7 @@ pub fn connect(config: RoomConfig) -> RoomLink {
             }
         }
         RoomCommand::FetchBlob(source_id) => fetch_blob(&transport, source_id),
+        RoomCommand::UploadBlob { source_id, bytes } => upload_blob(&transport, source_id, bytes),
         RoomCommand::Close => {
             *transport.closed.borrow_mut() = true;
             let socket = transport.socket.borrow_mut().take();
@@ -149,4 +150,27 @@ async fn fetch_bytes(url: &str) -> Option<Vec<u8>> {
         .await
         .ok()?;
     Some(js_sys::Uint8Array::new(&buffer).to_vec())
+}
+
+fn upload_blob(transport: &Rc<WebTransport>, source_id: String, bytes: std::sync::Arc<Vec<u8>>) {
+    let url = transport.config.blob_url(&source_id);
+    let events = transport.events.clone();
+    wasm_bindgen_futures::spawn_local(async move {
+        let ok = put_bytes(&url, &bytes).await.is_some();
+        let _ = events.try_send(RoomEvent::BlobUploaded { source_id, ok });
+    });
+}
+
+async fn put_bytes(url: &str, bytes: &[u8]) -> Option<()> {
+    let window = web_sys::window()?;
+    let init = web_sys::RequestInit::new();
+    init.set_method("PUT");
+    let payload = js_sys::Uint8Array::from(bytes);
+    init.set_body(&payload);
+    let response = wasm_bindgen_futures::JsFuture::from(window.fetch_with_str_and_init(url, &init))
+        .await
+        .ok()?
+        .dyn_into::<web_sys::Response>()
+        .ok()?;
+    response.ok().then_some(())
 }

@@ -29,12 +29,13 @@ impl LaidOutRichParagraph {
                 DecorationKind::Highlight | DecorationKind::ReferenceChip(_) => {
                     window.paint_quad(fill(bounds, d.color));
                 }
-                DecorationKind::CodePill | DecorationKind::LatexChip(_) => window.paint_quad(
+                DecorationKind::CodePill => window.paint_quad(
                     fill(bounds, d.color)
                         .corner_radii(px(style.code_radius))
                         .border_widths(px(style.code_border_width))
                         .border_color(style.code_border),
                 ),
+                DecorationKind::LatexChip(_) => {}
                 DecorationKind::PageGlyph => PAGE_ICON
                     .get_or_init(|| IconPaint::named("LinkedPageIcon"))
                     .paint(bounds, d.color, window, cx),

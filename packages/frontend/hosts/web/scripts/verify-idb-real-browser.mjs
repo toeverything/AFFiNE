@@ -110,7 +110,11 @@ const PROBE_HTML = `<!doctype html>
   <head><meta charset="utf-8" /></head>
   <body>
     <script type="module">
-      import { createCrdtWasmClient } from '/src/crdt-wasm-client.js';
+      window.__AFFINE_WEB_HOST__ = true;
+      import initPlayground, {
+        extract_subdoc_ids,
+        merge_updates_v1,
+      } from '/assets/pkg/playground.js';
       import {
         createIdbV1ReadonlyReader,
         createIdbWorkspaceStorage,
@@ -261,20 +265,16 @@ const PROBE_HTML = `<!doctype html>
           });
           v1Db.close();
 
-          const crdtCodec = createCrdtWasmClient(
-            '/assets/crdt-codec.dev-local.wasm'
-          );
-          await crdtCodec.ready();
+          await initPlayground();
           const reader = createIdbV1ReadonlyReader({
             workspaceId: 'ws-v1-e2e',
-            mergeUpdates: updates => crdtCodec.mergeUpdates(updates),
-            extractSubdocIds: rootUpdates =>
-              crdtCodec.extractSubdocIds(rootUpdates),
+            mergeUpdates: updates => merge_updates_v1(updates),
+            extractSubdocIds: rootUpdates => extract_subdoc_ids(rootUpdates),
           });
           const listed = await reader.listV1DocIds();
           const mergedRoot = await reader.getV1Doc('ws-v1-e2e');
           const roundtrippedSubdocs = mergedRoot?.bin
-            ? await crdtCodec.extractSubdocIds([mergedRoot.bin])
+            ? extract_subdoc_ids([mergedRoot.bin])
             : [];
           const subRaw = await reader.getV1DocRaw('live-guid');
           result.v1 = {

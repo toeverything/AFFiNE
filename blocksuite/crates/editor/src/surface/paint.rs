@@ -654,6 +654,19 @@ pub fn paint_surface(
     }
 }
 
+/// Paint all visible items of `layout` under an arbitrary world-to-screen `matrix`
+/// (shared by `SurfaceRef` frame thumbnails in `BlockFlow`).
+pub(crate) fn paint_surface_transformed(
+    layout: &SurfaceLayout,
+    matrix: TransformationMatrix,
+    window: &mut Window,
+    cx: &mut App,
+) {
+    for item in layout.visible_items() {
+        item.paint(matrix, false, window, cx);
+    }
+}
+
 impl Item {
     fn paint(
         &self,

@@ -2784,8 +2784,9 @@ mod tests {
         let bar = element(&frame, "overlay.keyboard_toolbar");
         assert_eq!(bar.bounds.height, KEYBOARD_TOOLBAR_HEIGHT);
         for id in [
+            "overlay.keyboard_toolbar.more_panel",
+            "overlay.keyboard_toolbar.text_style",
             "overlay.keyboard_toolbar.undo",
-            "overlay.keyboard_toolbar.bold",
             "overlay.keyboard_toolbar.dismiss",
         ] {
             let btn = element(&frame, id);
@@ -2795,7 +2796,7 @@ mod tests {
             );
         }
 
-        // Long-press on the bidi paragraph selects an ICU word.
+        // Long-press on the bidi paragraph selects an ICU word and autoShows the `Aa` sub-toolbar.
         let bidi_bounds = element(&frame, "page.block.bidi-p").bounds;
         session.overlay(OverlayEvent::LongPressWord {
             x: bidi_bounds.x + 10.0,
@@ -2804,6 +2805,10 @@ mod tests {
         let sel = session.selection().expect("word selection");
         assert_eq!(sel.0, "bidi-p");
         assert!(sel.3 > sel.1, "long-press must select a non-empty ICU word");
+        let sub_frame = session.frame();
+        assert_no_violations(&sub_frame, "mobile keyboard toolbar autoShow Aa");
+        let bold_btn = element(&sub_frame, "overlay.keyboard_toolbar.bold");
+        assert!(bold_btn.bounds.width >= 44.0 && bold_btn.bounds.height >= 44.0);
 
         // Clicking Bold on KeyboardToolbar applies bold in one undoable step.
         session.overlay(OverlayEvent::KeyboardToolbar(KeyboardToolbarAction::Bold));
@@ -2839,6 +2844,10 @@ mod tests {
     #[test]
     fn mobile_keyboard_toolbar_pagination_reaches_all_18_actions_on_390px() {
         let session = open(390, 844, PlaygroundTheme::Light);
+        session.view(|v, cx| {
+            v.set_image_picker(Some(std::rc::Rc::new(|| {})));
+            cx.notify();
+        });
         session.edit(|page| {
             page.add_block(
                 "mob-p",
@@ -2852,75 +2861,98 @@ mod tests {
             )
             .expect("add mobile paragraph");
         });
-        session.select("mob-p", "Tap");
+        // Collapsed caret starts on top-level bar (0.27.5 defaultKeyboardToolbarConfig).
+        session.overlay(OverlayEvent::SetSelection(Some(ActiveSelection::caret(
+            "mob-p", 0,
+        ))));
         session.overlay(OverlayEvent::SetKeyboardToolbarVisible(true));
 
+        let visible_top: Vec<&str> = DEFAULT_KEYBOARD_TOOLBAR_ITEMS
+            .iter()
+            .filter(|i| i.is_visible())
+            .map(ToolbarItemSpec::id)
+            .collect();
         let mut seen = std::collections::HashSet::new();
         for _ in 0..6 {
             let frame = session.frame();
-            assert_no_violations(&frame, "mobile toolbar page");
+            assert_no_violations(&frame, "mobile toolbar top page");
             let more = element(&frame, "overlay.keyboard_toolbar.more");
             let dismiss = element(&frame, "overlay.keyboard_toolbar.dismiss");
             assert!(more.bounds.width >= 44.0 && more.bounds.height >= 44.0);
             assert!(dismiss.bounds.width >= 44.0 && dismiss.bounds.height >= 44.0);
-            for action in KeyboardToolbarAction::ALL {
-                if action == KeyboardToolbarAction::Dismiss {
-                    continue;
-                }
-                let id = format!("overlay.keyboard_toolbar.{}", action.id());
-                if let Some(el) = frame.elements.get(id.as_str()) {
+            for &id in &visible_top {
+                let full_id = format!("overlay.keyboard_toolbar.{id}");
+                if let Some(el) = frame.elements.get(full_id.as_str()) {
                     assert!(
                         el.bounds.width >= 44.0 && el.bounds.height >= 44.0,
-                        "{id} < 44x44"
+                        "{full_id} < 44x44"
                     );
-                    seen.insert(action);
+                    seen.insert(id);
                 }
             }
             session.click(&frame, "overlay.keyboard_toolbar.more");
         }
-        for action in KeyboardToolbarAction::ALL {
-            if action != KeyboardToolbarAction::Dismiss {
-                assert!(
-                    seen.contains(&action),
-                    "action {action:?} unreachable via More pagination on 390px viewport"
-                );
-            }
+        for &id in &visible_top {
+            assert!(
+                seen.contains(id),
+                "top-level item {id} unreachable via More pagination on 390px viewport"
+            );
         }
 
-        // Helper to page until `target_id` is visible and click it on canvas.
-        let click_paged = |target_id: &str| {
-            for _ in 0..6 {
-                let frame = session.frame();
-                if frame.elements.contains_key(target_id) {
-                    session.click(&frame, target_id);
-                    return;
-                }
-                session.click(&frame, "overlay.keyboard_toolbar.more");
-            }
-            panic!("could not find {target_id} on any toolbar page");
-        };
-
-        // Click H1 -> converts paragraph to h1, Undo -> reverts, Todo -> converts to todo,
-        // CodeBlock -> converts to code, Mention -> opens @ picker, Dismiss -> hides bar.
-        click_paged("overlay.keyboard_toolbar.h1");
-        let after_h1 = session.frame();
-        assert!(after_h1.elements.contains_key("page.block.mob-p"));
-        click_paged("overlay.keyboard_toolbar.undo");
-        click_paged("overlay.keyboard_toolbar.todo");
-        click_paged("overlay.keyboard_toolbar.undo");
-        click_paged("overlay.keyboard_toolbar.code_block");
-        click_paged("overlay.keyboard_toolbar.undo");
-        click_paged("overlay.keyboard_toolbar.mention");
-        session.platform.advance_clock(Duration::from_millis(160));
-        session.platform.run_until_parked();
-        let with_mention = session.frame();
+        // Open `+` (`moreToolPanel`): H1, To-do, Code Block, Linked Page all work in 1 Undo step.
+        session.overlay(OverlayEvent::KeyboardToolbar(
+            KeyboardToolbarAction::ToggleMorePanel,
+        ));
+        let panel_frame = session.frame();
+        assert_no_violations(&panel_frame, "mobile toolbar more panel");
         assert!(
-            with_mention
+            panel_frame
                 .elements
-                .contains_key("overlay.linked_doc_menu")
+                .contains_key("overlay.keyboard_toolbar.panel")
         );
-        let dismiss_frame = session.frame();
-        session.click(&dismiss_frame, "overlay.keyboard_toolbar.dismiss");
+        session.click(&panel_frame, "overlay.keyboard_toolbar.panel.basic.h1");
+        assert!(session.frame().elements.contains_key("page.block.mob-p"));
+        session.overlay(OverlayEvent::KeyboardToolbar(KeyboardToolbarAction::Undo));
+
+        session.overlay(OverlayEvent::KeyboardToolbar(
+            KeyboardToolbarAction::ToggleMorePanel,
+        ));
+        let todo_frame = session.frame();
+        session.click(&todo_frame, "overlay.keyboard_toolbar.panel.list.todo");
+        session.overlay(OverlayEvent::KeyboardToolbar(KeyboardToolbarAction::Undo));
+
+        session.overlay(OverlayEvent::KeyboardToolbar(
+            KeyboardToolbarAction::ToggleMorePanel,
+        ));
+        let code_frame = session.frame();
+        session.click(
+            &code_frame,
+            "overlay.keyboard_toolbar.panel.basic.code_block",
+        );
+        session.overlay(OverlayEvent::KeyboardToolbar(KeyboardToolbarAction::Undo));
+
+        // Non-collapsed selection autoShows `Aa` sub-toolbar with Strike, Link, Highlight.
+        session.select("mob-p", "Tap");
+        let aa_frame = session.frame();
+        assert_no_violations(&aa_frame, "mobile toolbar autoShow Aa");
+        assert!(
+            aa_frame
+                .elements
+                .contains_key("overlay.keyboard_toolbar.back")
+        );
+        assert!(
+            aa_frame
+                .elements
+                .contains_key("overlay.keyboard_toolbar.bold")
+        );
+        assert!(
+            aa_frame
+                .elements
+                .contains_key("overlay.keyboard_toolbar.strike")
+        );
+
+        // Dismiss hides the bar cleanly.
+        session.click(&aa_frame, "overlay.keyboard_toolbar.dismiss");
         let dismissed = session.frame();
         assert!(!dismissed.elements.contains_key("overlay.keyboard_toolbar"));
     }

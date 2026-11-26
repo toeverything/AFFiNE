@@ -3,6 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https: wss: http: ws:; base-uri 'none'; object-src 'none'"
+    />
     <title>Native BlockSuite Playground (WebAssembly)</title>
     <style>
       html,
@@ -23,9 +27,11 @@
   </head>
   <body>
     <script type="module">
-      import init from './pkg/playground.js';
+      import init, * as playgroundWasm from './pkg/playground.js';
+      import { installPlaygroundPreviewBridge } from './preview-workers.js';
       window.__playgroundReady = false;
       window.__playgroundError = null;
+      installPlaygroundPreviewBridge(playgroundWasm, window.location.href);
       init()
         .then(() => {
           window.__playgroundReady = true;

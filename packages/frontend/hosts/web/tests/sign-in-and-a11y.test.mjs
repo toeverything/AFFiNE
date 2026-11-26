@@ -363,9 +363,10 @@ void test('OAuth login, native client callback handoff, and single-use code retr
 });
 
 void test('sign-in 3-step flow, frozen schema.gql OAuth query, Turnstile reset, and offline Use local workspace', async () => {
-  // 1. Frozen schema.gql ServerConfigType query uses ONLY name, features, oauthProviders.
+  // 1. Frozen schema.gql ServerConfigType query gates OAuth on same-origin `baseUrl`.
   const gqlBodies = [];
   const oauthCfg = await fetchOAuthProviders({
+    currentOrigin: 'https://app.affine.pro',
     fetchImpl: async (_url, init) => {
       gqlBodies.push(init.body);
       return {
@@ -374,6 +375,7 @@ void test('sign-in 3-step flow, frozen schema.gql OAuth query, Turnstile reset, 
           data: {
             serverConfig: {
               name: 'AFFiNE Cloud',
+              baseUrl: 'https://app.affine.pro',
               features: ['OAuth', 'Captcha'],
               oauthProviders: ['Google', 'Apple', 'Unsupported'],
             },
@@ -382,13 +384,48 @@ void test('sign-in 3-step flow, frozen schema.gql OAuth query, Turnstile reset, 
       };
     },
   });
-  assert.ok(gqlBodies[0].includes('name features oauthProviders'));
+  assert.ok(gqlBodies[0].includes('name baseUrl features oauthProviders'));
   assert.ok(!gqlBodies[0].includes('serverName'));
   assert.deepEqual(oauthCfg, {
     serverName: 'AFFiNE Cloud',
     oauth: true,
     providers: ['Google', 'Apple'],
   });
+
+  // Cross-origin reverse proxy, missing baseUrl, or invalid baseUrl must hide OAuth providers.
+  for (const [label, baseUrl, currentOrigin] of [
+    ['cross-origin proxy', 'https://affine.fail', 'https://fail.affine.fail'],
+    ['missing baseUrl', undefined, 'https://app.affine.pro'],
+    ['invalid baseUrl', 'not-a-url', 'https://app.affine.pro'],
+    ['scheme mismatch', 'http://app.affine.pro', 'https://app.affine.pro'],
+  ]) {
+    const gated = await fetchOAuthProviders({
+      currentOrigin,
+      fetchImpl: async () => ({
+        ok: true,
+        json: async () => ({
+          data: {
+            serverConfig: {
+              name: 'AFFiNE Cloud',
+              ...(baseUrl !== undefined ? { baseUrl } : {}),
+              features: ['OAuth'],
+              oauthProviders: ['Google', 'GitHub'],
+            },
+          },
+        }),
+      }),
+    });
+    assert.deepEqual(
+      gated,
+      {
+        serverName: 'AFFiNE Cloud',
+        oauth: false,
+        providers: [],
+        crossOriginProxy: true,
+      },
+      `OAuth must be hidden for ${label}`
+    );
+  }
 
   // 2. Captcha challenge passthrough + Turnstile reset lifecycle.
   const challengeRes = await maybeLoadTurnstile({

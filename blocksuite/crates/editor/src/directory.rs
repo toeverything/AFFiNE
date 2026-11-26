@@ -65,6 +65,15 @@ pub struct EditorDocSummary {
     pub updated_at_ms: i64,
 }
 
+/// Read-only preview metadata rendered inside `affine:embed-linked-doc` cards.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct EditorDocPreview {
+    pub title: String,
+    pub snippet: String,
+    pub updated_at_ms: i64,
+    pub revision: u64,
+}
+
 /// Cooperative cancellation token for paginated linked-document queries.
 #[derive(Clone, Debug, Default)]
 pub struct DocQueryCancelToken {
@@ -203,6 +212,21 @@ pub trait WorkspaceDocDirectory {
     /// Marks `id` as durably registered in the workspace root page list so that a subsequent
     /// directory refresh where `id` is absent treats `id` as deleted rather than still-pending.
     fn mark_doc_root_registered(&mut self, id: &EditorDocId);
+
+    /// Read-only summary (title, body snippet, updated timestamp, revision) for an embedded
+    /// linked-document card. Returns `None` when the host has no cached preview for `id`.
+    fn doc_preview(&self, _id: &EditorDocId) -> Option<EditorDocPreview> {
+        None
+    }
+
+    /// Read-only snapshot of a referenced document for `affine:embed-synced-doc` inline
+    /// preview rendering (zero CRDT writeback).
+    fn doc_snapshot(
+        &self,
+        _id: &EditorDocId,
+    ) -> Option<Arc<blocksuite_playground_doc::read::PageSnapshot>> {
+        None
+    }
 }
 
 /// Pure-Rust contiguous substring matcher returning `(score, utf16_highlights)`.
@@ -303,6 +327,8 @@ struct IntentRecord {
 #[derive(Clone, Debug)]
 pub struct InMemoryDocDirectory {
     docs: BTreeMap<EditorDocId, EditorDocSummary>,
+    previews: BTreeMap<EditorDocId, EditorDocPreview>,
+    snapshots: BTreeMap<EditorDocId, Arc<blocksuite_playground_doc::read::PageSnapshot>>,
     intents: BTreeMap<String, IntentRecord>,
     pending_root_docs: std::collections::BTreeSet<EditorDocId>,
     id_prefix: String,
@@ -314,6 +340,8 @@ impl Default for InMemoryDocDirectory {
     fn default() -> Self {
         Self {
             docs: BTreeMap::new(),
+            previews: BTreeMap::new(),
+            snapshots: BTreeMap::new(),
             intents: BTreeMap::new(),
             pending_root_docs: std::collections::BTreeSet::new(),
             id_prefix: "doc:linked".to_string(),
@@ -348,6 +376,18 @@ impl InMemoryDocDirectory {
     pub fn upsert(&mut self, doc: EditorDocSummary) {
         self.clock_ms = self.clock_ms.max(doc.updated_at_ms);
         self.docs.insert(doc.id.clone(), doc);
+    }
+
+    pub fn upsert_preview(&mut self, id: EditorDocId, preview: EditorDocPreview) {
+        self.previews.insert(id, preview);
+    }
+
+    pub fn upsert_snapshot(
+        &mut self,
+        id: EditorDocId,
+        snapshot: Arc<blocksuite_playground_doc::read::PageSnapshot>,
+    ) {
+        self.snapshots.insert(id, snapshot);
     }
 
     /// Synchronizes the directory's documents with `docs` while preserving `next_id`,
@@ -556,6 +596,25 @@ impl WorkspaceDocDirectory for InMemoryDocDirectory {
                 rec.deleted_from_root = false;
             }
         }
+    }
+
+    fn doc_preview(&self, id: &EditorDocId) -> Option<EditorDocPreview> {
+        if let Some(preview) = self.previews.get(id) {
+            return Some(preview.clone());
+        }
+        self.docs.get(id).map(|doc| EditorDocPreview {
+            title: doc.title.clone(),
+            snippet: String::new(),
+            updated_at_ms: doc.updated_at_ms,
+            revision: 0,
+        })
+    }
+
+    fn doc_snapshot(
+        &self,
+        id: &EditorDocId,
+    ) -> Option<Arc<blocksuite_playground_doc::read::PageSnapshot>> {
+        self.snapshots.get(id).cloned()
     }
 }
 

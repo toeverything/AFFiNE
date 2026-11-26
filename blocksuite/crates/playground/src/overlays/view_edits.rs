@@ -140,6 +140,9 @@ impl PlaygroundView {
                 command,
                 typed,
             } => self.run_slash_command(&block_id, command, typed, window, cx),
+            DocEdit::Bookmark { block_id, url } => {
+                self.insert_bookmark_after_block(&block_id, url, window, cx)
+            }
             edit @ (DocEdit::SetProp { .. } | DocEdit::Reorder { .. }) => {
                 let before = self.selection_snapshot();
                 let page = self.page_mut()?;

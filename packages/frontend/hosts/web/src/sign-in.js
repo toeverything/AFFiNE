@@ -537,15 +537,50 @@ export function readClientNonce(
 }
 
 /**
- * Queries same-origin `/graphql` using the frozen 0.27.5 `ServerConfigType`
- * fields (`name`, `features`, `oauthProviders`). Degrades silently to an empty
- * provider list when offline or unavailable.
+ * Returns whether the backend's configured `baseUrl` is a valid absolute URL
+ * whose origin matches `currentOrigin`.
  *
- * @param {{ fetchImpl?: typeof fetch, clientVersion?: string }} [options]
- * @returns {Promise<{ serverName: string, oauth: boolean, providers: string[] }>}
+ * @param {string | null | undefined} baseUrl
+ * @param {string | null | undefined} currentOrigin
+ * @returns {boolean}
+ */
+function isSameOriginBaseUrl(baseUrl, currentOrigin) {
+  if (
+    typeof baseUrl !== 'string' ||
+    !baseUrl.trim() ||
+    typeof currentOrigin !== 'string' ||
+    !currentOrigin.trim()
+  ) {
+    return false;
+  }
+  try {
+    const parsedBase = new URL(baseUrl.trim());
+    const parsedCurrent = new URL(currentOrigin.trim());
+    return (
+      (parsedBase.protocol === 'https:' || parsedBase.protocol === 'http:') &&
+      parsedBase.origin === parsedCurrent.origin
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Queries same-origin `/graphql` using the frozen 0.27.5 `ServerConfigType`
+ * fields (`name`, `baseUrl`, `features`, `oauthProviders`, `type`).
+ * Enables third-party OAuth providers ONLY when `baseUrl` is a valid absolute
+ * URL whose origin matches `currentOrigin`. Degrades silently to an empty
+ * provider list when offline, unavailable, or behind a cross-origin proxy.
+ *
+ * @param {{ fetchImpl?: typeof fetch, clientVersion?: string, currentOrigin?: string | null }} [options]
+ * @returns {Promise<{ serverName: string, oauth: boolean, providers: string[], crossOriginProxy?: boolean, deploymentType?: string }>}
  */
 export async function fetchOAuthProviders(options = {}) {
   const fetchImpl = options.fetchImpl || globalThis.fetch;
+  const currentOrigin =
+    options.currentOrigin !== undefined
+      ? options.currentOrigin
+      : globalThis.window?.location?.origin || null;
   try {
     const response = await fetchImpl('/graphql', {
       method: 'POST',
@@ -555,7 +590,8 @@ export async function fetchOAuthProviders(options = {}) {
         clientVersion: options.clientVersion,
       }),
       body: JSON.stringify({
-        query: 'query { serverConfig { name features oauthProviders type } }',
+        query:
+          'query { serverConfig { name baseUrl features oauthProviders type } }',
       }),
     });
     if (!response.ok) {
@@ -572,8 +608,11 @@ export async function fetchOAuthProviders(options = {}) {
     const features = Array.isArray(cfg?.features)
       ? cfg.features.map(f => String(f))
       : null;
+    const sameOrigin = isSameOriginBaseUrl(cfg?.baseUrl, currentOrigin);
     const oauthEnabled =
-      providers.length > 0 && (features === null || features.includes('OAuth'));
+      sameOrigin &&
+      providers.length > 0 &&
+      (features === null || features.includes('OAuth'));
     const deploymentType =
       typeof cfg?.type === 'string' && cfg.type.trim() ? cfg.type.trim() : null;
     return {
@@ -583,6 +622,7 @@ export async function fetchOAuthProviders(options = {}) {
           : 'AFFiNE',
       oauth: oauthEnabled,
       providers: oauthEnabled ? providers : [],
+      ...(!sameOrigin ? { crossOriginProxy: true } : {}),
       ...(deploymentType ? { deploymentType } : {}),
     };
   } catch {
@@ -1686,8 +1726,14 @@ export async function bootSignInPage(env = {}) {
     syncSubmitButtonsDisabled();
   }
 
+  let crossOriginProxy = false;
   if (oauthContainer || legalNoticeEl) {
-    const serverOAuth = await fetchOAuthProviders({ fetchImpl, clientVersion });
+    const serverOAuth = await fetchOAuthProviders({
+      fetchImpl,
+      clientVersion,
+      currentOrigin: currentUrl.origin,
+    });
+    crossOriginProxy = Boolean(serverOAuth.crossOriginProxy);
     syncLegalNoticeVisibility(serverOAuth.deploymentType);
     if (oauthContainer) {
       renderOAuthProviders({
@@ -1812,7 +1858,12 @@ export async function bootSignInPage(env = {}) {
         setStatus(`Failed to send code (${sendRes.status}).`, 'error');
       } else {
         runResendCountdown(emailKey);
-        setStatus('');
+        setStatus(
+          crossOriginProxy
+            ? 'Enter the 6-digit verification code sent to your email.'
+            : '',
+          'info'
+        );
       }
       return sendRes;
     } catch {
@@ -1971,7 +2022,9 @@ export async function bootSignInPage(env = {}) {
       setStatus(
         result.ok
           ? result.method === 'magic-link-send'
-            ? 'Check your email for the sign-in link.'
+            ? crossOriginProxy
+              ? 'Enter the 6-digit verification code sent to your email.'
+              : 'Check your email for the sign-in link.'
             : 'Signed in.'
           : errorText,
         result.ok ? 'info' : 'error'

@@ -37,7 +37,7 @@ pub(super) const ZOOM_BAR_RADIUS: f32 = 8.0;
 pub(super) const ZOOM_BTN_RADIUS: f32 = 4.0;
 pub(super) const ZOOM_BTN_HEIGHT: f32 = 28.0;
 
-type NoteLayoutKey = (u64, u32, u32, PlaygroundTheme, u64, u64, bool);
+type NoteLayoutKey = (u64, u32, u32, PlaygroundTheme, u64, u64, u64, bool);
 
 pub(super) struct CachedNoteFlow {
     pub(super) flow: BlockFlow,
@@ -401,11 +401,14 @@ pub struct EdgelessRenderInput<'a> {
     pub snapshot: &'a PageSnapshot,
     pub doc_rev: u64,
     pub env_rev: u64,
+    pub preview_rev: u64,
     pub preedit_nonce: u64,
     pub theme: PlaygroundTheme,
     pub palette: &'a Palette,
     pub page_titles: &'a BTreeMap<String, String>,
     pub images: &'a HashMap<String, ImageSlot>,
+    pub pdf_previews: Option<&'a HashMap<String, crate::block_flow::PdfPreviewPage>>,
+    pub doc_directory: Option<&'a dyn crate::directory::WorkspaceDocDirectory>,
     pub viewport_width: f32,
     pub viewport_height: f32,
     pub direction: ui::Direction,

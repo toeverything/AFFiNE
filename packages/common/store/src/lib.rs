@@ -11,8 +11,6 @@ pub mod idb;
 #[cfg(not(target_family = "wasm"))]
 pub mod sqlite;
 pub mod sync;
-#[cfg(feature = "wasm-codec")]
-pub mod wasm_codec;
 pub mod workspace_db;
 
 pub use clock::{Clock, ManualClock};

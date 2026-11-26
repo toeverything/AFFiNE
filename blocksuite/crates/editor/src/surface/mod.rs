@@ -8,6 +8,7 @@ mod rough;
 mod shapes;
 mod strokes;
 
+pub(crate) use paint::paint_surface_transformed;
 pub use paint::{SurfaceLayout, layout_surface, paint_surface, surface_element};
 use ui::{Bounds, Pixels, Point, point, px, size};
 

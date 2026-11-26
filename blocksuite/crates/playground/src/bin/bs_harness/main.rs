@@ -4,6 +4,7 @@ mod fps;
 mod probes;
 mod render;
 mod s3_evidence;
+mod s3_evidence_fixtures;
 mod states;
 
 use bench::run_bench;

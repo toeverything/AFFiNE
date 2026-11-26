@@ -6,7 +6,7 @@ use crate::engine::PreviewEngine;
 #[cfg(feature = "typst")]
 use crate::PreviewDate;
 #[cfg(feature = "math")]
-use crate::math::MathRenderOptions;
+use crate::math::{MathDisplayMode, MathRenderOptions};
 #[cfg(feature = "mermaid")]
 use crate::mermaid::{MermaidOptions, MermaidTheme};
 #[cfg(feature = "pdf")]
@@ -191,6 +191,72 @@ impl RawWorkerState {
                 #[cfg(not(feature = "pdf"))]
                 {
                     Err("pdf feature disabled in this worker".to_string())
+                }
+            }
+            8 => {
+                #[cfg(feature = "math")]
+                {
+                    if payload.len() < 15 {
+                        return Err("missing math rgba header".to_string());
+                    }
+                    let mode = match payload[0] {
+                        0 => MathDisplayMode::Inline,
+                        1 => MathDisplayMode::Display,
+                        other => return Err(format!("invalid math display mode tag {other}")),
+                    };
+                    let raw_fs =
+                        f32::from_le_bytes([payload[1], payload[2], payload[3], payload[4]]);
+                    let raw_pad =
+                        f32::from_le_bytes([payload[5], payload[6], payload[7], payload[8]]);
+                    let raw_scale =
+                        f32::from_le_bytes([payload[9], payload[10], payload[11], payload[12]]);
+                    let color_len = u16::from_le_bytes([payload[13], payload[14]]) as usize;
+                    if payload.len() < 15 + color_len {
+                        return Err("truncated math rgba color_css".to_string());
+                    }
+                    let color_css = std::str::from_utf8(&payload[15..15 + color_len])
+                        .map_err(|e| format!("invalid color_css utf8: {e}"))?
+                        .to_string();
+                    let latex = std::str::from_utf8(&payload[15 + color_len..])
+                        .map_err(|e| format!("invalid latex utf8: {e}"))?;
+                    let font_size_pt = if raw_fs.is_finite() && raw_fs > 0.0 {
+                        f64::from(raw_fs.clamp(6.0, 96.0))
+                    } else {
+                        16.0
+                    };
+                    let padding_pt = if raw_pad.is_finite() && raw_pad >= 0.0 {
+                        f64::from(raw_pad.min(32.0))
+                    } else {
+                        0.0
+                    };
+                    let scale = if raw_scale.is_finite() && raw_scale > 0.0 {
+                        raw_scale.clamp(1.0, 4.0)
+                    } else {
+                        2.0
+                    };
+                    let opts = MathRenderOptions {
+                        mode,
+                        font_size_pt,
+                        padding_pt,
+                        color_css,
+                    };
+                    let out = self
+                        .engine
+                        .render_latex_rgba(latex, &opts, scale)
+                        .map_err(|e| e.to_string())?;
+                    let mut frame = Vec::with_capacity(21 + out.image.pixels.len());
+                    frame.push(1);
+                    frame.extend_from_slice(&(out.width_pt as f32).to_le_bytes());
+                    frame.extend_from_slice(&(out.ascent_pt as f32).to_le_bytes());
+                    frame.extend_from_slice(&(out.descent_pt as f32).to_le_bytes());
+                    frame.extend_from_slice(&out.image.width_px.to_le_bytes());
+                    frame.extend_from_slice(&out.image.height_px.to_le_bytes());
+                    frame.extend_from_slice(&out.image.pixels);
+                    Ok(frame)
+                }
+                #[cfg(not(feature = "math"))]
+                {
+                    Err("math feature disabled in this worker".to_string())
                 }
             }
             other => Err(format!("unknown worker opcode {other}")),

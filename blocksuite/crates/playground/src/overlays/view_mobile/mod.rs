@@ -1,19 +1,40 @@
 //! Mobile `KeyboardToolbar`, long-press ICU word selection, embedded PDF paging,
 //! table cell editing, and embedded doc navigation handlers for `PlaygroundView`.
 
-use blocksuite_playground_doc::schema::{ListType, ParagraphType};
+mod actions;
+#[cfg(test)]
+mod tests;
+#[cfg(test)]
+mod tests_parity;
+#[cfg(test)]
+mod tests_sync;
+
 use ui::{Context, Window, point, px};
-use y_octo::{Any, TextAttributes, TextDeltaOp, TextInsert};
 
 use crate::{
     PlaygroundView,
-    block_flow::{parse_pdf_renderer, render_pdf_page},
+    block_flow::{PdfParseResult, parse_pdf_document, render_pdf_page},
     editor_session::{DocPoint, DocumentSelection, word_range},
 };
 
 use super::*;
 
 impl PlaygroundView {
+    /// Sync per-frame undo/redo/indent/dedent and `autoShow` selection capabilities
+    /// into `Overlays` for `KeyboardToolbar`.
+    pub(crate) fn sync_keyboard_toolbar_state(&mut self) {
+        let caps = KeyboardToolbarCapabilities {
+            can_undo: self.page().is_some_and(|p| p.can_undo()),
+            can_redo: self.page().is_some_and(|p| p.can_redo()),
+            can_indent: self.can_indent_current_block(),
+            can_dedent: self.can_dedent_current_block(),
+            can_pick_images: cfg!(target_family = "wasm") || self.image_picker.is_some(),
+            has_body_selection: self.editor.selection.is_some(),
+            has_non_collapsed_selection: self.editor.selection.as_ref().is_some_and(|s| !s.empty()),
+        };
+        self.overlays.set_keyboard_toolbar_capabilities(caps);
+    }
+
     /// Handles mobile keyboard toolbar, PDF paging, table cell edit, embed doc open,
     /// and touch long-press word selection events. Returns `true` when consumed.
     pub(super) fn handle_mobile_and_rich_event(
@@ -25,11 +46,18 @@ impl PlaygroundView {
         match event {
             OverlayEvent::SetKeyboardToolbarVisible(visible) => {
                 self.overlays.set_keyboard_toolbar_visible(*visible);
+                if *visible {
+                    self.sync_keyboard_toolbar_state();
+                }
                 cx.notify();
                 true
             }
             OverlayEvent::KeyboardToolbar(action) => {
                 self.run_keyboard_toolbar_action(*action, window, cx);
+                true
+            }
+            OverlayEvent::InsertImageBytes { bytes, caption } => {
+                let _ = self.insert_picked_image_bytes(bytes, caption, window, cx);
                 true
             }
             OverlayEvent::AttachmentPdfPage { block_id, delta } => {
@@ -80,6 +108,29 @@ impl PlaygroundView {
             .as_ref()
             .map(|sel| sel.focus.block_id.clone());
         match action {
+            KeyboardToolbarAction::ToggleMorePanel => {
+                self.overlays
+                    .toggle_keyboard_toolbar_panel(KeyboardToolbarPanel::More);
+                cx.notify();
+            }
+            KeyboardToolbarAction::OpenTextSubToolbar => {
+                self.overlays.open_keyboard_text_subtoolbar();
+                cx.notify();
+            }
+            KeyboardToolbarAction::BackToMainToolbar => {
+                self.overlays.close_keyboard_text_subtoolbar();
+                cx.notify();
+            }
+            KeyboardToolbarAction::ToggleTurnIntoPanel => {
+                self.overlays
+                    .toggle_keyboard_toolbar_panel(KeyboardToolbarPanel::TurnInto);
+                cx.notify();
+            }
+            KeyboardToolbarAction::ToggleHighlightPanel => {
+                self.overlays
+                    .toggle_keyboard_toolbar_panel(KeyboardToolbarPanel::Highlight);
+                cx.notify();
+            }
             KeyboardToolbarAction::Undo => {
                 let _ = self.history(false, window, cx);
             }
@@ -95,80 +146,70 @@ impl PlaygroundView {
             KeyboardToolbarAction::Underline => {
                 let _ = self.format_mark("underline", window, cx);
             }
+            KeyboardToolbarAction::Strike => {
+                let _ = self.format_mark("strike", window, cx);
+            }
             KeyboardToolbarAction::InlineCode => {
                 let _ = self.format_mark("code", window, cx);
             }
-            KeyboardToolbarAction::InlineMath => {
-                if let Some(sel) = self.editor.selection.clone() {
-                    let offset = sel.focus.offset();
-                    let now = self.now_ms(cx) as u64;
-                    let before = self.selection_snapshot();
-                    if let Ok(page) = self.page_mut() {
-                        let _ = page.stop_capturing();
-                        let mut delta = Vec::new();
-                        if offset > 0 {
-                            delta.push(TextDeltaOp::Retain {
-                                retain: offset,
-                                format: None,
-                            });
-                        }
-                        delta.push(TextDeltaOp::Insert {
-                            insert: TextInsert::Text(" ".into()),
-                            format: Some(TextAttributes::from([(
-                                "latex".to_string(),
-                                Any::String(String::new()),
-                            )])),
-                        });
-                        if let Ok(commit) =
-                            page.apply_text_delta(&sel.focus.block_id, "prop:text", &delta, now)
-                        {
-                            if commit.is_some()
-                                && let Some(before) = before
-                            {
-                                let _ = page.set_undo_selection_snapshot(before);
-                            }
-                            self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(
-                                &sel.focus.block_id,
-                                offset + 1,
-                            )));
-                            self.did_edit(commit, Some(&sel.focus.block_id), window, cx);
-                            self.dispatch_overlay(
-                                OverlayEvent::OpenEquationEditor {
-                                    target: EquationTarget::Inline {
-                                        block_id: sel.focus.block_id,
-                                        utf16_offset: offset,
-                                    },
-                                    initial: String::new(),
-                                },
-                                window,
-                                cx,
-                            );
-                        }
-                    }
-                }
+            KeyboardToolbarAction::Link => {
+                self.overlays.close_keyboard_toolbar_panel();
+                self.open_link_bar_from_toolbar(window, cx);
             }
-            KeyboardToolbarAction::H1
-            | KeyboardToolbarAction::H2
-            | KeyboardToolbarAction::H3
-            | KeyboardToolbarAction::Todo
-            | KeyboardToolbarAction::Bullet
-            | KeyboardToolbarAction::Numbered
-            | KeyboardToolbarAction::Quote
-            | KeyboardToolbarAction::CodeBlock => {
+            KeyboardToolbarAction::InlineMath => {
+                self.overlays.close_keyboard_toolbar_panel();
+                self.insert_inline_math_from_toolbar(window, cx);
+            }
+            KeyboardToolbarAction::SetTextColor(color) => {
+                let _ = self.format_color_mark("color", color.fg_css_var(), window, cx);
+                self.overlays.close_keyboard_toolbar_panel();
+                cx.notify();
+            }
+            KeyboardToolbarAction::SetBgColor(color) => {
+                let _ = self.format_color_mark("background", color.bg_css_var(), window, cx);
+                self.overlays.close_keyboard_toolbar_panel();
+                cx.notify();
+            }
+            KeyboardToolbarAction::Slash(cmd) => {
                 let Some(id) = block_id else {
                     return;
                 };
-                let cmd = match action {
-                    KeyboardToolbarAction::H1 => SlashCommand::Paragraph(ParagraphType::H1),
-                    KeyboardToolbarAction::H2 => SlashCommand::Paragraph(ParagraphType::H2),
-                    KeyboardToolbarAction::H3 => SlashCommand::Paragraph(ParagraphType::H3),
-                    KeyboardToolbarAction::Todo => SlashCommand::List(ListType::Todo),
-                    KeyboardToolbarAction::Bullet => SlashCommand::List(ListType::Bulleted),
-                    KeyboardToolbarAction::Numbered => SlashCommand::List(ListType::Numbered),
-                    KeyboardToolbarAction::Quote => SlashCommand::Paragraph(ParagraphType::Quote),
-                    _ => SlashCommand::Code,
-                };
+                self.overlays.close_keyboard_toolbar_panel();
                 let _ = self.run_slash_command(&id, cmd, false, window, cx);
+            }
+            KeyboardToolbarAction::EquationBlock => {
+                self.overlays.close_keyboard_toolbar_panel();
+                let _ = self.insert_equation_block_from_toolbar(window, cx);
+            }
+            KeyboardToolbarAction::Table => {
+                self.overlays.close_keyboard_toolbar_panel();
+                let _ = self.insert_table_block_from_toolbar(window, cx);
+            }
+            KeyboardToolbarAction::Callout => {
+                self.overlays.close_keyboard_toolbar_panel();
+                let _ = self.insert_callout_block_from_toolbar(window, cx);
+            }
+            KeyboardToolbarAction::Image => {
+                self.overlays.close_keyboard_toolbar_panel();
+                self.trigger_image_picker_from_toolbar(cx);
+            }
+            KeyboardToolbarAction::Bookmark => {
+                let Some(id) = block_id else {
+                    return;
+                };
+                self.overlays.close_keyboard_toolbar_panel();
+                self.dispatch_overlay(
+                    OverlayEvent::OpenBookmarkPrompt { block_id: id },
+                    window,
+                    cx,
+                );
+            }
+            KeyboardToolbarAction::Date(kind) => {
+                let (utc_ms, tz_offset_min) = self.local_calendar_now(cx);
+                let formatted =
+                    actions::format_keyboard_toolbar_local_date(utc_ms, tz_offset_min, kind);
+                self.overlays.close_keyboard_toolbar_panel();
+                let _ = self.insert_toolbar_plain_text(&formatted, window, cx);
             }
             KeyboardToolbarAction::Indent => {
                 let _ = self.edit_key("tab", false, window, cx);
@@ -176,24 +217,30 @@ impl PlaygroundView {
             KeyboardToolbarAction::Outdent => {
                 let _ = self.edit_key("tab", true, window, cx);
             }
-            KeyboardToolbarAction::Mention => {
-                if let Some(sel) = self.editor.selection.clone() {
-                    self.dispatch_overlay(
-                        OverlayEvent::OpenLinkedDocMenu {
-                            block_id: sel.focus.block_id,
-                            query: String::new(),
-                        },
-                        window,
-                        cx,
-                    );
-                }
+            KeyboardToolbarAction::Copy => {
+                self.copy_toolbar_selection_or_block(cx);
             }
+            KeyboardToolbarAction::Duplicate => {
+                let _ = self.duplicate_current_block(window, cx);
+            }
+            KeyboardToolbarAction::Delete => {
+                let _ = self.delete_current_block(window, cx);
+            }
+            KeyboardToolbarAction::Attachment
+            | KeyboardToolbarAction::EmbedIframe
+            | KeyboardToolbarAction::EmbedYoutube
+            | KeyboardToolbarAction::EmbedGithub
+            | KeyboardToolbarAction::EmbedFigma
+            | KeyboardToolbarAction::EmbedLoom
+            | KeyboardToolbarAction::DatabaseTableView
+            | KeyboardToolbarAction::DatabaseKanbanView => {}
             KeyboardToolbarAction::Dismiss => {
                 self.keyboard_toolbar_dismissed = true;
                 self.overlays.set_keyboard_toolbar_visible(false);
                 cx.notify();
             }
         }
+        self.sync_keyboard_toolbar_state();
     }
 
     fn step_attachment_pdf_page(&mut self, block_id: &str, delta: i32, cx: &mut Context<Self>) {
@@ -210,7 +257,7 @@ impl PlaygroundView {
         let Some(bytes) = self.state.blobs.get(&source_id) else {
             return;
         };
-        let Some(renderer) = parse_pdf_renderer(bytes) else {
+        let PdfParseResult::Ready(renderer) = parse_pdf_document(&source_id, bytes) else {
             return;
         };
         let total = renderer.page_count();
@@ -219,15 +266,18 @@ impl PlaygroundView {
         }
         let current = self.pdf_page_indices.get(block_id).copied().unwrap_or(0) as i64;
         let next = (current + i64::from(delta)).clamp(0, (total - 1) as i64) as usize;
+        // Persist target `next` before kicking off `render_pdf_page` so async Web Worker
+        // completion in `refresh_pdf_previews` lands on `next` instead of reverting to `0`.
+        self.pdf_page_indices.insert(block_id.to_string(), next);
         if let Some(preview) = render_pdf_page(&renderer, next, 1.5) {
             self.pdf_page_indices
                 .insert(block_id.to_string(), preview.page_index);
             self.pdf_preview_keys
                 .insert(block_id.to_string(), (source_id, preview.page_index));
             self.pdf_previews.insert(block_id.to_string(), preview);
-            self.env_rev += 1;
-            cx.notify();
+            crate::block_flow::bump_preview_revision();
         }
+        cx.notify();
     }
 
     /// Collect all embedded PDF attachment `(block_id, source_id)` pairs in the active snapshot.
@@ -277,7 +327,7 @@ impl PlaygroundView {
             self.pdf_previews.remove(&block_id);
             self.pdf_preview_keys.remove(&block_id);
             self.pdf_page_indices.remove(&block_id);
-            self.env_rev += 1;
+            crate::block_flow::bump_preview_revision();
         }
         self.pdf_previews
             .retain(|block_id, _| active_pdf_map.contains_key(block_id.as_str()));
@@ -294,18 +344,19 @@ impl PlaygroundView {
                     if self.failed_pdf_blobs.contains(&fail_key) {
                         continue;
                     }
-                    match parse_pdf_renderer(bytes) {
-                        Some(renderer) => {
+                    match parse_pdf_document(source_id, bytes) {
+                        PdfParseResult::Ready(renderer) => {
                             if let Some(preview) = render_pdf_page(&renderer, page_idx, 1.5) {
                                 let actual_idx = preview.page_index;
                                 self.pdf_page_indices.insert(block_id.clone(), actual_idx);
                                 self.pdf_preview_keys
                                     .insert(block_id.clone(), (source_id.clone(), actual_idx));
                                 self.pdf_previews.insert(block_id.clone(), preview);
-                                self.env_rev += 1;
+                                crate::block_flow::bump_preview_revision();
                             }
                         }
-                        None => {
+                        PdfParseResult::Pending => {}
+                        PdfParseResult::Invalid => {
                             self.failed_pdf_blobs.insert(fail_key);
                         }
                     }

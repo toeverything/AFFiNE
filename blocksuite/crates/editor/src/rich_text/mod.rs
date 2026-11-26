@@ -285,6 +285,8 @@ pub struct RichParagraphStyle {
     pub icon_color: Hsla,
     pub chip_bg: Hsla,
     pub chip_fg: Hsla,
+    /// Display scale factor used for rasterizing inline math formulas.
+    pub dpr: f32,
 }
 
 impl Default for RichParagraphStyle {
@@ -366,6 +368,7 @@ impl RichParagraphStyle {
             icon_color: color(theme.icon),
             chip_bg: color(raw_tokens::Rgba::TRANSPARENT),
             chip_fg: color(theme.text_primary),
+            dpr: 2.0,
         }
     }
 }

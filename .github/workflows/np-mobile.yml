@@ -148,17 +148,28 @@ jobs:
           workspaces: packages/frontend -> target
           key: np-mobile-preview-wasm
 
-      - name: Build and verify all four independent blocksuite-preview Wasm workers
+      - name: Install wasm-bindgen CLI
         run: |
-          mkdir -p /tmp/preview-wasm
+          WBG_VERSION=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/"/, "", $3); print $3; exit}' Cargo.lock)
+          URL="https://github.com/wasm-bindgen/wasm-bindgen/releases/download/${WBG_VERSION}/wasm-bindgen-${WBG_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+          if curl -fsSL "$URL" | tar -xz -C /tmp; then
+            sudo install -m 0755 "/tmp/wasm-bindgen-${WBG_VERSION}-x86_64-unknown-linux-musl/wasm-bindgen" /usr/local/bin/wasm-bindgen
+          else
+            cargo install --locked wasm-bindgen-cli --version "$WBG_VERSION"
+          fi
+          wasm-bindgen --version
+
+      - name: Build and verify main playground Wasm bundle and 4 preview Wasm workers
+        run: |
+          mkdir -p /tmp/preview-wasm/pkg
           for kind in mermaid math typst pdf; do
             cargo build --locked --profile wasm-release -p blocksuite-preview --no-default-features --features "${kind},wasm-worker" --target wasm32-unknown-unknown
             cp target/wasm32-unknown-unknown/wasm-release/blocksuite_preview.wasm "/tmp/preview-wasm/${kind}.wasm"
             test -s "/tmp/preview-wasm/${kind}.wasm"
           done
-          cargo build --locked --profile wasm-release -p affine-store --no-default-features --features wasm-codec --target wasm32-unknown-unknown
-          cp target/wasm32-unknown-unknown/wasm-release/affine_store.wasm /tmp/preview-wasm/crdt-codec.wasm
-          test -s /tmp/preview-wasm/crdt-codec.wasm
+          cargo build --locked --profile wasm-release -p playground --target wasm32-unknown-unknown
+          wasm-bindgen --target web --out-dir /tmp/preview-wasm/pkg target/wasm32-unknown-unknown/wasm-release/playground.wasm
+          test -s /tmp/preview-wasm/pkg/playground_bg.wasm
           node hosts/web/scripts/stage-preview-workers.mjs /tmp/preview-wasm dev-local
           node hosts/web/scripts/verify-preview-workers-e2e.mjs
 

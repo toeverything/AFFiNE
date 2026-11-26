@@ -762,4 +762,36 @@ impl PlaygroundView {
         w.prevent_default();
         cx.stop_propagation();
     }
+
+    pub(crate) fn open_link_bar_from_toolbar(&mut self, w: &mut Window, cx: &mut Context<Self>) {
+        self.open_link_bar_shortcut(w, cx);
+    }
+
+    pub(crate) fn copy_toolbar_selection_or_block(&mut self, cx: &mut Context<Self>) {
+        if let Some(slice) = self.clipboard_slice() {
+            crate::clipboard::write_slice(&slice, cx);
+            return;
+        }
+        if let Some(id) = self.editor.selection.as_ref().map(|s| &s.focus.block_id)
+            && let Some(text) = self.block_text(id)
+        {
+            cx.write_to_clipboard(ui::ClipboardItem::new_string(text.to_string()));
+        }
+    }
+
+    pub(crate) fn insert_toolbar_plain_text(
+        &mut self,
+        text: &str,
+        w: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
+        let Some(sel) = self.editor.selection.clone() else {
+            return Ok(());
+        };
+        self.page_mut()?.stop_capturing()?;
+        self.editor.last_typing = None;
+        self.replace_selection(sel, text, w, cx)?;
+        self.page_mut()?.stop_capturing()?;
+        Ok(())
+    }
 }

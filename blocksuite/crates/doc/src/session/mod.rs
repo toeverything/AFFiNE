@@ -10,7 +10,7 @@ pub use export::any_to_normalized_json;
 pub use workspace::WorkspaceSession;
 
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::{BTreeMap, BTreeSet},
 };
 
@@ -203,6 +203,7 @@ pub struct PageDocSession {
     undo_stack_id: UndoStackId,
     blocks_target: TypeTarget,
     surface_element_order: RefCell<BTreeMap<String, Vec<String>>>,
+    revision: Cell<u64>,
 }
 
 impl PageDocSession {
@@ -227,7 +228,25 @@ impl PageDocSession {
             undo_stack_id,
             blocks_target,
             surface_element_order: RefCell::new(BTreeMap::new()),
+            revision: Cell::new(0),
         })
+    }
+
+    /// Monotonically increasing revision bumped on every applied local or remote mutation,
+    /// including delete-only updates that leave the Yjs state vector unchanged.
+    pub fn revision(&self) -> u64 {
+        self.revision.get()
+    }
+
+    pub(super) fn bump_revision(&self) {
+        self.revision.set(self.revision.get().wrapping_add(1));
+    }
+
+    pub(super) fn record_commit(&self, commit: PageCommit) -> PageCommit {
+        if commit.is_some() {
+            self.bump_revision();
+        }
+        commit
     }
 
     /// Update and return per-surface first-integration key order for `prop:elements.value`,
@@ -319,6 +338,7 @@ impl PageDocSession {
     }
 
     pub fn inner_mut(&mut self) -> &mut DocSession<SelectionSnapshot> {
+        self.bump_revision();
         &mut self.session
     }
 
@@ -343,6 +363,9 @@ impl PageDocSession {
     /// commits so the caller can broadcast them back to the room.
     pub fn apply_remote_update_v1(&mut self, bytes: &[u8]) -> DocResult<RemoteApplyResult> {
         let commits = self.session.apply_update_v1(bytes)?;
+        if !commits.is_empty() {
+            self.bump_revision();
+        }
         self.refresh_all_surface_orders();
         let outbound_updates = commits
             .iter()
@@ -462,7 +485,8 @@ impl PageDocSession {
                 }
             }
         }
-        Ok(self.session.commit_tx()?)
+        let commit = self.session.commit_tx()?;
+        Ok(self.record_commit(commit))
     }
 
     /// Move an existing child block to a new index within `parent_id`'s `sys:children`.
@@ -491,7 +515,8 @@ impl PageDocSession {
             clamped_index,
             vec![SessionValue::Any(Any::String(child_id.to_string()))],
         )?;
-        Ok(self.session.commit_tx()?)
+        let commit = self.session.commit_tx()?;
+        Ok(self.record_commit(commit))
     }
 
     /// Insert text into a block's `Y.Text` property (e.g. `"prop:text"` or `"prop:title"`).
@@ -505,7 +530,8 @@ impl PageDocSession {
     ) -> DocResult<Option<SessionCommit<SelectionSnapshot>>> {
         self.advance_time(now_ms);
         let target = TypeTarget::Path(TypePath::root("blocks").key(block_id).key(prop_key));
-        Ok(self.session.text_insert(&target, index, text)?)
+        let commit = self.session.text_insert(&target, index, text)?;
+        Ok(self.record_commit(commit))
     }
 
     /// Remove a UTF-16 range from a block's `Y.Text` property.
@@ -519,7 +545,8 @@ impl PageDocSession {
     ) -> DocResult<Option<SessionCommit<SelectionSnapshot>>> {
         self.advance_time(now_ms);
         let target = TypeTarget::Path(TypePath::root("blocks").key(block_id).key(prop_key));
-        Ok(self.session.text_remove(&target, index, len)?)
+        let commit = self.session.text_remove(&target, index, len)?;
+        Ok(self.record_commit(commit))
     }
 
     /// Apply formatting attributes to a range in a block's `Y.Text` property.
@@ -534,7 +561,8 @@ impl PageDocSession {
     ) -> DocResult<Option<SessionCommit<SelectionSnapshot>>> {
         self.advance_time(now_ms);
         let target = TypeTarget::Path(TypePath::root("blocks").key(block_id).key(prop_key));
-        Ok(self.session.text_format(&target, index, len, attrs)?)
+        let commit = self.session.text_format(&target, index, len, attrs)?;
+        Ok(self.record_commit(commit))
     }
 
     /// Apply a raw delta to a block's `Y.Text` property.
@@ -547,7 +575,8 @@ impl PageDocSession {
     ) -> DocResult<Option<SessionCommit<SelectionSnapshot>>> {
         self.advance_time(now_ms);
         let target = TypeTarget::Path(TypePath::root("blocks").key(block_id).key(prop_key));
-        Ok(self.session.text_apply_delta(&target, delta)?)
+        let commit = self.session.text_apply_delta(&target, delta)?;
+        Ok(self.record_commit(commit))
     }
 
     /// Splice a UTF-16 range on an existing `Y.Text` target via a single tracked
@@ -587,7 +616,8 @@ impl PageDocSession {
             });
         }
         self.advance_time(now_ms);
-        Ok(self.session.text_apply_delta(target, &ops)?)
+        let commit = self.session.text_apply_delta(target, &ops)?;
+        Ok(self.record_commit(commit))
     }
 
     /// Set a scalar or nested property on a block (`prop:*`).
@@ -600,6 +630,7 @@ impl PageDocSession {
     ) -> DocResult<Option<SessionCommit<SelectionSnapshot>>> {
         self.advance_time(now_ms);
         let target = TypeTarget::Path(TypePath::root("blocks").key(block_id));
-        Ok(self.session.map_set(&target, prop_key.into(), value)?)
+        let commit = self.session.map_set(&target, prop_key.into(), value)?;
+        Ok(self.record_commit(commit))
     }
 }

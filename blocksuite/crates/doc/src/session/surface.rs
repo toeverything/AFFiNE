@@ -29,11 +29,12 @@ impl PageDocSession {
                 .key("prop:elements")
                 .key("value"),
         );
-        Ok(self.session.map_set(
+        let commit = self.session.map_set(
             &elements_value_target,
             element_id,
             SessionValue::Map(entries),
-        )?)
+        )?;
+        Ok(self.record_commit(commit))
     }
 
     /// Update a field on an existing surface element.
@@ -53,7 +54,8 @@ impl PageDocSession {
                 .key("value")
                 .key(element_id),
         );
-        Ok(self.session.map_set(&target, field.into(), value)?)
+        let commit = self.session.map_set(&target, field.into(), value)?;
+        Ok(self.record_commit(commit))
     }
 
     /// Format `[x, y, w, h]` into BlockSuite's wire `xywh` JSON string.
@@ -114,9 +116,10 @@ impl PageDocSession {
                 .key("prop:elements")
                 .key("value"),
         );
-        Ok(self
+        let commit = self
             .session
-            .map_remove(&elements_value_target, element_id)?)
+            .map_remove(&elements_value_target, element_id)?;
+        Ok(self.record_commit(commit))
     }
 
     /// Update multiple fields on an existing surface element in one tracked transaction.
@@ -191,11 +194,12 @@ impl PageDocSession {
                     }]
                 };
                 self.advance_time(now_ms);
-                Ok(self.session.map_set(
+                let commit = self.session.map_set(
                     &elem_target,
                     field.to_string(),
                     SessionValue::Text(delta),
-                )?)
+                )?;
+                Ok(self.record_commit(commit))
             }
         }
     }
@@ -568,11 +572,12 @@ impl PageDocSession {
                         format: None,
                     }]
                 };
-                Ok(self.session.map_set(
+                let commit = self.session.map_set(
                     &elem_target,
                     field.to_string(),
                     SessionValue::Text(delta),
-                )?)
+                )?;
+                Ok(self.record_commit(commit))
             }
         }
     }

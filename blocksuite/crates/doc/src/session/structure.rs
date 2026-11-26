@@ -53,7 +53,7 @@ impl PageDocSession {
         let commit = self.session.commit_tx();
         self.stop_capturing()?;
         result?;
-        Ok(commit?)
+        Ok(self.record_commit(commit?))
     }
 
     pub fn delete_block_subtree(

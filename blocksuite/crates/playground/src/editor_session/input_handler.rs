@@ -409,6 +409,11 @@ impl EntityInputHandler for PlaygroundView {
         w: &mut Window,
         _: &mut Context<Self>,
     ) -> Option<usize> {
+        if let Some(editor) = self.overlays.equation_editor()
+            && let Some(idx) = editor.hit_test_point(f32::from(p.x), f32::from(p.y))
+        {
+            return Some(idx);
+        }
         if let Some(link) = self.overlays.active_text_field() {
             let (selection, reversed) = link.shown_selection();
             return link

@@ -101,6 +101,7 @@ impl Overlays {
         self.close_linked_doc(now_ms);
         self.close_link_field();
         self.close_equation_editor_at(now_ms);
+        self.close_bookmark_prompt_at(now_ms);
         self.drag = None;
     }
 
@@ -250,6 +251,7 @@ impl Overlays {
                         self.linked_doc_menu().and_then(|menu| menu.rect),
                         self.open_toolbar().and_then(|toolbar| toolbar.rect),
                         self.equation_editor().and_then(|editor| editor.rect),
+                        self.bookmark_prompt().and_then(|prompt| prompt.rect),
                     ]
                     .into_iter()
                     .flatten()
@@ -411,14 +413,38 @@ impl Overlays {
                 effects.redraw = true;
             }
             OverlayEvent::EquationApply => self.apply_equation(now_ms, &mut effects),
+            OverlayEvent::EquationClick { x, y, shift } => {
+                if let Some(editor) = self.equation_editor_mut()
+                    && editor.click_at(x, y, shift)
+                {
+                    effects.redraw = true;
+                }
+            }
             OverlayEvent::CloseEquationEditor => {
                 if self.close_equation_editor_at(now_ms) {
+                    effects.redraw = true;
+                }
+            }
+            OverlayEvent::OpenBookmarkPrompt { block_id } => {
+                self.open_bookmark_prompt(block_id.clone(), now_ms);
+                effects.redraw = true;
+            }
+            OverlayEvent::BookmarkApply => self.apply_bookmark(now_ms, &mut effects),
+            OverlayEvent::CloseBookmarkPrompt => {
+                if self.close_bookmark_prompt_at(now_ms) {
                     effects.redraw = true;
                 }
             }
             OverlayEvent::KeyboardToolbarNextPage => {
                 self.next_keyboard_toolbar_page();
                 effects.redraw = true;
+            }
+            OverlayEvent::KeyboardToolbarPanelScroll(delta_y) => {
+                if let Some(s) = scene
+                    && self.scroll_active_keyboard_tool_panel(s, delta_y)
+                {
+                    effects.redraw = true;
+                }
             }
             OverlayEvent::OpenLinkedDocMenu { .. }
             | OverlayEvent::SetLinkedDocQuery(_)
@@ -428,6 +454,7 @@ impl Overlays {
             | OverlayEvent::CreateLinkedDoc { .. }
             | OverlayEvent::SetKeyboardToolbarVisible(_)
             | OverlayEvent::KeyboardToolbar(_)
+            | OverlayEvent::InsertImageBytes { .. }
             | OverlayEvent::FocusTableCell { .. }
             | OverlayEvent::AttachmentPdfPage { .. }
             | OverlayEvent::OpenEmbedDoc { .. }
@@ -450,14 +477,22 @@ impl Overlays {
         let key = keystroke.key.as_str();
         let shift = keystroke.modifiers.shift;
 
+        #[derive(Clone, Copy, PartialEq, Eq)]
+        enum ActiveFieldKind {
+            Equation,
+            Bookmark,
+            Link,
+        }
         let active_kind = if self.equation_editor().is_some() {
-            Some(true)
+            Some(ActiveFieldKind::Equation)
+        } else if self.bookmark_prompt().is_some() {
+            Some(ActiveFieldKind::Bookmark)
         } else if self.link_field().is_some() {
-            Some(false)
+            Some(ActiveFieldKind::Link)
         } else {
             None
         };
-        if let Some(is_equation) = active_kind {
+        if let Some(field_kind) = active_kind {
             if self.active_text_field().is_some_and(LinkBar::composing) {
                 if key == "escape"
                     && let Some(field) = self.active_text_field_mut()
@@ -471,20 +506,35 @@ impl Overlays {
             effects.handled = true;
             effects.redraw = true;
             match key {
-                "enter" => {
-                    if is_equation {
-                        self.apply_equation(now_ms, &mut effects);
-                    } else {
-                        self.apply_link(false, &mut effects);
+                "enter" => match field_kind {
+                    ActiveFieldKind::Equation => {
+                        if shift {
+                            if let Some(field) = self.active_text_field_mut() {
+                                field.replace(None, "\n");
+                            }
+                        } else {
+                            self.apply_equation(now_ms, &mut effects);
+                        }
+                    }
+                    ActiveFieldKind::Bookmark => self.apply_bookmark(now_ms, &mut effects),
+                    ActiveFieldKind::Link => self.apply_link(false, &mut effects),
+                },
+                "up" | "down" if field_kind == ActiveFieldKind::Equation && !secondary => {
+                    if let Some(editor) = self.equation_editor_mut() {
+                        editor.move_vertical_line(key == "down", shift);
                     }
                 }
-                "escape" => {
-                    if is_equation {
+                "escape" => match field_kind {
+                    ActiveFieldKind::Equation => {
                         self.close_equation_editor_at(now_ms);
-                    } else {
+                    }
+                    ActiveFieldKind::Bookmark => {
+                        self.close_bookmark_prompt_at(now_ms);
+                    }
+                    ActiveFieldKind::Link => {
                         self.close_link_field();
                     }
-                }
+                },
                 "v" if secondary => effects.paste = true,
                 "c" | "x" if secondary => {
                     if let Some(field) = self.active_text_field_mut()
@@ -627,6 +677,9 @@ impl Overlays {
         delta_x: f32,
         delta_y: f32,
     ) -> bool {
+        if self.scroll_keyboard_tool_panel(scene, x, y, delta_y) {
+            return true;
+        }
         if delta_x == 0.0 || delta_x.abs() < delta_y.abs() {
             return false;
         }
@@ -708,6 +761,11 @@ impl Overlays {
         }) {
             self.equation = None;
         }
+        if self.bookmark.as_ref().is_some_and(|prompt| {
+            prompt.presence.gone(now_ms) || layout.block(&prompt.block_id).is_none()
+        }) {
+            self.bookmark = None;
+        }
     }
 
     pub(super) fn in_flight(&self, now_ms: f64) -> bool {
@@ -727,5 +785,9 @@ impl Overlays {
                 .equation
                 .as_ref()
                 .is_some_and(|editor| editor.presence.in_flight(now_ms) || editor.presence.closing)
+            || self
+                .bookmark
+                .as_ref()
+                .is_some_and(|prompt| prompt.presence.in_flight(now_ms) || prompt.presence.closing)
     }
 }

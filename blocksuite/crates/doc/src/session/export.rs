@@ -87,13 +87,13 @@ impl PageDocSession {
     pub fn undo(&mut self) -> DocResult<Option<SessionCommit<SelectionSnapshot>>> {
         let res = self.session.undo_stack(self.undo_stack_id)?;
         self.refresh_all_surface_orders();
-        Ok(res)
+        Ok(self.record_commit(res))
     }
 
     pub fn redo(&mut self) -> DocResult<Option<SessionCommit<SelectionSnapshot>>> {
         let res = self.session.redo_stack(self.undo_stack_id)?;
         self.refresh_all_surface_orders();
-        Ok(res)
+        Ok(self.record_commit(res))
     }
 
     pub fn can_undo(&self) -> bool {

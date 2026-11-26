@@ -523,15 +523,22 @@ impl PlaygroundView {
                     Some((editing_id.to_string(), is_note, sel, focus))
                 });
 
+        let doc_dir: &dyn crate::directory::WorkspaceDocDirectory = self
+            .custom_doc_directory
+            .as_deref()
+            .unwrap_or(&self.default_doc_directory);
         let input = edgeless::EdgelessRenderInput {
             snapshot: &render_snapshot,
             doc_rev: self.doc_rev,
             env_rev: self.env_rev,
+            preview_rev: crate::block_flow::preview_revision(),
             preedit_nonce,
             theme: self.theme,
             palette,
             page_titles: &self.page_titles,
             images: &self.images,
+            pdf_previews: Some(&self.pdf_previews),
+            doc_directory: Some(doc_dir),
             viewport_width,
             viewport_height,
             direction: window.layout_direction(),
@@ -590,6 +597,7 @@ impl ui::Render for PlaygroundView {
         self.overlays.set_keyboard_toolbar_marks_disabled(
             self.table_cell.is_some() && self.editor.selection.is_none(),
         );
+        self.sync_keyboard_toolbar_state();
         window.set_touch_gestures_enabled(true);
         for gesture in window.take_touch_gestures() {
             if self.mode == PlaygroundMode::Page

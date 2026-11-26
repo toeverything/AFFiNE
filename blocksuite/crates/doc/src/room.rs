@@ -27,7 +27,7 @@ use y_octo::{
 };
 
 /// Maximum HTTP body size for `/api/collection/{id}/blob/{key}` (64 MiB).
-const MAX_BLOB_BODY_BYTES: usize = 64 * 1024 * 1024;
+const MAX_BLOB_BODY_BYTES: usize = crate::MAX_BLOB_BYTES;
 
 use crate::wire::{
     RoomBinaryFrame, RoomControlFrame, decode_binary_frame, decode_control_frame,

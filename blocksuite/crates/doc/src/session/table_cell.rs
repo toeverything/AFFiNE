@@ -118,26 +118,26 @@ impl PageDocSession {
         };
 
         self.advance_time(now_ms);
-        match write_target {
+        let commit = match write_target {
             CellWriteTarget::Flat {
                 block_target,
                 flat_key,
-            } => Ok(self
+            } => self
                 .session
-                .map_set(&block_target, flat_key, SessionValue::Text(delta))?),
-            CellWriteTarget::LegacyNestedCellMap { cell_target } => Ok(self.session.map_set(
-                &cell_target,
-                "text".to_string(),
-                SessionValue::Text(delta),
-            )?),
+                .map_set(&block_target, flat_key, SessionValue::Text(delta))?,
+            CellWriteTarget::LegacyNestedCellMap { cell_target } => {
+                self.session
+                    .map_set(&cell_target, "text".to_string(), SessionValue::Text(delta))?
+            }
             CellWriteTarget::LegacyNestedCellsMap {
                 cells_target,
                 cell_key,
             } => {
                 let cell_val = SessionValue::Map(vec![("text".into(), SessionValue::Text(delta))]);
-                Ok(self.session.map_set(&cells_target, cell_key, cell_val)?)
+                self.session.map_set(&cells_target, cell_key, cell_val)?
             }
-        }
+        };
+        Ok(self.record_commit(commit))
     }
 
     /// Encode a `RelativePosition` at UTF-16 `offset` on a live table cell's `Y.Text`.

@@ -20,8 +20,12 @@ use affine_store::{
     workspace_db::{PendingDocUpdate, derive_page_id_for_op},
 };
 use blocksuite_editor::{
-    DirectoryError, DocQueryPage, DocQueryRequest, EditorDocId, EditorDocMode, EditorDocSummary,
-    MatchedDocSummary, WorkspaceDocDirectory, match_exact_substring_utf16,
+    DirectoryError, DocQueryPage, DocQueryRequest, EditorDocId, EditorDocMode, EditorDocPreview,
+    EditorDocSummary, MatchedDocSummary, WorkspaceDocDirectory, match_exact_substring_utf16,
+};
+use blocksuite_playground_doc::{
+    read::{BlockContent, PageSnapshot},
+    session::PageDocSession,
 };
 use serde::{Deserialize, Serialize};
 
@@ -59,6 +63,38 @@ pub struct CreateIntentLedger {
     pub intents: BTreeMap<String, CreateIntentEntry>,
 }
 
+struct CachedDocContent {
+    revision: u64,
+    snippet: String,
+    snapshot: Arc<PageSnapshot>,
+}
+
+type DocUpdateLoader = Arc<dyn Fn(&str) -> Option<(u64, Vec<u8>)> + Send + Sync>;
+
+fn extract_snapshot_snippet(snapshot: &PageSnapshot) -> String {
+    let Some(root) = &snapshot.root else {
+        return String::new();
+    };
+    let mut parts = Vec::new();
+    for node in root.walk() {
+        let text = match &node.content {
+            BlockContent::Paragraph { text, .. } | BlockContent::List { text, .. } => {
+                text.plain.trim()
+            }
+            BlockContent::Callout { text, .. } => text.plain.trim(),
+            BlockContent::Code { text, .. } => text.trim(),
+            _ => "",
+        };
+        if !text.is_empty() {
+            parts.push(text.to_string());
+            if parts.len() >= 2 {
+                break;
+            }
+        }
+    }
+    parts.join(" ")
+}
+
 /// Production [`WorkspaceDocDirectory`] backed by a shared [`WorkspaceDirectory`] and [`CreateIntentLedger`].
 pub struct StoreBackedDocDirectory {
     directory: Arc<Mutex<WorkspaceDirectory>>,
@@ -66,6 +102,8 @@ pub struct StoreBackedDocDirectory {
     now_ms: i64,
     replica_seed: Option<String>,
     next_ephemeral_op: u64,
+    page_cache: Mutex<BTreeMap<String, CachedDocContent>>,
+    doc_loader: Option<DocUpdateLoader>,
 }
 
 impl StoreBackedDocDirectory {
@@ -92,7 +130,86 @@ impl StoreBackedDocDirectory {
             now_ms: initial_now_ms,
             replica_seed,
             next_ephemeral_op: 0,
+            page_cache: Mutex::new(BTreeMap::new()),
+            doc_loader: None,
         }
+    }
+
+    /// Attach an on-demand `(revision, v1_update_bytes)` loader for child page documents so
+    /// `doc_preview` and `doc_snapshot` resolve embedded linked/synced document cards directly
+    /// from the host document store.
+    pub fn with_doc_loader(
+        mut self,
+        loader: impl Fn(&str) -> Option<(u64, Vec<u8>)> + Send + Sync + 'static,
+    ) -> Self {
+        self.doc_loader = Some(Arc::new(loader));
+        self
+    }
+
+    /// Register or refresh a decoded child page snapshot for `id` (zero CRDT writeback).
+    pub fn upsert_doc_snapshot(
+        &self,
+        id: &EditorDocId,
+        snapshot: Arc<PageSnapshot>,
+        revision: u64,
+    ) {
+        let snippet = extract_snapshot_snippet(&snapshot);
+        self.page_cache
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(
+                id.as_str().to_string(),
+                CachedDocContent {
+                    revision,
+                    snippet,
+                    snapshot,
+                },
+            );
+    }
+
+    /// Decode and cache a child page's binary v1 CRDT update for embedded card previews.
+    pub fn load_doc_update_v1(
+        &self,
+        id: &EditorDocId,
+        update_v1: &[u8],
+        revision: u64,
+    ) -> Result<(), DirectoryError> {
+        let mut session = PageDocSession::new(id.as_str(), 1)
+            .map_err(|e| DirectoryError::Other(e.to_string()))?;
+        if !update_v1.is_empty() {
+            session
+                .apply_remote_update_v1(update_v1)
+                .map_err(|e| DirectoryError::Other(e.to_string()))?;
+        }
+        let snapshot = session
+            .read_page_snapshot()
+            .map_err(|e| DirectoryError::Other(e.to_string()))?;
+        self.upsert_doc_snapshot(id, Arc::new(snapshot), revision);
+        Ok(())
+    }
+
+    fn resolve_cached_or_loaded_content(
+        &self,
+        doc_id: &str,
+    ) -> Option<(u64, String, Arc<PageSnapshot>)> {
+        if let Some(loader) = &self.doc_loader
+            && let Some((rev, bytes)) = loader(doc_id)
+        {
+            let needs_decode = self
+                .page_cache
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .get(doc_id)
+                .is_none_or(|c| c.revision != rev);
+            if needs_decode {
+                let _ = self.load_doc_update_v1(&EditorDocId::new(doc_id), &bytes, rev);
+            }
+        }
+        self.page_cache
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(doc_id)
+            .map(|c| (c.revision, c.snippet.clone(), Arc::clone(&c.snapshot)))
     }
 
     pub fn shared_directory(&self) -> Arc<Mutex<WorkspaceDirectory>> {
@@ -386,6 +503,42 @@ impl WorkspaceDocDirectory for StoreBackedDocDirectory {
             }
         }
     }
+
+    fn doc_preview(&self, id: &EditorDocId) -> Option<EditorDocPreview> {
+        let doc_id = DocId::new(id.as_str()).ok()?;
+        let entry = self
+            .lock_directory()
+            .get_doc(&doc_id)
+            .ok()
+            .flatten()
+            .filter(|e| !e.trashed)?;
+        let updated_at_ms = entry.updated_date_ms.unwrap_or(entry.create_date_ms);
+        let (revision, snippet) = self
+            .resolve_cached_or_loaded_content(id.as_str())
+            .map(|(rev, snip, _)| (rev, snip))
+            .unwrap_or((1, String::new()));
+        Some(EditorDocPreview {
+            title: entry.title,
+            snippet,
+            updated_at_ms,
+            revision,
+        })
+    }
+
+    fn doc_snapshot(&self, id: &EditorDocId) -> Option<Arc<PageSnapshot>> {
+        let doc_id = DocId::new(id.as_str()).ok()?;
+        let exists = self
+            .lock_directory()
+            .get_doc(&doc_id)
+            .ok()
+            .flatten()
+            .is_some_and(|e| !e.trashed);
+        if !exists {
+            return None;
+        }
+        self.resolve_cached_or_loaded_content(id.as_str())
+            .map(|(_, _, snap)| snap)
+    }
 }
 
 #[cfg(test)]
@@ -511,5 +664,72 @@ mod tests {
                 .unwrap()
                 .is_some()
         );
+    }
+
+    #[test]
+    fn doc_preview_and_snapshot_resolve_store_backed_linked_and_synced_cards() {
+        use blocksuite_playground_doc::schema::{BlockSpec, ParagraphType};
+
+        let mut dir = new_store_backed_directory();
+        let created = dir
+            .create_linked_doc("Mobile Spec", EditorDocMode::Page, Some("spec-1"))
+            .unwrap();
+
+        // Before child page bytes arrive, preview resolves title + timestamp while snapshot is None.
+        let initial_preview = dir.doc_preview(&created.id).expect("store preview");
+        assert_eq!(initial_preview.title, "Mobile Spec");
+        assert_eq!(initial_preview.snippet, "");
+        assert_eq!(initial_preview.updated_at_ms, 1_000);
+        assert!(dir.doc_snapshot(&created.id).is_none());
+
+        // Populate child page CRDT update and verify both snippet and snapshot resolve cleanly.
+        let mut child = PageDocSession::new(created.id.as_str(), 7).unwrap();
+        child
+            .add_block(
+                "r",
+                BlockSpec::Page {
+                    title: "Mobile Spec".into(),
+                },
+                None,
+                None,
+                1,
+            )
+            .unwrap();
+        child
+            .add_block("n", BlockSpec::Note { xywh: None }, Some("r"), None, 2)
+            .unwrap();
+        child
+            .add_block(
+                "p1",
+                BlockSpec::Paragraph {
+                    paragraph_type: ParagraphType::Text,
+                    text: "Synced content from StoreBackedDocDirectory.".into(),
+                },
+                Some("n"),
+                None,
+                3,
+            )
+            .unwrap();
+        let update_bytes = child.encode_update_v1().unwrap();
+        dir.load_doc_update_v1(&created.id, &update_bytes, 4)
+            .unwrap();
+
+        let full_preview = dir.doc_preview(&created.id).expect("rich preview");
+        assert_eq!(full_preview.title, "Mobile Spec");
+        assert_eq!(
+            full_preview.snippet,
+            "Synced content from StoreBackedDocDirectory."
+        );
+        assert_eq!(full_preview.revision, 4);
+        let snap = dir.doc_snapshot(&created.id).expect("synced snapshot");
+        assert!(snap.block("p1").is_some());
+
+        // Trashing the document hides both preview and snapshot.
+        let store_doc_id = DocId::new(created.id.as_str()).unwrap();
+        dir.lock_directory()
+            .trash_doc(&store_doc_id, 2_000)
+            .unwrap();
+        assert!(dir.doc_preview(&created.id).is_none());
+        assert!(dir.doc_snapshot(&created.id).is_none());
     }
 }

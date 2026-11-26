@@ -265,20 +265,45 @@ impl ParagraphLayout<'_> {
             };
             let is_code = !first.chip && first.marks.code;
             let is_latex = first.chip && first.marks.latex.is_some();
-            let font_size = if is_code || is_latex {
+            let math_result = if is_latex {
+                first.marks.latex.as_deref().map(|tex| {
+                    if tex.trim().is_empty() {
+                        crate::block_flow::MathRenderResult::Pending
+                    } else {
+                        crate::block_flow::render_math_cached(
+                            tex,
+                            false,
+                            style.font_size * 0.92,
+                            style.text_color,
+                            style.dpr,
+                        )
+                    }
+                })
+            } else {
+                None
+            };
+            let is_latex_error = matches!(
+                math_result,
+                Some(crate::block_flow::MathRenderResult::Error)
+            );
+            let font_size = if is_code {
                 style.code_font_size
+            } else if is_latex {
+                12.0
             } else {
                 style.font_size
             };
             let display_text: std::borrow::Cow<'_, str> = if is_latex {
-                first
-                    .marks
-                    .latex
-                    .as_deref()
-                    .map(|tex| {
-                        std::borrow::Cow::Owned(crate::block_flow::format_inline_math_unicode(tex))
-                    })
-                    .unwrap_or(std::borrow::Cow::Borrowed(text))
+                if is_latex_error {
+                    std::borrow::Cow::Borrowed("Error equation")
+                } else {
+                    let raw_tex = first.marks.latex.as_deref().unwrap_or("").trim();
+                    if raw_tex.is_empty() {
+                        std::borrow::Cow::Borrowed("Equation")
+                    } else {
+                        std::borrow::Cow::Borrowed(text)
+                    }
+                }
             } else {
                 std::borrow::Cow::Borrowed(text)
             };
@@ -291,17 +316,32 @@ impl ParagraphLayout<'_> {
                         &style.font_family
                     });
                     // CSS `bolder`: regular and medium text step to 700, heavier text to 900.
-                    font.weight = if !s.marks.bold {
+                    font.weight = if is_latex {
+                        FontWeight::MEDIUM
+                    } else if !s.marks.bold {
                         style.base_weight
                     } else if style.base_weight.0 <= 500.0 {
                         FontWeight::BOLD
                     } else {
                         FontWeight::BLACK
                     };
-                    if s.marks.italic {
+                    if s.marks.italic && !is_latex {
                         font.style = FontStyle::Italic;
                     }
-                    let color = span_color(style, s);
+                    let color = if is_latex_error {
+                        style
+                            .theme
+                            .css_var("--affine-v2-text-highlight-fg-red")
+                            .or_else(|| style.theme.css_var("--affine-error-color"))
+                            .unwrap_or(style.text_color)
+                    } else if is_latex {
+                        style
+                            .theme
+                            .css_var("--affine-text-secondary-color")
+                            .unwrap_or(style.text_color)
+                    } else {
+                        span_color(style, s)
+                    };
                     let len = if s.chip {
                         display_text.len()
                     } else {
@@ -323,26 +363,19 @@ impl ParagraphLayout<'_> {
             );
             let (inset_start, inset_end) = if first.chip && first.marks.reference.is_some() {
                 (px(font_size + 4.), px(2.))
-            } else if is_code || is_latex {
+            } else if is_code {
                 let inset = px(style.code_padding_x + style.code_border_width);
                 (inset, inset)
             } else {
                 (Pixels::ZERO, Pixels::ZERO)
             };
-            let math = if is_latex {
-                first.marks.latex.as_deref().and_then(|tex| {
-                    let slot = crate::block_flow::render_math_cached(
-                        tex,
-                        false,
-                        style.font_size * 0.92,
-                        style.text_color,
-                    )?;
+            let math = match math_result {
+                Some(crate::block_flow::MathRenderResult::Ready(slot)) => {
                     let h = (slot.ascent_pt + slot.descent_pt).max(12.0);
                     let w = slot.width_pt.max(8.0);
                     Some((slot.image, size(px(w), px(h)), px(slot.ascent_pt)))
-                })
-            } else {
-                None
+                }
+                _ => None,
             };
             Some(StyledFragment {
                 spans: group,
@@ -477,14 +510,8 @@ impl ParagraphLayout<'_> {
                     {
                         decorate(
                             DecorationKind::LatexChip(latex.clone()),
-                            rect(
-                                baseline_y - px(style.code_baseline),
-                                px(style.code_baseline
-                                    + style.code_descent
-                                    + style.code_padding_bottom
-                                    + style.code_border_width),
-                            ),
-                            style.code_bg,
+                            rect(top, self.line_height),
+                            ui::transparent_black(),
                         );
                     } else if span.marks.code {
                         decorate(

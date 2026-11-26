@@ -1,24 +1,10 @@
-//! Screen-space overlays and interactive block controls of the Page view.
+//! Screen-space overlays and interactive block controls of the Page view (`Overlays`).
 //!
-//! [`Overlays`] owns what floats above or reacts inside the page: the slash menu, the
-//! formatting toolbar of the text selection, the gutter drag handle with its drop
-//! indicator, and the clickable parts of blocks (to-do boxes, toggle and heading chevrons,
-//! the code block's copy button and sideways scroll). The text selection itself is the
-//! editor's (`editor_session`); the overlays read it.
-//!
-//! The state machine is data in, commands out: an [`OverlayScene`] and an
-//! [`OverlayEvent`] or key go in, [`OverlayEffects`] come out (document edits, clipboard
-//! text, a timer to start). It reads no clock: every transition is an [`EaseOut`]
-//! evaluated at the scheduler time passed in. The `PlaygroundView` glue at the end of the
-//! module feeds it input and carries each edit out through the editor's document session
-//! as one undo step.
-//!
-//! Popovers are placed by the pure [`place_popover`]. Opening popovers mount on frame 1
-//! with opacity clamped to at least `0.01` so interactive controls are immediately clickable
-//! without triggering `zero-opacity-hit-through`; a popover that is fully closed is not
-//! mounted at all, and one that is fading out carries no handlers, so nothing invisible can
-//! be clicked.
+//! State transitions are pure functions of `OverlayScene` and scheduler time `now_ms`,
+//! emitting `OverlayEffects` (single-undo-step `DocEdit`s, clipboard writes, and timers).
+//! Popovers mount at `>= 0.01` opacity while opening and drop listeners while fading out.
 
+mod bookmark_prompt;
 mod equation;
 mod keyboard_toolbar;
 mod paint_linked_doc;
@@ -29,14 +15,20 @@ mod state;
 mod table_cell;
 mod toolbar;
 
+pub use bookmark_prompt::BookmarkPrompt;
 pub use equation::{EquationEditor, EquationTarget};
 pub use keyboard_toolbar::{
+    DEFAULT_KEYBOARD_TOOLBAR_ITEMS, HighlightColor, KEYBOARD_TOOL_PANEL_HEIGHT,
     KEYBOARD_TOOLBAR_BUTTON, KEYBOARD_TOOLBAR_HEIGHT, KeyboardToolbarAction,
+    KeyboardToolbarCapabilities, KeyboardToolbarDateKind, KeyboardToolbarLevel,
+    KeyboardToolbarPanel, KeyboardToolbarState, MORE_TOOL_PANEL_GROUPS, TEXT_SUB_TOOLBAR_ITEMS,
+    TURN_INTO_PANEL_ITEMS, ToolPanelGroupSpec, ToolbarActionSpec, ToolbarItemSpec,
+    is_flavour_supported,
 };
 pub use paint_page::{block_text, bounding_rect, find_parent, shared_alignment};
 pub use slash::{
-    SLASH_ITEMS, SlashCommand, SlashItem, SlashMenu, SlashRow, filter_slash_items, slash_rows,
-    slash_rows_for_query,
+    SLASH_ITEMS, SlashCommand, SlashItem, SlashMenu, SlashRow, filter_slash_items,
+    slash_item_by_id, slash_rows, slash_rows_for_query,
 };
 pub use state::normalize_url;
 pub use table_cell::InlineTableCell;
@@ -384,6 +376,8 @@ pub enum DocEdit {
         target: EquationTarget,
         latex: String,
     },
+    /// Insert a validated `affine:bookmark` block below `block_id`.
+    Bookmark { block_id: String, url: String },
 }
 
 /// Something that happened to the overlays: input routed by the view, or a call of the
@@ -455,12 +449,33 @@ pub enum OverlayEvent {
     },
     /// Commit the equation editor's current LaTeX string.
     EquationApply,
+    /// Click inside the multiline equation editor at window coordinates `(x, y)`.
+    EquationClick {
+        x: f32,
+        y: f32,
+        shift: bool,
+    },
     /// Dismiss the equation editor without committing.
     CloseEquationEditor,
+    /// Open the bookmark URL prompt anchored to `block_id`.
+    OpenBookmarkPrompt {
+        block_id: String,
+    },
+    /// Commit the bookmark URL prompt (no-op if empty or invalid).
+    BookmarkApply,
+    /// Dismiss the bookmark URL prompt without inserting a block.
+    CloseBookmarkPrompt,
+    /// Insert a decoded image blob chosen from the host file picker as an `affine:image` block.
+    InsertImageBytes {
+        bytes: Vec<u8>,
+        caption: String,
+    },
     /// Show or hide the mobile bottom keyboard toolbar.
     SetKeyboardToolbarVisible(bool),
     /// Cycle to the next action page on narrow mobile viewports.
     KeyboardToolbarNextPage,
+    /// Scroll the active mobile keyboard tool panel (`+`, `Turn into`, or `Highlight`) by `delta_y` px.
+    KeyboardToolbarPanelScroll(f32),
     /// Trigger one action button on the mobile bottom keyboard toolbar.
     KeyboardToolbar(KeyboardToolbarAction),
     /// Focus an `affine:table` cell in place for live `Y.Text` CRDT editing.
@@ -595,9 +610,8 @@ pub struct Overlays {
     pub(super) copied_generation: u64,
     pub(super) linked_doc: Option<LinkedDocMenuState>,
     pub(super) equation: Option<EquationEditor>,
-    pub(super) keyboard_toolbar_visible: bool,
-    pub(super) keyboard_toolbar_page: usize,
-    pub(super) keyboard_toolbar_marks_disabled: bool,
+    pub(super) bookmark: Option<BookmarkPrompt>,
+    pub(super) keyboard_toolbar: KeyboardToolbarState,
     pub format_cache: Option<FormatCache>,
 }
 
@@ -660,16 +674,20 @@ impl Overlays {
         self.open_toolbar_mut()?.link.as_mut()
     }
 
-    /// Whichever single-line overlay text field currently owns text input (equation editor or link field).
+    /// Whichever overlay text field currently owns text input (equation, bookmark, or link).
     pub fn active_text_field(&self) -> Option<&LinkBar> {
         self.equation_editor()
             .map(|editor| &editor.input)
+            .or_else(|| self.bookmark_prompt().map(|prompt| &prompt.input))
             .or_else(|| self.link_field())
     }
 
     pub fn active_text_field_mut(&mut self) -> Option<&mut LinkBar> {
         if self.equation_editor().is_some() {
             return self.equation_editor_mut().map(|editor| &mut editor.input);
+        }
+        if self.bookmark_prompt().is_some() {
+            return self.bookmark_prompt_mut().map(|prompt| &mut prompt.input);
         }
         self.link_field_mut()
     }
@@ -762,6 +780,8 @@ impl Overlays {
         self.chevrons.clear();
         self.linked_doc = None;
         self.equation = None;
+        self.bookmark = None;
+        self.keyboard_toolbar.close_transient();
         self.format_cache = None;
     }
 }

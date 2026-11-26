@@ -96,6 +96,7 @@ impl PlaygroundView {
                 self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
                 self.overlays.close_link_field();
                 self.overlays.close_equation_editor();
+                self.overlays.close_bookmark_prompt();
                 self.equation_snapshot = None;
                 match selection {
                     Some(selection) => {

@@ -137,6 +137,7 @@ pub fn prepare_edgeless_scene(
                         scale.to_bits(),
                         input.theme,
                         input.env_rev,
+                        input.preview_rev,
                         input.preedit_nonce,
                         is_rtl,
                     );
@@ -149,7 +150,9 @@ pub fn prepare_edgeless_scene(
                                 theme: input.theme,
                                 page_titles: input.page_titles,
                                 images: input.images,
-                                pdf_previews: None,
+                                pdf_previews: input.pdf_previews,
+                                doc_directory: input.doc_directory,
+                                equation_draft: None,
                                 env_rev: input.env_rev,
                                 direction: input.direction,
                             };
@@ -157,7 +160,7 @@ pub fn prepare_edgeless_scene(
                                 state.note_flows.entry(child.id.clone()).or_insert_with(|| {
                                     CachedNoteFlow {
                                         flow: BlockFlow::new(),
-                                        key: (u64::MAX, 0, 0, input.theme, 0, 0, !is_rtl),
+                                        key: (u64::MAX, 0, 0, input.theme, 0, 0, 0, !is_rtl),
                                         layout: Rc::new(FlowLayout {
                                             blocks: Vec::new(),
                                             width: inner_width,
@@ -230,6 +233,7 @@ pub fn prepare_edgeless_scene(
                             scale.to_bits(),
                             input.theme,
                             input.env_rev,
+                            input.preview_rev,
                             input.preedit_nonce,
                             is_rtl,
                         );
@@ -242,7 +246,9 @@ pub fn prepare_edgeless_scene(
                                     theme: input.theme,
                                     page_titles: input.page_titles,
                                     images: input.images,
-                                    pdf_previews: None,
+                                    pdf_previews: input.pdf_previews,
+                                    doc_directory: input.doc_directory,
+                                    equation_draft: None,
                                     env_rev: input.env_rev,
                                     direction: input.direction,
                                 };
@@ -251,7 +257,7 @@ pub fn prepare_edgeless_scene(
                                     .entry(child.id.clone())
                                     .or_insert_with(|| CachedNoteFlow {
                                         flow: BlockFlow::new(),
-                                        key: (u64::MAX, 0, 0, input.theme, 0, 0, !is_rtl),
+                                        key: (u64::MAX, 0, 0, input.theme, 0, 0, 0, !is_rtl),
                                         layout: Rc::new(FlowLayout {
                                             blocks: Vec::new(),
                                             width: text_width,
