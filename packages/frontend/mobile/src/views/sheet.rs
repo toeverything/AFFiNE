@@ -562,29 +562,39 @@ pub(super) fn render_active_sheet(
         ..palette.scrim
     };
 
-    let mut done_btn = div()
-        .id("mobile.sheet.done_btn")
-        .snapshot("mobile.sheet.done_btn", Some("mobile.sheet.panel"))
-        .relative()
-        .h(px(44.0))
-        .min_w(px(44.0))
-        .px(px(10.0))
-        .flex()
-        .items_center()
-        .justify_center()
-        .text_size(px(14.0))
-        .text_color(palette.accent)
-        .child(a11y_bounds_probe(
-            "mobile.sheet.done_btn",
-            a11y_bounds.clone(),
-        ))
-        .child(strings.close_label);
-    if accepts_input {
-        done_btn = done_btn.on_click(cx.listener(|this, _, _, cx| {
-            let t = this.now_ms(cx);
-            this.state.close_sheet(t);
-            cx.notify();
-        }));
+    let mut header_row = row_dir(dir).w_full().h(px(44.0)).justify_between().child(
+        div()
+            .text_size(px(16.0))
+            .text_color(palette.text_primary)
+            .child(title),
+    );
+
+    if sheet_kind != MobileSheet::ConfirmDeleteDoc {
+        let mut done_btn = div()
+            .id("mobile.sheet.done_btn")
+            .snapshot("mobile.sheet.done_btn", Some("mobile.sheet.panel"))
+            .relative()
+            .h(px(44.0))
+            .min_w(px(44.0))
+            .px(px(10.0))
+            .flex()
+            .items_center()
+            .justify_center()
+            .text_size(px(14.0))
+            .text_color(palette.accent)
+            .child(a11y_bounds_probe(
+                "mobile.sheet.done_btn",
+                a11y_bounds.clone(),
+            ))
+            .child(strings.close_label);
+        if accepts_input {
+            done_btn = done_btn.on_click(cx.listener(|this, _, _, cx| {
+                let t = this.now_ms(cx);
+                this.state.close_sheet(t);
+                cx.notify();
+            }));
+        }
+        header_row = header_row.child(done_btn);
     }
 
     let mut panel = div()
@@ -613,19 +623,7 @@ pub(super) fn render_active_sheet(
                     .bg(palette.border),
             ),
         )
-        .child(
-            row_dir(dir)
-                .w_full()
-                .h(px(44.0))
-                .justify_between()
-                .child(
-                    div()
-                        .text_size(px(16.0))
-                        .text_color(palette.text_primary)
-                        .child(title),
-                )
-                .child(done_btn),
-        )
+        .child(header_row)
         .child(content);
     if accepts_input {
         panel = panel.on_click(|_, _, _| {});

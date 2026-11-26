@@ -170,32 +170,34 @@ pub(super) fn insert_sheet_a11y_nodes(
     let panel_y = (viewport_height - safe_bottom - panel_h).max(0.0);
 
     let mut sheet_children = Vec::new();
-    let done_w = 56.0_f32;
-    let done_x = if is_rtl {
-        pad
-    } else {
-        (viewport_width - pad - done_w).max(0.0)
-    };
-    let done_id = "mobile.sheet.done_btn".to_string();
-    nodes.insert(
-        done_id.clone(),
-        AccessibilityNode {
-            id: done_id.clone(),
-            role: AccessibilityRole::Button,
-            name: strings.close_label.to_string(),
-            value: None,
-            state: AccessibilityState::default(),
-            focused: false,
-            bounds: AccessibilityBounds {
-                x: done_x,
-                y: panel_y + pad + 4.0 + gap,
-                width: done_w,
-                height: 44.0,
+    if state.active_sheet != MobileSheet::ConfirmDeleteDoc {
+        let done_w = 56.0_f32;
+        let done_x = if is_rtl {
+            pad
+        } else {
+            (viewport_width - pad - done_w).max(0.0)
+        };
+        let done_id = "mobile.sheet.done_btn".to_string();
+        nodes.insert(
+            done_id.clone(),
+            AccessibilityNode {
+                id: done_id.clone(),
+                role: AccessibilityRole::Button,
+                name: strings.close_label.to_string(),
+                value: None,
+                state: AccessibilityState::default(),
+                focused: false,
+                bounds: AccessibilityBounds {
+                    x: done_x,
+                    y: panel_y + pad + 4.0 + gap,
+                    width: done_w,
+                    height: 44.0,
+                },
+                children: Vec::new(),
             },
-            children: Vec::new(),
-        },
-    );
-    sheet_children.push(done_id);
+        );
+        sheet_children.push(done_id);
+    }
 
     let col_count = cols.len().max(1);
     let inner_w = (viewport_width - pad * 2.0).max(44.0);

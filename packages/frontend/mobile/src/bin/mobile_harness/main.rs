@@ -5,7 +5,7 @@
 
 use std::{cell::RefCell, path::PathBuf, rc::Rc, time::Duration};
 
-use affine_client::{DirectKind, Origin};
+use affine_client::{AccessibilityRole, DirectKind, Origin};
 use affine_mobile::{
     BackOutcome, MobileAppState, MobileBackCoordinator, MobileLocale, MobileSheet, MobileShellView,
     MobileTab, build_accessibility_tree, register_mobile_fonts, seed_showcase_state,
@@ -111,6 +111,13 @@ impl MobileSession {
         })
     }
 
+    fn measured_breadcrumb(&self) -> Result<Option<ui_kit::BreadcrumbBarLayout>> {
+        self.app.update(|cx| {
+            self.window_handle
+                .update(cx, |view, _, _| view.last_measured_breadcrumb().cloned())
+        })
+    }
+
     fn render_png(&self, out_path: &PathBuf) -> Result<usize> {
         self.headless_win.request_frame();
         let (image, glyph_count) = self.app.update(|cx| {
@@ -172,6 +179,75 @@ fn check_snapshot_bounds(
     violations
 }
 
+fn open_doclink_multi(s: &mut MobileAppState) {
+    s.open_doc("doc-arch", Origin::Direct(DirectKind::Home));
+    let arch_seq = s.history.current().map(|e| e.seq).unwrap_or(1);
+    s.open_doc(
+        "doc-sync",
+        Origin::DocLink {
+            parent_seq: arch_seq,
+            block_id: None,
+        },
+    );
+}
+
+fn check_doclink_switcher(
+    snap: &FrameSnapshot,
+    tree: &affine_client::AccessibilityTree,
+    measured_bc: Option<&ui_kit::BreadcrumbBarLayout>,
+    locale: MobileLocale,
+    ctx: &str,
+    violations: &mut Vec<String>,
+) {
+    if snap
+        .elements
+        .contains_key("mobile.page.breadcrumb.slot.breadcrumb.ellipsis")
+    {
+        violations.push(format!(
+            "{ctx}: doclink multi-location switcher degraded to bare ellipsis"
+        ));
+    }
+    let ok = tree
+        .nodes
+        .get("app.nav.breadcrumb")
+        .and_then(|nav| nav.children.first())
+        .and_then(|id| tree.nodes.get(id))
+        .is_some_and(|n| {
+            n.id != "breadcrumb.slot.breadcrumb.ellipsis"
+                && n.role == AccessibilityRole::Link
+                && n.state.expanded.is_some()
+        });
+    if !ok {
+        violations.push(format!(
+            "{ctx}: expected Switcher as first breadcrumb slot in accessibility tree"
+        ));
+    }
+    let expected_unit = match locale {
+        MobileLocale::En => "2 places",
+        MobileLocale::ZhHans => "2 处",
+        MobileLocale::Ar => "2 مواقع",
+    };
+    match measured_bc.and_then(|bc| bc.slots.first()) {
+        Some(slot) if slot.kind == ui_kit::BreadcrumbSlotKind::Switcher => {
+            let text = slot
+                .display_text
+                .trim_matches(|c| c == ui_kit::BIDI_FSI || c == ui_kit::BIDI_PDI);
+            let has_unit = text.contains(expected_unit);
+            let has_owner_prefix = text.rsplit_once(" · ").is_some_and(|(prefix, _)| {
+                !prefix
+                    .trim_matches(|c: char| c.is_whitespace() || c == '…')
+                    .is_empty()
+            });
+            if !has_unit || !has_owner_prefix {
+                violations.push(format!(
+                    "{ctx}: switcher text `{text}` must preserve owner prefix and `{expected_unit}`"
+                ));
+            }
+        }
+        _ => violations.push(format!("{ctx}: missing measured Switcher slot")),
+    }
+}
+
 fn run_audit_matrix() -> Result<()> {
     let mut all_violations: Vec<String> = Vec::new();
     let mut states_audited = 0usize;
@@ -224,7 +300,7 @@ fn run_audit_matrix() -> Result<()> {
                 let session = start_session(vp_w, vp_h, 1.0, state)?;
                 let tag_prefix = format!("{vp_w}x{vp_h}/{:?}/{}", theme, locale.code());
 
-                let routes: [(&str, Box<dyn Fn(&mut MobileAppState)>); 8] = [
+                let routes: [(&str, Box<dyn Fn(&mut MobileAppState)>); 9] = [
                     ("home", Box::new(|s| s.switch_tab(MobileTab::Home, 0.0))),
                     (
                         "explorer",
@@ -240,6 +316,7 @@ fn run_audit_matrix() -> Result<()> {
                             s.open_doc("doc-arch", Origin::Direct(DirectKind::Home));
                         }),
                     ),
+                    ("page_doclink_multi", Box::new(open_doclink_multi)),
                     (
                         "page_trash",
                         Box::new(|s| {
@@ -276,10 +353,22 @@ fn run_audit_matrix() -> Result<()> {
                         vp_h as f32,
                         &ctx,
                     ));
-                    let a11y_errors = session.update_state(|s| {
+                    let (a11y_errors, tree) = session.update_state(|s| {
                         let tree = build_accessibility_tree(s, vp_w as f32, vp_h as f32);
-                        validate_accessibility_tree(&tree)
+                        let errs = validate_accessibility_tree(&tree);
+                        (errs, tree)
                     })?;
+                    if *route_name == "page_doclink_multi" {
+                        let measured_bc = session.measured_breadcrumb()?;
+                        check_doclink_switcher(
+                            &snap,
+                            &tree,
+                            measured_bc.as_ref(),
+                            locale,
+                            &ctx,
+                            &mut all_violations,
+                        );
+                    }
                     for err in a11y_errors {
                         all_violations.push(format!("{ctx}: a11y {err}"));
                     }
@@ -294,18 +383,32 @@ fn run_audit_matrix() -> Result<()> {
         let mut state = seed_showcase_state(locale, ThemeMode::Light, "2026-11-25");
         state.font_scale = 1.35;
         let session = start_session(320, 568, 1.0, state)?;
-        for route_name in ["page_multi", "location_sheet"] {
-            session.update_state(|s| {
-                s.open_doc("doc-arch", Origin::Direct(DirectKind::Home));
-                if route_name == "location_sheet" {
+        for route_name in ["page_multi", "page_doclink_multi", "location_sheet"] {
+            session.update_state(|s| match route_name {
+                "page_doclink_multi" => open_doclink_multi(s),
+                "location_sheet" => {
+                    s.open_doc("doc-arch", Origin::Direct(DirectKind::Home));
                     s.open_sheet(MobileSheet::LocationAndTrail, 100.0);
                     s.settle_animations(500.0);
                 }
+                _ => s.open_doc("doc-arch", Origin::Direct(DirectKind::Home)),
             })?;
             let snap = session.frame()?;
             frames_audited += 1;
             let ctx = format!("320x568@1.35x/Light/{}/{route_name}", locale.code());
             all_violations.extend(check_snapshot_bounds(&snap, 320.0, 568.0, &ctx));
+            if route_name == "page_doclink_multi" {
+                let tree = session.update_state(|s| build_accessibility_tree(s, 320.0, 568.0))?;
+                let measured_bc = session.measured_breadcrumb()?;
+                check_doclink_switcher(
+                    &snap,
+                    &tree,
+                    measured_bc.as_ref(),
+                    locale,
+                    &ctx,
+                    &mut all_violations,
+                );
+            }
         }
     }
 
@@ -501,15 +604,7 @@ fn run_gallery(out_dir: PathBuf) -> Result<()> {
             MobileLocale::En,
             ThemeMode::Light,
             Box::new(|s| {
-                s.open_doc("doc-arch", Origin::Direct(DirectKind::Home));
-                let arch_seq = s.history.current().map(|e| e.seq).unwrap_or(1);
-                s.open_doc(
-                    "doc-sync",
-                    Origin::DocLink {
-                        parent_seq: arch_seq,
-                        block_id: None,
-                    },
-                );
+                open_doclink_multi(s);
                 s.open_sheet(MobileSheet::LocationAndTrail, 0.0);
                 s.settle_animations(500.0);
             }),
@@ -536,16 +631,26 @@ fn run_gallery(out_dir: PathBuf) -> Result<()> {
             "mobile-page-zh-hans.png",
             MobileLocale::ZhHans,
             ThemeMode::Light,
+            Box::new(open_doclink_multi),
+        ),
+        (
+            "mobile-page-doclink-multi-en.png",
+            MobileLocale::En,
+            ThemeMode::Light,
+            Box::new(open_doclink_multi),
+        ),
+        (
+            "mobile-page-doclink-multi-ar.png",
+            MobileLocale::Ar,
+            ThemeMode::Light,
+            Box::new(open_doclink_multi),
+        ),
+        (
+            "mobile-page-blank-untitled.png",
+            MobileLocale::En,
+            ThemeMode::Light,
             Box::new(|s| {
-                s.open_doc("doc-arch", Origin::Direct(DirectKind::Home));
-                let arch_seq = s.history.current().map(|e| e.seq).unwrap_or(1);
-                s.open_doc(
-                    "doc-sync",
-                    Origin::DocLink {
-                        parent_seq: arch_seq,
-                        block_id: None,
-                    },
-                );
+                s.create_doc(None, 0.0);
             }),
         ),
         (
@@ -629,15 +734,31 @@ fn run_gallery(out_dir: PathBuf) -> Result<()> {
         );
     }
 
-    // 320x568 narrow viewport LTR & RTL Journals 2-row grid shots.
-    let narrow_initial = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
-    let narrow_session = start_session(320, 568, 2.0, narrow_initial)?;
-    for (filename, locale) in [
-        ("journals-320-ltr.png", MobileLocale::En),
-        ("journals-320-rtl.png", MobileLocale::Ar),
-    ] {
+    // 320x568 narrow viewport shots (Journals LTR/RTL + 1.35x ZhHans DocLink switcher).
+    let narrow_session = start_session(
+        320,
+        568,
+        2.0,
+        seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25"),
+    )?;
+    let narrow_shots: [(&str, MobileLocale, f32, fn(&mut MobileAppState)); 3] = [
+        ("journals-320-ltr.png", MobileLocale::En, 1.0, |s| {
+            s.switch_tab(MobileTab::Journals, 0.0);
+        }),
+        ("journals-320-rtl.png", MobileLocale::Ar, 1.0, |s| {
+            s.switch_tab(MobileTab::Journals, 0.0);
+        }),
+        (
+            "mobile-page-doclink-multi-zh-320-135x.png",
+            MobileLocale::ZhHans,
+            1.35,
+            open_doclink_multi,
+        ),
+    ];
+    for (filename, locale, font_scale, setup) in narrow_shots {
         let mut next_state = seed_showcase_state(locale, ThemeMode::Light, "2026-11-25");
-        next_state.switch_tab(MobileTab::Journals, 0.0);
+        next_state.font_scale = font_scale;
+        setup(&mut next_state);
         narrow_session.update_state(|s| *s = next_state)?;
         let out_path = out_dir.join(filename);
         let glyphs = narrow_session.render_png(&out_path)?;

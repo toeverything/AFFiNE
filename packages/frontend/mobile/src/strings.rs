@@ -66,6 +66,8 @@ pub struct MobileStrings {
     pub documents_heading: &'static str,
     pub new_doc_label: &'static str,
     pub untitled_doc: &'static str,
+    pub page_title_placeholder: &'static str,
+    pub page_body_placeholder: &'static str,
     pub collections: &'static str,
     pub tags: &'static str,
     pub trash: &'static str,
@@ -133,11 +135,11 @@ impl MobileStrings {
         owner_title: &str,
         count: usize,
     ) -> String {
-        let short = truncate_display_width(owner_title, 12);
+        let short = truncate_display_width(owner_title, 28);
         match locale {
-            MobileLocale::En => format!("{short} · {count} locations"),
-            MobileLocale::ZhHans => format!("{short} 的 {count} 个位置"),
-            MobileLocale::Ar => format!("{short} ({count} مواقع)"),
+            MobileLocale::En => format!("{short} · {count} places"),
+            MobileLocale::ZhHans => format!("{short} · {count} 处"),
+            MobileLocale::Ar => format!("{short} · {count} مواقع"),
         }
     }
 
@@ -195,6 +197,8 @@ const EN_STRINGS: MobileStrings = MobileStrings {
     documents_heading: "Documents",
     new_doc_label: "New Document",
     untitled_doc: "Untitled",
+    page_title_placeholder: "Title",
+    page_body_placeholder: "Empty document",
     collections: "Collections",
     tags: "Tags",
     trash: "Trash",
@@ -256,6 +260,8 @@ const ZH_STRINGS: MobileStrings = MobileStrings {
     documents_heading: "文档",
     new_doc_label: "新建文档",
     untitled_doc: "无标题",
+    page_title_placeholder: "标题",
+    page_body_placeholder: "空白文档",
     collections: "集合",
     tags: "标签",
     trash: "回收站",
@@ -317,6 +323,8 @@ const AR_STRINGS: MobileStrings = MobileStrings {
     documents_heading: "المستندات",
     new_doc_label: "مستند جديد",
     untitled_doc: "بدون عنوان",
+    page_title_placeholder: "العنوان",
+    page_body_placeholder: "مستند فارغ",
     collections: "المجموعات",
     tags: "الوسوم",
     trash: "المهملات",

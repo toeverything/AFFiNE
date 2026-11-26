@@ -1276,6 +1276,22 @@ fn dotted_workspace_and_doc_ids_do_not_collide_in_scoped_actions() {
     ));
     assert_eq!(state.active_sheet, MobileSheet::ConfirmDeleteDoc);
 
+    let confirm_tree = affine_mobile::build_accessibility_tree(&mut state, 390.0, 844.0);
+    assert!(
+        !confirm_tree.nodes.contains_key("mobile.sheet.done_btn"),
+        "ConfirmDeleteDoc sheet must not expose ambiguous Done button in accessibility tree"
+    );
+    assert!(
+        !affine_mobile::perform_a11y_action(
+            &mut state,
+            "mobile.sheet.done_btn",
+            MobileA11yAction::Activate,
+            635.0,
+        ),
+        "activating mobile.sheet.done_btn on ConfirmDeleteDoc must return false"
+    );
+    assert_eq!(state.active_sheet, MobileSheet::ConfirmDeleteDoc);
+
     let stale_confirm_a = format!("app.sheet.delete_confirm.{enc_a}");
     assert!(
         !affine_mobile::perform_a11y_action(

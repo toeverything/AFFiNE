@@ -60,6 +60,7 @@ pub(super) struct MobilePalette {
     pub text_primary: Hsla,
     pub text_secondary: Hsla,
     pub text_muted: Hsla,
+    pub text_subtle: Hsla,
     pub border: Hsla,
     pub accent: Hsla,
     pub accent_soft: Hsla,
@@ -164,6 +165,10 @@ pub(super) fn palette_for(mode: ThemeMode) -> MobilePalette {
                 hsla(0.0, 0.0, 0.0, 0.55),
             ),
         };
+    let text_subtle = match mode {
+        ThemeMode::Light => hsla(0.69, 0.04, 0.39, 1.0),
+        ThemeMode::Dark => hsla(0.62, 0.05, 0.66, 1.0),
+    };
     MobilePalette {
         bg_canvas,
         bg_surface,
@@ -172,6 +177,7 @@ pub(super) fn palette_for(mode: ThemeMode) -> MobilePalette {
         text_primary: primary_text,
         text_secondary: secondary_text,
         text_muted: secondary_text,
+        text_subtle,
         border,
         accent,
         accent_soft,
@@ -238,6 +244,12 @@ impl MobileShellView {
 
     pub fn published_a11y_tree(&self) -> &AccessibilityTree {
         &self.published_a11y_tree
+    }
+
+    pub fn last_measured_breadcrumb(&self) -> Option<&BreadcrumbBarLayout> {
+        self.last_measured_breadcrumb
+            .as_ref()
+            .map(|(_, _, _, layout)| layout)
     }
 
     pub fn perform_a11y_action(

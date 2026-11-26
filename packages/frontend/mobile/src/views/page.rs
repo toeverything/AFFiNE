@@ -49,14 +49,30 @@ pub(super) fn render_page(
     let ws_id = state.active_workspace_id().to_string();
     let derivation = state.derive_breadcrumb();
     let backlinks = state.backlinks_for(doc_id);
-    let doc_title = doc_opt
+    let is_title_blank = doc_opt.as_ref().is_some_and(|d| d.title.trim().is_empty());
+    let is_body_blank = doc_opt
         .as_ref()
-        .map(|d| d.display_title(locale))
-        .unwrap_or_else(|| strings.doc_not_found_title.to_string());
-    let doc_body = doc_opt
-        .as_ref()
-        .map(|d| d.body_preview.clone())
-        .unwrap_or_default();
+        .is_some_and(|d| d.body_preview.trim().is_empty());
+    let (doc_title, title_color) = match &doc_opt {
+        Some(d) if is_title_blank && d.trashed => (d.display_title(locale), palette.text_subtle),
+        Some(_) if is_title_blank => (
+            strings.page_title_placeholder.to_string(),
+            palette.text_subtle,
+        ),
+        Some(d) => (d.title.clone(), palette.text_primary),
+        None => (
+            strings.doc_not_found_title.to_string(),
+            palette.text_primary,
+        ),
+    };
+    let (doc_body, body_color) = match &doc_opt {
+        Some(_) if is_body_blank => (
+            strings.page_body_placeholder.to_string(),
+            palette.text_subtle,
+        ),
+        Some(d) => (d.body_preview.clone(), palette.text_primary),
+        None => (String::new(), palette.text_primary),
+    };
 
     let header = row_dir(dir)
         .id("mobile.page.header")
@@ -240,7 +256,7 @@ pub(super) fn render_page(
                                 .mirror_in_rtl(true)
                                 .w(px(12.0))
                                 .h(px(12.0))
-                                .text_color(palette.text_muted),
+                                .text_color(palette.text_subtle),
                         ),
                 );
             }
@@ -252,7 +268,7 @@ pub(super) fn render_page(
             let text_color = if slot.is_current {
                 palette.text_primary
             } else {
-                palette.text_secondary
+                palette.text_subtle
             };
             let action = if slot.kind == BreadcrumbSlotKind::Ellipsis {
                 BreadcrumbAction::OpenLocationSheet {
@@ -516,7 +532,7 @@ pub(super) fn render_page(
             div()
                 .w_full()
                 .text_size(px(22.0 * font_scale))
-                .text_color(palette.text_primary)
+                .text_color(title_color)
                 .align_start_for(dir)
                 .child(doc_title),
         )
@@ -573,7 +589,7 @@ pub(super) fn render_page(
                 .border_1()
                 .border_color(palette.border)
                 .text_size(px(14.0 * font_scale))
-                .text_color(palette.text_secondary)
+                .text_color(body_color)
                 .align_start_for(dir)
                 .child(doc_body),
         );

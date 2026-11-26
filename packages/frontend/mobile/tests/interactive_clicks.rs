@@ -1063,6 +1063,21 @@ fn trashed_doc_supports_restore_ready_backlinks_two_step_delete_and_history_purg
         .unwrap();
     assert_eq!(sheet_after_first, MobileSheet::ConfirmDeleteDoc);
     assert!(doc_still_exists, "first click must NOT delete immediately");
+    let has_done_btn = t2
+        .app
+        .update(|cx| {
+            t2.window_handle.update(cx, |_, window, _| {
+                window
+                    .frame_snapshot()
+                    .elements
+                    .contains_key("mobile.sheet.done_btn")
+            })
+        })
+        .unwrap();
+    assert!(
+        !has_done_btn,
+        "ConfirmDeleteDoc sheet must not render ambiguous top-right Done button"
+    );
 
     // Cancel closes sheet and keeps doc intact.
     t2.click_id("app.sheet.delete_cancel.14:ws-mobile-rustdoc-trash");

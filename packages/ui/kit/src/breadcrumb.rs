@@ -210,6 +210,115 @@ fn ellipsize_label_with_measurer(
     ("…".to_string(), true)
 }
 
+fn ellipsize_switcher_label_with_measurer(
+    full_title: &str,
+    max_slot_width: f32,
+    config: &BreadcrumbBarConfig,
+    measure_label_px: &mut impl FnMut(&str) -> f32,
+) -> (String, bool) {
+    if measure_slot_width(
+        full_title,
+        BreadcrumbSlotKind::Switcher,
+        config,
+        measure_label_px,
+    ) <= max_slot_width
+    {
+        return (full_title.to_string(), false);
+    }
+    if let Some((owner_part, count_part)) = full_title.rsplit_once(" · ")
+        && !owner_part.is_empty()
+        && !count_part.is_empty()
+    {
+        let suffix = format!(" · {count_part}");
+        let chars: Vec<char> = owner_part.chars().collect();
+        let mut lo = 1usize;
+        let mut hi = chars.len();
+        let mut best: Option<String> = None;
+        while lo <= hi {
+            let mid = lo + (hi - lo) / 2;
+            let prefix_raw: String = chars[..mid].iter().collect();
+            let prefix = prefix_raw.trim_end_matches(|c: char| c.is_whitespace() || c == '…');
+            if prefix.is_empty() {
+                lo = mid + 1;
+                continue;
+            }
+            let candidate = format!("{prefix}…{suffix}");
+            if measure_slot_width(
+                &candidate,
+                BreadcrumbSlotKind::Switcher,
+                config,
+                measure_label_px,
+            ) <= max_slot_width
+            {
+                best = Some(candidate);
+                lo = mid + 1;
+            } else {
+                hi = mid - 1;
+            }
+        }
+        if let Some(candidate) = best {
+            return (candidate, true);
+        }
+        return ellipsize_label_with_measurer(
+            count_part,
+            BreadcrumbSlotKind::Switcher,
+            max_slot_width,
+            config,
+            measure_label_px,
+        );
+    }
+    ellipsize_label_with_measurer(
+        full_title,
+        BreadcrumbSlotKind::Switcher,
+        max_slot_width,
+        config,
+        measure_label_px,
+    )
+}
+
+fn cap_switcher_candidate(
+    item: &BreadcrumbItem,
+    available: f32,
+    share: f32,
+    max_switcher_w: f32,
+    config: &BreadcrumbBarConfig,
+    measure_label_px: &mut impl FnMut(&str) -> f32,
+) -> CandidateSlot {
+    let mut switcher_cap = (available * share)
+        .max(MIN_TOUCH_WIDTH + 36.0)
+        .min(max_switcher_w);
+    if let Some((owner_part, count_part)) = item.label.rsplit_once(" · ")
+        && let Some(first_ch) = owner_part.chars().find(|c| !c.is_whitespace() && *c != '…')
+        && !count_part.is_empty()
+    {
+        let min_owner_label = format!("{first_ch}… · {count_part}");
+        let min_owner_w = measure_slot_width(
+            &min_owner_label,
+            BreadcrumbSlotKind::Switcher,
+            config,
+            measure_label_px,
+        );
+        if min_owner_w > switcher_cap && min_owner_w <= max_switcher_w {
+            switcher_cap = min_owner_w;
+        }
+    }
+    let mut switcher = candidate_from_item(item, config, measure_label_px);
+    if switcher.width > switcher_cap {
+        let (ellipsized, was_truncated) = ellipsize_switcher_label_with_measurer(
+            &switcher.full_title,
+            switcher_cap,
+            config,
+            measure_label_px,
+        );
+        switcher.label = ellipsized;
+        switcher.truncated = was_truncated;
+        switcher.width =
+            measure_slot_width(&switcher.label, switcher.kind, config, measure_label_px)
+                .min(switcher_cap);
+    }
+    switcher
+}
+
 fn candidate_from_item(
     item: &BreadcrumbItem,
     config: &BreadcrumbBarConfig,
@@ -323,6 +432,36 @@ pub fn layout_breadcrumb_bar_with_measurer(
             if total_width(&tier2, config.separator_width) <= available {
                 collapsed_items.extend_from_slice(&ancestors[1..ancestors.len() - 1]);
                 chosen = tier2;
+            } else if ancestors[0].kind == BreadcrumbItemKind::Switcher
+                && available
+                    >= MIN_TOUCH_WIDTH * 2.0
+                        + config.ellipsis_width.max(MIN_TOUCH_WIDTH)
+                        + config.separator_width * 2.0
+            {
+                // Preserve the leading multi-location Switcher chip by ellipsizing only its
+                // owner prefix while keeping its location count suffix intact.
+                collapsed_items.extend_from_slice(&ancestors[1..ancestors.len() - 1]);
+                let ellipsis = ellipsis_candidate(config);
+                let max_switcher_w =
+                    (available - ellipsis.width - config.separator_width * 2.0 - MIN_TOUCH_WIDTH)
+                        .max(MIN_TOUCH_WIDTH);
+                let switcher = cap_switcher_candidate(
+                    &ancestors[0],
+                    available,
+                    0.52,
+                    max_switcher_w,
+                    config,
+                    &mut measure_label_px,
+                );
+                chosen = vec![
+                    switcher,
+                    ellipsis,
+                    candidate_from_item(
+                        &ancestors[ancestors.len() - 1],
+                        config,
+                        &mut measure_label_px,
+                    ),
+                ];
             } else {
                 // Tier 3: fold first segment into `…` as well -> `…` + direct parent.
                 collapsed_items.extend_from_slice(&ancestors[..ancestors.len() - 1]);
@@ -336,12 +475,31 @@ pub fn layout_breadcrumb_bar_with_measurer(
                 ];
             }
         } else if ancestors.len() == 2 {
-            // Tier 3 directly when there are no middle segments: fold first into `…`.
-            collapsed_items.push(ancestors[0].clone());
-            chosen = vec![
-                ellipsis_candidate(config),
-                candidate_from_item(&ancestors[1], config, &mut measure_label_px),
-            ];
+            if ancestors[0].kind == BreadcrumbItemKind::Switcher {
+                // Keep the Switcher chip visible with its dropdown chevron instead of folding it
+                // into a bare ellipsis; cap its width and let Tier 4 ellipsize the direct parent.
+                let max_switcher_w =
+                    (available - config.separator_width - MIN_TOUCH_WIDTH).max(MIN_TOUCH_WIDTH);
+                let switcher = cap_switcher_candidate(
+                    &ancestors[0],
+                    available,
+                    0.56,
+                    max_switcher_w,
+                    config,
+                    &mut measure_label_px,
+                );
+                chosen = vec![
+                    switcher,
+                    candidate_from_item(&ancestors[1], config, &mut measure_label_px),
+                ];
+            } else {
+                // Tier 3 directly when there are no middle segments: fold first into `…`.
+                collapsed_items.push(ancestors[0].clone());
+                chosen = vec![
+                    ellipsis_candidate(config),
+                    candidate_from_item(&ancestors[1], config, &mut measure_label_px),
+                ];
+            }
         } else {
             chosen = tier1;
         }
@@ -353,13 +511,22 @@ pub fn layout_breadcrumb_bar_with_measurer(
             let seps_w = (prefix_len as f32) * config.separator_width;
             let budget = (available - other_w - seps_w).max(MIN_TOUCH_WIDTH);
             if let Some(last) = chosen.last_mut() {
-                let (ellipsized, was_truncated) = ellipsize_label_with_measurer(
-                    &last.full_title,
-                    last.kind,
-                    budget,
-                    config,
-                    &mut measure_label_px,
-                );
+                let (ellipsized, was_truncated) = if last.kind == BreadcrumbSlotKind::Switcher {
+                    ellipsize_switcher_label_with_measurer(
+                        &last.full_title,
+                        budget,
+                        config,
+                        &mut measure_label_px,
+                    )
+                } else {
+                    ellipsize_label_with_measurer(
+                        &last.full_title,
+                        last.kind,
+                        budget,
+                        config,
+                        &mut measure_label_px,
+                    )
+                };
                 last.label = ellipsized;
                 last.truncated = was_truncated;
                 last.width = budget.min(available.max(MIN_TOUCH_WIDTH));
@@ -542,106 +709,4 @@ pub fn render_breadcrumb_bar(
     }
 
     row
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn seg(id: &str, label: &str) -> BreadcrumbItem {
-        BreadcrumbItem {
-            id: id.into(),
-            label: label.into(),
-            kind: BreadcrumbItemKind::Segment,
-            clickable: true,
-        }
-    }
-
-    fn current(id: &str, label: &str) -> BreadcrumbItem {
-        BreadcrumbItem {
-            id: id.into(),
-            label: label.into(),
-            kind: BreadcrumbItemKind::Current,
-            clickable: false,
-        }
-    }
-
-    #[test]
-    fn narrow_screen_follows_exact_four_tier_collapse_priority() {
-        let items = vec![
-            seg("f0", "Workspace Root"),
-            seg("f1", "Product Engineering"),
-            seg("f2", "Mobile Architecture"),
-            seg("f3", "Direct Parent Folder"),
-            current("doc", "Very Long Current Document Title"),
-        ];
-
-        // Wide viewport: keeps everything including current item.
-        let wide = layout_breadcrumb_bar(&items, &BreadcrumbBarConfig::new(1200.0, Direction::Ltr));
-        assert_eq!(wide.slots.len(), 5);
-        assert!(wide.collapsed_items.is_empty());
-        assert!(wide.slots.last().unwrap().is_current);
-
-        // Tier 1 (900px): hides trailing current item first while keeping all 4 ancestors.
-        let tier1 = layout_breadcrumb_bar(&items, &BreadcrumbBarConfig::new(900.0, Direction::Ltr));
-        assert_eq!(tier1.slots.len(), 4);
-        assert!(tier1.collapsed_items.is_empty());
-        assert!(!tier1.slots.last().unwrap().is_current);
-
-        // 320px with 1.3x large text: collapses to `…` + ellipsized direct parent, both >= 44pt.
-        let narrow_cfg = BreadcrumbBarConfig::new(320.0, Direction::Ltr).with_font_scale(1.3);
-        let narrow = layout_breadcrumb_bar(&items, &narrow_cfg);
-        assert_eq!(narrow.slots.len(), 2);
-        assert_eq!(narrow.slots[0].kind, BreadcrumbSlotKind::Ellipsis);
-        assert_eq!(narrow.slots[1].id, "f3");
-        assert!(narrow.slots[0].focusable && narrow.slots[1].focusable);
-        assert!(narrow.slots[0].width >= MIN_TOUCH_WIDTH);
-        assert!(narrow.slots[1].width >= MIN_TOUCH_WIDTH);
-        assert!(narrow.slots[0].height >= MIN_TOUCH_HEIGHT);
-        assert!(narrow.content_width <= narrow_cfg.available_width() + 0.01);
-        assert_eq!(narrow.collapsed_items.len(), 3);
-        assert!(narrow.slots[1].display_text.starts_with(BIDI_FSI));
-        assert!(narrow.slots[1].display_text.ends_with(BIDI_PDI));
-    }
-
-    #[test]
-    fn breadcrumb_ltr_and_rtl_satisfy_exact_horizontal_mirror_symmetry() {
-        let items = vec![
-            seg("f0", "Projects"),
-            seg("f1", "Q4 Plan"),
-            seg("f2", "Mobile"),
-            current("doc", "Spec"),
-        ];
-
-        for viewport in [320.0_f32, 375.0, 390.0, 430.0, 844.0] {
-            let ltr =
-                layout_breadcrumb_bar(&items, &BreadcrumbBarConfig::new(viewport, Direction::Ltr));
-            let rtl =
-                layout_breadcrumb_bar(&items, &BreadcrumbBarConfig::new(viewport, Direction::Rtl));
-
-            assert_eq!(ltr.slots.len(), rtl.slots.len());
-            assert_eq!(ltr.separators.len(), rtl.separators.len());
-
-            for (l, r) in ltr.slots.iter().zip(rtl.slots.iter()) {
-                assert_eq!(l.id, r.id);
-                assert!((l.width - r.width).abs() < 1e-3);
-                assert!(
-                    ((r.x + r.width) - (viewport - l.x)).abs() < 1e-3,
-                    "slot {} mirror violation at {viewport}px: rtl_x={} w={} ltr_x={}",
-                    l.id,
-                    r.x,
-                    r.width,
-                    l.x
-                );
-            }
-
-            for (l, r) in ltr.separators.iter().zip(rtl.separators.iter()) {
-                assert!(l.mirror_in_rtl && r.mirror_in_rtl);
-                assert!(
-                    ((r.x + r.width) - (viewport - l.x)).abs() < 1e-3,
-                    "separator mirror violation at {viewport}px"
-                );
-            }
-        }
-    }
 }

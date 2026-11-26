@@ -427,6 +427,9 @@ fn perform_sheet_a11y_action(state: &mut MobileAppState, node_id: &str, now_ms: 
     match node_id {
         "app.sheet.dialog" => return true,
         "mobile.sheet.done_btn" => {
+            if state.active_sheet == MobileSheet::ConfirmDeleteDoc {
+                return false;
+            }
             state.close_sheet(now_ms);
             return true;
         }
