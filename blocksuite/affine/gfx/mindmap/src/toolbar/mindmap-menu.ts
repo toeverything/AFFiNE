@@ -173,7 +173,7 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
       </button>
       <affine-tooltip tip-position="top" .offset=${12}>
         <affine-tooltip-content-with-shortcut
-          data-tip="${'Support import of FreeMind,OPML.'}"
+          data-tip="${'Support import of FreeMind,OPML,XMind.'}"
         ></affine-tooltip-content-with-shortcut>
       </affine-tooltip>
     </div>`;
