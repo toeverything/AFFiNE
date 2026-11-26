@@ -96,9 +96,10 @@ export class PanTool extends BaseTool<PanToolOption> {
       const selectionToRestore = this.gfx.selection.surfaceSelections.slice();
 
       const restoreToPrevious = () => {
-        this.gfx.selection.set(selectionToRestore);
-
-        if (!toolType) return;
+        if (!toolType) {
+          this.gfx.selection.set(selectionToRestore);
+          return;
+        }
         // restore to DefaultTool if previous tool is CopilotTool
         if (toolType.toolName === 'copilot') {
           this.controller.setTool(DefaultTool);
@@ -120,6 +121,8 @@ export class PanTool extends BaseTool<PanToolOption> {
           } as RestorablePresentToolOptions;
         }
         this.controller.setTool(toolType, finalOptions);
+        // setTool clears the selection, so restore it afterwards
+        this.gfx.selection.set(selectionToRestore);
       };
 
       // If in presentation mode, disable black background after middle mouse drag
