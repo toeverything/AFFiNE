@@ -2021,3 +2021,216 @@ fn cloud_admin_console_workspaces_dashboard_shared_links_and_updates() {
     db.pool().close().await;
   });
 }
+
+#[test]
+fn user_by_email_scope_visibility_and_strict_throttle_parity() {
+  with_migrated_db(|db_url| async move {
+    let db = connect_db(&db_url).await;
+    let state = AppState::new(
+      db.clone(),
+      None,
+      RuntimeConfig {
+        role: ServerRole::Allinone,
+        deployment_mode: server_types::DeploymentMode::Selfhosted,
+        dev_mode: false,
+        ..RuntimeConfig::default()
+      },
+      Arc::new(CommunityExtension::new()),
+    );
+    let app = build_router(state);
+
+    let (alice_id, alice_cookie) = seed_user_with_cookie(&db, "alice-scope@example.com", "Alice", false).await;
+    let (bob_id, _bob_cookie) = seed_user_with_cookie(&db, "bob-scope@example.com", "Bob", false).await;
+
+    // 1. Unauthenticated Query.user(email) returns null.
+    let (st_anon, body_anon) = post_graphql(
+      &app,
+      None,
+      r#"query($email: String!) { user(email: $email) { ... on UserType { id email } } }"#,
+      json!({ "email": "alice-scope@example.com" }),
+    )
+    .await;
+    assert_eq!(st_anon, StatusCode::OK);
+    assert!(body_anon["errors"].is_null(), "anon errors: {body_anon}");
+    assert!(body_anon["data"]["user"].is_null());
+
+    // 2. Authenticated user querying unrelated user returns null; querying self returns UserType (createdAt null).
+    let (_, body_unrelated) = post_graphql(
+      &app,
+      Some(&alice_cookie),
+      r#"query($email: String!) { user(email: $email) { ... on UserType { id email createdAt } } }"#,
+      json!({ "email": "bob-scope@example.com" }),
+    )
+    .await;
+    assert!(body_unrelated["errors"].is_null(), "unrelated errors: {body_unrelated}");
+    assert!(body_unrelated["data"]["user"].is_null());
+
+    let (_, body_self) = post_graphql(
+      &app,
+      Some(&alice_cookie),
+      r#"query($email: String!) { user(email: $email) { ... on UserType { id email createdAt } } }"#,
+      json!({ "email": "alice-scope@example.com" }),
+    )
+    .await;
+    assert!(body_self["errors"].is_null(), "self errors: {body_self}");
+    assert_eq!(body_self["data"]["user"]["id"].as_str(), Some(alice_id.as_str()));
+    assert!(body_self["data"]["user"]["createdAt"].is_null());
+
+    // 3. After joining a shared workspace, Query.user(email) returns the co-member's UserType.
+    let ws_id = uuid::Uuid::new_v4().to_string();
+    sqlx::query("INSERT INTO workspaces (id, name, created_at) VALUES ($1, 'Shared Scope WS', now())")
+      .bind(&ws_id)
+      .execute(db.pool())
+      .await
+      .expect("insert shared workspace");
+    for (uid, role) in [(&alice_id, "owner"), (&bob_id, "member")] {
+      sqlx::query(
+        "INSERT INTO workspace_members (id, workspace_id, user_id, role, source, state, created_at) \
+         VALUES ($1, $2, $3, $4, 'legacy', 'active', now())",
+      )
+      .bind(uuid::Uuid::new_v4().to_string())
+      .bind(&ws_id)
+      .bind(uid)
+      .bind(role)
+      .execute(db.pool())
+      .await
+      .expect("insert workspace member");
+    }
+
+    let (_, body_member) = post_graphql(
+      &app,
+      Some(&alice_cookie),
+      r#"query($email: String!) { user(email: $email) { ... on UserType { id email createdAt } } }"#,
+      json!({ "email": "bob-scope@example.com" }),
+    )
+    .await;
+    assert!(body_member["errors"].is_null(), "member errors: {body_member}");
+    assert_eq!(body_member["data"]["user"]["id"].as_str(), Some(bob_id.as_str()));
+    assert!(body_member["data"]["user"]["createdAt"].is_null());
+
+    // 3b. uploadAvatar returns non-null UserType.createdAt while currentUser and updateProfile return null.
+    let (_, cur_body) = post_graphql(&app, Some(&alice_cookie), "{ currentUser { id createdAt } }", json!({})).await;
+    assert!(cur_body["errors"].is_null(), "currentUser errors: {cur_body}");
+    assert!(cur_body["data"]["currentUser"]["createdAt"].is_null());
+
+    let (_, upd_body) = post_graphql(
+      &app,
+      Some(&alice_cookie),
+      r#"mutation { updateProfile(input: { name: "Alice Updated" }) { id createdAt } }"#,
+      json!({}),
+    )
+    .await;
+    assert!(upd_body["errors"].is_null(), "updateProfile errors: {upd_body}");
+    assert!(upd_body["data"]["updateProfile"]["createdAt"].is_null());
+
+    // Minimal valid 1x1 RGB PNG for uploadAvatar.
+    const ONE_BY_ONE_PNG: &[u8] = &[
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00,
+      0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49,
+      0x44, 0x41, 0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00, 0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xDD, 0x8D, 0xB0,
+      0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+    ];
+    let boundary = "----affine-avatar-created-at-boundary";
+    let mut mp = Vec::new();
+    mp.extend_from_slice(
+      format!(
+        "--{boundary}\r\nContent-Disposition: form-data; name=\"operations\"\r\n\r\n\
+         {{\"query\":\"mutation($avatar: Upload!) {{ uploadAvatar(avatar: $avatar) {{ id createdAt }} }}\",\"variables\":{{\"avatar\":null}}}}\r\n\
+         --{boundary}\r\nContent-Disposition: form-data; name=\"map\"\r\n\r\n\
+         {{\"0\":[\"variables.avatar\"]}}\r\n\
+         --{boundary}\r\nContent-Disposition: form-data; name=\"0\"; filename=\"tiny.png\"\r\n\
+         Content-Type: image/png\r\n\r\n"
+      )
+      .as_bytes(),
+    );
+    mp.extend_from_slice(ONE_BY_ONE_PNG);
+    mp.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+    let av_resp = app
+      .clone()
+      .oneshot(
+        Request::builder()
+          .method("POST")
+          .uri("/graphql")
+          .header(header::COOKIE, &alice_cookie)
+          .header(
+            header::CONTENT_TYPE,
+            format!("multipart/form-data; boundary={boundary}"),
+          )
+          .body(Body::from(mp))
+          .unwrap(),
+      )
+      .await
+      .expect("uploadAvatar response");
+    assert_eq!(av_resp.status(), StatusCode::OK);
+    let av_bytes = axum::body::to_bytes(av_resp.into_body(), 1024 * 1024).await.unwrap();
+    let av_json: Value = serde_json::from_slice(&av_bytes).unwrap();
+    assert!(av_json["errors"].is_null(), "uploadAvatar errors: {av_json}");
+    assert_eq!(av_json["data"]["uploadAvatar"]["id"].as_str(), Some(alice_id.as_str()));
+    assert!(
+      av_json["data"]["uploadAvatar"]["createdAt"]
+        .as_str()
+        .is_some_and(|s| !s.is_empty()),
+      "uploadAvatar must return non-null UserType.createdAt: {av_json}"
+    );
+
+    // 4. Strict throttle triggers 429 TOO_MANY_REQUESTS on Query.user(email) and publicUserById.
+    let mut user_throttled = false;
+    for _ in 0..25 {
+      let req = Request::builder()
+        .method("POST")
+        .uri("/graphql")
+        .header(header::CONTENT_TYPE, "application/json")
+        .header("x-forwarded-for", "198.51.100.11")
+        .body(Body::from(
+          json!({
+            "query": r#"query($email: String!) { user(email: $email) { ... on UserType { id } } }"#,
+            "variables": { "email": "alice-scope@example.com" }
+          })
+          .to_string(),
+        ))
+        .unwrap();
+      let resp = app.clone().oneshot(req).await.unwrap();
+      let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024).await.unwrap();
+      let val: Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
+      if val["errors"][0]["extensions"]["status"] == 429
+        || val["errors"][0]["extensions"]["type"] == "TOO_MANY_REQUESTS"
+      {
+        user_throttled = true;
+        break;
+      }
+    }
+    assert!(user_throttled, "Query.user(email) must enforce strict throttle (429)");
+
+    let mut pub_user_throttled = false;
+    for _ in 0..25 {
+      let req = Request::builder()
+        .method("POST")
+        .uri("/graphql")
+        .header(header::CONTENT_TYPE, "application/json")
+        .header("x-forwarded-for", "198.51.100.22")
+        .body(Body::from(
+          json!({
+            "query": r#"query($id: String!) { publicUserById(id: $id) { id } }"#,
+            "variables": { "id": alice_id }
+          })
+          .to_string(),
+        ))
+        .unwrap();
+      let resp = app.clone().oneshot(req).await.unwrap();
+      let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024).await.unwrap();
+      let val: Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
+      if val["errors"][0]["extensions"]["status"] == 429
+        || val["errors"][0]["extensions"]["type"] == "TOO_MANY_REQUESTS"
+      {
+        pub_user_throttled = true;
+        break;
+      }
+    }
+    assert!(
+      pub_user_throttled,
+      "Query.publicUserById must enforce strict throttle (429)"
+    );
+
+    db.pool().close().await;
+  });
+}

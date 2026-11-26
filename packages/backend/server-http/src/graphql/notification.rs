@@ -2,11 +2,12 @@
 
 use std::sync::Arc;
 
-use async_graphql::{Context, Enum, ID, InputObject, Result, SimpleObject};
+use async_graphql::{ComplexObject, Context, Enum, ID, InputObject, Result, SimpleObject, Union};
 use chrono::{DateTime, Utc};
 use server_domain::notifications::MentionDocInput as DomainMentionDocInput;
 
 use super::doc::{DocMode, PageInfo, PaginationInput, decode_cursor, encode_cursor};
+use super::user::PublicUserType;
 use super::{JsonObjectScalar, require_authenticated_user};
 use crate::AppState;
 use crate::legacy_compat::errors::domain_error_to_graphql;
@@ -81,7 +82,106 @@ impl NotificationType {
 }
 
 #[derive(SimpleObject, Clone, Debug)]
-#[graphql(name = "NotificationObjectType")]
+#[graphql(name = "NotificationWorkspaceType")]
+pub struct NotificationWorkspaceType {
+  pub avatar_url: Option<String>,
+  pub id: ID,
+  pub name: String,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "MentionDocType")]
+pub struct MentionDocType {
+  pub block_id: Option<String>,
+  pub element_id: Option<String>,
+  pub id: String,
+  pub mode: DocMode,
+  pub title: String,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "InvitationAcceptedNotificationBodyType")]
+pub struct InvitationAcceptedNotificationBodyType {
+  pub created_by_user: Option<PublicUserType>,
+  pub invite_id: ID,
+  #[graphql(name = "type")]
+  pub notification_type: NotificationType,
+  pub workspace: Option<NotificationWorkspaceType>,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "InvitationBlockedNotificationBodyType")]
+pub struct InvitationBlockedNotificationBodyType {
+  pub created_by_user: Option<PublicUserType>,
+  pub invite_id: ID,
+  #[graphql(name = "type")]
+  pub notification_type: NotificationType,
+  pub workspace: Option<NotificationWorkspaceType>,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "InvitationNotificationBodyType")]
+pub struct InvitationNotificationBodyType {
+  pub created_by_user: Option<PublicUserType>,
+  pub invite_id: ID,
+  #[graphql(name = "type")]
+  pub notification_type: NotificationType,
+  pub workspace: Option<NotificationWorkspaceType>,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "InvitationReviewApprovedNotificationBodyType")]
+pub struct InvitationReviewApprovedNotificationBodyType {
+  pub created_by_user: Option<PublicUserType>,
+  pub invite_id: ID,
+  #[graphql(name = "type")]
+  pub notification_type: NotificationType,
+  pub workspace: Option<NotificationWorkspaceType>,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "InvitationReviewDeclinedNotificationBodyType")]
+pub struct InvitationReviewDeclinedNotificationBodyType {
+  pub created_by_user: Option<PublicUserType>,
+  #[graphql(name = "type")]
+  pub notification_type: NotificationType,
+  pub workspace: Option<NotificationWorkspaceType>,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "InvitationReviewRequestNotificationBodyType")]
+pub struct InvitationReviewRequestNotificationBodyType {
+  pub created_by_user: Option<PublicUserType>,
+  pub invite_id: ID,
+  #[graphql(name = "type")]
+  pub notification_type: NotificationType,
+  pub workspace: Option<NotificationWorkspaceType>,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "MentionNotificationBodyType")]
+pub struct MentionNotificationBodyType {
+  pub created_by_user: Option<PublicUserType>,
+  pub doc: MentionDocType,
+  #[graphql(name = "type")]
+  pub notification_type: NotificationType,
+  pub workspace: Option<NotificationWorkspaceType>,
+}
+
+#[derive(Union, Clone, Debug)]
+#[graphql(name = "UnionNotificationBodyType")]
+pub enum UnionNotificationBodyType {
+  InvitationAccepted(InvitationAcceptedNotificationBodyType),
+  InvitationBlocked(InvitationBlockedNotificationBodyType),
+  Invitation(InvitationNotificationBodyType),
+  InvitationReviewApproved(InvitationReviewApprovedNotificationBodyType),
+  InvitationReviewDeclined(InvitationReviewDeclinedNotificationBodyType),
+  InvitationReviewRequest(InvitationReviewRequestNotificationBodyType),
+  Mention(MentionNotificationBodyType),
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "NotificationObjectType", complex)]
 pub struct NotificationObjectType {
   pub id: ID,
   pub level: NotificationLevel,
@@ -91,6 +191,16 @@ pub struct NotificationObjectType {
   pub created_at: DateTime<Utc>,
   pub updated_at: DateTime<Utc>,
   pub body: JsonObjectScalar,
+}
+
+#[ComplexObject]
+impl NotificationObjectType {
+  #[graphql(name = "_placeholderForUnionNotificationBodyType")]
+  async fn placeholder_for_union_notification_body_type(&self) -> Result<UnionNotificationBodyType> {
+    Err(async_graphql::Error::new(
+      "placeholder field to export UnionNotificationBodyType; use body instead",
+    ))
+  }
 }
 
 #[derive(SimpleObject, Clone, Debug)]

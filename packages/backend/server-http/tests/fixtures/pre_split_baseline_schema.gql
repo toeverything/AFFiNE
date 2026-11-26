@@ -323,21 +323,21 @@ type Mutation {
 	createWorkspace(init: Upload): WorkspaceType!
 	updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
 	deleteWorkspace(id: String!): Boolean!
-	leaveWorkspace(workspaceId: String!, sendLeaveMail: Boolean, workspaceName: String): Boolean!
+	leaveWorkspace(workspaceId: String!, sendLeaveMail: Boolean @deprecated(reason: "no used anymore"), workspaceName: String @deprecated(reason: "no longer used")): Boolean!
 	grantMember(workspaceId: String!, userId: String!, permission: Permission!): Boolean!
 	approveMember(workspaceId: String!, userId: String!): Boolean!
 	inviteMembers(workspaceId: String!, emails: [String!]!): [InviteResult!]!
 	revokeMember(workspaceId: String!, userId: String!): Boolean!
-	acceptInviteById(inviteId: String!, sendAcceptMail: Boolean, workspaceId: String): Boolean!
+	acceptInviteById(inviteId: String!, sendAcceptMail: Boolean @deprecated(reason: "never used"), workspaceId: String @deprecated(reason: "never used")): Boolean!
 	createInviteLink(workspaceId: String!, expireTime: WorkspaceInviteLinkExpireTime!): InviteLink!
 	revokeInviteLink(workspaceId: String!): Boolean!
 	updateAppConfig(updates: [UpdateAppConfigInput!]!): JSONObject!
 	sendTestEmail(config: JSONObject!): Boolean!
 	createBlobUpload(workspaceId: String!, key: String!, size: Int!, mime: String!): BlobUploadInit!
 	setBlob(workspaceId: String!, blob: Upload!): String!
-	deleteBlob(workspaceId: String!, key: String, hash: String, permanently: Boolean! = false): Boolean!
+	deleteBlob(workspaceId: String!, key: String, hash: String @deprecated(reason: "use parameter [key]"), permanently: Boolean! = false): Boolean!
 	releaseDeletedBlobs(workspaceId: String!): Boolean!
-	publishDoc(workspaceId: String!, docId: String!, mode: PublicDocMode! = Page): DocType!
+	publishDoc(workspaceId: String!, docId: String!, mode: PublicDocMode = Page): DocType!
 	revokePublicDoc(workspaceId: String!, docId: String!): DocType!
 	grantDocUserRoles(input: GrantDocUserRolesInput!): Boolean!
 	revokeDocUserRoles(input: RevokeDocUserRoleInput!): Boolean!
@@ -822,7 +822,7 @@ type WorkspaceType {
 	publicDocs: [DocType!]!
 	docs(pagination: PaginationInput!): PaginatedDocType!
 	recentlyUpdatedDocs(pagination: PaginationInput!): PaginatedDocType!
-	pageMeta(pageId: String!): WorkspaceDocMeta!
+	pageMeta(pageId: String!): WorkspaceDocMeta! @deprecated(reason: "use [WorkspaceType.doc] instead")
 	histories(guid: String!, before: DateTime, take: Int): [DocHistoryType!]!
 	comments(docId: String!, pagination: PaginationInput): PaginatedCommentObjectType!
 	commentChanges(docId: String!, pagination: PaginationInput!): PaginatedCommentChangeObjectType!

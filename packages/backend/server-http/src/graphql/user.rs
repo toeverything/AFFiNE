@@ -136,6 +136,13 @@ pub struct ClientTokenType {
 
 pub struct UserType {
   pub(crate) view: CurrentUserView,
+  pub(crate) created_at: Option<DateTime<Utc>>,
+}
+
+impl UserType {
+  pub(crate) fn session(view: CurrentUserView) -> Self {
+    Self { view, created_at: None }
+  }
 }
 
 #[Object(name = "UserType")]
@@ -158,6 +165,11 @@ impl UserType {
 
   async fn disabled(&self) -> bool {
     self.view.disabled
+  }
+
+  #[graphql(deprecation = "useless")]
+  async fn created_at(&self) -> Option<DateTime<Utc>> {
+    self.created_at
   }
 
   async fn email_verified(&self) -> bool {
@@ -342,23 +354,22 @@ async fn compute_user_quota_and_storage(state: &AppState, user_id: &str) -> Resu
 pub(crate) fn resolve_current_user(ctx: &Context<'_>) -> Option<UserType> {
   let auth = current_authenticated_user(ctx)?;
   if let Some(view) = &auth.user {
-    return Some(UserType { view: view.clone() });
+    return Some(UserType::session(view.clone()));
   }
-  Some(UserType {
-    view: CurrentUserView {
-      id: auth.user_id.clone(),
-      name: String::new(),
-      email: String::new(),
-      avatar_url: None,
-      disabled: false,
-      has_password: false,
-      email_verified: false,
-      features: Vec::new(),
-    },
-  })
+  Some(UserType::session(CurrentUserView {
+    id: auth.user_id.clone(),
+    name: String::new(),
+    email: String::new(),
+    avatar_url: None,
+    disabled: false,
+    has_password: false,
+    email_verified: false,
+    features: Vec::new(),
+  }))
 }
 
 pub(crate) async fn resolve_user_by_email(ctx: &Context<'_>, email: String) -> Result<Option<UserOrLimitedUser>> {
+  super::enforce_strict_throttle_graphql(ctx).await?;
   let canonical = server_domain::auth::canonical_email(&email).map_err(|e| domain_error_to_graphql(&e))?;
   let Some(auth) = current_authenticated_user(ctx) else {
     return Ok(None);
@@ -369,10 +380,11 @@ pub(crate) async fn resolve_user_by_email(ctx: &Context<'_>, email: String) -> R
     .get_user_by_email_for_actor(&auth.user_id, &canonical)
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
-  Ok(view.map(|v| UserOrLimitedUser::User(Box::new(UserType { view: v }))))
+  Ok(view.map(|v| UserOrLimitedUser::User(Box::new(UserType::session(v)))))
 }
 
 pub(crate) async fn resolve_public_user_by_id(ctx: &Context<'_>, id: String) -> Result<Option<PublicUserType>> {
+  super::enforce_strict_throttle_graphql(ctx).await?;
   let state = ctx.data_unchecked::<Arc<AppState>>();
   let view = state
     .users
@@ -471,7 +483,7 @@ pub(crate) async fn publish_user_updated_realtime(state: &AppState, user_id: &st
 pub(crate) async fn mutate_update_profile(ctx: &Context<'_>, input: UpdateUserInput) -> Result<UserType> {
   let user = require_authenticated_user(ctx).await?;
   if input.name.is_none() {
-    return Ok(UserType { view: user });
+    return Ok(UserType::session(user));
   }
   let state = ctx.data_unchecked::<Arc<AppState>>();
   let updated = state
@@ -486,7 +498,7 @@ pub(crate) async fn mutate_update_profile(ctx: &Context<'_>, input: UpdateUserIn
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
   publish_user_updated_realtime(state, &updated.id).await;
-  Ok(UserType { view: updated })
+  Ok(UserType::session(updated))
 }
 
 fn image_format_not_supported_error() -> async_graphql::Error {
@@ -620,9 +632,9 @@ pub(crate) async fn mutate_upload_avatar(ctx: &Context<'_>, avatar: Upload) -> R
     .and_then(|c| c.pointer("/storages/avatar/publicPath")?.as_str().map(str::to_owned))
     .unwrap_or_else(|| "/api/avatars/".to_owned());
   let avatar_url = format_avatar_url(&public_path, &key, &req_origin);
-  let updated = state
+  let (updated, created_at) = state
     .users
-    .update_profile(
+    .update_profile_with_created_at(
       &user.id,
       UpdateProfileInput {
         name: None,
@@ -644,7 +656,10 @@ pub(crate) async fn mutate_upload_avatar(ctx: &Context<'_>, avatar: Upload) -> R
     let _ = state.avatars.delete(old_key).await;
   }
 
-  Ok(UserType { view: updated })
+  Ok(UserType {
+    view: updated,
+    created_at: Some(created_at),
+  })
 }
 
 fn format_avatar_url(public_path: &str, key: &str, req_origin: &str) -> String {
@@ -870,7 +885,7 @@ pub(crate) async fn resolve_admin_users(ctx: &Context<'_>, filter: ListUserInput
     .list_users(&to_domain_user_filter(filter))
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
-  Ok(rows.into_iter().map(|view| UserType { view }).collect())
+  Ok(rows.into_iter().map(UserType::session).collect())
 }
 
 pub(crate) async fn resolve_admin_users_count(ctx: &Context<'_>, filter: Option<ListUserInput>) -> Result<i32> {
@@ -893,7 +908,7 @@ pub(crate) async fn resolve_admin_user_by_id(ctx: &Context<'_>, id: String) -> R
     .await
     .map_err(|e| domain_error_to_graphql(&e))?
     .ok_or_else(|| async_graphql::Error::new("Cannot return null for non-nullable field Query.userById."))?;
-  Ok(UserType { view })
+  Ok(UserType::session(view))
 }
 
 pub(crate) async fn resolve_admin_user_by_email(ctx: &Context<'_>, email: String) -> Result<Option<UserType>> {
@@ -904,7 +919,7 @@ pub(crate) async fn resolve_admin_user_by_email(ctx: &Context<'_>, email: String
     .get_user_by_email_admin(&email)
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
-  Ok(view.map(|view| UserType { view }))
+  Ok(view.map(UserType::session))
 }
 
 pub(crate) async fn mutate_admin_create_user(ctx: &Context<'_>, input: CreateUserInput) -> Result<UserType> {
@@ -921,7 +936,7 @@ pub(crate) async fn mutate_admin_create_user(ctx: &Context<'_>, input: CreateUse
     .create_user(&inp, cfg.password_min_length, cfg.password_max_length)
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
-  Ok(UserType { view })
+  Ok(UserType::session(view))
 }
 
 pub(crate) async fn mutate_admin_import_users(
@@ -947,7 +962,7 @@ pub(crate) async fn mutate_admin_import_users(
       .await
       .into_iter()
       .map(|res| match res {
-        Ok(view) => UserImportResultType::User(Box::new(UserType { view })),
+        Ok(view) => UserImportResultType::User(Box::new(UserType::session(view))),
         Err((email, err)) => UserImportResultType::Failed(UserImportFailedType {
           email,
           error: crate::legacy_compat::errors::domain_error_to_envelope(&err).message,
@@ -970,7 +985,7 @@ pub(crate) async fn mutate_admin_update_user(
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
   publish_user_updated_realtime(state, &view.id).await;
-  Ok(UserType { view })
+  Ok(UserType::session(view))
 }
 
 pub(crate) async fn mutate_admin_ban_user(ctx: &Context<'_>, id: String) -> Result<UserType> {
@@ -1006,7 +1021,7 @@ pub(crate) async fn mutate_admin_ban_user(ctx: &Context<'_>, id: String) -> Resu
           Some(req_id.as_str()),
         )
         .await;
-      Ok(UserType { view: result.new_user })
+      Ok(UserType::session(result.new_user))
     }
     Err(del_err) => {
       if !del_err.partial_cleanup.is_empty() {
@@ -1025,7 +1040,7 @@ pub(crate) async fn mutate_admin_enable_user(ctx: &Context<'_>, id: String) -> R
     .enable_user(&id)
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
-  Ok(UserType { view })
+  Ok(UserType::session(view))
 }
 
 pub(crate) async fn mutate_admin_update_user_features(

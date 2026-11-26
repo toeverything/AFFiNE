@@ -46,6 +46,7 @@ pub use workspace::{
   UpdateWorkspaceInput, WorkspaceInviteLinkExpireTime, WorkspaceMemberStatus, WorkspacePermissions, WorkspaceType,
 };
 
+pub use async_graphql::{Value as GraphqlConstValue, parser as graphql_parser};
 pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
 
 /// `v0.27.5` `JSON` scalar.
@@ -458,7 +459,18 @@ impl async_graphql::extensions::Extension for GraphqlAuthExtension {
           return Ok(Some(Value::Null));
         }
       }
-      next.run(ctx, info).await
+      let is_nullable_root =
+        (info.parent_type == "Query" || info.parent_type == "Mutation") && !info.return_type.ends_with('!');
+      match next.run(ctx, info).await {
+        Ok(v) => Ok(v),
+        Err(err) if is_nullable_root => {
+          if let Ok(mut errs) = self.deferred_errors.lock() {
+            errs.push(err);
+          }
+          Ok(Some(Value::Null))
+        }
+        Err(err) => Err(err),
+      }
     })
   }
 }
@@ -579,6 +591,39 @@ pub fn build_schema(state: Arc<AppState>) -> AppSchema {
     .extension(GraphqlAuthExtensionFactory)
     .data(state)
     .finish()
+}
+
+/// Exports SDL from `AppSchema` while escaping unescaped inner double quotes in
+/// `@deprecated(reason: "...")` emitted by `async-graphql 7.0.17` `Schema::sdl()`.
+pub fn export_valid_sdl(schema: &AppSchema) -> String {
+  let raw = schema.sdl();
+  const MARKER: &str = "@deprecated(reason: \"";
+  let mut out = String::with_capacity(raw.len() + 16);
+  let mut rest = raw.as_str();
+  while let Some(start) = rest.find(MARKER) {
+    let reason_start = start + MARKER.len();
+    out.push_str(&rest[..reason_start]);
+    rest = &rest[reason_start..];
+    if let Some(end_rel) = rest.find("\")") {
+      let reason = &rest[..end_rel];
+      if reason.contains('"') {
+        let mut prev_backslash = false;
+        for ch in reason.chars() {
+          if ch == '"' && !prev_backslash {
+            out.push('\\');
+          }
+          out.push(ch);
+          prev_backslash = ch == '\\' && !prev_backslash;
+        }
+      } else {
+        out.push_str(reason);
+      }
+      out.push_str("\")");
+      rest = &rest[end_rel + 2..];
+    }
+  }
+  out.push_str(rest);
+  out
 }
 
 #[cfg(test)]
@@ -1277,7 +1322,10 @@ mod tests {
             current_block = None;
             continue;
           }
-          if pending_member.is_empty() {
+          if pending_member.is_empty() || pending_member.ends_with('(') || line.starts_with(')') {
+            pending_member.push_str(line);
+          } else if paren_depth > 0 && !pending_member.ends_with(',') {
+            pending_member.push_str(", ");
             pending_member.push_str(line);
           } else {
             pending_member.push(' ');
@@ -1367,7 +1415,13 @@ mod tests {
         out.push(ch);
         i += ch.len_utf8();
       }
-      out.split_whitespace().collect::<Vec<_>>().join(" ")
+      out
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .replace(" ,", ",")
+        .replace(" )", ")")
+        .replace(" :", ":")
     }
 
     fn canonicalize_sdl_member(sig: &str) -> String {
@@ -1481,7 +1535,7 @@ mod tests {
     }
 
     let schema = Schema::build(QueryRoot::default(), MutationRoot::default(), EmptySubscription).finish();
-    let sdl = schema.sdl();
+    let sdl = export_valid_sdl(&schema);
 
     let baseline_sdl = include_str!("../../tests/fixtures/pre_split_baseline_schema.gql");
     let oracle_sdl = include_str!("../../../../../tests/oracle-contracts/v0.27.5/schema.gql");
@@ -1512,7 +1566,13 @@ mod tests {
           oracle_canonical.is_some_and(|os| os.contains(&canon)) && canonical_actual.contains(&canon);
         assert!(
           matches_oracle,
-          "pre-split GraphQL signature changed or dropped in `{def_key}`: `{base_sig}`"
+          "pre-split GraphQL signature changed or dropped in `{def_key}`: `{base_sig}` (canon=`{canon}`, in_oracle={}, in_actual={}, actual_sample={:?})",
+          oracle_canonical.is_some_and(|os| os.contains(&canon)),
+          canonical_actual.contains(&canon),
+          actual_members
+            .iter()
+            .filter(|m| m.starts_with(base_sig.split('(').next().unwrap_or("")))
+            .collect::<Vec<_>>()
         );
       }
     }

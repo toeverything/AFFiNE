@@ -628,7 +628,7 @@ impl AuthMutation {
       .await
       .map_err(|e| map_security_error(&e))?;
     publish_user_updated_realtime(state, &user.id).await;
-    Ok(UserType { view: user })
+    Ok(UserType::session(user))
   }
 
   async fn rotate_auth_signing_key(

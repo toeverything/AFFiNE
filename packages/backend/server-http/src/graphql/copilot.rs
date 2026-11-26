@@ -540,7 +540,7 @@ impl Copilot {
     })
   }
 
-  #[graphql(deprecation = "Use realtime subscription `copilot.transcript.task.changed` instead.")]
+  #[graphql(deprecation = "Use realtime subscription \"copilot.transcript.task.changed\" instead.")]
   async fn transcript_task(
     &self,
     ctx: &Context<'_>,

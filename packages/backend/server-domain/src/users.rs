@@ -238,18 +238,27 @@ impl UserService {
   }
 
   pub async fn update_profile(&self, user_id: &str, input: UpdateProfileInput) -> Result<CurrentUserView, DomainError> {
+    Ok(self.update_profile_with_created_at(user_id, input).await?.0)
+  }
+
+  pub async fn update_profile_with_created_at(
+    &self,
+    user_id: &str,
+    input: UpdateProfileInput,
+  ) -> Result<(CurrentUserView, DateTime<Utc>), DomainError> {
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
       .await
       .map_err(|e| DomainError::Internal(format!("begin update_profile: {e}")))?;
 
-    let exists: Option<bool> = sqlx::query_scalar("SELECT disabled FROM users WHERE id = $1 FOR UPDATE")
-      .bind(user_id)
-      .fetch_optional(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| DomainError::Internal(format!("lock user for update_profile: {e}")))?;
-    let Some(disabled) = exists else {
+    let row: Option<(bool, DateTime<Utc>)> =
+      sqlx::query_as("SELECT disabled, created_at FROM users WHERE id = $1 FOR UPDATE")
+        .bind(user_id)
+        .fetch_optional(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("lock user for update_profile: {e}")))?;
+    let Some((disabled, created_at)) = row else {
       return Err(DomainError::NotFound("user not found".to_owned()));
     };
     if disabled {
@@ -279,7 +288,7 @@ impl UserService {
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit update_profile: {e}")))?;
-    Ok(view)
+    Ok((view, created_at))
   }
 
   pub async fn get_by_email(&self, email: &str) -> Result<Option<UserRecord>, DomainError> {

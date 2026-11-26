@@ -14,6 +14,9 @@ use multer::{Constraints, Multipart, SizeLimit};
 pub(crate) const MAX_GRAPHQL_MULTIPART_FIELD_BYTES: usize = 1_000_000;
 /// Largest number of file fields and of `map` entries.
 pub(crate) const MAX_GRAPHQL_MULTIPART_FILES: usize = 32;
+/// Largest total number of variable paths across all `map` entries.
+/// Allows `graphql-upload` v17 single-file reuse across >32 paths while capping FD fan-out.
+pub(crate) const MAX_GRAPHQL_MULTIPART_PATHS: usize = 256;
 /// Largest file field.
 pub(crate) const MAX_GRAPHQL_MULTIPART_FILE_BYTES: usize = 100 * 1024 * 1024;
 /// Largest multipart body: every file at its limit plus room for the other
@@ -75,7 +78,8 @@ pub(crate) async fn receive_graphql_multipart(
       Some("map") => {
         let parsed: HashMap<String, Vec<String>> =
           serde_json::from_slice(&bytes).map_err(|e| ParseRequestError::InvalidFilesMap(Box::new(e)))?;
-        if parsed.len() > MAX_GRAPHQL_MULTIPART_FILES {
+        let total_paths: usize = parsed.values().map(Vec::len).sum();
+        if parsed.len() > MAX_GRAPHQL_MULTIPART_FILES || total_paths > MAX_GRAPHQL_MULTIPART_PATHS {
           return Err(ParseRequestError::PayloadTooLarge);
         }
         map = Some(parsed);

@@ -212,8 +212,12 @@ pub struct InviteUserType {
   pub name: Option<String>,
   pub email: Option<String>,
   pub avatar_url: Option<String>,
+  #[graphql(deprecation = "useless")]
+  pub created_at: Option<DateTime<Utc>>,
   pub email_verified: Option<bool>,
+  pub has_password: Option<bool>,
   pub disabled: Option<bool>,
+  #[graphql(deprecation = "Use role instead")]
   pub permission: Permission,
   pub role: Permission,
   pub invite_id: String,
@@ -328,7 +332,7 @@ impl WorkspaceType {
       .get_workspace_owner(&self.record.id)
       .await
       .map_err(|e| domain_error_to_graphql(&e))?;
-    Ok(UserType { view })
+    Ok(UserType::session(view))
   }
 
   async fn member_count(&self) -> i32 {
@@ -427,7 +431,9 @@ impl WorkspaceType {
             name: Some(m.name),
             email: Some(m.email),
             avatar_url: m.avatar_url,
+            created_at: None,
             email_verified: Some(m.email_verified),
+            has_password: None,
             disabled: Some(m.disabled),
             permission: perm,
             role: perm,
@@ -657,6 +663,7 @@ impl WorkspaceType {
     })
   }
 
+  #[graphql(deprecation = "use [WorkspaceType.doc] instead")]
   async fn page_meta(&self, ctx: &Context<'_>, page_id: String) -> Result<super::doc::WorkspaceDocMeta> {
     let user = require_authenticated_user(ctx).await?;
     let state = ctx.data_unchecked::<Arc<AppState>>();
@@ -832,6 +839,7 @@ pub(crate) async fn resolve_workspace(ctx: &Context<'_>, id: String) -> Result<W
 }
 
 pub(crate) async fn resolve_get_invite_info(ctx: &Context<'_>, invite_id: String) -> Result<InvitationType> {
+  super::enforce_strict_throttle_graphql(ctx).await?;
   let user = require_authenticated_user(ctx).await?;
   let state = ctx.data_unchecked::<Arc<AppState>>();
   let info = state
@@ -1289,8 +1297,8 @@ impl WorkspaceMutation {
     &self,
     ctx: &Context<'_>,
     workspace_id: String,
-    send_leave_mail: Option<bool>,
-    workspace_name: Option<String>,
+    #[graphql(deprecation = "no used anymore")] send_leave_mail: Option<bool>,
+    #[graphql(deprecation = "no longer used")] workspace_name: Option<String>,
   ) -> Result<bool> {
     mutate_leave_workspace(ctx, workspace_id, send_leave_mail, workspace_name).await
   }
@@ -1326,8 +1334,8 @@ impl WorkspaceMutation {
     &self,
     ctx: &Context<'_>,
     invite_id: String,
-    send_accept_mail: Option<bool>,
-    workspace_id: Option<String>,
+    #[graphql(deprecation = "never used")] send_accept_mail: Option<bool>,
+    #[graphql(deprecation = "never used")] workspace_id: Option<String>,
   ) -> Result<bool> {
     mutate_accept_invite_by_id(ctx, invite_id, send_accept_mail, workspace_id).await
   }

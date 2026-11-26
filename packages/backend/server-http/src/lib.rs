@@ -894,7 +894,7 @@ async fn handle_graphql_get(State(state): State<RouterState>, Query(params): Que
     return (
       StatusCode::OK,
       [("content-type", "text/plain; charset=utf-8")],
-      state.schema.sdl(),
+      graphql::export_valid_sdl(&state.schema),
     )
       .into_response();
   }
@@ -974,12 +974,7 @@ pub fn build_router(app: Arc<AppState>) -> Router {
     );
   }
   if matrix.graphql {
-    let graphql_route = Router::new()
-      .route("/graphql", get(handle_graphql_get).post(handle_graphql_post))
-      .layer(axum::extract::DefaultBodyLimit::max(
-        graphql_multipart::MAX_GRAPHQL_MULTIPART_BODY_BYTES,
-      ));
-    router = router.merge(graphql_route);
+    router = router.route("/graphql", get(handle_graphql_get).post(handle_graphql_post));
   }
   if matrix.auth_and_avatar_api {
     router = router
@@ -1201,6 +1196,7 @@ mod tests {
   fn graphql_post_enforces_v0275_upload_limits_at_http_layer() {
     use crate::graphql_multipart::{
       MAX_GRAPHQL_MULTIPART_FIELD_BYTES, MAX_GRAPHQL_MULTIPART_FILE_BYTES, MAX_GRAPHQL_MULTIPART_FILES,
+      MAX_GRAPHQL_MULTIPART_PATHS,
     };
 
     const BOUNDARY: &str = "affine-upload-limits";
@@ -1330,6 +1326,38 @@ mod tests {
           &multipart_type,
           multipart([operations(1)].into_iter().chain(files(1, 1)).collect()),
           StatusCode::BAD_REQUEST,
+        ),
+        (
+          "1 file mapped to 33 variable paths",
+          &multipart_type,
+          {
+            let paths: Vec<String> = (0..33).map(|i| format!("variables.f{i}")).collect();
+            let single_map = Part::Field("map", serde_json::json!({ "0": paths }).to_string());
+            multipart(vec![operations(33), single_map, Part::File("0".into(), 1)])
+          },
+          StatusCode::OK,
+        ),
+        (
+          "1 file mapped to 257 variable paths (> MAX_GRAPHQL_MULTIPART_PATHS)",
+          &multipart_type,
+          {
+            let paths: Vec<String> = (0..=MAX_GRAPHQL_MULTIPART_PATHS)
+              .map(|i| format!("variables.f{i}"))
+              .collect();
+            let single_map = Part::Field("map", serde_json::json!({ "0": paths }).to_string());
+            multipart(vec![
+              operations(MAX_GRAPHQL_MULTIPART_PATHS + 1),
+              single_map,
+              Part::File("0".into(), 1),
+            ])
+          },
+          StatusCode::PAYLOAD_TOO_LARGE,
+        ),
+        (
+          "map field ordered before operations",
+          &multipart_type,
+          multipart(vec![map(1), operations(1), Part::File("0".into(), 1)]),
+          StatusCode::OK,
         ),
       ];
       for (name, content_type, body, expected) in cases {

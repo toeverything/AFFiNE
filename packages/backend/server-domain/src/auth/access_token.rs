@@ -13,9 +13,9 @@ use crate::users::CurrentUserView;
 
 type HmacSha256 = Hmac<Sha256>;
 
-pub const ACCESS_TOKEN_TYPE: &str = "access";
+pub const ACCESS_TOKEN_TYPE: &str = "session_access";
 pub const ACCESS_TOKEN_ISSUER: &str = "affine";
-pub const ACCESS_TOKEN_AUDIENCE: &str = "affine-server";
+pub const ACCESS_TOKEN_AUDIENCE: &str = "affine-client";
 pub const CLOCK_TOLERANCE_SECONDS: i64 = 30;
 pub const DEFAULT_ACCESS_TOKEN_TTL_SECONDS: i64 = 900;
 

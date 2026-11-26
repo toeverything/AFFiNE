@@ -374,7 +374,7 @@ fn billing_graphql_sdl_matches_frozen_v0275_contract() {
       RuntimeConfig::default(),
       Arc::new(server_spi::CommunityExtension::new()),
     );
-    let gen_sdl = build_schema(state).sdl();
+    let gen_sdl = server_http::graphql::export_valid_sdl(&build_schema(state));
     let oracle_path =
       std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../tests/oracle-contracts/v0.27.5/schema.gql");
     let ref_sdl = std::fs::read_to_string(&oracle_path).expect("read frozen v0.27.5 schema.gql");

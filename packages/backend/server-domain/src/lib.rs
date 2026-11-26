@@ -5,6 +5,8 @@
 //! Depends on no HTTP/GraphQL transport frameworks and no storage/protocol
 //! compatibility layers.
 
+pub use y_octo;
+
 pub mod acl;
 pub mod admin;
 pub mod app_config;

@@ -770,9 +770,9 @@ impl DocMutation {
     ctx: &Context<'_>,
     workspace_id: String,
     doc_id: String,
-    #[graphql(default_with = "PublicDocMode::Page")] mode: PublicDocMode,
+    #[graphql(default_with = "Some(PublicDocMode::Page)")] mode: Option<PublicDocMode>,
   ) -> Result<DocType> {
-    mutate_publish_doc(ctx, workspace_id, doc_id, mode).await
+    mutate_publish_doc(ctx, workspace_id, doc_id, mode.unwrap_or(PublicDocMode::Page)).await
   }
 
   async fn revoke_public_doc(&self, ctx: &Context<'_>, workspace_id: String, doc_id: String) -> Result<DocType> {

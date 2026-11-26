@@ -363,7 +363,7 @@ impl BlobMutation {
     ctx: &Context<'_>,
     workspace_id: String,
     key: Option<String>,
-    hash: Option<String>,
+    #[graphql(deprecation = "use parameter [key]")] hash: Option<String>,
     #[graphql(default = false)] permanently: bool,
   ) -> Result<bool> {
     mutate_delete_blob(ctx, workspace_id, key, hash, permanently).await

@@ -27,6 +27,7 @@ use server_domain::notifications::NotificationService;
 use server_domain::selfhost_license::SelfhostLicenseService;
 use server_domain::users::UserService;
 use server_domain::workspaces::WorkspaceService;
+pub use server_http;
 use server_http::{AppServices, AppState, RuntimeConfig, build_router};
 use server_mail::{MailWorkerError, SmtpConfig, SmtpMailer, process_ready_mail_deliveries};
 use server_search::{SearchConfig, SearchError, SearchRuntime};
