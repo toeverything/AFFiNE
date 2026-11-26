@@ -10914,13 +10914,13 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
-      * `With the workspace creator's free account, every member can access up to <1>7 days<1> of version history.`
+      * `With the workspace creator's free account, every member can access up to <1>7 days</1> of version history.`
       */
     ["com.affine.history.confirm-restore-modal.free-plan-prompt.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
     }>>;
     /**
-      * `With the workspace creator's Pro account, every member enjoys the privilege of accessing up to <1>30 days<1> of version history.`
+      * `With the workspace creator's Pro account, every member enjoys the privilege of accessing up to <1>30 days</1> of version history.`
       */
     ["com.affine.history.confirm-restore-modal.pro-plan-prompt.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
