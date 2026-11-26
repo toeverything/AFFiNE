@@ -107,7 +107,7 @@ pub fn build_accessibility_tree_with_layout(
                 id: root_id.clone(),
                 role: AccessibilityRole::Application,
                 name: "AFFiNE".to_string(),
-                value: Some(state.active_workspace().name.clone()),
+                value: Some(state.active_workspace().summary.name.clone()),
                 state: AccessibilityState::default(),
                 focused: false,
                 bounds: AccessibilityBounds {
@@ -132,7 +132,7 @@ pub fn build_accessibility_tree_with_layout(
             AccessibilityNode {
                 id: ws_btn_id.clone(),
                 role: AccessibilityRole::Button,
-                name: state.active_workspace().name.clone(),
+                name: state.active_workspace().summary.name.clone(),
                 value: None,
                 state: AccessibilityState {
                     expanded: Some(state.active_sheet == MobileSheet::WorkspaceSelector),
@@ -215,7 +215,7 @@ pub fn build_accessibility_tree_with_layout(
             main_children.push(day_id);
         }
 
-        let has_entry = state.docs.iter().any(|d| {
+        let has_entry = state.active_workspace().docs.iter().any(|d| {
             !d.trashed && d.journal_date.as_deref() == Some(state.selected_journal_date.as_str())
         });
         let cta_id = "mobile.journals.create_btn".to_string();
@@ -723,7 +723,7 @@ pub fn build_accessibility_tree_with_layout(
             id: root_id.clone(),
             role: AccessibilityRole::Application,
             name: "AFFiNE".to_string(),
-            value: Some(state.active_workspace().name.clone()),
+            value: Some(state.active_workspace().summary.name.clone()),
             state: AccessibilityState::default(),
             focused: false,
             bounds: AccessibilityBounds {

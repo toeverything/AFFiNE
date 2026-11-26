@@ -1103,10 +1103,13 @@ void test('single-flight overlapping flush, compactDocWithMerged CAS, built-in Y
     workspaceId: 'ws-yjs-v1',
     indexedDB: idb,
   });
-  assert.deepEqual(await defaultV1.listV1DocIds(), [
-    'ws-yjs-v1',
-    'guid-page-1',
-  ]);
+  await assert.rejects(() => defaultV1.listV1DocIds(), TypeError);
+  assert.deepEqual(
+    await defaultV1.listV1DocIds({
+      extractSubdocIds: () => ['guid-page-1'],
+    }),
+    ['ws-yjs-v1', 'guid-page-1']
+  );
 
   // 4. bootWebHost unbound -> attachWorkspace dynamically binds storage & flusher.
   const host = await bootWebHost({
@@ -1173,168 +1176,9 @@ void test('single-flight overlapping flush, compactDocWithMerged CAS, built-in Y
   storage.close();
 });
 
-// Genuine Yjs v1 binary fixtures generated offline with `yjs` (zero runtime dependency).
-const REAL_YJS_FIXTURES = {
-  // 1. meta.name renamed twice, then 2 pages created (merged single snapshot)
-  renamedTwiceTwoPages: new Uint8Array([
-    1, 11, 101, 0, 33, 1, 4, 109, 101, 116, 97, 4, 110, 97, 109, 101, 1, 168,
-    101, 0, 1, 119, 12, 87, 111, 114, 107, 115, 112, 97, 99, 101, 32, 118, 50,
-    39, 1, 4, 109, 101, 116, 97, 5, 112, 97, 103, 101, 115, 0, 7, 0, 101, 2, 1,
-    40, 0, 101, 3, 2, 105, 100, 1, 119, 6, 112, 97, 103, 101, 45, 49, 40, 0,
-    101, 3, 5, 116, 105, 116, 108, 101, 1, 119, 8, 80, 97, 103, 101, 32, 79,
-    110, 101, 135, 101, 3, 1, 40, 0, 101, 6, 2, 105, 100, 1, 119, 6, 112, 97,
-    103, 101, 45, 50, 40, 0, 101, 6, 5, 116, 105, 116, 108, 101, 1, 119, 8, 80,
-    97, 103, 101, 32, 84, 119, 111, 41, 1, 6, 115, 112, 97, 99, 101, 115, 6,
-    112, 97, 103, 101, 45, 49, 13, 103, 117, 105, 100, 45, 99, 97, 115, 101, 49,
-    45, 112, 49, 118, 0, 41, 1, 6, 115, 112, 97, 99, 101, 115, 6, 112, 97, 103,
-    101, 45, 50, 13, 103, 117, 105, 100, 45, 99, 97, 115, 101, 49, 45, 112, 50,
-    118, 0, 1, 101, 1, 0, 1,
-  ]),
-  // 2. p1 created, meta.pages[0].title edited twice, then p2 created
-  titleEditedTwiceThenP2: new Uint8Array([
-    1, 11, 102, 0, 39, 1, 4, 109, 101, 116, 97, 5, 112, 97, 103, 101, 115, 0, 7,
-    0, 102, 0, 1, 40, 0, 102, 1, 2, 105, 100, 1, 119, 2, 112, 49, 33, 0, 102, 1,
-    5, 116, 105, 116, 108, 101, 1, 41, 1, 6, 115, 112, 97, 99, 101, 115, 2, 112,
-    49, 13, 103, 117, 105, 100, 45, 99, 97, 115, 101, 50, 45, 112, 49, 118, 0,
-    161, 102, 3, 1, 168, 102, 5, 1, 119, 11, 70, 105, 110, 97, 108, 32, 84, 105,
-    116, 108, 101, 135, 102, 1, 1, 40, 0, 102, 7, 2, 105, 100, 1, 119, 2, 112,
-    50, 40, 0, 102, 7, 5, 116, 105, 116, 108, 101, 1, 119, 11, 83, 101, 99, 111,
-    110, 100, 32, 80, 97, 103, 101, 41, 1, 6, 115, 112, 97, 99, 101, 115, 2,
-    112, 50, 13, 103, 117, 105, 100, 45, 99, 97, 115, 101, 50, 45, 112, 50, 118,
-    0, 1, 102, 2, 3, 1, 5, 1,
-  ]),
-  // 3. Y.XmlFragment + Y.XmlElement in root doc before page creation
-  xmlFragmentBeforePage: new Uint8Array([
-    1, 7, 103, 0, 39, 1, 4, 109, 101, 116, 97, 5, 110, 111, 116, 101, 115, 4, 7,
-    0, 103, 0, 3, 9, 112, 97, 114, 97, 103, 114, 97, 112, 104, 39, 1, 4, 109,
-    101, 116, 97, 5, 112, 97, 103, 101, 115, 0, 7, 0, 103, 2, 1, 40, 0, 103, 3,
-    2, 105, 100, 1, 119, 5, 112, 45, 120, 109, 108, 40, 0, 103, 3, 5, 116, 105,
-    116, 108, 101, 1, 119, 17, 65, 102, 116, 101, 114, 32, 88, 109, 108, 70,
-    114, 97, 103, 109, 101, 110, 116, 41, 1, 6, 115, 112, 97, 99, 101, 115, 5,
-    112, 45, 120, 109, 108, 14, 103, 117, 105, 100, 45, 99, 97, 115, 101, 51,
-    45, 120, 109, 108, 118, 0, 0,
-  ]),
-  // 4a. spaces.set('p1', oldDoc) overwritten by liveDoc + foreignDoc in otherMap (merged snapshot)
-  overwrittenAndForeignSnapshot: new Uint8Array([
-    1, 7, 104, 0, 39, 1, 4, 109, 101, 116, 97, 5, 112, 97, 103, 101, 115, 0, 7,
-    0, 104, 0, 1, 40, 0, 104, 1, 2, 105, 100, 1, 119, 2, 112, 49, 40, 0, 104, 1,
-    5, 116, 105, 116, 108, 101, 1, 119, 9, 76, 105, 118, 101, 32, 80, 97, 103,
-    101, 33, 1, 6, 115, 112, 97, 99, 101, 115, 2, 112, 49, 1, 169, 104, 4, 9,
-    108, 105, 118, 101, 45, 103, 117, 105, 100, 118, 0, 41, 1, 8, 111, 116, 104,
-    101, 114, 77, 97, 112, 7, 102, 111, 114, 101, 105, 103, 110, 12, 102, 111,
-    114, 101, 105, 103, 110, 45, 103, 117, 105, 100, 118, 0, 1, 104, 1, 4, 1,
-  ]),
-  // 4b. Multi-frame incremental updates where update[1] DeleteSet deletes update[0]'s old-guid
-  overwrittenAndForeignIncremental: [
-    new Uint8Array([
-      1, 6, 105, 0, 39, 1, 4, 109, 101, 116, 97, 5, 112, 97, 103, 101, 115, 0,
-      7, 0, 105, 0, 1, 40, 0, 105, 1, 2, 105, 100, 1, 119, 2, 112, 49, 40, 0,
-      105, 1, 5, 116, 105, 116, 108, 101, 1, 119, 9, 76, 105, 118, 101, 32, 80,
-      97, 103, 101, 41, 1, 6, 115, 112, 97, 99, 101, 115, 2, 112, 49, 8, 111,
-      108, 100, 45, 103, 117, 105, 100, 118, 0, 41, 1, 8, 111, 116, 104, 101,
-      114, 77, 97, 112, 7, 102, 111, 114, 101, 105, 103, 110, 12, 102, 111, 114,
-      101, 105, 103, 110, 45, 103, 117, 105, 100, 118, 0, 0,
-    ]),
-    new Uint8Array([
-      1, 1, 105, 6, 169, 105, 4, 9, 108, 105, 118, 101, 45, 103, 117, 105, 100,
-      118, 0, 1, 105, 1, 4, 1,
-    ]),
-  ],
-  // 5. meta.pages had p1 then deleted all pages while spaces still holds p1 -> must return []
-  emptyPagesWithOrphanSpace: new Uint8Array([
-    1, 4, 106, 0, 39, 1, 4, 109, 101, 116, 97, 5, 112, 97, 103, 101, 115, 0, 1,
-    0, 106, 0, 1, 0, 1, 41, 1, 6, 115, 112, 97, 99, 101, 115, 2, 112, 49, 11,
-    111, 114, 112, 104, 97, 110, 45, 103, 117, 105, 100, 118, 0, 1, 106, 1, 1,
-    2,
-  ]),
-};
-
-void test('real Yjs v1 binary fixtures decode overwrites, Y.XmlFragment, DeleteSet live spaces, and 3/4-segment userdata keys', async () => {
-  const { extractYjsV1SubdocIds } = await import('../src/idb-storage.js');
-
-  assert.deepEqual(
-    extractYjsV1SubdocIds([REAL_YJS_FIXTURES.renamedTwiceTwoPages]),
-    ['guid-case1-p1', 'guid-case1-p2']
-  );
-  assert.deepEqual(
-    extractYjsV1SubdocIds([REAL_YJS_FIXTURES.titleEditedTwiceThenP2]),
-    ['guid-case2-p1', 'guid-case2-p2']
-  );
-  assert.deepEqual(
-    extractYjsV1SubdocIds([REAL_YJS_FIXTURES.xmlFragmentBeforePage]),
-    ['guid-case3-xml']
-  );
-  assert.deepEqual(
-    extractYjsV1SubdocIds([REAL_YJS_FIXTURES.overwrittenAndForeignSnapshot]),
-    ['live-guid']
-  );
-  assert.deepEqual(
-    extractYjsV1SubdocIds(REAL_YJS_FIXTURES.overwrittenAndForeignIncremental),
-    ['live-guid']
-  );
-  assert.deepEqual(
-    extractYjsV1SubdocIds([REAL_YJS_FIXTURES.emptyPagesWithOrphanSpace]),
-    []
-  );
-  // Malformed/truncated frames (including missing trailing DeleteSet) must throw RangeError.
-  assert.throws(
-    () => extractYjsV1SubdocIds([new Uint8Array([1, 1, 1, 0, 0x20 | 9, 1])]),
-    RangeError
-  );
-  assert.throws(
-    () =>
-      extractYjsV1SubdocIds([
-        REAL_YJS_FIXTURES.overwrittenAndForeignSnapshot.subarray(
-          0,
-          REAL_YJS_FIXTURES.overwrittenAndForeignSnapshot.byteLength - 5
-        ),
-      ]),
-    RangeError
-  );
-
-  // Concurrent Y.Map overwrite (client 21 -> g21 vs client 42 -> g42): both arrival orders yield ONLY g42.
-  const { extractYjsV1SubdocEntries } = await import('../src/idb-storage.js');
-  const encStr = str => {
-    const b = new TextEncoder().encode(str);
-    return [b.byteLength, ...b];
-  };
-  const concurrent21 = new Uint8Array([
-    1,
-    1,
-    21,
-    0,
-    0x20 | 9,
-    1,
-    ...encStr('spaces'),
-    ...encStr('p'),
-    ...encStr('g21'),
-    126,
-    0,
-  ]);
-  const concurrent42 = new Uint8Array([
-    1,
-    1,
-    42,
-    0,
-    0x20 | 9,
-    1,
-    ...encStr('spaces'),
-    ...encStr('p'),
-    ...encStr('g42'),
-    126,
-    0,
-  ]);
-  for (const pair of [
-    [concurrent21, concurrent42],
-    [concurrent42, concurrent21],
-  ]) {
-    const out = extractYjsV1SubdocEntries(pair);
-    assert.deepEqual(out.guids, ['g42']);
-    assert.equal(out.pageIdToGuid.get('p'), 'g42');
-  }
-
-  // Verify listV1DocIds matches both 3-segment (userdata$u$ws) and 4-segment (userdata$u$ws$fav) keys.
+void test('listV1DocIds requires extractSubdocIds for non-empty rootUpdates, wires bootWebHost codecs, and matches 3/4-segment userdata keys', async () => {
   const idb = createMemoryIdbFactory();
+  const BroadcastChannelImpl = createBroadcastBus();
   const encoder = new TextEncoder();
   const v1Db = await new Promise((resolve, reject) => {
     const req = idb.open('affine-local', 1);
@@ -1347,9 +1191,10 @@ void test('real Yjs v1 binary fixtures decode overwrites, Y.XmlFragment, DeleteS
   const tx = v1Db.transaction('workspace', 'readwrite');
   tx.objectStore('workspace').put({
     id: 'ws',
-    updates: REAL_YJS_FIXTURES.overwrittenAndForeignIncremental.map(
-      (update, idx) => ({ timestamp: idx + 1, update })
-    ),
+    updates: [
+      { timestamp: 1, update: encoder.encode('root-frame-1') },
+      { timestamp: 2, update: encoder.encode('root-frame-2') },
+    ],
   });
   for (const key of [
     'live-guid',
@@ -1371,9 +1216,21 @@ void test('real Yjs v1 binary fixtures decode overwrites, Y.XmlFragment, DeleteS
     tx.commit();
   });
 
+  // Fail-fast when non-empty rootUpdates exist and no extractSubdocIds callback is configured.
+  const unconfigured = createIdbV1ReadonlyReader({
+    workspaceId: 'ws',
+    indexedDB: idb,
+  });
+  await assert.rejects(() => unconfigured.listV1DocIds(), TypeError);
+
+  // Injected extractSubdocIds discovers live subdocs and filters 3/4-segment userdata$ keys.
   const reader = createIdbV1ReadonlyReader({
     workspaceId: 'ws',
     indexedDB: idb,
+    extractSubdocIds: rootUpdates => {
+      assert.equal(rootUpdates.length, 2);
+      return ['live-guid'];
+    },
   });
   assert.deepEqual(await reader.listV1DocIds(), [
     'ws',
@@ -1381,6 +1238,44 @@ void test('real Yjs v1 binary fixtures decode overwrites, Y.XmlFragment, DeleteS
     'userdata$u$ws',
     'userdata$u$ws$fav',
   ]);
+
+  // bootWebHost forwards env.mergeUpdates / env.extractSubdocIds and supports dynamic setCrdtCodecs().
+  const host = await bootWebHost({
+    win: {
+      navigator: { gpu: {} },
+      location: { href: 'https://app.affine.pro/', assign() {} },
+    },
+    doc: {
+      createElement: () => ({ getContext: () => ({}) }),
+      getElementById: id =>
+        id === 'affine-build-manifest'
+          ? {
+              textContent: JSON.stringify({
+                shellVersion: 'mobile-v1',
+                buildHash: 'm5',
+                appEntryJs: null,
+                workers: {},
+                fonts: {},
+              }),
+            }
+          : null,
+    },
+    indexedDB: idb,
+    BroadcastChannelImpl,
+    space: { flavour: 'local', type: 'workspace', id: 'ws' },
+  });
+  await assert.rejects(() => host.v1Reader.listV1DocIds(), TypeError);
+  host.setCrdtCodecs({
+    mergeUpdates: testMergeFrames,
+    extractSubdocIds: () => ['live-guid'],
+  });
+  assert.deepEqual(await host.v1Reader.listV1DocIds(), [
+    'ws',
+    'live-guid',
+    'userdata$u$ws',
+    'userdata$u$ws$fav',
+  ]);
+  host.dispose();
 });
 
 void test('empty flush microtask race and throwing post-commit update listener never drop or duplicate writes', async () => {

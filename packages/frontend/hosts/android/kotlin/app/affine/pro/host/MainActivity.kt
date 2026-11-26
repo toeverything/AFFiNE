@@ -110,6 +110,8 @@ object NativeBridge {
   external fun nativeGetComposingEnd(handle: Long): Int
 
   // Legacy localStorage upgrade import & rollback write-back (zero IndexedDB).
+  external fun nativeIsAllowedLegacyLocalStorageKey(key: String): Boolean
+  external fun nativeFilterLegacyLocalStorageProbe(rawJson: String): String?
   external fun nativeImportLegacyLocalStorageProbe(
     handle: Long,
     payloadJson: String,
@@ -156,6 +158,7 @@ object NativeBridge {
 
   // Jetpack Preferences DataStore (`auth-sessions`) & `v1:` AES-GCM auth contract.
   external fun nativeCanonicalEndpoint(endpoint: String): String
+  external fun nativeAuthTokenKey(endpoint: String): String
   external fun nativeKeystoreAlias(endpoint: String): String
   external fun nativeDataStoreGetString(filesDir: String, key: String): String?
   external fun nativeDataStoreReadResult(filesDir: String, key: String): String
@@ -203,7 +206,6 @@ object NativeBridge {
     activeHandleCode: Int,
   )
   external fun nativeSelectionBeginDrag(handle: Long, touchX: Float, touchY: Float): Int
-  external fun nativeSelectionUpdateDrag(handle: Long, touchX: Float, touchY: Float): Boolean
   external fun nativeSelectionEndDrag(handle: Long): Boolean
   external fun nativeSelectionCancelDrag(handle: Long)
   external fun nativeClearSelectionOverlay(handle: Long)
@@ -647,14 +649,6 @@ class AndroidSelectionCoordinator(
     return hit
   }
 
-  fun updateDrag(touchX: Float, touchY: Float): Boolean {
-    val handle = handleProvider()
-    if (handle == 0L) return false
-    val moved = NativeBridge.nativeSelectionUpdateDrag(handle, touchX, touchY)
-    if (moved) onMutated()
-    return moved
-  }
-
   fun endDrag(): Boolean {
     val handle = handleProvider()
     if (handle == 0L) return false
@@ -904,7 +898,7 @@ class SelectionGestureController(
         return true
       }
     }
-    return coordinator.updateDrag(x, y)
+    return false
   }
 
   fun onUp(viewportWidthPx: Int, density: Float): Boolean {

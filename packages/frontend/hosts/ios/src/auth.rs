@@ -1,4 +1,19 @@
-use chrono::DateTime;
+pub use affine_store::auth::{
+    auth_error_json_permanently_invalidates_session as auth_error_permanently_invalidates_session,
+    canonical_endpoint, legacy_storage_endpoint_key,
+};
+use affine_store::{
+    api_client::{
+        ApiClientKind, ApiHttpRequest, ApiRequestContext, AuthSessionExchangeRequest,
+        HEADER_AFFINE_VERSION, HEADER_CLIENT_KIND, build_auth_session_exchange_request,
+        build_auth_session_refresh_request, build_auth_session_revoke_request,
+    },
+    auth::{
+        MAX_EXPIRES_IN_SECS as STORE_MAX_EXPIRES_IN_SECS, STORED_TOKEN_PAIR_VERSION,
+        is_bearer_token_type, is_valid_rfc3339,
+    },
+    sync::DEFAULT_CLIENT_VERSION,
+};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
@@ -14,29 +29,15 @@ pub const KEYCHAIN_TOKEN_SERVICE: &str = "app.affine.pro.auth-token";
 pub const INSTALLATION_ID_DEFAULTS_KEY: &str = "app.affine.pro.auth-installation-id";
 
 /// Header identifying native mobile auth requests to AFFiNE backend endpoints.
-pub const CLIENT_KIND_HEADER: &str = "x-affine-client-kind";
-pub const CLIENT_KIND_NATIVE: &str = "native";
+pub const CLIENT_KIND_HEADER: &str = HEADER_CLIENT_KIND;
+pub const CLIENT_KIND_NATIVE: &str = ApiClientKind::Native.as_str();
 
 /// Header carrying the AFFiNE client version required by `/api/auth/session/*`.
-pub const AFFINE_VERSION_HEADER: &str = "x-affine-version";
-pub const AFFINE_CLIENT_VERSION: &str = "0.27.5";
-
-/// Error codes returned by `/api/auth/session/refresh` that permanently invalidate
-/// the stored Keychain session, matching 0.27.5 `AuthPlugin.swift:44-52`.
-const PERMANENT_SESSION_INVALIDATION_CODES: &[&str] = &[
-    "AUTH_SESSION_EXPIRED",
-    "AUTH_SESSION_REVOKED",
-    "REFRESH_TOKEN_INVALID",
-    "REFRESH_TOKEN_REUSED",
-    "UNSUPPORTED_CLIENT_VERSION",
-    "ACCESS_TOKEN_INVALID",
-];
-
-/// Supported schema version for `StoredAuthTokenPair`.
-pub const STORED_TOKEN_PAIR_VERSION: u32 = 1;
+pub const AFFINE_VERSION_HEADER: &str = HEADER_AFFINE_VERSION;
+pub const AFFINE_CLIENT_VERSION: &str = DEFAULT_CLIENT_VERSION;
 
 /// Maximum valid access-token lifetime accepted from `/api/auth/session/*` responses.
-pub const MAX_EXPIRES_IN_SECS: i64 = 86_400;
+pub const MAX_EXPIRES_IN_SECS: i64 = STORE_MAX_EXPIRES_IN_SECS as i64;
 
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum AuthError {
@@ -106,22 +107,6 @@ pub struct AuthSessionHttpRequest {
     pub body_json: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct AuthErrorPayload {
-    code: Option<String>,
-    name: Option<String>,
-}
-
-/// Return true when an auth server error JSON permanently invalidates the stored
-/// Keychain session (`AuthPlugin.swift:44-52`).
-pub fn auth_error_permanently_invalidates_session(error_json: &str) -> bool {
-    let Ok(payload) = serde_json::from_str::<AuthErrorPayload>(error_json) else {
-        return false;
-    };
-    let code = payload.code.as_deref().or(payload.name.as_deref());
-    matches!(code, Some(c) if PERMANENT_SESSION_INVALIDATION_CODES.contains(&c))
-}
-
 /// Convert Unix epoch seconds (1970-01-01) to Apple reference epoch seconds (2001-01-01).
 pub fn unix_secs_to_apple_reference_secs(unix_secs: f64) -> f64 {
     unix_secs - APPLE_REFERENCE_EPOCH_OFFSET_SECS
@@ -132,75 +117,13 @@ pub fn apple_reference_secs_to_unix_secs(apple_secs: f64) -> f64 {
     apple_secs + APPLE_REFERENCE_EPOCH_OFFSET_SECS
 }
 
-/// Canonicalize an endpoint URL identically to 0.27.5 `AuthPlugin.swift:205-213`:
-/// lowercase scheme and host, omit default ports (`80` for `http`, `443` for `https`),
-/// and strip path/query/fragment components.
-pub fn canonical_endpoint(endpoint: &str) -> String {
-    let trimmed = endpoint.trim();
-    let Some((scheme_raw, rest)) = trimmed.split_once("://") else {
-        return endpoint.to_string();
-    };
-    if scheme_raw.is_empty()
-        || !scheme_raw
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
-    {
-        return endpoint.to_string();
-    }
-
-    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
-    if authority.is_empty() {
-        return endpoint.to_string();
-    }
-    let host_port = authority.rsplit('@').next().unwrap_or(authority);
-    let (host_raw, port_raw) = if let Some(bracket_end) = host_port.find(']') {
-        if !host_port.starts_with('[') {
-            return endpoint.to_string();
-        }
-        let host = &host_port[..=bracket_end];
-        let tail = &host_port[bracket_end + 1..];
-        if let Some(port_str) = tail.strip_prefix(':') {
-            (host, Some(port_str))
-        } else if tail.is_empty() {
-            (host, None)
-        } else {
-            return endpoint.to_string();
-        }
-    } else if let Some((host, port_str)) = host_port.rsplit_once(':') {
-        (host, Some(port_str))
-    } else {
-        (host_port, None)
-    };
-
-    if host_raw.is_empty() {
-        return endpoint.to_string();
-    }
-
-    let scheme = scheme_raw.to_ascii_lowercase();
-    let host = host_raw.to_ascii_lowercase();
-    let default_port = match scheme.as_str() {
-        "http" => Some(80u16),
-        "https" => Some(443u16),
-        _ => None,
-    };
-
-    let port_suffix = match port_raw {
-        None | Some("") => String::new(),
-        Some(p) => match p.parse::<u16>() {
-            Ok(port) if Some(port) == default_port => String::new(),
-            Ok(port) => format!(":{port}"),
-            Err(_) => return endpoint.to_string(),
-        },
-    };
-
-    format!("{scheme}://{host}{port_suffix}")
-}
-
 fn validate_iso8601(field: &'static str, value: &str) -> Result<(), AuthError> {
-    DateTime::parse_from_rfc3339(value).map_err(|_| AuthError::InvalidIsoTimestamp {
-        field,
-        value: value.to_string(),
-    })?;
+    if !is_valid_rfc3339(value) {
+        return Err(AuthError::InvalidIsoTimestamp {
+            field,
+            value: value.to_string(),
+        });
+    }
     Ok(())
 }
 
@@ -218,7 +141,7 @@ impl StoredAuthTokenPair {
         if self.version != STORED_TOKEN_PAIR_VERSION {
             return Err(AuthError::UnsupportedVersion(self.version));
         }
-        if self.token_type != "Bearer" {
+        if !is_bearer_token_type(&self.token_type) {
             return Err(AuthError::InvalidTokenType(self.token_type.clone()));
         }
         if self.access_token.is_empty() {
@@ -244,7 +167,7 @@ impl StoredAuthTokenPair {
         response: &AuthTokenResponse,
         now_unix_ms: i64,
     ) -> Result<Self, AuthError> {
-        if response.token_type != "Bearer" {
+        if !is_bearer_token_type(&response.token_type) {
             return Err(AuthError::InvalidTokenType(response.token_type.clone()));
         }
         if response.access_token.is_empty() {
@@ -316,6 +239,23 @@ fn require_canonical_endpoint(endpoint: &str) -> Result<String, AuthError> {
     Ok(canonical)
 }
 
+fn to_ios_http_request(
+    base: &str,
+    req: ApiHttpRequest,
+) -> Result<AuthSessionHttpRequest, AuthError> {
+    let body_json = String::from_utf8(req.body.unwrap_or_default())
+        .map_err(|err| AuthError::InvalidJson(err.to_string()))?;
+    Ok(AuthSessionHttpRequest {
+        method: "POST".to_string(),
+        url: format!("{base}{}", req.path),
+        client_kind_header: CLIENT_KIND_HEADER.to_string(),
+        client_kind_value: CLIENT_KIND_NATIVE.to_string(),
+        version_header: AFFINE_VERSION_HEADER.to_string(),
+        version_value: AFFINE_CLIENT_VERSION.to_string(),
+        body_json,
+    })
+}
+
 /// Build the `/api/auth/session/exchange` request payload with `x-affine-client-kind: native`.
 pub fn build_exchange_request(
     endpoint: &str,
@@ -330,21 +270,18 @@ pub fn build_exchange_request(
         return Err(AuthError::MissingField("installationId"));
     }
     let base = require_canonical_endpoint(endpoint)?;
-    let body = serde_json::json!({
-        "code": code,
-        "installationId": installation_id,
-        "platform": "ios",
-        "deviceName": device_name,
-    });
-    Ok(AuthSessionHttpRequest {
-        method: "POST".to_string(),
-        url: format!("{base}/api/auth/session/exchange"),
-        client_kind_header: CLIENT_KIND_HEADER.to_string(),
-        client_kind_value: CLIENT_KIND_NATIVE.to_string(),
-        version_header: AFFINE_VERSION_HEADER.to_string(),
-        version_value: AFFINE_CLIENT_VERSION.to_string(),
-        body_json: body.to_string(),
-    })
+    let ctx = ApiRequestContext::native(None);
+    let req = build_auth_session_exchange_request(
+        &ctx,
+        &AuthSessionExchangeRequest {
+            code: code.to_string(),
+            installation_id: installation_id.to_string(),
+            platform: "ios".to_string(),
+            device_name: Some(device_name.to_string()),
+        },
+    )
+    .map_err(|err| AuthError::InvalidJson(err.to_string()))?;
+    to_ios_http_request(&base, req)
 }
 
 /// Build the `/api/auth/session/refresh` request payload with `x-affine-client-kind: native`.
@@ -356,18 +293,10 @@ pub fn build_refresh_request(
         return Err(AuthError::MissingField("refreshToken"));
     }
     let base = require_canonical_endpoint(endpoint)?;
-    let body = serde_json::json!({
-        "refreshToken": refresh_token,
-    });
-    Ok(AuthSessionHttpRequest {
-        method: "POST".to_string(),
-        url: format!("{base}/api/auth/session/refresh"),
-        client_kind_header: CLIENT_KIND_HEADER.to_string(),
-        client_kind_value: CLIENT_KIND_NATIVE.to_string(),
-        version_header: AFFINE_VERSION_HEADER.to_string(),
-        version_value: AFFINE_CLIENT_VERSION.to_string(),
-        body_json: body.to_string(),
-    })
+    let ctx = ApiRequestContext::native(None);
+    let req = build_auth_session_refresh_request(&ctx, refresh_token, None)
+        .map_err(|err| AuthError::InvalidJson(err.to_string()))?;
+    to_ios_http_request(&base, req)
 }
 
 /// Build the `/api/auth/session/revoke` request payload with `x-affine-client-kind: native`.
@@ -379,18 +308,10 @@ pub fn build_revoke_request(
         return Err(AuthError::MissingField("refreshToken"));
     }
     let base = require_canonical_endpoint(endpoint)?;
-    let body = serde_json::json!({
-        "refreshToken": refresh_token,
-    });
-    Ok(AuthSessionHttpRequest {
-        method: "POST".to_string(),
-        url: format!("{base}/api/auth/session/revoke"),
-        client_kind_header: CLIENT_KIND_HEADER.to_string(),
-        client_kind_value: CLIENT_KIND_NATIVE.to_string(),
-        version_header: AFFINE_VERSION_HEADER.to_string(),
-        version_value: AFFINE_CLIENT_VERSION.to_string(),
-        body_json: body.to_string(),
-    })
+    let ctx = ApiRequestContext::native(None);
+    let req = build_auth_session_revoke_request(&ctx, refresh_token)
+        .map_err(|err| AuthError::InvalidJson(err.to_string()))?;
+    to_ios_http_request(&base, req)
 }
 
 #[cfg(test)]
@@ -411,11 +332,21 @@ mod tests {
                 "https://self-host.example.com:3010",
             ),
             ("http://127.0.0.1:8080/", "http://127.0.0.1:8080"),
+            ("https://[::1]:443/graphql", "https://[::1]"),
+            ("https://[::1]:8443/graphql", "https://[::1]:8443"),
             ("not-a-url", "not-a-url"),
         ];
         for (input, expected) in cases {
             assert_eq!(canonical_endpoint(input), expected, "input={input}");
         }
+        assert_eq!(
+            legacy_storage_endpoint_key("https://[::1]:443/graphql"),
+            "https://::1"
+        );
+        assert_eq!(
+            legacy_storage_endpoint_key("https://[::1]:8443/graphql"),
+            "https://::1:8443"
+        );
     }
 
     #[test]
@@ -573,5 +504,35 @@ mod tests {
             StoredAuthTokenPair::from_token_response(&bad_resp, 1_795_600_000_000),
             Err(AuthError::InvalidExpiresIn(0))
         );
+
+        // Table-driven cross-platform parity: case-insensitive Bearer and RFC3339 timezone offsets.
+        let valid_variants = [
+            ("Bearer", "2026-12-01T00:00:00Z", "2027-01-01T00:00:00Z"),
+            (
+                "bearer",
+                "2026-12-01T08:00:00+08:00",
+                "2027-01-01T00:00:00-05:00",
+            ),
+            (
+                "BEARER",
+                "2026-12-01T08:00:00.250+08:00",
+                "2027-01-01T00:00:00.5Z",
+            ),
+        ];
+        for (token_type, refresh_ts, abs_ts) in valid_variants {
+            let resp = AuthTokenResponse {
+                token_type: token_type.into(),
+                access_token: "acc".into(),
+                expires_in: 600,
+                refresh_token: "ref".into(),
+                refresh_expires_at: refresh_ts.into(),
+                session: AuthSessionInfo {
+                    id: "sess".into(),
+                    absolute_expires_at: abs_ts.into(),
+                },
+            };
+            let pair = StoredAuthTokenPair::from_token_response(&resp, 1_795_600_000_000).unwrap();
+            assert!(StoredAuthTokenPair::from_json(&pair.to_json().unwrap()).is_ok());
+        }
     }
 }

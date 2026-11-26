@@ -273,6 +273,8 @@ AffineUtf16Range affine_ios_host_marked_range(const AffineIosHost *host);
 
 char *affine_ios_auth_canonical_endpoint(const char *endpoint);
 
+char *affine_ios_auth_legacy_storage_endpoint_key(const char *endpoint);
+
 char *affine_ios_auth_parse_keychain_json(
     const char *json,
     double now_unix_secs,
@@ -290,6 +292,7 @@ char *affine_ios_auth_resolve_installation_id(
 
 bool affine_ios_auth_error_permanently_invalidates_session(const char *error_json);
 
+bool affine_ios_legacy_is_permitted_key(const char *key);
 char *affine_ios_legacy_storage_parse_snapshot_json(const char *snapshot_json);
 
 char *affine_ios_legacy_storage_plan_write_back_json(
@@ -402,12 +405,6 @@ bool affine_ios_host_selection_begin_drag(
 AffinePoint affine_ios_host_selection_drag_probe(
     const AffineIosHost *host,
     AffinePoint touch_point);
-
-AffineSelectionOverlayState affine_ios_host_selection_update_drag(
-    AffineIosHost *host,
-    AffinePoint touch_point,
-    AffineRect updated_caret,
-    AffineUtf16Range updated_range);
 
 uint32_t affine_ios_host_selection_drag_anchor(
     const AffineIosHost *host);

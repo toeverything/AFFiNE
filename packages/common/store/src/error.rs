@@ -18,9 +18,6 @@ pub enum StoreError {
     #[error("workspace root meta.pages is not initialized")]
     RootMetaNotInitialized,
 
-    #[error("companion workspace table `{0}` is not resolved; load it or mark it absent first")]
-    DbTableNotResolved(String),
-
     #[error("concurrent modification prevented write")]
     ConcurrentModification,
 

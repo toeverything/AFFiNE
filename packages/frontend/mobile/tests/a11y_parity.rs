@@ -246,7 +246,7 @@ fn landscape_notch_a11y_bounds_match_rendered_snapshot_in_ltr_and_rtl() {
                 app.window_handle.update(cx, |v, _, cx| {
                     v.state
                         .open_doc("doc-arch", Origin::Direct(DirectKind::Home));
-                    let arch_seq = v.state.history.current().unwrap().seq;
+                    let arch_seq = v.state.active_workspace().history.current().unwrap().seq;
                     v.state.open_doc(
                         "doc-sync",
                         Origin::DocLink {
@@ -355,7 +355,7 @@ fn all_published_interactive_a11y_nodes_activate_and_modal_blocks_background() {
             Box::new(|| {
                 let mut s = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
                 s.open_doc("doc-arch", Origin::Direct(DirectKind::Home));
-                let arch_seq = s.history.current().unwrap().seq;
+                let arch_seq = s.active_workspace().history.current().unwrap().seq;
                 s.open_doc(
                     "doc-sync",
                     Origin::DocLink {
@@ -523,8 +523,12 @@ fn a11y_actions_match_real_clicks_for_explorer_back_breadcrumb_and_backlink() {
                 click_app.window_handle.update(cx, |v, _, _| {
                     (
                         v.state.route.clone(),
-                        v.state.history.len(),
-                        v.state.history.current().map(|e| e.target.clone()),
+                        v.state.active_workspace().history.len(),
+                        v.state
+                            .active_workspace()
+                            .history
+                            .current()
+                            .map(|e| e.target.clone()),
                     )
                 })
             })
@@ -538,9 +542,13 @@ fn a11y_actions_match_real_clicks_for_explorer_back_breadcrumb_and_backlink() {
             400.0
         ));
         assert_eq!(a11y_state.route, click_route);
-        assert_eq!(a11y_state.history.len(), click_len);
+        assert_eq!(a11y_state.active_workspace().history.len(), click_len);
         assert_eq!(
-            a11y_state.history.current().map(|e| e.target.clone()),
+            a11y_state
+                .active_workspace()
+                .history
+                .current()
+                .map(|e| e.target.clone()),
             click_target
         );
     }
@@ -566,8 +574,12 @@ fn a11y_actions_match_real_clicks_for_explorer_back_breadcrumb_and_backlink() {
                 click_app.window_handle.update(cx, |v, _, _| {
                     (
                         v.state.route.clone(),
-                        v.state.history.len(),
-                        v.state.history.current().map(|e| e.target.clone()),
+                        v.state.active_workspace().history.len(),
+                        v.state
+                            .active_workspace()
+                            .history
+                            .current()
+                            .map(|e| e.target.clone()),
                     )
                 })
             })
@@ -581,9 +593,13 @@ fn a11y_actions_match_real_clicks_for_explorer_back_breadcrumb_and_backlink() {
             400.0
         ));
         assert_eq!(a11y_state.route, click_route);
-        assert_eq!(a11y_state.history.len(), click_len);
+        assert_eq!(a11y_state.active_workspace().history.len(), click_len);
         assert_eq!(
-            a11y_state.history.current().map(|e| e.target.clone()),
+            a11y_state
+                .active_workspace()
+                .history
+                .current()
+                .map(|e| e.target.clone()),
             click_target
         );
     }
@@ -607,7 +623,7 @@ fn a11y_actions_match_real_clicks_for_explorer_back_breadcrumb_and_backlink() {
                     (
                         v.state.route.clone(),
                         v.state.active_sheet,
-                        v.state.history.len(),
+                        v.state.active_workspace().history.len(),
                     )
                 })
             })
@@ -622,7 +638,7 @@ fn a11y_actions_match_real_clicks_for_explorer_back_breadcrumb_and_backlink() {
         ));
         assert_eq!(a11y_state.route, click_route);
         assert_eq!(a11y_state.active_sheet, click_sheet);
-        assert_eq!(a11y_state.history.len(), click_len);
+        assert_eq!(a11y_state.active_workspace().history.len(), click_len);
         assert_eq!(a11y_state.route, MobileRoute::Page("doc-journal".into()));
     }
 }
@@ -650,9 +666,15 @@ fn explorer_a11y_drilldown_and_origins_match_clicks_across_folder_collection_tag
                 let d = v.state.derive_breadcrumb();
                 let ids: Vec<String> = d.crumbs.iter().map(|c| c.id.clone()).collect();
                 (
-                    v.state.history.current().unwrap().origin.clone(),
+                    v.state
+                        .active_workspace()
+                        .history
+                        .current()
+                        .unwrap()
+                        .origin
+                        .clone(),
                     ids,
-                    v.state.history.len(),
+                    v.state.active_workspace().history.len(),
                 )
             })
         })
@@ -671,7 +693,13 @@ fn explorer_a11y_drilldown_and_origins_match_clicks_across_folder_collection_tag
             400.0
         ));
     }
-    let a11y_origin = a11y_state.history.current().unwrap().origin.clone();
+    let a11y_origin = a11y_state
+        .active_workspace()
+        .history
+        .current()
+        .unwrap()
+        .origin
+        .clone();
     let a11y_crumbs: Vec<String> = a11y_state
         .derive_breadcrumb()
         .crumbs
@@ -690,7 +718,7 @@ fn explorer_a11y_drilldown_and_origins_match_clicks_across_folder_collection_tag
         vec!["folder:f-eng", "folder:f-mobile", "doc:doc-arch"]
     );
     assert_eq!(a11y_crumbs, click_crumbs);
-    assert_eq!(a11y_state.history.len(), click_hist_len);
+    assert_eq!(a11y_state.active_workspace().history.len(), click_hist_len);
 
     // 2. Folder, Collection, and Tag origins match clicks 100%.
     let origin_cases: [(&str, NavTarget, &str, Origin); 3] = [
@@ -735,7 +763,16 @@ fn explorer_a11y_drilldown_and_origins_match_clicks_across_folder_collection_tag
                         .iter()
                         .map(|c| c.id.clone())
                         .collect();
-                    (v.state.history.current().unwrap().origin.clone(), ids)
+                    (
+                        v.state
+                            .active_workspace()
+                            .history
+                            .current()
+                            .unwrap()
+                            .origin
+                            .clone(),
+                        ids,
+                    )
                 })
             })
             .unwrap();
@@ -747,7 +784,13 @@ fn explorer_a11y_drilldown_and_origins_match_clicks_across_folder_collection_tag
             MobileA11yAction::Activate,
             400.0
         ));
-        let a_origin = s.history.current().unwrap().origin.clone();
+        let a_origin = s
+            .active_workspace()
+            .history
+            .current()
+            .unwrap()
+            .origin
+            .clone();
         let a_crumbs: Vec<String> = s
             .derive_breadcrumb()
             .crumbs
@@ -784,7 +827,7 @@ fn cross_sheet_stale_a11y_action_is_rejected() {
 fn narrow_breadcrumb_ellipsis_sheet_close_restores_focus_to_ellipsis() {
     let mut init = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
     init.open_doc("doc-arch", Origin::Direct(DirectKind::Home));
-    let s1 = init.history.current().unwrap().seq;
+    let s1 = init.active_workspace().history.current().unwrap().seq;
     init.open_doc(
         "doc-sync",
         Origin::DocLink {
@@ -792,7 +835,7 @@ fn narrow_breadcrumb_ellipsis_sheet_close_restores_focus_to_ellipsis() {
             block_id: None,
         },
     );
-    let s2 = init.history.current().unwrap().seq;
+    let s2 = init.active_workspace().history.current().unwrap().seq;
     init.open_doc(
         "doc-journal",
         Origin::DocLink {
@@ -1037,9 +1080,9 @@ fn stale_explorer_doc_action_from_previous_workspace_is_rejected() {
             app.window_handle.update(cx, |v, _, cx| {
                 let personal_idx = v
                     .state
-                    .workspaces
+                    .workspace_store
                     .iter()
-                    .position(|w| w.id == "ws-personal")
+                    .position(|w| w.summary.id == "ws-personal")
                     .expect("ws-personal exists");
                 v.state.select_workspace(personal_idx, 500.0);
                 v.state.settle_animations(1000.0);
@@ -1060,10 +1103,11 @@ fn stale_explorer_doc_action_from_previous_workspace_is_rejected() {
                         .nodes
                         .contains_key("mobile.explorer.doc.14:ws-mobile-rustdoc-arch")
                 );
-                let ws_before = v.state.scope.workspace_id.clone();
+                let ws_before = v.state.active_workspace().scope.workspace_id.clone();
                 let route_before = v.state.route.clone();
                 let hist_before: Vec<NavTarget> = v
                     .state
+                    .active_workspace()
                     .history
                     .entries()
                     .iter()
@@ -1075,10 +1119,11 @@ fn stale_explorer_doc_action_from_previous_workspace_is_rejected() {
                     MobileA11yAction::Activate,
                     cx
                 ));
-                assert_eq!(v.state.scope.workspace_id, ws_before);
+                assert_eq!(v.state.active_workspace().scope.workspace_id, ws_before);
                 assert_eq!(v.state.route, route_before);
                 let hist_after: Vec<NavTarget> = v
                     .state
+                    .active_workspace()
                     .history
                     .entries()
                     .iter()
@@ -1099,7 +1144,7 @@ fn stale_breadcrumb_ellipsis_action_after_widening_viewport_is_rejected() {
             link_id: "l-arch-mobile".into(),
         },
     );
-    let arch_seq = init.history.current().unwrap().seq;
+    let arch_seq = init.active_workspace().history.current().unwrap().seq;
     init.open_doc(
         "doc-sync",
         Origin::DocLink {
@@ -1107,7 +1152,7 @@ fn stale_breadcrumb_ellipsis_action_after_widening_viewport_is_rejected() {
             block_id: None,
         },
     );
-    let sync_seq = init.history.current().unwrap().seq;
+    let sync_seq = init.active_workspace().history.current().unwrap().seq;
     init.open_doc(
         "doc-journal",
         Origin::DocLink {
@@ -1195,25 +1240,24 @@ fn dotted_workspace_and_doc_ids_do_not_collide_in_scoped_actions() {
     );
 
     let mut state = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
-    state.workspaces[0].id = "team.eu".into();
     state.workspace_store[0].summary.id = "team.eu".into();
     state.workspace_store[0].scope.workspace_id = "team.eu".into();
-    state.scope.workspace_id = "team.eu".into();
-    state.docs.push(affine_mobile::MobileDocRecord {
-        id: "notes".into(),
-        title: "EU Team Notes".into(),
-        body_preview: "EU workspace doc".into(),
-        tags: Vec::new(),
-        updated_at_ms: 1_764_000_500,
-        is_favorite: false,
-        trashed: true,
-        journal_date: None,
-        clock: 1,
-        outgoing_edges: Vec::new(),
-    });
-    state.workspace_store[0].docs = state.docs.clone();
+    state
+        .active_workspace_mut()
+        .docs
+        .push(affine_mobile::MobileDocRecord {
+            id: "notes".into(),
+            title: "EU Team Notes".into(),
+            body_preview: "EU workspace doc".into(),
+            tags: Vec::new(),
+            updated_at_ms: 1_764_000_500,
+            is_favorite: false,
+            trashed: true,
+            journal_date: None,
+            clock: 1,
+            outgoing_edges: Vec::new(),
+        });
 
-    state.workspaces[1].id = "team".into();
     state.workspace_store[1].summary.id = "team".into();
     state.workspace_store[1].scope.workspace_id = "team".into();
     state.workspace_store[1]
@@ -1323,18 +1367,20 @@ fn screen_reader_scroll_actions_reach_34th_doc_and_30th_collection_and_tag() {
     for (w, h) in [(390u32, 844u32), (320u32, 568u32)] {
         let mut init = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
         for i in 1..=34 {
-            init.docs.push(affine_mobile::MobileDocRecord {
-                id: format!("doc-a11y-{i}"),
-                title: format!("A11y Document {i}"),
-                body_preview: format!("Body {i}"),
-                tags: Vec::new(),
-                updated_at_ms: 1_764_000_000 + i as i64,
-                is_favorite: false,
-                trashed: false,
-                journal_date: None,
-                clock: 1,
-                outgoing_edges: Vec::new(),
-            });
+            init.active_workspace_mut()
+                .docs
+                .push(affine_mobile::MobileDocRecord {
+                    id: format!("doc-a11y-{i}"),
+                    title: format!("A11y Document {i}"),
+                    body_preview: format!("Body {i}"),
+                    tags: Vec::new(),
+                    updated_at_ms: 1_764_000_000 + i as i64,
+                    is_favorite: false,
+                    trashed: false,
+                    journal_date: None,
+                    clock: 1,
+                    outgoing_edges: Vec::new(),
+                });
         }
         init.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
 
@@ -1458,15 +1504,18 @@ fn screen_reader_scroll_actions_reach_34th_doc_and_30th_collection_and_tag() {
 
     // 2. 30 collections and 30 tags scroll to bottom and activate 30th item.
     let mut init = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
-    init.collections.clear();
-    init.tags.clear();
+    init.active_workspace_mut().collections.clear();
+    init.active_workspace_mut().tags.clear();
     for i in 1..=30 {
-        init.collections.push(affine_mobile::MobileCollection {
-            id: format!("col-bulk-{i}"),
-            name: format!("Collection #{i}"),
-            doc_ids: vec!["doc-arch".into()],
-        });
-        init.tags
+        init.active_workspace_mut()
+            .collections
+            .push(affine_mobile::MobileCollection {
+                id: format!("col-bulk-{i}"),
+                name: format!("Collection #{i}"),
+                doc_ids: vec!["doc-arch".into()],
+            });
+        init.active_workspace_mut()
+            .tags
             .push((format!("tag-bulk-{i}"), format!("tag-{i}")));
     }
     init.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
@@ -1518,7 +1567,13 @@ fn screen_reader_scroll_actions_reach_34th_doc_and_30th_collection_and_tag() {
         .app
         .update(|cx| {
             app.window_handle.update(cx, |v, _, _| {
-                v.state.history.current().unwrap().target.clone()
+                v.state
+                    .active_workspace()
+                    .history
+                    .current()
+                    .unwrap()
+                    .target
+                    .clone()
             })
         })
         .unwrap();
@@ -1580,7 +1635,13 @@ fn screen_reader_scroll_actions_reach_34th_doc_and_30th_collection_and_tag() {
         .app
         .update(|cx| {
             app.window_handle.update(cx, |v, _, _| {
-                v.state.history.current().unwrap().target.clone()
+                v.state
+                    .active_workspace()
+                    .history
+                    .current()
+                    .unwrap()
+                    .target
+                    .clone()
             })
         })
         .unwrap();
@@ -1617,10 +1678,19 @@ fn empty_title_uses_localized_untitled_in_main_landmark_and_backlinks_sheet() {
                     target_doc_id: "doc-arch".into(),
                     kind: blocksuite_playground_doc::refs::OutboundRefKind::InlineMention,
                 };
-                if let Some(d) = v.state.docs.iter_mut().find(|d| d.id == src_id) {
+                if let Some(d) = v
+                    .state
+                    .active_workspace_mut()
+                    .docs
+                    .iter_mut()
+                    .find(|d| d.id == src_id)
+                {
                     d.outgoing_edges.push(edge.clone());
                 }
-                v.state.link_graph.replace_edges(&src_id, vec![edge], 1);
+                v.state
+                    .active_workspace_mut()
+                    .link_graph
+                    .replace_edges(&src_id, vec![edge], 1);
                 v.state
                     .open_doc("doc-arch", Origin::Direct(DirectKind::Home));
                 v.state

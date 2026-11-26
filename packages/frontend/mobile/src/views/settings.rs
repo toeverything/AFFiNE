@@ -110,7 +110,7 @@ pub(super) fn render_settings(
         let title = strings.settings_groups[idx];
         let value = match group {
             SettingsGroupId::Account => state.settings.account_email.clone(),
-            SettingsGroupId::Workspace => state.active_workspace().name.clone(),
+            SettingsGroupId::Workspace => state.active_workspace().summary.name.clone(),
             SettingsGroupId::Appearance => theme_label.to_string(),
             SettingsGroupId::Language => state.settings.locale.display_name().to_string(),
             SettingsGroupId::Editor => format!("{}%", state.settings.editor_font_scale_pct),

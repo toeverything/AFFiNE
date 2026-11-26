@@ -111,7 +111,7 @@ private actor AuthSessionBroker {
   }
 
   func readTokenPair(for endpoint: String) throws -> LegacyStoredAuthTokenPair? {
-    let account = LegacyAuthBridge.canonicalEndpoint(endpoint)
+    let account = LegacyAuthBridge.legacyStorageEndpointKey(endpoint)
     guard let data = try persistence.readRawData(service: LegacyAuthBridge.keychainService, account: account) else {
       return nil
     }
@@ -145,7 +145,7 @@ private actor AuthSessionBroker {
   }
 
   func writeTokenPair(_ pair: LegacyStoredAuthTokenPair, for endpoint: String) throws {
-    let key = LegacyAuthBridge.canonicalEndpoint(endpoint)
+    let key = LegacyAuthBridge.legacyStorageEndpointKey(endpoint)
     invalidateRefresh(key)
     let data = try JSONEncoder().encode(pair)
     try persistence.writeRawData(data, service: LegacyAuthBridge.keychainService, account: key)
@@ -156,7 +156,7 @@ private actor AuthSessionBroker {
     for endpoint: String,
     nowUnixMs: Int64
   ) throws -> LegacyStoredAuthTokenPair {
-    let key = LegacyAuthBridge.canonicalEndpoint(endpoint)
+    let key = LegacyAuthBridge.legacyStorageEndpointKey(endpoint)
     invalidateRefresh(key)
     let (pair, payloadData) = try encodeTokenResponse(responseData, nowUnixMs: nowUnixMs)
     try persistence.writeRawData(payloadData, service: LegacyAuthBridge.keychainService, account: key)
@@ -164,7 +164,7 @@ private actor AuthSessionBroker {
   }
 
   func deleteTokenPair(for endpoint: String) throws {
-    let key = LegacyAuthBridge.canonicalEndpoint(endpoint)
+    let key = LegacyAuthBridge.legacyStorageEndpointKey(endpoint)
     invalidateRefresh(key)
     try persistence.deleteRawData(service: LegacyAuthBridge.keychainService, account: key)
   }
@@ -187,7 +187,7 @@ private actor AuthSessionBroker {
     endpoint: String,
     session: URLSession
   ) async throws -> LegacyStoredAuthTokenPair {
-    let key = LegacyAuthBridge.canonicalEndpoint(endpoint)
+    let key = LegacyAuthBridge.legacyStorageEndpointKey(endpoint)
     if let existing = refreshTasks[key] {
       return try await existing.task.value
     }
@@ -229,7 +229,7 @@ private actor AuthSessionBroker {
   }
 
   func prepareRevoke(endpoint: String) throws -> LegacyStoredAuthTokenPair? {
-    let key = LegacyAuthBridge.canonicalEndpoint(endpoint)
+    let key = LegacyAuthBridge.legacyStorageEndpointKey(endpoint)
     let current = try readTokenPair(for: endpoint)
     invalidateRefresh(key)
     try persistence.deleteRawData(service: LegacyAuthBridge.keychainService, account: key)
@@ -373,6 +373,13 @@ final class LegacyAuthBridge: @unchecked Sendable {
 
   static func canonicalEndpoint(_ endpoint: String) -> String {
     let ptr = endpoint.withCString { affine_ios_auth_canonical_endpoint($0) }
+    guard let ptr else { return endpoint }
+    defer { affine_ios_string_free(ptr) }
+    return String(cString: ptr)
+  }
+
+  static func legacyStorageEndpointKey(_ endpoint: String) -> String {
+    let ptr = endpoint.withCString { affine_ios_auth_legacy_storage_endpoint_key($0) }
     guard let ptr else { return endpoint }
     defer { affine_ios_string_free(ptr) }
     return String(cString: ptr)

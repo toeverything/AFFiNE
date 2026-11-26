@@ -1,5 +1,11 @@
 // @ts-check
 
+import {
+  buildStubImports,
+  invokeScalarRpc,
+  resolveWasmExport,
+} from '../wasm-scalar-rpc.js';
+
 const OPCODE_REGISTER_FONT = 1;
 const OPCODE_MERMAID_SVG = 2;
 const OPCODE_MATH_SVG = 3;
@@ -14,52 +20,6 @@ const KIND_OPCODES = {
   typst: OPCODE_TYPST_SVG,
   pdf: OPCODE_PDF_PAGE,
 };
-
-/**
- * Builds stub imports for unused `wasm-bindgen` JS glue entries so the raw
- * scalar `affine_worker_*` exports run directly under `WebAssembly.instantiate`
- * without requiring `wasm-bindgen-cli`.
- *
- * @param {WebAssembly.Module} mod
- * @returns {WebAssembly.Imports}
- */
-function buildStubImports(mod) {
-  /** @type {Record<string, Record<string, WebAssembly.ImportValue>>} */
-  const imports = {};
-  for (const desc of WebAssembly.Module.imports(mod)) {
-    if (!imports[desc.module]) {
-      imports[desc.module] = {};
-    }
-    if (desc.kind === 'function') {
-      imports[desc.module][desc.name] = () => 0;
-    } else if (desc.kind === 'global') {
-      imports[desc.module][desc.name] = 0;
-    }
-  }
-  return imports;
-}
-
-/**
- * Resolves a raw `affine_worker_*` export from `instance.exports`, matching
- * either the exact name or `wasm-bindgen`'s hashed export `<name>_<hex>`
- * (never matching `__wbindgen_describe_*` metadata exports).
- *
- * @param {Record<string, unknown>} rawExports
- * @param {string} baseName
- * @returns {Function}
- */
-function resolveWorkerExport(rawExports, baseName) {
-  if (typeof rawExports[baseName] === 'function') {
-    return /** @type {Function} */ (rawExports[baseName]);
-  }
-  const prefix = `${baseName}_`;
-  for (const [key, value] of Object.entries(rawExports)) {
-    if (key.startsWith(prefix) && typeof value === 'function') {
-      return value;
-    }
-  }
-  throw new Error(`Worker wasm missing required export: ${baseName}`);
-}
 
 /**
  * Instantiates the pinned `.wasm` binary from `globalThis.AFFINE_WORKER_WASM_URL`
@@ -81,21 +41,21 @@ async function loadWorkerExports(wasmUrl) {
     /** @type {unknown} */ (instance.exports)
   );
   return {
-    affine_worker_reset_input: resolveWorkerExport(
+    resetInput: resolveWasmExport(
       rawExports,
-      'affine_worker_reset_input'
+      'affine_worker_reset_input',
+      'Worker'
     ),
-    affine_worker_push_input_u32: resolveWorkerExport(
+    pushInputU32: resolveWasmExport(
       rawExports,
-      'affine_worker_push_input_u32'
+      'affine_worker_push_input_u32',
+      'Worker'
     ),
-    affine_worker_invoke: resolveWorkerExport(
+    invoke: resolveWasmExport(rawExports, 'affine_worker_invoke', 'Worker'),
+    outputU32: resolveWasmExport(
       rawExports,
-      'affine_worker_invoke'
-    ),
-    affine_worker_output_u32: resolveWorkerExport(
-      rawExports,
-      'affine_worker_output_u32'
+      'affine_worker_output_u32',
+      'Worker'
     ),
   };
 }
@@ -104,39 +64,13 @@ async function loadWorkerExports(wasmUrl) {
  * Invokes `affine_worker_invoke` with `[opcode, ...payload]` and returns the
  * raw binary response frame (`[0x01, ...ok]` or `[0x00, ...utf8Err]`).
  *
- * @param {Record<string, Function>} exports
+ * @param {{ resetInput: Function, pushInputU32: Function, invoke: Function, outputU32: Function }} exports
  * @param {number} opcode
  * @param {Uint8Array} payload
  * @returns {Uint8Array}
  */
 function invokeRaw(exports, opcode, payload) {
-  exports.affine_worker_reset_input();
-  const full = new Uint8Array(1 + payload.length);
-  full[0] = opcode;
-  full.set(payload, 1);
-
-  for (let i = 0; i < full.length; i += 4) {
-    const valid = Math.min(4, full.length - i);
-    const word =
-      (full[i] || 0) |
-      ((full[i + 1] || 0) << 8) |
-      ((full[i + 2] || 0) << 16) |
-      ((full[i + 3] || 0) << 24);
-    exports.affine_worker_push_input_u32(word >>> 0, valid);
-  }
-
-  const outLen = Number(exports.affine_worker_invoke());
-  const outBytes = new Uint8Array(outLen);
-  const wordCount = Math.ceil(outLen / 4);
-  for (let w = 0; w < wordCount; w += 1) {
-    const word = Number(exports.affine_worker_output_u32(w)) >>> 0;
-    const base = w * 4;
-    if (base < outLen) outBytes[base] = word & 0xff;
-    if (base + 1 < outLen) outBytes[base + 1] = (word >>> 8) & 0xff;
-    if (base + 2 < outLen) outBytes[base + 2] = (word >>> 16) & 0xff;
-    if (base + 3 < outLen) outBytes[base + 3] = (word >>> 24) & 0xff;
-  }
-  return outBytes;
+  return invokeScalarRpc(exports, opcode, payload);
 }
 
 /**

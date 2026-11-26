@@ -237,3 +237,7 @@ codegen-units = 16
 debug = "limited"
 lto = "thin"
 codegen-units = 1
+
+[profile.wasm-release]
+inherits = "release"
+strip = "debuginfo"

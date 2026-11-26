@@ -186,7 +186,7 @@ fn workspace_switch_isolates_docs_backlinks_and_back_stack() {
         .update(|cx| {
             t.window_handle.update(cx, |v, _, _| {
                 (
-                    v.state.scope.workspace_id.clone(),
+                    v.state.active_workspace().scope.workspace_id.clone(),
                     v.state.doc_by_id("doc-arch").is_some(),
                     v.state.doc_by_id("doc-personal-1").is_some(),
                     v.state.backlinks_for("doc-personal-1").items.len(),
@@ -230,7 +230,11 @@ fn explorer_drilldown_and_breadcrumb_folder_navigation_roundtrip() {
             t.window_handle.update(cx, |v, _, _| {
                 (
                     v.state.route.clone(),
-                    v.state.history.current().map(|e| e.target.clone()),
+                    v.state
+                        .active_workspace()
+                        .history
+                        .current()
+                        .map(|e| e.target.clone()),
                 )
             })
         })
@@ -247,7 +251,7 @@ fn doc_link_cur_location_pick_preserves_d0_and_return_to_trail_restores_without_
             t.window_handle.update(cx, |v, _, cx| {
                 v.state
                     .open_doc("doc-arch", Origin::Direct(DirectKind::Home));
-                let arch_seq = v.state.history.current().unwrap().seq;
+                let arch_seq = v.state.active_workspace().history.current().unwrap().seq;
                 v.state.open_doc(
                     "doc-sync",
                     Origin::DocLink {
@@ -263,7 +267,10 @@ fn doc_link_cur_location_pick_preserves_d0_and_return_to_trail_restores_without_
 
     let len_before = t
         .app
-        .update(|cx| t.window_handle.update(cx, |v, _, _| v.state.history.len()))
+        .update(|cx| {
+            t.window_handle
+                .update(cx, |v, _, _| v.state.active_workspace().history.len())
+        })
         .unwrap();
 
     // Open Location & Trail sheet and pick cur (`doc-sync`)'s own folder location.
@@ -277,6 +284,7 @@ fn doc_link_cur_location_pick_preserves_d0_and_return_to_trail_restores_without_
                 let d = v.state.derive_breadcrumb();
                 let arch_entry = v
                     .state
+                    .active_workspace()
                     .history
                     .entries()
                     .iter()
@@ -285,7 +293,7 @@ fn doc_link_cur_location_pick_preserves_d0_and_return_to_trail_restores_without_
                 (
                     d.can_return_to_trail,
                     arch_entry.pick.is_none(),
-                    v.state.history.len(),
+                    v.state.active_workspace().history.len(),
                 )
             })
         })
@@ -302,7 +310,7 @@ fn doc_link_cur_location_pick_preserves_d0_and_return_to_trail_restores_without_
         .update(|cx| {
             t.window_handle.update(cx, |v, _, _| {
                 let d = v.state.derive_breadcrumb();
-                (d.trail.len(), v.state.history.len())
+                (d.trail.len(), v.state.active_workspace().history.len())
             })
         })
         .unwrap();
@@ -407,7 +415,13 @@ fn compact_landscape_location_sheet_keeps_owner_locations_and_use_trail_reachabl
             t.window_handle.update(cx, |v, _, cx| {
                 v.state
                     .open_doc("doc-arch", Origin::Direct(DirectKind::Home));
-                let parent_seq = v.state.history.current().expect("doc-arch entry").seq;
+                let parent_seq = v
+                    .state
+                    .active_workspace()
+                    .history
+                    .current()
+                    .expect("doc-arch entry")
+                    .seq;
                 v.state.open_doc(
                     "doc-sync",
                     Origin::DocLink {
@@ -484,7 +498,7 @@ fn explorer_drilldown_back_pops_history_with_dynamic_parent_label() {
                     .get("mobile.explorer.back_btn")
                     .map(|n| n.name.clone())
                     .unwrap_or_default();
-                (v.state.history.len(), name)
+                (v.state.active_workspace().history.len(), name)
             })
         })
         .unwrap();
@@ -503,8 +517,12 @@ fn explorer_drilldown_back_pops_history_with_dynamic_parent_label() {
                     .map(|n| n.name.clone())
                     .unwrap_or_default();
                 (
-                    v.state.history.current().map(|e| e.target.clone()),
-                    v.state.history.len(),
+                    v.state
+                        .active_workspace()
+                        .history
+                        .current()
+                        .map(|e| e.target.clone()),
+                    v.state.active_workspace().history.len(),
                     name,
                 )
             })
@@ -519,8 +537,13 @@ fn explorer_drilldown_back_pops_history_with_dynamic_parent_label() {
         .app
         .update(|cx| {
             t.window_handle.update(cx, |v, _, _| {
-                let target = v.state.history.current().map(|e| e.target.clone());
-                let len = v.state.history.len();
+                let target = v
+                    .state
+                    .active_workspace()
+                    .history
+                    .current()
+                    .map(|e| e.target.clone());
+                let len = v.state.active_workspace().history.len();
                 let action = MobileBackCoordinator::handle_back(&mut v.state, 1000.0);
                 (target, len, action)
             })
@@ -565,7 +588,11 @@ fn explorer_collections_and_tags_index_filter_exact_members() {
         .app
         .update(|cx| {
             t.window_handle.update(cx, |v, _, _| {
-                v.state.history.current().map(|e| e.target.clone())
+                v.state
+                    .active_workspace()
+                    .history
+                    .current()
+                    .map(|e| e.target.clone())
             })
         })
         .unwrap();
@@ -795,7 +822,14 @@ fn create_doc_from_home_explorer_root_and_folder_opens_with_expected_origin() {
                     other => panic!("expected Page route, got {other:?}"),
                 };
                 let doc = v.state.doc_by_id(&id).unwrap();
-                let origin = v.state.history.current().unwrap().origin.clone();
+                let origin = v
+                    .state
+                    .active_workspace()
+                    .history
+                    .current()
+                    .unwrap()
+                    .origin
+                    .clone();
                 (
                     id,
                     doc.title.clone(),
@@ -853,9 +887,17 @@ fn create_doc_from_home_explorer_root_and_folder_opens_with_expected_origin() {
                     MobileRoute::Page(id) => id.clone(),
                     other => panic!("expected Page route, got {other:?}"),
                 };
-                let origin = v.state.history.current().unwrap().origin.clone();
+                let origin = v
+                    .state
+                    .active_workspace()
+                    .history
+                    .current()
+                    .unwrap()
+                    .origin
+                    .clone();
                 let idx = v
                     .state
+                    .active_workspace()
                     .folder_rows
                     .iter()
                     .find(|r| {
@@ -942,14 +984,18 @@ fn journals_week_strip_switches_date_and_creates_new_journal_for_empty_day() {
     // Today (2026-11-25) already has `doc-journal`: clicking CTA opens it without creating a new doc.
     let docs_before = t
         .app
-        .update(|cx| t.window_handle.update(cx, |v, _, _| v.state.docs.len()))
+        .update(|cx| {
+            t.window_handle
+                .update(cx, |v, _, _| v.state.active_workspace().docs.len())
+        })
         .unwrap();
     t.click_id("mobile.journals.create_btn");
     let (route_today, docs_after_today) = t
         .app
         .update(|cx| {
-            t.window_handle
-                .update(cx, |v, _, _| (v.state.route.clone(), v.state.docs.len()))
+            t.window_handle.update(cx, |v, _, _| {
+                (v.state.route.clone(), v.state.active_workspace().docs.len())
+            })
         })
         .unwrap();
     assert_eq!(route_today, MobileRoute::Page("doc-journal".into()));
@@ -972,7 +1018,13 @@ fn journals_week_strip_switches_date_and_creates_new_journal_for_empty_day() {
                     id,
                     doc.title.clone(),
                     doc.journal_date.clone(),
-                    v.state.history.current().unwrap().origin.clone(),
+                    v.state
+                        .active_workspace()
+                        .history
+                        .current()
+                        .unwrap()
+                        .origin
+                        .clone(),
                 )
             })
         })
@@ -1131,18 +1183,21 @@ fn explorer_scrolls_30_docs_keeps_tabbar_fixed_and_opens_30th_doc() {
         .update(|cx| {
             t.window_handle.update(cx, |v, _, cx| {
                 for i in 1..=30 {
-                    v.state.docs.push(affine_mobile::MobileDocRecord {
-                        id: format!("doc-bulk-{i}"),
-                        title: format!("Bulk Document {i}"),
-                        body_preview: format!("Preview {i}"),
-                        tags: Vec::new(),
-                        updated_at_ms: 1_764_000_000 + i as i64,
-                        is_favorite: false,
-                        trashed: false,
-                        journal_date: None,
-                        clock: 1,
-                        outgoing_edges: Vec::new(),
-                    });
+                    v.state
+                        .active_workspace_mut()
+                        .docs
+                        .push(affine_mobile::MobileDocRecord {
+                            id: format!("doc-bulk-{i}"),
+                            title: format!("Bulk Document {i}"),
+                            body_preview: format!("Preview {i}"),
+                            tags: Vec::new(),
+                            updated_at_ms: 1_764_000_000 + i as i64,
+                            is_favorite: false,
+                            trashed: false,
+                            journal_date: None,
+                            clock: 1,
+                            outgoing_edges: Vec::new(),
+                        });
                 }
                 v.state.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
                 cx.notify();
@@ -1221,18 +1276,21 @@ fn touch_swipe_scrolls_30_docs_without_accidental_click_and_back_restores_scroll
         .update(|cx| {
             t.window_handle.update(cx, |v, _, cx| {
                 for i in 1..=30 {
-                    v.state.docs.push(affine_mobile::MobileDocRecord {
-                        id: format!("doc-bulk-{i}"),
-                        title: format!("Bulk Document {i}"),
-                        body_preview: format!("Preview {i}"),
-                        tags: Vec::new(),
-                        updated_at_ms: 1_764_000_000 + i as i64,
-                        is_favorite: false,
-                        trashed: false,
-                        journal_date: None,
-                        clock: 1,
-                        outgoing_edges: Vec::new(),
-                    });
+                    v.state
+                        .active_workspace_mut()
+                        .docs
+                        .push(affine_mobile::MobileDocRecord {
+                            id: format!("doc-bulk-{i}"),
+                            title: format!("Bulk Document {i}"),
+                            body_preview: format!("Preview {i}"),
+                            tags: Vec::new(),
+                            updated_at_ms: 1_764_000_000 + i as i64,
+                            is_favorite: false,
+                            trashed: false,
+                            journal_date: None,
+                            clock: 1,
+                            outgoing_edges: Vec::new(),
+                        });
                 }
                 v.state.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
                 cx.notify();
@@ -1371,18 +1429,21 @@ fn mouse_drag_off_list_and_hover_does_not_scroll_or_open_doc() {
         .update(|cx| {
             t.window_handle.update(cx, |v, _, cx| {
                 for i in 1..=30 {
-                    v.state.docs.push(affine_mobile::MobileDocRecord {
-                        id: format!("doc-bulk-{i}"),
-                        title: format!("Bulk Document {i}"),
-                        body_preview: format!("Preview {i}"),
-                        tags: Vec::new(),
-                        updated_at_ms: 1_764_000_000 + i as i64,
-                        is_favorite: false,
-                        trashed: false,
-                        journal_date: None,
-                        clock: 1,
-                        outgoing_edges: Vec::new(),
-                    });
+                    v.state
+                        .active_workspace_mut()
+                        .docs
+                        .push(affine_mobile::MobileDocRecord {
+                            id: format!("doc-bulk-{i}"),
+                            title: format!("Bulk Document {i}"),
+                            body_preview: format!("Preview {i}"),
+                            tags: Vec::new(),
+                            updated_at_ms: 1_764_000_000 + i as i64,
+                            is_favorite: false,
+                            trashed: false,
+                            journal_date: None,
+                            clock: 1,
+                            outgoing_edges: Vec::new(),
+                        });
                 }
                 v.state.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
                 cx.notify();

@@ -54,37 +54,9 @@ final class LegacyLocalStorageProbe: NSObject, WKNavigationDelegate {
   static let probeURLString = "capacitor://localhost/__affine_probe__"
   static let localWorkspaceKey = "affine-local-workspace"
 
-  static let defaultExactKeys: [String] = [
-    localWorkspaceKey,
-    "global-state:serverList",
-    "global-cache:i18n_lng",
-    "last_workspace_id",
-    "last_workspace_flavour",
-    "affine-settings",
-    "theme",
-  ]
-
-  static let defaultKeyPrefixes: [String] = [
-    "global-state:serverConfig:",
-    "affine-flag:",
-    "global-state:affine-flag:",
-  ]
-
+  /// Delegate allowlist membership directly to `affine-legacy-import` via Rust C-ABI.
   static func isWhitelistedKey(_ key: String) -> Bool {
-    if defaultExactKeys.contains(key) {
-      return true
-    }
-    for prefix in defaultKeyPrefixes {
-      if key.hasPrefix(prefix) && key.count > prefix.count {
-        return true
-      }
-    }
-    if key.hasSuffix("-auth") {
-      let stem = String(key.dropLast(5))
-      let serverId = stem.hasPrefix("global-state:") ? String(stem.dropFirst(13)) : stem
-      return !serverId.isEmpty
-    }
-    return false
+    key.withCString { affine_ios_legacy_is_permitted_key($0) }
   }
 
   /// Validate write-back mutations before touching `capacitor://localhost` `localStorage`.
@@ -263,38 +235,29 @@ final class LegacyLocalStorageProbe: NSObject, WKNavigationDelegate {
         )
         return
       }
-      self.finish(runId: runId, result: .success(snapshot))
+      let filteredEntries: [String: String]
+      switch self.mode {
+      case .capture(let allowedKeys) where !allowedKeys.isEmpty:
+        let allowSet = Set(allowedKeys)
+        filteredEntries = snapshot.entries.filter { allowSet.contains($0.key) }
+      default:
+        filteredEntries = snapshot.entries.filter { Self.isWhitelistedKey($0.key) }
+      }
+      let filtered = LegacyLocalStorageSnapshot(
+        origin: snapshot.origin,
+        length: snapshot.length,
+        keys: snapshot.keys,
+        entries: filteredEntries,
+        idbAccessCount: snapshot.idbAccessCount
+      )
+      self.finish(runId: runId, result: .success(filtered))
     }
   }
 
-  private func buildWhitelistPredicateJs(explicitAllowJson: String) -> String {
-    let encodedDefaultExact = encodeJson(Self.defaultExactKeys, fallback: "[]")
-    let encodedDefaultPrefixes = encodeJson(Self.defaultKeyPrefixes, fallback: "[]")
-    return """
-      const explicitAllow = \(explicitAllowJson);
-      const exactSet = new Set(explicitAllow.length > 0 ? explicitAllow : \(encodedDefaultExact));
-      const prefixes = explicitAllow.length > 0 ? [] : \(encodedDefaultPrefixes);
-      const allowAuthSuffix = explicitAllow.length === 0;
-      const isAllowed = (k) => {
-        if (exactSet.has(k)) return true;
-        for (const p of prefixes) {
-          if (k.startsWith(p) && k.length > p.length) return true;
-        }
-        if (allowAuthSuffix && k.endsWith("-auth")) {
-          const prefix = k.slice(0, -5);
-          const sid = prefix.startsWith("global-state:") ? prefix.slice(13) : prefix;
-          if (sid.length > 0) return true;
-        }
-        return false;
-      };
-      """
-  }
-
   private func buildCaptureScript(allowedKeys: [String]) -> String {
-    let predicate = buildWhitelistPredicateJs(explicitAllowJson: encodeJson(allowedKeys, fallback: "[]"))
+    _ = allowedKeys
     return """
       (() => {
-        \(predicate)
         const keys = [];
         const entries = {};
         const total = window.localStorage.length;
@@ -302,11 +265,9 @@ final class LegacyLocalStorageProbe: NSObject, WKNavigationDelegate {
           const k = window.localStorage.key(i);
           if (k !== null) {
             keys.push(k);
-            if (isAllowed(k)) {
-              const v = window.localStorage.getItem(k);
-              if (v !== null) {
-                entries[k] = v;
-              }
+            const v = window.localStorage.getItem(k);
+            if (v !== null) {
+              entries[k] = v;
             }
           }
         }
@@ -323,21 +284,14 @@ final class LegacyLocalStorageProbe: NSObject, WKNavigationDelegate {
   }
 
   private func buildWriteBackScript(setEntries: [String: String], removeKeys: [String]) -> String {
-    let predicate = buildWhitelistPredicateJs(explicitAllowJson: "[]")
     let encodedSet = encodeJson(setEntries, fallback: "{}")
     let encodedRemove = encodeJson(removeKeys, fallback: "[]")
     return """
       (() => {
-        \(predicate)
         const toSet = \(encodedSet);
         const toRemove = \(encodedRemove);
-        for (const k of Object.keys(toSet)) {
-          if (!isAllowed(k)) {
-            throw new Error("Non-whitelisted key in write-back set: " + k);
-          }
-        }
         for (const k of toRemove) {
-          if (!isAllowed(k) || k === "\(Self.localWorkspaceKey)") {
+          if (k === "\(Self.localWorkspaceKey)") {
             throw new Error("Forbidden key in write-back remove: " + k);
           }
         }
@@ -354,11 +308,9 @@ final class LegacyLocalStorageProbe: NSObject, WKNavigationDelegate {
           const k = window.localStorage.key(i);
           if (k !== null) {
             keys.push(k);
-            if (isAllowed(k)) {
-              const v = window.localStorage.getItem(k);
-              if (v !== null) {
-                entries[k] = v;
-              }
+            const v = window.localStorage.getItem(k);
+            if (v !== null) {
+              entries[k] = v;
             }
           }
         }

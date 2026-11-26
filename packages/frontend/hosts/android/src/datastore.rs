@@ -12,12 +12,27 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
+pub use affine_store::auth::{
+    PERMANENT_AUTH_ERROR_CODES, canonical_endpoint, is_permanent_auth_error_code,
+    legacy_storage_endpoint_key,
+};
+use affine_store::{
+    api_client::{
+        ApiClientKind, ApiHttpRequest, ApiRequestContext, AuthSessionExchangeRequest,
+        HEADER_AFFINE_VERSION, HEADER_CLIENT_KIND, build_auth_session_exchange_request,
+        build_auth_session_refresh_request, build_auth_session_revoke_request,
+    },
+    auth::{
+        MAX_EXPIRES_IN_SECS as STORE_MAX_EXPIRES_IN_SECS,
+        MIN_EXPIRES_IN_SECS as STORE_MIN_EXPIRES_IN_SECS, STORED_TOKEN_PAIR_VERSION,
+        is_bearer_token_type, is_valid_rfc3339, normalize_rfc3339_utc_z,
+    },
+    sync::DEFAULT_CLIENT_VERSION,
+};
 use base64::Engine;
 use base64::engine::general_purpose::{STANDARD, URL_SAFE};
-use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use url::Url;
 
 /// Jetpack Preferences DataStore name for Android auth credentials.
 pub const AUTH_DATASTORE_NAME: &str = "auth-sessions";
@@ -35,30 +50,12 @@ pub const AUTH_TOKEN_KEY_PREFIX: &str = "auth-token:";
 pub const KEYSTORE_ALIAS_PREFIX: &str = "affine-auth-session-";
 
 /// Header identifying native mobile auth requests to AFFiNE server endpoints.
-pub const AUTH_CLIENT_KIND_HEADER: &str = "x-affine-client-kind";
-pub const AUTH_CLIENT_KIND_VALUE: &str = "native";
+pub const AUTH_CLIENT_KIND_HEADER: &str = HEADER_CLIENT_KIND;
+pub const AUTH_CLIENT_KIND_VALUE: &str = ApiClientKind::Native.as_str();
 
 /// Header identifying the compatible AFFiNE mobile client version (`0.27.5`).
-pub const AUTH_CLIENT_VERSION_HEADER: &str = "x-affine-version";
-pub const AUTH_CLIENT_VERSION_VALUE: &str = "0.27.5";
-
-/// Permanent auth server error codes matching `AuthPlugin.kt:74-77`.
-///
-/// Encountering any of these during session refresh requires deleting the
-/// stored `auth-token:<endpoint>` entry while preserving `auth-installation-id`.
-pub const PERMANENT_AUTH_ERROR_CODES: &[&str] = &[
-    "ACCESS_TOKEN_INVALID",
-    "AUTH_SESSION_EXPIRED",
-    "AUTH_SESSION_REVOKED",
-    "REFRESH_TOKEN_INVALID",
-    "REFRESH_TOKEN_REUSED",
-    "UNSUPPORTED_CLIENT_VERSION",
-];
-
-/// Returns `true` when `code` is a permanent auth error requiring session cleanup.
-pub fn is_permanent_auth_error_code(code: &str) -> bool {
-    PERMANENT_AUTH_ERROR_CODES.contains(&code)
-}
+pub const AUTH_CLIENT_VERSION_HEADER: &str = HEADER_AFFINE_VERSION;
+pub const AUTH_CLIENT_VERSION_VALUE: &str = DEFAULT_CLIENT_VERSION;
 
 /// Ciphertext envelope version prefix (`v1:<base64_iv>:<base64_ct_and_tag>`).
 pub const AUTH_CIPHERTEXT_PREFIX: &str = "v1";
@@ -73,10 +70,10 @@ pub const AUTH_GCM_TAG_LEN: usize = 16;
 pub const AUTH_REFRESH_LEAD_MS: i64 = 120_000;
 
 /// Minimum allowed `expiresIn` in seconds (`1..=86_400`).
-pub const MIN_EXPIRES_IN_SECS: i64 = 1;
+pub const MIN_EXPIRES_IN_SECS: i64 = STORE_MIN_EXPIRES_IN_SECS as i64;
 
 /// Maximum allowed `expiresIn` in seconds (`1..=86_400`).
-pub const MAX_EXPIRES_IN_SECS: i64 = 86_400;
+pub const MAX_EXPIRES_IN_SECS: i64 = STORE_MAX_EXPIRES_IN_SECS as i64;
 
 /// Errors returned by the DataStore protobuf codec and auth payload validator.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -105,38 +102,20 @@ pub fn auth_datastore_path(files_dir: &Path) -> PathBuf {
     files_dir.join("datastore").join(AUTH_DATASTORE_FILE)
 }
 
-/// Normalizes an endpoint URL identically to `AuthSessionBroker.canonical` in `AuthPlugin.kt`.
-pub fn canonical_endpoint(endpoint: &str) -> String {
-    let Ok(parsed) = Url::parse(endpoint) else {
-        return endpoint.to_string();
-    };
-    let Some(host) = parsed.host_str() else {
-        return endpoint.to_string();
-    };
-    let scheme = parsed.scheme();
-    let default_port = match scheme {
-        "http" => Some(80),
-        "https" => Some(443),
-        _ => None,
-    };
-    let port_suffix = match parsed.port() {
-        Some(port) if Some(port) != default_port => format!(":{port}"),
-        _ => String::new(),
-    };
-    format!("{scheme}://{host}{port_suffix}")
-}
-
-/// Returns the DataStore preference key `auth-token:<canonical_endpoint>`.
+/// Returns the DataStore preference key `auth-token:<legacy_storage_endpoint_key>`.
 pub fn auth_token_key(endpoint: &str) -> String {
-    format!("{AUTH_TOKEN_KEY_PREFIX}{}", canonical_endpoint(endpoint))
+    format!(
+        "{AUTH_TOKEN_KEY_PREFIX}{}",
+        legacy_storage_endpoint_key(endpoint)
+    )
 }
 
 /// Computes the Android Keystore alias identically to `TokenCipher.alias` in `AuthPlugin.kt`.
 ///
-/// Format: `affine-auth-session-<first 24 chars of URL-safe base64(SHA-256(canonical_endpoint))>`.
+/// Format: `affine-auth-session-<first 24 chars of URL-safe base64(SHA-256(legacy_storage_endpoint_key))>`.
 pub fn keystore_alias(endpoint: &str) -> String {
-    let canonical = canonical_endpoint(endpoint);
-    let digest = Sha256::digest(canonical.as_bytes());
+    let storage_key = legacy_storage_endpoint_key(endpoint);
+    let digest = Sha256::digest(storage_key.as_bytes());
     let encoded = URL_SAFE.encode(digest);
     format!("{KEYSTORE_ALIAS_PREFIX}{}", &encoded[..24])
 }
@@ -234,12 +213,9 @@ pub struct AuthSessionRecord {
     pub extra: BTreeMap<String, serde_json::Value>,
 }
 
-/// Validates strict UTC ISO-8601 timestamps matching `AuthSessionBroker.isIso8601`.
+/// Validates RFC 3339 timestamps (both `Z` and `±HH:MM` offsets) via `affine-store`.
 pub fn is_valid_iso8601_utc(value: &str) -> bool {
-    const FORMATS: [&str; 2] = ["%Y-%m-%dT%H:%M:%S%.3fZ", "%Y-%m-%dT%H:%M:%SZ"];
-    FORMATS
-        .iter()
-        .any(|fmt| NaiveDateTime::parse_from_str(value, fmt).is_ok())
+    is_valid_rfc3339(value)
 }
 
 impl AuthSessionRecord {
@@ -273,9 +249,10 @@ impl AuthSessionRecord {
             serde_json::Value::from(access_expires_at),
         );
 
-        let record: Self = serde_json::from_value(serde_json::Value::Object(obj))
+        let mut record: Self = serde_json::from_value(serde_json::Value::Object(obj))
             .map_err(|e| DataStoreError::InvalidSessionPayload(e.to_string()))?;
         record.validate()?;
+        record.normalize_for_storage()?;
         Ok(record)
     }
 
@@ -298,15 +275,15 @@ impl AuthSessionRecord {
         Ok(record)
     }
 
-    /// Validates version, bearer token type, non-empty tokens, Unix ms range, and ISO-8601 fields.
+    /// Validates version, bearer token type, non-empty tokens, Unix ms range, and RFC 3339 fields.
     pub fn validate(&self) -> Result<(), DataStoreError> {
-        if self.version != 1 {
+        if self.version != STORED_TOKEN_PAIR_VERSION {
             return Err(DataStoreError::InvalidSessionPayload(format!(
                 "unsupported version {}",
                 self.version
             )));
         }
-        if self.token_type != "Bearer" {
+        if !is_bearer_token_type(&self.token_type) {
             return Err(DataStoreError::InvalidSessionPayload(format!(
                 "unsupported tokenType {:?}",
                 self.token_type
@@ -324,22 +301,45 @@ impl AuthSessionRecord {
                 self.access_expires_at
             )));
         }
-        if !is_valid_iso8601_utc(&self.refresh_expires_at) {
+        if !is_valid_rfc3339(&self.refresh_expires_at) {
             return Err(DataStoreError::InvalidSessionPayload(
-                "invalid refreshExpiresAt ISO-8601 UTC timestamp".into(),
+                "invalid refreshExpiresAt RFC 3339 timestamp".into(),
             ));
         }
-        if !is_valid_iso8601_utc(&self.session.absolute_expires_at) {
+        if !is_valid_rfc3339(&self.session.absolute_expires_at) {
             return Err(DataStoreError::InvalidSessionPayload(
-                "invalid session.absoluteExpiresAt ISO-8601 UTC timestamp".into(),
+                "invalid session.absoluteExpiresAt RFC 3339 timestamp".into(),
             ));
         }
         Ok(())
     }
 
-    /// Serializes the validated session payload for encryption and DataStore persistence.
+    /// Normalizes `tokenType` to exact `"Bearer"` and RFC 3339 timestamps to UTC `Z` format
+    /// matching `0.27.5` `AuthPlugin.kt:237-240,278-288` for downgrade-safe persistence.
+    fn normalize_for_storage(&mut self) -> Result<(), DataStoreError> {
+        self.token_type = "Bearer".to_string();
+        self.refresh_expires_at =
+            normalize_rfc3339_utc_z(&self.refresh_expires_at).ok_or_else(|| {
+                DataStoreError::InvalidSessionPayload(
+                    "invalid refreshExpiresAt RFC 3339 timestamp".into(),
+                )
+            })?;
+        self.session.absolute_expires_at =
+            normalize_rfc3339_utc_z(&self.session.absolute_expires_at).ok_or_else(|| {
+                DataStoreError::InvalidSessionPayload(
+                    "invalid session.absoluteExpiresAt RFC 3339 timestamp".into(),
+                )
+            })?;
+        Ok(())
+    }
+
+    /// Serializes the validated session payload for encryption and DataStore persistence,
+    /// normalizing `tokenType` to `"Bearer"` and timestamps to UTC `Z` for `0.27.5` parity.
     pub fn to_stored_json(&self) -> Result<String, DataStoreError> {
-        serde_json::to_string(self)
+        self.validate()?;
+        let mut normalized = self.clone();
+        normalized.normalize_for_storage()?;
+        serde_json::to_string(&normalized)
             .map_err(|e| DataStoreError::InvalidSessionPayload(e.to_string()))
     }
 
@@ -357,17 +357,22 @@ pub struct AuthHttpRequestSpec {
     pub body_json: String,
 }
 
-fn default_auth_headers() -> Vec<(String, String)> {
-    vec![
-        (
-            AUTH_CLIENT_KIND_HEADER.to_string(),
-            AUTH_CLIENT_KIND_VALUE.to_string(),
-        ),
-        (
-            AUTH_CLIENT_VERSION_HEADER.to_string(),
-            AUTH_CLIENT_VERSION_VALUE.to_string(),
-        ),
-    ]
+fn to_android_http_spec(endpoint: &str, req: ApiHttpRequest) -> AuthHttpRequestSpec {
+    let body_json = String::from_utf8(req.body.unwrap_or_default()).unwrap_or_default();
+    AuthHttpRequestSpec {
+        url: format!("{}{}", canonical_endpoint(endpoint), req.path),
+        headers: vec![
+            (
+                AUTH_CLIENT_KIND_HEADER.to_string(),
+                AUTH_CLIENT_KIND_VALUE.to_string(),
+            ),
+            (
+                AUTH_CLIENT_VERSION_HEADER.to_string(),
+                AUTH_CLIENT_VERSION_VALUE.to_string(),
+            ),
+        ],
+        body_json,
+    }
 }
 
 /// Builds a `/api/auth/session/exchange` request reusing `installation_id`.
@@ -377,37 +382,34 @@ pub fn build_exchange_request(
     installation_id: &str,
     device_name: &str,
 ) -> AuthHttpRequestSpec {
-    let body = serde_json::json!({
-        "code": code,
-        "installationId": installation_id,
-        "platform": "android",
-        "deviceName": device_name,
-    });
-    AuthHttpRequestSpec {
-        url: format!("{}/api/auth/session/exchange", canonical_endpoint(endpoint)),
-        headers: default_auth_headers(),
-        body_json: body.to_string(),
-    }
+    let ctx = ApiRequestContext::native(None);
+    let req = build_auth_session_exchange_request(
+        &ctx,
+        &AuthSessionExchangeRequest {
+            code: code.to_string(),
+            installation_id: installation_id.to_string(),
+            platform: "android".to_string(),
+            device_name: Some(device_name.to_string()),
+        },
+    )
+    .expect("native exchange request serialization cannot fail");
+    to_android_http_spec(endpoint, req)
 }
 
 /// Builds a `/api/auth/session/refresh` request with native client headers.
 pub fn build_refresh_request(endpoint: &str, refresh_token: &str) -> AuthHttpRequestSpec {
-    let body = serde_json::json!({ "refreshToken": refresh_token });
-    AuthHttpRequestSpec {
-        url: format!("{}/api/auth/session/refresh", canonical_endpoint(endpoint)),
-        headers: default_auth_headers(),
-        body_json: body.to_string(),
-    }
+    let ctx = ApiRequestContext::native(None);
+    let req = build_auth_session_refresh_request(&ctx, refresh_token, None)
+        .expect("native refresh request serialization cannot fail");
+    to_android_http_spec(endpoint, req)
 }
 
 /// Builds a `/api/auth/session/revoke` request with native client headers.
 pub fn build_revoke_request(endpoint: &str, refresh_token: &str) -> AuthHttpRequestSpec {
-    let body = serde_json::json!({ "refreshToken": refresh_token });
-    AuthHttpRequestSpec {
-        url: format!("{}/api/auth/session/revoke", canonical_endpoint(endpoint)),
-        headers: default_auth_headers(),
-        body_json: body.to_string(),
-    }
+    let ctx = ApiRequestContext::native(None);
+    let req = build_auth_session_revoke_request(&ctx, refresh_token)
+        .expect("native revoke request serialization cannot fail");
+    to_android_http_spec(endpoint, req)
 }
 
 /// Value stored inside Jetpack Preferences DataStore `PreferenceMap`.
@@ -810,6 +812,14 @@ mod tests {
             auth_token_key("https://app.affine.pro:443/docs"),
             "auth-token:https://app.affine.pro"
         );
+        assert_eq!(
+            auth_token_key("https://[::1]:443/graphql"),
+            "auth-token:https://::1"
+        );
+        assert_eq!(
+            auth_token_key("https://[::1]:8443/graphql"),
+            "auth-token:https://::1:8443"
+        );
         let alias = keystore_alias("https://app.affine.pro:443");
         assert!(alias.starts_with(KEYSTORE_ALIAS_PREFIX));
         assert_eq!(alias.len(), KEYSTORE_ALIAS_PREFIX.len() + 24);
@@ -933,6 +943,28 @@ mod tests {
             "AUTH_SESSION_TEMPORARILY_UNAVAILABLE"
         ));
         assert!(!is_permanent_auth_error_code("TOO_MANY_REQUESTS"));
+
+        // Table-driven cross-platform parity: case-insensitive Bearer and RFC3339 timezone offsets.
+        let parity_cases = [
+            ("Bearer", "2027-01-01T00:00:00Z", "2027-06-01T00:00:00Z"),
+            (
+                "bearer",
+                "2027-01-01T08:00:00+08:00",
+                "2027-06-01T00:00:00-05:00",
+            ),
+            (
+                "BEARER",
+                "2027-01-01T08:00:00.125+08:00",
+                "2027-06-01T00:00:00.5Z",
+            ),
+        ];
+        for (token_type, refresh_ts, abs_ts) in parity_cases {
+            let payload = format!(
+                r#"{{"tokenType":"{token_type}","accessToken":"a","refreshToken":"r","expiresIn":600,"refreshExpiresAt":"{refresh_ts}","session":{{"id":"s","absoluteExpiresAt":"{abs_ts}"}}}}"#
+            );
+            let rec = AuthSessionRecord::from_server_response(&payload, now_ms).unwrap();
+            assert!(AuthSessionRecord::from_stored_json(&rec.to_stored_json().unwrap()).is_ok());
+        }
     }
 
     #[test]
@@ -1037,5 +1069,50 @@ mod tests {
         );
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn idna_endpoint_and_0275_downgrade_normalization_roundtrip() {
+        // IDNA endpoint key must match 0.27.5 punycode canonical form.
+        assert_eq!(
+            auth_token_key("https://bücher.example"),
+            "auth-token:https://xn--bcher-kva.example"
+        );
+        assert_eq!(
+            auth_token_key("https://bücher.example:443/api"),
+            auth_token_key("https://xn--bcher-kva.example")
+        );
+
+        // Lowercase "bearer" and +08:00 cross-day timestamp normalize to exact "Bearer" + UTC Z.
+        let response = r#"{
+            "tokenType": "bearer",
+            "accessToken": "acc-idna",
+            "expiresIn": 3600,
+            "refreshToken": "ref-idna",
+            "refreshExpiresAt": "2026-12-01T01:30:00+08:00",
+            "session": {
+                "id": "sess-idna",
+                "absoluteExpiresAt": "2026-12-31T23:30:00.5-02:00"
+            }
+        }"#;
+        let record = AuthSessionRecord::from_server_response(response, 1_760_000_000_000)
+            .expect("lowercase bearer and offset RFC3339 must parse");
+        let persisted_json = record.to_stored_json().expect("to_stored_json");
+        let parsed: serde_json::Value = serde_json::from_str(&persisted_json).unwrap();
+        assert_eq!(parsed["tokenType"], "Bearer");
+        assert_eq!(parsed["refreshExpiresAt"], "2026-11-30T17:30:00Z");
+        assert_eq!(
+            parsed["session"]["absoluteExpiresAt"],
+            "2027-01-01T01:30:00.500Z"
+        );
+
+        // Persisted JSON must roundtrip cleanly and pass exact 0.27.5 AuthPlugin.kt rules.
+        let reloaded = AuthSessionRecord::from_stored_json(&persisted_json).unwrap();
+        assert_eq!(reloaded.token_type, "Bearer");
+        assert_eq!(reloaded.refresh_expires_at, "2026-11-30T17:30:00Z");
+        assert_eq!(
+            reloaded.session.absolute_expires_at,
+            "2027-01-01T01:30:00.500Z"
+        );
     }
 }

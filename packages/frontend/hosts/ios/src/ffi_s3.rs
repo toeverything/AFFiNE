@@ -235,27 +235,6 @@ pub unsafe extern "C" fn affine_ios_host_selection_drag_probe(
         .drag_probe_point_for(touch_point)
 }
 
-/// Update an in-progress teardrop handle drag and return the refreshed overlay state.
-///
-/// # Safety
-/// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn affine_ios_host_selection_update_drag(
-    host: *mut AffineIosHost,
-    touch_point: AffinePoint,
-    updated_caret: AffineRect,
-    updated_range: AffineUtf16Range,
-) -> AffineSelectionOverlayState {
-    let Some(host) = (unsafe { host.as_mut() }) else {
-        return AffineSelectionOverlayState::default();
-    };
-    let _ =
-        host.state
-            .selection_overlay_mut()
-            .update_drag(touch_point, updated_caret, updated_range);
-    host.state.selection_overlay_state()
-}
-
 /// Query the fixed UTF-16 anchor offset of an active handle drag (`u32::MAX` when idle).
 ///
 /// # Safety
@@ -826,18 +805,21 @@ mod tests {
             affine_ios_host_selection_begin_drag(host, hit, AffinePoint { x: 183.0, y: 186.0 })
         });
         let dragged = unsafe {
-            affine_ios_host_selection_update_drag(
+            affine_ios_host_selection_apply_drag_endpoints(
                 host,
                 AffinePoint { x: 220.0, y: 186.0 },
+                12,
+                AffineRect {
+                    x: 40.0,
+                    y: 160.0,
+                    width: 2.0,
+                    height: 20.0,
+                },
                 AffineRect {
                     x: 220.0,
                     y: 160.0,
                     width: 2.0,
                     height: 20.0,
-                },
-                AffineUtf16Range {
-                    location: 0,
-                    length: 12,
                 },
             )
         };

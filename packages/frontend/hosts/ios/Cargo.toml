@@ -10,6 +10,7 @@ workspace = "../.."
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
+affine-legacy-import = { path = "../../legacy-import" }
 affine-store = { path = "../../../common/store" }
 blocksuite-playground-doc = { path = "../../../../blocksuite/crates/doc", default-features = false }
 chrono.workspace = true

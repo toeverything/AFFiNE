@@ -27,6 +27,7 @@ checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 name = "affine-android-host"
 version = "0.1.0"
 dependencies = [
+ "affine-legacy-import",
  "affine-store",
  "base64 0.22.1",
  "chrono",
@@ -58,6 +59,7 @@ dependencies = [
 name = "affine-ios-host"
 version = "0.1.0"
 dependencies = [
+ "affine-legacy-import",
  "affine-store",
  "blocksuite-playground-doc",
  "chrono",
@@ -106,6 +108,8 @@ dependencies = [
  "sqlx",
  "thiserror 2.0.21",
  "tokio",
+ "url",
+ "wasm-bindgen",
  "y-octo",
 ]
 

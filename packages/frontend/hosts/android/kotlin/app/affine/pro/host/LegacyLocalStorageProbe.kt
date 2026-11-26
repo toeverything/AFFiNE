@@ -27,40 +27,8 @@ class LegacyLocalStorageProbe(private val context: Context) {
     const val LOCAL_WORKSPACE_KEY = "affine-local-workspace"
     const val DEFAULT_TIMEOUT_MS = 5_000L
 
-    /**
-     * Exact `0.27.5` `localStorage` keys (`local.ts:58`, `storage.ts:83,91`, `auth.ts:59`).
-     */
-    val EXACT_ALLOWED_KEYS: List<String> = listOf(
-      LOCAL_WORKSPACE_KEY,
-      "global-state:serverList",
-      "global-cache:i18n_lng",
-      "last_workspace_id",
-      "last_workspace_flavour",
-      "affine-settings",
-      "theme",
-    )
-
-    fun isAllowedKey(key: String): Boolean {
-      if (key in EXACT_ALLOWED_KEYS) return true
-      if (key.startsWith("global-state:serverConfig:")) {
-        return key.length > "global-state:serverConfig:".length
-      }
-      if (key.startsWith("global-state:affine-flag:")) {
-        return key.length > "global-state:affine-flag:".length
-      }
-      if (key.startsWith("affine-flag:")) {
-        return key.length > "affine-flag:".length
-      }
-      if (key.startsWith("global-state:") && key.endsWith("-auth")) {
-        val serverId = key.removePrefix("global-state:").removeSuffix("-auth")
-        return serverId.isNotEmpty()
-      }
-      if (key.endsWith("-auth")) {
-        val serverId = key.removeSuffix("-auth")
-        return serverId.isNotEmpty() && !serverId.contains(':')
-      }
-      return false
-    }
+    /** Delegates allowlist membership directly to `affine-legacy-import` via JNI. */
+    fun isAllowedKey(key: String): Boolean = NativeBridge.nativeIsAllowedLegacyLocalStorageKey(key)
 
     private const val IDB_GUARD_PRELUDE = """
       let idbTouchCount = 0;
@@ -95,33 +63,20 @@ class LegacyLocalStorageProbe(private val context: Context) {
       return "\"$escaped\""
     }
 
-    private fun jsAllowMatcher(extraExactKeys: List<String>): String {
-      val exactList = (EXACT_ALLOWED_KEYS + extraExactKeys).distinct().joinToString(",") { jsString(it) }
-      return """
-        const exactAllow = new Set([$exactList]);
-        const isAllowedKey = (k) => {
-          if (exactAllow.has(k)) return true;
-          if (k.startsWith("global-state:serverConfig:")) return k.length > "global-state:serverConfig:".length;
-          if (k.startsWith("global-state:affine-flag:")) return k.length > "global-state:affine-flag:".length;
-          if (k.startsWith("affine-flag:")) return k.length > "affine-flag:".length;
-          if (k.startsWith("global-state:") && k.endsWith("-auth")) {
-            return k.slice("global-state:".length, -"-auth".length).length > 0;
-          }
-          if (k.endsWith("-auth")) {
-            const id = k.slice(0, -"-auth".length);
-            return id.length > 0 && !id.includes(":");
-          }
-          return false;
-        };
-      """.trimIndent()
+    /**
+     * Filters raw `evaluateJavascript` snapshot JSON in Rust via `affine-legacy-import`'s
+     * single allowlist, avoiding Android `org.json` stubs and keeping zero allowlist rules
+     * in Kotlin.
+     */
+    fun filterSnapshotEntries(rawJson: String?): String? {
+      if (rawJson.isNullOrBlank() || rawJson.trim() == "null") return null
+      return NativeBridge.nativeFilterLegacyLocalStorageProbe(rawJson)
     }
 
-    fun buildCaptureScript(extraExactKeys: List<String> = emptyList()): String {
-      val matcher = jsAllowMatcher(extraExactKeys)
+    fun buildCaptureScript(): String {
       return """
         (() => {
           $IDB_GUARD_PRELUDE
-          $matcher
           const keys = [];
           const entries = {};
           const total = window.localStorage.length;
@@ -129,10 +84,8 @@ class LegacyLocalStorageProbe(private val context: Context) {
             const k = window.localStorage.key(i);
             if (k !== null) {
               keys.push(k);
-              if (isAllowedKey(k)) {
-                const v = window.localStorage.getItem(k);
-                if (v !== null) entries[k] = v;
-              }
+              const v = window.localStorage.getItem(k);
+              if (v !== null) entries[k] = v;
             }
           }
           keys.sort();
@@ -161,7 +114,6 @@ class LegacyLocalStorageProbe(private val context: Context) {
       for (k in removeKeys) {
         require(isAllowedKey(k)) { "non-allowlisted removeKeys key: $k" }
       }
-      val matcher = jsAllowMatcher(emptyList())
       val setPairs = setEntries.entries
         .sortedBy { it.key }
         .joinToString(",") { (k, v) -> "[${jsString(k)},${jsString(v)}]" }
@@ -169,14 +121,10 @@ class LegacyLocalStorageProbe(private val context: Context) {
       return """
         (() => {
           $IDB_GUARD_PRELUDE
-          $matcher
           const targetSet = [$setPairs];
           const targetRemove = [$remList];
-          for (const [k] of targetSet) {
-            if (!isAllowedKey(k)) throw new Error('AFFINE_WRITEBACK_KEY_FORBIDDEN:' + k);
-          }
           for (const k of targetRemove) {
-            if (!isAllowedKey(k) || k === "affine-local-workspace") {
+            if (k === "affine-local-workspace") {
               throw new Error('AFFINE_WRITEBACK_REMOVE_FORBIDDEN:' + k);
             }
           }
@@ -193,10 +141,8 @@ class LegacyLocalStorageProbe(private val context: Context) {
             const k = window.localStorage.key(i);
             if (k !== null) {
               keys.push(k);
-              if (isAllowedKey(k)) {
-                const v = window.localStorage.getItem(k);
-                if (v !== null) entries[k] = v;
-              }
+              const v = window.localStorage.getItem(k);
+              if (v !== null) entries[k] = v;
             }
           }
           let verified = true;
@@ -229,11 +175,12 @@ class LegacyLocalStorageProbe(private val context: Context) {
   }
 
   fun capture(
-    extraExactKeys: List<String> = emptyList(),
     timeoutMs: Long = DEFAULT_TIMEOUT_MS,
     onResult: (String?) -> Unit,
   ) {
-    runIsolatedScript(buildCaptureScript(extraExactKeys), timeoutMs, onResult)
+    runIsolatedScript(buildCaptureScript(), timeoutMs) { raw ->
+      onResult(filterSnapshotEntries(raw))
+    }
   }
 
   fun writeBackLegacyLocalStorage(
@@ -242,7 +189,9 @@ class LegacyLocalStorageProbe(private val context: Context) {
     timeoutMs: Long = DEFAULT_TIMEOUT_MS,
     onResult: (String?) -> Unit,
   ) {
-    runIsolatedScript(buildWriteBackScript(setEntries, removeKeys), timeoutMs, onResult)
+    runIsolatedScript(buildWriteBackScript(setEntries, removeKeys), timeoutMs) { raw ->
+      onResult(filterSnapshotEntries(raw))
+    }
   }
 
   @SuppressLint("SetJavaScriptEnabled")

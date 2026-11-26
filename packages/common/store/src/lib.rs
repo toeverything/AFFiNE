@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 pub mod api_client;
+pub mod auth;
 pub mod blob_api;
 pub mod clock;
 pub mod directory;
@@ -10,6 +11,8 @@ pub mod idb;
 #[cfg(not(target_family = "wasm"))]
 pub mod sqlite;
 pub mod sync;
+#[cfg(feature = "wasm-codec")]
+pub mod wasm_codec;
 pub mod workspace_db;
 
 pub use clock::{Clock, ManualClock};

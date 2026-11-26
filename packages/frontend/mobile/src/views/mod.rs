@@ -261,7 +261,12 @@ impl MobileShellView {
         let now_ms = self.now_ms(cx);
         let (vp_w, vp_h) = self.last_viewport;
         let content_w = (vp_w - self.last_safe_area.left - self.last_safe_area.right).max(44.0);
-        let head_seq = self.state.history.current().map(|e| e.seq);
+        let head_seq = self
+            .state
+            .active_workspace()
+            .history
+            .current()
+            .map(|e| e.seq);
         let measured = match (&self.state.route, &self.last_measured_breadcrumb) {
             (MobileRoute::Page(doc_id), Some((c_doc, c_seq, c_w, layout)))
                 if c_doc == doc_id && *c_seq == head_seq && (c_w - content_w).abs() < 0.5 =>
@@ -618,7 +623,11 @@ impl Render for MobileShellView {
             measured_bc_layout.and_then(|layout| match &self.state.route {
                 MobileRoute::Page(doc_id) => Some((
                     doc_id.clone(),
-                    self.state.history.current().map(|e| e.seq),
+                    self.state
+                        .active_workspace()
+                        .history
+                        .current()
+                        .map(|e| e.seq),
                     content_w,
                     layout,
                 )),

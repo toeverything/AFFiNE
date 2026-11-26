@@ -43,6 +43,7 @@ const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
+  '.wasm': 'application/wasm',
 };
 
 function isSnapWrapper(bin) {
@@ -109,6 +110,7 @@ const PROBE_HTML = `<!doctype html>
   <head><meta charset="utf-8" /></head>
   <body>
     <script type="module">
+      import { createCrdtWasmClient } from '/src/crdt-wasm-client.js';
       import {
         createIdbV1ReadonlyReader,
         createIdbWorkspaceStorage,
@@ -259,13 +261,28 @@ const PROBE_HTML = `<!doctype html>
           });
           v1Db.close();
 
-          const reader = createIdbV1ReadonlyReader({ workspaceId: 'ws-v1-e2e' });
+          const crdtCodec = createCrdtWasmClient(
+            '/assets/crdt-codec.dev-local.wasm'
+          );
+          await crdtCodec.ready();
+          const reader = createIdbV1ReadonlyReader({
+            workspaceId: 'ws-v1-e2e',
+            mergeUpdates: updates => crdtCodec.mergeUpdates(updates),
+            extractSubdocIds: rootUpdates =>
+              crdtCodec.extractSubdocIds(rootUpdates),
+          });
           const listed = await reader.listV1DocIds();
+          const mergedRoot = await reader.getV1Doc('ws-v1-e2e');
+          const roundtrippedSubdocs = mergedRoot?.bin
+            ? await crdtCodec.extractSubdocIds([mergedRoot.bin])
+            : [];
           const subRaw = await reader.getV1DocRaw('live-guid');
           result.v1 = {
             missingDoc,
             createdEmpty,
             listed,
+            mergedRootBytes: mergedRoot?.bin ? mergedRoot.bin.byteLength : 0,
+            roundtrippedSubdocs,
             subdocBytes: subRaw ? subRaw.updates[0].byteLength : 0,
           };
           await deleteDb('affine-local');
@@ -427,6 +444,11 @@ try {
     'userdata$u1$ws-v1-e2e',
     'userdata$u1$ws-v1-e2e$fav',
   ]);
+  assert.ok(
+    probeResult.v1.mergedRootBytes > 0,
+    'getV1Doc must merge REAL_YJS_V1_UPDATES via real Wasm codec'
+  );
+  assert.deepEqual(probeResult.v1.roundtrippedSubdocs, ['live-guid']);
   assert.equal(probeResult.v1.subdocBytes, 11);
 
   console.log(

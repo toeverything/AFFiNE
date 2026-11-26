@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Worker as NodeWorker } from 'node:worker_threads';
 
+import { createCrdtWasmClient } from '../src/crdt-wasm-client.js';
 import { createWorkerLoader } from '../src/worker-loader.js';
 
 const WEB_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -346,8 +347,59 @@ try {
     `blue PDF center pixel mismatch: R=${blueR}, B=${blueB}`
   );
 
+  // 6. CRDT codec Wasm (`crdt-codec.dev-local.wasm`): strict import check, real Yjs v1 extract + merge + corrupt fail.
+  const crdtCodecUrl = loader.resolveCrdtCodecUrl();
+  assert.ok(
+    crdtCodecUrl && crdtCodecUrl.includes('crdt-codec.dev-local.wasm'),
+    `unexpected crdtCodecUrl: ${crdtCodecUrl}`
+  );
+  const crdtWasmBytes = readFileSync(
+    join(ASSETS_DIR, 'crdt-codec.dev-local.wasm')
+  );
+  const crdtClient = createCrdtWasmClient(crdtCodecUrl, {
+    fetchImpl: async () => /** @type {Response} */ (
+      /** @type {unknown} */ ({
+        ok: true,
+        status: 200,
+        arrayBuffer: async () =>
+          crdtWasmBytes.buffer.slice(
+            crdtWasmBytes.byteOffset,
+            crdtWasmBytes.byteOffset + crdtWasmBytes.byteLength
+          ),
+      })
+    ),
+  });
+  const realYjsV1 = [
+    new Uint8Array([
+      1, 6, 105, 0, 39, 1, 4, 109, 101, 116, 97, 5, 112, 97, 103, 101, 115, 0,
+      7, 0, 105, 0, 1, 40, 0, 105, 1, 2, 105, 100, 1, 119, 2, 112, 49, 40, 0,
+      105, 1, 5, 116, 105, 116, 108, 101, 1, 119, 9, 76, 105, 118, 101, 32, 80,
+      97, 103, 101, 41, 1, 6, 115, 112, 97, 99, 101, 115, 2, 112, 49, 8, 111,
+      108, 100, 45, 103, 117, 105, 100, 118, 0, 41, 1, 8, 111, 116, 104, 101,
+      114, 77, 97, 112, 7, 102, 111, 114, 101, 105, 103, 110, 12, 102, 111, 114,
+      101, 105, 103, 110, 45, 103, 117, 105, 100, 118, 0, 0,
+    ]),
+    new Uint8Array([
+      1, 1, 105, 6, 169, 105, 4, 9, 108, 105, 118, 101, 45, 103, 117, 105, 100,
+      118, 0, 1, 105, 1, 4, 1,
+    ]),
+  ];
+  assert.deepEqual(await crdtClient.extractSubdocIds(realYjsV1), ['live-guid']);
+  const mergedV1 = await crdtClient.mergeUpdates(realYjsV1);
+  assert.ok(mergedV1 instanceof Uint8Array && mergedV1.byteLength > 0);
+  assert.deepEqual(await crdtClient.extractSubdocIds([mergedV1]), [
+    'live-guid',
+  ]);
+  const emptyMerged = await crdtClient.mergeUpdates([]);
+  assert.deepEqual(Array.from(emptyMerged), [0, 0]);
+  await assert.rejects(
+    () =>
+      crdtClient.extractSubdocIds([new Uint8Array([0xff, 0xff, 0xff, 0x80])]),
+    /./
+  );
+
   console.log(
-    `E2E 4-worker + static-font verification passed: fonts(${Object.keys(loadedFonts).join(',')}), mermaid(light=${mermaidLight.result.svg.length}B vs dark=${mermaidDark.result.svg.length}B), math(${mathRes.result.svg.length}B), typst(1p ${typstRes.result.svg.length}B), pdf(red R=${redR}/B=${redB}, blue R=${blueR}/B=${blueB}, ${redRes.result.rgba.byteLength}B RGBA)`
+    `E2E 4-worker + crdt-codec + static-font verification passed: fonts(${Object.keys(loadedFonts).join(',')}), crdt-codec(${crdtWasmBytes.byteLength}B, merged=${mergedV1.byteLength}B), mermaid(light=${mermaidLight.result.svg.length}B vs dark=${mermaidDark.result.svg.length}B), math(${mathRes.result.svg.length}B), typst(1p ${typstRes.result.svg.length}B), pdf(red R=${redR}/B=${redB}, blue R=${blueR}/B=${blueB}, ${redRes.result.rgba.byteLength}B RGBA)`
   );
 } finally {
   await Promise.all(activeWorkers.map(w => w.terminate()));

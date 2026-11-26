@@ -11,15 +11,49 @@ use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 
 use crate::datastore::{
-    AuthSessionRecord, V1EncryptedEnvelope, auth_datastore_path, canonical_endpoint,
-    delete_file_key, get_or_create_file_string, is_permanent_auth_error_code, keystore_alias,
-    read_file_string, update_file_string,
+    AuthSessionRecord, V1EncryptedEnvelope, auth_datastore_path, auth_token_key,
+    canonical_endpoint, delete_file_key, get_or_create_file_string, is_permanent_auth_error_code,
+    keystore_alias, read_file_string, update_file_string,
 };
 use crate::jni_bridge::{
     JBoolean, JClass, JInt, JLong, JString, JniEnvPtr, new_jstring, read_jstring_utf8,
     with_host_mut, with_host_ref,
 };
-use crate::verify_legacy_writeback_result;
+use crate::{
+    filter_legacy_local_storage_probe_json, is_allowed_legacy_local_storage_key,
+    verify_legacy_writeback_result,
+};
+
+/// # Safety
+/// `env` must be null or a valid `JNIEnv*`; `key` must be null or a valid `jstring`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeIsAllowedLegacyLocalStorageKey(
+    env: JniEnvPtr,
+    _class: JClass,
+    key: JString,
+) -> JBoolean {
+    let Some(raw) = (unsafe { read_jstring_utf8(env, key) }) else {
+        return 0;
+    };
+    u8::from(is_allowed_legacy_local_storage_key(&raw))
+}
+
+/// # Safety
+/// `env` must be null or a valid `JNIEnv*`; `raw_json` must be null or a valid `jstring`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeFilterLegacyLocalStorageProbe(
+    env: JniEnvPtr,
+    _class: JClass,
+    raw_json: JString,
+) -> JString {
+    let Some(raw) = (unsafe { read_jstring_utf8(env, raw_json) }) else {
+        return core::ptr::null_mut();
+    };
+    match filter_legacy_local_storage_probe_json(&raw) {
+        Some(filtered) => unsafe { new_jstring(env, &filtered) },
+        None => core::ptr::null_mut(),
+    }
+}
 
 /// # Safety
 /// `env` must be null or a valid `JNIEnv*`; string args must be null or valid `jstring`s.
@@ -89,7 +123,10 @@ pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeGetPreserve
     _class: JClass,
     handle: JLong,
 ) -> JString {
-    let raw = with_host_ref(handle, |host| host.raw_local_workspace_value.clone()).flatten();
+    let raw = with_host_ref(handle, |host| {
+        host.preserved_local_workspace_raw().map(str::to_string)
+    })
+    .flatten();
     match raw {
         Some(value) => unsafe { new_jstring(env, &value) },
         None => core::ptr::null_mut(),
@@ -306,6 +343,20 @@ pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeCanonicalEn
         return core::ptr::null_mut();
     };
     unsafe { new_jstring(env, &canonical_endpoint(&raw)) }
+}
+
+/// # Safety
+/// `env` must be null or a valid `JNIEnv*`; `endpoint` must be null or a valid `jstring`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeAuthTokenKey(
+    env: JniEnvPtr,
+    _class: JClass,
+    endpoint: JString,
+) -> JString {
+    let Some(raw) = (unsafe { read_jstring_utf8(env, endpoint) }) else {
+        return core::ptr::null_mut();
+    };
+    unsafe { new_jstring(env, &auth_token_key(&raw)) }
 }
 
 /// # Safety

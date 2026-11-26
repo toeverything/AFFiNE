@@ -6,8 +6,7 @@
 //!    child page skeleton initialization).
 //! 2. Replaying an `intent_id` whose root-registered document was deleted from `meta.pages`
 //!    always returns `Err(DirectoryError::NotFound)` and never revives the deleted document (`F1`).
-//! 3. Persists unfinished create intents across session restarts (`export_recovery_state` /
-//!    `import_recovery_state`) and retires them idempotently once confirmed.
+//! 3. Tracks in-session `intent_id` idempotent replay and retires confirmed intents.
 //! 4. Ephemeral (`intent_id: None`) creations use a 128-bit CSPRNG replica seed (`getrandom`)
 //!    + existence guard so offline replicas across processes never collide on `"ephemeral-1"`.
 
@@ -116,50 +115,13 @@ impl StoreBackedDocDirectory {
         self.lock_directory().drain_pending_updates()
     }
 
-    /// Export both the create-intent ledger and `WorkspaceDirectory`'s `ExplicitCreateJournal`.
-    pub fn export_recovery_state(&self) -> Result<(Vec<u8>, Vec<u8>), DirectoryError> {
-        let ledger_bytes =
-            serde_json::to_vec(&self.ledger).map_err(|e| DirectoryError::Other(e.to_string()))?;
-        let journal_bytes = self
-            .lock_directory()
-            .export_explicit_create_journal()
-            .map_err(|e| DirectoryError::Other(e.to_string()))?;
-        Ok((ledger_bytes, journal_bytes))
-    }
-
-    /// Restore persisted create-intent ledger and `ExplicitCreateJournal` after a restart.
-    pub fn import_recovery_state(
-        &mut self,
-        ledger_bytes: &[u8],
-        journal_bytes: &[u8],
-    ) -> Result<(), DirectoryError> {
-        let restored: CreateIntentLedger = serde_json::from_slice(ledger_bytes)
-            .map_err(|e| DirectoryError::Other(e.to_string()))?;
-        let mut dir = self.lock_directory();
-        if restored.space_id != dir.db().space_id() {
-            return Err(DirectoryError::Other(format!(
-                "intent ledger space_id {:?} does not match workspace {:?}",
-                restored.space_id,
-                dir.db().space_id()
-            )));
-        }
-        dir.import_explicit_create_journal(journal_bytes)
-            .map_err(|e| DirectoryError::Other(e.to_string()))?;
-        drop(dir);
-        self.ledger.intents.extend(restored.intents);
-        Ok(())
-    }
-
     /// Record that the child page skeleton has finished initializing, and idempotently retire
-    /// the intent from the unfinished-create journal once confirmed.
+    /// the intent from the in-session ledger once confirmed.
     pub fn confirm_child_skeleton_and_retire(&mut self, intent_id: &str) -> bool {
         let Some(entry) = self.ledger.intents.get_mut(intent_id) else {
             return false;
         };
         entry.skeleton_initialized = true;
-        if let Ok(doc_id) = DocId::new(entry.doc_id.clone()) {
-            self.lock_directory().acknowledge_explicit_create(&doc_id);
-        }
         true
     }
 
@@ -440,7 +402,7 @@ mod tests {
     }
 
     #[test]
-    fn closes_all_four_reviewer_directory_invariants_across_restart_and_delete() {
+    fn enforces_in_session_intent_idempotency_and_anti_resurrection_after_delete() {
         let mut dir = new_store_backed_directory();
 
         let created = dir
@@ -451,47 +413,14 @@ mod tests {
         assert!(!dir.ledger().intents["intent-1"].skeleton_initialized);
         assert_eq!(dir.unfinished_intents().len(), 1);
 
-        let (root_snap, props_snap) = {
-            let guard = dir.lock_directory();
-            (
-                guard.db().root().encode_update_v1().unwrap(),
-                guard
-                    .db()
-                    .db_table(affine_store::workspace_db::WorkspaceDbTableName::DocProperties)
-                    .unwrap()
-                    .encode_update_v1()
-                    .unwrap(),
-            )
-        };
-        let (ledger_bytes, journal_bytes) = dir.export_recovery_state().unwrap();
-
-        let mut recovered_db =
-            WorkspaceDb::from_root_update_v1("ws-s2", "u1", 2, &root_snap).unwrap();
-        recovered_db
-            .load_db_table(
-                affine_store::workspace_db::WorkspaceDbTableName::DocProperties,
-                &props_snap,
-            )
-            .unwrap();
-        let mut recovered =
-            StoreBackedDocDirectory::new(WorkspaceDirectory::new(recovered_db), 2_000);
-        recovered
-            .import_recovery_state(&ledger_bytes, &journal_bytes)
-            .unwrap();
-        assert_eq!(recovered.unfinished_intents().len(), 1);
-        let replayed = recovered
+        let replayed = dir
             .create_linked_doc("Architecture", EditorDocMode::Edgeless, Some("intent-1"))
             .unwrap();
         assert_eq!(replayed.id, created.id);
-        assert!(recovered.confirm_child_skeleton_and_retire("intent-1"));
-        assert!(recovered.unfinished_intents().is_empty());
+        assert!(dir.confirm_child_skeleton_and_retire("intent-1"));
+        assert!(dir.unfinished_intents().is_empty());
 
-        let full = recovered
-            .lock_directory()
-            .db()
-            .root()
-            .encode_update_v1()
-            .unwrap();
+        let full = dir.lock_directory().db().root().encode_update_v1().unwrap();
         let mut peer = y_octo::DocOptions::from_identity(9, "ws-s2".to_string()).build();
         peer.apply_update_from_binary_v1(&full).unwrap();
         let sv = peer.get_state_vector();
@@ -501,13 +430,12 @@ mod tests {
         };
         pages.remove(0, 1).unwrap();
         let diff = peer.encode_state_as_update_v1(&sv).unwrap();
-        recovered
-            .lock_directory()
+        dir.lock_directory()
             .db_mut()
             .apply_remote_root_update(&diff)
             .unwrap();
 
-        let err = recovered
+        let err = dir
             .create_linked_doc("Architecture", EditorDocMode::Edgeless, Some("intent-1"))
             .expect_err("deleted doc must not revive on intent replay");
         assert_eq!(err, DirectoryError::NotFound(created.id));
@@ -546,8 +474,10 @@ mod tests {
         base.initialize_meta().unwrap();
         let root_snap = base.root().encode_update_v1().unwrap();
 
-        let db_a = WorkspaceDb::from_root_update_v1("ws-offline", "u1", 10, &root_snap).unwrap();
-        let db_b = WorkspaceDb::from_root_update_v1("ws-offline", "u2", 20, &root_snap).unwrap();
+        let db_a =
+            WorkspaceDb::from_root_update_v1("ws-offline", "u1", 10, &root_snap, &[]).unwrap();
+        let db_b =
+            WorkspaceDb::from_root_update_v1("ws-offline", "u2", 20, &root_snap, &[]).unwrap();
         let mut replica_a = StoreBackedDocDirectory::new(WorkspaceDirectory::new(db_a), 100);
         let mut replica_b = StoreBackedDocDirectory::new(WorkspaceDirectory::new(db_b), 100);
 

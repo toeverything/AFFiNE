@@ -231,6 +231,13 @@ pub struct WorkspaceData {
     pub next_doc_seq: u64,
 }
 
+impl WorkspaceData {
+    /// Count of non-trashed documents in this workspace.
+    pub fn active_doc_count(&self) -> usize {
+        self.docs.iter().filter(|d| !d.trashed).count()
+    }
+}
+
 /// Document record stored in the mobile shell view model.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MobileDocRecord {
@@ -284,8 +291,8 @@ impl MobileBackCoordinator {
             state.page_overlay_active = false;
             return BackOutcome::ClearedPageOverlay;
         }
-        if state.history.can_back() {
-            state.history.back();
+        if state.active_workspace().history.can_back() {
+            state.active_workspace_mut().history.back();
             state.sync_route_from_history();
             return BackOutcome::NavigatedBack;
         }
@@ -295,8 +302,6 @@ impl MobileBackCoordinator {
 
 /// Complete deterministic state of the L4 mobile shell.
 pub struct MobileAppState {
-    pub scope: Scope,
-    pub workspaces: Vec<WorkspaceSummary>,
     pub workspace_store: Vec<WorkspaceData>,
     pub active_workspace_idx: usize,
     pub active_tab: MobileTab,
@@ -317,22 +322,11 @@ pub struct MobileAppState {
     pub explorer_scroll_by_seq: std::collections::HashMap<u64, f32>,
     pub today_date: String,
     pub selected_journal_date: String,
-    pub next_doc_seq: u64,
     pub search_query: String,
     pub search_selection: Range<usize>,
     pub search_preedit: Option<Range<usize>>,
     pub search_engine: WeightedSearchEngine,
     pub settings: SettingsState,
-    pub history: NavHistory,
-    pub folders_resolved: bool,
-    pub folder_rows: Vec<FolderRow>,
-    pub folder_revision: u64,
-    pub folder_cache: FolderForestCache,
-    pub docs: Vec<MobileDocRecord>,
-    pub collections: Vec<MobileCollection>,
-    pub tags: Vec<(String, String)>,
-    pub link_graph: LinkGraph,
-    pub workspace_index_seeded: bool,
     pub system_dark: bool,
     pub font_scale: f32,
 }
@@ -346,46 +340,23 @@ impl MobileAppState {
         self.settings.locale
     }
 
-    pub fn active_workspace(&self) -> &WorkspaceSummary {
-        &self.workspaces[self.active_workspace_idx]
+    /// Borrow the active workspace slice (single source of truth in `workspace_store`).
+    pub fn active_workspace(&self) -> &WorkspaceData {
+        &self.workspace_store[self.active_workspace_idx]
     }
 
-    /// Switch to workspace `idx`, saving the outgoing workspace's isolated state and loading
-    /// the incoming workspace's `scope`, `docs`, `folder_rows`, `link_graph`, and `history`.
+    /// Mutably borrow the active workspace slice (single source of truth in `workspace_store`).
+    pub fn active_workspace_mut(&mut self) -> &mut WorkspaceData {
+        &mut self.workspace_store[self.active_workspace_idx]
+    }
+
+    /// Switch to workspace `idx` in place without cloning workspace slices.
     pub fn select_workspace(&mut self, idx: usize, now_ms: f64) {
         if idx >= self.workspace_store.len() || idx == self.active_workspace_idx {
             self.close_sheet(now_ms);
             return;
         }
-        // Persist outgoing workspace slice.
-        if let Some(prev) = self.workspace_store.get_mut(self.active_workspace_idx) {
-            prev.scope = self.scope.clone();
-            prev.folders_resolved = self.folders_resolved;
-            prev.folder_rows = self.folder_rows.clone();
-            prev.folder_revision = self.folder_revision;
-            prev.docs = self.docs.clone();
-            prev.collections = self.collections.clone();
-            prev.tags = self.tags.clone();
-            prev.link_graph = self.link_graph.clone();
-            prev.workspace_index_seeded = self.workspace_index_seeded;
-            prev.history = self.history.clone();
-            prev.next_doc_seq = self.next_doc_seq;
-        }
-        // Load incoming workspace slice.
         self.active_workspace_idx = idx;
-        let next = self.workspace_store[idx].clone();
-        self.scope = next.scope;
-        self.folders_resolved = next.folders_resolved;
-        self.folder_rows = next.folder_rows;
-        self.folder_revision = next.folder_revision;
-        self.folder_cache = FolderForestCache::new();
-        self.docs = next.docs;
-        self.collections = next.collections;
-        self.tags = next.tags;
-        self.link_graph = next.link_graph;
-        self.workspace_index_seeded = next.workspace_index_seeded;
-        self.history = next.history;
-        self.next_doc_seq = next.next_doc_seq;
         self.selected_journal_date = self.today_date.clone();
         self.search_query.clear();
         self.search_selection = 0..0;
@@ -406,16 +377,18 @@ impl MobileAppState {
             self.close_sheet(now_ms);
             return;
         }
-        if self
+        let ws = self.active_workspace_mut();
+        if ws
             .history
             .peek_back()
-            .is_some_and(|prev| prev.target == parent_target && prev.scope == self.scope)
+            .is_some_and(|prev| prev.target == parent_target && prev.scope == ws.scope)
         {
-            self.history.pop_back();
+            ws.history.pop_back();
             self.sync_route_from_history();
         } else {
-            self.history.replace_current(
-                self.scope.clone(),
+            let scope = ws.scope.clone();
+            ws.history.replace_current(
+                scope,
                 parent_target,
                 Origin::Direct(DirectKind::AllDocs),
                 None,
@@ -438,16 +411,20 @@ impl MobileAppState {
 
     /// Push `target` onto `history` unless it already sits at the top of the active scope.
     pub fn navigate_target(&mut self, target: NavTarget, origin: Origin) {
-        if self
-            .history
-            .current()
-            .is_some_and(|cur| cur.target == target && cur.scope == self.scope)
-        {
+        let already_current = {
+            let ws = self.active_workspace();
+            ws.history
+                .current()
+                .is_some_and(|cur| cur.target == target && cur.scope == ws.scope)
+        };
+        if already_current {
             self.sync_route_from_history();
             return;
         }
         self.save_current_explorer_scroll();
-        self.history.push(self.scope.clone(), target, origin, None);
+        let ws = self.active_workspace_mut();
+        let scope = ws.scope.clone();
+        ws.history.push(scope, target, origin, None);
         self.explorer_scroll_y = 0.0;
         self.sync_route_from_history();
     }
@@ -469,33 +446,36 @@ impl MobileAppState {
             MobileTab::Journals => MobileRoute::Journals,
             MobileTab::Search => MobileRoute::Search,
         };
-        let already_same_root = self
-            .history
-            .current()
-            .is_some_and(|e| e.target == target && e.scope == self.scope);
+        let (already_same_root, at_single_root) = {
+            let ws = self.active_workspace();
+            let same = ws
+                .history
+                .current()
+                .is_some_and(|e| e.target == target && e.scope == ws.scope);
+            let single = ws.history.len() <= 1
+                && ws.history.current().is_some_and(|e| {
+                    matches!(
+                        e.target,
+                        NavTarget::Home
+                            | NavTarget::AllDocs
+                            | NavTarget::Journals
+                            | NavTarget::Search
+                    )
+                });
+            (same, single)
+        };
         if already_same_root {
             self.restore_current_explorer_scroll();
             return;
         }
-        // Switching between top-level root tabs resets the root entry instead of piling up
-        // unbounded duplicate tab history when at the root level.
-        let at_single_root = self.history.len() <= 1
-            && self.history.current().is_some_and(|e| {
-                matches!(
-                    e.target,
-                    NavTarget::Home | NavTarget::AllDocs | NavTarget::Journals | NavTarget::Search
-                )
-            });
         if at_single_root {
-            self.history = NavHistory::new();
+            self.active_workspace_mut().history = NavHistory::new();
             self.explorer_scroll_by_seq.clear();
         }
-        self.history.push(
-            self.scope.clone(),
-            target,
-            Origin::Direct(DirectKind::Home),
-            None,
-        );
+        let ws = self.active_workspace_mut();
+        let scope = ws.scope.clone();
+        ws.history
+            .push(scope, target, Origin::Direct(DirectKind::Home), None);
     }
 
     pub fn open_doc(&mut self, doc_id: &str, origin: Origin) {
@@ -541,7 +521,9 @@ impl MobileAppState {
     }
 
     pub fn pick_location(&mut self, seq: u64, choice: Option<LocationChoice>, now_ms: f64) {
-        self.history.pick_location(seq, choice);
+        self.active_workspace_mut()
+            .history
+            .pick_location(seq, choice);
         self.close_sheet(now_ms);
     }
 
@@ -562,11 +544,14 @@ impl MobileAppState {
                 self.open_sheet_from(MobileSheet::LocationAndTrail, Some(trigger), now_ms);
             }
             _ => {
-                if self
-                    .history
-                    .click_breadcrumb_ancestor(action, self.scope.clone())
-                    .is_some()
-                {
+                let clicked = {
+                    let ws = self.active_workspace_mut();
+                    let scope = ws.scope.clone();
+                    ws.history
+                        .click_breadcrumb_ancestor(action, scope)
+                        .is_some()
+                };
+                if clicked {
                     self.sync_route_from_history();
                 }
             }
@@ -574,10 +559,15 @@ impl MobileAppState {
     }
 
     pub fn sync_route_from_history(&mut self) {
-        let Some(entry) = self.history.current() else {
+        let Some(target) = self
+            .active_workspace()
+            .history
+            .current()
+            .map(|e| e.target.clone())
+        else {
             return;
         };
-        match &entry.target {
+        match target {
             NavTarget::Home => {
                 self.active_tab = MobileTab::Home;
                 self.route = MobileRoute::Home;
@@ -599,7 +589,7 @@ impl MobileAppState {
                 self.route = MobileRoute::Search;
             }
             NavTarget::Doc(id) => {
-                self.route = MobileRoute::Page(id.clone());
+                self.route = MobileRoute::Page(id);
             }
             NavTarget::Settings => {
                 self.route = MobileRoute::Settings;
@@ -609,13 +599,12 @@ impl MobileAppState {
     }
 
     pub fn breadcrumb_snapshot(&mut self) -> WorkspaceBreadcrumbSnapshot {
-        let forest = self.folder_cache.resolve(
-            self.folders_resolved,
-            self.folder_revision,
-            &self.folder_rows,
-        );
         let locale = self.locale();
-        let docs = self
+        let ws = self.active_workspace_mut();
+        let forest =
+            ws.folder_cache
+                .resolve(ws.folders_resolved, ws.folder_revision, &ws.folder_rows);
+        let docs = ws
             .docs
             .iter()
             .map(|d| {
@@ -631,36 +620,38 @@ impl MobileAppState {
             })
             .collect();
         WorkspaceBreadcrumbSnapshot {
-            folders_resolved: self.folders_resolved,
+            folders_resolved: ws.folders_resolved,
             forest,
             docs,
-            collections: self
+            collections: ws
                 .collections
                 .iter()
                 .map(|c| (c.id.clone(), c.name.clone()))
                 .collect(),
-            tags: self.tags.iter().cloned().collect(),
+            tags: ws.tags.iter().cloned().collect(),
         }
     }
 
     pub fn derive_breadcrumb(&mut self) -> BreadcrumbDerivation {
         let snapshot = self.breadcrumb_snapshot();
-        breadcrumb::derive(&self.history, &snapshot)
+        breadcrumb::derive(&self.active_workspace().history, &snapshot)
     }
 
     pub fn backlinks_for(&self, doc_id: &str) -> BacklinksResult {
-        let live_clocks: BTreeMap<String, u64> = self
+        let ws = self.active_workspace();
+        let live_clocks: BTreeMap<String, u64> = ws
             .docs
             .iter()
             .filter(|d| !d.trashed)
             .map(|d| (d.id.clone(), d.clock))
             .collect();
-        self.link_graph
-            .backlinks(doc_id, &live_clocks, self.workspace_index_seeded, None)
+        ws.link_graph
+            .backlinks(doc_id, &live_clocks, ws.workspace_index_seeded, None)
     }
 
     pub fn search_hits(&self) -> Vec<SearchHit> {
         let docs: Vec<SearchDocument> = self
+            .active_workspace()
             .docs
             .iter()
             .filter(|d| !d.trashed)
@@ -676,15 +667,13 @@ impl MobileAppState {
     }
 
     pub fn doc_by_id(&self, id: &str) -> Option<&MobileDocRecord> {
-        self.docs.iter().find(|d| d.id == id)
+        self.active_workspace().docs.iter().find(|d| d.id == id)
     }
 
     pub fn forest_state(&mut self) -> FolderForestState {
-        self.folder_cache.resolve(
-            self.folders_resolved,
-            self.folder_revision,
-            &self.folder_rows,
-        )
+        let ws = self.active_workspace_mut();
+        ws.folder_cache
+            .resolve(ws.folders_resolved, ws.folder_revision, &ws.folder_rows)
     }
 }
 
@@ -738,11 +727,11 @@ mod tests {
     fn switching_workspaces_isolates_docs_backlinks_and_history() {
         let mut state = seed_showcase_state(MobileLocale::En, ThemeMode::Light, "2026-11-25");
         state.open_doc("doc-arch", Origin::Direct(DirectKind::Home));
-        assert_eq!(state.scope.workspace_id, "ws-mobile-rust");
+        assert_eq!(state.active_workspace_id(), "ws-mobile-rust");
         assert_eq!(state.backlinks_for("doc-arch").items.len(), 2);
 
         state.select_workspace(1, 50.0);
-        assert_eq!(state.scope.workspace_id, "ws-personal");
+        assert_eq!(state.active_workspace_id(), "ws-personal");
         assert!(state.doc_by_id("doc-arch").is_none());
         assert!(state.doc_by_id("doc-personal-1").is_some());
         assert_eq!(state.backlinks_for("doc-personal-1").items.len(), 1);

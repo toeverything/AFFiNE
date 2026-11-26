@@ -6,20 +6,12 @@ use std::{
     },
 };
 
-use serde::{Deserialize, Serialize};
-
 use crate::{
     error::{StoreError, StoreResult},
     workspace_db::{
         DocPropertiesRow, PageIdSource, PendingDocUpdate, WorkspaceDb, WorkspaceDbTableName,
     },
 };
-
-#[derive(Deserialize, Serialize)]
-struct ExplicitCreateJournalWire {
-    space_id: String,
-    intents: BTreeMap<String, String>,
-}
 
 /// Canonical document identifier in the store domain.
 /// Never carries `db$`, `userdata$`, legacy subdoc GUIDs, or network ACK metadata.
@@ -198,7 +190,6 @@ struct ProjectionCacheState {
 pub struct WorkspaceDirectory {
     db: WorkspaceDb,
     last_opened: Option<DocId>,
-    explicit_create_intents: BTreeMap<String, DocMode>,
     cache: Mutex<ProjectionCacheState>,
 }
 
@@ -207,73 +198,8 @@ impl WorkspaceDirectory {
         Self {
             db,
             last_opened: None,
-            explicit_create_intents: BTreeMap::new(),
             cache: Mutex::new(ProjectionCacheState::default()),
         }
-    }
-
-    /// Stage a non-`Page` creation intent for a fresh explicit `doc_id` before persisting `root`
-    /// so crash replay can backfill a missing `DocProperties` row without mutating legacy `0.27.5`
-    /// pages that already exist in `meta.pages` without a `DocProperties` row.
-    ///
-    /// Returns `Ok(false)` without staging when `mode == DocMode::Page` or `doc_id` already exists
-    /// in the workspace root document.
-    pub fn stage_explicit_create(&mut self, doc_id: &DocId, mode: DocMode) -> StoreResult<bool> {
-        if mode == DocMode::Page || self.get_doc(doc_id)?.is_some() {
-            return Ok(false);
-        }
-        self.explicit_create_intents
-            .insert(doc_id.as_str().to_string(), mode);
-        Ok(true)
-    }
-
-    /// Retire a staged explicit creation intent once `root` and `db$docProperties` are committed.
-    pub fn acknowledge_explicit_create(&mut self, doc_id: &DocId) -> bool {
-        self.explicit_create_intents
-            .remove(doc_id.as_str())
-            .is_some()
-    }
-
-    /// Export staged explicit non-`Page` creation intents as workspace-bound JSON bytes for
-    /// client-local persistence outside frozen `<spaceId>.db`.
-    pub fn export_explicit_create_journal(&self) -> StoreResult<Vec<u8>> {
-        let intents = self
-            .explicit_create_intents
-            .iter()
-            .map(|(k, m)| (k.clone(), m.as_str().to_string()))
-            .collect();
-        let wire = ExplicitCreateJournalWire {
-            space_id: self.db.space_id().to_string(),
-            intents,
-        };
-        Ok(serde_json::to_vec(&wire)?)
-    }
-
-    /// Restore staged explicit non-`Page` creation intents for this workspace on crash recovery.
-    pub fn import_explicit_create_journal(&mut self, bytes: &[u8]) -> StoreResult<()> {
-        let wire: ExplicitCreateJournalWire = serde_json::from_slice(bytes)?;
-        if wire.space_id != self.db.space_id() {
-            return Err(StoreError::InvalidProtocol(format!(
-                "explicit create journal space_id {:?} does not match workspace {:?}",
-                wire.space_id,
-                self.db.space_id()
-            )));
-        }
-        let mut parsed = BTreeMap::new();
-        for (doc_id, raw_mode) in wire.intents {
-            let valid_id = DocId::new(doc_id)?;
-            let mode = match raw_mode.as_str() {
-                "edgeless" => DocMode::Edgeless,
-                other => {
-                    return Err(StoreError::InvalidProtocol(format!(
-                        "unsupported explicit create journal mode: {other:?}"
-                    )));
-                }
-            };
-            parsed.insert(valid_id.as_str().to_string(), mode);
-        }
-        self.explicit_create_intents.extend(parsed);
-        Ok(())
     }
 
     pub fn db(&self) -> &WorkspaceDb {
@@ -410,20 +336,8 @@ impl WorkspaceDirectory {
     /// Create a document in `WorkspaceDb`, recording root (and non-`Page` `DocProperties`) updates
     /// in `WorkspaceDb::pending_updates` (to be persisted atomically via `push_updates_batch`).
     ///
-    /// Non-`Page` creation requires `db$docProperties` to be resolved first (returning
-    /// [`StoreError::DbTableNotResolved`] with zero mutations so retry intent survives restarts).
-    /// Existing explicit IDs preserve legacy `Page` documents that lack a `DocProperties` row
-    /// unless backed by a matching [`Self::import_explicit_create_journal`] creation record.
+    /// Existing explicit IDs preserve legacy `Page` documents that lack a `DocProperties` row.
     pub fn create_doc(&mut self, request: CreateDocRequest) -> StoreResult<CreateDocResult> {
-        if request.mode != DocMode::Page
-            && !self
-                .db
-                .is_db_table_resolved(WorkspaceDbTableName::DocProperties)
-        {
-            return Err(StoreError::DbTableNotResolved(
-                WorkspaceDbTableName::DocProperties.local_doc_id(),
-            ));
-        }
         let id_source = match &request.id {
             CreateDocId::DerivedFromOp(op_id) => PageIdSource::DerivedFromOp(op_id.as_str()),
             CreateDocId::Explicit(doc_id) => PageIdSource::Explicit(doc_id.as_str()),
@@ -436,17 +350,7 @@ impl WorkspaceDirectory {
             let has_existing_row = self
                 .db
                 .has_db_row_entry(WorkspaceDbTableName::DocProperties, &outcome.page_id)?;
-            if outcome.created_new
-                && matches!(request.id, CreateDocId::Explicit(_))
-                && !has_existing_row
-            {
-                self.explicit_create_intents
-                    .insert(outcome.page_id.clone(), request.mode);
-            }
-            let has_explicit_intent =
-                self.explicit_create_intents.get(&outcome.page_id) == Some(&request.mode);
-            if (outcome.created_new || is_derived_retry || has_explicit_intent) && !has_existing_row
-            {
+            if (outcome.created_new || is_derived_retry) && !has_existing_row {
                 self.db.upsert_db_row(
                     WorkspaceDbTableName::DocProperties,
                     &DocPropertiesRow {
@@ -781,14 +685,12 @@ mod tests {
     }
 
     #[test]
-    fn create_doc_recovers_partial_mode_for_derived_and_explicit_ids_without_clobbering_existing_rows()
-     {
+    fn create_doc_recovers_partial_mode_without_clobbering_existing_or_legacy_rows() {
         let shared_explicit_id = DocId::new("doc-same").unwrap();
 
-        // 1. Legacy 0.27.5 completed Page doc without any `DocProperties` row (created via
-        //    `WorkspaceDb::create_page` / `collection.createDoc(id)` with zero journal):
+        // 1. Legacy 0.27.5 completed Page doc without any `DocProperties` row:
         //    a subsequent `create_doc(Explicit("doc-same"), Edgeless)` MUST keep `DocMode::Page`
-        //    and emit zero updates, and `stage_explicit_create` refuses to stage an existing page.
+        //    and emit zero updates.
         let mut legacy_db = WorkspaceDb::new("ws-1", "u1", 1);
         legacy_db.initialize_meta().unwrap();
         legacy_db
@@ -801,14 +703,14 @@ mod tests {
         let legacy_root = legacy_db.root().encode_update_v1().unwrap();
 
         let legacy_reopened_db =
-            WorkspaceDb::from_root_update_v1("ws-1", "u1", 2, &legacy_root).unwrap();
+            WorkspaceDb::from_root_update_v1("ws-1", "u1", 2, &legacy_root, &[]).unwrap();
         let mut legacy_dir = WorkspaceDirectory::new(legacy_reopened_db);
-        // Plain `DocMode::Page` creation works even before `db$docProperties` is resolved and
-        // writes ONLY `ws-1` (never clobbering a lower-client_id remote `"edgeless"` row).
-        let unresolved_page_db =
-            WorkspaceDb::from_root_update_v1("ws-1", "u1", 99, &legacy_root).unwrap();
-        let mut unresolved_page_dir = WorkspaceDirectory::new(unresolved_page_db);
-        let plain_created = unresolved_page_dir
+        // Plain `DocMode::Page` creation writes ONLY `ws-1` (never clobbering a lower-client_id
+        // remote `"edgeless"` row).
+        let plain_page_db =
+            WorkspaceDb::from_root_update_v1("ws-1", "u1", 99, &legacy_root, &[]).unwrap();
+        let mut plain_page_dir = WorkspaceDirectory::new(plain_page_db);
+        let plain_created = plain_page_dir
             .create_doc(CreateDocRequest {
                 id: CreateDocId::explicit(DocId::new("page-plain").unwrap()),
                 title: "Plain".into(),
@@ -817,7 +719,7 @@ mod tests {
             })
             .unwrap();
         assert!(plain_created.created_new);
-        let plain_updates = unresolved_page_dir.drain_pending_updates();
+        let plain_updates = plain_page_dir.drain_pending_updates();
         assert_eq!(plain_updates.len(), 1);
         assert_eq!(plain_updates[0].doc_id, "ws-1");
 
@@ -846,12 +748,12 @@ mod tests {
             .unwrap()
             .encode_update_v1()
             .unwrap();
-        unresolved_page_dir
+        plain_page_dir
             .db_mut()
             .load_db_table(WorkspaceDbTableName::DocProperties, &remote_props_bytes)
             .unwrap();
         assert_eq!(
-            unresolved_page_dir
+            plain_page_dir
                 .get_doc(&plain_created.doc_id)
                 .unwrap()
                 .unwrap()
@@ -859,16 +761,6 @@ mod tests {
             DocMode::Edgeless
         );
 
-        // Now resolve `DocProperties` as absent on `legacy_dir` and call `Explicit("doc-same")`
-        // with `DocMode::Edgeless`: must preserve legacy `DocMode::Page` with 0 pending updates!
-        legacy_dir
-            .db_mut()
-            .mark_db_table_absent(WorkspaceDbTableName::DocProperties);
-        assert!(
-            !legacy_dir
-                .stage_explicit_create(&shared_explicit_id, DocMode::Edgeless)
-                .unwrap()
-        );
         let legacy_dup = legacy_dir
             .create_doc(CreateDocRequest {
                 id: CreateDocId::explicit(shared_explicit_id.clone()),
@@ -888,212 +780,159 @@ mod tests {
         );
         assert!(legacy_dir.drain_pending_updates().is_empty());
 
-        // 2. Side-by-side partial-save recovery and reverse-arrival preservation for BOTH
-        //    `DerivedFromOp("op-edgeless")` AND the exact same `Explicit("doc-same")` ID when
-        //    backed by a workspace-bound `ExplicitCreateJournal`.
-        let id_cases = [
-            CreateDocId::from_op("op-edgeless").unwrap(),
-            CreateDocId::explicit(shared_explicit_id),
-        ];
-        for create_id in id_cases {
-            let mut dir = new_initialized_directory();
-            if let CreateDocId::Explicit(ref explicit_id) = create_id {
-                assert!(
-                    dir.stage_explicit_create(explicit_id, DocMode::Edgeless)
-                        .unwrap()
-                );
-            }
-            let journal_bytes = dir.export_explicit_create_journal().unwrap();
-            let created = dir
-                .create_doc(CreateDocRequest {
-                    id: create_id.clone(),
-                    title: "Canvas".into(),
-                    mode: DocMode::Edgeless,
-                    now_ms: 500,
-                })
-                .unwrap();
-            assert!(created.created_new);
-            assert_eq!(dir.drain_pending_updates().len(), 2);
-            let root_only = dir.db().root().encode_update_v1().unwrap();
+        // 2. DerivedFromOp partial-save recovery and reverse-arrival preservation.
+        let create_id = CreateDocId::from_op("op-edgeless").unwrap();
+        let mut dir = new_initialized_directory();
+        let created = dir
+            .create_doc(CreateDocRequest {
+                id: create_id.clone(),
+                title: "Canvas".into(),
+                mode: DocMode::Edgeless,
+                now_ms: 500,
+            })
+            .unwrap();
+        assert!(created.created_new);
+        assert_eq!(dir.drain_pending_updates().len(), 2);
+        let root_only = dir.db().root().encode_update_v1().unwrap();
 
-            // Cross-workspace journal import is rejected.
-            let mut wrong_ws = WorkspaceDirectory::new(WorkspaceDb::new("ws-other", "u1", 9));
-            assert!(matches!(
-                wrong_ws.import_explicit_create_journal(&journal_bytes),
-                Err(StoreError::InvalidProtocol(_))
-            ));
-
-            // Crash after persisting ONLY root (+ local journal): unresolved table -> DbTableNotResolved.
-            let reloaded_db =
-                WorkspaceDb::from_root_update_v1("ws-1", "u1", 2, &root_only).unwrap();
-            let mut reloaded_dir = WorkspaceDirectory::new(reloaded_db);
-            reloaded_dir
-                .import_explicit_create_journal(&journal_bytes)
-                .unwrap();
-            let unresolved_err = reloaded_dir
-                .create_doc(CreateDocRequest {
-                    id: create_id.clone(),
-                    title: "Canvas".into(),
-                    mode: DocMode::Edgeless,
-                    now_ms: 600,
-                })
-                .unwrap_err();
-            assert!(matches!(unresolved_err, StoreError::DbTableNotResolved(_)));
-            assert!(reloaded_dir.drain_pending_updates().is_empty());
-
-            // Second restart -> import journal + mark_db_table_absent -> retry emits 1 DocProperties
-            // update and recovers Edgeless for both DerivedFromOp and Explicit("doc-same")!
-            let second_boot_db =
-                WorkspaceDb::from_root_update_v1("ws-1", "u1", 2, &root_only).unwrap();
-            let mut second_boot_dir = WorkspaceDirectory::new(second_boot_db);
+        // Reopen with root only (empty `initial_db_tables` means `db$docProperties` absent on disk):
+        // retrying `DerivedFromOp` backfills `db$docProperties`.
+        let second_boot_db =
+            WorkspaceDb::from_root_update_v1("ws-1", "u1", 2, &root_only, &[]).unwrap();
+        let mut second_boot_dir = WorkspaceDirectory::new(second_boot_db);
+        let retry = second_boot_dir
+            .create_doc(CreateDocRequest {
+                id: create_id.clone(),
+                title: "Canvas".into(),
+                mode: DocMode::Edgeless,
+                now_ms: 610,
+            })
+            .unwrap();
+        assert!(!retry.created_new);
+        assert_eq!(retry.doc_id, created.doc_id);
+        assert_eq!(
             second_boot_dir
-                .import_explicit_create_journal(&journal_bytes)
-                .unwrap();
-            second_boot_dir
-                .db_mut()
-                .mark_db_table_absent(WorkspaceDbTableName::DocProperties);
-            let retry = second_boot_dir
-                .create_doc(CreateDocRequest {
-                    id: create_id.clone(),
-                    title: "Canvas".into(),
-                    mode: DocMode::Edgeless,
-                    now_ms: 610,
-                })
-                .unwrap();
-            assert!(!retry.created_new);
-            assert_eq!(retry.doc_id, created.doc_id);
-            assert_eq!(
-                second_boot_dir
-                    .get_doc(&created.doc_id)
-                    .unwrap()
-                    .unwrap()
-                    .mode,
-                DocMode::Edgeless
-            );
-            let backfilled = second_boot_dir.drain_pending_updates();
-            assert_eq!(backfilled.len(), 1);
-            assert_eq!(backfilled[0].doc_id, "db$docProperties");
-            if matches!(create_id, CreateDocId::Explicit(_)) {
-                assert!(second_boot_dir.acknowledge_explicit_create(&created.doc_id));
-            }
-
-            // User switches primaryMode to "page"; higher client_id = 3 > 2 restart preserves Page
-            // even if an unacknowledged journal is re-imported.
-            second_boot_dir
-                .db_mut()
-                .patch_db_row_fields(
-                    WorkspaceDbTableName::DocProperties,
-                    created.doc_id.as_str(),
-                    &[("primaryMode", Some(serde_json::json!("page")))],
-                )
-                .unwrap();
-            let _ = second_boot_dir.drain_pending_updates();
-            let persisted_props_bytes = second_boot_dir
-                .db()
-                .db_table(WorkspaceDbTableName::DocProperties)
+                .get_doc(&created.doc_id)
                 .unwrap()
-                .encode_update_v1()
-                .unwrap();
-
-            let restart_db = WorkspaceDb::from_root_update_v1("ws-1", "u1", 3, &root_only).unwrap();
-            let mut restart_dir = WorkspaceDirectory::new(restart_db);
-            restart_dir
-                .import_explicit_create_journal(&journal_bytes)
-                .unwrap();
-            assert!(matches!(
-                restart_dir.create_doc(CreateDocRequest {
-                    id: create_id.clone(),
-                    title: "Canvas".into(),
-                    mode: DocMode::Edgeless,
-                    now_ms: 700,
-                }),
-                Err(StoreError::DbTableNotResolved(_))
-            ));
-            restart_dir
-                .db_mut()
-                .load_db_table(WorkspaceDbTableName::DocProperties, &persisted_props_bytes)
-                .unwrap();
-            let replay_after_load = restart_dir
-                .create_doc(CreateDocRequest {
-                    id: create_id.clone(),
-                    title: "Canvas".into(),
-                    mode: DocMode::Edgeless,
-                    now_ms: 710,
-                })
-                .unwrap();
-            assert!(!replay_after_load.created_new);
-            assert_eq!(
-                restart_dir.get_doc(&created.doc_id).unwrap().unwrap().mode,
-                DocMode::Page
-            );
-            assert!(restart_dir.drain_pending_updates().is_empty());
-
-            // Reverse partial state: live "page" row and soft-deleted row loaded before root page.
-            let mut empty_root_db = WorkspaceDb::new("ws-1", "u1", 1);
-            empty_root_db.initialize_meta().unwrap();
-            let empty_root_bytes = empty_root_db.root().encode_update_v1().unwrap();
-
-            let rev_live_db =
-                WorkspaceDb::from_root_update_v1("ws-1", "u1", 4, &empty_root_bytes).unwrap();
-            let mut rev_live_dir = WorkspaceDirectory::new(rev_live_db);
-            rev_live_dir
-                .db_mut()
-                .load_db_table(WorkspaceDbTableName::DocProperties, &persisted_props_bytes)
-                .unwrap();
-            let repaired_live = rev_live_dir
-                .create_doc(CreateDocRequest {
-                    id: create_id.clone(),
-                    title: "Canvas".into(),
-                    mode: DocMode::Edgeless,
-                    now_ms: 800,
-                })
-                .unwrap();
-            assert!(repaired_live.created_new);
-            assert_eq!(
-                rev_live_dir.get_doc(&created.doc_id).unwrap().unwrap().mode,
-                DocMode::Page
-            );
-            let live_updates = rev_live_dir.drain_pending_updates();
-            assert_eq!(live_updates.len(), 1);
-            assert_eq!(live_updates[0].doc_id, "ws-1");
-
-            second_boot_dir
-                .db_mut()
-                .soft_delete_db_row(WorkspaceDbTableName::DocProperties, created.doc_id.as_str())
-                .unwrap();
-            let deleted_props_bytes = second_boot_dir
-                .db()
-                .db_table(WorkspaceDbTableName::DocProperties)
                 .unwrap()
-                .encode_update_v1()
-                .unwrap();
-            let rev_del_db =
-                WorkspaceDb::from_root_update_v1("ws-1", "u1", 5, &empty_root_bytes).unwrap();
-            let mut rev_del_dir = WorkspaceDirectory::new(rev_del_db);
+                .mode,
+            DocMode::Edgeless
+        );
+        let backfilled = second_boot_dir.drain_pending_updates();
+        assert_eq!(backfilled.len(), 1);
+        assert_eq!(backfilled[0].doc_id, "db$docProperties");
+
+        // User switches primaryMode to "page"; higher client_id = 3 > 2 restart passing persisted
+        // `db$docProperties` preserves Page.
+        second_boot_dir
+            .db_mut()
+            .patch_db_row_fields(
+                WorkspaceDbTableName::DocProperties,
+                created.doc_id.as_str(),
+                &[("primaryMode", Some(serde_json::json!("page")))],
+            )
+            .unwrap();
+        let _ = second_boot_dir.drain_pending_updates();
+        let persisted_props_bytes = second_boot_dir
+            .db()
+            .db_table(WorkspaceDbTableName::DocProperties)
+            .unwrap()
+            .encode_update_v1()
+            .unwrap();
+
+        let restart_db = WorkspaceDb::from_root_update_v1(
+            "ws-1",
+            "u1",
+            3,
+            &root_only,
+            &[(WorkspaceDbTableName::DocProperties, &persisted_props_bytes)],
+        )
+        .unwrap();
+        let mut restart_dir = WorkspaceDirectory::new(restart_db);
+        let replay_after_load = restart_dir
+            .create_doc(CreateDocRequest {
+                id: create_id.clone(),
+                title: "Canvas".into(),
+                mode: DocMode::Edgeless,
+                now_ms: 710,
+            })
+            .unwrap();
+        assert!(!replay_after_load.created_new);
+        assert_eq!(
+            restart_dir.get_doc(&created.doc_id).unwrap().unwrap().mode,
+            DocMode::Page
+        );
+        assert!(restart_dir.drain_pending_updates().is_empty());
+
+        // Reverse partial state: live "page" row and soft-deleted row loaded before root page.
+        let mut empty_root_db = WorkspaceDb::new("ws-1", "u1", 1);
+        empty_root_db.initialize_meta().unwrap();
+        let empty_root_bytes = empty_root_db.root().encode_update_v1().unwrap();
+
+        let rev_live_db = WorkspaceDb::from_root_update_v1(
+            "ws-1",
+            "u1",
+            4,
+            &empty_root_bytes,
+            &[(WorkspaceDbTableName::DocProperties, &persisted_props_bytes)],
+        )
+        .unwrap();
+        let mut rev_live_dir = WorkspaceDirectory::new(rev_live_db);
+        let repaired_live = rev_live_dir
+            .create_doc(CreateDocRequest {
+                id: create_id.clone(),
+                title: "Canvas".into(),
+                mode: DocMode::Edgeless,
+                now_ms: 800,
+            })
+            .unwrap();
+        assert!(repaired_live.created_new);
+        assert_eq!(
+            rev_live_dir.get_doc(&created.doc_id).unwrap().unwrap().mode,
+            DocMode::Page
+        );
+        let live_updates = rev_live_dir.drain_pending_updates();
+        assert_eq!(live_updates.len(), 1);
+        assert_eq!(live_updates[0].doc_id, "ws-1");
+
+        second_boot_dir
+            .db_mut()
+            .soft_delete_db_row(WorkspaceDbTableName::DocProperties, created.doc_id.as_str())
+            .unwrap();
+        let deleted_props_bytes = second_boot_dir
+            .db()
+            .db_table(WorkspaceDbTableName::DocProperties)
+            .unwrap()
+            .encode_update_v1()
+            .unwrap();
+        let rev_del_db = WorkspaceDb::from_root_update_v1(
+            "ws-1",
+            "u1",
+            5,
+            &empty_root_bytes,
+            &[(WorkspaceDbTableName::DocProperties, &deleted_props_bytes)],
+        )
+        .unwrap();
+        let mut rev_del_dir = WorkspaceDirectory::new(rev_del_db);
+        let repaired_del = rev_del_dir
+            .create_doc(CreateDocRequest {
+                id: create_id,
+                title: "Canvas".into(),
+                mode: DocMode::Edgeless,
+                now_ms: 810,
+            })
+            .unwrap();
+        assert!(repaired_del.created_new);
+        let del_updates = rev_del_dir.drain_pending_updates();
+        assert_eq!(del_updates.len(), 1);
+        assert_eq!(del_updates[0].doc_id, "ws-1");
+        assert!(
             rev_del_dir
-                .db_mut()
-                .load_db_table(WorkspaceDbTableName::DocProperties, &deleted_props_bytes)
-                .unwrap();
-            let repaired_del = rev_del_dir
-                .create_doc(CreateDocRequest {
-                    id: create_id,
-                    title: "Canvas".into(),
-                    mode: DocMode::Edgeless,
-                    now_ms: 810,
-                })
-                .unwrap();
-            assert!(repaired_del.created_new);
-            let del_updates = rev_del_dir.drain_pending_updates();
-            assert_eq!(del_updates.len(), 1);
-            assert_eq!(del_updates[0].doc_id, "ws-1");
-            assert!(
-                rev_del_dir
-                    .db()
-                    .db_table(WorkspaceDbTableName::DocProperties)
-                    .unwrap()
-                    .is_soft_deleted(created.doc_id.as_str())
-                    .unwrap()
-            );
-        }
+                .db()
+                .db_table(WorkspaceDbTableName::DocProperties)
+                .unwrap()
+                .is_soft_deleted(created.doc_id.as_str())
+                .unwrap()
+        );
     }
 }

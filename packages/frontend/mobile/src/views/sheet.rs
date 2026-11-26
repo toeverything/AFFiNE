@@ -52,7 +52,12 @@ pub(super) fn render_active_sheet(
     match sheet_kind {
         MobileSheet::LocationAndTrail => {
             let derivation = state.derive_breadcrumb();
-            let cur_seq = state.history.current().map(|e| e.seq).unwrap_or(0);
+            let cur_seq = state
+                .active_workspace()
+                .history
+                .current()
+                .map(|e| e.seq)
+                .unwrap_or(0);
             let cur_doc_id = match &state.route {
                 MobileRoute::Page(id) => id.clone(),
                 _ => String::new(),
@@ -349,9 +354,9 @@ pub(super) fn render_active_sheet(
                 .flex()
                 .flex_col()
                 .overflow_hidden();
-            for (idx, ws) in state.workspaces.iter().enumerate() {
+            for (idx, ws) in state.workspace_store.iter().enumerate() {
                 let selected = idx == state.active_workspace_idx;
-                let ws_row_id = format!("mobile.sheet.ws.{}", ws.id);
+                let ws_row_id = format!("mobile.sheet.ws.{}", ws.summary.id);
                 let mut row = row_dir(dir)
                     .id(ws_row_id.clone())
                     .snapshot(ws_row_id.clone(), Some("mobile.sheet.panel"))
@@ -366,7 +371,7 @@ pub(super) fn render_active_sheet(
                         div()
                             .text_size(px(14.0))
                             .text_color(palette.text_primary)
-                            .child(ws.name.clone()),
+                            .child(ws.summary.name.clone()),
                     )
                     .child(
                         div()

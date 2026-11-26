@@ -327,12 +327,17 @@ pub(super) fn render_collection_drilldown(
 ) -> impl IntoElement {
     let locale = state.locale();
     let ws_id = state.active_workspace_id().to_string();
-    let col = state.collections.iter().find(|c| c.id == col_id);
+    let col = state
+        .active_workspace()
+        .collections
+        .iter()
+        .find(|c| c.id == col_id);
     let title = col
         .map(|c| c.name.clone())
         .unwrap_or_else(|| env.strings.collections.to_string());
     let docs: Vec<(String, String)> = match col {
         Some(c) => state
+            .active_workspace()
             .docs
             .iter()
             .filter(|d| !d.trashed && c.doc_ids.iter().any(|id| id == &d.id))
@@ -363,12 +368,14 @@ pub(super) fn render_tag_drilldown(
     let locale = state.locale();
     let ws_id = state.active_workspace_id().to_string();
     let title = state
+        .active_workspace()
         .tags
         .iter()
         .find(|(id, _)| id == tag_id)
         .map(|(_, name)| format!("#{name}"))
         .unwrap_or_else(|| format!("#{tag_id}"));
     let docs: Vec<(String, String)> = state
+        .active_workspace()
         .docs
         .iter()
         .filter(|d| !d.trashed && d.tags.iter().any(|t| t == tag_id))
@@ -396,6 +403,7 @@ pub(super) fn render_trash_drilldown(
     let locale = state.locale();
     let ws_id = state.active_workspace_id().to_string();
     let docs: Vec<(String, String)> = state
+        .active_workspace()
         .docs
         .iter()
         .filter(|d| d.trashed)

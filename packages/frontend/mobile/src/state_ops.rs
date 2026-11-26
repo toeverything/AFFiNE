@@ -3,13 +3,12 @@
 
 use affine_client::{DirectKind, NavTarget, Origin};
 use affine_store::workspace_db::FolderRow;
+use blocksuite_playground_doc::fractional_index::generate_key_between;
 
 use crate::{
     state::{MobileAppState, MobileDocRecord, MobileSheet, SettingsGroupId, ThemePreference},
     strings::MobileLocale,
 };
-
-const BASE62_ALPHABET: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 /// Encode `(ws_id, doc_id)` with an unambiguous byte-length prefix (`"{ws_len}:{ws_id}{doc_id}"`)
 /// so workspace or document IDs containing `.` or `:` never collide.
@@ -27,38 +26,9 @@ pub fn decode_scoped_doc_target(raw: &str) -> Option<(&str, &str)> {
     Some((&rest[..ws_len], &rest[ws_len..]))
 }
 
-/// Generate a valid fractional-index key strictly greater than `max_existing` in ASCII order.
-pub(crate) fn next_fractional_index(max_existing: Option<&str>) -> String {
-    let Some(last) = max_existing.filter(|s| !s.is_empty()) else {
-        return "a0".to_string();
-    };
-    let bytes = last.as_bytes();
-    if let Some(&tail) = bytes.last()
-        && let Some(pos) = BASE62_ALPHABET.iter().position(|&b| b == tail)
-        && pos + 1 < BASE62_ALPHABET.len()
-    {
-        let mut next = bytes[..bytes.len() - 1].to_vec();
-        next.push(BASE62_ALPHABET[pos + 1]);
-        if let Ok(s) = String::from_utf8(next) {
-            return s;
-        }
-    }
-    format!("{last}V")
-}
-
 impl MobileAppState {
     pub fn active_workspace_id(&self) -> &str {
-        &self.scope.workspace_id
-    }
-
-    pub(crate) fn sync_active_workspace_doc_count(&mut self) {
-        let active_count = self.docs.iter().filter(|d| !d.trashed).count();
-        if let Some(ws) = self.workspaces.get_mut(self.active_workspace_idx) {
-            ws.doc_count = active_count;
-        }
-        if let Some(store) = self.workspace_store.get_mut(self.active_workspace_idx) {
-            store.summary.doc_count = active_count;
-        }
+        &self.active_workspace().scope.workspace_id
     }
 
     /// Adjust `explorer_scroll_y` by `delta_y`, clamp to `0.0..=max_scroll`, and persist it
@@ -66,7 +36,7 @@ impl MobileAppState {
     pub fn scroll_explorer_by(&mut self, delta_y: f32, max_scroll: f32) {
         let ceiling = max_scroll.max(0.0);
         self.explorer_scroll_y = (self.explorer_scroll_y + delta_y).clamp(0.0, ceiling);
-        if let Some(seq) = self.history.current().map(|e| e.seq) {
+        if let Some(seq) = self.active_workspace().history.current().map(|e| e.seq) {
             self.explorer_scroll_by_seq
                 .insert(seq, self.explorer_scroll_y);
         }
@@ -74,7 +44,7 @@ impl MobileAppState {
 
     pub(crate) fn save_current_explorer_scroll(&mut self) {
         if self.route == crate::state::MobileRoute::Explorer
-            && let Some(seq) = self.history.current().map(|e| e.seq)
+            && let Some(seq) = self.active_workspace().history.current().map(|e| e.seq)
         {
             self.explorer_scroll_by_seq
                 .insert(seq, self.explorer_scroll_y.max(0.0));
@@ -84,6 +54,7 @@ impl MobileAppState {
     pub(crate) fn restore_current_explorer_scroll(&mut self) {
         if self.route == crate::state::MobileRoute::Explorer {
             self.explorer_scroll_y = self
+                .active_workspace()
                 .history
                 .current()
                 .and_then(|e| self.explorer_scroll_by_seq.get(&e.seq).copied())
@@ -94,50 +65,55 @@ impl MobileAppState {
     /// Create a new document in the active workspace, optionally placing a folder link under
     /// `folder_id`, and immediately open it.
     pub fn create_doc(&mut self, folder_id: Option<&str>, now_ms: f64) -> String {
-        let seq = self.next_doc_seq;
-        self.next_doc_seq += 1;
-        let ws_id = self.scope.workspace_id.clone();
-        let doc_id = format!("doc-{ws_id}-new-{seq}");
-        let updated_at_ms = 1_764_001_000 + (now_ms.max(0.0) as i64) + (seq as i64);
-        self.docs.insert(
-            0,
-            MobileDocRecord {
-                id: doc_id.clone(),
-                title: String::new(),
-                body_preview: String::new(),
-                tags: Vec::new(),
-                updated_at_ms,
-                is_favorite: false,
-                trashed: false,
-                journal_date: None,
-                clock: 1,
-                outgoing_edges: Vec::new(),
-            },
-        );
-        self.link_graph.replace_edges(&doc_id, Vec::new(), 1);
-        self.sync_active_workspace_doc_count();
+        let (doc_id, origin) = {
+            let ws = self.active_workspace_mut();
+            let seq = ws.next_doc_seq;
+            ws.next_doc_seq += 1;
+            let ws_id = ws.scope.workspace_id.clone();
+            let doc_id = format!("doc-{ws_id}-new-{seq}");
+            let updated_at_ms = 1_764_001_000 + (now_ms.max(0.0) as i64) + (seq as i64);
+            ws.docs.insert(
+                0,
+                MobileDocRecord {
+                    id: doc_id.clone(),
+                    title: String::new(),
+                    body_preview: String::new(),
+                    tags: Vec::new(),
+                    updated_at_ms,
+                    is_favorite: false,
+                    trashed: false,
+                    journal_date: None,
+                    clock: 1,
+                    outgoing_edges: Vec::new(),
+                },
+            );
+            ws.link_graph.replace_edges(&doc_id, Vec::new(), 1);
 
-        if let Some(fid) = folder_id {
-            let link_id = format!("l-{ws_id}-new-{seq}");
-            let max_idx = self
-                .folder_rows
-                .iter()
-                .filter(|r| r.parent_id.as_deref() == Some(fid))
-                .map(|r| r.index.as_str())
-                .max();
-            let index = next_fractional_index(max_idx);
-            self.folder_rows.push(FolderRow {
-                id: link_id.clone(),
-                parent_id: Some(fid.to_string()),
-                data: doc_id.clone(),
-                folder_type: "doc".to_string(),
-                index,
-            });
-            self.folder_revision += 1;
-            self.open_doc(&doc_id, Origin::Placement { link_id });
-        } else {
-            self.open_doc(&doc_id, Origin::Direct(DirectKind::AllDocs));
-        }
+            let origin = if let Some(fid) = folder_id {
+                let link_id = format!("l-{ws_id}-new-{seq}");
+                let max_idx = ws
+                    .folder_rows
+                    .iter()
+                    .filter(|r| r.parent_id.as_deref() == Some(fid))
+                    .map(|r| r.index.as_str())
+                    .max();
+                let index = generate_key_between(max_idx, None)
+                    .unwrap_or_else(|_| format!("{}V", max_idx.unwrap_or("a0")));
+                ws.folder_rows.push(FolderRow {
+                    id: link_id.clone(),
+                    parent_id: Some(fid.to_string()),
+                    data: doc_id.clone(),
+                    folder_type: "doc".to_string(),
+                    index,
+                });
+                ws.folder_revision += 1;
+                Origin::Placement { link_id }
+            } else {
+                Origin::Direct(DirectKind::AllDocs)
+            };
+            (doc_id, origin)
+        };
+        self.open_doc(&doc_id, origin);
         doc_id
     }
 
@@ -151,6 +127,7 @@ impl MobileAppState {
     /// open it with `Origin::Journal`.
     pub fn open_or_create_journal_for_date(&mut self, date: &str, now_ms: f64) -> String {
         if let Some(existing_id) = self
+            .active_workspace()
             .docs
             .iter()
             .find(|d| !d.trashed && d.journal_date.as_deref() == Some(date))
@@ -160,38 +137,42 @@ impl MobileAppState {
             return existing_id;
         }
         if let Some(trashed_id) = self
+            .active_workspace()
             .docs
             .iter()
             .find(|d| d.trashed && d.journal_date.as_deref() == Some(date))
             .map(|d| d.id.clone())
         {
-            let ws_id = self.scope.workspace_id.clone();
+            let ws_id = self.active_workspace_id().to_string();
             self.restore_doc_scoped(&ws_id, &trashed_id);
             self.open_doc(&trashed_id, Origin::Journal);
             return trashed_id;
         }
-        let seq = self.next_doc_seq;
-        self.next_doc_seq += 1;
-        let ws_id = self.scope.workspace_id.clone();
-        let doc_id = format!("doc-{ws_id}-journal-{date}-{seq}");
-        let updated_at_ms = 1_764_001_000 + (now_ms.max(0.0) as i64) + (seq as i64);
-        self.docs.insert(
-            0,
-            MobileDocRecord {
-                id: doc_id.clone(),
-                title: format!("Journal {date}"),
-                body_preview: String::new(),
-                tags: vec!["daily".to_string()],
-                updated_at_ms,
-                is_favorite: false,
-                trashed: false,
-                journal_date: Some(date.to_string()),
-                clock: 1,
-                outgoing_edges: Vec::new(),
-            },
-        );
-        self.link_graph.replace_edges(&doc_id, Vec::new(), 1);
-        self.sync_active_workspace_doc_count();
+        let doc_id = {
+            let ws = self.active_workspace_mut();
+            let seq = ws.next_doc_seq;
+            ws.next_doc_seq += 1;
+            let ws_id = ws.scope.workspace_id.clone();
+            let doc_id = format!("doc-{ws_id}-journal-{date}-{seq}");
+            let updated_at_ms = 1_764_001_000 + (now_ms.max(0.0) as i64) + (seq as i64);
+            ws.docs.insert(
+                0,
+                MobileDocRecord {
+                    id: doc_id.clone(),
+                    title: format!("Journal {date}"),
+                    body_preview: String::new(),
+                    tags: vec!["daily".to_string()],
+                    updated_at_ms,
+                    is_favorite: false,
+                    trashed: false,
+                    journal_date: Some(date.to_string()),
+                    clock: 1,
+                    outgoing_edges: Vec::new(),
+                },
+            );
+            ws.link_graph.replace_edges(&doc_id, Vec::new(), 1);
+            doc_id
+        };
         self.open_doc(&doc_id, Origin::Journal);
         doc_id
     }
@@ -205,10 +186,11 @@ impl MobileAppState {
         trigger_a11y_id: Option<&str>,
         now_ms: f64,
     ) -> bool {
-        if self.scope.workspace_id != ws_id {
+        let ws = self.active_workspace();
+        if ws.scope.workspace_id != ws_id {
             return false;
         }
-        if !self.docs.iter().any(|d| d.id == doc_id && d.trashed) {
+        if !ws.docs.iter().any(|d| d.id == doc_id && d.trashed) {
             return false;
         }
         self.pending_delete_target = Some((ws_id.to_string(), doc_id.to_string()));
@@ -219,18 +201,18 @@ impl MobileAppState {
     /// Restore a trashed document scoped to `(ws_id, doc_id)`, synchronizing its `link_graph`
     /// clock so workspace backlinks stay `Ready`.
     pub fn restore_doc_scoped(&mut self, ws_id: &str, doc_id: &str) -> bool {
-        if self.scope.workspace_id != ws_id {
+        let ws = self.active_workspace_mut();
+        if ws.scope.workspace_id != ws_id {
             return false;
         }
-        let Some(doc) = self.docs.iter_mut().find(|d| d.id == doc_id && d.trashed) else {
+        let Some(doc) = ws.docs.iter_mut().find(|d| d.id == doc_id && d.trashed) else {
             return false;
         };
         doc.trashed = false;
         doc.clock += 1;
         let edges = doc.outgoing_edges.clone();
         let clock = doc.clock;
-        self.link_graph.replace_edges(doc_id, edges, clock);
-        self.sync_active_workspace_doc_count();
+        ws.link_graph.replace_edges(doc_id, edges, clock);
         true
     }
 
@@ -242,36 +224,42 @@ impl MobileAppState {
         doc_id: &str,
         now_ms: f64,
     ) -> bool {
-        if self.scope.workspace_id != ws_id {
-            return false;
+        {
+            let ws = self.active_workspace_mut();
+            if ws.scope.workspace_id != ws_id {
+                return false;
+            }
+            if !ws.docs.iter().any(|d| d.id == doc_id && d.trashed) {
+                return false;
+            }
+            ws.docs.retain(|d| d.id != doc_id);
+            let rows_before = ws.folder_rows.len();
+            ws.folder_rows
+                .retain(|r| !(r.folder_type == "doc" && r.data == doc_id));
+            if ws.folder_rows.len() != rows_before {
+                ws.folder_revision += 1;
+            }
+            for col in &mut ws.collections {
+                col.doc_ids.retain(|id| id != doc_id);
+            }
+            ws.link_graph.replace_edges(doc_id, Vec::new(), u64::MAX);
         }
-        if !self.docs.iter().any(|d| d.id == doc_id && d.trashed) {
-            return false;
-        }
-        self.docs.retain(|d| d.id != doc_id);
-        let rows_before = self.folder_rows.len();
-        self.folder_rows
-            .retain(|r| !(r.folder_type == "doc" && r.data == doc_id));
-        if self.folder_rows.len() != rows_before {
-            self.folder_revision += 1;
-        }
-        for col in &mut self.collections {
-            col.doc_ids.retain(|id| id != doc_id);
-        }
-        self.link_graph.replace_edges(doc_id, Vec::new(), u64::MAX);
-        self.sync_active_workspace_doc_count();
 
         self.pending_delete_target = None;
         self.close_sheet(now_ms);
-        self.history
-            .remove_target(&self.scope, &NavTarget::Doc(doc_id.to_string()));
-        if self.history.is_empty() {
-            self.history.push(
-                self.scope.clone(),
-                NavTarget::AllDocs,
-                Origin::Direct(DirectKind::AllDocs),
-                None,
-            );
+        {
+            let ws = self.active_workspace_mut();
+            let scope = ws.scope.clone();
+            ws.history
+                .remove_target(&scope, &NavTarget::Doc(doc_id.to_string()));
+            if ws.history.is_empty() {
+                ws.history.push(
+                    scope,
+                    NavTarget::AllDocs,
+                    Origin::Direct(DirectKind::AllDocs),
+                    None,
+                );
+            }
         }
         self.sync_route_from_history();
         true

@@ -9,16 +9,25 @@ license.workspace = true
 [lints]
 workspace = true
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+wasm-codec = ["dep:wasm-bindgen"]
+
 [dependencies]
 base64.workspace = true
+chrono.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
+url.workspace = true
+wasm-bindgen = { workspace = true, optional = true }
 y-octo.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-chrono.workspace = true
 sqlx.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]

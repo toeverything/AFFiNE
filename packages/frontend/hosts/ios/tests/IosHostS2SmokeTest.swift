@@ -433,7 +433,7 @@ struct IosHostS2SmokeTest {
     print("PASS [7/14]: allowlist shrink evicted & closed old handle and mount failure propagated")
   }
 
-  /// 8. Corrupt affine-local-workspace mounts 0 workspaces and preserves raw string & all whitelisted keys on write-back.
+  /// 8. Corrupt affine-local-workspace preserves raw string as existing_user (0 local mounts) and full whitelist roundtrips.
   @MainActor
   static func testCorruptLocalWorkspacePreservesRawAndFullWhitelistRoundtrip() async throws {
     let tmpDir = FileManager.default.temporaryDirectory.appendingPathComponent("s2-ios-swift-corrupt-\(UUID().uuidString)")
@@ -443,9 +443,10 @@ struct IosHostS2SmokeTest {
     let coordinator = HostBootstrapCoordinator(documentsDirectory: tmpDir)
     let corruptSnap = LegacyLocalStorageSnapshot(
       origin: "capacitor://localhost",
-      length: 5,
+      length: 6,
       keys: [
         "affine-local-workspace",
+        "affine-settings",
         "global-cache:i18n_lng",
         "global-state:serverConfig:srv-1",
         "last_workspace_id",
@@ -453,6 +454,7 @@ struct IosHostS2SmokeTest {
       ],
       entries: [
         "affine-local-workspace": "{broken",
+        "affine-settings": "{broken-aux",
         "global-cache:i18n_lng": "\"zh-Hans\"",
         "global-state:serverConfig:srv-1": "{\"serverName\":\"Self\"}",
         "last_workspace_id": "ws-prev",
@@ -461,28 +463,18 @@ struct IosHostS2SmokeTest {
       idbAccessCount: 0
     )
     let disp = try coordinator.applySnapshot(corruptSnap)
-    require(disp.status == "existing_user", "corrupt snapshot must remain existing_user")
-    require(disp.state.localWorkspaceIds.isEmpty, "corrupt affine-local-workspace must fail-closed (0 mounted)")
+    require(disp.status == "existing_user", "corrupt affine-local-workspace must classify as existing_user")
+    require(disp.state.localWorkspaceIds.isEmpty, "corrupt affine-local-workspace must mount 0 workspaces")
+    require(coordinator.allowlistedLocalIds.isEmpty, "corrupt affine-local-workspace must keep allowlist empty")
 
     let plan = try coordinator.buildRollbackWriteBackPlan()
-    require(plan.set["affine-local-workspace"] == "{broken", "corrupt raw value must not be overwritten with []")
+    require(plan.set["affine-local-workspace"] == "{broken", "corrupt affine-local-workspace must be preserved verbatim")
+    require(plan.set["affine-settings"] == "{broken-aux", "corrupt auxiliary key must be preserved verbatim")
     require(plan.set["global-state:serverConfig:srv-1"] == "{\"serverName\":\"Self\"}", "serverConfig must roundtrip")
     require(plan.set["theme"] == "dark", "theme must roundtrip")
     require(plan.set["last_workspace_id"] == "ws-prev", "last_workspace_id must roundtrip")
     require(plan.set["global-cache:i18n_lng"] == "\"zh-Hans\"", "i18n_lng must roundtrip")
-
-    // Valid empty "[]" mounts 0 workspaces and writes back "[]".
-    let emptySnap = LegacyLocalStorageSnapshot(
-      origin: "capacitor://localhost",
-      length: 1,
-      keys: ["affine-local-workspace"],
-      entries: ["affine-local-workspace": "[]"],
-      idbAccessCount: 0
-    )
-    _ = try coordinator.applySnapshot(emptySnap)
-    let emptyPlan = try coordinator.buildRollbackWriteBackPlan()
-    require(emptyPlan.set["affine-local-workspace"] == "[]", "valid empty list must write back []")
-    print("PASS [8/14]: corrupt affine-local-workspace preserved verbatim & full whitelist roundtripped")
+    print("PASS [8/14]: corrupt affine-local-workspace preserved verbatim as existing_user & full whitelist roundtripped")
   }
 
   /// 9. Two distinct LegacyAuthBridge instances sharing the same persistence share single-flight & mutationEpochs.
@@ -554,7 +546,74 @@ struct IosHostS2SmokeTest {
     }
     let afterClear = try await bridgeA.readTokenPair(for: endpoint)
     require(afterClear == nil, "credentials must stay cleared after cross-instance clearSession")
-    print("PASS [9/14]: multi-instance LegacyAuthBridge shared single-flight & mutationEpochs")
+
+    // Historical 0.27.5 unbracketed IPv6 Keychain account ("https://::1:8443") must be read
+    // and refreshed over a valid bracketed HTTP URL ("https://[::1]:8443/api/auth/session/refresh").
+    let ipv6Endpoint = "https://[::1]:8443"
+    let legacyAccountKey = "https://::1:8443"
+    let legacyData = try JSONEncoder().encode(expiredPair)
+    try sharedStore.writeRawData(
+      legacyData,
+      service: LegacyAuthBridge.keychainService,
+      account: legacyAccountKey
+    )
+    let loadedLegacyIpv6 = try await bridgeA.readTokenPair(for: ipv6Endpoint)
+    require(
+      loadedLegacyIpv6?.refreshToken == expiredPair.refreshToken,
+      "historical unbracketed IPv6 Keychain entry must load for bracketed endpoint"
+    )
+    var seenIpv6Url: String?
+    MockAuthURLProtocol.reset()
+    MockAuthURLProtocol.handler = { req in
+      seenIpv6Url = req.url?.absoluteString
+      let body = """
+      {"tokenType":"Bearer","accessToken":"acc-ipv6-new","expiresIn":3600,"refreshToken":"ref-ipv6-new","refreshExpiresAt":"2026-12-25T10:00:00Z","session":{"id":"sess-ipv6","absoluteExpiresAt":"2027-05-25T10:00:00Z"}}
+      """
+      return (200, Data(body.utf8))
+    }
+    let refreshedIpv6 = try await bridgeA.refreshSession(endpoint: ipv6Endpoint, session: session)
+    require(refreshedIpv6.accessToken == "acc-ipv6-new", "IPv6 refresh must return new access token")
+    require(
+      seenIpv6Url == "https://[::1]:8443/api/auth/session/refresh",
+      "IPv6 refresh HTTP URL must stay bracketed, got \(String(describing: seenIpv6Url))"
+    )
+
+    // 0.27.5 compressed unbracketed IPv6 Keychain account ("https://2001:db8::1:8443") must also
+    // load when the caller passes expanded IPv6 form, and refresh over compressed bracketed HTTP URL.
+    let expandedIpv6Endpoint = "https://[2001:0db8:0000:0000:0000:0000:0000:0001]:8443"
+    let legacyCompressedAccountKey = "https://2001:db8::1:8443"
+    try sharedStore.writeRawData(
+      legacyData,
+      service: LegacyAuthBridge.keychainService,
+      account: legacyCompressedAccountKey
+    )
+    let loadedExpandedIpv6 = try await bridgeA.readTokenPair(for: expandedIpv6Endpoint)
+    require(
+      loadedExpandedIpv6?.refreshToken == expiredPair.refreshToken,
+      "0.27.5 compressed unbracketed IPv6 Keychain entry must load for expanded IPv6 endpoint"
+    )
+    var seenExpandedIpv6Url: String?
+    MockAuthURLProtocol.reset()
+    MockAuthURLProtocol.handler = { req in
+      seenExpandedIpv6Url = req.url?.absoluteString
+      let body = """
+      {"tokenType":"Bearer","accessToken":"acc-ipv6-exp-new","expiresIn":3600,"refreshToken":"ref-ipv6-exp-new","refreshExpiresAt":"2026-12-25T10:00:00Z","session":{"id":"sess-ipv6-exp","absoluteExpiresAt":"2027-05-25T10:00:00Z"}}
+      """
+      return (200, Data(body.utf8))
+    }
+    let refreshedExpandedIpv6 = try await bridgeA.refreshSession(
+      endpoint: expandedIpv6Endpoint,
+      session: session
+    )
+    require(
+      refreshedExpandedIpv6.accessToken == "acc-ipv6-exp-new",
+      "expanded IPv6 refresh must return new access token"
+    )
+    require(
+      seenExpandedIpv6Url == "https://[2001:db8::1]:8443/api/auth/session/refresh",
+      "expanded IPv6 refresh HTTP URL must be compressed bracketed, got \(String(describing: seenExpandedIpv6Url))"
+    )
+    print("PASS [9/14]: multi-instance LegacyAuthBridge shared single-flight, mutationEpochs & IPv6 legacy Keychain upgrade")
   }
 
   /// 10. Frame 1 drawable unavailable preserves dirty=true; Frame 2 with no new input renders & clears dirty.

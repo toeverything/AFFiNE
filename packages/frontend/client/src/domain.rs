@@ -342,24 +342,14 @@ impl WorkspaceDomainService {
 
     /// Mark an existing non-trashed document as a daily journal entry for `date` (`YYYY-MM-DD`).
     ///
-    /// Rejects missing/trashed documents, unresolved `db$docProperties`, and tombstoned rows, and
-    /// preserves all existing `DocPropertiesRow` fields (including `primaryMode = edgeless` and
-    /// custom fields).
+    /// Rejects missing/trashed documents and tombstoned rows, and preserves all existing
+    /// `DocPropertiesRow` fields (including `primaryMode = edgeless` and custom fields).
     pub fn set_journal_date(&mut self, doc_id: &DocId, date: &str) -> ClientResult<()> {
         let mut dir = self.lock_directory();
         let entry = dir
             .get_doc(doc_id)?
             .filter(|e| !e.trashed)
             .ok_or_else(|| ClientError::DocNotFound(doc_id.as_str().to_string()))?;
-
-        if !dir
-            .db()
-            .is_db_table_resolved(WorkspaceDbTableName::DocProperties)
-        {
-            return Err(ClientError::TableNotLoaded(
-                WorkspaceDbTableName::DocProperties.local_doc_id(),
-            ));
-        }
 
         let existing_row =
             if let Some(table) = dir.db().db_table(WorkspaceDbTableName::DocProperties) {
@@ -493,15 +483,6 @@ mod tests {
         assert_eq!(
             svc.set_journal_date(&d1, "2026-11-26"),
             Err(ClientError::RowTombstoned(d1.as_str().to_string()))
-        );
-
-        // Unloaded DocProperties table MUST return TableNotLoaded instead of writing default Page.
-        let root_snap = svc.lock_directory().db().root().encode_update_v1().unwrap();
-        let unloaded_db = WorkspaceDb::from_root_update_v1("ws-dom", "u1", 2, &root_snap).unwrap();
-        let mut unloaded_svc = WorkspaceDomainService::new(WorkspaceDirectory::new(unloaded_db));
-        assert_eq!(
-            unloaded_svc.set_journal_date(&d1, "2026-11-25"),
-            Err(ClientError::TableNotLoaded("db$docProperties".into()))
         );
 
         svc.add_favorite(format!("doc:{}", d1.as_str()), "a0")

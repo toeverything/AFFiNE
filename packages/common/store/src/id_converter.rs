@@ -2,10 +2,33 @@ use std::collections::BTreeMap;
 
 use y_octo::{
     Any, DocOptions, DocSession, SessionConfig, SessionReadValue, SessionUndoConfig, TypePath,
-    TypeTarget,
+    TypeTarget, merge_updates_v1, validate_update_v1,
 };
 
 use crate::error::{StoreError, StoreResult};
+
+fn is_empty_crdt_update(bin: &[u8]) -> bool {
+    bin.is_empty() || bin == [0, 0]
+}
+
+/// Merge a slice of encoded Yjs v1 CRDT updates into a single v1 update (native + `wasm32`).
+pub fn merge_crdt_updates_v1(updates: &[&[u8]]) -> StoreResult<Vec<u8>> {
+    let non_empty: Vec<&[u8]> = updates
+        .iter()
+        .copied()
+        .filter(|u| !is_empty_crdt_update(u))
+        .collect();
+    match non_empty.as_slice() {
+        [] => Ok(vec![0, 0]),
+        [single] => {
+            validate_update_v1(single).map_err(|err| StoreError::InvalidBinary(err.to_string()))?;
+            Ok((*single).to_vec())
+        }
+        many => merge_updates_v1(many.iter().copied())
+            .and_then(|merged| merged.encode_v1())
+            .map_err(|err| StoreError::InvalidBinary(err.to_string())),
+    }
+}
 
 /// Bidirectional document ID converter matching `packages/common/nbstore/src/utils/id-converter.ts`.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -111,6 +134,26 @@ impl IdConverter {
         }
 
         Ok(converter)
+    }
+
+    /// Extract live `meta.pages -> spaces` subdoc GUIDs from one or more encoded Yjs v1 root
+    /// document updates (merged via `y-octo`, rejecting malformed or truncated frames).
+    pub fn extract_subdoc_guids_from_root_updates(
+        space_id: &str,
+        root_updates: &[&[u8]],
+    ) -> StoreResult<Vec<String>> {
+        if root_updates.is_empty() {
+            return Ok(Vec::new());
+        }
+        let merged = merge_crdt_updates_v1(root_updates)?;
+        let converter = Self::from_root_doc_bytes(space_id, None, Some(&merged))?;
+        let mut guids = Vec::new();
+        for (_, guid) in converter.page_mappings() {
+            if !guids.iter().any(|existing| existing == guid) {
+                guids.push(guid.to_string());
+            }
+        }
+        Ok(guids)
     }
 
     /// Register a bidirectional alias between normalized `page_id` and legacy `subdoc_guid`.
@@ -332,5 +375,130 @@ mod tests {
         assert_eq!(converter.old_id_to_new_id("old-guid-1"), "page-1");
         assert_eq!(converter.new_id_to_old_id("page-2"), "page-2");
         assert_eq!(converter.old_id_to_new_id("page-2"), "page-2");
+    }
+
+    #[test]
+    fn real_yjs_v1_binary_fixtures_decode_overwrites_xml_deleteset_and_concurrent_spaces() {
+        // Genuine Yjs v1 binary fixtures migrated from Web host idb-storage tests.
+        const RENAMED_TWICE_TWO_PAGES: &[u8] = &[
+            1, 11, 101, 0, 33, 1, 4, 109, 101, 116, 97, 4, 110, 97, 109, 101, 1, 168, 101, 0, 1,
+            119, 12, 87, 111, 114, 107, 115, 112, 97, 99, 101, 32, 118, 50, 39, 1, 4, 109, 101,
+            116, 97, 5, 112, 97, 103, 101, 115, 0, 7, 0, 101, 2, 1, 40, 0, 101, 3, 2, 105, 100, 1,
+            119, 6, 112, 97, 103, 101, 45, 49, 40, 0, 101, 3, 5, 116, 105, 116, 108, 101, 1, 119,
+            8, 80, 97, 103, 101, 32, 79, 110, 101, 135, 101, 3, 1, 40, 0, 101, 6, 2, 105, 100, 1,
+            119, 6, 112, 97, 103, 101, 45, 50, 40, 0, 101, 6, 5, 116, 105, 116, 108, 101, 1, 119,
+            8, 80, 97, 103, 101, 32, 84, 119, 111, 41, 1, 6, 115, 112, 97, 99, 101, 115, 6, 112,
+            97, 103, 101, 45, 49, 13, 103, 117, 105, 100, 45, 99, 97, 115, 101, 49, 45, 112, 49,
+            118, 0, 41, 1, 6, 115, 112, 97, 99, 101, 115, 6, 112, 97, 103, 101, 45, 50, 13, 103,
+            117, 105, 100, 45, 99, 97, 115, 101, 49, 45, 112, 50, 118, 0, 1, 101, 1, 0, 1,
+        ];
+        const TITLE_EDITED_TWICE_THEN_P2: &[u8] = &[
+            1, 11, 102, 0, 39, 1, 4, 109, 101, 116, 97, 5, 112, 97, 103, 101, 115, 0, 7, 0, 102, 0,
+            1, 40, 0, 102, 1, 2, 105, 100, 1, 119, 2, 112, 49, 33, 0, 102, 1, 5, 116, 105, 116,
+            108, 101, 1, 41, 1, 6, 115, 112, 97, 99, 101, 115, 2, 112, 49, 13, 103, 117, 105, 100,
+            45, 99, 97, 115, 101, 50, 45, 112, 49, 118, 0, 161, 102, 3, 1, 168, 102, 5, 1, 119, 11,
+            70, 105, 110, 97, 108, 32, 84, 105, 116, 108, 101, 135, 102, 1, 1, 40, 0, 102, 7, 2,
+            105, 100, 1, 119, 2, 112, 50, 40, 0, 102, 7, 5, 116, 105, 116, 108, 101, 1, 119, 11,
+            83, 101, 99, 111, 110, 100, 32, 80, 97, 103, 101, 41, 1, 6, 115, 112, 97, 99, 101, 115,
+            2, 112, 50, 13, 103, 117, 105, 100, 45, 99, 97, 115, 101, 50, 45, 112, 50, 118, 0, 1,
+            102, 2, 3, 1, 5, 1,
+        ];
+        const XML_FRAGMENT_BEFORE_PAGE: &[u8] = &[
+            1, 7, 103, 0, 39, 1, 4, 109, 101, 116, 97, 5, 110, 111, 116, 101, 115, 4, 7, 0, 103, 0,
+            3, 9, 112, 97, 114, 97, 103, 114, 97, 112, 104, 39, 1, 4, 109, 101, 116, 97, 5, 112,
+            97, 103, 101, 115, 0, 7, 0, 103, 2, 1, 40, 0, 103, 3, 2, 105, 100, 1, 119, 5, 112, 45,
+            120, 109, 108, 40, 0, 103, 3, 5, 116, 105, 116, 108, 101, 1, 119, 17, 65, 102, 116,
+            101, 114, 32, 88, 109, 108, 70, 114, 97, 103, 109, 101, 110, 116, 41, 1, 6, 115, 112,
+            97, 99, 101, 115, 5, 112, 45, 120, 109, 108, 14, 103, 117, 105, 100, 45, 99, 97, 115,
+            101, 51, 45, 120, 109, 108, 118, 0, 0,
+        ];
+        const OVERWRITTEN_AND_FOREIGN_SNAPSHOT: &[u8] = &[
+            1, 7, 104, 0, 39, 1, 4, 109, 101, 116, 97, 5, 112, 97, 103, 101, 115, 0, 7, 0, 104, 0,
+            1, 40, 0, 104, 1, 2, 105, 100, 1, 119, 2, 112, 49, 40, 0, 104, 1, 5, 116, 105, 116,
+            108, 101, 1, 119, 9, 76, 105, 118, 101, 32, 80, 97, 103, 101, 33, 1, 6, 115, 112, 97,
+            99, 101, 115, 2, 112, 49, 1, 169, 104, 4, 9, 108, 105, 118, 101, 45, 103, 117, 105,
+            100, 118, 0, 41, 1, 8, 111, 116, 104, 101, 114, 77, 97, 112, 7, 102, 111, 114, 101,
+            105, 103, 110, 12, 102, 111, 114, 101, 105, 103, 110, 45, 103, 117, 105, 100, 118, 0,
+            1, 104, 1, 4, 1,
+        ];
+        const OVERWRITTEN_INCREMENTAL_0: &[u8] = &[
+            1, 6, 105, 0, 39, 1, 4, 109, 101, 116, 97, 5, 112, 97, 103, 101, 115, 0, 7, 0, 105, 0,
+            1, 40, 0, 105, 1, 2, 105, 100, 1, 119, 2, 112, 49, 40, 0, 105, 1, 5, 116, 105, 116,
+            108, 101, 1, 119, 9, 76, 105, 118, 101, 32, 80, 97, 103, 101, 41, 1, 6, 115, 112, 97,
+            99, 101, 115, 2, 112, 49, 8, 111, 108, 100, 45, 103, 117, 105, 100, 118, 0, 41, 1, 8,
+            111, 116, 104, 101, 114, 77, 97, 112, 7, 102, 111, 114, 101, 105, 103, 110, 12, 102,
+            111, 114, 101, 105, 103, 110, 45, 103, 117, 105, 100, 118, 0, 0,
+        ];
+        const OVERWRITTEN_INCREMENTAL_1: &[u8] = &[
+            1, 1, 105, 6, 169, 105, 4, 9, 108, 105, 118, 101, 45, 103, 117, 105, 100, 118, 0, 1,
+            105, 1, 4, 1,
+        ];
+        const EMPTY_PAGES_WITH_ORPHAN_SPACE: &[u8] = &[
+            1, 4, 106, 0, 39, 1, 4, 109, 101, 116, 97, 5, 112, 97, 103, 101, 115, 0, 1, 0, 106, 0,
+            1, 0, 1, 41, 1, 6, 115, 112, 97, 99, 101, 115, 2, 112, 49, 11, 111, 114, 112, 104, 97,
+            110, 45, 103, 117, 105, 100, 118, 0, 1, 106, 1, 1, 2,
+        ];
+
+        let cases: &[(&str, &[&[u8]], &[&str])] = &[
+            (
+                "renamedTwiceTwoPages",
+                &[RENAMED_TWICE_TWO_PAGES],
+                &["guid-case1-p1", "guid-case1-p2"],
+            ),
+            (
+                "titleEditedTwiceThenP2",
+                &[TITLE_EDITED_TWICE_THEN_P2],
+                &["guid-case2-p1", "guid-case2-p2"],
+            ),
+            (
+                "xmlFragmentBeforePage",
+                &[XML_FRAGMENT_BEFORE_PAGE],
+                &["guid-case3-xml"],
+            ),
+            (
+                "overwrittenAndForeignSnapshot",
+                &[OVERWRITTEN_AND_FOREIGN_SNAPSHOT],
+                &["live-guid"],
+            ),
+            (
+                "overwrittenAndForeignIncremental",
+                &[OVERWRITTEN_INCREMENTAL_0, OVERWRITTEN_INCREMENTAL_1],
+                &["live-guid"],
+            ),
+            (
+                "emptyPagesWithOrphanSpace",
+                &[EMPTY_PAGES_WITH_ORPHAN_SPACE],
+                &[],
+            ),
+        ];
+        for (name, updates, expected) in cases {
+            let actual =
+                IdConverter::extract_subdoc_guids_from_root_updates("ws-v1", updates).unwrap();
+            assert_eq!(actual, *expected, "fixture={name}");
+        }
+
+        // Malformed / truncated frames MUST return InvalidBinary.
+        assert!(matches!(
+            IdConverter::extract_subdoc_guids_from_root_updates(
+                "ws-v1",
+                &[&[1, 1, 1, 0, 0x20 | 9, 1]]
+            ),
+            Err(StoreError::InvalidBinary(_))
+        ));
+        let truncated =
+            &OVERWRITTEN_AND_FOREIGN_SNAPSHOT[..OVERWRITTEN_AND_FOREIGN_SNAPSHOT.len() - 5];
+        assert!(matches!(
+            IdConverter::extract_subdoc_guids_from_root_updates("ws-v1", &[truncated]),
+            Err(StoreError::InvalidBinary(_))
+        ));
+
+        // 3-segment and 4-segment userdata$ conversion parity.
+        let conv = IdConverter::new("ws");
+        assert_eq!(conv.old_id_to_new_id("userdata$u$ws$fav"), "userdata$u$fav");
+        assert_eq!(conv.new_id_to_old_id("userdata$u$fav"), "userdata$u$ws$fav");
+        assert_eq!(
+            conv.old_id_to_new_id("userdata$u$other"),
+            "userdata$u$other"
+        );
     }
 }

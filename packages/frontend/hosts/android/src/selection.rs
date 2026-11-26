@@ -311,59 +311,6 @@ impl SelectionOverlayState {
         self.recompute();
     }
 
-    /// Moves the actively dragged selection handle using the recorded grab offset
-    /// and updates the magnifier anchor.
-    ///
-    /// Automatically swaps start and end endpoints and flips `active_drag` when the
-    /// dragged handle crosses past the opposite handle (same-line or cross-line).
-    pub fn update_drag(&mut self, touch_x: f32, touch_y: f32) -> bool {
-        if self.active_drag == SelectionHandleKind::None
-            || !touch_x.is_finite()
-            || !touch_y.is_finite()
-        {
-            return false;
-        }
-        let next_x = self.clamp_x(touch_x + self.grab_dx);
-        let next_y = self.clamp_y(touch_y + self.grab_dy);
-        self.probe_x = next_x;
-        self.probe_y = next_y;
-        match self.active_drag {
-            SelectionHandleKind::Start => {
-                self.raw_start_x = next_x;
-                self.raw_start_y = next_y;
-            }
-            SelectionHandleKind::End => {
-                self.raw_end_x = next_x;
-                self.raw_end_y = next_y;
-            }
-            SelectionHandleKind::None => return false,
-        }
-        if self.is_selection_inverted() {
-            core::mem::swap(&mut self.raw_start_x, &mut self.raw_end_x);
-            core::mem::swap(&mut self.raw_start_y, &mut self.raw_end_y);
-            self.active_drag = match self.active_drag {
-                SelectionHandleKind::Start => SelectionHandleKind::End,
-                SelectionHandleKind::End => SelectionHandleKind::Start,
-                SelectionHandleKind::None => SelectionHandleKind::None,
-            };
-        }
-        self.recompute();
-        true
-    }
-
-    fn is_selection_inverted(&self) -> bool {
-        let sy = self.raw_start_y;
-        let ey = self.raw_end_y;
-        let same_line_tol = 0.5 * self.line_height.max(16.0);
-        if (sy - ey).abs() > same_line_tol {
-            return sy > ey;
-        }
-        match self.direction {
-            TextDirection::Ltr => self.raw_start_x > self.raw_end_x,
-            TextDirection::Rtl => self.raw_start_x < self.raw_end_x,
-        }
-    }
-
     /// Packs the overlay geometry into a fixed 24-float array for zero-allocation,
     /// zero-JSON per-frame `AndroidSelectionOverlayView.onDraw` rendering.
     pub fn pack_overlay_floats(&self) -> [f32; 24] {
@@ -738,9 +685,16 @@ mod tests {
         assert!(state.magnifier.visible);
         assert!(state.action_menu_rect.is_none());
 
-        // Drag end handle right & upward to top-right edge -> loupe clamps cleanly inside viewport.
-        // Because grab_dy = tip_y - center_y = -33.0, touch_y = 43.0 places tip_y at 10.0.
-        assert!(state.update_drag(1200.0, 533.0));
+        // Drag end handle right to viewport edge -> loupe clamps cleanly inside viewport.
+        state.apply_text_drag_endpoints(
+            200.0,
+            500.0,
+            1200.0,
+            500.0,
+            60.0,
+            TextDirection::Ltr,
+            SelectionHandleKind::End,
+        );
         assert!(state.magnifier.visible);
         assert_eq!(state.end_handle.tip_x, 1080.0);
         assert_eq!(state.end_handle.tip_y, 500.0);
@@ -764,13 +718,33 @@ mod tests {
         let grab_x = state.start_handle.center_x;
         let grab_y = state.start_handle.center_y;
         assert_eq!(state.begin_drag(grab_x, grab_y), SelectionHandleKind::Start);
-        assert!(state.update_drag(grab_x, grab_y));
+        let (probe_x, probe_y) = state
+            .probe_drag_position(grab_x, grab_y)
+            .expect("probe drag position during active drag");
+        assert!((probe_x - 200.0).abs() < 1e-3);
+        assert!((probe_y - 500.0).abs() < 1e-3);
+        state.apply_text_drag_endpoints(
+            200.0,
+            500.0,
+            700.0,
+            500.0,
+            60.0,
+            TextDirection::Ltr,
+            SelectionHandleKind::Start,
+        );
         assert!((state.start_handle.tip_x - 200.0).abs() < 1e-3);
         assert!((state.start_handle.tip_y - 500.0).abs() < 1e-3);
 
-        // 2. Same-line LTR crossover: drag Start past End -> swaps endpoints & flips active_drag to End.
-        let dx_past_end = 700.0;
-        assert!(state.update_drag(grab_x + dx_past_end, grab_y));
+        // 2. Same-line LTR crossover via authoritative UTF-16 anchor -> endpoints swap & active_drag flips to End.
+        state.apply_text_drag_endpoints(
+            700.0,
+            500.0,
+            900.0,
+            500.0,
+            60.0,
+            TextDirection::Ltr,
+            SelectionHandleKind::End,
+        );
         assert_eq!(state.active_drag, SelectionHandleKind::End);
         assert!((state.start_handle.tip_x - 700.0).abs() < 1e-3);
         assert!((state.end_handle.tip_x - 900.0).abs() < 1e-3);
@@ -784,23 +758,39 @@ mod tests {
         );
         let _ = state.end_drag();
 
-        // 3. Cross-line crossover: drag Start below End -> swaps endpoints & flips active_drag to End.
+        // 3. Cross-line crossover via authoritative UTF-16 anchor -> endpoints swap & active_drag flips to End.
         state.update_selection(300.0, 400.0, 600.0, 600.0, 60.0, TextDirection::Ltr, true);
         let sx = state.start_handle.center_x;
         let sy = state.start_handle.center_y;
         assert_eq!(state.begin_drag(sx, sy), SelectionHandleKind::Start);
-        assert!(state.update_drag(sx, sy + 400.0));
+        state.apply_text_drag_endpoints(
+            600.0,
+            600.0,
+            300.0,
+            800.0,
+            60.0,
+            TextDirection::Ltr,
+            SelectionHandleKind::End,
+        );
         assert_eq!(state.active_drag, SelectionHandleKind::End);
         assert!((state.start_handle.tip_y - 600.0).abs() < 1e-3);
         assert!((state.end_handle.tip_y - 800.0).abs() < 1e-3);
         let _ = state.end_drag();
 
-        // 4. Same-line RTL crossover: drag Start left of End -> swaps endpoints & flips active_drag.
+        // 4. Same-line RTL crossover via authoritative UTF-16 anchor -> active_drag flips to End.
         state.update_selection(800.0, 500.0, 400.0, 500.0, 60.0, TextDirection::Rtl, true);
         let rsx = state.start_handle.center_x;
         let rsy = state.start_handle.center_y;
         assert_eq!(state.begin_drag(rsx, rsy), SelectionHandleKind::Start);
-        assert!(state.update_drag(rsx - 600.0, rsy));
+        state.apply_text_drag_endpoints(
+            400.0,
+            500.0,
+            200.0,
+            500.0,
+            60.0,
+            TextDirection::Rtl,
+            SelectionHandleKind::End,
+        );
         assert_eq!(state.active_drag, SelectionHandleKind::End);
         assert!((state.start_handle.tip_x - 400.0).abs() < 1e-3);
         assert!((state.end_handle.tip_x - 200.0).abs() < 1e-3);
@@ -815,14 +805,22 @@ mod tests {
         assert!(!state.end_handle.visible);
         assert!(state.action_menu_rect.is_none());
 
-        // 6. Same-line vertical jitter (+/-1px, +/-2px, +/-15px) within 0.5 * line_height
-        //    must NEVER falsely swap Start and End handles.
+        // 6. Same-line vertical jitter via authoritative UTF-16 anchor never swaps End to Start.
         state.update_selection(200.0, 500.0, 700.0, 500.0, 60.0, TextDirection::Ltr, true);
         let ex = state.end_handle.center_x;
         let ey = state.end_handle.center_y;
         assert_eq!(state.begin_drag(ex, ey), SelectionHandleKind::End);
         for dy in [-1.0_f32, 1.0, -2.0, 2.0, -15.0, 15.0] {
-            assert!(state.update_drag(ex - 20.0, ey + dy));
+            let _ = state.probe_drag_position(ex - 20.0, ey + dy);
+            state.apply_text_drag_endpoints(
+                200.0,
+                500.0,
+                680.0,
+                500.0,
+                60.0,
+                TextDirection::Ltr,
+                SelectionHandleKind::End,
+            );
             assert_eq!(
                 state.active_drag,
                 SelectionHandleKind::End,

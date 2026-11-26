@@ -37,7 +37,7 @@ pub(super) fn render_home(
     a11y_bounds: &A11yBoundsMap,
     cx: &mut Context<MobileShellView>,
 ) -> impl IntoElement {
-    let ws = state.active_workspace();
+    let ws = &state.active_workspace().summary;
     let locale = state.locale();
     let compact = viewport_h < 460.0;
 
@@ -165,6 +165,7 @@ pub(super) fn render_home(
         .items_stretch()
         .gap(px(10.0));
     for doc in state
+        .active_workspace()
         .docs
         .iter()
         .filter(|d| !d.trashed && d.is_favorite)
@@ -226,7 +227,12 @@ pub(super) fn render_home(
         .overflow_hidden();
 
     let tight_portrait = !compact && viewport_h < 620.0;
-    let active_docs: Vec<_> = state.docs.iter().filter(|d| !d.trashed).collect();
+    let active_docs: Vec<_> = state
+        .active_workspace()
+        .docs
+        .iter()
+        .filter(|d| !d.trashed)
+        .collect();
     let max_recent = if compact { 2 } else { active_docs.len() };
     for (idx, doc) in active_docs.iter().take(max_recent).enumerate() {
         let doc_id = doc.id.clone();
@@ -477,6 +483,7 @@ pub(super) fn render_journals(
     };
 
     let selected_doc = state
+        .active_workspace()
         .docs
         .iter()
         .find(|d| !d.trashed && d.journal_date.as_deref() == Some(selected_date.as_str()));

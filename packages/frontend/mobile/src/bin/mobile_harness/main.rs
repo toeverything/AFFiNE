@@ -179,9 +179,13 @@ fn check_snapshot_bounds(
     violations
 }
 
+fn current_seq(s: &MobileAppState) -> u64 {
+    s.active_workspace().history.current().map_or(1, |e| e.seq)
+}
+
 fn open_doclink_multi(s: &mut MobileAppState) {
     s.open_doc("doc-arch", Origin::Direct(DirectKind::Home));
-    let arch_seq = s.history.current().map(|e| e.seq).unwrap_or(1);
+    let arch_seq = current_seq(s);
     s.open_doc(
         "doc-sync",
         Origin::DocLink {
@@ -485,7 +489,7 @@ fn run_fps_replay() -> Result<()> {
         clock_ms += step_for(&session, fps, 280)?;
 
         // 4. Open doc-sync via DocLink, click breadcrumb ancestor doc-arch (Push), then Back gesture.
-        let arch_seq = session.update_state(|s| s.history.current().map(|e| e.seq).unwrap_or(1))?;
+        let arch_seq = session.update_state(|s| current_seq(s))?;
         session.update_state(|s| {
             s.open_doc(
                 "doc-sync",
@@ -698,8 +702,9 @@ fn run_gallery(out_dir: PathBuf) -> Result<()> {
             MobileLocale::En,
             ThemeMode::Light,
             Box::new(|s| {
+                let docs = &mut s.active_workspace_mut().docs;
                 for i in 1..=30 {
-                    s.docs.push(affine_mobile::MobileDocRecord {
+                    docs.push(affine_mobile::MobileDocRecord {
                         id: format!("doc-bulk-{i}"),
                         title: format!("Spec Document #{i:02}"),
                         body_preview: format!("Body preview for document #{i:02}."),

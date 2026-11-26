@@ -76,7 +76,7 @@ impl AndroidHostState {
             );
             return true;
         }
-        self.selection.update_drag(touch_x, touch_y)
+        false
     }
 
     /// Finishes dragging a selection handle and snaps handles to the final UTF-16 range.

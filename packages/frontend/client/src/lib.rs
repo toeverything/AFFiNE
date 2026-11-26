@@ -72,9 +72,6 @@ pub enum ClientError {
     #[error("document `{0}` not found")]
     DocNotFound(String),
 
-    #[error("workspace metadata table `{0}` is not loaded")]
-    TableNotLoaded(String),
-
     #[error("row `{0}` is tombstoned and cannot be revived")]
     RowTombstoned(String),
 

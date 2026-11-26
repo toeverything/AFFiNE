@@ -60,6 +60,7 @@ pub(super) fn insert_explorer_a11y_nodes(
     }
 
     let cur_target = state
+        .active_workspace()
         .history
         .current()
         .map(|e| e.target.clone())
@@ -130,7 +131,7 @@ pub(super) fn insert_explorer_a11y_nodes(
             }
         }
         NavTarget::Collection(col_id) if col_id.is_empty() => {
-            for (idx, col) in state.collections.iter().enumerate() {
+            for (idx, col) in state.active_workspace().collections.iter().enumerate() {
                 rows.push((
                     format!("mobile.explorer.collection.{}", col.id),
                     col.name.clone(),
@@ -140,10 +141,15 @@ pub(super) fn insert_explorer_a11y_nodes(
             }
         }
         NavTarget::Collection(col_id) => {
-            if let Some(col) = state.collections.iter().find(|c| c.id == col_id) {
+            if let Some(col) = state
+                .active_workspace()
+                .collections
+                .iter()
+                .find(|c| c.id == col_id)
+            {
                 let member_ids = col.doc_ids.clone();
                 let mut idx = 0usize;
-                for doc in &state.docs {
+                for doc in &state.active_workspace().docs {
                     if !doc.trashed && member_ids.iter().any(|id| id == &doc.id) {
                         rows.push((
                             format!(
@@ -160,7 +166,7 @@ pub(super) fn insert_explorer_a11y_nodes(
             }
         }
         NavTarget::Tag(tag_id) if tag_id.is_empty() => {
-            for (idx, (tag_id, tag_name)) in state.tags.iter().enumerate() {
+            for (idx, (tag_id, tag_name)) in state.active_workspace().tags.iter().enumerate() {
                 rows.push((
                     format!("mobile.explorer.tag.{tag_id}"),
                     format!("#{tag_name}"),
@@ -171,7 +177,7 @@ pub(super) fn insert_explorer_a11y_nodes(
         }
         NavTarget::Tag(tag_id) => {
             let mut idx = 0usize;
-            for doc in &state.docs {
+            for doc in &state.active_workspace().docs {
                 if !doc.trashed && doc.tags.iter().any(|t| t == &tag_id) {
                     rows.push((
                         format!(
@@ -188,7 +194,7 @@ pub(super) fn insert_explorer_a11y_nodes(
         }
         NavTarget::Trash => {
             let mut idx = 0usize;
-            for doc in &state.docs {
+            for doc in &state.active_workspace().docs {
                 if doc.trashed {
                     rows.push((
                         format!(
@@ -278,7 +284,7 @@ pub(super) fn insert_explorer_a11y_nodes(
                 pad + heading_h + gap + folder_h + gap + org_h + gap + heading_h + gap + 1.0
             };
             let mut doc_idx = 0usize;
-            for doc in &state.docs {
+            for doc in &state.active_workspace().docs {
                 if !doc.trashed {
                     rows.push((
                         format!(
@@ -357,6 +363,7 @@ pub(super) fn explorer_scroll_metrics(
     let effective_h = (viewport_height - safe.top - safe.bottom).max(160.0);
     let avail_h = (effective_h - 56.0 - 64.0).max(44.0);
     let cur_target = state
+        .active_workspace()
         .history
         .current()
         .map(|e| e.target.clone())
@@ -379,15 +386,17 @@ pub(super) fn explorer_scroll_metrics(
             32.0 + (total_rows as f32) * 46.0 + 2.0
         }
         NavTarget::Collection(col_id) if col_id.is_empty() => {
-            32.0 + (state.collections.len() as f32) * 46.0 + 2.0
+            32.0 + (state.active_workspace().collections.len() as f32) * 46.0 + 2.0
         }
         NavTarget::Collection(col_id) => {
             let count = state
+                .active_workspace()
                 .collections
                 .iter()
                 .find(|c| c.id == col_id)
                 .map(|c| {
                     state
+                        .active_workspace()
                         .docs
                         .iter()
                         .filter(|d| !d.trashed && c.doc_ids.iter().any(|id| id == &d.id))
@@ -397,10 +406,11 @@ pub(super) fn explorer_scroll_metrics(
             32.0 + (count as f32) * 46.0 + 2.0
         }
         NavTarget::Tag(tag_id) if tag_id.is_empty() => {
-            32.0 + (state.tags.len() as f32) * 46.0 + 2.0
+            32.0 + (state.active_workspace().tags.len() as f32) * 46.0 + 2.0
         }
         NavTarget::Tag(tag_id) => {
             let count = state
+                .active_workspace()
                 .docs
                 .iter()
                 .filter(|d| !d.trashed && d.tags.iter().any(|t| t == &tag_id))
@@ -408,7 +418,12 @@ pub(super) fn explorer_scroll_metrics(
             32.0 + (count as f32) * 46.0 + 2.0
         }
         NavTarget::Trash => {
-            let count = state.docs.iter().filter(|d| d.trashed).count();
+            let count = state
+                .active_workspace()
+                .docs
+                .iter()
+                .filter(|d| d.trashed)
+                .count();
             32.0 + (count as f32) * 46.0 + 2.0
         }
         _ => {
@@ -430,7 +445,12 @@ pub(super) fn explorer_scroll_metrics(
                 FolderForestState::Ready(forest) => forest.dfs_folders().len(),
                 FolderForestState::Unresolved => 0,
             };
-            let active_docs = state.docs.iter().filter(|d| !d.trashed).count();
+            let active_docs = state
+                .active_workspace()
+                .docs
+                .iter()
+                .filter(|d| !d.trashed)
+                .count();
             let folder_h = (folder_count as f32) * row_h + 2.0;
             let org_h = if tight_portrait {
                 44.0 + 2.0
@@ -465,7 +485,11 @@ pub(super) fn explorer_scroll_metrics(
 
 fn explorer_back_label(state: &mut MobileAppState) -> Option<String> {
     let strings = state.locale().strings();
-    let target = state.history.current().map(|e| e.target.clone())?;
+    let target = state
+        .active_workspace()
+        .history
+        .current()
+        .map(|e| e.target.clone())?;
     match target {
         NavTarget::Folder(folder_id) => {
             if let FolderForestState::Ready(forest) = state.forest_state()

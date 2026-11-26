@@ -146,45 +146,29 @@ final class SelectionOverlayView: UIView {
       let cProbe = affine_ios_host_selection_drag_probe(handle, cPoint)
       let probePoint = CGPoint(x: CGFloat(cProbe.x), y: CGFloat(cProbe.y))
       lastResolvedProbePoint = probePoint
-      let state: AffineSelectionOverlayState
-      if let resolver = onSelectionDragResolved {
-        let resolved = resolver(probePoint)
-        let cStart = AffineRect(
-          x: Float(resolved.startCaret.origin.x),
-          y: Float(resolved.startCaret.origin.y),
-          width: Float(resolved.startCaret.size.width),
-          height: Float(resolved.startCaret.size.height)
-        )
-        let cEnd = AffineRect(
-          x: Float(resolved.endCaret.origin.x),
-          y: Float(resolved.endCaret.origin.y),
-          width: Float(resolved.endCaret.size.width),
-          height: Float(resolved.endCaret.size.height)
-        )
-        state = affine_ios_host_selection_apply_drag_endpoints(
-          handle,
-          cPoint,
-          resolved.targetOffset,
-          cStart,
-          cEnd
-        )
-      } else {
-        let activeHeight = max(
-          1.0,
-          CGFloat(
-            currentState.active_drag_handle == 1
-              ? (currentState.start_handle.stem_bottom_y - currentState.start_handle.stem_top_y)
-              : (currentState.end_handle.stem_bottom_y - currentState.end_handle.stem_top_y)
-          )
-        )
-        let cCaret = AffineRect(
-          x: Float(probePoint.x - 1.0),
-          y: Float(probePoint.y - activeHeight * 0.5),
-          width: 2.0,
-          height: Float(activeHeight)
-        )
-        state = affine_ios_host_selection_update_drag(handle, cPoint, cCaret, currentState.range)
+      guard let resolver = onSelectionDragResolved else {
+        return currentState
       }
+      let resolved = resolver(probePoint)
+      let cStart = AffineRect(
+        x: Float(resolved.startCaret.origin.x),
+        y: Float(resolved.startCaret.origin.y),
+        width: Float(resolved.startCaret.size.width),
+        height: Float(resolved.startCaret.size.height)
+      )
+      let cEnd = AffineRect(
+        x: Float(resolved.endCaret.origin.x),
+        y: Float(resolved.endCaret.origin.y),
+        width: Float(resolved.endCaret.size.width),
+        height: Float(resolved.endCaret.size.height)
+      )
+      let state = affine_ios_host_selection_apply_drag_endpoints(
+        handle,
+        cPoint,
+        resolved.targetOffset,
+        cStart,
+        cEnd
+      )
       applyOverlayState(state)
       return state
 

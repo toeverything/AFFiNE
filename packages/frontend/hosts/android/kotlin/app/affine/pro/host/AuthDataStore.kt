@@ -469,7 +469,7 @@ class AuthSessionStore(
     return synchronized(c.lock) {
       c.epoch += 1L
       c.clearPendingRotation()
-      val written = persistence.writeEncryptedSession(filesDir, tokenKey(canonical), encrypted)
+      val written = persistence.writeEncryptedSession(filesDir, NativeBridge.nativeAuthTokenKey(canonical), encrypted)
       if (written) {
         clearPersistedRefreshAttemptUnlocked(canonical)
       }
@@ -493,7 +493,7 @@ class AuthSessionStore(
       if (c.epoch != startEpoch) {
         return@synchronized false
       }
-      val written = persistence.writeEncryptedSession(filesDir, tokenKey(canonical), encrypted)
+      val written = persistence.writeEncryptedSession(filesDir, NativeBridge.nativeAuthTokenKey(canonical), encrypted)
       if (written) {
         c.epoch += 1L
         c.clearPendingRotation()
@@ -589,7 +589,7 @@ class AuthSessionStore(
         val encrypted = storedJson?.let { cipher.encrypt(canonical, it) }
         synchronized(c.lock) {
           if (c.epoch == startEpoch && encrypted != null && NativeBridge.nativeValidateV1Ciphertext(encrypted)) {
-            val written = persistence.writeEncryptedSession(filesDir, tokenKey(canonical), encrypted)
+            val written = persistence.writeEncryptedSession(filesDir, NativeBridge.nativeAuthTokenKey(canonical), encrypted)
             if (written) {
               c.epoch += 1L
               c.clearPendingRotation()
@@ -606,7 +606,7 @@ class AuthSessionStore(
             synchronized(c.lock) {
               if (c.epoch == startEpoch && encrypted != null && NativeBridge.nativeValidateV1Ciphertext(encrypted)) {
                 c.pendingRotated = PendingRotatedSession(startEpoch, res.serverResponseJson, res.nowMs)
-                val written = persistence.writeEncryptedSession(filesDir, tokenKey(canonical), encrypted)
+                val written = persistence.writeEncryptedSession(filesDir, NativeBridge.nativeAuthTokenKey(canonical), encrypted)
                 if (written) {
                   c.epoch += 1L
                   c.clearPendingRotation()
@@ -624,7 +624,7 @@ class AuthSessionStore(
                   c.epoch += 1L
                   c.clearPendingRotation()
                   clearPersistedRefreshAttemptUnlocked(canonical)
-                  NativeBridge.nativeDataStoreDeleteKey(filesDir, tokenKey(canonical))
+                  NativeBridge.nativeDataStoreDeleteKey(filesDir, NativeBridge.nativeAuthTokenKey(canonical))
                   clearLegacyCookieKeysUnlocked(canonical)
                   shouldCleanCookies = true
                 }
@@ -655,18 +655,18 @@ class AuthSessionStore(
   }
 
   private fun readSessionJsonUnlocked(canonical: String): String? {
-    val result = NativeBridge.nativeDataStoreReadResult(filesDir, tokenKey(canonical))
+    val result = NativeBridge.nativeDataStoreReadResult(filesDir, NativeBridge.nativeAuthTokenKey(canonical))
     if (!result.startsWith("OK:")) {
       return null
     }
     val encoded = result.substring(3).takeIf { it.isNotEmpty() } ?: return null
     val plaintext = cipher.decrypt(canonical, encoded) ?: run {
       cipher.reset(canonical)
-      NativeBridge.nativeDataStoreDeleteKey(filesDir, tokenKey(canonical))
+      NativeBridge.nativeDataStoreDeleteKey(filesDir, NativeBridge.nativeAuthTokenKey(canonical))
       return null
     }
     if (!NativeBridge.nativeValidateAuthSessionJson(plaintext)) {
-      NativeBridge.nativeDataStoreDeleteKey(filesDir, tokenKey(canonical))
+      NativeBridge.nativeDataStoreDeleteKey(filesDir, NativeBridge.nativeAuthTokenKey(canonical))
       return null
     }
     return plaintext
@@ -681,7 +681,7 @@ class AuthSessionStore(
       c.epoch += 1L
       c.clearPendingRotation()
       clearPersistedRefreshAttemptUnlocked(canonical)
-      val removed = NativeBridge.nativeDataStoreDeleteKey(filesDir, tokenKey(canonical))
+      val removed = NativeBridge.nativeDataStoreDeleteKey(filesDir, NativeBridge.nativeAuthTokenKey(canonical))
       val legacyCleared = clearLegacyCookieKeysUnlocked(canonical)
       removed && legacyCleared
     }
@@ -713,7 +713,7 @@ class AuthSessionStore(
       c.epoch += 1L
       c.clearPendingRotation()
       clearPersistedRefreshAttemptUnlocked(canonical)
-      val removed = NativeBridge.nativeDataStoreDeleteKey(filesDir, tokenKey(canonical))
+      val removed = NativeBridge.nativeDataStoreDeleteKey(filesDir, NativeBridge.nativeAuthTokenKey(canonical))
       val legacyCleared = clearLegacyCookieKeysUnlocked(canonical)
       removed && legacyCleared
     }
@@ -780,12 +780,9 @@ class AuthSessionStore(
     NativeBridge.nativeDataStoreDeleteKey(filesDir, attemptKey(canonicalEndpoint))
   }
 
-  private fun tokenKey(canonicalEndpoint: String): String = "$TOKEN_KEY_PREFIX$canonicalEndpoint"
-
   companion object {
     const val INSTALLATION_ID_KEY = "auth-installation-id"
     const val REFRESH_ATTEMPT_KEY_PREFIX = "auth-refresh-attempt:"
-    const val TOKEN_KEY_PREFIX = "auth-token:"
     const val CLIENT_KIND_HEADER = "x-affine-client-kind"
     const val CLIENT_KIND_VALUE = "native"
     const val CLIENT_VERSION_HEADER = "x-affine-version"

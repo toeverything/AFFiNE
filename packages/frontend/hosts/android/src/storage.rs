@@ -8,16 +8,12 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
-use std::time::Duration;
 
 use affine_store::sqlite::{
     DocDiff, SqliteDocStorage, resolve_workspace_db_path, sanitize_peer_name,
 };
+pub use affine_store::sync::SpaceType;
 use affine_store::workspace_db::PendingDocUpdate;
-use sqlx::{
-    Row,
-    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions},
-};
 use tokio::runtime::{Builder, Runtime};
 
 /// Explicit SQLite busy timeout (milliseconds) applied to maintenance connections.
@@ -34,30 +30,48 @@ pub struct PassiveCheckpointResult {
 /// Legacy `localStorage` key storing the ordered list of local workspace IDs.
 pub const LOCAL_WORKSPACE_LOCAL_STORAGE_KEY: &str = "affine-local-workspace";
 
-/// Space type segment inside `<filesDir>/workspaces/<spaceType>/`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum SpaceType {
-    Workspace,
-    Userspace,
-}
-
-impl SpaceType {
-    /// Returns the exact on-disk directory segment used by `0.27.5`.
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Workspace => "workspace",
-            Self::Userspace => "userspace",
+/// Filters a raw WebView `evaluateJavascript` snapshot JSON payload using
+/// `affine-legacy-import`'s single allowlist, retaining all top-level metadata
+/// (`origin`, `length`, sorted `keys`, `removedKeys`, `verified`, `idbBlocked`,
+/// `idbTouchCount`) while stripping non-allowlisted keys from `entries`.
+/// Returns `None` if `payload_json` is `"null"`, invalid JSON, or not a JSON object.
+pub fn filter_legacy_local_storage_probe_json(payload_json: &str) -> Option<String> {
+    let trimmed = payload_json.trim();
+    if trimmed.is_empty() || trimmed == "null" {
+        return None;
+    }
+    let unwrapped_owned: String;
+    let effective_json = if trimmed.starts_with('"') {
+        unwrapped_owned = serde_json::from_str::<String>(trimmed).ok()?;
+        unwrapped_owned.as_str()
+    } else {
+        trimmed
+    };
+    let mut obj =
+        serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(effective_json).ok()?;
+    if let Some(serde_json::Value::Array(keys)) = obj.get_mut("keys") {
+        let mut sorted: Vec<String> = keys
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .collect();
+        if sorted.len() == keys.len() {
+            sorted.sort();
+            *keys = sorted.into_iter().map(serde_json::Value::String).collect();
         }
     }
-
-    /// Parses a space type string (`"workspace"` or `"userspace"`).
-    pub fn parse(raw: &str) -> Option<Self> {
-        match raw {
-            "workspace" => Some(Self::Workspace),
-            "userspace" => Some(Self::Userspace),
-            _ => None,
+    let mut filtered_entries = serde_json::Map::new();
+    if let Some(serde_json::Value::Object(raw_entries)) = obj.get("entries") {
+        for (k, v) in raw_entries {
+            if affine_legacy_import::is_permitted_sentinel_entry_key(k) {
+                filtered_entries.insert(k.clone(), v.clone());
+            }
         }
     }
+    obj.insert(
+        "entries".to_string(),
+        serde_json::Value::Object(filtered_entries),
+    );
+    serde_json::to_string(&serde_json::Value::Object(obj)).ok()
 }
 
 /// Errors returned by the Android SQLite storage bridge.
@@ -91,26 +105,9 @@ impl std::fmt::Display for AndroidStorageError {
 
 impl std::error::Error for AndroidStorageError {}
 
-/// Parses `affine-local-workspace` JSON into an ordered, deduplicated list of workspace IDs.
-///
-/// Matches `normalizeWorkspaceIds` + `dedupeWorkspaceIds` in
-/// `packages/frontend/core/src/modules/workspace-engine/impls/workspace-id-utils.ts`.
-pub fn parse_local_workspace_ids(raw_json: &str) -> Vec<String> {
-    let Ok(serde_json::Value::Array(items)) = serde_json::from_str::<serde_json::Value>(raw_json)
-    else {
-        return Vec::new();
-    };
-    let mut seen = BTreeSet::new();
-    let mut out = Vec::new();
-    for item in items {
-        if let serde_json::Value::String(id) = item
-            && seen.insert(id.clone())
-        {
-            out.push(id);
-        }
-    }
-    out
-}
+/// Parses `affine-local-workspace` JSON into an ordered, deduplicated list of workspace IDs
+/// via `affine-legacy-import`.
+pub use affine_legacy_import::parse_local_workspace_ids;
 
 /// Resolves `<filesDir>/workspaces/<spaceType>/<sanitizedPeer>/<spaceId>.db`.
 pub fn resolve_android_db_path(
@@ -156,6 +153,7 @@ impl AndroidWorkspaceCatalog {
     }
 
     /// Builds a catalog directly from the `affine-local-workspace` JSON value.
+    #[cfg(test)]
     pub fn from_local_storage_json(raw_json: &str) -> Self {
         Self::from_ids(parse_local_workspace_ids(raw_json))
     }
@@ -188,7 +186,6 @@ impl AndroidWorkspaceCatalog {
 /// Synchronous bridge over `affine_store::sqlite::SqliteDocStorage` for JNI callers.
 pub struct AndroidSqliteBridge {
     storages: BTreeMap<String, SqliteDocStorage>,
-    maintenance_pools: BTreeMap<String, SqlitePool>,
     runtime: Option<Runtime>,
 }
 
@@ -218,7 +215,6 @@ impl AndroidSqliteBridge {
         Self {
             runtime: None,
             storages: BTreeMap::new(),
-            maintenance_pools: BTreeMap::new(),
         }
     }
 
@@ -331,26 +327,16 @@ impl AndroidSqliteBridge {
         }
         let path_str = db_path.to_string_lossy().to_string();
         let rt = Self::runtime_ref(&mut self.runtime)?;
-        let (storage, maint_pool) = rt
+        let storage = rt
             .block_on(async {
-                let storage = SqliteDocStorage::new(path_str.clone());
+                let storage = SqliteDocStorage::new(path_str);
                 storage.connect().await?;
                 storage.set_space_id(space_id).await?;
-                let maint_opts = SqliteConnectOptions::new()
-                    .filename(&path_str)
-                    .journal_mode(SqliteJournalMode::Wal)
-                    .busy_timeout(Duration::from_millis(SQLITE_BUSY_TIMEOUT_MS));
-                let maint_pool = SqlitePoolOptions::new()
-                    .max_connections(1)
-                    .connect_lazy_with(maint_opts);
-                Ok::<(SqliteDocStorage, SqlitePool), affine_store::StoreError>((
-                    storage, maint_pool,
-                ))
+                Ok::<SqliteDocStorage, affine_store::StoreError>(storage)
             })
             .map_err(|e| AndroidStorageError::Store(e.to_string()))?;
 
         self.storages.insert(key.clone(), storage);
-        self.maintenance_pools.insert(key.clone(), maint_pool);
         Ok(key)
     }
 
@@ -425,34 +411,31 @@ impl AndroidSqliteBridge {
             .map_err(|e| AndroidStorageError::Store(e.to_string()))
     }
 
-    /// Flushes the WAL journal using non-blocking `PRAGMA wal_checkpoint(PASSIVE);`
-    /// on the persistent `busy_timeout = 5000ms` pool, safe for Android `onStop()`.
+    /// Flushes the WAL journal using non-blocking `PRAGMA wal_checkpoint(PASSIVE);`,
+    /// safe for Android `onStop()`.
     pub fn checkpoint_passive(
         &mut self,
         connection_key: &str,
     ) -> Result<PassiveCheckpointResult, AndroidStorageError> {
         let rt = Self::runtime_ref(&mut self.runtime)?;
-        let pool = self
-            .maintenance_pools
+        let storage = self
+            .storages
             .get(connection_key)
             .ok_or_else(|| AndroidStorageError::NotConnected(connection_key.to_string()))?;
-        rt.block_on(async {
-            let row = sqlx::query("PRAGMA wal_checkpoint(PASSIVE);")
-                .fetch_one(pool)
-                .await?;
-            Ok::<PassiveCheckpointResult, sqlx::Error>(PassiveCheckpointResult {
-                busy: row.try_get(0)?,
-                log: row.try_get(1)?,
-                checkpointed: row.try_get(2)?,
-            })
+        let (busy, log, checkpointed) = rt
+            .block_on(storage.checkpoint_passive())
+            .map_err(|e| AndroidStorageError::Store(e.to_string()))?;
+        Ok(PassiveCheckpointResult {
+            busy,
+            log,
+            checkpointed,
         })
-        .map_err(|e| AndroidStorageError::Store(e.to_string()))
     }
 
     /// Runs non-blocking `PRAGMA wal_checkpoint(PASSIVE);` on every open SQLite DB
     /// (called from `MainActivity.onStop()`), returning the count of checkpointed DBs.
     pub fn checkpoint_all_passive(&mut self) -> usize {
-        let keys: Vec<String> = self.maintenance_pools.keys().cloned().collect();
+        let keys: Vec<String> = self.storages.keys().cloned().collect();
         let mut count = 0usize;
         for key in keys {
             if self.checkpoint_passive(&key).is_ok() {
@@ -470,32 +453,21 @@ impl AndroidSqliteBridge {
 
     /// Closes a single connected database cleanly.
     pub fn close(&mut self, connection_key: &str) -> bool {
-        let maint = self.maintenance_pools.remove(connection_key);
-        let storage = self.storages.remove(connection_key);
-        if storage.is_none() && maint.is_none() {
+        let Some(storage) = self.storages.remove(connection_key) else {
             return false;
-        }
+        };
         if let Some(rt) = &self.runtime {
-            if let Some(s) = storage {
-                rt.block_on(s.close());
-            }
-            if let Some(p) = maint {
-                rt.block_on(p.close());
-            }
+            rt.block_on(storage.close());
         }
         true
     }
 
     /// Closes all open databases cleanly.
     pub fn close_all(&mut self) {
-        let maint_pools = std::mem::take(&mut self.maintenance_pools);
         let storages = std::mem::take(&mut self.storages);
         if let Some(rt) = &self.runtime {
             for (_, storage) in storages {
                 rt.block_on(storage.close());
-            }
-            for (_, pool) in maint_pools {
-                rt.block_on(pool.close());
             }
         }
     }
@@ -504,11 +476,12 @@ impl AndroidSqliteBridge {
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
+    use std::time::Duration;
 
     use affine_store::sqlite::get_migrator;
     use sqlx::Connection;
     use sqlx::migrate::{MigrateDatabase, Migration, Migrator};
-    use sqlx::sqlite::Sqlite;
+    use sqlx::sqlite::{Sqlite, SqliteConnectOptions};
     use y_octo::DocOptions;
 
     use super::*;

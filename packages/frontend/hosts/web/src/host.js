@@ -1,6 +1,7 @@
 // @ts-check
 
 import { createA11yTree } from './a11y.js';
+import { createCrdtWasmClient } from './crdt-wasm-client.js';
 import {
   createIdbV1ReadonlyReader,
   createIdbWorkspaceStorage,
@@ -926,6 +927,8 @@ export function hideRuntimeFatal(doc) {
  * @param {IDBFactory} [env.indexedDB]
  * @param {typeof BroadcastChannel} [env.BroadcastChannelImpl]
  * @param {ReturnType<typeof createIdbWorkspaceStorage>} [env.workspaceStorage]
+ * @param {(updates: Uint8Array[]) => Uint8Array | Promise<Uint8Array>} [env.mergeUpdates]
+ * @param {(rootUpdates: Uint8Array[]) => Iterable<string> | Promise<Iterable<string>>} [env.extractSubdocIds]
  * @param {() => number} [env.now]
  * @param {(fn: () => void, ms: number) => unknown} [env.setTimer]
  * @param {(handle: unknown) => void} [env.clearTimer]
@@ -957,24 +960,61 @@ export async function bootWebHost(env = {}) {
   const embedLayer = doc.getElementById('embed-layer');
   const a11yRoot = doc.getElementById('a11y-tree');
 
+  /** @type {(updates: Uint8Array[]) => Uint8Array | Promise<Uint8Array>} */
+  let activeMergeUpdates =
+    typeof env.mergeUpdates === 'function' ? env.mergeUpdates : null;
+  /** @type {(rootUpdates: Uint8Array[]) => Iterable<string> | Promise<Iterable<string>>} */
+  let activeExtractSubdocIds =
+    typeof env.extractSubdocIds === 'function' ? env.extractSubdocIds : null;
+
+  /**
+   * @param {{ flavour: string, type: 'workspace' | 'userspace', id: string }} space
+   */
+  function createWorkspaceBindings(space) {
+    const nextStorage = createIdbWorkspaceStorage({
+      ...space,
+      indexedDB: env.indexedDB || win.indexedDB,
+      BroadcastChannelImpl: env.BroadcastChannelImpl || win.BroadcastChannel,
+      now: env.now,
+      mergeUpdates: activeMergeUpdates || undefined,
+    });
+    const nextPending = createPendingWriteFlusher(nextStorage);
+    const nextV1Reader = createIdbV1ReadonlyReader({
+      workspaceId: space.id,
+      indexedDB: env.indexedDB || win.indexedDB,
+      mergeUpdates: activeMergeUpdates || undefined,
+      extractSubdocIds: activeExtractSubdocIds || undefined,
+    });
+    return {
+      workspaceStorage: nextStorage,
+      pendingWrites: nextPending,
+      v1Reader: nextV1Reader,
+    };
+  }
+
+  /** @type {{ flavour: string, type: 'workspace' | 'userspace', id: string } | null} */
+  let currentSpace = env.space ? { ...env.space } : null;
   let workspaceStorage =
     env.workspaceStorage ||
-    (env.space
+    (currentSpace
       ? createIdbWorkspaceStorage({
-          ...env.space,
+          ...currentSpace,
           indexedDB: env.indexedDB || win.indexedDB,
           BroadcastChannelImpl:
             env.BroadcastChannelImpl || win.BroadcastChannel,
           now: env.now,
+          mergeUpdates: activeMergeUpdates || undefined,
         })
       : null);
   let pendingWrites = workspaceStorage
     ? createPendingWriteFlusher(workspaceStorage)
     : null;
-  let v1Reader = env.space
+  let v1Reader = currentSpace
     ? createIdbV1ReadonlyReader({
-        workspaceId: env.space.id,
+        workspaceId: currentSpace.id,
         indexedDB: env.indexedDB || win.indexedDB,
+        mergeUpdates: activeMergeUpdates || undefined,
+        extractSubdocIds: activeExtractSubdocIds || undefined,
       })
     : null;
   const resolveFlush = () => {
@@ -1026,6 +1066,31 @@ export async function bootWebHost(env = {}) {
     assetBaseUrl: env.assetBaseUrl,
     buildId: env.buildId,
   });
+  const crdtCodecUrl = workerLoader.resolveCrdtCodecUrl();
+  const crdtCodecClient = crdtCodecUrl
+    ? createCrdtWasmClient(crdtCodecUrl, {
+        fetchImpl:
+          env.fetchImpl ||
+          (typeof win.fetch === 'function' ? win.fetch.bind(win) : undefined),
+      })
+    : null;
+  if (crdtCodecClient) {
+    if (!activeMergeUpdates) {
+      activeMergeUpdates = updates => crdtCodecClient.mergeUpdates(updates);
+    }
+    if (!activeExtractSubdocIds) {
+      activeExtractSubdocIds = rootUpdates =>
+        crdtCodecClient.extractSubdocIds(rootUpdates);
+    }
+    workspaceStorage?.setCrdtCodecs?.({ mergeUpdates: activeMergeUpdates });
+    v1Reader?.setCrdtCodecs?.({
+      mergeUpdates: activeMergeUpdates,
+      extractSubdocIds: activeExtractSubdocIds,
+    });
+    if (env.preloadCrdtCodec) {
+      await crdtCodecClient.ready();
+    }
+  }
   const pdfClient = createPdfPreviewClient({
     workerLoader,
     maxCacheBytes: env.pdfCacheMaxBytes,
@@ -1251,17 +1316,9 @@ export async function bootWebHost(env = {}) {
         id: space.id || space.spaceId,
       };
       workspaceStorage?.close();
-      workspaceStorage = createIdbWorkspaceStorage({
-        ...normalized,
-        indexedDB: env.indexedDB || win.indexedDB,
-        BroadcastChannelImpl: env.BroadcastChannelImpl || win.BroadcastChannel,
-        now: env.now,
-      });
-      pendingWrites = createPendingWriteFlusher(workspaceStorage);
-      v1Reader = createIdbV1ReadonlyReader({
-        workspaceId: normalized.id,
-        indexedDB: env.indexedDB || win.indexedDB,
-      });
+      currentSpace = normalized;
+      ({ workspaceStorage, pendingWrites, v1Reader } =
+        createWorkspaceBindings(normalized));
       return { workspaceStorage, pendingWrites, v1Reader };
     },
     switchWorkspace: async space => {
@@ -1280,20 +1337,32 @@ export async function bootWebHost(env = {}) {
         id: space.id || space.spaceId,
       };
       workspaceStorage?.close();
-      workspaceStorage = createIdbWorkspaceStorage({
-        ...normalized,
-        indexedDB: env.indexedDB || win.indexedDB,
-        BroadcastChannelImpl: env.BroadcastChannelImpl || win.BroadcastChannel,
-        now: env.now,
-      });
-      pendingWrites = createPendingWriteFlusher(workspaceStorage);
-      v1Reader = createIdbV1ReadonlyReader({
-        workspaceId: normalized.id,
-        indexedDB: env.indexedDB || win.indexedDB,
-      });
+      currentSpace = normalized;
+      ({ workspaceStorage, pendingWrites, v1Reader } =
+        createWorkspaceBindings(normalized));
       return { workspaceStorage, pendingWrites, v1Reader };
     },
+    setCrdtCodecs: codecs => {
+      if (codecs && 'mergeUpdates' in codecs) {
+        activeMergeUpdates =
+          typeof codecs.mergeUpdates === 'function'
+            ? codecs.mergeUpdates
+            : null;
+      }
+      if (codecs && 'extractSubdocIds' in codecs) {
+        activeExtractSubdocIds =
+          typeof codecs.extractSubdocIds === 'function'
+            ? codecs.extractSubdocIds
+            : null;
+      }
+      workspaceStorage?.setCrdtCodecs?.({ mergeUpdates: activeMergeUpdates });
+      v1Reader?.setCrdtCodecs?.({
+        mergeUpdates: activeMergeUpdates,
+        extractSubdocIds: activeExtractSubdocIds,
+      });
+    },
     workerLoader,
+    crdtCodecClient,
     pdfClient,
     gpuRecovery,
     safeAreaObserver,

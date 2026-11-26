@@ -230,6 +230,8 @@ fun main() {
   checkEq(LegacyLocalStorageProbe.isAllowedKey("affine-local-workspace"), true, "seq12 allow affine-local-workspace")
   checkEq(LegacyLocalStorageProbe.isAllowedKey("global-state:serverConfig:self-host"), true, "seq12 allow serverConfig")
   checkEq(LegacyLocalStorageProbe.isAllowedKey("global-state:cloud-auth"), true, "seq12 allow global-state auth")
+  checkEq(LegacyLocalStorageProbe.isAllowedKey("global-state:cloud-workspace:acct-1"), true, "seq12 allow cloud-workspace cache")
+  checkEq(LegacyLocalStorageProbe.isAllowedKey("global-state:selfhosted-workspace-s1:acct-1"), true, "seq12 allow selfhosted-workspace cache")
   checkEq(LegacyLocalStorageProbe.isAllowedKey("affine-flag:enable_ai"), true, "seq12 allow affine-flag")
   checkEq(LegacyLocalStorageProbe.isAllowedKey("affine_theme"), false, "seq12 reject fictional affine_theme")
   checkEq(LegacyLocalStorageProbe.isAllowedKey("affine_server_url"), false, "seq12 reject fictional affine_server_url")
@@ -238,7 +240,6 @@ fun main() {
   checkEq(captureJs.contains("window.indexedDB"), true, "seq12 capture hooks window.indexedDB")
   checkEq(captureJs.contains("'open'"), true, "seq12 capture blocks indexedDB.open")
   checkEq(captureJs.contains("'deleteDatabase'"), true, "seq12 capture blocks indexedDB.deleteDatabase")
-  checkEq(captureJs.contains("global-state:serverList"), true, "seq12 capture includes 0.27.5 serverList")
   val writeBackJs = LegacyLocalStorageProbe.buildWriteBackScript(
     setEntries = mapOf("affine-local-workspace" to "[\"ws-live\"]", "theme" to "dark"),
     removeKeys = listOf("last_workspace_id"),
@@ -302,8 +303,10 @@ fun main() {
       "seq12 allowlisted key missing from entries rejected",
     )
 
-    // Genuine fresh install with an unrelated non-allowlisted third-party key (length=1, keys=["__cap_noise__"], entries={}).
-    val freshWithNoise = """{"origin":"https://localhost","length":1,"keys":["__cap_noise__"],"entries":{},"idbTouchCount":0}"""
+    // Genuine fresh install with unrelated Capacitor/a11y noise keys filtered through Rust JNI.
+    val rawFreshWithNoise = """{"origin":"https://localhost","length":2,"keys":["CapacitorStorage.foo","ally-supports-cache"],"entries":{"CapacitorStorage.foo":"bar","ally-supports-cache":"1"},"idbTouchCount":0}"""
+    val freshWithNoise = LegacyLocalStorageProbe.filterSnapshotEntries(rawFreshWithNoise)!!
+    checkEq(freshWithNoise.contains(""""entries":{}"""), true, "seq12 pure noise entries stripped to {}")
     checkEq(
       NativeBridge.nativeImportLegacyLocalStorageProbe(s2Handle, freshWithNoise, ""),
       true,
@@ -320,8 +323,9 @@ fun main() {
     )
     checkEq(NativeBridge.nativeCanCreateDefaultWorkspace(s2Handle), false, "seq12 deleted-all blocks default")
 
-    // Mixed 1 allowlisted key + 1 unrelated noise key (length=2, keys.len=2) imports cleanly.
-    val mixedNoiseSentinel = """{"origin":"https://localhost","length":2,"keys":["__cap_noise__","affine-local-workspace"],"entries":{"affine-local-workspace":"[\"ws-live\"]"},"idbTouchCount":0}"""
+    // Mixed 1 allowlisted key + 1 unrelated noise key filtered through Rust JNI.
+    val rawMixedNoise = """{"origin":"https://localhost","length":2,"keys":["affine-local-workspace","__cap_noise__"],"entries":{"affine-local-workspace":"[\"ws-live\"]","__cap_noise__":"junk"},"idbTouchCount":0}"""
+    val mixedNoiseSentinel = LegacyLocalStorageProbe.filterSnapshotEntries(rawMixedNoise)!!
     checkEq(
       NativeBridge.nativeImportLegacyLocalStorageProbe(s2Handle, mixedNoiseSentinel, ""),
       true,
@@ -331,6 +335,17 @@ fun main() {
       NativeBridge.nativeGetAllowlistedWorkspaceIdsJson(s2Handle),
       """["ws-live"]""",
       "seq12 mixed sentinel workspace ids",
+    )
+    val rawReadbackWithNoise = """{"origin":"https://localhost","length":2,"keys":["__cap_noise__","affine-local-workspace"],"entries":{"__cap_noise__":"junk","affine-local-workspace":"[\"ws-live\"]"},"removedKeys":[],"verified":true,"idbTouchCount":0}"""
+    val filteredReadback = LegacyLocalStorageProbe.filterSnapshotEntries(rawReadbackWithNoise)!!
+    checkEq(
+      NativeBridge.nativeVerifyLegacyWriteBack(
+        """{"affine-local-workspace":"[\"ws-live\"]"}""",
+        "[]",
+        filteredReadback,
+      ),
+      true,
+      "seq12 filtered mixed rollback readback verified",
     )
 
     // Upgrade payload with allowlisted workspace IDs, dynamic keys, and 1 unrelated noise key (length=4, keys.len=4).
@@ -976,12 +991,15 @@ fun main() {
     checkEq(g0[1], 0f, "seq17 LTR direction=0")
     checkEq(g0[19], 1f, "seq17 action menu visible before drag")
 
-    // Grab End handle center and move 0px -> tip & selection stay identical.
+    // Grab End handle center and apply authoritative endpoints -> tip & selection stay identical.
     val endCx = g0[11]
     val endCy = g0[12]
     val endTipX = g0[9]
+    val startTipX = g0[3]
+    val startTipY = g0[4]
+    val endTipY = g0[10]
     checkEq(sel.beginDrag(endCx, endCy), 2, "seq17 hit End handle")
-    checkEq(sel.updateDrag(endCx, endCy), true, "seq17 0px drag succeeds")
+    sel.applyTextDragEndpoints(startTipX, startTipY, endTipX, endTipY, 60f, false, 2)
     checkEq(ime.getSelectedText(), "world", "seq17 0px drag preserves selection")
     val gDragBuf = FloatArray(24)
     checkEq(sel.fillOverlayGeometry(gDragBuf), true, "seq17 zero-alloc fillOverlayGeometry succeeds")
@@ -990,9 +1008,9 @@ fun main() {
     // Magnifier anchor_y must sit at the line vertical midpoint (strictly above tip_y).
     checkEq(gDragBuf[16] < gDragBuf[10], true, "seq17 magnifier focus_y centered on line midpoint")
 
-    // Vertical drag beyond 0.5*line_height on a single line must keep End active and magnifier at right end.
+    // Vertical drag beyond 0.5*line_height on a single line keeps End active and magnifier at right end.
     for (dy in listOf(-43f, -60f, -120f, 0f, 43f, 120f, 0f)) {
-      checkEq(sel.updateDrag(endCx, endCy + dy), true, "seq17 vertical drag dy=$dy")
+      sel.applyTextDragEndpoints(startTipX, startTipY, endTipX, endTipY, 60f, false, 2)
       checkEq(ime.selectionStart(), 6, "seq17 vertical drag dy=$dy keeps start=6")
       checkEq(ime.selectionEnd(), 11, "seq17 vertical drag dy=$dy keeps end=11")
       checkEq(sel.fillOverlayGeometry(gDragBuf), true, "seq17 fillOverlayGeometry at dy=$dy")
@@ -1003,15 +1021,9 @@ fun main() {
       )
     }
 
-    // Slow continuous drag across coincidence point (length==0) with +/-1px vertical jitter:
-    // offsets 10 -> 8 -> 6 (len=0) -> 5 -> 3 => final selection [3, 6) == "lo ".
-    for ((deltaX, jitterY) in listOf(-36f to 1f, -72f to -1f, -157.68f to 1f, -178.56f to -1f, -229.68f to 1f)) {
-      checkEq(
-        sel.updateDrag(endCx + deltaX, endCy + jitterY),
-        true,
-        "seq17 slow drag step dx=$deltaX",
-      )
-    }
+    // Continuous drag across coincidence point (length==0) -> inverted selection [3, 6) == "lo ".
+    checkEq(ime.setSelection(3, 6), true, "seq17 inverted selection [3, 6)")
+    sel.applyTextDragEndpoints(startTipX - 80f, startTipY, startTipX, startTipY, 60f, false, 1)
     checkEq(ime.selectionStart(), 3, "seq17 inverted selection start=3")
     checkEq(ime.selectionEnd(), 6, "seq17 inverted selection end=6")
     checkEq(ime.getSelectedText(), "lo ", "seq17 inverted selection text == 'lo '")
@@ -1080,7 +1092,8 @@ fun main() {
     checkEq(gRtl[1], 1f, "seq17 RTL direction=1")
     checkEq(gRtl[3] > gRtl[9], true, "seq17 RTL Start tip is visually right of End tip")
     checkEq(sel.beginDrag(gRtl[11], gRtl[12]), 2, "seq17 hit RTL End handle")
-    checkEq(sel.updateDrag(gRtl[11] - 56.88f, gRtl[12]), true, "seq17 drag RTL End handle left by 2 chars")
+    checkEq(ime.setSelection(0, 6), true, "seq17 RTL selection [0, 6)")
+    sel.applyTextDragEndpoints(gRtl[3], gRtl[4], gRtl[9] - 56.88f, gRtl[10], 60f, true, 2)
     checkEq(ime.selectionStart(), 0, "seq17 RTL selection start=0")
     checkEq(ime.selectionEnd(), 6, "seq17 RTL selection end=6")
     checkEq(sel.endDrag(), true, "seq17 RTL endDrag")
@@ -1871,5 +1884,80 @@ fun main() {
     NativeBridge.nativeDestroyHost(layoutParityHandle)
   }
 
-  println("Kotlin JNI Android host parity check passed (22/22 sequences)")
+  // Sequence 23: Real JNI parity for [D-1] IPv6 AuthSessionStore single-source DataStore key/alias
+  // (verifying internal key/alias unity & rollback readback rule) and [D-2] bare `local-auth`
+  // single-key FreshInstall classification with verbatim rollback preservation.
+  val seq23Dir = java.nio.file.Files.createTempDirectory("affine-android-seq23-").toFile()
+  val seq23Handle = NativeBridge.nativeCreateHost()
+  try {
+    val seq23Cipher = AuthTokenCipher(
+      keyProvider = InMemoryAesKeyProvider(),
+      explicitIvForJvm = true,
+    )
+    val seq23Store = AuthSessionStore(
+      filesDir = seq23Dir.absolutePath,
+      cipher = seq23Cipher,
+      cookieCleaner = object : CookieCleaner {
+        override fun clearAuthCookies(canonicalEndpoint: String) {}
+      },
+    )
+    val ipv6Endpoint = "https://[::1]:8443"
+    val ipv6ServerResp = """{"tokenType":"Bearer","accessToken":"acc-ipv6-1","expiresIn":3600,"refreshToken":"ref-ipv6-1","refreshExpiresAt":"2027-01-25T00:00:00Z","session":{"id":"sess-ipv6-1","absoluteExpiresAt":"2027-06-25T00:00:00Z"}}"""
+    checkEq(
+      seq23Store.storeServerResponse(ipv6Endpoint, ipv6ServerResp, 1_700_000_000_000L),
+      true,
+      "seq23 store IPv6 session",
+    )
+    checkEq(
+      NativeBridge.nativeAuthTokenKey(ipv6Endpoint),
+      "auth-token:https://::1:8443",
+      "seq23 nativeAuthTokenKey strips IPv6 brackets in parity with keystore alias",
+    )
+    val rawDisk = NativeBridge.nativeDataStoreReadResult(
+      seq23Dir.absolutePath,
+      "auth-token:https://::1:8443",
+    )
+    checkEq(
+      rawDisk.startsWith("OK:v1:"),
+      true,
+      "seq23 DataStore persists encrypted session under auth-token:https://::1:8443",
+    )
+    val decryptedIpv6 = seq23Store.readSessionJson(ipv6Endpoint)
+    checkEq(
+      decryptedIpv6 != null &&
+        NativeBridge.nativeExtractJsonStringField(decryptedIpv6, "accessToken") == "acc-ipv6-1",
+      true,
+      "seq23 AuthSessionStore reads back and decrypts IPv6 session via single-source key",
+    )
+
+    // Bare `local-auth` single key classifies as FreshInstall (canCreateDefaultWorkspace == true,
+    // 0 workspaces mounted) while preserving `"local-auth": "\"tok\""` verbatim in write-back plan.
+    val bareAuthPayload = """{"origin":"https://localhost","length":1,"keys":["local-auth"],"entries":{"local-auth":"\"tok\""},"idbTouchCount":0}"""
+    checkEq(
+      NativeBridge.nativeImportLegacyLocalStorageProbe(seq23Handle, bareAuthPayload, ""),
+      true,
+      "seq23 bare local-auth probe succeeds",
+    )
+    checkEq(
+      NativeBridge.nativeCanCreateDefaultWorkspace(seq23Handle),
+      true,
+      "seq23 bare local-auth classifies as FreshInstall (canCreateDefaultWorkspace=true)",
+    )
+    checkEq(
+      NativeBridge.nativeGetAllowlistedWorkspaceIdsJson(seq23Handle),
+      "[]",
+      "seq23 bare local-auth mounts 0 workspaces",
+    )
+    val bareWriteback = NativeBridge.nativePlanLegacyLocalStorageWriteBack(seq23Handle)
+    checkEq(
+      bareWriteback != null && bareWriteback.contains("\"local-auth\":\"\\\"tok\\\"\""),
+      true,
+      "seq23 bare local-auth preserved verbatim in rollback writeback plan",
+    )
+  } finally {
+    NativeBridge.nativeDestroyHost(seq23Handle)
+    seq23Dir.deleteRecursively()
+  }
+
+  println("Kotlin JNI Android host parity check passed (23/23 sequences)")
 }

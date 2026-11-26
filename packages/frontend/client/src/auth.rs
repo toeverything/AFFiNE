@@ -13,6 +13,9 @@ use affine_store::{
         ApiHttpRequest, ApiRequestContext, AuthSessionMeta, AuthSessionUser, AuthTokenPairResponse,
         build_get_auth_session_request, decode_auth_session_response,
     },
+    auth::{
+        MAX_EXPIRES_IN_SECS, parse_and_validate_token_pair_response, validate_token_pair_fields,
+    },
     sync::SocketAuthMode,
 };
 use serde::{Deserialize, Serialize};
@@ -73,48 +76,18 @@ struct IosKeychainTokenPairWire {
 impl StoredAuthTokenPair {
     /// Maximum `expires_in` accepted from a native token endpoint (`24h`, matching `0.27.5`
     /// `AuthPlugin.swift` / `AuthPlugin.kt`).
-    pub const MAX_EXPIRES_IN_SECS: u64 = 86_400;
+    pub const MAX_EXPIRES_IN_SECS: u64 = MAX_EXPIRES_IN_SECS;
 
     fn validate_invariant_fields(&self) -> ClientResult<()> {
-        if self.version != 1 {
-            return Err(ClientError::InvalidAuthPayload(format!(
-                "unsupported StoredAuthTokenPair version: {}",
-                self.version
-            )));
-        }
-        if !self.token_type.eq_ignore_ascii_case("Bearer") {
-            return Err(ClientError::InvalidAuthPayload(format!(
-                "expected Bearer tokenType, got {:?}",
-                self.token_type
-            )));
-        }
-        if self.access_token.trim().is_empty() || self.refresh_token.trim().is_empty() {
-            return Err(ClientError::InvalidAuthPayload(
-                "accessToken and refreshToken must be non-empty".into(),
-            ));
-        }
-        if let Some(ref ts) = self.refresh_expires_at
-            && !is_valid_rfc3339(ts)
-        {
-            return Err(ClientError::InvalidAuthPayload(format!(
-                "invalid RFC3339 refreshExpiresAt: `{ts}`"
-            )));
-        }
-        if let Some(ref meta) = self.session {
-            if meta.id.trim().is_empty() {
-                return Err(ClientError::InvalidAuthPayload(
-                    "session.id must be non-empty when session is present".into(),
-                ));
-            }
-            if let Some(ref abs_ts) = meta.absolute_expires_at
-                && !is_valid_rfc3339(abs_ts)
-            {
-                return Err(ClientError::InvalidAuthPayload(format!(
-                    "invalid RFC3339 session.absoluteExpiresAt: `{abs_ts}`"
-                )));
-            }
-        }
-        Ok(())
+        validate_token_pair_fields(
+            self.version,
+            &self.token_type,
+            &self.access_token,
+            &self.refresh_token,
+            self.refresh_expires_at.as_deref(),
+            self.session.as_ref(),
+        )
+        .map_err(|err| ClientError::InvalidAuthPayload(err.to_string()))
     }
 
     /// Validate and convert a server [`AuthTokenPairResponse`] into a [`StoredAuthTokenPair`]
@@ -123,45 +96,17 @@ impl StoredAuthTokenPair {
     /// Rejects non-`Bearer` `token_type`, empty tokens, out-of-range `expires_in`
     /// (`1..=86_400`), and malformed RFC 3339 timestamps.
     pub fn from_wire(parsed: AuthTokenPairResponse, now_ms: i64) -> ClientResult<Self> {
-        let token_type = parsed
-            .token_type
-            .as_deref()
-            .filter(|t| t.eq_ignore_ascii_case("Bearer"))
-            .ok_or_else(|| {
-                ClientError::InvalidAuthPayload(format!(
-                    "expected Bearer tokenType, got {:?}",
-                    parsed.token_type
-                ))
-            })?;
-        let expires_in = parsed
-            .expires_in
-            .filter(|&secs| (1..=Self::MAX_EXPIRES_IN_SECS).contains(&secs))
-            .ok_or_else(|| {
-                ClientError::InvalidAuthPayload("expiresIn must be within 1..=86400 seconds".into())
-            })?;
-        let session = parsed.session.or_else(|| {
-            parsed.session_id.map(|id| AuthSessionMeta {
-                id,
-                absolute_expires_at: None,
-            })
-        });
-
-        let expires_ms = expires_in
-            .checked_mul(1_000)
-            .and_then(|ms| i64::try_from(ms).ok())
-            .ok_or_else(|| ClientError::InvalidAuthPayload("expiresIn overflow".into()))?;
-
-        let pair = Self {
-            version: 1,
-            token_type: token_type.to_string(),
-            access_token: parsed.access_token,
-            access_expires_at: now_ms.saturating_add(expires_ms),
-            refresh_token: parsed.refresh_token,
-            refresh_expires_at: parsed.refresh_expires_at,
-            session,
-        };
-        pair.validate_invariant_fields()?;
-        Ok(pair)
+        let validated = parse_and_validate_token_pair_response(parsed, now_ms)
+            .map_err(|err| ClientError::InvalidAuthPayload(err.to_string()))?;
+        Ok(Self {
+            version: validated.version,
+            token_type: validated.token_type,
+            access_token: validated.access_token,
+            access_expires_at: validated.access_expires_at_ms,
+            refresh_token: validated.refresh_token,
+            refresh_expires_at: validated.refresh_expires_at,
+            session: validated.session,
+        })
     }
 
     pub fn session_id(&self) -> Option<&str> {
@@ -420,81 +365,6 @@ impl AuthController {
             }
         }
     }
-}
-
-/// Pure-Rust RFC 3339 timestamp syntax and calendar-date validator (`YYYY-MM-DDTHH:MM:SS(.frac)?(Z|[+-]HH:MM)`).
-fn is_valid_rfc3339(s: &str) -> bool {
-    if !s.is_ascii() {
-        return false;
-    }
-    let bytes = s.as_bytes();
-    if bytes.len() < 20 {
-        return false;
-    }
-    let date_ok = bytes[4] == b'-'
-        && bytes[7] == b'-'
-        && matches!(bytes[10], b'T' | b't' | b' ')
-        && bytes[13] == b':'
-        && bytes[16] == b':';
-    if !date_ok {
-        return false;
-    }
-    let (Some(year), Some(month), Some(day), Some(hour), Some(min), Some(sec)) = (
-        parse_digits(&s[0..4]),
-        parse_digits(&s[5..7]),
-        parse_digits(&s[8..10]),
-        parse_digits(&s[11..13]),
-        parse_digits(&s[14..16]),
-        parse_digits(&s[17..19]),
-    ) else {
-        return false;
-    };
-    let max_day = match month {
-        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-        4 | 6 | 9 | 11 => 30,
-        2 => {
-            if (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400) {
-                29
-            } else {
-                28
-            }
-        }
-        _ => return false,
-    };
-    if !(1..=max_day).contains(&day) || hour > 23 || min > 59 || sec > 60 {
-        return false;
-    }
-    let mut idx = 19;
-    if idx < bytes.len() && bytes[idx] == b'.' {
-        idx += 1;
-        let frac_start = idx;
-        while idx < bytes.len() && bytes[idx].is_ascii_digit() {
-            idx += 1;
-        }
-        if idx == frac_start {
-            return false;
-        }
-    }
-    let tz = &s[idx..];
-    if tz == "Z" || tz == "z" {
-        return true;
-    }
-    let tz_bytes = tz.as_bytes();
-    if tz_bytes.len() == 6
-        && matches!(tz_bytes[0], b'+' | b'-')
-        && tz_bytes[3] == b':'
-        && let (Some(tz_h), Some(tz_m)) = (parse_digits(&tz[1..3]), parse_digits(&tz[4..6]))
-    {
-        return tz_h <= 23 && tz_m <= 59;
-    }
-    false
-}
-
-fn parse_digits(s: &str) -> Option<u32> {
-    if s.is_empty() || !s.bytes().all(|b| b.is_ascii_digit()) {
-        return None;
-    }
-    s.parse::<u32>().ok()
 }
 
 #[cfg(test)]

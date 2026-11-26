@@ -152,10 +152,13 @@ jobs:
         run: |
           mkdir -p /tmp/preview-wasm
           for kind in mermaid math typst pdf; do
-            cargo build --locked --release -p blocksuite-preview --no-default-features --features "${kind},wasm-worker" --target wasm32-unknown-unknown
-            cp target/wasm32-unknown-unknown/release/blocksuite_preview.wasm "/tmp/preview-wasm/${kind}.wasm"
+            cargo build --locked --profile wasm-release -p blocksuite-preview --no-default-features --features "${kind},wasm-worker" --target wasm32-unknown-unknown
+            cp target/wasm32-unknown-unknown/wasm-release/blocksuite_preview.wasm "/tmp/preview-wasm/${kind}.wasm"
             test -s "/tmp/preview-wasm/${kind}.wasm"
           done
+          cargo build --locked --profile wasm-release -p affine-store --no-default-features --features wasm-codec --target wasm32-unknown-unknown
+          cp target/wasm32-unknown-unknown/wasm-release/affine_store.wasm /tmp/preview-wasm/crdt-codec.wasm
+          test -s /tmp/preview-wasm/crdt-codec.wasm
           node hosts/web/scripts/stage-preview-workers.mjs /tmp/preview-wasm dev-local
           node hosts/web/scripts/verify-preview-workers-e2e.mjs
 

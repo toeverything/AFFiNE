@@ -44,6 +44,12 @@ for (const kind of KINDS) {
   copyFileSync(src, dst);
 }
 
+const crdtCodecSrc = join(SOURCE_DIR, 'crdt-codec.wasm');
+if (!existsSync(crdtCodecSrc)) {
+  throw new Error(`Missing built CRDT codec wasm binary: ${crdtCodecSrc}`);
+}
+copyFileSync(crdtCodecSrc, join(ASSETS_DIR, `crdt-codec.${BUILD_HASH}.wasm`));
+
 for (const font of FONT_SPECS) {
   if (!existsSync(font.src)) {
     throw new Error(`Missing tracked font source: ${font.src}`);
@@ -52,5 +58,5 @@ for (const font of FONT_SPECS) {
 }
 
 console.log(
-  `Staged 4 preview Wasm workers and ${FONT_SPECS.length} static fonts into ${ASSETS_DIR}`
+  `Staged 4 preview Wasm workers, CRDT codec Wasm, and ${FONT_SPECS.length} static fonts into ${ASSETS_DIR}`
 );

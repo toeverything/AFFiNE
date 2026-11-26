@@ -207,20 +207,6 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSelectionBeginDrag
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSelectionUpdateDrag(
-    _env: JniEnvPtr,
-    _class: JClass,
-    handle: JLong,
-    touch_x: JFloat,
-    touch_y: JFloat,
-) -> JBoolean {
-    with_host_mut(handle, |host| {
-        u8::from(host.update_selection_handle_drag(touch_x, touch_y))
-    })
-    .unwrap_or(0)
-}
-
-#[unsafe(no_mangle)]
 pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSelectionEndDrag(
     _env: JniEnvPtr,
     _class: JClass,

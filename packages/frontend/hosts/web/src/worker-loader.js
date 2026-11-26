@@ -17,6 +17,7 @@
  * @property {string} [buildId]
  * @property {string | null} [assetBaseUrl]
  * @property {string | null} [appEntryJs]
+ * @property {string | null} [crdtCodecWasm]
  * @property {Record<PreviewWorkerKind, WorkerAssetSpec>} workers
  * @property {Record<string, string>} fonts
  */
@@ -62,12 +63,17 @@ export function freezeBuildManifest(raw) {
     typeof raw.assetBaseUrl === 'string' && raw.assetBaseUrl.trim()
       ? raw.assetBaseUrl.trim()
       : null;
+  const crdtCodecWasm =
+    typeof raw.crdtCodecWasm === 'string' && raw.crdtCodecWasm.trim()
+      ? raw.crdtCodecWasm.trim()
+      : null;
   return Object.freeze({
     shellVersion: String(raw.shellVersion || 'mobile-v1'),
     buildHash: effectiveBuildId,
     buildId: effectiveBuildId,
     assetBaseUrl,
     appEntryJs: typeof raw.appEntryJs === 'string' ? raw.appEntryJs : null,
+    crdtCodecWasm,
     workers: /** @type {Record<PreviewWorkerKind, WorkerAssetSpec>} */ (
       workers
     ),
@@ -224,6 +230,23 @@ export function createWorkerLoader(rawManifest, options = {}) {
   }
 
   /**
+   * Resolves the pinned CRDT codec `.wasm` URL when declared in the manifest.
+   *
+   * @returns {string | null}
+   */
+  function resolveCrdtCodecUrl() {
+    if (!manifest.crdtCodecWasm) {
+      return null;
+    }
+    return pinUrl(
+      manifest.crdtCodecWasm,
+      baseUrl,
+      lockedBuildId,
+      lockedAssetBaseUrl
+    );
+  }
+
+  /**
    * Lazily spawns and caches a preview Web Worker via a pinned ES module
    * `blob:` bootstrap script (never passes a `.wasm` URL to `new Worker`).
    *
@@ -309,6 +332,7 @@ export function createWorkerLoader(rawManifest, options = {}) {
     assetBaseUrl: lockedAssetBaseUrl,
     resolveWorkerAssets,
     resolveFontUrl,
+    resolveCrdtCodecUrl,
     loadWorker,
     hasLoadedWorker,
     terminateWorker,

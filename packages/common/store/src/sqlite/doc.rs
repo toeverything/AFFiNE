@@ -101,6 +101,8 @@ impl SqliteDocStorage {
     }
 
     /// Push a document update, optionally marking `pending_create` for `create_for_peer`.
+    ///
+    /// Preserves single-row empty-update (`[0, 0]`) registration in `updates`/`clocks`/`peer_clocks`.
     pub async fn push_update_with_peer<U: AsRef<[u8]>>(
         &self,
         doc_id: &str,
@@ -108,32 +110,10 @@ impl SqliteDocStorage {
         create_for_peer: Option<&str>,
         now_ms: i64,
     ) -> StoreResult<NaiveDateTime> {
-        let mut timestamp = millis_to_naive_utc(now_ms);
-
-        for attempt in 0..12 {
-            match self
-                .try_insert_update_with_timestamp(
-                    doc_id,
-                    update.as_ref(),
-                    timestamp,
-                    create_for_peer,
-                )
-                .await
-            {
-                Ok(true) => return Ok(timestamp),
-                Ok(false) => {}
-                Err(err) if attempt == 11 => return Err(err.into()),
-                Err(_) => {}
-            }
-            let clock = self.get_doc_clock(doc_id).await?.map(|c| c.timestamp);
-            timestamp = (timestamp + chrono::Duration::milliseconds(1)).max(
-                clock
-                    .map(|c| c + chrono::Duration::milliseconds(1))
-                    .unwrap_or(timestamp),
-            );
-        }
-
-        Err(StoreError::ConcurrentModification)
+        let committed = self
+            .push_updates_in_immediate_tx(&[(doc_id, update.as_ref())], create_for_peer, now_ms)
+            .await?;
+        Ok(committed[0].1)
     }
 
     /// Atomically persist a batch of [`crate::workspace_db::PendingDocUpdate`] entries inside a
@@ -150,22 +130,32 @@ impl SqliteDocStorage {
         create_for_peer: Option<&str>,
         now_ms: i64,
     ) -> StoreResult<Vec<(String, NaiveDateTime)>> {
-        let non_empty: Vec<&crate::workspace_db::PendingDocUpdate> = updates
+        let non_empty: Vec<(&str, &[u8])> = updates
             .iter()
             .filter(|u| !is_empty_update(&u.update))
+            .map(|u| (u.doc_id.as_str(), u.update.as_slice()))
             .collect();
         if non_empty.is_empty() {
             return Ok(Vec::new());
         }
+        self.push_updates_in_immediate_tx(&non_empty, create_for_peer, now_ms)
+            .await
+    }
 
+    async fn push_updates_in_immediate_tx(
+        &self,
+        items: &[(&str, &[u8])],
+        create_for_peer: Option<&str>,
+        now_ms: i64,
+    ) -> StoreResult<Vec<(String, NaiveDateTime)>> {
         let base_ts = millis_to_naive_utc(now_ms);
         let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
-        let mut committed = Vec::with_capacity(non_empty.len());
+        let mut committed = Vec::with_capacity(items.len());
 
-        for item in non_empty {
+        for &(doc_id, update) in items {
             let existing_clock: Option<NaiveDateTime> =
                 sqlx::query("SELECT timestamp FROM clocks WHERE doc_id = $1")
-                    .bind(&item.doc_id)
+                    .bind(doc_id)
                     .fetch_optional(&mut *tx)
                     .await?
                     .map(|row| row.try_get("timestamp"))
@@ -178,8 +168,8 @@ impl SqliteDocStorage {
             };
 
             sqlx::query("INSERT INTO updates (doc_id, data, created_at) VALUES ($1, $2, $3)")
-                .bind(&item.doc_id)
-                .bind(&item.update)
+                .bind(doc_id)
+                .bind(update)
                 .bind(effective_ts)
                 .execute(&mut *tx)
                 .await?;
@@ -188,7 +178,7 @@ impl SqliteDocStorage {
                 "INSERT INTO clocks (doc_id, timestamp) VALUES ($1, $2) \
                  ON CONFLICT(doc_id) DO UPDATE SET timestamp = MAX(clocks.timestamp, excluded.timestamp);",
             )
-            .bind(&item.doc_id)
+            .bind(doc_id)
             .bind(effective_ts)
             .execute(&mut *tx)
             .await?;
@@ -199,7 +189,7 @@ impl SqliteDocStorage {
                      ON CONFLICT(peer, doc_id) DO UPDATE SET pending_create = TRUE",
                 )
                 .bind(peer)
-                .bind(&item.doc_id)
+                .bind(doc_id)
                 .execute(&mut *tx)
                 .await?;
                 sqlx::query(
@@ -212,68 +202,11 @@ impl SqliteDocStorage {
                 .await?;
             }
 
-            committed.push((item.doc_id.clone(), effective_ts));
+            committed.push((doc_id.to_string(), effective_ts));
         }
 
         tx.commit().await?;
         Ok(committed)
-    }
-
-    async fn try_insert_update_with_timestamp(
-        &self,
-        doc_id: &str,
-        update: &[u8],
-        timestamp: NaiveDateTime,
-        create_for_peer: Option<&str>,
-    ) -> sqlx::Result<bool> {
-        let mut tx = self.pool.begin().await?;
-
-        let inserted = sqlx::query(
-            "INSERT INTO updates (doc_id, data, created_at) \
-             SELECT $1, $2, $3 WHERE NOT EXISTS (\
-               SELECT 1 FROM clocks WHERE doc_id = $1 AND timestamp >= $3\
-             )",
-        )
-        .bind(doc_id)
-        .bind(update)
-        .bind(timestamp)
-        .execute(&mut *tx)
-        .await?
-        .rows_affected();
-        if inserted == 0 {
-            return Ok(false);
-        }
-
-        sqlx::query(
-            "INSERT INTO clocks (doc_id, timestamp) VALUES ($1, $2) \
-             ON CONFLICT(doc_id) DO UPDATE SET timestamp = MAX(clocks.timestamp, excluded.timestamp);",
-        )
-        .bind(doc_id)
-        .bind(timestamp)
-        .execute(&mut *tx)
-        .await?;
-
-        if let Some(peer) = create_for_peer {
-            sqlx::query(
-                "INSERT INTO peer_clocks (peer, doc_id, pending_create) VALUES ($1, $2, TRUE) \
-                 ON CONFLICT(peer, doc_id) DO UPDATE SET pending_create = TRUE",
-            )
-            .bind(peer)
-            .bind(doc_id)
-            .execute(&mut *tx)
-            .await?;
-            sqlx::query(
-                "INSERT INTO peer_clocks (peer, doc_id, cache_token) \
-                 SELECT $1, space_id, 1 FROM meta WHERE TRUE \
-                 ON CONFLICT(peer, doc_id) DO UPDATE SET cache_token = cache_token + 1",
-            )
-            .bind(peer)
-            .execute(&mut *tx)
-            .await?;
-        }
-
-        tx.commit().await?;
-        Ok(true)
     }
 
     /// Read the stored snapshot row for `doc_id` without compacting pending updates.

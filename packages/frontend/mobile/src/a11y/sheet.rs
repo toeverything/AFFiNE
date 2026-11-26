@@ -103,13 +103,13 @@ pub(super) fn insert_sheet_a11y_nodes(
         MobileSheet::WorkspaceSelector => {
             cols.push(
                 state
-                    .workspaces
+                    .workspace_store
                     .iter()
                     .enumerate()
                     .map(|(i, ws)| {
                         (
-                            format!("mobile.sheet.ws.{}", ws.id),
-                            ws.name.clone(),
+                            format!("mobile.sheet.ws.{}", ws.summary.id),
+                            ws.summary.name.clone(),
                             i == state.active_workspace_idx,
                             48.0,
                         )

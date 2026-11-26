@@ -53,42 +53,10 @@ pub use surface::{
 /// Legacy Capacitor Android WebView origin used for one-shot `localStorage` probing.
 pub const LEGACY_ANDROID_ORIGIN: &str = "https://localhost";
 
-/// Exact allowlisted `localStorage` keys imported on upgrade from `0.27.5`
-/// (`local.ts:58`, `storage.ts:83,91`, `auth.ts:59`).
-pub const LEGACY_EXACT_ALLOWED_KEYS: &[&str] = &[
-    LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
-    "global-state:serverList",
-    "global-cache:i18n_lng",
-    "last_workspace_id",
-    "last_workspace_flavour",
-    "affine-settings",
-    "theme",
-];
-
-/// Returns `true` when `key` matches the `0.27.5` Capacitor Android WebView
-/// `localStorage` allowlist (exact keys + dynamic server/auth/flag keys).
+/// Returns `true` when `key` matches the single authoritative `affine-legacy-import`
+/// `localStorage` allowlist (including cloud/self-hosted workspace caches and bare `*-auth`).
 pub fn is_allowed_legacy_local_storage_key(key: &str) -> bool {
-    if LEGACY_EXACT_ALLOWED_KEYS.contains(&key) {
-        return true;
-    }
-    if let Some(id) = key.strip_prefix("global-state:serverConfig:") {
-        return !id.is_empty();
-    }
-    if let Some(rest) = key.strip_prefix("global-state:affine-flag:") {
-        return !rest.is_empty();
-    }
-    if let Some(rest) = key.strip_prefix("affine-flag:") {
-        return !rest.is_empty();
-    }
-    if let Some(rest) = key.strip_prefix("global-state:")
-        && let Some(server_id) = rest.strip_suffix("-auth")
-    {
-        return !server_id.is_empty();
-    }
-    if let Some(server_id) = key.strip_suffix("-auth") {
-        return !server_id.is_empty() && !server_id.contains(':');
-    }
-    false
+    affine_legacy_import::is_permitted_sentinel_entry_key(key)
 }
 
 /// Minimum Android API level that provides `android.view.autofill.AutofillManager`.
@@ -317,6 +285,8 @@ impl LegacyUpgradeImportState {
     }
 }
 
+pub use storage::filter_legacy_local_storage_probe_json;
+
 /// Parses and validates a legacy `https://localhost` `localStorage` probe JSON
 /// payload matching the cross-slice `WebViewStorageSentinel` contract:
 /// 1. `origin == "https://localhost"`
@@ -332,6 +302,13 @@ pub fn parse_legacy_local_storage_probe(
     payload_json: &str,
     allowed_keys: &[&str],
 ) -> Result<LegacyLocalStorageSnapshot, LegacyProbeError> {
+    parse_legacy_local_storage_probe_with_flag(payload_json, allowed_keys).map(|(snap, _)| snap)
+}
+
+fn parse_legacy_local_storage_probe_with_flag(
+    payload_json: &str,
+    allowed_keys: &[&str],
+) -> Result<(LegacyLocalStorageSnapshot, bool), LegacyProbeError> {
     let trimmed = payload_json.trim();
     let unwrapped_owned: String;
     let effective_json = if trimmed.starts_with('"') {
@@ -341,14 +318,74 @@ pub fn parse_legacy_local_storage_probe(
     } else {
         trimmed
     };
-    let raw: LegacyLocalStorageSnapshot = serde_json::from_str(effective_json)
+    let mut raw: LegacyLocalStorageSnapshot = serde_json::from_str(effective_json)
         .map_err(|err| LegacyProbeError::InvalidJson(err.to_string()))?;
+
+    if raw.idb_touch_count > 0 {
+        return Err(LegacyProbeError::IndexedDbTouched(raw.idb_touch_count));
+    }
+
+    if allowed_keys.is_empty() {
+        use affine_legacy_import::sentinel::{
+            SentinelEvaluation, SentinelFailureReason, WebViewStorageSentinel, evaluate_sentinel,
+        };
+        let sentinel = WebViewStorageSentinel {
+            origin: raw.origin.clone(),
+            length: raw.length,
+            keys: raw.keys.clone(),
+            entries: raw.entries.clone(),
+        };
+        match evaluate_sentinel(&sentinel, &[LEGACY_ANDROID_ORIGIN]) {
+            eval @ (SentinelEvaluation::ValidEmpty | SentinelEvaluation::ValidPopulated { .. }) => {
+                let has_allowlisted_keys = matches!(
+                    eval,
+                    SentinelEvaluation::ValidPopulated {
+                        has_allowlisted_keys: true
+                    }
+                );
+                raw.keys.sort();
+                raw.idb_touch_count = 0;
+                return Ok((raw, has_allowlisted_keys));
+            }
+            SentinelEvaluation::UnreadyOrMismatch(reason) => {
+                return Err(match reason {
+                    SentinelFailureReason::EmptyOrigin => {
+                        LegacyProbeError::UnexpectedOrigin(raw.origin)
+                    }
+                    SentinelFailureReason::OriginMismatch { actual } => {
+                        LegacyProbeError::UnexpectedOrigin(actual)
+                    }
+                    SentinelFailureReason::LengthMismatch {
+                        reported_length,
+                        observed_keys,
+                    } => LegacyProbeError::InconsistentSentinel(format!(
+                        "keys.len() ({observed_keys}) != localStorage.length ({reported_length})"
+                    )),
+                    SentinelFailureReason::DuplicateKeys => {
+                        LegacyProbeError::InconsistentSentinel("duplicate key in sentinel".into())
+                    }
+                    SentinelFailureReason::EntryKeyMissingFromKeyList { key } => {
+                        LegacyProbeError::InconsistentSentinel(format!(
+                            "entry key {key:?} missing from sentinel keys"
+                        ))
+                    }
+                    SentinelFailureReason::DisallowedEntryKey { key } => {
+                        LegacyProbeError::InconsistentSentinel(format!(
+                            "non-allowlisted key in sentinel entries: {key:?}"
+                        ))
+                    }
+                    SentinelFailureReason::MissingAllowlistedEntry { key } => {
+                        LegacyProbeError::InconsistentSentinel(format!(
+                            "allowlisted key {key:?} present in keys but missing from entries"
+                        ))
+                    }
+                });
+            }
+        }
+    }
 
     if raw.origin != LEGACY_ANDROID_ORIGIN {
         return Err(LegacyProbeError::UnexpectedOrigin(raw.origin));
-    }
-    if raw.idb_touch_count > 0 {
-        return Err(LegacyProbeError::IndexedDbTouched(raw.idb_touch_count));
     }
     if raw.keys.len() != raw.length {
         return Err(LegacyProbeError::InconsistentSentinel(format!(
@@ -358,16 +395,7 @@ pub fn parse_legacy_local_storage_probe(
         )));
     }
 
-    let custom_allow: Option<BTreeSet<&str>> = if allowed_keys.is_empty() {
-        None
-    } else {
-        Some(allowed_keys.iter().copied().collect())
-    };
-    let is_allowed = |k: &str| match &custom_allow {
-        Some(set) => set.contains(k),
-        None => is_allowed_legacy_local_storage_key(k),
-    };
-
+    let custom_allow: BTreeSet<&str> = allowed_keys.iter().copied().collect();
     let mut seen_keys = BTreeSet::new();
     for k in &raw.keys {
         if !seen_keys.insert(k.as_str()) {
@@ -384,7 +412,7 @@ pub fn parse_legacy_local_storage_probe(
                 "entry key {k:?} missing from sentinel keys"
             )));
         }
-        if !is_allowed(&k) {
+        if !custom_allow.contains(k.as_str()) {
             return Err(LegacyProbeError::InconsistentSentinel(format!(
                 "non-allowlisted key in sentinel entries: {k:?}"
             )));
@@ -393,7 +421,7 @@ pub fn parse_legacy_local_storage_probe(
     }
 
     for k in &seen_keys {
-        if is_allowed(k) && !entries.contains_key(*k) {
+        if custom_allow.contains(*k) && !entries.contains_key(*k) {
             return Err(LegacyProbeError::InconsistentSentinel(format!(
                 "allowlisted key {k:?} present in keys but missing from entries"
             )));
@@ -403,14 +431,18 @@ pub fn parse_legacy_local_storage_probe(
     let mut keys: Vec<String> = seen_keys.into_iter().map(str::to_string).collect();
     keys.sort();
 
-    Ok(LegacyLocalStorageSnapshot {
-        origin: raw.origin,
-        length: raw.length,
-        keys,
-        entries,
-        removed_keys: raw.removed_keys,
-        idb_touch_count: 0,
-    })
+    let has_allowlisted_keys = !entries.is_empty();
+    Ok((
+        LegacyLocalStorageSnapshot {
+            origin: raw.origin,
+            length: raw.length,
+            keys,
+            entries,
+            removed_keys: raw.removed_keys,
+            idb_touch_count: 0,
+        },
+        has_allowlisted_keys,
+    ))
 }
 
 /// Verifies a rollback `writeBackLegacyLocalStorage` read-back sentinel against
@@ -543,10 +575,9 @@ pub struct AndroidHostState {
     pub autofill: AutofillState,
     pub upgrade_import: LegacyUpgradeImportState,
     pub workspace_catalog: AndroidWorkspaceCatalog,
-    /// Losslessly preserves the raw `affine-local-workspace` value read on upgrade
-    /// (including malformed JSON like `"{broken"`) so untouched rollback write-back
-    /// never silently overwrites it with `"[]"`.
-    pub raw_local_workspace_value: Option<String>,
+    /// Parsed `affine-legacy-import` snapshot holding canonical `preserved_raw_entries`
+    /// (single source of truth for untouched malformed `affine-local-workspace` write-back).
+    pub legacy_snapshot: Option<affine_legacy_import::LegacyLocalStorageSnapshot>,
     /// Local workspace IDs that failed `connect_workspace` during bootstrap or retry.
     pub failed_local_workspace_mounts: BTreeSet<String>,
     pub sqlite: AndroidSqliteBridge,
@@ -571,7 +602,7 @@ impl Default for AndroidHostState {
             autofill: AutofillState::default(),
             upgrade_import: LegacyUpgradeImportState::Pending,
             workspace_catalog: AndroidWorkspaceCatalog::default(),
-            raw_local_workspace_value: None,
+            legacy_snapshot: None,
             failed_local_workspace_mounts: BTreeSet::new(),
             sqlite: AndroidSqliteBridge::new(),
             utf16_text: Vec::new(),
@@ -646,24 +677,20 @@ impl AndroidHostState {
         payload_json: &str,
         allowed_keys: &[&str],
     ) -> Result<&LegacyLocalStorageSnapshot, LegacyProbeError> {
-        match parse_legacy_local_storage_probe(payload_json, allowed_keys) {
-            Ok(snapshot) => {
-                if let Some(raw_ids) = snapshot.entries.get(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) {
-                    let is_malformed = serde_json::from_str::<Vec<String>>(raw_ids).is_err();
-                    self.raw_local_workspace_value = is_malformed.then(|| raw_ids.clone());
-                    self.workspace_catalog =
-                        AndroidWorkspaceCatalog::from_local_storage_json(raw_ids);
-                } else {
-                    self.raw_local_workspace_value = None;
-                    self.workspace_catalog = AndroidWorkspaceCatalog::default();
-                }
+        match parse_legacy_local_storage_probe_with_flag(payload_json, allowed_keys) {
+            Ok((snapshot, has_allowlisted_keys)) => {
+                let parsed_legacy =
+                    affine_legacy_import::parse_allowlisted_entries(&snapshot.entries);
+                self.workspace_catalog =
+                    AndroidWorkspaceCatalog::from_ids(parsed_legacy.local_workspace_ids.clone());
+                self.legacy_snapshot = Some(parsed_legacy);
                 let _ = self
                     .sqlite
                     .evict_unlisted_local_workspaces(&self.workspace_catalog);
                 self.failed_local_workspace_mounts
                     .retain(|id| self.workspace_catalog.contains(id));
 
-                if snapshot.entries.is_empty() {
+                if !has_allowlisted_keys {
                     self.upgrade_import = LegacyUpgradeImportState::FreshInstall;
                 } else {
                     self.upgrade_import = LegacyUpgradeImportState::Imported(snapshot);
@@ -717,6 +744,18 @@ impl AndroidHostState {
             .any(|id| !self.sqlite.is_local_workspace_connected(id))
     }
 
+    /// Returns the preserved raw `affine-local-workspace` string (if malformed/non-array)
+    /// from `affine-legacy-import`'s `preserved_raw_entries`.
+    pub fn preserved_local_workspace_raw(&self) -> Option<&str> {
+        self.legacy_snapshot
+            .as_ref()
+            .and_then(|s| {
+                s.preserved_raw_entries
+                    .get(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY)
+            })
+            .map(String::as_str)
+    }
+
     /// Plans a rollback `localStorage` write-back JSON payload (`setEntries` +
     /// `removeKeys`). Returns `None` while upgrade import is incomplete or any
     /// allowlisted local workspace has an unresolved mount failure.
@@ -725,13 +764,21 @@ impl AndroidHostState {
             return None;
         }
         let mut set_entries = BTreeMap::new();
+        if let Some(snapshot) = &self.legacy_snapshot {
+            for (k, v) in &snapshot.preserved_raw_entries {
+                set_entries.insert(k.clone(), v.clone());
+            }
+        }
         if !self.workspace_catalog.ids().is_empty() {
             set_entries.insert(
                 LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string(),
                 serde_json::to_string(self.workspace_catalog.ids()).ok()?,
             );
-        } else if let Some(raw) = &self.raw_local_workspace_value {
-            set_entries.insert(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string(), raw.clone());
+        } else if let Some(raw) = self.preserved_local_workspace_raw() {
+            set_entries.insert(
+                LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string(),
+                raw.to_string(),
+            );
         } else if matches!(self.upgrade_import, LegacyUpgradeImportState::Imported(_)) {
             set_entries.insert(
                 LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string(),
@@ -1025,7 +1072,11 @@ mod tests {
             .unwrap();
         assert!(!host.upgrade_import.can_create_default_workspace());
         assert!(host.workspace_catalog.ids().is_empty());
-        assert_eq!(host.raw_local_workspace_value.as_deref(), Some("{broken"));
+        assert_eq!(host.preserved_local_workspace_raw(), Some("{broken"));
+        let corrupt_plan = host
+            .plan_legacy_local_storage_writeback()
+            .expect("corrupt list rollback plan");
+        assert!(corrupt_plan.contains(r#""affine-local-workspace":"{broken""#));
 
         // Upgrade with allowlisted workspaces + dynamic keys + 1 unrelated noise key (length == 4, keys.len() == 4).
         let upgrade_payload = r#"{
@@ -1319,5 +1370,61 @@ mod tests {
                 host.selection.magnifier.anchor_x
             );
         }
+    }
+
+    #[test]
+    fn delegated_sentinel_handles_filtered_noise_upgrade_rollback_and_fresh_install() {
+        // 1. Filtered upgrade payload: affine-local-workspace=["ws-a"] + __cap_noise__ stripped from entries.
+        let upgrade_json = r#"{"origin":"https://localhost","length":2,"keys":["__cap_noise__","affine-local-workspace"],"entries":{"affine-local-workspace":"[\"ws-a\"]"},"idbTouchCount":0}"#;
+        let mut host = AndroidHostState::new();
+        let snap = host
+            .import_legacy_local_storage_probe(upgrade_json, &[])
+            .expect("filtered mixed upgrade sentinel must succeed");
+        assert_eq!(snap.keys, vec!["__cap_noise__", "affine-local-workspace"]);
+        assert!(!host.upgrade_import.can_create_default_workspace());
+        assert!(host.workspace_catalog.contains("ws-a"));
+
+        // Rollback read-back with the same unrelated noise key stripped from entries passes.
+        let mut expected_set = BTreeMap::new();
+        expected_set.insert(
+            LOCAL_WORKSPACE_LOCAL_STORAGE_KEY.to_string(),
+            r#"["ws-a"]"#.to_string(),
+        );
+        verify_legacy_writeback_result(&expected_set, &[], upgrade_json)
+            .expect("rollback readback with noise key in keys only must pass");
+
+        // 2. Fresh install with only __cap_noise__ stripped from entries allows default workspace.
+        let fresh_json = r#"{"origin":"https://localhost","length":1,"keys":["__cap_noise__"],"entries":{},"idbTouchCount":0}"#;
+        let mut fresh_host = AndroidHostState::new();
+        fresh_host
+            .import_legacy_local_storage_probe(fresh_json, &[])
+            .expect("filtered fresh install with noise key must succeed");
+        assert!(fresh_host.upgrade_import.can_create_default_workspace());
+
+        // 3. Unfiltered noise key still present in entries is rejected by affine-legacy-import sentinel.
+        let unfiltered_json = r#"{"origin":"https://localhost","length":1,"keys":["__cap_noise__"],"entries":{"__cap_noise__":"junk"},"idbTouchCount":0}"#;
+        let err = parse_legacy_local_storage_probe(unfiltered_json, &[]).unwrap_err();
+        assert!(matches!(err, LegacyProbeError::InconsistentSentinel(_)));
+
+        // 4. Bare legacy `<id>-auth` single key ("local-auth": "\"tok\"") classifies as FreshInstall
+        // (matching iOS has_allowlisted_keys == false), mounts 0 workspaces, and preserves the raw
+        // entry verbatim in rollback writeback without deleting it.
+        let bare_auth_json = r#"{"origin":"https://localhost","length":1,"keys":["local-auth"],"entries":{"local-auth":"\"tok\""},"idbTouchCount":0}"#;
+        let mut bare_host = AndroidHostState::new();
+        bare_host
+            .import_legacy_local_storage_probe(bare_auth_json, &[])
+            .expect("bare local-auth sentinel must succeed");
+        assert!(matches!(
+            bare_host.upgrade_import,
+            LegacyUpgradeImportState::FreshInstall
+        ));
+        assert!(bare_host.upgrade_import.can_create_default_workspace());
+        assert!(bare_host.workspace_catalog.ids().is_empty());
+        let bare_plan_raw = bare_host
+            .plan_legacy_local_storage_writeback()
+            .expect("FreshInstall writeback plan must be available");
+        let bare_plan: serde_json::Value = serde_json::from_str(&bare_plan_raw).unwrap();
+        assert_eq!(bare_plan["setEntries"]["local-auth"], "\"tok\"");
+        assert_eq!(bare_plan["removeKeys"], serde_json::json!([]));
     }
 }

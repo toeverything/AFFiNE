@@ -1,7 +1,4 @@
-use std::{
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::path::{Path, PathBuf};
 
 use affine_store::{
     StoreError,
@@ -17,10 +14,6 @@ use blocksuite_playground_doc::{
     session::PageDocSession,
 };
 use serde::Serialize;
-use sqlx::{
-    Pool, Sqlite,
-    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous},
-};
 use thiserror::Error;
 use tokio::runtime::{Builder, Runtime};
 
@@ -81,8 +74,6 @@ fn serialize_page_snapshot(snapshot: &PageSnapshot) -> Result<String, serde_json
 pub enum WorkspaceStoreError {
     #[error("storage error: {0}")]
     Store(#[from] StoreError),
-    #[error("sqlite maintenance error: {0}")]
-    Sqlx(#[from] sqlx::Error),
     #[error("document CRDT error: {0}")]
     Doc(#[from] DocError),
     #[error("I/O error: {0}")]
@@ -146,7 +137,6 @@ pub fn resolve_allowlisted_local_workspaces(
 /// Handle to an opened 0.27.5-compatible in-place SQLite WAL workspace or userspace database.
 pub struct IosWorkspaceHandle {
     storage: SqliteDocStorage,
-    maintenance_pool: Pool<Sqlite>,
     runtime: Runtime,
     space_id: String,
     db_path: PathBuf,
@@ -183,31 +173,15 @@ impl IosWorkspaceHandle {
 
         let runtime = Builder::new_current_thread().enable_all().build()?;
         let path_str = db_path.to_string_lossy().into_owned();
-        let (storage, maintenance_pool) = runtime.block_on(async {
-            let storage = SqliteDocStorage::new(path_str.clone());
+        let storage = runtime.block_on(async {
+            let storage = SqliteDocStorage::new(path_str);
             storage.connect().await?;
             storage.set_space_id(space_id).await?;
-
-            let maint_opts = SqliteConnectOptions::new()
-                .filename(&path_str)
-                .journal_mode(SqliteJournalMode::Wal)
-                .synchronous(SqliteSynchronous::Full)
-                .foreign_keys(true)
-                .busy_timeout(Duration::from_millis(SQLITE_BUSY_TIMEOUT_MS));
-            let maintenance_pool = SqlitePoolOptions::new()
-                .max_connections(1)
-                .connect_with(maint_opts)
-                .await?;
-            sqlx::query("PRAGMA busy_timeout = 5000;")
-                .execute(&maintenance_pool)
-                .await?;
-
-            Ok::<(SqliteDocStorage, Pool<Sqlite>), WorkspaceStoreError>((storage, maintenance_pool))
+            Ok::<SqliteDocStorage, WorkspaceStoreError>(storage)
         })?;
 
         Ok(Self {
             storage,
-            maintenance_pool,
             runtime,
             space_id: space_id.to_string(),
             db_path,
@@ -341,12 +315,7 @@ impl IosWorkspaceHandle {
 
     /// Run a non-blocking `PRAGMA wal_checkpoint(PASSIVE);` suitable for iOS background transitions.
     pub fn checkpoint_passive(&self) -> Result<(), WorkspaceStoreError> {
-        self.runtime.block_on(async {
-            sqlx::query("PRAGMA wal_checkpoint(PASSIVE);")
-                .execute(&self.maintenance_pool)
-                .await?;
-            Ok::<(), sqlx::Error>(())
-        })?;
+        let _ = self.runtime.block_on(self.storage.checkpoint_passive())?;
         Ok(())
     }
 
@@ -356,19 +325,12 @@ impl IosWorkspaceHandle {
         Ok(())
     }
 
-    /// Close the underlying SQLite connection pools cleanly.
+    /// Close the underlying SQLite connection pool cleanly.
     pub fn close(self) {
         let Self {
-            storage,
-            maintenance_pool,
-            runtime,
-            ..
+            storage, runtime, ..
         } = self;
-        runtime.block_on(async {
-            maintenance_pool.close().await;
-            storage.close().await;
-        });
-        drop(maintenance_pool);
+        runtime.block_on(storage.close());
         drop(storage);
         drop(runtime);
     }
@@ -377,7 +339,7 @@ impl IosWorkspaceHandle {
 #[cfg(test)]
 mod tests {
     use blocksuite_playground_doc::schema::{BlockSpec, ParagraphType};
-    use sqlx::Connection;
+    use sqlx::{Connection, sqlite::SqliteConnectOptions};
 
     use super::*;
 

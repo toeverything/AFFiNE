@@ -338,7 +338,6 @@ pub fn seed_showcase_state(
     let primary = build_primary_workspace(locale, today_date);
     let personal = build_personal_workspace(locale);
 
-    let workspaces = vec![primary.summary.clone(), personal.summary.clone()];
     let mut settings = SettingsState::default();
     settings.account_email = "darksky@affine.pro".to_string();
     settings.account_plan = "Pro Cloud".to_string();
@@ -350,9 +349,7 @@ pub fn seed_showcase_state(
     };
 
     MobileAppState {
-        scope: primary.scope.clone(),
-        workspaces,
-        workspace_store: vec![primary.clone(), personal],
+        workspace_store: vec![primary, personal],
         active_workspace_idx: 0,
         active_tab: MobileTab::Home,
         route: MobileRoute::Home,
@@ -368,7 +365,6 @@ pub fn seed_showcase_state(
         explorer_scroll_by_seq: std::collections::HashMap::new(),
         today_date: today_date.to_string(),
         selected_journal_date: today_date.to_string(),
-        next_doc_seq: primary.next_doc_seq,
         search_query: match locale {
             MobileLocale::En => "Sync".into(),
             MobileLocale::ZhHans => "同步".into(),
@@ -378,16 +374,6 @@ pub fn seed_showcase_state(
         search_preedit: None,
         search_engine: WeightedSearchEngine::default(),
         settings,
-        history: primary.history,
-        folders_resolved: primary.folders_resolved,
-        folder_rows: primary.folder_rows,
-        folder_revision: primary.folder_revision,
-        folder_cache: FolderForestCache::new(),
-        docs: primary.docs,
-        collections: primary.collections,
-        tags: primary.tags,
-        link_graph: primary.link_graph,
-        workspace_index_seeded: primary.workspace_index_seeded,
         system_dark: matches!(theme, ThemeMode::Dark),
         font_scale: 1.0,
     }

@@ -115,14 +115,6 @@ pub struct LegacyLocalStorageSnapshot {
 }
 
 impl LegacyLocalStorageSnapshot {
-    /// Explicitly replace `local_workspace_ids` and retire any raw preserved entry for
-    /// `affine-local-workspace`, marking the key present so empty lists serialize as `"[]"`.
-    pub fn set_local_workspace_ids(&mut self, ids: Vec<String>) {
-        self.preserved_raw_entries.remove(KEY_LOCAL_WORKSPACE_LIST);
-        self.local_workspace_ids = dedupe_preserve_order(ids);
-        self.has_local_workspace_key = true;
-    }
-
     /// Explicitly replace `server_list` and retire any corrupt raw preserved entry for
     /// `global-state:serverList`, marking the key present so empty lists serialize as `"[]"`.
     pub fn set_server_list(&mut self, servers: Vec<LegacyServerMetadata>) {
@@ -206,8 +198,28 @@ pub fn is_allowlisted_key(key: &str) -> bool {
 
 /// Return `true` if `key` is permitted inside `WebViewStorageSentinel::entries` (official allowlist
 /// plus bare `<id>-auth` keys that mobile probes may forward).
-pub(crate) fn is_permitted_sentinel_entry_key(key: &str) -> bool {
+pub fn is_permitted_sentinel_entry_key(key: &str) -> bool {
     is_allowlisted_key(key) || is_legacy_bare_auth_key(key)
+}
+
+fn parse_local_workspace_ids_checked(raw_json: &str) -> Option<Vec<String>> {
+    let Ok(Value::Array(items)) = serde_json::from_str::<Value>(raw_json) else {
+        return None;
+    };
+    let ids: Vec<String> = items
+        .into_iter()
+        .filter_map(|v| match v {
+            Value::String(id) if !id.is_empty() => Some(id),
+            _ => None,
+        })
+        .collect();
+    Some(dedupe_preserve_order(ids))
+}
+
+/// Parse `affine-local-workspace` JSON into an ordered, deduplicated list of workspace IDs
+/// (returning an empty `Vec` on non-array or invalid JSON).
+pub fn parse_local_workspace_ids(raw_json: &str) -> Vec<String> {
+    parse_local_workspace_ids_checked(raw_json).unwrap_or_default()
 }
 
 /// Parse allowlisted entries from a validated positive sentinel.
@@ -226,7 +238,7 @@ pub fn import_from_sentinel(
         }
         SentinelEvaluation::ValidEmpty => Ok((evaluation, LegacyLocalStorageSnapshot::default())),
         SentinelEvaluation::ValidPopulated { .. } => {
-            let snapshot = parse_allowlisted_entries(&sentinel.entries)?;
+            let snapshot = parse_allowlisted_entries(&sentinel.entries);
             Ok((evaluation, snapshot))
         }
     }
@@ -234,32 +246,23 @@ pub fn import_from_sentinel(
 
 /// Parse allowlisted keys from a raw `localStorage` map with per-key fault tolerance.
 ///
-/// `affine-local-workspace` MUST be a valid JSON array (non-string and empty elements are filtered
-/// out without trimming original IDs, matching `workspace-id-utils.ts`). Malformed auxiliary JSON
-/// keys are preserved verbatim in `preserved_raw_entries` instead of aborting the workspace import.
-pub fn parse_allowlisted_entries(
-    entries: &BTreeMap<String, String>,
-) -> Result<LegacyLocalStorageSnapshot, LegacyImportError> {
+/// Valid `affine-local-workspace` JSON arrays have non-string and empty elements filtered out
+/// without trimming original IDs (matching `workspace-id-utils.ts`). Malformed or non-array
+/// `affine-local-workspace` values and malformed auxiliary JSON keys are preserved verbatim in
+/// `preserved_raw_entries` with `has_local_workspace_key = true` so upgrade classifies the user as
+/// `ExistingUser`, blocks default workspace creation, and preserves the raw value on rollback.
+pub fn parse_allowlisted_entries(entries: &BTreeMap<String, String>) -> LegacyLocalStorageSnapshot {
     let mut snapshot = LegacyLocalStorageSnapshot::default();
 
     if let Some(raw) = entries.get(KEY_LOCAL_WORKSPACE_LIST) {
-        let parsed: Value =
-            serde_json::from_str(raw).map_err(|err| LegacyImportError::MalformedJson {
-                key: KEY_LOCAL_WORKSPACE_LIST.to_string(),
-                message: err.to_string(),
-            })?;
-        let Some(items) = parsed.as_array() else {
-            return Err(LegacyImportError::MalformedJson {
-                key: KEY_LOCAL_WORKSPACE_LIST.to_string(),
-                message: "expected JSON array for affine-local-workspace".to_string(),
-            });
-        };
-        let ids: Vec<String> = items
-            .iter()
-            .filter_map(|v| v.as_str().filter(|s| !s.is_empty()).map(str::to_string))
-            .collect();
-        snapshot.local_workspace_ids = dedupe_preserve_order(ids);
         snapshot.has_local_workspace_key = true;
+        if let Some(ids) = parse_local_workspace_ids_checked(raw) {
+            snapshot.local_workspace_ids = ids;
+        } else {
+            snapshot
+                .preserved_raw_entries
+                .insert(KEY_LOCAL_WORKSPACE_LIST.to_string(), raw.clone());
+        }
     }
 
     if let Some(raw) = entries.get(KEY_SERVER_LIST) {
@@ -354,7 +357,7 @@ pub fn parse_allowlisted_entries(
         }
     }
 
-    Ok(snapshot)
+    snapshot
 }
 
 /// Deduplicate workspace IDs preserving order and exact original strings (zero `.trim()`).
@@ -491,10 +494,65 @@ mod tests {
                 .any(|m| m.key() == "global-state:cloud-workspace:acct-1")
         );
 
-        // Non-array `affine-local-workspace` MUST return an error to block silent wipe.
-        let bad_ws =
-            BTreeMap::from([("affine-local-workspace".into(), r#"{"not":"array"}"#.into())]);
-        assert!(parse_allowlisted_entries(&bad_ws).is_err());
+        // Malformed or non-array `affine-local-workspace` ("{broken", "{}", "\"abc\"") is preserved
+        // verbatim in `preserved_raw_entries` with `has_local_workspace_key = true` and empty
+        // `local_workspace_ids`, stays verbatim when mutating other settings, and is replaced only
+        // after retiring the preserved raw entry and updating `local_workspace_ids`.
+        for raw_corrupt in ["{broken", "{}", "\"abc\""] {
+            let entries = BTreeMap::from([
+                (KEY_LOCAL_WORKSPACE_LIST.into(), raw_corrupt.into()),
+                (KEY_THEME.into(), "dark".into()),
+            ]);
+            let sentinel = WebViewStorageSentinel {
+                origin: "capacitor://localhost".into(),
+                length: 2,
+                keys: vec![KEY_LOCAL_WORKSPACE_LIST.into(), KEY_THEME.into()],
+                entries: entries.clone(),
+            };
+            let (eval, parsed) =
+                import_from_sentinel(&sentinel, &["capacitor://localhost"]).unwrap();
+            assert_eq!(
+                eval,
+                SentinelEvaluation::ValidPopulated {
+                    has_allowlisted_keys: true
+                }
+            );
+            assert!(parsed.local_workspace_ids.is_empty());
+            assert!(parsed.has_local_workspace_key);
+            assert_eq!(
+                parsed
+                    .preserved_raw_entries
+                    .get(KEY_LOCAL_WORKSPACE_LIST)
+                    .map(String::as_str),
+                Some(raw_corrupt)
+            );
+            // Mutating another setting writes back corrupt affine-local-workspace verbatim.
+            let mut edited_other = parsed.clone();
+            edited_other.i18n_lng = Some("zh-Hans".into());
+            let serialized = writeback::serialize_snapshot_entries(&edited_other).unwrap();
+            assert_eq!(
+                serialized.get(KEY_LOCAL_WORKSPACE_LIST).map(String::as_str),
+                Some(raw_corrupt)
+            );
+            assert_eq!(
+                serialized.get(KEY_I18N_LNG).map(String::as_str),
+                Some("\"zh-Hans\"")
+            );
+            // Retiring the preserved raw string and updating local_workspace_ids emits new JSON array.
+            let mut replaced = parsed.clone();
+            replaced
+                .preserved_raw_entries
+                .remove(KEY_LOCAL_WORKSPACE_LIST);
+            replaced.local_workspace_ids = vec!["ws-new".into()];
+            replaced.has_local_workspace_key = true;
+            let serialized_replaced = writeback::serialize_snapshot_entries(&replaced).unwrap();
+            assert_eq!(
+                serialized_replaced
+                    .get(KEY_LOCAL_WORKSPACE_LIST)
+                    .map(String::as_str),
+                Some(r#"["ws-new"]"#)
+            );
+        }
 
         // Corrupt `global-state:serverList` stays untouched (0 mutations) when unedited,
         // and writes `"[]"` only after explicit `set_server_list(vec![])`.
@@ -502,7 +560,7 @@ mod tests {
             ("affine-local-workspace".into(), r#"["ws-1"]"#.into()),
             ("global-state:serverList".into(), "{broken".into()),
         ]);
-        let parsed_srv = parse_allowlisted_entries(&corrupt_srv).unwrap();
+        let parsed_srv = parse_allowlisted_entries(&corrupt_srv);
         assert!(
             build_writeback_changeset(&parsed_srv, &parsed_srv)
                 .unwrap()

@@ -464,7 +464,7 @@ export function createIdbWorkspaceStorage(options) {
   const dbName = formatIdbName(options);
   const channelName = formatIdbChannelName(dbName);
   const now = options.now || (() => Date.now());
-  const configuredMergeUpdates =
+  let configuredMergeUpdates =
     typeof options.mergeUpdates === 'function' ? options.mergeUpdates : null;
   const readonlyMode = Boolean(options.readonlyMode);
   const BroadcastChannelCtor =
@@ -1225,12 +1225,25 @@ export function createIdbWorkspaceStorage(options) {
     };
   }
 
+  /**
+   * Updates the CRDT `mergeUpdates` callback after Wasm initialization.
+   *
+   * @param {{ mergeUpdates?: ((updates: Uint8Array[]) => Uint8Array | Promise<Uint8Array>) | null }} codecs
+   */
+  function setCrdtCodecs(codecs) {
+    if (codecs && 'mergeUpdates' in codecs) {
+      configuredMergeUpdates =
+        typeof codecs.mergeUpdates === 'function' ? codecs.mergeUpdates : null;
+    }
+  }
+
   return {
     dbName,
     channelName,
     version: IDB_SCHEMA_VERSION,
     open,
     close,
+    setCrdtCodecs,
     pushDocUpdate,
     pushDocUpdatesBatch,
     getDoc,
@@ -1264,680 +1277,13 @@ export function createIdbWorkspaceStorage(options) {
 }
 
 /**
- * Minimal zero-dependency pure-JS Yjs v1 Item + DeleteSet decoder that
- * reconstructs live `meta.pages -> spaces` `ContentDoc` (`tag === 9`) subdoc
- * GUIDs from legacy V1 root document updates. Throws on malformed frames.
- *
- * @param {Uint8Array[]} rootUpdates
- * @returns {{ guids: string[], pageIdToGuid: Map<string, string> }}
- */
-export function extractYjsV1SubdocEntries(rootUpdates) {
-  const decoder = new TextDecoder();
-  /**
-   * @typedef {{
-   *   client: number,
-   *   clock: number,
-   *   len: number,
-   *   tag: number,
-   *   origin: { client: number, clock: number } | null,
-   *   rightOrigin: { client: number, clock: number } | null,
-   *   parentKey: string | null,
-   *   parentId: { client: number, clock: number } | null,
-   *   parentSub: string | null,
-   *   deleted: boolean,
-   *   typeRef: number | null,
-   *   values: unknown[] | null,
-   *   guid: string | null,
-   * }} YjsDecodedItem
-   */
-  /** @type {YjsDecodedItem[]} */
-  const allItems = [];
-  /** @type {Map<string, YjsDecodedItem>} */
-  const itemByKey = new Map();
-  /** @type {Map<number, YjsDecodedItem[]>} */
-  const itemsByClient = new Map();
-  /** @type {Map<number, Array<[number, number]>>} */
-  const deleteRangesByClient = new Map();
-
-  for (const buf of rootUpdates || []) {
-    if (!(buf instanceof Uint8Array) || buf.byteLength === 0) {
-      continue;
-    }
-    let pos = 0;
-    const readUint8 = () => {
-      if (pos >= buf.byteLength) {
-        throw new RangeError('Unexpected EOF');
-      }
-      return buf[pos++];
-    };
-    const readVarUint = () => {
-      let num = 0;
-      let mult = 1;
-      for (let i = 0; i < 10; i += 1) {
-        const r = readUint8();
-        num += (r & 0x7f) * mult;
-        if (r < 0x80) {
-          return num;
-        }
-        mult *= 128;
-      }
-      throw new RangeError('VarUint overflow');
-    };
-    const readVarBytes = () => {
-      const len = readVarUint();
-      if (pos + len > buf.byteLength) {
-        throw new RangeError('Unexpected EOF');
-      }
-      const slice = buf.subarray(pos, pos + len);
-      pos += len;
-      return slice;
-    };
-    const readVarString = () => decoder.decode(readVarBytes());
-    const readAny = () => {
-      const type = readUint8();
-      switch (type) {
-        case 127: // undefined
-        case 126: // null
-        case 121: // false
-        case 120: // true
-          return null;
-        case 125: {
-          // varInt
-          let r = readUint8();
-          while (r & 0x80) {
-            r = readUint8();
-          }
-          return 0;
-        }
-        case 124: // float32
-          if (pos + 4 > buf.byteLength) {
-            throw new RangeError('Unexpected EOF');
-          }
-          pos += 4;
-          return 0;
-        case 123: // float64
-        case 122: // bigint64
-          if (pos + 8 > buf.byteLength) {
-            throw new RangeError('Unexpected EOF');
-          }
-          pos += 8;
-          return 0;
-        case 119: // string
-          return readVarString();
-        case 116: // binary
-          readVarBytes();
-          return null;
-        case 118: {
-          // object
-          const len = readVarUint();
-          for (let i = 0; i < len; i += 1) {
-            readVarBytes();
-            readAny();
-          }
-          return null;
-        }
-        case 117: {
-          // array
-          const len = readVarUint();
-          for (let i = 0; i < len; i += 1) {
-            readAny();
-          }
-          return null;
-        }
-        default:
-          throw new RangeError(`Unknown lib0 any tag ${type}`);
-      }
-    };
-
-    const numClients = readVarUint();
-    for (let c = 0; c < numClients; c += 1) {
-      const numStructs = readVarUint();
-      const client = readVarUint();
-      let clock = readVarUint();
-      let clientList = itemsByClient.get(client);
-      if (!clientList) {
-        clientList = [];
-        itemsByClient.set(client, clientList);
-      }
-      for (let s = 0; s < numStructs; s += 1) {
-        const itemClock = clock;
-        const info = readUint8();
-        const tag = info & 0x1f;
-        if (tag === 0 || tag === 10) {
-          clock += readVarUint();
-          continue;
-        }
-        const hasOrigin = (info & 0x80) !== 0;
-        const hasRightOrigin = (info & 0x40) !== 0;
-        const origin = hasOrigin
-          ? { client: readVarUint(), clock: readVarUint() }
-          : null;
-        const rightOrigin = hasRightOrigin
-          ? { client: readVarUint(), clock: readVarUint() }
-          : null;
-        /** @type {string | null} */
-        let parentKey = null;
-        /** @type {{ client: number, clock: number } | null} */
-        let parentId = null;
-        /** @type {string | null} */
-        let parentSub = null;
-        if (!hasOrigin && !hasRightOrigin) {
-          const hasParentYKey = readVarUint() === 1;
-          if (hasParentYKey) {
-            parentKey = readVarString();
-          } else {
-            parentId = { client: readVarUint(), clock: readVarUint() };
-          }
-          if (info & 0x20) {
-            parentSub = readVarString();
-          }
-        }
-        let len = 1;
-        let deleted = false;
-        /** @type {number | null} */
-        let typeRef = null;
-        /** @type {unknown[] | null} */
-        let values = null;
-        /** @type {string | null} */
-        let guid = null;
-        switch (tag) {
-          case 1: // Deleted
-            len = readVarUint();
-            deleted = true;
-            break;
-          case 2: {
-            // JSON
-            len = readVarUint();
-            values = [];
-            for (let j = 0; j < len; j += 1) {
-              values.push(readVarString());
-            }
-            break;
-          }
-          case 3: // Binary
-            readVarBytes();
-            break;
-          case 4: {
-            // String
-            const str = readVarString();
-            len = str.length;
-            values = [str];
-            break;
-          }
-          case 5: // Embed
-            readVarString();
-            break;
-          case 6: // Format
-            readVarString();
-            readVarString();
-            break;
-          case 7: {
-            // Type (only YXmlElement=3 and YXmlHook=5 carry a node name string)
-            typeRef = readVarUint();
-            if (typeRef === 3 || typeRef === 5) {
-              readVarString();
-            }
-            break;
-          }
-          case 8: {
-            // Any
-            len = readVarUint();
-            values = [];
-            for (let j = 0; j < len; j += 1) {
-              values.push(readAny());
-            }
-            break;
-          }
-          case 9: {
-            // ContentDoc (subdoc)
-            guid = readVarString();
-            readAny();
-            break;
-          }
-          default:
-            throw new RangeError(`Unknown Yjs struct tag ${tag}`);
-        }
-        clock += len;
-        const itemKey = `${client}:${itemClock}`;
-        const existing = itemByKey.get(itemKey);
-        if (existing) {
-          if (deleted) {
-            existing.deleted = true;
-          }
-          continue;
-        }
-        /** @type {YjsDecodedItem} */
-        const item = {
-          client,
-          clock: itemClock,
-          len,
-          tag,
-          origin,
-          rightOrigin,
-          parentKey,
-          parentId,
-          parentSub,
-          deleted,
-          typeRef,
-          values,
-          guid,
-        };
-        allItems.push(item);
-        itemByKey.set(itemKey, item);
-        clientList.push(item);
-      }
-    }
-
-    const numDsClients = readVarUint();
-    for (let d = 0; d < numDsClients; d += 1) {
-      const dsClient = readVarUint();
-      const numRanges = readVarUint();
-      let ranges = deleteRangesByClient.get(dsClient);
-      if (!ranges) {
-        ranges = [];
-        deleteRangesByClient.set(dsClient, ranges);
-      }
-      for (let r = 0; r < numRanges; r += 1) {
-        const dsClock = readVarUint();
-        const dsLen = readVarUint();
-        ranges.push([dsClock, dsClock + dsLen]);
-      }
-    }
-  }
-
-  /** @type {Map<number, Array<[number, number]>>} */
-  const mergedDeleteRanges = new Map();
-  for (const [dsClient, rawRanges] of deleteRangesByClient) {
-    rawRanges.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-    /** @type {Array<[number, number]>} */
-    const merged = [];
-    for (const [s, e] of rawRanges) {
-      const last = merged[merged.length - 1];
-      if (last && s <= last[1]) {
-        if (e > last[1]) {
-          last[1] = e;
-        }
-      } else {
-        merged.push([s, e]);
-      }
-    }
-    mergedDeleteRanges.set(dsClient, merged);
-  }
-
-  for (const list of itemsByClient.values()) {
-    list.sort((a, b) => a.clock - b.clock);
-  }
-
-  for (const item of allItems) {
-    if (item.deleted) {
-      continue;
-    }
-    const ranges = mergedDeleteRanges.get(item.client);
-    if (!ranges || ranges.length === 0) {
-      continue;
-    }
-    let lo = 0;
-    let hi = ranges.length - 1;
-    let idx = -1;
-    while (lo <= hi) {
-      const mid = (lo + hi) >>> 1;
-      if (ranges[mid][0] <= item.clock) {
-        idx = mid;
-        lo = mid + 1;
-      } else {
-        hi = mid - 1;
-      }
-    }
-    if (idx >= 0 && item.clock + Math.max(1, item.len) <= ranges[idx][1]) {
-      item.deleted = true;
-    }
-  }
-
-  /** @param {{ client: number, clock: number }} id */
-  const findItem = id => {
-    const exact = itemByKey.get(`${id.client}:${id.clock}`);
-    if (exact) {
-      return exact;
-    }
-    const list = itemsByClient.get(id.client);
-    if (!list || list.length === 0) {
-      return null;
-    }
-    let lo = 0;
-    let hi = list.length - 1;
-    let idx = -1;
-    while (lo <= hi) {
-      const mid = (lo + hi) >>> 1;
-      if (list[mid].clock <= id.clock) {
-        idx = mid;
-        lo = mid + 1;
-      } else {
-        hi = mid - 1;
-      }
-    }
-    if (idx >= 0) {
-      const cand = list[idx];
-      if (id.clock < cand.clock + Math.max(1, cand.len)) {
-        return cand;
-      }
-    }
-    return null;
-  };
-
-  /** @type {Map<YjsDecodedItem, { parentKey: string | null, parentIdKey: string | null, parentSub: string | null }>} */
-  const resolvedParents = new Map();
-  /**
-   * Iterative parent resolver (zero recursion so 40,000+ page arrays never
-   * overflow the JS call stack).
-   *
-   * @param {YjsDecodedItem} startItem
-   * @returns {{ parentKey: string | null, parentIdKey: string | null, parentSub: string | null }}
-   */
-  const resolveParent = startItem => {
-    const cached0 = resolvedParents.get(startItem);
-    if (cached0) {
-      return cached0;
-    }
-    /** @type {YjsDecodedItem[]} */
-    const chain = [];
-    /** @type {Set<YjsDecodedItem>} */
-    const seen = new Set();
-    /** @type {YjsDecodedItem | null} */
-    let cur = startItem;
-    /** @type {{ parentKey: string | null, parentIdKey: string | null, parentSub: string | null } | null} */
-    let res = null;
-    while (cur) {
-      const hit = resolvedParents.get(cur);
-      if (hit) {
-        res = hit;
-        break;
-      }
-      if (cur.parentKey !== null || cur.parentId !== null) {
-        res = {
-          parentKey: cur.parentKey,
-          parentIdKey: cur.parentId
-            ? `${cur.parentId.client}:${cur.parentId.clock}`
-            : null,
-          parentSub: cur.parentSub,
-        };
-        break;
-      }
-      if (seen.has(cur)) {
-        res = { parentKey: null, parentIdKey: null, parentSub: null };
-        break;
-      }
-      seen.add(cur);
-      chain.push(cur);
-      const ref = cur.origin || cur.rightOrigin;
-      cur = ref ? findItem(ref) : null;
-    }
-    const finalRes = res || {
-      parentKey: null,
-      parentIdKey: null,
-      parentSub: null,
-    };
-    for (const node of chain) {
-      resolvedParents.set(node, finalRes);
-    }
-    if (cur && !resolvedParents.has(cur)) {
-      resolvedParents.set(cur, finalRes);
-    }
-    return finalRes;
-  };
-
-  /**
-   * Resolves the winning live Y.Map entry for a `(parent, parentSub)` bucket
-   * using deterministic YATA sibling integration (arrival-order independent).
-   *
-   * @param {YjsDecodedItem[]} bucket
-   * @returns {YjsDecodedItem | null}
-   */
-  const pickLiveMapEntry = bucket => {
-    if (bucket.length === 0) {
-      return null;
-    }
-    if (bucket.length === 1) {
-      return bucket[0].deleted ? null : bucket[0];
-    }
-    /** @type {Map<string, YjsDecodedItem>} */
-    const bucketByKey = new Map();
-    for (const it of bucket) {
-      bucketByKey.set(`${it.client}:${it.clock}`, it);
-    }
-    const sorted = [...bucket].sort(
-      (a, b) => a.client - b.client || a.clock - b.clock
-    );
-    /** @type {YjsDecodedItem[]} */
-    const ordered = [];
-    /** @type {Set<YjsDecodedItem>} */
-    const placed = new Set();
-    /** @type {Set<YjsDecodedItem>} */
-    const active = new Set();
-    for (const root of sorted) {
-      if (placed.has(root)) {
-        continue;
-      }
-      /** @type {Array<[YjsDecodedItem, boolean]>} */
-      const stack = [[root, false]];
-      while (stack.length > 0) {
-        const frame = stack.pop();
-        if (!frame) {
-          break;
-        }
-        const [node, expanded] = frame;
-        if (placed.has(node)) {
-          continue;
-        }
-        if (expanded) {
-          active.delete(node);
-          placed.add(node);
-          ordered.push(node);
-          continue;
-        }
-        if (active.has(node)) {
-          continue;
-        }
-        active.add(node);
-        stack.push([node, true]);
-        if (node.rightOrigin) {
-          const depR = bucketByKey.get(
-            `${node.rightOrigin.client}:${node.rightOrigin.clock}`
-          );
-          if (depR && !placed.has(depR)) {
-            stack.push([depR, false]);
-          }
-        }
-        if (node.origin) {
-          const depL = bucketByKey.get(
-            `${node.origin.client}:${node.origin.clock}`
-          );
-          if (depL && !placed.has(depL)) {
-            stack.push([depL, false]);
-          }
-        }
-      }
-    }
-    /** @type {YjsDecodedItem[]} */
-    const seq = [];
-    /** @param {{ client: number, clock: number } | null} id */
-    const indexOfId = id => {
-      if (!id) {
-        return null;
-      }
-      for (let i = 0; i < seq.length; i += 1) {
-        const cand = seq[i];
-        if (
-          cand.client === id.client &&
-          cand.clock <= id.clock &&
-          id.clock < cand.clock + Math.max(1, cand.len)
-        ) {
-          return i;
-        }
-      }
-      return null;
-    };
-    for (const item of ordered) {
-      const leftFound = indexOfId(item.origin);
-      const rightFound = indexOfId(item.rightOrigin);
-      const leftIdx = leftFound === null ? -1 : leftFound;
-      const rightIdx = rightFound === null ? seq.length : rightFound;
-      let insertAt = leftIdx + 1;
-      let scanning = false;
-      for (let i = leftIdx + 1; i < rightIdx; i += 1) {
-        const o = seq[i];
-        const oLeftFound = indexOfId(o.origin);
-        const oRightFound = indexOfId(o.rightOrigin);
-        const oLeft = oLeftFound === null ? -1 : oLeftFound;
-        const oRight = oRightFound === null ? seq.length : oRightFound;
-        if (oLeft < leftIdx) {
-          scanning = true;
-        } else if (oLeft === leftIdx) {
-          if (item.client < o.client) {
-            scanning = false;
-            break;
-          }
-          scanning = oRight !== rightIdx;
-        }
-        if (!scanning) {
-          insertAt = i + 1;
-        }
-      }
-      seq.splice(insertAt, 0, item);
-    }
-    const tail = seq[seq.length - 1];
-    return tail && !tail.deleted ? tail : null;
-  };
-
-  /** @type {YjsDecodedItem[]} */
-  const metaPagesBucket = [];
-  for (const item of allItems) {
-    const parent = resolveParent(item);
-    if (parent.parentKey === 'meta' && parent.parentSub === 'pages') {
-      metaPagesBucket.push(item);
-    }
-  }
-  /** @type {Set<string>} */
-  const pagesArrayIds = new Set();
-  const livePagesArray = pickLiveMapEntry(metaPagesBucket);
-  if (livePagesArray && livePagesArray.tag === 7) {
-    pagesArrayIds.add(`${livePagesArray.client}:${livePagesArray.clock}`);
-  }
-
-  /** @type {Set<string>} */
-  const pageMapIds = new Set();
-  for (const item of allItems) {
-    if (item.deleted || item.tag !== 7) {
-      continue;
-    }
-    const parent = resolveParent(item);
-    if (parent.parentIdKey && pagesArrayIds.has(parent.parentIdKey)) {
-      pageMapIds.add(`${item.client}:${item.clock}`);
-    }
-  }
-
-  /** @type {Map<string, YjsDecodedItem[]>} */
-  const pageIdBuckets = new Map();
-  for (const item of allItems) {
-    const parent = resolveParent(item);
-    if (
-      parent.parentIdKey &&
-      pageMapIds.has(parent.parentIdKey) &&
-      parent.parentSub === 'id'
-    ) {
-      let bucket = pageIdBuckets.get(parent.parentIdKey);
-      if (!bucket) {
-        bucket = [];
-        pageIdBuckets.set(parent.parentIdKey, bucket);
-      }
-      bucket.push(item);
-    }
-  }
-
-  /** @type {Set<string>} */
-  const livePageIds = new Set();
-  for (const bucket of pageIdBuckets.values()) {
-    const winner = pickLiveMapEntry(bucket);
-    if (!winner || !winner.values || !winner.values.length) {
-      continue;
-    }
-    const raw = winner.values[winner.values.length - 1];
-    if (winner.tag === 2 && typeof raw === 'string') {
-      try {
-        const parsed = JSON.parse(raw);
-        if (typeof parsed === 'string' && parsed) {
-          livePageIds.add(parsed);
-        }
-      } catch {
-        // Ignore non-JSON string entry.
-      }
-    } else if (typeof raw === 'string' && raw) {
-      livePageIds.add(raw);
-    }
-  }
-
-  /** @type {Map<string, YjsDecodedItem[]>} */
-  const spaceBuckets = new Map();
-  /** @type {string[]} */
-  const unkeyedSpaceGuids = [];
-  for (const item of allItems) {
-    const parent = resolveParent(item);
-    if (parent.parentKey !== 'spaces') {
-      continue;
-    }
-    if (parent.parentSub !== null) {
-      let bucket = spaceBuckets.get(parent.parentSub);
-      if (!bucket) {
-        bucket = [];
-        spaceBuckets.set(parent.parentSub, bucket);
-      }
-      bucket.push(item);
-    } else if (
-      pagesArrayIds.size === 0 &&
-      !item.deleted &&
-      item.tag === 9 &&
-      item.guid
-    ) {
-      unkeyedSpaceGuids.push(item.guid);
-    }
-  }
-
-  /** @type {Set<string>} */
-  const guids = new Set(unkeyedSpaceGuids);
-  /** @type {Map<string, string>} */
-  const pageIdToGuid = new Map();
-  for (const [spaceSub, bucket] of spaceBuckets) {
-    if (pagesArrayIds.size > 0 && !livePageIds.has(spaceSub)) {
-      continue;
-    }
-    const winner = pickLiveMapEntry(bucket);
-    if (winner && winner.tag === 9 && winner.guid) {
-      guids.add(winner.guid);
-      pageIdToGuid.set(spaceSub, winner.guid);
-    }
-  }
-
-  return { guids: [...guids], pageIdToGuid };
-}
-
-/**
- * Default pure-JS Yjs v1 subdoc GUID extractor used by
- * `createIdbV1ReadonlyReader` when no custom extractor is provided.
- *
- * @param {Uint8Array[]} rootUpdates
- * @returns {string[]}
- */
-export function extractYjsV1SubdocIds(rootUpdates) {
-  return extractYjsV1SubdocEntries(rootUpdates).guids;
-}
-
-/**
  * Creates a strictly read-only fallback reader for legacy Web IndexedDB V1
  * databases (`affine-local` for docs and `${workspaceId}_blob` for blobs),
  * aligned with `local.ts:197-210` and `nbstore/src/impls/idb/v1/*`.
  *
  * Never creates an empty V1 database when none exists, and never mutates V1
- * data. Uses a built-in pure-JS Yjs v1 `ContentDoc` extractor by default so
- * top-level V1 subdoc pages are discovered without external dependencies.
+ * data. Listing subdocs of a non-empty V1 root requires an `extractSubdocIds`
+ * callback (wired to `crdt-codec.wasm` in `host.js`) or explicit `opts.subdocIds`.
  *
  * @param {{
  *   workspaceId: string,
@@ -1949,12 +1295,12 @@ export function extractYjsV1SubdocIds(rootUpdates) {
 export function createIdbV1ReadonlyReader(options) {
   const workspaceId = options.workspaceId;
   const factory = options.indexedDB || globalThis.indexedDB;
-  const configuredMergeUpdates =
+  let configuredMergeUpdates =
     typeof options.mergeUpdates === 'function' ? options.mergeUpdates : null;
-  const configuredExtractSubdocIds =
+  let configuredExtractSubdocIds =
     typeof options.extractSubdocIds === 'function'
       ? options.extractSubdocIds
-      : extractYjsV1SubdocIds;
+      : null;
   const blobDbName = `${workspaceId}_blob`;
 
   /**
@@ -2100,9 +1446,7 @@ export function createIdbV1ReadonlyReader(options) {
           : configuredExtractSubdocIds;
       const [rawKeys, rootRecord] = await Promise.all([
         requestToPromise(store.getAllKeys()),
-        extractor
-          ? requestToPromise(store.get(workspaceId))
-          : Promise.resolve(null),
+        requestToPromise(store.get(workspaceId)),
       ]);
       await done;
       const keys = rawKeys.map(String);
@@ -2125,7 +1469,12 @@ export function createIdbV1ReadonlyReader(options) {
           }
         }
       }
-      if (extractor && rootUpdates.length) {
+      if (rootUpdates.length && !opts.subdocIds) {
+        if (!extractor) {
+          throw new TypeError(
+            'extractSubdocIds callback is required to inspect non-empty V1 root CRDT updates'
+          );
+        }
         const extracted = await extractor(rootUpdates);
         if (extracted) {
           for (const subId of extracted) {
@@ -2181,6 +1530,24 @@ export function createIdbV1ReadonlyReader(options) {
     }
   }
 
+  /**
+   * Updates CRDT merge/extraction callbacks after Wasm initialization.
+   *
+   * @param {{ mergeUpdates?: ((updates: Uint8Array[]) => Uint8Array | Promise<Uint8Array>) | null, extractSubdocIds?: ((rootUpdates: Uint8Array[]) => Iterable<string> | Promise<Iterable<string>>) | null }} codecs
+   */
+  function setCrdtCodecs(codecs) {
+    if (codecs && 'mergeUpdates' in codecs) {
+      configuredMergeUpdates =
+        typeof codecs.mergeUpdates === 'function' ? codecs.mergeUpdates : null;
+    }
+    if (codecs && 'extractSubdocIds' in codecs) {
+      configuredExtractSubdocIds =
+        typeof codecs.extractSubdocIds === 'function'
+          ? codecs.extractSubdocIds
+          : null;
+    }
+  }
+
   return Object.freeze({
     readonly: true,
     workspaceId,
@@ -2188,6 +1555,7 @@ export function createIdbV1ReadonlyReader(options) {
     getV1DocRaw,
     listV1DocIds,
     getV1Blob,
+    setCrdtCodecs,
   });
 }
 

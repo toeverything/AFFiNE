@@ -91,12 +91,12 @@ impl SqliteDocStorage {
         Ok(())
     }
 
-    /// Perform a non-blocking `PASSIVE` WAL checkpoint.
-    pub async fn checkpoint_passive(&self) -> StoreResult<()> {
-        sqlx::query("PRAGMA wal_checkpoint(PASSIVE);")
-            .execute(&self.pool)
+    /// Perform a non-blocking `PASSIVE` WAL checkpoint, returning `(busy, log, checkpointed)`.
+    pub async fn checkpoint_passive(&self) -> StoreResult<(i64, i64, i64)> {
+        let row = sqlx::query("PRAGMA wal_checkpoint(PASSIVE);")
+            .fetch_one(&self.pool)
             .await?;
-        Ok(())
+        Ok((row.try_get(0)?, row.try_get(1)?, row.try_get(2)?))
     }
 
     /// Export a compacted copy of the database to `target_path`.
@@ -290,11 +290,14 @@ mod tests {
         // Reload fresh WorkspaceDb + db$docProperties from SQLite: Edgeless mode & idempotency hold.
         let loaded_rec = storage.get_doc("ws-idem").await.unwrap().unwrap();
         let loaded_props = storage.get_doc("db$docProperties").await.unwrap().unwrap();
-        let mut reloaded_db =
-            WorkspaceDb::from_root_update_v1("ws-idem", "u1", 2, &loaded_rec.bin).unwrap();
-        reloaded_db
-            .load_db_table(WorkspaceDbTableName::DocProperties, &loaded_props.bin)
-            .unwrap();
+        let reloaded_db = WorkspaceDb::from_root_update_v1(
+            "ws-idem",
+            "u1",
+            2,
+            &loaded_rec.bin,
+            &[(WorkspaceDbTableName::DocProperties, &loaded_props.bin)],
+        )
+        .unwrap();
         let sv_before = reloaded_db.root().encode_state_vector_v1().unwrap();
         let mut reloaded_dir = WorkspaceDirectory::new(reloaded_db);
         assert_eq!(
@@ -327,7 +330,7 @@ mod tests {
         reloaded_dir.trash_doc(&original_page_id, 2_500).unwrap();
         let trashed_bytes = reloaded_dir.db().root().encode_update_v1().unwrap();
         let mut after_trash =
-            WorkspaceDb::from_root_update_v1("ws-idem", "u1", 3, &trashed_bytes).unwrap();
+            WorkspaceDb::from_root_update_v1("ws-idem", "u1", 3, &trashed_bytes, &[]).unwrap();
         let retry_trashed = after_trash
             .create_page(PageIdSource::DerivedFromOp("op-1"), "Spec", 3_000)
             .unwrap();

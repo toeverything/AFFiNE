@@ -127,6 +127,7 @@ pub fn apply_measured_bounds(
 /// folder placements, collections, tags, and All Docs / Trash produce identical breadcrumbs.
 pub fn derive_explorer_doc_origin(state: &mut MobileAppState, doc_id: &str) -> Origin {
     let target = state
+        .active_workspace()
         .history
         .current()
         .map(|e| e.target.clone())
@@ -319,7 +320,12 @@ pub(crate) fn perform_a11y_action_with_layout(
             true
         }
         "mobile.explorer.new_doc_btn" => {
-            let folder_id = match state.history.current().map(|e| &e.target) {
+            let folder_id = match state
+                .active_workspace()
+                .history
+                .current()
+                .map(|e| &e.target)
+            {
                 Some(NavTarget::Folder(fid)) => Some(fid.clone()),
                 _ => None,
             };
@@ -441,7 +447,11 @@ fn perform_sheet_a11y_action(state: &mut MobileAppState, node_id: &str, now_ms: 
             let Some(ws_id) = node_id.strip_prefix("mobile.sheet.ws.") else {
                 return false;
             };
-            let Some(idx) = state.workspaces.iter().position(|w| w.id == ws_id) else {
+            let Some(idx) = state
+                .workspace_store
+                .iter()
+                .position(|w| w.summary.id == ws_id)
+            else {
                 return false;
             };
             state.select_workspace(idx, now_ms);
@@ -449,7 +459,12 @@ fn perform_sheet_a11y_action(state: &mut MobileAppState, node_id: &str, now_ms: 
         }
         MobileSheet::LocationAndTrail => {
             if node_id == "mobile.sheet.use_trail_btn" {
-                let cur_seq = state.history.current().map(|e| e.seq).unwrap_or(0);
+                let cur_seq = state
+                    .active_workspace()
+                    .history
+                    .current()
+                    .map(|e| e.seq)
+                    .unwrap_or(0);
                 state.pick_location(cur_seq, Some(LocationChoice::UseTrail), now_ms);
                 return true;
             }
@@ -481,7 +496,12 @@ fn perform_sheet_a11y_action(state: &mut MobileAppState, node_id: &str, now_ms: 
                 let Ok(idx) = rest.parse::<usize>() else {
                     return false;
                 };
-                let cur_seq = state.history.current().map(|e| e.seq).unwrap_or(0);
+                let cur_seq = state
+                    .active_workspace()
+                    .history
+                    .current()
+                    .map(|e| e.seq)
+                    .unwrap_or(0);
                 let derivation = state.derive_breadcrumb();
                 let Some(opt) = derivation.current_doc_locations.get(idx) else {
                     return false;
@@ -599,7 +619,11 @@ fn perform_breadcrumb_a11y_action(state: &mut MobileAppState, slot_id: &str, now
 }
 
 fn explorer_back_parent_target(state: &mut MobileAppState) -> Option<NavTarget> {
-    let target = state.history.current().map(|e| e.target.clone())?;
+    let target = state
+        .active_workspace()
+        .history
+        .current()
+        .map(|e| e.target.clone())?;
     match target {
         NavTarget::Folder(folder_id) => {
             if let FolderForestState::Ready(forest) = state.forest_state()

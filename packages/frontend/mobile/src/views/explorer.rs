@@ -36,6 +36,7 @@ pub(super) fn render_explorer(
         a11y_bounds,
     };
     let cur_target = state
+        .active_workspace()
         .history
         .current()
         .map(|e| e.target.clone())
@@ -96,8 +97,14 @@ fn render_all_docs_root(
             .collect(),
         FolderForestState::Unresolved => Vec::new(),
     };
-    let trash_count = state.docs.iter().filter(|d| d.trashed).count();
+    let trash_count = state
+        .active_workspace()
+        .docs
+        .iter()
+        .filter(|d| d.trashed)
+        .count();
     let active_docs: Vec<(String, String)> = state
+        .active_workspace()
         .docs
         .iter()
         .filter(|d| !d.trashed)
@@ -239,7 +246,7 @@ fn render_all_docs_root(
             .child(explorer_compact_meta_cell(
                 "mobile.explorer.collections",
                 strings.collections,
-                state.collections.len(),
+                state.active_workspace().collections.len(),
                 NavTarget::Collection(String::new()),
                 env,
                 false,
@@ -248,7 +255,7 @@ fn render_all_docs_root(
             .child(explorer_compact_meta_cell(
                 "mobile.explorer.tags",
                 strings.tags,
-                state.tags.len(),
+                state.active_workspace().tags.len(),
                 NavTarget::Tag(String::new()),
                 env,
                 true,
@@ -277,7 +284,7 @@ fn render_all_docs_root(
             .child(explorer_meta_row(
                 "mobile.explorer.collections",
                 strings.collections,
-                state.collections.len(),
+                state.active_workspace().collections.len(),
                 NavTarget::Collection(String::new()),
                 row_h,
                 is_visible(org_top, row_h),
@@ -288,7 +295,7 @@ fn render_all_docs_root(
             .child(explorer_meta_row(
                 "mobile.explorer.tags",
                 strings.tags,
-                state.tags.len(),
+                state.active_workspace().tags.len(),
                 NavTarget::Tag(String::new()),
                 row_h,
                 is_visible(org_top + row_h, row_h),
@@ -553,10 +560,12 @@ fn render_collections_index(
     cx: &mut Context<MobileShellView>,
 ) -> impl IntoElement {
     let items: Vec<(String, String, usize, NavTarget)> = state
+        .active_workspace()
         .collections
         .iter()
         .map(|col| {
             let count = state
+                .active_workspace()
                 .docs
                 .iter()
                 .filter(|d| !d.trashed && col.doc_ids.iter().any(|id| id == &d.id))
@@ -587,10 +596,12 @@ fn render_tags_index(
     cx: &mut Context<MobileShellView>,
 ) -> impl IntoElement {
     let items: Vec<(String, String, usize, NavTarget)> = state
+        .active_workspace()
         .tags
         .iter()
         .map(|(tag_id, tag_name)| {
             let count = state
+                .active_workspace()
                 .docs
                 .iter()
                 .filter(|d| !d.trashed && d.tags.iter().any(|t| t == tag_id))

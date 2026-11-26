@@ -13,6 +13,7 @@ crate-type = ["rlib", "cdylib"]
 host-jni = []
 
 [dependencies]
+affine-legacy-import = { path = "../../legacy-import" }
 affine-store = { path = "../../../common/store" }
 base64.workspace = true
 chrono.workspace = true

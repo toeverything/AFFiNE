@@ -12,7 +12,7 @@ pub use tables::{
     YjsTableDoc,
 };
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use serde::Serialize;
 use serde_json::Value as JsonValue;
@@ -38,7 +38,6 @@ pub struct WorkspaceDb {
     client_id: u64,
     root: WorkspaceRootDoc,
     db_tables: BTreeMap<WorkspaceDbTableName, YjsTableDoc>,
-    resolved_db_tables: BTreeSet<WorkspaceDbTableName>,
     userdata_tables: BTreeMap<UserdataTableName, YjsTableDoc>,
     pending_updates: Vec<PendingDocUpdate>,
 }
@@ -55,35 +54,38 @@ impl WorkspaceDb {
             client_id,
             root,
             db_tables: BTreeMap::new(),
-            resolved_db_tables: WORKSPACE_DB_TABLE_NAMES.iter().copied().collect(),
             userdata_tables: BTreeMap::new(),
             pending_updates: Vec::new(),
         }
     }
 
-    /// Load an existing root document snapshot with zero writeback.
+    /// Load an existing root document snapshot together with any persisted companion `db$` tables
+    /// in a single construction step with zero writeback.
     ///
-    /// Companion `db$` tables start in the unresolved state until loaded via [`Self::load_db_table`]
-    /// or explicitly confirmed absent in storage via [`Self::mark_db_table_absent`].
+    /// Tables omitted from `initial_db_tables` are treated as confirmed absent in local storage.
     pub fn from_root_update_v1(
         space_id: impl Into<String>,
         user_id: impl Into<String>,
         client_id: u64,
         root_update: &[u8],
+        initial_db_tables: &[(WorkspaceDbTableName, &[u8])],
     ) -> StoreResult<Self> {
         let space_id = space_id.into();
         let user_id = user_id.into();
         let root = WorkspaceRootDoc::from_update_v1(space_id.clone(), client_id, root_update)?;
-        Ok(Self {
+        let mut db = Self {
             space_id,
             user_id,
             client_id,
             root,
             db_tables: BTreeMap::new(),
-            resolved_db_tables: BTreeSet::new(),
             userdata_tables: BTreeMap::new(),
             pending_updates: Vec::new(),
-        })
+        };
+        for &(table, update) in initial_db_tables {
+            db.load_db_table(table, update)?;
+        }
+        Ok(db)
     }
 
     pub fn space_id(&self) -> &str {
@@ -188,18 +190,6 @@ impl WorkspaceDb {
         Ok(update)
     }
 
-    /// Return `true` when `table` has been loaded from storage, initialized in a fresh workspace,
-    /// or explicitly confirmed absent via [`Self::mark_db_table_absent`].
-    pub fn is_db_table_resolved(&self, table: WorkspaceDbTableName) -> bool {
-        self.resolved_db_tables.contains(&table)
-    }
-
-    /// Mark `table` as confirmed absent in local storage (e.g. `get_doc("db$docProperties")`
-    /// returned `None`).
-    pub fn mark_db_table_absent(&mut self, table: WorkspaceDbTableName) {
-        self.resolved_db_tables.insert(table);
-    }
-
     /// Load or CRDT-merge a workspace `db$` table document from encoded v1 bytes.
     ///
     /// If local writes occurred before the snapshot arrived, merges via CRDT `apply_update_v1`
@@ -217,7 +207,6 @@ impl WorkspaceDb {
             )?;
             self.db_tables.insert(table, doc);
         }
-        self.resolved_db_tables.insert(table);
         Ok(())
     }
 

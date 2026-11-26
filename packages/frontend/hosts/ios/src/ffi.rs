@@ -13,7 +13,7 @@ use super::{
     },
     legacy_storage::{
         ImportedLegacyState, LegacyLocalStorageSnapshot, LegacyWriteBackPlan,
-        parse_legacy_snapshot, verify_write_back_readback,
+        is_whitelisted_legacy_key, parse_legacy_snapshot, verify_write_back_readback,
     },
     workspace_store::{IosWorkspaceHandle, resolve_ios_space_db_path},
 };
@@ -334,6 +334,18 @@ pub unsafe extern "C" fn affine_ios_auth_canonical_endpoint(
     into_c_string(canonical_endpoint(ep))
 }
 
+/// # Safety
+/// `endpoint` must be null or a valid NUL-terminated UTF-8 C string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn affine_ios_auth_legacy_storage_endpoint_key(
+    endpoint: *const c_char,
+) -> *mut c_char {
+    let Some(ep) = (unsafe { c_str_opt(endpoint) }) else {
+        return core::ptr::null_mut();
+    };
+    into_c_string(crate::auth::legacy_storage_endpoint_key(ep))
+}
+
 /// Parse a 0.27.5 Keychain JSON payload (2001-epoch `accessExpiresAt`) and check validity.
 /// Returns normalized Keychain JSON (still 2001-epoch) or null if invalid.
 ///
@@ -421,6 +433,18 @@ pub unsafe extern "C" fn affine_ios_auth_error_permanently_invalidates_session(
     auth_error_permanently_invalidates_session(raw)
 }
 
+/// Return true when `key` is permitted by `affine-legacy-import`'s single authoritative allowlist.
+///
+/// # Safety
+/// `key` must be null or a valid NUL-terminated UTF-8 string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn affine_ios_legacy_is_permitted_key(key: *const c_char) -> bool {
+    let Some(raw) = (unsafe { c_str_opt(key) }) else {
+        return false;
+    };
+    is_whitelisted_legacy_key(raw)
+}
+
 /// Validate a positive sentinel `LegacyLocalStorageSnapshot` JSON (requiring `capacitor://localhost`
 /// and `idbAccessCount == 0`) and return the `LegacyUpgradeDisposition` JSON, or null on error.
 ///
@@ -462,7 +486,9 @@ pub unsafe extern "C" fn affine_ios_legacy_storage_plan_write_back_json(
     let prev_keys: Vec<String> = unsafe { c_str_opt(previous_keys_json) }
         .and_then(|s| serde_json::from_str(s).ok())
         .unwrap_or_default();
-    let plan = state.to_write_back_plan(&prev_keys);
+    let Ok(plan) = state.to_write_back_plan(&prev_keys) else {
+        return core::ptr::null_mut();
+    };
     serde_json::to_string(&plan)
         .map(into_c_string)
         .unwrap_or(core::ptr::null_mut())

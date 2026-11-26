@@ -260,41 +260,6 @@ impl SelectionOverlayController {
         }
     }
 
-    pub fn update_drag(
-        &mut self,
-        touch_point: AffinePoint,
-        updated_caret: AffineRect,
-        updated_range: AffineUtf16Range,
-    ) -> bool {
-        if self.active_drag == AffineSelectionHandleKind::None {
-            return false;
-        }
-        self.drag_touch_point = AffinePoint {
-            x: sanitize_f32(touch_point.x),
-            y: sanitize_f32(touch_point.y),
-        };
-        let sanitized = updated_caret.sanitized();
-        match self.active_drag {
-            AffineSelectionHandleKind::Start => {
-                self.start_caret = sanitized;
-                if is_caret_after(self.start_caret, self.end_caret, self.writing_direction) {
-                    core::mem::swap(&mut self.start_caret, &mut self.end_caret);
-                    self.active_drag = AffineSelectionHandleKind::End;
-                }
-            }
-            AffineSelectionHandleKind::End => {
-                self.end_caret = sanitized;
-                if is_caret_after(self.start_caret, self.end_caret, self.writing_direction) {
-                    core::mem::swap(&mut self.start_caret, &mut self.end_caret);
-                    self.active_drag = AffineSelectionHandleKind::Start;
-                }
-            }
-            AffineSelectionHandleKind::None => return false,
-        }
-        self.range = updated_range;
-        true
-    }
-
     /// Update an in-progress drag from authoritative UTF-16 anchor/target offsets and
     /// caller-supplied shaped start/end caret rects, without guessing crossover from
     /// 2D caret coordinates (safe for mixed BiDi runs and vertical finger drift).
@@ -584,17 +549,6 @@ fn distance_to_handle(px: f32, py: f32, handle: AffineTeardropHandleLayout) -> f
     d_drop.min(d_stem)
 }
 
-fn is_caret_after(a: AffineRect, b: AffineRect, direction: AffineWritingDirection) -> bool {
-    let line_tolerance = a.height.max(b.height).max(1.0) * 0.5;
-    if (a.y - b.y).abs() > line_tolerance {
-        return a.y > b.y;
-    }
-    match direction {
-        AffineWritingDirection::Ltr => a.x > b.x,
-        AffineWritingDirection::Rtl => a.x < b.x,
-    }
-}
-
 fn hypot(dx: f32, dy: f32) -> f32 {
     (dx * dx + dy * dy).sqrt()
 }
@@ -835,18 +789,21 @@ mod tests {
         assert!(dragging.loupe.center_x >= min_cx);
         assert!(dragging.loupe.center_y >= min_cy);
 
-        // Drag start handle past end handle: handles normalize and active drag flips to End.
-        assert!(ctrl.update_drag(
+        // Drag start handle past end handle: authoritative UTF-16 anchor updates range and flips active drag to End.
+        assert!(ctrl.apply_text_drag_endpoints(
             AffinePoint { x: 260.0, y: 125.0 },
+            18,
+            AffineRect {
+                x: 200.0,
+                y: 120.0,
+                width: 2.0,
+                height: 20.0,
+            },
             AffineRect {
                 x: 260.0,
                 y: 120.0,
                 width: 2.0,
                 height: 20.0,
-            },
-            AffineUtf16Range {
-                location: 12,
-                length: 6,
             },
         ));
         assert_eq!(ctrl.active_drag_handle(), AffineSelectionHandleKind::End);
@@ -1076,17 +1033,33 @@ mod tests {
                 "{}",
                 c.name
             );
+            // Authoritative UTF-16 target offset crosses past the fixed anchor (2 or 10).
+            let target_offset = match c.expect_active_after {
+                AffineSelectionHandleKind::End => 12,
+                AffineSelectionHandleKind::Start => 1,
+                AffineSelectionHandleKind::None => 2,
+            };
+            let new_start = AffineRect {
+                x: c.expect_start_x,
+                y: c.expect_start_y,
+                width: 2.0,
+                height: 20.0,
+            };
+            let new_end = AffineRect {
+                x: c.expect_end_x,
+                y: c.expect_end_y,
+                width: 2.0,
+                height: 20.0,
+            };
             assert!(
-                ctrl.update_drag(
+                ctrl.apply_text_drag_endpoints(
                     AffinePoint {
                         x: c.target.x,
                         y: c.target.y,
                     },
-                    c.target,
-                    AffineUtf16Range {
-                        location: 1,
-                        length: 6,
-                    },
+                    target_offset,
+                    new_start,
+                    new_end,
                 ),
                 "{}",
                 c.name
