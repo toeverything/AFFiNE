@@ -841,6 +841,29 @@ void test('Iron Rule F1: deleted workspace with leftover IDB has 0 resurrection 
   setWebPreference('affine-theme', null, localStorage);
   assert.equal(getWebPreference('affine-theme', localStorage), null);
 
+  // Missing storage or missing setItem/removeItem throws with zero broadcasts.
+  const countBeforeNullWrites = notifications.length;
+  assert.throws(() => addLocalWorkspaceId('ws-null', null, myChannel), {
+    message: /localStorage\.setItem is unavailable/,
+  });
+  assert.throws(
+    () =>
+      removeLocalWorkspaceId(
+        'ws-new',
+        { getItem: () => '["ws-new"]' },
+        myChannel
+      ),
+    { message: /localStorage\.setItem is unavailable/ }
+  );
+  assert.throws(() => setWebPreference('language', 'zh-Hant', null), {
+    message: /localStorage\.setItem is unavailable/,
+  });
+  assert.throws(() => setWebPreference('language', null, { setItem() {} }), {
+    message: /localStorage\.removeItem is unavailable/,
+  });
+  assert.equal(notifications.length, countBeforeNullWrites);
+  assert.deepEqual(getLocalWorkspaceIds(null), []);
+
   peerChannel.close();
   myChannel.close();
   keepStore.close();

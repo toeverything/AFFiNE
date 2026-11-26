@@ -41,6 +41,8 @@ import {
   createSelectionOverlayController,
   drawSelectionOverlay,
   executeClipboardAction,
+  resolveSelectionLocale,
+  SELECTION_MENU_FONT,
 } from '../src/selection-overlay.js';
 import {
   bootSignInPage,
@@ -2642,4 +2644,555 @@ void test('production overlay Cut rejects missing logical token and isolates sce
       delete globalThis.OffscreenCanvas;
     }
   }
+});
+
+void test('selection overlay localizes BCP-47 tags, preserves 44px button floors, and mirrors RTL layout and hit testing', async () => {
+  const baseInput = {
+    viewport: { width: 390, height: 844, safeArea: { top: 44, bottom: 34 } },
+    rects: [{ x: 32, y: 220, width: 300, height: 26 }],
+    caretStart: { x: 32, y: 220, height: 26, dir: 'ltr' },
+    caretEnd: { x: 332, y: 220, height: 26, dir: 'ltr' },
+  };
+
+  // 1. BCP-47 language, script, and region subtags ignore -u-/-x- extensions.
+  for (const [tag, expected] of [
+    ['zh-TW', 'zh-hant'],
+    ['zh-TW-u-nu-latn', 'zh-hant'],
+    ['zh-HK-u-ca-chinese', 'zh-hant'],
+    ['zh-MO-x-custom', 'zh-hant'],
+    ['zh-Hant-CN-u-nu-hanidec', 'zh-hant'],
+    ['zh-Hans-TW', 'zh-hans'],
+    ['zh-CN-u-nu-latn', 'zh-hans'],
+    ['ZH_cn', 'zh-hans'],
+    ['ar-EG-u-nu-arab', 'ar'],
+    ['fr-FR', 'en'],
+  ]) {
+    assert.equal(
+      resolveSelectionLocale(tag),
+      expected,
+      `BCP-47 tag ${tag} resolved unexpectedly`
+    );
+  }
+
+  // 2. zh-Hans labels and widths stay within viewport with >= 44px touch targets.
+  const zhLayout = computeSelectionOverlayLayout({
+    ...baseInput,
+    locale: 'zh-Hans',
+    dir: 'ltr',
+  });
+  assert.equal(zhLayout.menu.locale, 'zh-hans');
+  assert.equal(zhLayout.menu.dir, 'ltr');
+  assert.deepEqual(
+    zhLayout.menu.items.map(item => [item.id, item.label]),
+    [
+      ['copy', '复制'],
+      ['cut', '剪切'],
+      ['paste', '粘贴'],
+      ['select-all', '全选'],
+    ]
+  );
+  for (let i = 0; i < zhLayout.menu.items.length; i += 1) {
+    const item = zhLayout.menu.items[i];
+    assert.ok(
+      item.width >= 44,
+      `zh-Hans item ${item.id} width ${item.width} < 44`
+    );
+    if (i > 0) {
+      assert.ok(
+        item.x > zhLayout.menu.items[i - 1].x,
+        'LTR menu items must increase left-to-right'
+      );
+    }
+  }
+  assert.ok(zhLayout.menu.x >= 12);
+  assert.ok(zhLayout.menu.x + zhLayout.menu.width <= 390 - 12);
+
+  // 3. zh-Hant with Unicode extension and custom labels override work cleanly.
+  const zhHantLayout = computeSelectionOverlayLayout({
+    ...baseInput,
+    locale: 'zh-TW-u-nu-latn',
+    labels: { copy: '拷貝' },
+  });
+  assert.equal(zhHantLayout.menu.locale, 'zh-hant');
+  assert.deepEqual(
+    zhHantLayout.menu.items.map(item => item.label),
+    ['拷貝', '剪下', '貼上', '全選']
+  );
+
+  // 4. Arabic infers RTL direction when dir is omitted, and mirrors button x coordinates right-to-left.
+  const arMeasure = label => label.length * 9;
+  const arLayout = computeSelectionOverlayLayout({
+    ...baseInput,
+    locale: 'ar',
+    measureText: arMeasure,
+  });
+  assert.equal(arLayout.menu.locale, 'ar');
+  assert.equal(arLayout.menu.dir, 'rtl');
+  assert.deepEqual(
+    arLayout.menu.items.map(item => [item.id, item.label]),
+    [
+      ['copy', 'نسخ'],
+      ['cut', 'قص'],
+      ['paste', 'لصق'],
+      ['select-all', 'تحديد الكل'],
+    ]
+  );
+  const selectAllAr = arLayout.menu.items.find(
+    item => item.id === 'select-all'
+  );
+  assert.ok(selectAllAr);
+  assert.ok(
+    selectAllAr.width >= arMeasure('تحديد الكل'),
+    'Arabic Select All button width must fit measured text without clipping'
+  );
+  for (let i = 1; i < arLayout.menu.items.length; i += 1) {
+    assert.ok(
+      arLayout.menu.items[i].x < arLayout.menu.items[i - 1].x,
+      'RTL menu items must strictly decrease right-to-left'
+    );
+  }
+  assert.ok(arLayout.menu.x >= 12);
+  assert.ok(arLayout.menu.x + arLayout.menu.width <= 390 - 12);
+
+  // 5. Long sibling label on a 320px viewport preserves >= 44px floor on all 4 buttons in LTR and RTL,
+  //    and drawn text centers, dividers, and hit rects match layout items 1:1.
+  for (const dir of /** @type {const} */ (['ltr', 'rtl'])) {
+    const drawnTexts = [];
+    const drawnLines = [];
+    const mockCtx = {
+      font: '',
+      textAlign: '',
+      textBaseline: '',
+      direction: 'ltr',
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 1,
+      save() {},
+      restore() {},
+      beginPath() {},
+      closePath() {},
+      moveTo(x, y) {
+        this._mx = x;
+        this._my = y;
+      },
+      lineTo(x, y) {
+        drawnLines.push({ x1: this._mx, y1: this._my, x2: x, y2: y });
+      },
+      arc() {},
+      arcTo() {},
+      quadraticCurveTo() {},
+      fill() {},
+      stroke() {},
+      fillRect() {},
+      fillText(text, x, y, maxWidth) {
+        drawnTexts.push({ text, x, y, maxWidth });
+      },
+    };
+    const narrowCtrl = createSelectionOverlayController({
+      getInput: () => ({
+        viewport: { width: 320, height: 568 },
+        edgeMargin: 12,
+        rects: [{ x: 24, y: 180, width: 200, height: 24 }],
+        caretStart: { x: 24, y: 180, height: 24, dir },
+        caretEnd: { x: 224, y: 180, height: 24, dir },
+        labels: { 'select-all': 'Select all text in this document' },
+        measureText: s => 8 * s.length,
+      }),
+      locale: 'en',
+      dir,
+    });
+    const narrowLayout = narrowCtrl.getLayout();
+    assert.ok(narrowLayout);
+    assert.equal(narrowLayout.menu.width, 296);
+    drawSelectionOverlay(mockCtx, narrowLayout);
+    assert.equal(mockCtx.font, SELECTION_MENU_FONT);
+    assert.equal(drawnTexts.length, 4);
+    for (let i = 0; i < narrowLayout.menu.items.length; i += 1) {
+      const item = narrowLayout.menu.items[i];
+      assert.ok(
+        item.width >= 44,
+        `${dir} item ${item.id} width ${item.width} fell below 44px`
+      );
+      assert.ok(Math.abs(drawnTexts[i].x - (item.x + item.width / 2)) < 1e-6);
+      for (const probeX of [
+        item.x + 1,
+        item.x + item.width / 2,
+        item.x + item.width - 1,
+      ]) {
+        assert.deepEqual(
+          narrowCtrl.hitTest(probeX, item.y + item.height / 2),
+          { kind: 'menu', action: item.id },
+          `${dir} hitTest mismatch for ${item.id} at x=${probeX}`
+        );
+      }
+      if (i < narrowLayout.menu.items.length - 1) {
+        const expectedDividerX = dir === 'rtl' ? item.x : item.x + item.width;
+        assert.ok(
+          drawnLines.some(
+            seg =>
+              seg.y1 === item.y + 9 &&
+              Math.abs(seg.x1 - expectedDividerX) < 1e-6
+          ),
+          `${dir} divider missing at x=${expectedDividerX}`
+        );
+      }
+    }
+  }
+
+  // 6. index.html declares lang="en" for WCAG 3.1.1 boot announcements, while production
+  //    default-app-entry forwards preferred browser locale to the selection menu.
+  const indexHtml = readFileSync(join(WEB_ROOT, 'index.html'), 'utf8');
+  assert.ok(
+    indexHtml.includes('<html lang="en">'),
+    'index.html must declare lang="en" for English boot skeleton accessibility'
+  );
+  {
+    let activeBrowserLang = 'zh-TW-u-nu-latn';
+    const fakeCanvas = {
+      id: 'app-canvas',
+      width: 390,
+      height: 844,
+      clientWidth: 390,
+      clientHeight: 844,
+      style: {},
+      addEventListener() {},
+      removeEventListener() {},
+      getBoundingClientRect: () => ({
+        left: 0,
+        top: 0,
+        width: 390,
+        height: 844,
+      }),
+      getContext(kind) {
+        if (kind !== '2d') {
+          return null;
+        }
+        return new Proxy(
+          {},
+          {
+            get: (_t, prop) =>
+              prop === 'measureText'
+                ? s => ({ width: s.length * 8 })
+                : () => {},
+            set: () => true,
+          }
+        );
+      },
+    };
+    const manifestJson = indexHtml
+      .match(
+        /<script id="affine-build-manifest" type="application\/json">([\s\S]*?)<\/script>/
+      )[1]
+      .trim();
+    const fakeDoc = {
+      documentElement: { lang: 'en', dir: '' },
+      getElementById(id) {
+        if (id === 'affine-build-manifest') {
+          return { textContent: manifestJson };
+        }
+        if (id === 'app-canvas') return fakeCanvas;
+        if (id === 'ime')
+          return { readOnly: false, style: {}, addEventListener() {} };
+        if (id === 'boot') return { dataset: {}, remove() {} };
+        return null;
+      },
+      querySelectorAll: () => [],
+      createElement(tag) {
+        if (tag !== 'canvas') return {};
+        return {
+          id: '',
+          width: 390,
+          height: 844,
+          style: {},
+          getContext(kind) {
+            if (kind === '2d') {
+              return fakeCanvas.getContext('2d');
+            }
+            if (kind === 'webgl2') {
+              return { getParameter: () => 'WebGL2', getExtension: () => null };
+            }
+            return null;
+          },
+        };
+      },
+      addEventListener() {},
+      removeEventListener() {},
+    };
+    const origDoc = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    const origOffscreen = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'OffscreenCanvas'
+    );
+    Object.defineProperty(globalThis, 'document', {
+      value: fakeDoc,
+      configurable: true,
+    });
+    Object.defineProperty(globalThis, 'OffscreenCanvas', {
+      value: undefined,
+      configurable: true,
+    });
+    try {
+      const fakeWin = {
+        navigator: {
+          get language() {
+            return activeBrowserLang;
+          },
+          clipboard: {},
+        },
+        location: { href: 'https://app.affine.pro/', assign() {} },
+      };
+      const handle = await bootWebHost({
+        win: fakeWin,
+        doc: fakeDoc,
+        importModule: async () => {
+          globalThis.__AFFINE_WEB_HOST__ = fakeWin.__AFFINE_WEB_HOST__;
+          try {
+            await import('../src/default-app-entry.js?scene-mode=overlay-wcag-lang');
+          } finally {
+            delete globalThis.__AFFINE_WEB_HOST__;
+          }
+        },
+      });
+      assert.equal(fakeDoc.documentElement.lang, 'en');
+
+      handle.selectionOverlay.setScene({ selection: baseInput });
+      const twMenu = handle.selectionOverlay.getLayout().menu;
+      assert.equal(twMenu.locale, 'zh-hant');
+      assert.equal(twMenu.dir, 'ltr');
+      assert.equal(twMenu.items[0].label, '複製');
+
+      activeBrowserLang = 'ar';
+      handle.selectionOverlay.setScene({ selection: baseInput });
+      const arMenu = handle.selectionOverlay.getLayout().menu;
+      assert.equal(arMenu.locale, 'ar');
+      assert.equal(arMenu.dir, 'rtl');
+      assert.equal(arMenu.items[0].id, 'copy');
+      assert.equal(arMenu.items[0].label, 'نسخ');
+      assert.ok(
+        arMenu.items[0].x > arMenu.items[3].x,
+        'Arabic copy button must sit at the rightmost x coordinate'
+      );
+
+      activeBrowserLang = 'he';
+      handle.selectionOverlay.setScene({ selection: baseInput });
+      const heMenu = handle.selectionOverlay.getLayout().menu;
+      assert.equal(heMenu.locale, 'en');
+      assert.equal(heMenu.dir, 'ltr');
+
+      handle.dispose();
+
+      // 6b. Existing 0.27.5 GlobalCache ('global-cache:i18n_lng' JSON string) is decoded,
+      //     'system' falls back to browser language, and explicit scene locale still wins.
+      const storageEntries = new Map([
+        ['global-cache:i18n_lng', JSON.stringify('ar')],
+      ]);
+      activeBrowserLang = 'en-US';
+      const storageWin = {
+        localStorage: {
+          getItem: k => (storageEntries.has(k) ? storageEntries.get(k) : null),
+          setItem: (k, v) => {
+            storageEntries.set(k, String(v));
+          },
+          removeItem: k => {
+            storageEntries.delete(k);
+          },
+        },
+        navigator: {
+          get language() {
+            return activeBrowserLang;
+          },
+          clipboard: {},
+        },
+        location: { href: 'https://app.affine.pro/', assign() {} },
+      };
+      const storageHandle = await bootWebHost({
+        win: storageWin,
+        doc: fakeDoc,
+        importModule: async () => {
+          globalThis.__AFFINE_WEB_HOST__ = storageWin.__AFFINE_WEB_HOST__;
+          try {
+            await import('../src/default-app-entry.js?scene-mode=overlay-global-cache');
+          } finally {
+            delete globalThis.__AFFINE_WEB_HOST__;
+          }
+        },
+      });
+      storageHandle.selectionOverlay.setScene({ selection: baseInput });
+      const persistedAr = storageHandle.selectionOverlay.getLayout().menu;
+      assert.equal(persistedAr.locale, 'ar');
+      assert.equal(persistedAr.dir, 'rtl');
+      assert.equal(persistedAr.items[0].label, 'نسخ');
+
+      storageHandle.selectionOverlay.setScene({
+        selection: { ...baseInput, locale: 'zh-Hans' },
+      });
+      const explicitWins = storageHandle.selectionOverlay.getLayout().menu;
+      assert.equal(explicitWins.locale, 'zh-hans');
+      assert.equal(explicitWins.dir, 'ltr');
+      assert.equal(explicitWins.items[0].label, '复制');
+
+      storageEntries.set('global-cache:i18n_lng', JSON.stringify('system'));
+      activeBrowserLang = 'zh-HK';
+      storageHandle.selectionOverlay.setScene({ selection: baseInput });
+      const systemFallback = storageHandle.selectionOverlay.getLayout().menu;
+      assert.equal(systemFallback.locale, 'zh-hant');
+      assert.equal(systemFallback.items[0].label, '複製');
+      storageHandle.dispose();
+
+      // 6c. Blocked win.localStorage getter (SecurityError) never throws on explicit or browser locale.
+      activeBrowserLang = 'zh-CN';
+      const blockedWin = {
+        navigator: {
+          get language() {
+            return activeBrowserLang;
+          },
+          clipboard: {},
+        },
+        location: { href: 'https://app.affine.pro/', assign() {} },
+      };
+      Object.defineProperty(blockedWin, 'localStorage', {
+        get() {
+          const err = new Error('The operation is insecure.');
+          err.name = 'SecurityError';
+          throw err;
+        },
+      });
+      const blockedHandle = await bootWebHost({
+        win: blockedWin,
+        doc: fakeDoc,
+        importModule: async () => {
+          globalThis.__AFFINE_WEB_HOST__ = blockedWin.__AFFINE_WEB_HOST__;
+          try {
+            await import('../src/default-app-entry.js?scene-mode=overlay-blocked-storage');
+          } finally {
+            delete globalThis.__AFFINE_WEB_HOST__;
+          }
+        },
+      });
+      blockedHandle.selectionOverlay.setScene({ selection: baseInput });
+      const blockedBrowserMenu =
+        blockedHandle.selectionOverlay.getLayout().menu;
+      assert.equal(blockedBrowserMenu.locale, 'zh-hans');
+      assert.equal(blockedBrowserMenu.items[0].label, '复制');
+
+      blockedHandle.selectionOverlay.setScene({
+        selection: { ...baseInput, locale: 'ar' },
+      });
+      const blockedExplicitMenu =
+        blockedHandle.selectionOverlay.getLayout().menu;
+      assert.equal(blockedExplicitMenu.locale, 'ar');
+      assert.equal(blockedExplicitMenu.dir, 'rtl');
+      assert.equal(blockedExplicitMenu.items[0].label, 'نسخ');
+      assert.throws(() => blockedHandle.setLocalWorkspaceIds(['ws-blocked']), {
+        name: 'SecurityError',
+      });
+      assert.throws(() => blockedHandle.setWebPreference('language', 'ar'), {
+        name: 'SecurityError',
+      });
+      blockedHandle.dispose();
+
+      // 6d. QuotaExceededError on workspace/preference writes propagates to caller
+      //     with zero broadcasts and unchanged persisted value, then succeeds on retry.
+      const quotaEntries = new Map([
+        ['affine-local-workspace', JSON.stringify(['A'])],
+        ['language', 'ar'],
+      ]);
+      let failWrites = true;
+      const broadcasts = [];
+      class FakeBroadcastChannel {
+        postMessage(msg) {
+          broadcasts.push(msg);
+        }
+        addEventListener() {}
+        removeEventListener() {}
+        close() {}
+      }
+      const quotaWin = {
+        BroadcastChannel: FakeBroadcastChannel,
+        localStorage: {
+          getItem: k => (quotaEntries.has(k) ? quotaEntries.get(k) : null),
+          setItem: (k, v) => {
+            if (failWrites) {
+              const err = new Error('Storage quota exceeded');
+              err.name = 'QuotaExceededError';
+              throw err;
+            }
+            quotaEntries.set(k, String(v));
+          },
+          removeItem: k => {
+            if (failWrites) {
+              const err = new Error('Storage quota exceeded');
+              err.name = 'QuotaExceededError';
+              throw err;
+            }
+            quotaEntries.delete(k);
+          },
+        },
+        navigator: { language: 'en-US', clipboard: {} },
+        location: { href: 'https://app.affine.pro/', assign() {} },
+      };
+      const quotaHandle = await bootWebHost({
+        win: quotaWin,
+        doc: fakeDoc,
+        importModule: async () => {},
+      });
+      assert.throws(() => quotaHandle.setLocalWorkspaceIds([], 'A'), {
+        name: 'QuotaExceededError',
+      });
+      assert.equal(broadcasts.length, 0);
+      assert.deepEqual(quotaHandle.getLocalWorkspaceIds(), ['A']);
+
+      assert.throws(() => quotaHandle.setLocalWorkspaceIds(['A', 'B'], 'B'), {
+        name: 'QuotaExceededError',
+      });
+      assert.equal(broadcasts.length, 0);
+      assert.deepEqual(quotaHandle.getLocalWorkspaceIds(), ['A']);
+
+      assert.throws(() => quotaHandle.setWebPreference('language', 'zh-Hant'), {
+        name: 'QuotaExceededError',
+      });
+      assert.equal(quotaHandle.getWebPreference('language'), 'ar');
+
+      failWrites = false;
+      assert.deepEqual(quotaHandle.setLocalWorkspaceIds(['A', 'B'], 'B'), [
+        'A',
+        'B',
+      ]);
+      assert.deepEqual(quotaHandle.getLocalWorkspaceIds(), ['A', 'B']);
+      assert.deepEqual(broadcasts, ['B']);
+      quotaHandle.setWebPreference('language', 'zh-Hant');
+      assert.equal(quotaHandle.getWebPreference('language'), 'zh-Hant');
+      quotaHandle.dispose();
+    } finally {
+      if (origDoc) Object.defineProperty(globalThis, 'document', origDoc);
+      else delete globalThis.document;
+      if (origOffscreen) {
+        Object.defineProperty(globalThis, 'OffscreenCanvas', origOffscreen);
+      } else {
+        delete globalThis.OffscreenCanvas;
+      }
+    }
+  }
+
+  // 7. Controller hit-testing and pointerup dispatch match mirrored RTL button rects.
+  const fired = [];
+  const ctrl = createSelectionOverlayController({
+    getInput: () => ({ ...baseInput, measureText: arMeasure }),
+    locale: 'ar',
+    onAction: action => {
+      fired.push(action);
+    },
+  });
+  const ctrlLayout = ctrl.getLayout();
+  assert.ok(ctrlLayout);
+  for (const item of ctrlLayout.menu.items) {
+    const cx = item.x + item.width / 2;
+    const cy = item.y + item.height / 2;
+    assert.deepEqual(ctrl.hitTest(cx, cy), { kind: 'menu', action: item.id });
+    ctrl.onPointerDown(cx, cy);
+    const up = ctrl.onPointerUp(cx, cy);
+    assert.equal(up.action, item.id);
+    await up.actionPromise;
+  }
+  assert.deepEqual(fired, ['copy', 'cut', 'paste', 'select-all']);
 });

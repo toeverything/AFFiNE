@@ -1203,7 +1203,7 @@ export async function bootWebHost(env = {}) {
   const localWorkspaceListeners = new Set();
   /** @param {MessageEvent} event */
   function handleLocalWorkspaceChanged(event) {
-    const ids = getLocalWorkspaceIds(win.localStorage);
+    const ids = getLocalWorkspaceIds(safeGetLocalStorage(win));
     const changedId = typeof event?.data === 'string' ? event.data : null;
     for (const listener of localWorkspaceListeners) {
       listener(ids, changedId);
@@ -1365,11 +1365,11 @@ export async function bootWebHost(env = {}) {
       iframe.addEventListener?.('focus', onIframeFocus);
       return { iframe, activate: () => activate(false), unmount };
     },
-    getLocalWorkspaceIds: () => getLocalWorkspaceIds(win.localStorage),
+    getLocalWorkspaceIds: () => getLocalWorkspaceIds(safeGetLocalStorage(win)),
     setLocalWorkspaceIds: (ids, changedId = null) =>
       setLocalWorkspaceIds(
         ids,
-        win.localStorage,
+        win?.localStorage ?? null,
         localWorkspaceChannel,
         changedId
       ),
@@ -1379,9 +1379,10 @@ export async function bootWebHost(env = {}) {
         localWorkspaceListeners.delete(listener);
       };
     },
-    getWebPreference: key => getWebPreference(key, win.localStorage),
+    getWebPreference: key => getWebPreference(key, safeGetLocalStorage(win)),
     setWebPreference: (key, value) =>
-      setWebPreference(key, value, win.localStorage),
+      setWebPreference(key, value, win?.localStorage ?? null),
+    getPreferredLocale: () => resolvePreferredLocale(win),
     markFirstFrameReady: () => removeBootSkeleton(doc),
     dispose: () => {
       doc.removeEventListener?.('visibilitychange', onVisibilityChange);
@@ -1415,6 +1416,88 @@ export async function bootWebHost(env = {}) {
   }
 
   return hostHandle;
+}
+
+/**
+ * Safely reads `win.localStorage` without throwing when browser privacy settings
+ * or sandboxed iframes reject the property getter with `SecurityError`.
+ *
+ * @param {{ localStorage?: Storage } | null | undefined} win
+ * @returns {Storage | null}
+ */
+function safeGetLocalStorage(win) {
+  try {
+    return win?.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Decodes a stored language value from either 0.27.5 `GlobalCache`
+ * (`JSON.stringify(lang)` under `global-cache:i18n_lng`) or a plain string
+ * preference, treating `'system'`, malformed JSON, and empty/non-BCP-47
+ * sentinels as unset.
+ *
+ * @param {string | null | undefined} raw
+ * @returns {string}
+ */
+function decodeStoredLocale(raw) {
+  if (typeof raw !== 'string') {
+    return '';
+  }
+  let trimmed = raw.trim();
+  if (!trimmed) {
+    return '';
+  }
+  if (
+    trimmed.startsWith('"') ||
+    trimmed.startsWith('{') ||
+    trimmed.startsWith('[')
+  ) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      trimmed = typeof parsed === 'string' ? parsed.trim() : '';
+    } catch {
+      return '';
+    }
+  } else if (trimmed === 'null' || trimmed === 'undefined') {
+    return '';
+  }
+  if (!trimmed || trimmed.toLowerCase() === 'system') {
+    return '';
+  }
+  if (!/^[a-zA-Z]{2,3}(?:[-_][a-zA-Z0-9]{1,8})*$/.test(trimmed)) {
+    return '';
+  }
+  return trimmed;
+}
+
+/**
+ * Resolves the user's preferred locale from host `language` preference,
+ * existing 0.27.5 `global-cache:i18n_lng`, or `navigator.language`.
+ *
+ * @param {{ localStorage?: Storage, navigator?: { language?: string } } | null | undefined} win
+ * @returns {string}
+ */
+function resolvePreferredLocale(win) {
+  const storage = safeGetLocalStorage(win);
+  const hostPref = decodeStoredLocale(getWebPreference('language', storage));
+  if (hostPref) {
+    return hostPref;
+  }
+  const legacyGlobalCache = decodeStoredLocale(
+    getWebPreference('global-cache:i18n_lng', storage)
+  );
+  if (legacyGlobalCache) {
+    return legacyGlobalCache;
+  }
+  try {
+    const navLang = win?.navigator?.language;
+    return typeof navLang === 'string' ? navLang.trim() : '';
+  } catch {
+    return '';
+  }
 }
 
 if (

@@ -3,6 +3,7 @@
 import {
   createSelectionOverlayController,
   drawSelectionOverlay,
+  SELECTION_MENU_FONT,
 } from './selection-overlay.js';
 
 /**
@@ -429,8 +430,47 @@ function attachSelectionOverlayRuntime(host) {
     return presentSurface(activeCanvas, stageSurface);
   }
 
+  /** @param {string} label */
+  function measureMenuLabel(label) {
+    const ctx = /** @type {CanvasRenderingContext2D | null} */ (
+      stageSurface?.getContext?.('2d') ?? null
+    );
+    if (!ctx || typeof ctx.measureText !== 'function') {
+      return Number.NaN;
+    }
+    ctx.save?.();
+    ctx.font = SELECTION_MENU_FONT;
+    const width = ctx.measureText(label)?.width ?? Number.NaN;
+    ctx.restore?.();
+    return width;
+  }
+
   const selectionController = createSelectionOverlayController({
-    getInput: () => selectionInput,
+    getInput: () => {
+      if (!selectionInput) {
+        return null;
+      }
+      const explicitLocale =
+        typeof selectionInput.locale === 'string'
+          ? selectionInput.locale.trim()
+          : '';
+      let resolvedLocale = explicitLocale;
+      if (!resolvedLocale) {
+        resolvedLocale = host?.getPreferredLocale?.() || '';
+      }
+      if (!resolvedLocale) {
+        try {
+          resolvedLocale = globalThis.navigator?.language || '';
+        } catch {
+          resolvedLocale = '';
+        }
+      }
+      return {
+        ...selectionInput,
+        locale: resolvedLocale || undefined,
+      };
+    },
+    measureText: measureMenuLabel,
     onDragHandle: (handle, x, y) => {
       selectionCallbacks?.onDragHandle?.(handle, x, y);
     },

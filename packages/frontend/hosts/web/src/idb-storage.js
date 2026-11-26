@@ -96,6 +96,14 @@ export function dedupeWorkspaceIds(ids) {
   return [...new Set(ids)];
 }
 
+function defaultLocalStorage() {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Reads the ordered local workspace ID list strictly from same-origin
  * `localStorage['affine-local-workspace']`. Never scans `indexedDB.databases()`,
@@ -104,12 +112,13 @@ export function dedupeWorkspaceIds(ids) {
  * @param {Pick<Storage, 'getItem'> | null | undefined} [storage]
  * @returns {string[]}
  */
-export function getLocalWorkspaceIds(storage = globalThis.localStorage) {
-  if (!storage || typeof storage.getItem !== 'function') {
+export function getLocalWorkspaceIds(storage) {
+  const resolved = storage === undefined ? defaultLocalStorage() : storage;
+  if (!resolved || typeof resolved.getItem !== 'function') {
     return [];
   }
   try {
-    const raw = storage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY);
+    const raw = resolved.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY);
     if (!raw) {
       return [];
     }
@@ -135,17 +144,18 @@ export function setLocalWorkspaceIds(
   notifyChannel = null,
   changedId = null
 ) {
+  if (!storage || typeof storage.setItem !== 'function') {
+    throw new Error('localStorage.setItem is unavailable for persistence');
+  }
   const next =
     typeof idsOrUpdater === 'function'
       ? idsOrUpdater(getLocalWorkspaceIds(storage))
       : idsOrUpdater;
   const deduplicated = dedupeWorkspaceIds(normalizeWorkspaceIds(next));
-  if (storage && typeof storage.setItem === 'function') {
-    storage.setItem(
-      LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
-      JSON.stringify(deduplicated)
-    );
-  }
+  storage.setItem(
+    LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
+    JSON.stringify(deduplicated)
+  );
   if (notifyChannel && typeof notifyChannel.postMessage === 'function') {
     notifyChannel.postMessage(changedId);
   }
@@ -201,12 +211,13 @@ export function removeLocalWorkspaceId(
  * @param {Pick<Storage, 'getItem'> | null | undefined} [storage]
  * @returns {string | null}
  */
-export function getWebPreference(key, storage = globalThis.localStorage) {
-  if (!storage || typeof storage.getItem !== 'function') {
+export function getWebPreference(key, storage) {
+  const resolved = storage === undefined ? defaultLocalStorage() : storage;
+  if (!resolved || typeof resolved.getItem !== 'function') {
     return null;
   }
   try {
-    return storage.getItem(key);
+    return resolved.getItem(key);
   } catch {
     return null;
   }
@@ -224,13 +235,16 @@ export function setWebPreference(
   value,
   storage = globalThis.localStorage
 ) {
-  if (!storage) {
-    return;
-  }
   if (value === null || value === undefined) {
-    storage.removeItem?.(key);
+    if (!storage || typeof storage.removeItem !== 'function') {
+      throw new Error('localStorage.removeItem is unavailable for persistence');
+    }
+    storage.removeItem(key);
   } else {
-    storage.setItem?.(key, String(value));
+    if (!storage || typeof storage.setItem !== 'function') {
+      throw new Error('localStorage.setItem is unavailable for persistence');
+    }
+    storage.setItem(key, String(value));
   }
 }
 

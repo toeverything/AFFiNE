@@ -61,6 +61,8 @@
  * @typedef {Object} SelectionMenuLayout
  * @property {boolean} visible
  * @property {'above' | 'below'} placement
+ * @property {'ltr' | 'rtl'} dir
+ * @property {string} locale
  * @property {number} x
  * @property {number} y
  * @property {number} width
@@ -100,20 +102,38 @@
  * @property {boolean} [readOnly]
  * @property {boolean} [canPaste]
  * @property {number} [edgeMargin]
+ * @property {string} [locale]
+ * @property {'ltr' | 'rtl'} [dir]
+ * @property {Partial<Record<SelectionActionId, string>>} [labels]
+ * @property {(label: string) => number} [measureText]
  */
 
-const ACTION_LABELS = Object.freeze({
-  copy: 'Copy',
-  cut: 'Cut',
-  paste: 'Paste',
-  'select-all': 'Select All',
-});
-
-const ACTION_MIN_WIDTHS = Object.freeze({
-  copy: 64,
-  cut: 56,
-  paste: 68,
-  'select-all': 92,
+/** @type {Readonly<Record<'en' | 'zh-hans' | 'zh-hant' | 'ar', Readonly<Record<SelectionActionId, string>>>>} */
+const LOCALIZED_ACTION_LABELS = Object.freeze({
+  en: Object.freeze({
+    copy: 'Copy',
+    cut: 'Cut',
+    paste: 'Paste',
+    'select-all': 'Select All',
+  }),
+  'zh-hans': Object.freeze({
+    copy: '复制',
+    cut: '剪切',
+    paste: '粘贴',
+    'select-all': '全选',
+  }),
+  'zh-hant': Object.freeze({
+    copy: '複製',
+    cut: '剪下',
+    paste: '貼上',
+    'select-all': '全選',
+  }),
+  ar: Object.freeze({
+    copy: 'نسخ',
+    cut: 'قص',
+    paste: 'لصق',
+    'select-all': 'تحديد الكل',
+  }),
 });
 
 const DEFAULT_ACTIONS = /** @type {const} */ ([
@@ -123,12 +143,170 @@ const DEFAULT_ACTIONS = /** @type {const} */ ([
   'select-all',
 ]);
 
+export const SELECTION_MENU_FONT =
+  '600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+const MIN_ACTION_WIDTH_PX = 44;
+const ACTION_HORIZONTAL_PADDING_PX = 28;
 const MIN_EDGE_MARGIN_PX = 12;
 const HANDLE_RADIUS_PX = 7.5;
 const HANDLE_HIT_HALF_SIZE_PX = 22;
 const MENU_HEIGHT_PX = 40;
 const MENU_GAP_PX = 12;
 const LOUPE_RADIUS_PX = 28;
+
+/**
+ * Normalizes a BCP-47 language tag to a built-in selection menu locale key,
+ * inspecting primary language, script, and region subtags before singleton
+ * extensions (`-u-`, `-t-`, `-x-`).
+ *
+ * @param {string | null | undefined} rawLocale
+ * @returns {'en' | 'zh-hans' | 'zh-hant' | 'ar'}
+ */
+export function resolveSelectionLocale(rawLocale) {
+  const candidate =
+    (typeof rawLocale === 'string' && rawLocale.trim()) ||
+    globalThis.document?.documentElement?.lang?.trim() ||
+    globalThis.navigator?.language?.trim() ||
+    'en';
+  const parts = candidate.toLowerCase().replace(/_/g, '-').split('-');
+  const lang = parts[0] || 'en';
+  let script = '';
+  let region = '';
+  for (let i = 1; i < parts.length; i += 1) {
+    const sub = parts[i];
+    if (sub.length === 1) {
+      break;
+    }
+    if (!script && /^[a-z]{4}$/.test(sub)) {
+      script = sub;
+    } else if (!region && (/^[a-z]{2}$/.test(sub) || /^\d{3}$/.test(sub))) {
+      region = sub;
+    }
+  }
+  if (lang === 'zh') {
+    if (script === 'hans') {
+      return 'zh-hans';
+    }
+    if (script === 'hant') {
+      return 'zh-hant';
+    }
+    if (region === 'tw' || region === 'hk' || region === 'mo') {
+      return 'zh-hant';
+    }
+    return 'zh-hans';
+  }
+  if (lang === 'ar') {
+    return 'ar';
+  }
+  return 'en';
+}
+
+/**
+ * Resolves localized labels for selection menu actions with optional overrides.
+ *
+ * @param {string | null | undefined} locale
+ * @param {Partial<Record<SelectionActionId, string>> | null | undefined} [customLabels]
+ * @returns {Record<SelectionActionId, string>}
+ */
+export function resolveSelectionActionLabels(locale, customLabels) {
+  const base = LOCALIZED_ACTION_LABELS[resolveSelectionLocale(locale)];
+  /** @type {Record<SelectionActionId, string>} */
+  const resolved = { ...base };
+  if (customLabels) {
+    for (const id of DEFAULT_ACTIONS) {
+      const override = customLabels[id];
+      if (typeof override === 'string' && override.trim().length > 0) {
+        resolved[id] = override;
+      }
+    }
+  }
+  return resolved;
+}
+
+/**
+ * Resolves horizontal layout direction (`ltr` or `rtl`) for the selection menu,
+ * inferring `rtl` when the resolved menu locale is Arabic and neither explicit
+ * `dir` nor `document.documentElement.dir` is set.
+ *
+ * @param {'ltr' | 'rtl' | string | null | undefined} rawDir
+ * @param {'en' | 'zh-hans' | 'zh-hant' | 'ar'} resolvedLocale
+ * @returns {'ltr' | 'rtl'}
+ */
+function resolveSelectionDirection(rawDir, resolvedLocale) {
+  if (rawDir === 'rtl' || rawDir === 'ltr') {
+    return rawDir;
+  }
+  const docDir = globalThis.document?.documentElement?.dir
+    ?.trim()
+    .toLowerCase();
+  if (docDir === 'rtl' || docDir === 'ltr') {
+    return docDir;
+  }
+  return resolvedLocale === 'ar' ? 'rtl' : 'ltr';
+}
+
+/**
+ * Estimates rendered text width in CSS pixels for `MENU_FONT` when no Canvas 2D
+ * `measureText` callback is supplied.
+ *
+ * @param {string} label
+ * @returns {number}
+ */
+function estimateLabelWidthPx(label) {
+  let width = 0;
+  for (const ch of label) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (
+      (code >= 0x2e80 && code <= 0x9fff) ||
+      (code >= 0xf900 && code <= 0xfaff) ||
+      (code >= 0xfe30 && code <= 0xfe4f) ||
+      (code >= 0xff00 && code <= 0xffef)
+    ) {
+      width += 13.5;
+    } else if (
+      (code >= 0x0590 && code <= 0x08ff) ||
+      (code >= 0xfb50 && code <= 0xfdff) ||
+      (code >= 0xfe70 && code <= 0xfeff)
+    ) {
+      width += 7.8;
+    } else if (ch === ' ') {
+      width += 4.5;
+    } else if (ch >= 'A' && ch <= 'Z') {
+      width += 8.8;
+    } else {
+      width += 7.4;
+    }
+  }
+  return width;
+}
+
+/**
+ * Computes the dynamic touch-safe button width for a menu label.
+ *
+ * @param {string} label
+ * @param {((label: string) => number) | undefined} measureText
+ * @returns {number}
+ */
+function computeActionWidthPx(label, measureText) {
+  let measured = Number.NaN;
+  if (typeof measureText === 'function') {
+    const candidate = measureText(label);
+    if (
+      typeof candidate === 'number' &&
+      Number.isFinite(candidate) &&
+      candidate > 0
+    ) {
+      measured = candidate;
+    }
+  }
+  const textWidth = Number.isFinite(measured)
+    ? measured
+    : estimateLabelWidthPx(label);
+  return Math.max(
+    MIN_ACTION_WIDTH_PX,
+    Math.ceil(textWidth) + ACTION_HORIZONTAL_PADDING_PX
+  );
+}
 
 /**
  * Clamps a numeric value to `[min, max]`.
@@ -256,6 +434,10 @@ export function computeSelectionOverlayLayout(input) {
   );
   const endHandle = buildHandleLayout('end', end, endFlare, endHeadCx);
 
+  const locale = resolveSelectionLocale(input.locale);
+  const actionLabels = resolveSelectionActionLabels(locale, input.labels);
+  const dir = resolveSelectionDirection(input.dir, locale);
+
   const requestedActions = input.actions
     ? [...input.actions]
     : [...DEFAULT_ACTIONS];
@@ -266,18 +448,43 @@ export function computeSelectionOverlayLayout(input) {
     if (input.canPaste === false && id === 'paste') {
       return false;
     }
-    return Boolean(ACTION_LABELS[id]);
+    return Boolean(actionLabels[id]);
+  });
+
+  const actionSpecs = filteredActions.map(id => {
+    const label = actionLabels[id];
+    return {
+      id,
+      label,
+      width: computeActionWidthPx(label, input.measureText),
+    };
   });
 
   const maxBarWidth = Math.max(
     120,
     input.viewport.width - safeLeft - safeRight - edgeMargin * 2
   );
-  const rawWidth = filteredActions.reduce(
-    (sum, id) => sum + ACTION_MIN_WIDTHS[id],
-    0
-  );
-  const scale = rawWidth > maxBarWidth ? maxBarWidth / rawWidth : 1;
+  const rawWidth = actionSpecs.reduce((sum, spec) => sum + spec.width, 0);
+  const floorTotal = actionSpecs.length * MIN_ACTION_WIDTH_PX;
+  /** @type {number[]} */
+  let allocatedWidths;
+  if (rawWidth <= maxBarWidth) {
+    allocatedWidths = actionSpecs.map(spec => spec.width);
+  } else if (maxBarWidth <= floorTotal) {
+    const each = actionSpecs.length > 0 ? maxBarWidth / actionSpecs.length : 0;
+    allocatedWidths = actionSpecs.map(() => each);
+  } else {
+    const extraBudget = maxBarWidth - floorTotal;
+    const excesses = actionSpecs.map(spec =>
+      Math.max(0, spec.width - MIN_ACTION_WIDTH_PX)
+    );
+    const totalExcess = excesses.reduce((sum, excess) => sum + excess, 0);
+    allocatedWidths = excesses.map(excess =>
+      totalExcess > 0
+        ? MIN_ACTION_WIDTH_PX + (excess / totalExcess) * extraBudget
+        : MIN_ACTION_WIDTH_PX
+    );
+  }
   const barWidth = Math.min(rawWidth, maxBarWidth);
 
   const bounds = rects.reduce(
@@ -322,19 +529,19 @@ export function computeSelectionOverlayLayout(input) {
         )
       );
 
-  let cursorX = menuX;
-  const items = filteredActions.map(id => {
-    const itemWidth = ACTION_MIN_WIDTHS[id] * scale;
-    const item = {
-      id,
-      label: ACTION_LABELS[id],
-      x: cursorX,
+  let cursorX = dir === 'rtl' ? menuX + barWidth : menuX;
+  const items = actionSpecs.map((spec, index) => {
+    const itemWidth = allocatedWidths[index];
+    const x = dir === 'rtl' ? cursorX - itemWidth : cursorX;
+    cursorX = dir === 'rtl' ? x : cursorX + itemWidth;
+    return {
+      id: spec.id,
+      label: spec.label,
+      x,
       y: menuY,
       width: itemWidth,
       height: MENU_HEIGHT_PX,
     };
-    cursorX += itemWidth;
-    return item;
   });
 
   const dragging = Boolean(input.dragging);
@@ -357,6 +564,8 @@ export function computeSelectionOverlayLayout(input) {
     menu: {
       visible: !dragging && items.length > 0 && rects.length > 0,
       placement,
+      dir,
+      locale,
       x: menuX,
       y: menuY,
       width: barWidth,
@@ -534,10 +743,13 @@ export function drawSelectionOverlay(ctx, layout, options = {}) {
     traceRoundedRect(ctx, x + 0.5, y + 0.5, width - 1, height - 1, 10);
     ctx.stroke();
 
-    ctx.font =
-      '600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = SELECTION_MENU_FONT;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    const isRtl = layout.menu.dir === 'rtl';
+    if ('direction' in ctx) {
+      ctx.direction = isRtl ? 'rtl' : 'ltr';
+    }
 
     for (let i = 0; i < items.length; i += 1) {
       const item = items[i];
@@ -557,15 +769,17 @@ export function drawSelectionOverlay(ctx, layout, options = {}) {
       ctx.fillText(
         item.label,
         item.x + item.width / 2,
-        item.y + item.height / 2
+        item.y + item.height / 2,
+        Math.max(8, item.width - 8)
       );
 
       if (i < items.length - 1) {
+        const dividerX = isRtl ? item.x : item.x + item.width;
         ctx.strokeStyle = menuDivider;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(item.x + item.width, item.y + 9);
-        ctx.lineTo(item.x + item.width, item.y + item.height - 9);
+        ctx.moveTo(dividerX, item.y + 9);
+        ctx.lineTo(dividerX, item.y + item.height - 9);
         ctx.stroke();
       }
     }
@@ -755,6 +969,10 @@ export function attachImeSelectionGuard(imeEl, isOverlayActive) {
  * @param {(handle: 'start' | 'end', x: number, y: number) => void} [options.onDragHandle]
  * @param {(action: SelectionActionId) => Promise<unknown> | unknown} [options.onAction]
  * @param {(layout: SelectionOverlayLayout | null) => void} [options.onLayoutChange]
+ * @param {string} [options.locale]
+ * @param {'ltr' | 'rtl'} [options.dir]
+ * @param {Partial<Record<SelectionActionId, string>>} [options.labels]
+ * @param {(label: string) => number} [options.measureText]
  */
 export function createSelectionOverlayController(options) {
   /** @type {'start' | 'end' | null} */
@@ -772,6 +990,10 @@ export function createSelectionOverlayController(options) {
     }
     return computeSelectionOverlayLayout({
       ...raw,
+      locale: raw.locale ?? options.locale,
+      dir: raw.dir ?? options.dir,
+      labels: raw.labels ?? options.labels,
+      measureText: raw.measureText ?? options.measureText,
       dragging: draggingHandle !== null,
       activeHandle: draggingHandle,
     });
