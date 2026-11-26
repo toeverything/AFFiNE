@@ -1275,6 +1275,7 @@ mod tests {
       let avatars = Arc::new(LocalFsBlobStorage::new(&root_str, "avatars").expect("avatars storage"));
       let comment_attachments =
         Arc::new(LocalFsBlobStorage::new(&root_str, "comment-attachments").expect("attachments storage"));
+      let copilot_storage = Arc::new(LocalFsBlobStorage::new(&root_str, "copilot").expect("copilot storage"));
       let state = crate::AppState::with_services(
         db.clone(),
         None,
@@ -1294,6 +1295,7 @@ mod tests {
           search,
           avatars,
           comment_attachments,
+          copilot_storage,
           invalidation,
           event_bus,
         },

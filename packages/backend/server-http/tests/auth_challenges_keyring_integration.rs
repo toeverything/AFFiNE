@@ -553,6 +553,7 @@ fn security_challenges_email_change_password_reset_keyring_and_throttle_adversar
         search: Arc::clone(&base_state.search),
         avatars: Arc::clone(&base_state.avatars),
         comment_attachments: Arc::clone(&base_state.comment_attachments),
+        copilot_storage: Arc::clone(&base_state.boot_copilot_storage),
         invalidation: Arc::clone(&base_state.invalidation),
         event_bus: event_bus.clone(),
       },

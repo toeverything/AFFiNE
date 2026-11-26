@@ -368,23 +368,74 @@ pub fn expand_module_config_paths(mut value: serde_json::Value) -> serde_json::V
   value
 }
 
-fn load_home_config_file(override_path: Option<&std::path::Path>) -> (AffineConfigFile, serde_json::Value) {
-  let path = override_path
-    .map(PathBuf::from)
-    .or_else(|| {
-      std::env::var_os("AFFINE_CONFIG_PATH")
-        .filter(|v| !v.is_empty())
-        .map(PathBuf::from)
-    })
-    .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".affine/config/config.json")));
-  let Some(raw_val) = path
-    .and_then(|p| std::fs::read_to_string(p).ok())
-    .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
-  else {
-    return (AffineConfigFile::default(), serde_json::Value::Null);
+/// Config file contents: the typed view, the expanded JSON, and the nested
+/// `copilot.storage` object of the raw file.
+type HomeConfigFile = (AffineConfigFile, serde_json::Value, Option<serde_json::Value>);
+
+fn load_home_config_file(override_path: Option<&std::path::Path>) -> Result<HomeConfigFile, ServerError> {
+  let explicit = override_path.map(PathBuf::from).or_else(|| {
+    std::env::var_os("AFFINE_CONFIG_PATH")
+      .filter(|v| !v.is_empty())
+      .map(PathBuf::from)
+  });
+  let (path, is_explicit) = match explicit {
+    Some(p) => (p, true),
+    None => match std::env::var_os("HOME") {
+      Some(home) => (PathBuf::from(home).join(".affine/config/config.json"), false),
+      None => return Ok((AffineConfigFile::default(), serde_json::Value::Null, None)),
+    },
+  };
+  let raw = match std::fs::read_to_string(&path) {
+    Ok(raw) => raw,
+    Err(err) if !is_explicit && err.kind() == std::io::ErrorKind::NotFound => {
+      return Ok((AffineConfigFile::default(), serde_json::Value::Null, None));
+    }
+    Err(err) => {
+      return Err(ServerError::InvalidConfig(format!(
+        "failed to read config file {}: {err}",
+        path.display()
+      )));
+    }
+  };
+  let raw_val = serde_json::from_str::<serde_json::Value>(&raw)
+    .map_err(|err| ServerError::InvalidConfig(format!("failed to parse config file {}: {err}", path.display())))?;
+  if !raw_val.is_object() {
+    return Err(ServerError::InvalidConfig(format!(
+      "invalid config file {}: expected JSON object",
+      path.display()
+    )));
+  }
+  let invalid_module = |module: &str| {
+    ServerError::InvalidConfig(format!(
+      "invalid config file {}: {module} must be a JSON object",
+      path.display()
+    ))
+  };
+  if raw_val.get("storages").is_some_and(|v| !v.is_null() && !v.is_object()) {
+    return Err(invalid_module("storages"));
+  }
+  let copilot_storage = match raw_val.get("copilot") {
+    None | Some(serde_json::Value::Null) => None,
+    Some(serde_json::Value::Object(copilot)) => match copilot.get("storage") {
+      None | Some(serde_json::Value::Null) => None,
+      Some(storage) => {
+        let invalid =
+          |e: server_types::DomainError| ServerError::InvalidConfig(format!("invalid copilot storage config: {e}"));
+        server_domain::app_config::validate_storage_object_config("copilot.storage", storage).map_err(invalid)?;
+        server_blob::StorageBackendSpec::from_app_config_json_scoped(storage, "copilot", "copilot")
+          .map_err(invalid)?
+          .ok_or_else(|| ServerError::InvalidConfig("invalid copilot storage config: missing provider".to_owned()))?;
+        Some(storage.clone())
+      }
+    },
+    Some(_) => return Err(invalid_module("copilot")),
   };
   let val = expand_module_config_paths(raw_val);
-  (serde_json::from_value(val.clone()).unwrap_or_default(), val)
+  Ok((
+    serde_json::from_value(val.clone()).unwrap_or_default(),
+    val,
+    copilot_storage,
+  ))
 }
 
 fn generate_ephemeral_private_key() -> String {
@@ -687,7 +738,7 @@ async fn build_server_with_bound_port(
     None => generate_ephemeral_private_key(),
   };
 
-  let (file_cfg, file_json) = load_home_config_file(cli.config_path.as_deref());
+  let (file_cfg, file_json, file_copilot_storage) = load_home_config_file(cli.config_path.as_deref())?;
   let server_name = file_cfg
     .server
     .as_ref()
@@ -877,6 +928,7 @@ async fn build_server_with_bound_port(
     smtp: smtp_runtime_cfg,
     fallback_smtp: SmtpRuntimeConfig::default(),
     file_json,
+    file_copilot_storage,
     env_keys,
     redis_configured: effective_redis_url.is_some(),
     redis_url_env_set: env_redis_url_raw.is_some(),
@@ -1032,6 +1084,19 @@ async fn build_server_with_bound_port(
   let storage = boot_storage("blob", "blobs")?;
   let avatars = boot_storage("avatar", "avatars")?;
   let comment_attachments = boot_storage("comment-attachments", "comment-attachments")?;
+  let copilot_storage: Arc<dyn server_blob::BlobStorageBackend> =
+    if let Some(raw) = app_config_baseline.file_copilot_storage_config() {
+      let spec = server_blob::StorageBackendSpec::from_app_config_json_scoped(raw, "copilot", "copilot")?
+        .ok_or_else(|| ServerError::InvalidConfig("invalid copilot storage config: missing provider".to_owned()))?;
+      spec
+        .build()
+        .map_err(|e| ServerError::InvalidConfig(format!("invalid copilot storage config: {e}")))?
+    } else {
+      Arc::new(
+        LocalFsBlobStorage::new(&blob_root_str, "copilot")
+          .map_err(|e| ServerError::InvalidConfig(format!("invalid copilot storage config: {e}")))?,
+      )
+    };
   let app_config = AppConfigService::new(db.clone(), app_config_baseline, Arc::clone(&event_bus));
   let blobs = BlobService::new(db.clone(), storage, ext.quota_gate());
   if cli.search_enabled && cli.search_provider == "embedded" && role != ServerRole::Allinone {
@@ -1069,6 +1134,7 @@ async fn build_server_with_bound_port(
       search,
       avatars,
       comment_attachments,
+      copilot_storage,
       invalidation,
       event_bus,
     },
@@ -1182,7 +1248,11 @@ where
       built.state.search.initialize().await?;
     }
   } else {
-    let _ = built.state.init_blob_storage_from_app_config().await;
+    built
+      .state
+      .init_blob_storage_from_app_config_for_boot(true)
+      .await
+      .map_err(|e| ServerError::InvalidConfig(format!("invalid blob storage app_config: {e}")))?;
   }
 
   before_serve(&built).await?;

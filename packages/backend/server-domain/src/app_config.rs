@@ -259,6 +259,8 @@ pub struct RuntimeAppConfigBaseline {
   pub smtp: SmtpRuntimeConfig,
   pub fallback_smtp: SmtpRuntimeConfig,
   pub file_json: Value,
+  /// `copilot.storage` read from the nested `copilot.storage` path of the raw config file.
+  pub file_copilot_storage: Option<Value>,
   pub env_keys: std::collections::BTreeSet<String>,
   pub redis_configured: bool,
   pub redis_url_env_set: bool,
@@ -289,6 +291,9 @@ impl RuntimeAppConfigBaseline {
       .or_else(|| s.get(name)?.get("storage"))
       .filter(|v| !v.is_null())
   }
+  pub fn file_copilot_storage_config(&self) -> Option<&Value> {
+    self.file_copilot_storage.as_ref().filter(|v| !v.is_null())
+  }
 }
 
 impl std::fmt::Debug for RuntimeAppConfigBaseline {
@@ -299,6 +304,7 @@ impl std::fmt::Debug for RuntimeAppConfigBaseline {
       .field("smtp", &self.smtp)
       .field("fallback_smtp", &self.fallback_smtp)
       .field("file_json", &"<redacted>")
+      .field("file_copilot_storage", &"<redacted>")
       .field("env_keys", &self.env_keys)
       .field("redis_configured", &self.redis_configured)
       .field("redis_url_env_set", &self.redis_url_env_set)
@@ -547,6 +553,43 @@ impl AppConfigService {
         .filter(|v| !v.is_null())
         .cloned(),
     )
+  }
+  pub async fn load_effective_copilot_storage_config_uncached(&self) -> Result<Option<Value>, DomainError> {
+    let mut conn = self
+      .db
+      .acquire_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("acquire copilot storage config read: {e}")))?;
+    let row: Option<Value> = sqlx::query_scalar("SELECT value FROM app_configs WHERE id = 'copilot.storage'")
+      .fetch_optional(&mut *conn)
+      .await
+      .map_err(|e| DomainError::Internal(format!("load copilot storage app_config: {e}")))?;
+    let Some(val) = row
+      .filter(|v| !v.is_null())
+      .or_else(|| self.baseline.file_copilot_storage_config().cloned())
+      .filter(|v| !v.is_null())
+    else {
+      return Ok(None);
+    };
+    validate_storage_object_config("copilot.storage", &val)?;
+    Ok(Some(val))
+  }
+  /// Reports whether `app_configs` is absent (`42P01`), as in an empty
+  /// database that starts without schema checks.
+  pub async fn app_configs_table_missing(&self) -> Result<bool, DomainError> {
+    let mut conn = self
+      .db
+      .acquire_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("acquire app_configs probe: {e}")))?;
+    match sqlx::query("SELECT 1 FROM app_configs LIMIT 0")
+      .execute(&mut *conn)
+      .await
+    {
+      Ok(_) => Ok(false),
+      Err(sqlx::Error::Database(e)) if e.code().as_deref() == Some("42P01") => Ok(true),
+      Err(e) => Err(DomainError::Internal(format!("probe app_configs: {e}"))),
+    }
   }
   pub async fn update_app_config_with_blob_guard(
     &self,
@@ -1222,7 +1265,7 @@ struct StorageObjectConfigEnvelope {
   config: Value,
 }
 
-fn validate_storage_object_config(key: &str, value: &Value) -> Result<(), DomainError> {
+pub fn validate_storage_object_config(key: &str, value: &Value) -> Result<(), DomainError> {
   let parsed: StorageObjectConfigEnvelope = serde_json::from_value(value.clone()).map_err(|err| {
     DomainError::Validation(format!(
       "invalid app config value for `{key}`: invalid storage config ({err})"

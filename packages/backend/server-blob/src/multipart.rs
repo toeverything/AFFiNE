@@ -271,6 +271,14 @@ impl StorageBackendSpec {
           pu_or(&["urlPrefix"], &["uploadUrlPrefix"]),
           pu_or(&["signKey"], &["proxyUploadSecret"]),
         );
+        let request_timeout = match cfg.get("requestTimeoutMs") {
+          None | Some(Value::Null) => None,
+          Some(v) => {
+            Some(std::time::Duration::from_millis(v.as_u64().ok_or_else(|| {
+              DomainError::Validation("invalid S3 requestTimeoutMs".into())
+            })?))
+          }
+        };
         let proxy_upload = cfg
           .get("proxyUpload")
           .and_then(Value::as_bool)
@@ -284,7 +292,7 @@ impl StorageBackendSpec {
             secret_access_key: cred(&["secretAccessKey", "secret_access_key"]).unwrap_or("").into(),
             session_token: cred(&["sessionToken"]).map(str::to_owned),
             force_path_style: is_r2 || cfg.get("forcePathStyle").and_then(Value::as_bool).unwrap_or(false),
-            request_timeout: None,
+            request_timeout,
           },
           upload_options: S3UploadOptions {
             use_presigned_url,

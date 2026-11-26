@@ -402,6 +402,7 @@ fn create_blob_upload_graphql_then_set_blob_and_r2_proxy_zero_byte_preauth() {
           search: Arc::clone(&base.search),
           avatars: Arc::clone(&base.avatars),
           comment_attachments: Arc::clone(&base.comment_attachments),
+          copilot_storage: Arc::clone(&base.boot_copilot_storage),
           invalidation: Arc::clone(&base.invalidation),
           event_bus: bus,
         },

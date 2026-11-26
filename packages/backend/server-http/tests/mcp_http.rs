@@ -882,6 +882,7 @@ fn mcp_doc_search_lexical_hits_real_search_runtime() {
         search: enabled_search,
         avatars: Arc::clone(&state.avatars),
         comment_attachments: Arc::clone(&state.comment_attachments),
+        copilot_storage: Arc::clone(&state.boot_copilot_storage),
         invalidation: Arc::clone(&state.invalidation),
         event_bus: Arc::clone(&state.event_bus),
       },

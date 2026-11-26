@@ -1,6 +1,7 @@
 //! `S3BlobStorage` against an in-process path-style S3 endpoint: presigned
 //! PUT/GET/HEAD/DELETE URLs, signed PUT headers, 404 as a missing object and
-//! error statuses surfaced as failures.
+//! error statuses surfaced as failures, plus the S3 and R2 request timeout
+//! that `StorageBackendSpec` reads from an app config.
 
 use std::{
   collections::HashMap,
@@ -15,7 +16,7 @@ use axum::{
   response::{IntoResponse, Response},
   routing::any,
 };
-use server_blob::{BlobStorageBackend, S3BlobStorage, S3Config, checksum_crc32_base64};
+use server_blob::{BlobStorageBackend, S3BlobStorage, S3Config, StorageBackendSpec, checksum_crc32_base64};
 
 /// Body, content type and CRC32 checksum header of a stored object.
 type StoredObject = (Vec<u8>, String, String);
@@ -188,4 +189,39 @@ async fn transport_failures_do_not_leak_presigned_urls() {
       assert!(!text.contains(secret), "{secret} leaked: {text}");
     }
   }
+}
+
+#[test]
+fn app_config_request_timeout_ms_reaches_s3_and_r2_config() {
+  let ms_90s = Some(std::time::Duration::from_millis(90_000));
+  for (provider, timeout, expected) in [
+    ("aws-s3", serde_json::json!(90_000), ms_90s),
+    ("cloudflare-r2", serde_json::json!(90_000), ms_90s),
+    ("aws-s3", serde_json::Value::Null, None),
+    ("cloudflare-r2", serde_json::Value::Null, None),
+  ] {
+    let raw = serde_json::json!({
+      "provider": provider,
+      "bucket": "copilot",
+      "config": {
+        "region": "auto",
+        "accountId": "acct",
+        "credentials": { "accessKeyId": "ak", "secretAccessKey": "sk" },
+        "requestTimeoutMs": timeout,
+      },
+    });
+    let spec = StorageBackendSpec::from_app_config_json_scoped(&raw, "copilot", "copilot")
+      .unwrap()
+      .unwrap();
+    let StorageBackendSpec::S3 { config, .. } = &spec else {
+      panic!("{provider} must parse as S3");
+    };
+    assert_eq!(config.request_timeout, expected, "{provider} {timeout}");
+    spec.build().unwrap();
+  }
+  let bad = serde_json::json!({
+    "provider": "aws-s3",
+    "config": { "region": "auto", "requestTimeoutMs": "90s" },
+  });
+  assert!(StorageBackendSpec::from_app_config_json_scoped(&bad, "copilot", "copilot").is_err());
 }

@@ -144,6 +144,8 @@ pub struct AppState {
   pub mcp_throttler: Arc<crate::rest::mcp::McpDefaultThrottler>,
   avatars_dynamic: Arc<server_blob::DynamicBlobStorage>,
   boot_avatars: Arc<dyn BlobStorageBackend>,
+  pub copilot_dynamic: Arc<server_blob::DynamicBlobStorage>,
+  pub boot_copilot_storage: Arc<dyn BlobStorageBackend>,
   pub worker_proxy_sem: Arc<tokio::sync::Semaphore>,
   pub telemetry_deduper: Arc<std::sync::Mutex<rest::telemetry::TelemetryDeduper>>,
   pub throttle_redis_conn: Arc<tokio::sync::Mutex<Option<redis::aio::MultiplexedConnection>>>,
@@ -189,6 +191,7 @@ pub struct AppServices {
   pub search: Arc<SearchRuntime>,
   pub avatars: Arc<dyn BlobStorageBackend>,
   pub comment_attachments: Arc<dyn BlobStorageBackend>,
+  pub copilot_storage: Arc<dyn BlobStorageBackend>,
   pub invalidation: Arc<dyn InvalidationPublisher>,
   pub event_bus: Arc<dyn EventBusPublisher>,
 }
@@ -252,6 +255,8 @@ impl AppState {
     let comment_attachments: Arc<dyn BlobStorageBackend> = Arc::new(
       LocalFsBlobStorage::new(&blob_root_str, "comment-attachments").expect("valid temp comment-attachments storage"),
     );
+    let copilot_storage: Arc<dyn BlobStorageBackend> =
+      Arc::new(LocalFsBlobStorage::new(&blob_root_str, "copilot").expect("valid temp copilot storage"));
     let blobs = BlobService::new(db.clone(), storage, extension.quota_gate());
     let search = Arc::new(
       SearchRuntime::new(db.pool().clone(), extension.quota_gate(), SearchConfig::default())
@@ -277,6 +282,7 @@ impl AppState {
         search,
         avatars,
         comment_attachments,
+        copilot_storage,
         invalidation,
         event_bus,
       },
@@ -306,6 +312,8 @@ impl AppState {
     let boot_avatars = services.avatars;
     let avatars_dynamic = Arc::new(server_blob::DynamicBlobStorage::new(Arc::clone(&boot_avatars)));
     let avatars: Arc<dyn BlobStorageBackend> = Arc::clone(&avatars_dynamic) as Arc<dyn BlobStorageBackend>;
+    let boot_copilot_storage = services.copilot_storage;
+    let copilot_dynamic = Arc::new(server_blob::DynamicBlobStorage::new(Arc::clone(&boot_copilot_storage)));
     Arc::new(Self {
       db,
       redis,
@@ -336,6 +344,8 @@ impl AppState {
       mcp_throttler,
       avatars_dynamic,
       boot_avatars,
+      copilot_dynamic,
+      boot_copilot_storage,
       worker_proxy_sem: Arc::new(tokio::sync::Semaphore::new(8)),
       telemetry_deduper: Arc::new(std::sync::Mutex::new(rest::telemetry::TelemetryDeduper::new(
         std::time::Duration::from_secs(24 * 3600),
@@ -374,6 +384,21 @@ impl AppState {
     match spec {
       Some(s) => self.avatars_dynamic.swap_backend(s.build()?),
       None => self.avatars_dynamic.swap_backend(Arc::clone(&self.boot_avatars)),
+    }
+    Ok(true)
+  }
+
+  pub async fn reload_copilot_storage_from_app_config(&self) -> Result<bool, server_types::DomainError> {
+    let _guard = self.copilot_dynamic.write_reload().await;
+    let spec = match self.app_config.load_effective_copilot_storage_config_uncached().await? {
+      Some(raw) => server_blob::StorageBackendSpec::from_app_config_json_scoped(&raw, "copilot", "copilot")?,
+      None => None,
+    };
+    match spec {
+      Some(s) => self.copilot_dynamic.swap_backend(s.build()?),
+      None => self
+        .copilot_dynamic
+        .swap_backend(Arc::clone(&self.boot_copilot_storage)),
     }
     Ok(true)
   }
@@ -447,11 +472,24 @@ impl AppState {
   }
 
   pub async fn init_blob_storage_from_app_config(&self) -> Result<bool, server_types::DomainError> {
-    self.reload_blob_storage_from_app_config().await?;
-    self.reload_avatar_storage_from_app_config().await
+    self.init_blob_storage_from_app_config_for_boot(false).await
   }
 
-  async fn apply_dirty_reloads(&self, d: &mut (bool, bool, bool)) {
+  /// With `allow_missing_table`, a database without `app_configs` keeps the
+  /// boot storage from the file config. Every other error is returned.
+  pub async fn init_blob_storage_from_app_config_for_boot(
+    &self,
+    allow_missing_table: bool,
+  ) -> Result<bool, server_types::DomainError> {
+    if allow_missing_table && self.app_config.app_configs_table_missing().await? {
+      return Ok(false);
+    }
+    self.reload_blob_storage_from_app_config().await?;
+    self.reload_avatar_storage_from_app_config().await?;
+    self.reload_copilot_storage_from_app_config().await
+  }
+
+  async fn apply_dirty_reloads(&self, d: &mut (bool, bool, bool, bool)) {
     let err = |r: Result<bool, server_types::DomainError>, w: &str| {
       r.inspect_err(|e| tracing::warn!(error = %e, "{w} failed")).is_err()
     };
@@ -463,6 +501,9 @@ impl AppState {
     }
     if d.2 {
       d.2 = err(self.reconcile_metrics_listener().await.map(|_| true), "metrics");
+    }
+    if d.3 {
+      d.3 = err(self.reload_copilot_storage_from_app_config().await, "copilot");
     }
   }
 
@@ -496,7 +537,7 @@ impl AppState {
         }
         continue;
       }
-      let mut dirty = (true, true, true);
+      let mut dirty = (true, true, true, true);
       let mut delay = Duration::from_millis(200);
       let mut retry = mk_retry(delay);
       self.app_config.invalidate_cache();
@@ -505,9 +546,9 @@ impl AppState {
       loop {
         let msg = tokio::select! {
           () = shutdown.notified() => return,
-          _ = retry.tick(), if dirty.0 || dirty.1 || dirty.2 => {
+          _ = retry.tick(), if dirty.0 || dirty.1 || dirty.2 || dirty.3 => {
             self.apply_dirty_reloads(&mut dirty).await;
-            if dirty.0 || dirty.1 || dirty.2 {
+            if dirty.0 || dirty.1 || dirty.2 || dirty.3 {
               delay = (delay * 2).min(Duration::from_secs(30));
               retry = mk_retry(delay);
             }
@@ -531,16 +572,20 @@ impl AppState {
           keys.iter().any(|k| k == "storages" || k.starts_with("storages.blob")),
           keys.iter().any(|k| k == "storages" || k.starts_with("storages.avatar")),
           keys.iter().any(|k| k == "metrics" || k.starts_with("metrics.")),
+          keys
+            .iter()
+            .any(|k| k == "copilot" || k == "copilot.storage" || k.starts_with("copilot.storage.")),
         );
-        if run.0 || run.1 || run.2 {
+        if run.0 || run.1 || run.2 || run.3 {
           let hit = run;
           self.apply_dirty_reloads(&mut run).await;
           dirty = (
             if hit.0 { run.0 } else { dirty.0 },
             if hit.1 { run.1 } else { dirty.1 },
             if hit.2 { run.2 } else { dirty.2 },
+            if hit.3 { run.3 } else { dirty.3 },
           );
-          if run.0 || run.1 || run.2 {
+          if run.0 || run.1 || run.2 || run.3 {
             delay = Duration::from_millis(200);
             retry = mk_retry(delay);
           }

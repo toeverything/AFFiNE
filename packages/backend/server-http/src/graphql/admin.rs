@@ -877,6 +877,9 @@ pub(crate) async fn mutate_update_app_config(
   let touched_avatar_storage = domain_updates
     .iter()
     .any(|u| u.key == "storages" || u.key.starts_with("storages.avatar"));
+  let touched_copilot_storage = domain_updates
+    .iter()
+    .any(|u| u.key == "copilot" || u.key == "copilot.storage" || u.key.starts_with("copilot.storage."));
   for u in &domain_updates {
     let raw_blob = match u.key.as_str() {
       "storages.blob.storage" => u.value.as_ref(),
@@ -902,6 +905,21 @@ pub(crate) async fn mutate_update_app_config(
     {
       let _ = spec.build().map_err(|e| domain_error_to_graphql(&e))?;
     }
+    let raw_copilot = match u.key.as_str() {
+      "copilot.storage" => u.value.as_ref(),
+      "copilot" => u.value.as_ref().and_then(|v| v.get("storage")),
+      _ => None,
+    }
+    .filter(|v| !v.is_null());
+    if let Some(raw) = raw_copilot {
+      server_domain::app_config::validate_storage_object_config("copilot.storage", raw)
+        .map_err(|e| domain_error_to_graphql(&e))?;
+      if let Some(spec) = server_blob::StorageBackendSpec::from_app_config_json_scoped(raw, "copilot", "copilot")
+        .map_err(|e| domain_error_to_graphql(&e))?
+      {
+        let _ = spec.build().map_err(|e| domain_error_to_graphql(&e))?;
+      }
+    }
   }
   let effective = state
     .app_config
@@ -917,6 +935,12 @@ pub(crate) async fn mutate_update_app_config(
   if touched_avatar_storage {
     state
       .reload_avatar_storage_from_app_config()
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+  }
+  if touched_copilot_storage {
+    state
+      .reload_copilot_storage_from_app_config()
       .await
       .map_err(|e| domain_error_to_graphql(&e))?;
   }
