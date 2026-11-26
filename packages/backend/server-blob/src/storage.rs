@@ -173,12 +173,38 @@ pub(crate) fn validate_multipart_parts(parts: &[UploadedPart]) -> Result<Vec<Upl
   }
   Ok(sorted)
 }
+pub(crate) fn object_too_large(key: &str, max_bytes: usize) -> StorageError {
+  StorageError::Metadata(format!("object `{key}` exceeds size limit of {max_bytes} bytes"))
+}
+
 #[async_trait::async_trait]
 pub trait BlobStorageBackend: Send + Sync + 'static {
   async fn put(&self, key: &str, body: Vec<u8>, content_type: &str) -> Result<ObjectMetadata, StorageError>;
   async fn get(&self, key: &str) -> Result<Option<(Vec<u8>, ObjectMetadata)>, StorageError>;
   async fn head(&self, key: &str) -> Result<Option<ObjectMetadata>, StorageError>;
   async fn delete(&self, key: &str) -> Result<(), StorageError>;
+
+  /// Reads `key` and fails when the object holds more than `max_bytes`.
+  async fn get_limited(&self, key: &str, max_bytes: usize) -> Result<Option<(Vec<u8>, ObjectMetadata)>, StorageError> {
+    if let Some(meta) = self.head(key).await?
+      && u64::try_from(meta.content_length).is_ok_and(|len| len > max_bytes as u64)
+    {
+      return Err(object_too_large(key, max_bytes));
+    }
+    let Some((body, meta)) = self.get(key).await? else {
+      return Ok(None);
+    };
+    if body.len() > max_bytes {
+      return Err(object_too_large(key, max_bytes));
+    }
+    Ok(Some((body, meta)))
+  }
+
+  /// Returns a signed download URL for `key`, or `None` when the backend
+  /// cannot sign downloads.
+  async fn presign_get(&self, _k: &str) -> Result<Option<PresignedUpload>, StorageError> {
+    Ok(None)
+  }
 
   fn capabilities(&self) -> StorageCapabilities {
     StorageCapabilities::default()
@@ -283,6 +309,12 @@ impl BlobStorageBackend for DynamicBlobStorage {
   }
   async fn delete(&self, key: &str) -> Result<(), StorageError> {
     self.current().delete(key).await
+  }
+  async fn get_limited(&self, key: &str, max_bytes: usize) -> Result<Option<(Vec<u8>, ObjectMetadata)>, StorageError> {
+    self.current().get_limited(key, max_bytes).await
+  }
+  async fn presign_get(&self, k: &str) -> Result<Option<PresignedUpload>, StorageError> {
+    self.current().presign_get(k).await
   }
   fn capabilities(&self) -> StorageCapabilities {
     self.current().capabilities()
@@ -599,6 +631,42 @@ impl BlobStorageBackend for LocalFsBlobStorage {
           source,
         }),
       }
+    })
+    .await
+  }
+
+  async fn get_limited(&self, key: &str, max_bytes: usize) -> Result<Option<(Vec<u8>, ObjectMetadata)>, StorageError> {
+    let path = self.object_path(key)?;
+    let key = key.to_owned();
+    blocking(move || {
+      use std::io::Read as _;
+      let io_err = |source| StorageError::Io {
+        context: "read object",
+        source,
+      };
+      match std::fs::metadata(&path) {
+        Ok(file_meta) if file_meta.len() > max_bytes as u64 => return Err(object_too_large(&key, max_bytes)),
+        Ok(_) => {}
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(err) => return Err(io_err(err)),
+      }
+      let Some(metadata) = read_metadata(&path)? else {
+        return Ok(None);
+      };
+      let file = match std::fs::File::open(&path) {
+        Ok(file) => file,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(err) => return Err(io_err(err)),
+      };
+      let mut body = Vec::new();
+      file
+        .take((max_bytes as u64).saturating_add(1))
+        .read_to_end(&mut body)
+        .map_err(io_err)?;
+      if body.len() > max_bytes {
+        return Err(object_too_large(&key, max_bytes));
+      }
+      Ok(Some((body, metadata)))
     })
     .await
   }

@@ -411,6 +411,7 @@ fn multipart_upload_lifecycle_tamper_rejection_and_single_conn_pool_deadlock_fre
       session_token: None,
       force_path_style: true,
       request_timeout: None,
+      presign_expires: None,
     })
     .unwrap();
     assert!(

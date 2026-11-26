@@ -110,6 +110,13 @@ fn first_str<'a>(obj: &'a Map<String, Value>, keys: &[&str]) -> Option<&'a str> 
     .iter()
     .find_map(|k| obj.get(*k)?.as_str().map(str::trim).filter(|s| !s.is_empty()))
 }
+/// Like [`first_str`] but keeps surrounding whitespace, for signing secrets
+/// whose exact bytes matter.
+fn first_raw_nonempty_str<'a>(obj: &'a Map<String, Value>, keys: &[&str]) -> Option<&'a str> {
+  keys
+    .iter()
+    .find_map(|k| obj.get(*k)?.as_str().filter(|s| !s.is_empty()))
+}
 fn cfg_err(err: StorageError) -> DomainError {
   match err {
     StorageError::Config(m) | StorageError::InvalidKey(m) => DomainError::Validation(m),
@@ -267,10 +274,25 @@ impl StorageBackendSpec {
           .and_then(|o| o.get("enabled")?.as_bool())
           .or_else(|| cfg.get("usePresignedUrl")?.as_bool())
           .unwrap_or(false);
-        let (upload_url_prefix, proxy_upload_secret) = (
-          pu_or(&["urlPrefix"], &["uploadUrlPrefix"]),
-          pu_or(&["signKey"], &["proxyUploadSecret"]),
-        );
+        let proxy_upload_secret = pu
+          .and_then(|o| first_raw_nonempty_str(o, &["signKey"]))
+          .or_else(|| first_raw_nonempty_str(cfg, &["proxyUploadSecret"]))
+          .map(str::to_owned);
+        let upload_url_prefix = pu_or(&["urlPrefix"], &["uploadUrlPrefix"]);
+        let presign_expires = match cfg.get("presign") {
+          None | Some(Value::Null) => None,
+          Some(presign) => {
+            let presign = presign
+              .as_object()
+              .ok_or_else(|| DomainError::Validation("invalid S3 presign config".into()))?;
+            match presign.get("expiresInSeconds") {
+              None | Some(Value::Null) => None,
+              Some(v) => Some(std::time::Duration::from_secs(v.as_u64().ok_or_else(|| {
+                DomainError::Validation("invalid S3 presign.expiresInSeconds".into())
+              })?)),
+            }
+          }
+        };
         let request_timeout = match cfg.get("requestTimeoutMs") {
           None | Some(Value::Null) => None,
           Some(v) => {
@@ -293,8 +315,13 @@ impl StorageBackendSpec {
             session_token: cred(&["sessionToken"]).map(str::to_owned),
             force_path_style: is_r2 || cfg.get("forcePathStyle").and_then(Value::as_bool).unwrap_or(false),
             request_timeout,
+            presign_expires,
           },
           upload_options: S3UploadOptions {
+            custom_get_sign: is_r2
+              && use_presigned_url
+              && upload_url_prefix.as_deref().is_some_and(|s| !s.is_empty())
+              && proxy_upload_secret.as_deref().is_some_and(|s| !s.is_empty()),
             use_presigned_url,
             proxy_upload,
             upload_url_prefix,

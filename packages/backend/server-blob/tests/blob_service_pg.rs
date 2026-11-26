@@ -528,6 +528,7 @@ fn storage_failures_keep_ledger_consistent_and_retryable_without_leaking_details
       session_token: Some("SESSIONLEAKCHECK".into()),
       force_path_style: true,
       request_timeout: Some(std::time::Duration::from_secs(5)),
+      presign_expires: None,
     })
     .unwrap();
     let s3_service = BlobService::new(

@@ -15,6 +15,7 @@ struct Hook {
 
 static WRITE_HOOK: OnceLock<Mutex<Option<Arc<Hook>>>> = OnceLock::new();
 static READ_HOOK: OnceLock<Mutex<Option<Arc<Hook>>>> = OnceLock::new();
+static MANIFEST_CHECKED_HOOK: OnceLock<Mutex<Option<Arc<Hook>>>> = OnceLock::new();
 static HOOK_TEST_LOCK: Mutex<()> = Mutex::new(());
 
 pub(super) struct Guard(Option<Arc<Hook>>);
@@ -85,6 +86,12 @@ pub(super) fn enter_write_blocking_hook() -> Guard {
 
 pub(super) fn enter_read_blocking_hook() -> Guard {
   enter_slot(&READ_HOOK)
+}
+
+/// Runs right after a read checked its manifest snapshot and before it reads
+/// the recipe.
+pub(super) fn enter_manifest_checked_hook() -> Guard {
+  enter_slot(&MANIFEST_CHECKED_HOOK)
 }
 
 #[test]
@@ -381,4 +388,59 @@ fn may_run_precomp2_transform_skips_plain_text_and_unknown_binaries() {
     assert!(may_run_precomp2_transform(None, &buf));
     assert!(may_run_precomp2_transform(Some("bin"), &buf));
   }
+}
+
+#[test]
+fn get_limited_reads_one_manifest_snapshot_while_the_key_is_replaced() {
+  let _serial = HOOK_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .worker_threads(4)
+    .enable_all()
+    .build()
+    .unwrap();
+  rt.block_on(async move {
+    let root = std::env::temp_dir().join(format!("affine-ap-snapshot-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&root).unwrap();
+    let ap = Arc::new(AssetpackBlobStorage::new(root.to_str().unwrap(), "blobs", "blob").unwrap());
+    let small = b"small-version".to_vec();
+    ap.put("ws/swap.bin", small.clone(), "application/octet-stream")
+      .await
+      .unwrap();
+
+    // Block the read after it checked its manifest snapshot and before it reads
+    // the recipe, then replace the key with a version over the limit.
+    let hook = new_hook();
+    *MANIFEST_CHECKED_HOOK.get_or_init(|| Mutex::new(None)).lock().unwrap() = Some(Arc::clone(&hook));
+    let cleanup = CleanupGuard {
+      slot: &MANIFEST_CHECKED_HOOK,
+      hook: Arc::clone(&hook),
+    };
+    let reader = {
+      let ap = Arc::clone(&ap);
+      let limit = small.len();
+      tokio::spawn(async move { ap.get_limited("ws/swap.bin", limit).await })
+    };
+    let h_wait = Arc::clone(&hook);
+    tokio::task::spawn_blocking(move || {
+      let mut n = h_wait.entered.lock().unwrap();
+      while *n < 1 {
+        n = h_wait.entered_cv.wait(n).unwrap();
+      }
+    })
+    .await
+    .unwrap();
+    ap.put("ws/swap.bin", vec![b'L'; 4096], "application/octet-stream")
+      .await
+      .unwrap();
+    hook.gate.store(false, Ordering::SeqCst);
+    *hook.released.lock().unwrap() = true;
+    hook.released_cv.notify_all();
+    let (body, _) = reader.await.unwrap().unwrap().expect("snapshot body");
+    assert_eq!(body, small, "the read stays on its manifest snapshot");
+    drop(cleanup);
+
+    // A fresh read sees the replacement and fails on its manifest size.
+    assert!(ap.get_limited("ws/swap.bin", small.len()).await.is_err());
+    let _ = std::fs::remove_dir_all(&root);
+  });
 }

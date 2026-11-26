@@ -4,6 +4,7 @@
 //! on transition-era checkpoint tables or cutover checks.
 
 pub mod bootstrap;
+pub mod prisma_baseline;
 pub mod sessions;
 pub mod updates;
 

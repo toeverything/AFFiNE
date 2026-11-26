@@ -18,7 +18,7 @@ use tokio::sync::{OnceCell, Semaphore};
 
 use crate::storage::{
   BlobStorageBackend, ObjectMetadata, StorageBackendIdentity, StorageError, checksum_crc32_base64,
-  normalize_storage_key, now_ms, resolve_bucket_dir,
+  normalize_storage_key, now_ms, object_too_large, resolve_bucket_dir,
 };
 
 #[cfg(test)]
@@ -230,6 +230,110 @@ impl TransformDecoder for FloorSizedDecoder {
 }
 
 impl AssetpackBlobStorage {
+  /// Reads `key` from one manifest snapshot and, with `max_bytes`, fails
+  /// before it reads any chunk of an object over the limit.
+  async fn read_bounded(
+    &self,
+    key: &str,
+    max_bytes: Option<usize>,
+  ) -> Result<Option<(Vec<u8>, ObjectMetadata)>, StorageError> {
+    normalize_storage_key(key)?;
+    let pool = self.open_pool().await?;
+    let Some((hex, meta)) = self.manifest_row(pool, key).await? else {
+      return Ok(None);
+    };
+    if !(0..=MAX_BLOB_SIZE).contains(&meta.content_length) {
+      return Err(ap_err("assetpack manifest size exceeds max"));
+    }
+    let too_large = |len: u64| max_bytes.filter(|&limit| len > limit as u64);
+    if let Some(limit) = u64::try_from(meta.content_length).ok().and_then(too_large) {
+      return Err(object_too_large(key, limit));
+    }
+    // The hook waits on a condition variable, so it runs off the async workers.
+    #[cfg(test)]
+    tokio::task::spawn_blocking(|| drop(tests::enter_manifest_checked_hook()))
+      .await
+      .map_err(ap_err)?;
+    let rhash = Hash32::from_hex(&hex).map_err(ap_err)?;
+    let rlim = (0, MAX_RECIPE_BYTES, MAX_RECIPE_BYTES);
+    let rrow = fetch_bounded_obj_row(pool, rhash, ObjectKind::Recipe, rlim, "recipe").await?;
+    let permit = ASSETPACK_READ_SEM.acquire().await.map_err(ap_err)?;
+    let (recipe_obj, recipe) = tokio::task::spawn_blocking(move || {
+      let _permit = permit;
+      let obj = decode_verified_object(rhash, ObjectKind::Recipe, rrow.0 as u64, &rrow)?;
+      let parsed = parse_recipe_checked(&obj.bytes, &rhash).map_err(ap_err)?;
+      Ok::<_, StorageError>((obj, parsed))
+    })
+    .await
+    .map_err(ap_err)??;
+    let orig_len = recipe.original_file_size;
+    if let Some(limit) = too_large(orig_len) {
+      return Err(object_too_large(key, limit));
+    }
+    let max_stream = (MAX_BLOB_SIZE as u64) + 64 * 1024 * 1024;
+    let chunks_sum = recipe
+      .chunks
+      .iter()
+      .try_fold(0u64, |acc, (_, l)| acc.checked_add(u64::from(*l)))
+      .ok_or_else(|| ap_err("assetpack chunk length overflow"))?;
+    if orig_len > MAX_BLOB_SIZE as u64
+      || recipe.stored_stream_size > max_stream
+      || u64::try_from(meta.content_length).ok() != Some(orig_len)
+      || chunks_sum != recipe.stored_stream_size
+    {
+      return Err(ap_err("assetpack recipe size mismatch or exceeds max"));
+    }
+    let mut chunk_rows: HashMap<Hash32, (u64, usize, ObjRow)> = HashMap::with_capacity(recipe.chunks.len());
+    let mut total_stored = 0u64;
+    for (chash, expected_len) in recipe.chunks {
+      let exp_u64 = u64::from(expected_len);
+      if let Some((prev_len, count, _)) = chunk_rows.get_mut(&chash) {
+        if *prev_len != exp_u64 {
+          return Err(ap_err(format!("assetpack chunk length conflict {chash}")));
+        }
+        *count += 1;
+        continue;
+      }
+      let rem = i64::try_from(max_stream.saturating_sub(total_stored)).unwrap_or(i64::MAX);
+      let lim = (i64::from(expected_len), i64::from(expected_len), rem);
+      let crow = fetch_bounded_obj_row(pool, chash, ObjectKind::Chunk, lim, "chunk").await?;
+      total_stored = total_stored.saturating_add(crow.2.len() as u64);
+      chunk_rows.insert(chash, (exp_u64, 1, crow));
+    }
+    let decoders = Arc::clone(&self.decoders);
+    let permit = ASSETPACK_READ_SEM.acquire().await.map_err(ap_err)?;
+    let body = tokio::task::spawn_blocking(move || {
+      let _permit = permit;
+      #[cfg(test)]
+      let _hook = tests::enter_read_blocking_hook();
+      let mut objects = HashMap::with_capacity(chunk_rows.len() + 1);
+      objects.insert(rhash, (1usize, recipe_obj));
+      for (chash, (expected_len, count, crow)) in chunk_rows {
+        objects.insert(
+          chash,
+          (
+            count,
+            decode_verified_object(chash, ObjectKind::Chunk, expected_len, &crow)?,
+          ),
+        );
+      }
+      let limits = FileReadLimits {
+        max_chunk_count: 1_000_000,
+        max_stored_stream_bytes: max_stream,
+        max_original_file_bytes: orig_len,
+      };
+      FileReader::new(&TakingSource(Mutex::new(objects)), &decoders, limits)
+        .read_file(rhash)
+        .map_err(ap_err)
+    })
+    .await
+    .map_err(ap_err)??;
+    if let Some(limit) = too_large(body.len() as u64) {
+      return Err(object_too_large(key, limit));
+    }
+    Ok(Some((body, meta)))
+  }
+
   pub fn new(root: &str, bucket: &str, scope: impl Into<String>) -> Result<Self, StorageError> {
     let bucket_dir = resolve_bucket_dir(root, bucket)?;
     let mut decode_tc = FileTransformConfig::default();
@@ -461,86 +565,11 @@ impl BlobStorageBackend for AssetpackBlobStorage {
   }
 
   async fn get(&self, key: &str) -> Result<Option<(Vec<u8>, ObjectMetadata)>, StorageError> {
-    normalize_storage_key(key)?;
-    let pool = self.open_pool().await?;
-    let Some((hex, meta)) = self.manifest_row(pool, key).await? else {
-      return Ok(None);
-    };
-    if !(0..=MAX_BLOB_SIZE).contains(&meta.content_length) {
-      return Err(ap_err("assetpack manifest size exceeds max"));
-    }
-    let rhash = Hash32::from_hex(&hex).map_err(ap_err)?;
-    let rlim = (0, MAX_RECIPE_BYTES, MAX_RECIPE_BYTES);
-    let rrow = fetch_bounded_obj_row(pool, rhash, ObjectKind::Recipe, rlim, "recipe").await?;
-    let permit = ASSETPACK_READ_SEM.acquire().await.map_err(ap_err)?;
-    let (recipe_obj, recipe) = tokio::task::spawn_blocking(move || {
-      let _permit = permit;
-      let obj = decode_verified_object(rhash, ObjectKind::Recipe, rrow.0 as u64, &rrow)?;
-      let parsed = parse_recipe_checked(&obj.bytes, &rhash).map_err(ap_err)?;
-      Ok::<_, StorageError>((obj, parsed))
-    })
-    .await
-    .map_err(ap_err)??;
-    let orig_len = recipe.original_file_size;
-    let max_stream = (MAX_BLOB_SIZE as u64) + 64 * 1024 * 1024;
-    let chunks_sum = recipe
-      .chunks
-      .iter()
-      .try_fold(0u64, |acc, (_, l)| acc.checked_add(u64::from(*l)))
-      .ok_or_else(|| ap_err("assetpack chunk length overflow"))?;
-    if orig_len > MAX_BLOB_SIZE as u64
-      || recipe.stored_stream_size > max_stream
-      || u64::try_from(meta.content_length).ok() != Some(orig_len)
-      || chunks_sum != recipe.stored_stream_size
-    {
-      return Err(ap_err("assetpack recipe size mismatch or exceeds max"));
-    }
-    let mut chunk_rows: HashMap<Hash32, (u64, usize, ObjRow)> = HashMap::with_capacity(recipe.chunks.len());
-    let mut total_stored = 0u64;
-    for (chash, expected_len) in recipe.chunks {
-      let exp_u64 = u64::from(expected_len);
-      if let Some((prev_len, count, _)) = chunk_rows.get_mut(&chash) {
-        if *prev_len != exp_u64 {
-          return Err(ap_err(format!("assetpack chunk length conflict {chash}")));
-        }
-        *count += 1;
-        continue;
-      }
-      let rem = i64::try_from(max_stream.saturating_sub(total_stored)).unwrap_or(i64::MAX);
-      let lim = (i64::from(expected_len), i64::from(expected_len), rem);
-      let crow = fetch_bounded_obj_row(pool, chash, ObjectKind::Chunk, lim, "chunk").await?;
-      total_stored = total_stored.saturating_add(crow.2.len() as u64);
-      chunk_rows.insert(chash, (exp_u64, 1, crow));
-    }
-    let decoders = Arc::clone(&self.decoders);
-    let permit = ASSETPACK_READ_SEM.acquire().await.map_err(ap_err)?;
-    let body = tokio::task::spawn_blocking(move || {
-      let _permit = permit;
-      #[cfg(test)]
-      let _hook = tests::enter_read_blocking_hook();
-      let mut objects = HashMap::with_capacity(chunk_rows.len() + 1);
-      objects.insert(rhash, (1usize, recipe_obj));
-      for (chash, (expected_len, count, crow)) in chunk_rows {
-        objects.insert(
-          chash,
-          (
-            count,
-            decode_verified_object(chash, ObjectKind::Chunk, expected_len, &crow)?,
-          ),
-        );
-      }
-      let limits = FileReadLimits {
-        max_chunk_count: 1_000_000,
-        max_stored_stream_bytes: max_stream,
-        max_original_file_bytes: orig_len,
-      };
-      FileReader::new(&TakingSource(Mutex::new(objects)), &decoders, limits)
-        .read_file(rhash)
-        .map_err(ap_err)
-    })
-    .await
-    .map_err(ap_err)??;
-    Ok(Some((body, meta)))
+    self.read_bounded(key, None).await
+  }
+
+  async fn get_limited(&self, key: &str, max_bytes: usize) -> Result<Option<(Vec<u8>, ObjectMetadata)>, StorageError> {
+    self.read_bounded(key, Some(max_bytes)).await
   }
 
   async fn head(&self, key: &str) -> Result<Option<ObjectMetadata>, StorageError> {

@@ -23,11 +23,12 @@ use url::Url;
 use crate::storage::{
   BlobStorageBackend, MultipartUploadInit, ObjectMetadata, PresignedUpload, StorageBackendIdentity,
   StorageCapabilities, StorageError, UploadUrlConfig, UploadedPart, checksum_crc32_base64, normalize_storage_key,
-  sign_proxy_upload_token, verify_proxy_upload_token,
+  object_too_large, sign_proxy_upload_token, verify_proxy_upload_token,
 };
 
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const DEFAULT_PRESIGN_EXPIRES: Duration = Duration::from_secs(60);
+const MAX_ERROR_RESPONSE_BODY_BYTES: usize = 64 * 1024;
 const DIRECT_UPLOAD_PRESIGN_EXPIRES: Duration = Duration::from_secs(600);
 
 /// Connection settings of one S3-compatible bucket.
@@ -42,6 +43,8 @@ pub struct S3Config {
   pub session_token: Option<String>,
   pub force_path_style: bool,
   pub request_timeout: Option<Duration>,
+  /// Lifetime of signed download URLs. `None` uses the default of 60 seconds.
+  pub presign_expires: Option<Duration>,
 }
 
 /// Optional direct/proxied upload policy attached to [`S3BlobStorage`].
@@ -51,6 +54,9 @@ pub struct S3UploadOptions {
   pub proxy_upload: bool,
   pub upload_url_prefix: Option<String>,
   pub proxy_upload_secret: Option<String>,
+  /// Signs downloads as `{upload_url_prefix}/{key}?sign=...` with
+  /// `proxy_upload_secret` instead of SigV4 (R2 behind a signing worker).
+  pub custom_get_sign: bool,
 }
 
 impl std::fmt::Debug for S3UploadOptions {
@@ -61,6 +67,7 @@ impl std::fmt::Debug for S3UploadOptions {
       .field("proxy_upload", &self.proxy_upload)
       .field("upload_url_prefix", &self.upload_url_prefix)
       .field("proxy_upload_secret", &sec)
+      .field("custom_get_sign", &self.custom_get_sign)
       .finish()
   }
 }
@@ -76,6 +83,7 @@ impl std::fmt::Debug for S3Config {
       .field("session_token", &self.session_token.as_ref().map(|_| "[REDACTED]"))
       .field("force_path_style", &self.force_path_style)
       .field("request_timeout", &self.request_timeout)
+      .field("presign_expires", &self.presign_expires)
       .finish()
   }
 }
@@ -88,6 +96,7 @@ pub struct S3BlobStorage {
   credentials: Credentials,
   http: reqwest::Client,
   upload_options: S3UploadOptions,
+  presign_expires: Duration,
 }
 
 fn resolve_s3_endpoint(region: &str) -> String {
@@ -230,6 +239,7 @@ impl S3BlobStorage {
       credentials,
       http,
       upload_options: S3UploadOptions::default(),
+      presign_expires: config.presign_expires.unwrap_or(DEFAULT_PRESIGN_EXPIRES),
     })
   }
 
@@ -260,16 +270,23 @@ impl S3BlobStorage {
       .map_err(|err| request_error(context, err.without_url()))
   }
 
-  async fn ensure_success(context: &str, response: reqwest::Response) -> Result<reqwest::Response, StorageError> {
+  /// Returns `response` on success, else an error with at most the first
+  /// `MAX_ERROR_RESPONSE_BODY_BYTES` of the error body read.
+  async fn ensure_success(context: &str, mut response: reqwest::Response) -> Result<reqwest::Response, StorageError> {
     if response.status().is_success() {
       return Ok(response);
     }
     let status = response.status();
-    let body = response.text().await.unwrap_or_default();
-    Err(request_error(
-      context,
-      format!("HTTP {status}: {}", body.chars().take(512).collect::<String>()),
-    ))
+    let mut buf = Vec::new();
+    while let Ok(Some(chunk)) = response.chunk().await {
+      let take = chunk.len().min(MAX_ERROR_RESPONSE_BODY_BYTES - buf.len());
+      buf.extend_from_slice(&chunk[..take]);
+      if buf.len() >= MAX_ERROR_RESPONSE_BODY_BYTES {
+        break;
+      }
+    }
+    let body: String = String::from_utf8_lossy(&buf).chars().take(512).collect();
+    Err(request_error(context, format!("HTTP {status}: {body}")))
   }
   fn part_u16(n: i32) -> Result<u16, StorageError> {
     u16::try_from(n).map_err(|_| StorageError::InvalidKey(format!("invalid part number {n}")))
@@ -281,6 +298,35 @@ impl S3BlobStorage {
   async fn head_req(&self, key: &str, msg: &str) -> Result<ObjectMetadata, StorageError> {
     self.head(key).await?.ok_or_else(|| StorageError::Metadata(msg.into()))
   }
+}
+
+/// Builds `{prefix}/{key}?sign={unix_secs}-{base64(hmac_sha256(secret, path + unix_secs))}`,
+/// the download URL format of a signing worker in front of R2.
+fn custom_signed_get_url(
+  prefix: &str,
+  secret: &str,
+  segments: &[String],
+  unix_secs: i64,
+) -> Result<String, StorageError> {
+  use base64::{Engine as _, engine::general_purpose::STANDARD};
+  use hmac::{Hmac, Mac as _};
+  let invalid = |msg: &str| StorageError::Metadata(format!("invalid storage download URL prefix: {msg}"));
+  let mut url = Url::parse(prefix).map_err(|err| invalid(&err.to_string()))?;
+  if !matches!(url.scheme(), "http" | "https") || url.query().is_some() || url.fragment().is_some() {
+    return Err(invalid("expected an HTTP(S) URL without query or fragment"));
+  }
+  url
+    .path_segments_mut()
+    .map_err(|_| invalid("cannot be a base URL"))?
+    .pop_if_empty()
+    .extend(segments);
+  let mut mac = Hmac::<sha2::Sha256>::new_from_slice(secret.as_bytes()).map_err(|err| invalid(&err.to_string()))?;
+  mac.update(format!("{}{unix_secs}", url.path()).as_bytes());
+  let signature = STANDARD.encode(mac.finalize().into_bytes());
+  url
+    .query_pairs_mut()
+    .append_pair("sign", &format!("{unix_secs}-{signature}"));
+  Ok(url.into())
 }
 
 #[async_trait::async_trait]
@@ -324,6 +370,58 @@ impl BlobStorageBackend for S3BlobStorage {
       .await
       .map_err(|err| request_error(&context, err.without_url()))?;
     Ok(Some((body.to_vec(), metadata)))
+  }
+
+  async fn get_limited(&self, key: &str, max_bytes: usize) -> Result<Option<(Vec<u8>, ObjectMetadata)>, StorageError> {
+    normalize_storage_key(key)?;
+    let url = GetObject::new(&self.bucket, Some(&self.credentials), key).sign(DEFAULT_PRESIGN_EXPIRES);
+    let context = format!("get {key}");
+    let response = self.send(&context, Method::GET, url, &[], None).await?;
+    if response.status() == StatusCode::NOT_FOUND {
+      return Ok(None);
+    }
+    let mut response = Self::ensure_success(&context, response).await?;
+    if response.content_length().is_some_and(|len| len > max_bytes as u64) {
+      return Err(object_too_large(key, max_bytes));
+    }
+    let metadata = metadata_from_headers(response.headers());
+    let mut body = Vec::new();
+    while let Some(chunk) = response
+      .chunk()
+      .await
+      .map_err(|err| request_error(&context, err.without_url()))?
+    {
+      if body.len().saturating_add(chunk.len()) > max_bytes {
+        return Err(object_too_large(key, max_bytes));
+      }
+      body.extend_from_slice(&chunk);
+    }
+    Ok(Some((body, metadata)))
+  }
+
+  async fn presign_get(&self, k: &str) -> Result<Option<PresignedUpload>, StorageError> {
+    let segments = normalize_storage_key(k)?;
+    let now = Utc::now();
+    let unix_secs = now.timestamp();
+    let ttl = self.presign_expires;
+    let ttl_secs = i64::try_from(ttl.as_secs()).unwrap_or(60);
+    let expires_at = chrono::DateTime::from_timestamp(unix_secs.saturating_add(ttl_secs), 0).unwrap_or(now);
+    let opts = &self.upload_options;
+    if opts.custom_get_sign
+      && let (Some(prefix), Some(secret)) = (opts.upload_url_prefix.as_deref(), opts.proxy_upload_secret.as_deref())
+    {
+      return Ok(Some(PresignedUpload {
+        url: custom_signed_get_url(prefix, secret, &segments, unix_secs)?,
+        headers: BTreeMap::new(),
+        expires_at,
+      }));
+    }
+    let url = GetObject::new(&self.bucket, Some(&self.credentials), k).sign(ttl);
+    Ok(Some(PresignedUpload {
+      url: url.into(),
+      headers: BTreeMap::new(),
+      expires_at,
+    }))
   }
 
   async fn head(&self, key: &str) -> Result<Option<ObjectMetadata>, StorageError> {
@@ -606,6 +704,7 @@ mod tests {
       session_token: Some("session-token-value".into()),
       force_path_style: false,
       request_timeout: None,
+      presign_expires: None,
     };
     let debug = format!("{config:?}");
     assert!(debug.contains("AKID") && debug.contains("[REDACTED]"), "{debug}");
