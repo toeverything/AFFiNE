@@ -121,6 +121,7 @@ test('support ```[lang] to add code block with language', async ({ page }) => {
   await expect(languageButton).toBeVisible();
   await expect(languageButton).toHaveText('TypeScript');
 });
+
 test('supports language identifiers with hyphens in code block shortcuts', async ({
   page,
 }) => {
@@ -135,10 +136,9 @@ test('supports language identifiers with hyphens in code block shortcuts', async
 
   await expect(controller.codeBlock).toBeVisible();
   await controller.codeBlock.hover();
-  await expect(controller.languageButton).toHaveText(
-    'TypeScript with Tags'
-  );
+  await expect(controller.languageButton).toHaveText('TypeScript with Tags');
 });
+
 test('use more than three backticks can not create code block', async ({
   page,
 }) => {
