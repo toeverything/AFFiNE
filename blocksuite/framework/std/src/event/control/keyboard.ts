@@ -7,7 +7,12 @@ import {
   UIEventStateContext,
 } from '../base.js';
 import type { EventOptions, UIEventDispatcher } from '../dispatcher.js';
-import { androidBindKeymapPatch, bindKeymap } from '../keymap.js';
+import {
+  androidBindKeymapPatch,
+  bindInputTypeKeymap,
+  bindKeymap,
+  formatInputTypeBindings,
+} from '../keymap.js';
 import { KeyboardEventState } from '../state/index.js';
 import { EventScopeSourceType, EventSourceState } from '../state/source.js';
 
@@ -98,6 +103,11 @@ export class KeyboardControl {
         })
       );
     }
+
+    const formatBinding = bindInputTypeKeymap(keymap, formatInputTypeBindings);
+    disposables.add(
+      this._dispatcher.add('beforeInput', formatBinding, options)
+    );
 
     disposables.add(
       this._dispatcher.add(

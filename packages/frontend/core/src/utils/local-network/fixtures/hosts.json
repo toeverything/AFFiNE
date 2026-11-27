@@ -1,0 +1,190 @@
+[
+  {
+    "host": "localhost",
+    "local": true
+  },
+  {
+    "host": "LOCALHOST",
+    "local": true
+  },
+  {
+    "host": "localhost.",
+    "local": true
+  },
+  {
+    "host": "nas",
+    "local": true
+  },
+  {
+    "host": "my-server",
+    "local": true
+  },
+  {
+    "host": "local",
+    "local": true
+  },
+  {
+    "host": "affine.local",
+    "local": true
+  },
+  {
+    "host": "nas.home.local",
+    "local": true
+  },
+  {
+    "host": "AFFINE.LOCAL",
+    "local": true
+  },
+  {
+    "host": "affine.home.com",
+    "local": false
+  },
+  {
+    "host": "example.com",
+    "local": false
+  },
+  {
+    "host": "app.affine.pro",
+    "local": false
+  },
+  {
+    "host": "foo.localhost",
+    "local": false
+  },
+  {
+    "host": "local.example.com",
+    "local": false
+  },
+  {
+    "host": "",
+    "local": false
+  },
+  {
+    "host": "127.0.0.1",
+    "local": true
+  },
+  {
+    "host": "127.255.0.1",
+    "local": true
+  },
+  {
+    "host": "10.0.0.5",
+    "local": true
+  },
+  {
+    "host": "172.16.0.1",
+    "local": true
+  },
+  {
+    "host": "172.31.255.255",
+    "local": true
+  },
+  {
+    "host": "192.168.1.10",
+    "local": true
+  },
+  {
+    "host": "169.254.10.20",
+    "local": true
+  },
+  {
+    "host": "172.15.0.1",
+    "local": false
+  },
+  {
+    "host": "172.32.0.1",
+    "local": false
+  },
+  {
+    "host": "192.169.1.1",
+    "local": false
+  },
+  {
+    "host": "8.8.8.8",
+    "local": false
+  },
+  {
+    "host": "100.64.0.1",
+    "local": false
+  },
+  {
+    "host": "0.0.0.0",
+    "local": false
+  },
+  {
+    "host": "2130706433",
+    "local": false
+  },
+  {
+    "host": "0x7f000001",
+    "local": false
+  },
+  {
+    "host": "010.0.0.1",
+    "local": false
+  },
+  {
+    "host": "256.1.1.1",
+    "local": false
+  },
+  {
+    "host": "1.2.3",
+    "local": false
+  },
+  {
+    "host": "::1",
+    "local": true
+  },
+  {
+    "host": "[::1]",
+    "local": true
+  },
+  {
+    "host": "0:0:0:0:0:0:0:1",
+    "local": true
+  },
+  {
+    "host": "fe80::1",
+    "local": true
+  },
+  {
+    "host": "[fe80::1]",
+    "local": true
+  },
+  {
+    "host": "febf::1",
+    "local": true
+  },
+  {
+    "host": "fc00::1",
+    "local": true
+  },
+  {
+    "host": "fd12:3456::1",
+    "local": true
+  },
+  {
+    "host": "fec0::1",
+    "local": false
+  },
+  {
+    "host": "fe00::1",
+    "local": false
+  },
+  {
+    "host": "::",
+    "local": false
+  },
+  {
+    "host": "2001:4860:4860::8888",
+    "local": false
+  },
+  {
+    "host": "::ffff:192.168.1.1",
+    "local": false
+  },
+  {
+    "host": "1::2::3",
+    "local": false
+  }
+]

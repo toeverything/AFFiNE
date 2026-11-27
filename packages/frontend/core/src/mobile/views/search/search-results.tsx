@@ -9,7 +9,7 @@ import * as styles from './style.css';
 
 export interface SearchResultsProps {
   title: string;
-  docs?: DocCardProps['meta'][];
+  docs?: (DocCardProps['meta'] & { blockId?: string })[];
   collections?: UniversalSearchResultItemProps['item'][];
   tags?: UniversalSearchResultItemProps['item'][];
   error?: any;
@@ -46,7 +46,12 @@ export const SearchResults = ({
           <div className={styles.resBlockScrollContent}>
             <div className={styles.scrollDocsContent}>
               {docs.map(doc => (
-                <DocCard meta={doc} key={doc.id} className={styles.docCard} />
+                <DocCard
+                  meta={doc}
+                  blockIds={doc.blockId ? [doc.blockId] : undefined}
+                  key={doc.id}
+                  className={styles.docCard}
+                />
               ))}
             </div>
           </div>

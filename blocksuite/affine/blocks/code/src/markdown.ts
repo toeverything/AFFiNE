@@ -12,7 +12,7 @@ import { InlineMarkdownExtension } from '@blocksuite/std/inline';
 export const CodeBlockMarkdownExtension =
   InlineMarkdownExtension<AffineTextAttributes>({
     name: 'code-block',
-    pattern: /^```([a-zA-Z0-9]*)\s$/,
+    pattern: /^```([a-zA-Z0-9-]*)\s$/,
     action: ({ inlineEditor, inlineRange, prefixText, pattern }) => {
       if (inlineEditor.yTextString.slice(0, inlineRange.index).includes('\n')) {
         return;

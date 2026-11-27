@@ -33,6 +33,7 @@ export class Editor extends Entity {
   });
 
   readonly mode$ = new LiveData<DocMode>('page');
+  readonly readOnlyMode$ = new LiveData(false);
   readonly selector$ = new LiveData<EditorSelector | undefined>(undefined);
   readonly doc = this.docService.doc;
   readonly isSharedMode =
@@ -104,6 +105,12 @@ export class Editor extends Entity {
 
   setMode(mode: DocMode) {
     this.mode$.next(mode);
+  }
+
+  toggleReadOnlyMode() {
+    const next = !this.readOnlyMode$.value;
+    this.readOnlyMode$.next(next);
+    return next;
   }
 
   setDefaultOpenProperty(defaultOpenProperty: DefaultOpenProperty | undefined) {

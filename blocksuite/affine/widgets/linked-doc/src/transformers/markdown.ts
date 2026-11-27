@@ -584,13 +584,16 @@ async function exportDoc(doc: Store) {
 
   const adapter = new MarkdownAdapter(job, provider);
   if (!snapshot) {
-    return;
+    return false;
   }
 
   const markdownResult = await adapter.fromDocSnapshot({
     snapshot,
     assets: job.assetsManager,
   });
+  if (!markdownResult.file && !markdownResult.assetsIds.length) {
+    return false;
+  }
 
   let downloadBlob: Blob;
   const docTitle = doc.meta?.title || 'Untitled';
@@ -611,6 +614,7 @@ async function exportDoc(doc: Store) {
     name = `${docTitle}.md`;
   }
   download(downloadBlob, name);
+  return true;
 }
 
 /**
@@ -832,6 +836,7 @@ async function planMarkdownZipInternal({
       applySnapshotTitle(snapshot, preferredTitle);
       docs.push({
         id: pageId,
+        sourcePath: fullPath,
         snapshot,
         meta: {
           ...meta,

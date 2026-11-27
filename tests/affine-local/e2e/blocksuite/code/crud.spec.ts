@@ -46,6 +46,9 @@ test.describe('Code Block Preview', () => {
   test('enable mermaid preview', async ({ page }) => {
     const code = page.locator('affine-code');
     const mermaidSvg = page.locator('mermaid-preview .mermaid-preview-svg svg');
+    const mermaidContainer = page.locator(
+      'mermaid-preview .mermaid-preview-container'
+    );
 
     await openHomePage(page);
     await createNewPage(page);
@@ -60,6 +63,20 @@ test.describe('Code Block Preview', () => {
     });
     await page.getByText('Preview').click();
     await expect(mermaidSvg).toBeVisible();
+
+    const toggleFullscreen = mermaidContainer.locator(
+      '[title="Toggle fullscreen"]'
+    );
+    const isFullscreen = () =>
+      mermaidContainer.evaluate(
+        element =>
+          (element.getRootNode() as ShadowRoot).fullscreenElement === element
+      );
+
+    await toggleFullscreen.click();
+    await expect.poll(isFullscreen).toBe(true);
+    await toggleFullscreen.click();
+    await expect.poll(isFullscreen).toBe(false);
   });
 
   test('enable typst preview', async ({ page }) => {

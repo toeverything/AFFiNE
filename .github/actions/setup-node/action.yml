@@ -21,10 +21,6 @@ inputs:
     description: 'Download the Electron binary'
     required: false
     default: 'true'
-  corepack-install:
-    description: 'Install CorePack'
-    required: false
-    default: 'false'
   hard-link-nm:
     description: 'set nmMode to hardlinks-local in .yarnrc.yml'
     required: false
@@ -62,8 +58,7 @@ runs:
     - uses: kenchan0130/actions-system-info@master
       id: system-info
 
-    - name: Init CorePack
-      if: ${{ inputs.corepack-install == 'true' }}
+    - name: Enable Corepack
       shell: bash
       working-directory: ${{ steps.workspace-path.outputs.workspace_path }}
       run: corepack enable

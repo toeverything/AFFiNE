@@ -1,8 +1,10 @@
+import { PeekViewExtension } from '@blocksuite/affine/components/peek';
 import {
   DatabaseBlockDataSource,
   databaseBlockProperties,
   EditorHostKey,
 } from '@blocksuite/affine-block-database';
+import { insertTableBlockCommand } from '@blocksuite/affine-block-table';
 import { LinkExtension } from '@blocksuite/affine-inline-link';
 import { textKeymap } from '@blocksuite/affine-inline-preset';
 import type { AffineReference } from '@blocksuite/affine-inline-reference';
@@ -14,10 +16,18 @@ import type {
 } from '@blocksuite/affine-model';
 import { insertContent } from '@blocksuite/affine-rich-text';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
+import {
+  IconPickerServiceIdentifier,
+  IconType,
+} from '@blocksuite/affine-shared/services';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { createDefaultDoc } from '@blocksuite/affine-shared/utils';
 import type { SingleViewBase } from '@blocksuite/data-view';
-import { SurfaceSelection, TextSelection } from '@blocksuite/std';
+import {
+  KeymapExtension,
+  SurfaceSelection,
+  TextSelection,
+} from '@blocksuite/std';
 import type { InlineMarkdownMatch } from '@blocksuite/std/inline';
 import { Text } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -192,6 +202,32 @@ test.each([false, true])(
   }
 );
 
+test.each([
+  { type: 'application/pdf', readonly: false, peeked: true },
+  { type: 'application/zip', readonly: false, peeked: false },
+  { type: 'application/pdf', readonly: true, peeked: true },
+  { type: 'application/zip', readonly: true, peeked: true },
+])(
+  'double-clicking a $type attachment (readonly: $readonly) opens the peek view: $peeked',
+  async ({ type, readonly, peeked }) => {
+    const peek = vi.fn();
+    await setupEditor('page', [PeekViewExtension({ peek })]);
+    const noteId = addNote(doc);
+    const id = doc.addBlock(
+      'affine:attachment',
+      { name: 'file', type, size: 1 },
+      noteId
+    );
+    await wait();
+    doc.readonly = readonly;
+    editor
+      .host!.view.getBlock(id)!
+      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    doc.readonly = false;
+    expect(peek).toHaveBeenCalledTimes(peeked ? 1 : 0);
+  }
+);
+
 test('typing into a sorted database title keeps editing the same row', async () => {
   const noteId = addNote(doc);
   const id = doc.addBlock('affine:database', {}, noteId);
@@ -242,6 +278,111 @@ test('typing into a sorted database title keeps editing the same row', async () 
   ]);
   expect(titleCells[0].dataset.editing).toBe('true');
 });
+
+test.each([
+  { hasIcon: true, target: '[data-testid="callout-emoji"]', opened: true },
+  { hasIcon: true, target: 'rich-text', opened: false },
+  { hasIcon: false, target: 'rich-text', opened: false },
+])(
+  'clicking $target in a callout (icon: $hasIcon) opens the icon picker: $opened',
+  async ({ hasIcon, target, opened }) => {
+    await setupEditor('page', [
+      {
+        setup: di => {
+          di.override(IconPickerServiceIdentifier, () => ({
+            iconPickerComponent: () => ({ update() {}, unmount() {} }),
+          }));
+        },
+      },
+    ]);
+    const noteId = addNote(doc);
+    const calloutId = doc.addBlock(
+      'affine:callout',
+      { icon: hasIcon ? { type: IconType.Emoji, unicode: '💡' } : undefined },
+      noteId
+    );
+    doc.addBlock('affine:paragraph', { text: new Text('text') }, calloutId);
+    await wait();
+    editor
+      .host!.view.getBlock(calloutId)!
+      .querySelector<HTMLElement>(target)!
+      .click();
+    await wait();
+    expect(editor.host!.querySelector('icon-picker-wrapper') !== null).toBe(
+      opened
+    );
+  }
+);
+
+test.each([
+  { name: 'after the next pointer move', moveAfterScroll: true },
+  { name: 'while the pointer rests', moveAfterScroll: false },
+])(
+  'table drag selection follows the pointer across a scroll $name',
+  async ({ moveAfterScroll }) => {
+    const columnIds = ['c0', 'c1', 'c2', 'c3', 'c4', 'c5'];
+    const noteId = addNote(doc);
+    const tableId = doc.addBlock(
+      'affine:table',
+      {
+        rows: { r0: { rowId: 'r0', order: 'a0' } },
+        columns: Object.fromEntries(
+          columnIds.map((columnId, index) => [
+            columnId,
+            { columnId, order: `a${index}`, width: 300 },
+          ])
+        ),
+        cells: Object.fromEntries(
+          columnIds.map(columnId => [
+            `r0:${columnId}`,
+            { text: new Text(columnId) },
+          ])
+        ),
+      },
+      noteId
+    );
+    await wait();
+    const table = editor.host!.view.getBlock(tableId) as TableBlockComponent;
+    const cells = Array.from(
+      table.querySelectorAll<HTMLElement>('affine-table-cell td')
+    );
+    const center = (cell: HTMLElement) => {
+      const rect = cell.getBoundingClientRect();
+      return {
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+      };
+    };
+    const mouse = (type: string, target: EventTarget, at: MouseEventInit) =>
+      target.dispatchEvent(new MouseEvent(type, { bubbles: true, ...at }));
+
+    const scroller = table.querySelector<HTMLElement>(
+      '[contenteditable="false"]'
+    )!;
+    scroller.scrollLeft = 0;
+    await wait();
+
+    mouse('mousedown', cells[0], center(cells[0]));
+    const pointer = center(cells[1]);
+    mouse('mousemove', cells[1], pointer);
+    scroller.scrollLeft = 600;
+    scroller.dispatchEvent(new Event('scroll'));
+    await wait();
+    if (moveAfterScroll) {
+      mouse('mousemove', cells[3], pointer);
+    }
+    await wait();
+    mouse('mouseup', window, pointer);
+
+    expect(table.selectionController.getSelected()).toEqual({
+      type: 'area',
+      rowStartIndex: 0,
+      rowEndIndex: 0,
+      columnStartIndex: 0,
+      columnEndIndex: 3,
+    });
+  }
+);
 
 test.each(['page', 'edgeless'] as const)(
   'table selection preserves its input owner in %s mode',
@@ -441,6 +582,23 @@ describe('markdown/list/paragraph/quote/code/link', () => {
     expect((model as any).props.language).toBe('typescript');
   });
 
+  test('spellcheck is disabled in code blocks only', async () => {
+    const { noteId, paragraphId } = await createParagraph('paragraph');
+    const codeId = doc.addBlock(
+      'affine:code',
+      { text: new Text('const value = 1;') },
+      noteId
+    );
+    await wait();
+
+    const editable = (blockId: string) =>
+      getRichTextByBlockId(blockId).querySelector<HTMLElement>(
+        '[contenteditable="true"]'
+      )!;
+    expect(editable(codeId).spellcheck).toBe(false);
+    expect(editable(paragraphId).closest('[spellcheck="false"]')).toBeNull();
+  });
+
   test('inline markdown converts style and link attributes', async () => {
     const { paragraphId: boldParagraphId } = await createParagraph();
     await triggerMarkdown(boldParagraphId, '**bold** ', 'bold');
@@ -477,6 +635,39 @@ describe('markdown/list/paragraph/quote/code/link', () => {
     });
   });
 });
+
+test.each([
+  ['formatBold', 'Mod-b'],
+  ['formatItalic', 'Mod-i'],
+  ['formatUnderline', 'Mod-u'],
+])(
+  'native %s input runs the %s binding of the block',
+  async (inputType, hotkey) => {
+    const bindings = {
+      'Mod-b': vi.fn(() => true),
+      'Mod-i': vi.fn(() => true),
+      'Mod-u': vi.fn(() => true),
+    };
+    await setupEditor('page', [
+      KeymapExtension(() => bindings, { flavour: 'affine:paragraph' }),
+    ]);
+    const { paragraphId } = await createParagraph('hello');
+    setTextSelection(paragraphId, 0, 5);
+    editor.std.event.active = true;
+    const event = new InputEvent('beforeinput', {
+      inputType,
+      bubbles: true,
+      cancelable: true,
+    });
+
+    getRichTextByBlockId(paragraphId).dispatchEvent(event);
+
+    for (const [key, binding] of Object.entries(bindings)) {
+      expect(binding).toHaveBeenCalledTimes(key === hotkey ? 1 : 0);
+    }
+    expect(event.defaultPrevented).toBe(true);
+  }
+);
 
 describe('hotkey/bracket/linked-page', () => {
   test('bracket keymap skips redundant right bracket in code block', async () => {
@@ -600,4 +791,43 @@ describe('slash-menu action semantics', () => {
     const richText = getRichTextByBlockId(first.id);
     expect(richText.inlineEditor.yTextString).toMatch(/\d{4}-\d{2}-\d{2}/);
   });
+});
+
+describe('table insertion', () => {
+  test.each([
+    { kind: 'empty', itemText: '', keptChildren: 0 },
+    { kind: 'non-empty', itemText: 'child', keptChildren: 1 },
+  ])(
+    'inserts the table after the top-level list from a nested list item that is $kind',
+    async ({ itemText, keptChildren }) => {
+      const noteId = addNote(doc);
+      const outerId = doc.addBlock(
+        'affine:list',
+        { type: 'bulleted', text: new Text('outer') },
+        noteId
+      );
+      const innerId = doc.addBlock(
+        'affine:list',
+        { type: 'bulleted', text: new Text(itemText) },
+        outerId
+      );
+      await wait();
+
+      const inner = doc.getBlock(innerId)?.model;
+      if (!inner) {
+        throw new Error('Cannot find nested list model');
+      }
+      const [, { insertedTableBlockId }] = editor.std.command.exec(
+        insertTableBlockCommand,
+        { selectedModels: [inner], place: 'after', removeEmptyLine: true }
+      );
+
+      const note = doc.getBlock(noteId)?.model;
+      expect(note?.children.slice(1).map(child => child.id)).toEqual([
+        outerId,
+        insertedTableBlockId,
+      ]);
+      expect(doc.getBlock(outerId)?.model.children).toHaveLength(keptChildren);
+    }
+  );
 });

@@ -26,7 +26,6 @@ const GLOBAL_DIALOGS = {
 
 const WORKSPACE_DIALOGS = {
   //   'doc-info': DocInfoDialog,
-  //   'collection-editor': CollectionEditorDialog,
   'tag-selector': TagSelectorDialog,
   'doc-selector': DocSelectorDialog,
   'collection-selector': CollectionSelectorDialog,

@@ -1,3 +1,4 @@
+import { getOrCreateI18n, I18n } from '@affine/i18n';
 import {
   app,
   Menu,
@@ -103,7 +104,7 @@ class TrayState implements Disposable {
       key: 'primary',
       getConfig: () => [
         {
-          label: 'Open Journal',
+          label: I18n['com.affine.tray.open-journal'](),
           icon: icons.journal,
           click: () => {
             logger.info('User action: Open Journal');
@@ -112,7 +113,7 @@ class TrayState implements Disposable {
           },
         },
         {
-          label: 'New Page',
+          label: I18n['com.affine.tray.new-page'](),
           icon: icons.page,
           click: () => {
             logger.info('User action: New Page');
@@ -121,7 +122,7 @@ class TrayState implements Disposable {
           },
         },
         {
-          label: 'New Edgeless',
+          label: I18n['com.affine.tray.new-edgeless'](),
           icon: icons.edgeless,
           click: () => {
             logger.info('User action: New Edgeless');
@@ -142,12 +143,12 @@ class TrayState implements Disposable {
       const items: TrayMenuConfig = [];
       if (!MeetingsSettingsState.value.enabled) {
         items.push({
-          label: 'Meetings are disabled',
+          label: I18n['com.affine.tray.meetings-disabled'](),
           disabled: true,
         });
       } else if (!checkCanRecordMeeting()) {
         items.push({
-          label: 'Required permissions not granted',
+          label: I18n['com.affine.tray.meetings-permissions-missing'](),
           disabled: true,
         });
       } else {
@@ -179,11 +180,11 @@ class TrayState implements Disposable {
 
           items.push(
             {
-              label: 'Start Recording Meeting',
+              label: I18n['com.affine.tray.start-recording'](),
               icon: icons.record,
               submenu: [
                 {
-                  label: 'System audio (all audio will be recorded)',
+                  label: I18n['com.affine.tray.record-system-audio'](),
                   icon: icons.monitor,
                   click: () => {
                     logger.info(
@@ -201,8 +202,10 @@ class TrayState implements Disposable {
           );
         } else {
           const recordingLabel = recordingStatus.appName
-            ? `Recording (${recordingStatus.appName})`
-            : 'Recording';
+            ? I18n['com.affine.tray.recording-app']({
+                appName: recordingStatus.appName,
+              })
+            : I18n['com.affine.tray.recording']();
 
           // recording is active
           items.push(
@@ -212,7 +215,7 @@ class TrayState implements Disposable {
               disabled: true,
             },
             {
-              label: 'Stop',
+              label: I18n['com.affine.tray.stop-recording'](),
               disabled: recordingStatus.status !== 'recording',
               click: () => {
                 logger.info('User action: Stop Recording');
@@ -228,7 +231,7 @@ class TrayState implements Disposable {
       }
       if (checkRecordingAvailable()) {
         items.push({
-          label: `Meetings Settings...`,
+          label: I18n['com.affine.tray.meetings-settings'](),
           click: () => {
             activateMainWindow();
             applicationMenuSubjects.openInSettingModal$.next({
@@ -252,14 +255,14 @@ class TrayState implements Disposable {
       key: 'secondary',
       getConfig: () => [
         {
-          label: 'Open AFFiNE',
+          label: I18n['com.affine.tray.open-affine'](),
           click: () => {
             logger.info('User action: Open AFFiNE');
             activateMainWindow();
           },
         },
         {
-          label: 'Menubar settings...',
+          label: I18n['com.affine.tray.menubar-settings'](),
           click: () => {
             activateMainWindow();
             applicationMenuSubjects.openInSettingModal$.next({
@@ -269,7 +272,7 @@ class TrayState implements Disposable {
           },
         },
         {
-          label: `About ${app.getName()}`,
+          label: I18n['com.affine.tray.about']({ appName: app.getName() }),
           click: () => {
             activateMainWindow();
             applicationMenuSubjects.openInSettingModal$.next({
@@ -279,7 +282,7 @@ class TrayState implements Disposable {
         },
         'separator',
         {
-          label: 'Quit AFFiNE Completely...',
+          label: I18n['com.affine.tray.quit'](),
           click: () => {
             logger.info('User action: Quit AFFiNE Completely');
             app.quit();
@@ -333,11 +336,16 @@ class TrayState implements Disposable {
         logger.debug('App groups updated, refreshing tray menu');
         this.update();
       });
+      const languageChangedHandler = () => {
+        this.update();
+      };
+      getOrCreateI18n().on('languageChanged', languageChangedHandler);
 
       this.disposables.push(() => {
         this.tray?.off('click', clickHandler);
         this.tray?.destroy();
         appGroupsSubscription.unsubscribe();
+        getOrCreateI18n().off('languageChanged', languageChangedHandler);
       });
     }
 

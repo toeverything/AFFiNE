@@ -1,5 +1,6 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { ImportCommitService } from '@affine/core/desktop/dialogs/import/commit-service';
+import { snapshotReadableFiles } from '@affine/core/desktop/dialogs/import/file-import';
 import { commitNativeImport } from '@affine/core/desktop/dialogs/import/native-backend';
 import {
   preflightWebFilesImport,
@@ -9,7 +10,6 @@ import { DebugLogger } from '@affine/debug';
 import { snapshotFile } from '@blocksuite/affine/shared/utils';
 import {
   BearTransformer,
-  type ImportWarning,
   MarkdownTransformer,
   NotionHtmlTransformer,
   ObsidianTransformer,
@@ -179,23 +179,4 @@ async function detectNotionZipFormat(file: File): Promise<'markdown' | 'html'> {
   }
   if (hasHtml) return 'html';
   throw new Error('No Notion Markdown or HTML pages found in the archive');
-}
-
-async function snapshotReadableFiles(files: File[]) {
-  const snapshots: File[] = [];
-  const warnings: ImportWarning[] = [];
-  for (const file of files) {
-    try {
-      snapshots.push(await snapshotFile(file));
-    } catch (error) {
-      const sourcePath = file.webkitRelativePath || file.name;
-      const reason = error instanceof Error ? error.message : String(error);
-      warnings.push({
-        code: 'file-unreadable',
-        message: `Skipped unreadable file: ${sourcePath}. ${reason}`,
-        sourcePath,
-      });
-    }
-  }
-  return { files: snapshots, warnings };
 }

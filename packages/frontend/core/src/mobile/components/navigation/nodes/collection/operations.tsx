@@ -16,7 +16,6 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import {
   DeleteIcon,
-  FilterIcon,
   OpenInNewIcon,
   PlusIcon,
   SplitViewIcon,
@@ -63,8 +62,7 @@ export const useNavigationPanelCollectionAddDoc = (
 
 export const useNavigationPanelCollectionNodeOperations = (
   collectionId: string,
-  handleAddDocToCollection: () => void,
-  onOpenEdit: () => void
+  handleAddDocToCollection: () => void
 ) => {
   const t = useI18n();
   const {
@@ -110,10 +108,6 @@ export const useNavigationPanelCollectionNodeOperations = (
     });
   }, [collectionId, collectionService]);
 
-  const handleShowEdit = useCallback(() => {
-    onOpenEdit();
-  }, [onOpenEdit]);
-
   const handleRename = useCallback(
     (name: string) => {
       const collection = collectionService.collection$(collectionId).value;
@@ -138,7 +132,6 @@ export const useNavigationPanelCollectionNodeOperations = (
       handleDeleteCollection,
       handleOpenInNewTab,
       handleOpenInSplitView,
-      handleShowEdit,
       handleToggleFavoriteCollection,
       handleRename,
     }),
@@ -149,7 +142,6 @@ export const useNavigationPanelCollectionNodeOperations = (
       handleOpenInNewTab,
       handleOpenInSplitView,
       handleRename,
-      handleShowEdit,
       handleToggleFavoriteCollection,
     ]
   );
@@ -157,8 +149,7 @@ export const useNavigationPanelCollectionNodeOperations = (
 
 export const useNavigationPanelCollectionNodeOperationsMenu = (
   collectionId: string,
-  handleAddDocToCollection: () => void,
-  onOpenEdit: () => void
+  handleAddDocToCollection: () => void
 ): NodeOperation[] => {
   const t = useI18n();
 
@@ -168,13 +159,11 @@ export const useNavigationPanelCollectionNodeOperationsMenu = (
     handleDeleteCollection,
     handleOpenInNewTab,
     handleOpenInSplitView,
-    handleShowEdit,
     handleToggleFavoriteCollection,
     handleRename,
   } = useNavigationPanelCollectionNodeOperations(
     collectionId,
-    handleAddDocToCollection,
-    onOpenEdit
+    handleAddDocToCollection
   );
 
   return useMemo(
@@ -201,14 +190,6 @@ export const useNavigationPanelCollectionNodeOperationsMenu = (
       {
         index: 11,
         view: <MenuSeparator />,
-      },
-      {
-        index: 99,
-        view: (
-          <MenuItem prefixIcon={<FilterIcon />} onClick={handleShowEdit}>
-            {t['com.affine.collection.menu.edit']()}
-          </MenuItem>
-        ),
       },
       {
         index: 99,
@@ -278,7 +259,6 @@ export const useNavigationPanelCollectionNodeOperationsMenu = (
       handleOpenInNewTab,
       handleOpenInSplitView,
       handleRename,
-      handleShowEdit,
       handleToggleFavoriteCollection,
       t,
     ]
@@ -288,18 +268,15 @@ export const useNavigationPanelCollectionNodeOperationsMenu = (
 export const NavigationPanelCollectionNodeMenu = ({
   collectionId,
   handleAddDocToCollection,
-  onOpenEdit,
   additionalOperations,
 }: {
   collectionId: string;
   handleAddDocToCollection: () => void;
-  onOpenEdit: () => void;
   additionalOperations?: NodeOperation[];
 }) => {
   const operations = useNavigationPanelCollectionNodeOperationsMenu(
     collectionId,
-    handleAddDocToCollection,
-    onOpenEdit
+    handleAddDocToCollection
   );
   const allOperations = useMemo(
     () => [...(additionalOperations ?? []), ...operations],

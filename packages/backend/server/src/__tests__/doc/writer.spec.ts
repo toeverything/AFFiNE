@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { McpAccessMode } from '@prisma/client';
 import test from 'ava';
 import {
@@ -516,6 +517,82 @@ test('MCP create_document recovers incomplete registration as collaborator witho
     );
     t.true(deniedRes.isError);
     t.regex(deniedRes.content[0].text, /Doc\.Update access denied/);
+  } finally {
+    (globalThis as any).env = prevEnv;
+  }
+});
+
+test('MCP update tools return not found only for NotFoundException', async t => {
+  const workspaceId = 'ws-mcp-update-errors';
+  const docId = 'doc-1';
+  const tools = [
+    {
+      name: 'update_document',
+      method: 'updateDoc' as const,
+      args: { docId, content: 'Updated body' },
+      prefix: 'Failed to update document',
+    },
+    {
+      name: 'update_document_meta',
+      method: 'updateDocMeta' as const,
+      args: { docId, title: 'Updated title' },
+      prefix: 'Failed to update document metadata',
+    },
+  ];
+  const errorCases = [
+    {
+      label: 'Error',
+      thrown: new Error('source_merge: ambiguous_identity'),
+      expected: (prefix: string) =>
+        `${prefix}: source_merge: ambiguous_identity`,
+    },
+    {
+      label: 'non-Error',
+      thrown: 'unexpected failure',
+      expected: (prefix: string) => `${prefix}: Unknown error`,
+    },
+    {
+      label: 'NotFoundException',
+      thrown: new NotFoundException(`Document ${docId} not found`),
+      expected: () => `Doc with id ${docId} not found.`,
+    },
+  ];
+
+  const prevEnv = (globalThis as any).env;
+  (globalThis as any).env = { ...prevEnv, dev: true };
+
+  try {
+    for (const toolSpec of tools) {
+      for (const errorCase of errorCases) {
+        const writerMock = {
+          async [toolSpec.method]() {
+            throw errorCase.thrown;
+          },
+        };
+        const provider = new WorkspaceMcpProvider(
+          createPermissionMock() as any,
+          {} as any,
+          writerMock as any,
+          {} as any
+        );
+        const server = await provider.for(
+          'user-1',
+          workspaceId,
+          McpAccessMode.READ_WRITE
+        );
+        const tool = server.tools.find(item => item.name === toolSpec.name)!;
+        const result = await tool.execute(toolSpec.args, {
+          signal: new AbortController().signal,
+        });
+
+        t.true(result.isError, `${toolSpec.name} (${errorCase.label})`);
+        t.is(
+          result.content[0].text,
+          errorCase.expected(toolSpec.prefix),
+          `${toolSpec.name} (${errorCase.label})`
+        );
+      }
+    }
   } finally {
     (globalThis as any).env = prevEnv;
   }

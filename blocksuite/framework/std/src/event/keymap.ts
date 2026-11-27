@@ -121,27 +121,38 @@ export function bindKeymap(
 // the information about what key is pressed. See
 // https://stackoverflow.com/a/68188679
 // https://stackoverflow.com/a/66724830
-export function androidBindKeymapPatch(
-  bindings: Record<string, UIEventHandler>
+const androidInputTypeBindings: Record<string, string> = {
+  deleteContentBackward: 'Backspace',
+  deleteContentForward: 'Delete',
+  insertParagraph: 'Enter',
+};
+
+// Native formatting controls, such as the iOS selection menu, send these
+// input types without any keyboard event.
+export const formatInputTypeBindings: Record<string, string> = {
+  formatBold: 'Mod-b',
+  formatItalic: 'Mod-i',
+  formatUnderline: 'Mod-u',
+};
+
+// Runs the binding that `inputTypeBindings` maps the input type of a
+// `beforeinput` event to, as if its key had been pressed.
+export function bindInputTypeKeymap(
+  bindings: Record<string, UIEventHandler>,
+  inputTypeBindings: Record<string, string>
 ): UIEventHandler {
+  const map = normalize(bindings);
   return ctx => {
     const event = ctx.get('defaultState').event;
     if (!(event instanceof InputEvent)) return;
 
-    const bindingName =
-      event.inputType === 'deleteContentBackward'
-        ? 'Backspace'
-        : event.inputType === 'deleteContentForward'
-          ? 'Delete'
-          : event.inputType === 'insertParagraph'
-            ? 'Enter'
-            : undefined;
-    if (!bindingName || !(bindingName in bindings)) return false;
+    const bindingName = inputTypeBindings[event.inputType];
+    const binding = bindingName && map[normalizeKeyName(bindingName)];
+    if (!binding) return false;
 
     if (!ctx.has('keyboardState')) {
       const keyboardEvent = new KeyboardEvent('keydown', {
-        key: bindingName,
-        code: bindingName,
+        key: bindingName.split('-').at(-1),
         cancelable: true,
       });
       Object.defineProperty(keyboardEvent, 'isComposing', {
@@ -156,10 +167,16 @@ export function androidBindKeymapPatch(
       );
     }
 
-    const handled = bindings[bindingName](ctx);
+    const handled = binding(ctx);
     if (handled || ctx.get('keyboardState').raw.defaultPrevented) {
       event.preventDefault();
     }
     return handled;
   };
+}
+
+export function androidBindKeymapPatch(
+  bindings: Record<string, UIEventHandler>
+): UIEventHandler {
+  return bindInputTypeKeymap(bindings, androidInputTypeBindings);
 }

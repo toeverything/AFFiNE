@@ -27,10 +27,12 @@ import type {
   TDocumentDefinitions,
 } from 'pdfmake/interfaces';
 
+import { FontConfigIdentifier } from '../../services/font-loader/font-loader-service.js';
 import { getNumberPrefix } from '../../utils';
 import { sanitizeSvg } from '../../utils/svg.js';
 import { resolveCssVariable } from './css-utils.js';
 import { extractTextWithInline } from './delta-converter.js';
+import { createPdfFontLoader } from './fonts.js';
 import {
   calculateImageDimensions,
   extractImageDimensions,
@@ -50,20 +52,7 @@ import {
   textContentToString,
 } from './utils.js';
 
-pdfMake.fonts = {
-  Inter: {
-    normal: 'https://cdn.affine.pro/fonts/Inter-Regular.woff',
-    bold: 'https://cdn.affine.pro/fonts/Inter-SemiBold.woff',
-    italics: 'https://cdn.affine.pro/fonts/Inter-Italic.woff',
-    bolditalics: 'https://cdn.affine.pro/fonts/Inter-SemiBoldItalic.woff',
-  },
-  SarasaGothicCL: {
-    normal: 'https://cdn.affine.pro/fonts/SarasaGothicCL-Regular.ttf',
-    bold: 'https://cdn.affine.pro/fonts/SarasaGothicCL-Regular.ttf',
-    italics: 'https://cdn.affine.pro/fonts/SarasaGothicCL-Regular.ttf',
-    bolditalics: 'https://cdn.affine.pro/fonts/SarasaGothicCL-Regular.ttf',
-  },
-};
+const loadPdfFonts = createPdfFontLoader();
 
 export type PdfAdapterFile = {
   blob: Blob;
@@ -991,9 +980,18 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
   private async _createPdfBlob(
     docDefinition: TDocumentDefinitions
   ): Promise<Blob> {
+    // Loaded up front: pdfmake never calls back when it fails to fetch a font URL.
+    const { fonts, vfs } = await loadPdfFonts(
+      this.provider.getOptional(FontConfigIdentifier) ?? []
+    );
     return new Promise((resolve, reject) => {
       try {
-        const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+        const pdfDocGenerator = pdfMake.createPdf(
+          docDefinition,
+          undefined,
+          fonts,
+          vfs
+        );
         pdfDocGenerator.getBlob(blob => resolve(blob));
       } catch (error) {
         reject(error);

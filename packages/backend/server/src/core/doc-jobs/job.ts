@@ -1,22 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 import { EventBus, metrics } from '../../base';
 import { Models } from '../../models';
 import {
   BackendRuntimeEmbeddingService,
+  backendRuntimeErrorCode,
   BackendRuntimeProvider,
 } from '../backend-runtime';
 import { DatabaseDocReader, DocStorageOptions } from '../doc';
 import { StorageRuntimeProvider } from '../storage-runtime';
 
+const INVALID_ROOT_RETRY_MS = 5 * 60_000;
 const DOC_BATCH_SIZE = 100;
 const WORKSPACE_BATCH_SIZE = 100;
 
 @Injectable()
 export class DocJobRunner {
   private readonly logger = new Logger(DocJobRunner.name);
+  private readonly invalidRootRetryAt = new Map<string, number>();
   private summaryWorkspaceCursor = 0;
 
   constructor(
@@ -55,6 +58,11 @@ export class DocJobRunner {
       };
     }
 
+    const now = Date.now();
+    for (const [workspaceId, retryAt] of this.invalidRootRetryAt) {
+      if (retryAt <= now) this.invalidRootRetryAt.delete(workspaceId);
+    }
+    const deferred = [...this.invalidRootRetryAt.keys()];
     const documents = await this.prisma.$queryRaw<
       { workspaceId: string; docId: string; revision: string }[]
     >`
@@ -82,6 +90,7 @@ export class DocJobRunner {
         AND source.source_kind = 'document'
         AND source.source_key = snapshot.guid
       WHERE workspace.enable_doc_embedding
+        ${deferred.length ? Prisma.sql`AND snapshot.workspace_id NOT IN (${Prisma.join(deferred)})` : Prisma.empty}
         AND (NOT lifecycle_mode.active OR EXISTS (
           SELECT 1 FROM storage_reconciliation_checkpoints checkpoint
           WHERE checkpoint.kind = 'workspace_doc_lifecycle'
@@ -102,6 +111,7 @@ export class DocJobRunner {
     `;
     let syncedDocuments = 0;
     for (const document of documents) {
+      if (this.invalidRootRetryAt.has(document.workspaceId)) continue;
       try {
         await this.embedding.syncDocument(
           document.workspaceId,
@@ -110,6 +120,14 @@ export class DocJobRunner {
         );
         syncedDocuments++;
       } catch (error) {
+        if (
+          backendRuntimeErrorCode(error) === 'embedding_legacy_root_invalid'
+        ) {
+          this.invalidRootRetryAt.set(
+            document.workspaceId,
+            Date.now() + INVALID_ROOT_RETRY_MS
+          );
+        }
         this.logger.error('document embedding sync failed', {
           ...document,
           error,

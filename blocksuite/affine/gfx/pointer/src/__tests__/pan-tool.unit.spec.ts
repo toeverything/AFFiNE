@@ -36,8 +36,9 @@ const createToolFixture = (options?: {
   currentToolOptions?: Record<string, unknown>;
 }) => {
   const applyDeltaCenter = vi.fn();
-  const selectionSet = vi.fn();
-  const setTool = vi.fn();
+  const calls: string[] = [];
+  const selectionSet = vi.fn(() => calls.push('selection.set'));
+  const setTool = vi.fn(() => calls.push('setTool'));
   const navigatorSettingUpdated = {
     next: vi.fn(),
   };
@@ -84,6 +85,7 @@ const createToolFixture = (options?: {
 
   return {
     applyDeltaCenter,
+    calls,
     navigatorSettingUpdated,
     selectionSet,
     setTool,
@@ -173,5 +175,32 @@ describe('PanTool', () => {
         restoredAfterPan: true,
       }
     );
+  });
+  test('middle click temporary pan restores the selection after switching back', () => {
+    const { tool, calls, selectionSet } = createToolFixture({
+      currentToolName: 'default',
+    });
+
+    const hooks: Partial<Record<'pointerDown', PointerDownHandler>> = {};
+    (tool as any).eventTarget = {
+      addHook: (eventName: 'pointerDown', handler: PointerDownHandler) => {
+        hooks[eventName] = handler;
+      },
+    };
+
+    tool.mounted();
+    hooks.pointerDown!({
+      raw: {
+        button: MouseButton.MIDDLE,
+        preventDefault: vi.fn(),
+      },
+    });
+    document.dispatchEvent(
+      new PointerEvent('pointerup', { button: MouseButton.MIDDLE })
+    );
+
+    // setTool clears the selection, so it must be restored last
+    expect(calls).toEqual(['setTool', 'setTool', 'selection.set']);
+    expect(selectionSet).toHaveBeenLastCalledWith([{ elements: ['shape-1'] }]);
   });
 });

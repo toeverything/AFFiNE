@@ -1,7 +1,12 @@
 import { describe, expect, test, vi } from 'vitest';
 
 import { UIEventState, UIEventStateContext } from '../event/base.js';
-import { androidBindKeymapPatch, bindKeymap } from '../event/keymap.js';
+import {
+  androidBindKeymapPatch,
+  bindInputTypeKeymap,
+  bindKeymap,
+  formatInputTypeBindings,
+} from '../event/keymap.js';
 
 const createKeyboardEvent = (options: {
   key: string;
@@ -199,5 +204,31 @@ describe('androidBindKeymapPatch', () => {
     expect(handler(ctx)).toBe(false);
     expect(enter).not.toHaveBeenCalled();
     expect(backspace).not.toHaveBeenCalled();
+  });
+});
+
+describe('bindInputTypeKeymap with formatInputTypeBindings', () => {
+  test.each([
+    ['formatBold', 'Mod-b'],
+    ['formatItalic', 'Mod-i'],
+    ['formatUnderline', 'Mod-u'],
+  ])('routes %s to the %s binding', (inputType, hotkey) => {
+    const binding = vi.fn(() => true);
+    const other = vi.fn(() => true);
+    const handler = bindInputTypeKeymap(
+      { [hotkey]: binding, 'Mod-k': other },
+      formatInputTypeBindings
+    );
+    const event = new InputEvent('beforeinput', {
+      inputType,
+      cancelable: true,
+    });
+
+    expect(handler(UIEventStateContext.from(new UIEventState(event)))).toBe(
+      true
+    );
+    expect(binding).toHaveBeenCalledOnce();
+    expect(other).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(true);
   });
 });

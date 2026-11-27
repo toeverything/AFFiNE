@@ -24,6 +24,26 @@ test('can open login modal in workspace list', async ({ page }) => {
   await expect(page.getByTestId('auth-modal')).toBeVisible();
 });
 
+test('login modal fits and scrolls in a short window', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 400 });
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await page.getByTestId('sidebar-user-avatar').click({
+    delay: 200,
+  });
+  const authModal = page.getByTestId('auth-modal');
+  await expect(authModal).toBeVisible();
+
+  const box = await authModal.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(400);
+
+  const lastButton = authModal.getByRole('button').last();
+  await lastButton.scrollIntoViewIfNeeded();
+  await expect(lastButton).toBeInViewport({ ratio: 1 });
+});
+
 test.describe('login first', () => {
   let user: {
     id: string;

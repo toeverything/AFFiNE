@@ -168,7 +168,6 @@ type AcceptTypes =
 
 type OpenFileOptions = {
   fileSystemAccess?: boolean;
-  snapshot?: boolean;
 };
 
 function copyToArrayBuffer(bytes: Uint8Array) {
@@ -211,21 +210,6 @@ export async function snapshotFile(file: File, relativePath?: string) {
   return snapshot;
 }
 
-export async function snapshotFiles(files: File[]) {
-  const results = await Promise.allSettled(
-    files.map(file => snapshotFile(file))
-  );
-  const snapshots: File[] = [];
-  for (const result of results) {
-    if (result.status === 'fulfilled') {
-      snapshots.push(result.value);
-    } else {
-      console.error('Failed to snapshot file', result.reason);
-    }
-  }
-  return snapshots;
-}
-
 function canUseFileSystemAccessAPI(
   api: 'showOpenFilePicker' | 'showDirectoryPicker'
 ) {
@@ -239,10 +223,6 @@ function canUseFileSystemAccessAPI(
       }
     })()
   );
-}
-
-function isAbortError(error: unknown) {
-  return error instanceof Error && error.name === 'AbortError';
 }
 
 function isNotReadableError(error: unknown) {
@@ -274,19 +254,15 @@ export async function openFilesWith(
       // Show the file picker, optionally allowing multiple files.
       const handles = await window.showOpenFilePicker(pickerOpts);
 
-      const files = await Promise.all(handles.map(handle => handle.getFile()));
-      return options?.snapshot ? await snapshotFiles(files) : files;
+      return await Promise.all(handles.map(handle => handle.getFile()));
     } catch (err) {
-      if (options?.snapshot && !isAbortError(err)) {
-        throw err;
-      }
       console.error(err);
       return null;
     }
   }
 
   // Fallback if the File System Access API is not supported.
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     // Append a new `<input type="file" multiple? />` and hide it.
     const input = document.createElement('input');
     input.classList.add('affine-upload-input');
@@ -303,21 +279,9 @@ export async function openFilesWith(
     document.body.append(input);
     // The `change` event fires when the user interacts with the dialog.
     input.addEventListener('change', () => {
-      const files = input.files ? Array.from(input.files) : null;
-      const finish = (result: File[] | null) => {
-        // Remove the `<input type="file" multiple? />` again from the DOM.
-        input.remove();
-        resolve(result);
-      };
-
-      if (files && options?.snapshot) {
-        snapshotFiles(files).then(finish, error => {
-          input.remove();
-          reject(error);
-        });
-      } else {
-        finish(files);
-      }
+      // Remove the `<input type="file" multiple? />` again from the DOM.
+      input.remove();
+      resolve(input.files ? Array.from(input.files) : null);
     });
     // The `cancel` event fires when the user cancels the dialog.
     input.addEventListener('cancel', () => {
@@ -359,19 +323,11 @@ export async function openDirectory(
             const fileHandle = handle as FileSystemFileHandle;
             if (fileHandle.getFile) {
               const file = await fileHandle.getFile();
-              if (options?.snapshot) {
-                try {
-                  files.push(await snapshotFile(file, relativePath));
-                } catch (error) {
-                  console.error('Failed to snapshot file', relativePath, error);
-                }
-              } else {
-                Object.defineProperty(file, 'webkitRelativePath', {
-                  value: relativePath,
-                  writable: false,
-                });
-                files.push(file);
-              }
+              Object.defineProperty(file, 'webkitRelativePath', {
+                value: relativePath,
+                writable: false,
+              });
+              files.push(file);
             }
           } else if (handle.kind === 'directory') {
             await readDirectory(
@@ -385,15 +341,12 @@ export async function openDirectory(
       await readDirectory(dirHandle, '');
       return files;
     } catch (err) {
-      if (options?.snapshot && !isAbortError(err)) {
-        throw err;
-      }
       console.error(err);
       return null;
     }
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const input = document.createElement('input');
     input.classList.add('affine-upload-input');
     input.style.display = 'none';
@@ -405,20 +358,8 @@ export async function openDirectory(
     document.body.append(input);
 
     input.addEventListener('change', () => {
-      const files = input.files ? Array.from(input.files) : null;
-      const finish = (result: File[] | null) => {
-        input.remove();
-        resolve(result);
-      };
-
-      if (files && options?.snapshot) {
-        snapshotFiles(files).then(finish, error => {
-          input.remove();
-          reject(error);
-        });
-      } else {
-        finish(files);
-      }
+      input.remove();
+      resolve(input.files ? Array.from(input.files) : null);
     });
 
     input.addEventListener('cancel', () => {

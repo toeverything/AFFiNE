@@ -25,7 +25,11 @@ import {
 import { DebugLogger } from '@affine/debug';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import { openDirectory, openFilesWith } from '@blocksuite/affine/shared/utils';
+import {
+  openDirectory,
+  openFilesWith,
+  snapshotFile,
+} from '@blocksuite/affine/shared/utils';
 import type { Workspace } from '@blocksuite/affine/store';
 import {
   DocxTransformer,
@@ -56,14 +60,10 @@ import {
   useState,
 } from 'react';
 
+import { importFilesAsDocs } from './file-import';
 import * as style from './styles.css';
 
 const logger = new DebugLogger('import');
-
-function shouldSnapshotPickedFiles(type: ImportType, acceptType: AcceptType) {
-  if (acceptType === 'Directory' || acceptType === 'Skip') return false;
-  return !['markdownZip', 'notion', 'bear', 'oneNote'].includes(type);
-}
 
 type ImportType =
   | 'markdown'
@@ -292,22 +292,17 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   markdown: {
     fileOptions: { acceptType: 'Markdown', multiple: true },
     importFunction: async ({ docCollection, files }) => {
-      const docIds: string[] = [];
-      for (const file of files) {
+      return importFilesAsDocs(files, async file => {
         const text = await file.text();
         const fileName = file.name.split('.').slice(0, -1).join('.');
-        const docId = await MarkdownTransformer.importMarkdownToDoc({
+        return MarkdownTransformer.importMarkdownToDoc({
           collection: docCollection,
           schema: getAFFiNEWorkspaceSchema(),
           markdown: text,
           fileName,
           extensions: getStoreManager().config.init().value.get('store'),
         });
-        if (docId) docIds.push(docId);
-      }
-      return {
-        docIds,
-      };
+      });
     },
   },
   markdownZip: {
@@ -326,22 +321,17 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   html: {
     fileOptions: { acceptType: 'Html', multiple: true },
     importFunction: async ({ docCollection, files }) => {
-      const docIds: string[] = [];
-      for (const file of files) {
+      return importFilesAsDocs(files, async file => {
         const text = await file.text();
         const fileName = file.name.split('.').slice(0, -1).join('.');
-        const docId = await HtmlTransformer.importHTMLToDoc({
+        return HtmlTransformer.importHTMLToDoc({
           collection: docCollection,
           schema: getAFFiNEWorkspaceSchema(),
           extensions: getStoreManager().config.init().value.get('store'),
           html: text,
           fileName,
         });
-        if (docId) docIds.push(docId);
-      }
-      return {
-        docIds,
-      };
+      });
     },
   },
   notion: {
@@ -390,17 +380,14 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   docx: {
     fileOptions: { acceptType: 'Docx', multiple: false },
     importFunction: async ({ docCollection, files }) => {
-      const docIds: string[] = [];
-      for (const file of files) {
-        const docId = await DocxTransformer.importDocx({
+      return importFilesAsDocs(files, file =>
+        DocxTransformer.importDocx({
           collection: docCollection,
           schema: getAFFiNEWorkspaceSchema(),
           imported: file,
           extensions: getStoreManager().config.init().value.get('store'),
-        });
-        if (docId) docIds.push(docId);
-      }
-      return { docIds };
+        })
+      );
     },
   },
   snapshot: {
@@ -414,7 +401,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         await ZipTransformer.importDocs(
           docCollection,
           getAFFiNEWorkspaceSchema(),
-          file
+          await snapshotFile(file)
         )
       )
         .filter((doc): doc is NonNullable<typeof doc> => doc !== undefined)
@@ -577,27 +564,35 @@ const SuccessStatus = ({
   return (
     <>
       <div className={style.importModalTitle}>
-        {t['com.affine.import.status.success.title']()}
+        {warnings.length
+          ? t['com.affine.import.status.warning.title']()
+          : t['com.affine.import.status.success.title']()}
       </div>
-      <p className={style.importStatusContent}>
-        {t['com.affine.import.status.success.message']()}{' '}
-        <a
-          className={style.link}
-          href={BUILD_CONFIG.discordUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Discord
-        </a>
-        .
-      </p>
       {warnings.length ? (
-        <div className={style.importWarnings}>
-          {warnings.map((warning, index) => (
-            <div key={`${warning}-${index}`}>{warning}</div>
-          ))}
-        </div>
-      ) : null}
+        <>
+          <p className={style.importStatusContent}>
+            {t['com.affine.import.status.warning.message']()}
+          </p>
+          <div className={style.importWarnings}>
+            {warnings.map((warning, index) => (
+              <div key={`${warning}-${index}`}>{warning}</div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className={style.importStatusContent}>
+          {t['com.affine.import.status.success.message']()}{' '}
+          <a
+            className={style.link}
+            href={BUILD_CONFIG.discordUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Discord
+          </a>
+          .
+        </p>
+      )}
       <div className={style.importModalButtonContainer}>
         <Button onClick={onComplete} variant="primary">
           {t['Complete']()}
@@ -721,7 +716,6 @@ export const ImportDialog = ({
                 })
               : await openFilesWith(acceptType, multiple, {
                   fileSystemAccess: false,
-                  snapshot: shouldSnapshotPickedFiles(type, acceptType),
                 });
 
         if (!files || (files.length === 0 && acceptType !== 'Skip')) {

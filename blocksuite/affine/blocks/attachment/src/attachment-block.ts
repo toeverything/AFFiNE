@@ -53,8 +53,10 @@ type AttachmentResolvedStateInfo = ResolvedStateInfo & {
 };
 
 @Peekable({
+  // The toolbar is unavailable in read-only docs, so the peek view is
+  // the only place to download attachments there.
   enableOn: ({ model }: AttachmentBlockComponent) => {
-    return model.props.type.endsWith('pdf');
+    return model.store.readonly || model.props.type.endsWith('pdf');
   },
 })
 export class AttachmentBlockComponent extends CaptionedBlockComponent<AttachmentBlockModel> {

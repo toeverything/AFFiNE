@@ -1236,6 +1236,70 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.appearanceSettings.menubar.windowBehavior.startMinimized.description"](): string;
     /**
+      * `Open Journal`
+      */
+    ["com.affine.tray.open-journal"](): string;
+    /**
+      * `New Page`
+      */
+    ["com.affine.tray.new-page"](): string;
+    /**
+      * `New Edgeless`
+      */
+    ["com.affine.tray.new-edgeless"](): string;
+    /**
+      * `Meetings are disabled`
+      */
+    ["com.affine.tray.meetings-disabled"](): string;
+    /**
+      * `Required permissions not granted`
+      */
+    ["com.affine.tray.meetings-permissions-missing"](): string;
+    /**
+      * `Start Recording Meeting`
+      */
+    ["com.affine.tray.start-recording"](): string;
+    /**
+      * `System audio (all audio will be recorded)`
+      */
+    ["com.affine.tray.record-system-audio"](): string;
+    /**
+      * `Recording`
+      */
+    ["com.affine.tray.recording"](): string;
+    /**
+      * `Recording ({{appName}})`
+      */
+    ["com.affine.tray.recording-app"](options: {
+        readonly appName: string;
+    }): string;
+    /**
+      * `Stop`
+      */
+    ["com.affine.tray.stop-recording"](): string;
+    /**
+      * `Meetings Settings...`
+      */
+    ["com.affine.tray.meetings-settings"](): string;
+    /**
+      * `Open AFFiNE`
+      */
+    ["com.affine.tray.open-affine"](): string;
+    /**
+      * `Menubar settings...`
+      */
+    ["com.affine.tray.menubar-settings"](): string;
+    /**
+      * `About {{appName}}`
+      */
+    ["com.affine.tray.about"](options: {
+        readonly appName: string;
+    }): string;
+    /**
+      * `Quit AFFiNE Completely...`
+      */
+    ["com.affine.tray.quit"](): string;
+    /**
       * `Theme`
       */
     ["com.affine.appearanceSettings.theme.title"](): string;
@@ -1547,6 +1611,10 @@ export function useAFFiNEI18N(): {
       * `Unable to connect to the server.`
       */
     ["com.affine.auth.sign.add-selfhosted.error"](): string;
+    /**
+      * `This app only connects to servers on your local network over http. Use an https:// address, or the server's local IP address or .local name.`
+      */
+    ["com.affine.auth.sign.add-selfhosted.public-http"](): string;
     /**
       * `Privacy policy`
       */
@@ -2474,6 +2542,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.header.mode-switch.edgeless"](): string;
     /**
+      * `Read only`
+      */
+    ["com.affine.header.readonly-toggle.read-only"](): string;
+    /**
+      * `Editing`
+      */
+    ["com.affine.header.readonly-toggle.editing"](): string;
+    /**
       * `Add tag`
       */
     ["com.affine.header.option.add-tag"](): string;
@@ -2739,6 +2815,14 @@ export function useAFFiNEI18N(): {
       * `Import completed`
       */
     ["com.affine.import.status.success.title"](): string;
+    /**
+      * `Some items were skipped or only partly imported:`
+      */
+    ["com.affine.import.status.warning.message"](): string;
+    /**
+      * `Import completed with warnings`
+      */
+    ["com.affine.import.status.warning.title"](): string;
     /**
       * `Cancel`
       */
@@ -10830,13 +10914,13 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
-      * `With the workspace creator's free account, every member can access up to <1>7 days<1> of version history.`
+      * `With the workspace creator's free account, every member can access up to <1>7 days</1> of version history.`
       */
     ["com.affine.history.confirm-restore-modal.free-plan-prompt.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
     }>>;
     /**
-      * `With the workspace creator's Pro account, every member enjoys the privilege of accessing up to <1>30 days<1> of version history.`
+      * `With the workspace creator's Pro account, every member enjoys the privilege of accessing up to <1>30 days</1> of version history.`
       */
     ["com.affine.history.confirm-restore-modal.pro-plan-prompt.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;

@@ -1,4 +1,4 @@
-import { useThemeColorV2 } from '@affine/component';
+import { IconButton, useThemeColorV2 } from '@affine/component';
 import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
@@ -19,13 +19,15 @@ import { JournalService } from '@affine/core/modules/journal';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { WorkspaceService } from '@affine/core/modules/workspace';
-import { i18nTime } from '@affine/i18n';
+import { i18nTime, useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   customImageProxyMiddleware,
   ImageProxyService,
 } from '@blocksuite/affine/shared/adapters';
+import { EditIcon, ViewIcon as ViewIconBlocksuite } from '@blocksuite/icons/rc';
 import {
   FrameworkScope,
   useLiveData,
@@ -68,10 +70,12 @@ const DetailPageImpl = ({
   immersive,
   chromeVisible,
   immersiveTapHandlers,
+  readonly,
 }: {
   immersive: boolean;
   chromeVisible: boolean;
   immersiveTapHandlers?: ImmersiveTapHandlers;
+  readonly: boolean;
 }) => {
   const {
     editorService,
@@ -104,10 +108,6 @@ const DetailPageImpl = ({
 
   const editorContainer = useLiveData(editor.editorContainer$);
 
-  const enableKeyboardToolbar =
-    featureFlagService.flags.enable_mobile_keyboard_toolbar.value;
-  const enableEdgelessEditing =
-    featureFlagService.flags.enable_mobile_edgeless_editing.value;
   const enableAIButton = useLiveData(
     featureFlagService.flags.enable_mobile_ai_button.$
   );
@@ -207,14 +207,6 @@ const DetailPageImpl = ({
     [docCollection.id, editor, jumpToPageBlock, openPage, server]
   );
 
-  const canEdit = useGuard('Doc_Update', doc.id);
-
-  const readonly =
-    !canEdit ||
-    isInTrash ||
-    !enableKeyboardToolbar ||
-    (mode === 'edgeless' && !enableEdgelessEditing);
-
   const immersiveZoomToolbarBottom = getImmersiveZoomToolbarBottom({
     immersive,
     chromeVisible,
@@ -289,13 +281,18 @@ const MobileDetailPageHeader = ({
   allJournalDates,
   handleDateChange,
   trackScrollTitle,
+  onToggleReadOnly,
 }: {
   date?: string;
   title?: string;
   allJournalDates: Set<string | null | undefined>;
   handleDateChange: (date: string) => void;
   trackScrollTitle: boolean;
+  onToggleReadOnly?: () => void;
 }) => {
+  const t = useI18n();
+  const editor = useService(EditorService).editor;
+  const isReadOnlyMode = useLiveData(editor.readOnlyMode$);
   const [showTitle, setShowTitle] = useState(getShouldShowTitle);
 
   useEffect(() => {
@@ -339,6 +336,19 @@ const MobileDetailPageHeader = ({
       contentClassName={styles.headerContent}
       suffix={
         <>
+          {onToggleReadOnly && (
+            <IconButton
+              data-testid="readonly-toggle-button"
+              size="24"
+              onClick={onToggleReadOnly}
+              icon={isReadOnlyMode ? <ViewIconBlocksuite /> : <EditIcon />}
+              tooltip={
+                isReadOnlyMode
+                  ? t['com.affine.header.readonly-toggle.read-only']()
+                  : t['com.affine.header.readonly-toggle.editing']()
+              }
+            />
+          )}
           <PageHeaderShareButton />
           <PageHeaderMenuButton />
         </>
@@ -377,10 +387,36 @@ const MobileDetailPageContent = ({
   allJournalDates: Set<string | null | undefined>;
   handleDateChange: (date: string) => void;
 }) => {
-  const editor = useService(EditorService).editor;
+  const { editorService, docService, featureFlagService } = useServices({
+    EditorService,
+    DocService,
+    FeatureFlagService,
+  });
+  const editor = editorService.editor;
   const mode = useLiveData(editor.mode$);
+  const doc = docService.doc;
+  const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
+  const canEdit = useGuard('Doc_Update', pageId);
+  const enableKeyboardToolbar = useLiveData(
+    featureFlagService.flags.enable_mobile_keyboard_toolbar.$
+  );
+  const enableEdgelessEditing = useLiveData(
+    featureFlagService.flags.enable_mobile_edgeless_editing.$
+  );
+  const isPageEditable =
+    !!canEdit &&
+    !isInTrash &&
+    !!enableKeyboardToolbar &&
+    (mode !== 'edgeless' || !!enableEdgelessEditing);
   const [isLandscape, setIsLandscape] = useState(getIsLandscape);
   const [chromeVisible, setChromeVisible] = useState(true);
+  const isReadOnlyMode = useLiveData(editor.readOnlyMode$);
+  const readonly = !isPageEditable || isReadOnlyMode;
+
+  const onToggleReadOnly = useCallback(() => {
+    const on = editor.toggleReadOnlyMode();
+    track.$.header.actions.toggleReadOnlyMode({ on });
+  }, [editor]);
   const tapStateRef = useRef<{
     pointerId: number;
     clientX: number;
@@ -511,6 +547,7 @@ const MobileDetailPageContent = ({
           allJournalDates={allJournalDates}
           handleDateChange={handleDateChange}
           trackScrollTitle={trackScrollTitle}
+          onToggleReadOnly={isPageEditable ? onToggleReadOnly : undefined}
         />
       )}
       <JournalConflictBlock date={date} />
@@ -518,6 +555,7 @@ const MobileDetailPageContent = ({
         immersive={immersive}
         chromeVisible={chromeVisible}
         immersiveTapHandlers={immersiveTapHandlers}
+        readonly={readonly}
       />
     </>
   );

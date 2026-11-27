@@ -194,7 +194,6 @@ export class BlockDiffPlayground extends WidgetComponent {
           .onClose=${this.handleClose}
         ></affine-block-diff-playground-modal>
       `,
-      container: this.host,
       computePosition: {
         referenceElement: this.fab,
         placement: 'top-end',
