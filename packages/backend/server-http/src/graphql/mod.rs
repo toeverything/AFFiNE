@@ -229,9 +229,6 @@ impl LazyGraphqlPrincipal {
           }
           Err(crate::rest::PrincipalResolutionError::AccessToken(code)) => {
             let (env, _) = crate::rest::PrincipalResolutionError::AccessToken(code).into_envelope();
-            if let Ok(mut guard) = self.http_error.lock() {
-              *guard = Some(crate::rest::PrincipalResolutionError::AccessToken(code).into_http_response());
-            }
             Err(env)
           }
           Err(crate::rest::PrincipalResolutionError::Domain(err)) => {
@@ -511,8 +508,14 @@ pub struct CoreQuery;
 
 #[Object]
 impl CoreQuery {
-  async fn current_user(&self, ctx: &Context<'_>) -> Option<UserType> {
-    user::resolve_current_user(ctx)
+  async fn current_user(&self, ctx: &Context<'_>) -> Result<Option<UserType>> {
+    if let Some(lazy) = ctx.data_opt::<LazyGraphqlPrincipal>()
+      && let Err(env) = lazy.resolve_once().await
+    {
+      return Err(envelope_to_graphql(env.clone()));
+    }
+    enforce_default_throttle_if_anonymous_graphql(ctx).await?;
+    Ok(user::resolve_current_user(ctx))
   }
 
   async fn user(&self, ctx: &Context<'_>, email: String) -> Result<Option<UserOrLimitedUser>> {

@@ -10,6 +10,12 @@ pub enum SyncError {
   #[error("bad request: {0}")]
   BadRequest(String),
 
+  #[error("query is too long (max {max})")]
+  QueryTooLong { max: usize },
+
+  #[error("copilot is disabled")]
+  CopilotDisabled,
+
   #[error("unsupported client version: {client_version} (required {required_version})")]
   UnsupportedClientVersion {
     client_version: String,

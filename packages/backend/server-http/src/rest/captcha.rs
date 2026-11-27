@@ -77,17 +77,36 @@ pub(crate) async fn enforce_named_captcha_guard(
   headers: &HeaderMap,
   pending_cookie_action: &PrincipalCookieAction,
 ) -> Result<(), Box<Response>> {
-  let (https, dev_mode, mut allowed_hosts) = {
+  let (https, dev_mode, mut allowed_hosts, file_json) = {
     let cfg = state.app.config.load();
     let mut hosts = cfg.app_config_baseline.server.hosts.clone();
     hosts.push(cfg.app_config_baseline.server.host.clone());
-    (cfg.https, cfg.dev_mode, hosts)
+    (
+      cfg.https,
+      cfg.dev_mode,
+      hosts,
+      cfg.app_config_baseline.file_json.clone(),
+    )
   };
+  if let Ok(eff) = state.app.app_config.get_effective_app_config().await
+    && let Some(dyn_hosts) = eff.pointer("/server/hosts").and_then(serde_json::Value::as_array)
+  {
+    for h in dyn_hosts.iter().filter_map(serde_json::Value::as_str) {
+      if !h.is_empty() && !allowed_hosts.iter().any(|x| x == h) {
+        allowed_hosts.push(h.to_owned());
+      }
+    }
+  }
   let fail = |mut resp: Response| -> Result<(), Box<Response>> {
     pending_cookie_action.apply_to(resp.headers_mut(), https);
     Err(Box::new(resp))
   };
-  let effective = match load_effective_captcha_config(&state.app.db).await {
+  let effective = match server_domain::auth::captcha::load_effective_captcha_config_with_file(
+    &state.app.db,
+    Some(&file_json),
+  )
+  .await
+  {
     Ok(v) => v,
     Err(err) => return fail(domain_error_to_http_response(&err)),
   };

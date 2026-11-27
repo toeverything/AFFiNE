@@ -352,11 +352,45 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
       }
     }
     DomainError::Validation(msg) => {
+      if msg == "password_required" {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "INVALID_INPUT".into(),
+          name: "PASSWORD_REQUIRED".into(),
+          message: "Password is required.".into(),
+          data: None,
+        };
+      }
+      if let Some(rest) = msg.strip_prefix("invalid_password_length:") {
+        let (min, max) = rest
+          .split_once(':')
+          .map(|(a, b)| (a.parse::<usize>().unwrap_or(8), b.parse::<usize>().unwrap_or(32)))
+          .unwrap_or((8, 32));
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "INVALID_INPUT".into(),
+          name: "INVALID_PASSWORD_LENGTH".into(),
+          message: format!("Password length must be between {min} and {max} characters."),
+          data: Some(serde_json::json!({ "min": min, "max": max })),
+        };
+      }
+      if msg == "invalid_email" || msg.eq_ignore_ascii_case("invalid email format") || msg.contains("invalid email") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "INVALID_INPUT".into(),
+          name: "INVALID_EMAIL".into(),
+          message: "Invalid email format.".into(),
+          data: None,
+        };
+      }
       if let Some(detail) = msg.strip_prefix("blob_invalid:") {
         return LegacyErrorEnvelope {
           status: StatusCode::BAD_REQUEST.as_u16(),
           code: "Bad Request".into(),
-          error_type: "BAD_REQUEST".into(),
+          error_type: "INVALID_INPUT".into(),
           name: "BLOB_INVALID".into(),
           message: detail.to_owned(),
           data: None,

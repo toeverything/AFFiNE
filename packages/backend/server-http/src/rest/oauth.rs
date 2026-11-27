@@ -380,7 +380,7 @@ async fn handle_oauth_callback(
         }
         match &session {
           OpenAppSignInResult::Cookie(cookie) => append_auth_cookies(r.headers_mut(), cookie, https),
-          OpenAppSignInResult::Native { .. } => append_clear_auth_cookies(r.headers_mut()),
+          OpenAppSignInResult::Native { .. } => append_clear_auth_cookies(r.headers_mut(), https),
         }
         r
       } else {
@@ -397,7 +397,7 @@ async fn handle_oauth_callback(
         let mut r = json_utf8_response(StatusCode::OK, dto, false);
         match cookie_opt {
           Some(cookie) => append_auth_cookies(r.headers_mut(), &cookie, https),
-          None => append_clear_auth_cookies(r.headers_mut()),
+          None => append_clear_auth_cookies(r.headers_mut(), https),
         }
         r
       };

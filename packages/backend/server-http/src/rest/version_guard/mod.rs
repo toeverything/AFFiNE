@@ -83,6 +83,15 @@ pub enum VersionGuardError {
 }
 
 impl VersionGuardError {
+  pub fn into_parts(self) -> (String, String) {
+    match self {
+      Self::UnsupportedClientVersion {
+        client_version,
+        required_version,
+      } => (client_version, required_version),
+    }
+  }
+
   /// Converts the error into the exact `v0.27.5` `UserFriendlyError` envelope.
   pub fn into_envelope(self) -> LegacyErrorEnvelope {
     match self {
@@ -117,6 +126,23 @@ impl VersionGuardError {
 /// explicitly present empty header returns `Some("")`, matching `v0.27.5`
 /// `getClientVersionFromRequest` so `"" ?? session.refreshClientVersion` does
 /// not silently fall back to the session version.
+pub fn verify_session_client_version_now(
+  headers: &HeaderMap,
+  refresh_client_version: Option<&str>,
+  sign_in_client_version: Option<&str>,
+  cfg: &ClientVersionControlConfig,
+  allow_canary: bool,
+) -> Result<(), VersionGuardError> {
+  verify_session_client_version_at(
+    headers,
+    refresh_client_version,
+    sign_in_client_version,
+    cfg,
+    allow_canary,
+    Utc::now(),
+  )
+}
+
 pub fn extract_client_version(headers: &HeaderMap) -> Option<&str> {
   headers
     .get(CLIENT_VERSION_HEADER)

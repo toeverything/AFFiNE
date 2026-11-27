@@ -299,11 +299,14 @@ impl AppState {
   ) -> Arc<Self> {
     let admin = server_domain::admin::AdminService::new(db.clone());
     let calendar_webhook_token = Arc::new(std::sync::Mutex::new(None));
+    let auth = services.auth.with_app_config(services.app_config.clone());
     let calendar = CalendarService::new(
       db.clone(),
-      services.auth.config().private_key.clone(),
+      auth.config().private_key.clone(),
       config.external_url.clone(),
     )
+    .with_app_config(services.app_config.clone())
+    .with_file_json(Some(config.app_config_baseline.file_json.clone()))
     .with_shared_webhook_token(Arc::clone(&calendar_webhook_token));
     let calendar_oauth = CalendarOAuthStore::new(redis.clone(), config.session_redis_db_index).ok();
     let mcp = McpCredentialService::new(db.clone(), Arc::clone(&services.event_bus))
@@ -320,7 +323,7 @@ impl AppState {
       redis,
       config: ArcSwap::from_pointee(config),
       extension,
-      auth: services.auth,
+      auth,
       users: services.users,
       workspaces: services.workspaces,
       admin,
@@ -649,6 +652,10 @@ pub struct ReadyResponse {
 #[derive(Debug, Deserialize)]
 struct GraphqlGetQuery {
   sdl: Option<String>,
+  query: Option<String>,
+  #[serde(rename = "operationName")]
+  operation_name: Option<String>,
+  variables: Option<String>,
 }
 
 fn role_flavor_str(role: ServerRole) -> &'static str {
@@ -801,6 +808,33 @@ pub fn graphql_query_exceeds_depth(query: &str, max_depth: usize) -> bool {
 /// Largest JSON `/graphql` request body.
 const MAX_GRAPHQL_JSON_BODY_BYTES: usize = 16 * 1024 * 1024;
 
+fn graphql_bad_request_response(status: StatusCode, apollo_code: &str, message: &str) -> Response {
+  let formatted = format!("GraphQL bad request, code: {apollo_code}, {message}");
+  let body = serde_json::json!({
+    "errors": [{
+      "message": message,
+      "extensions": {
+        "status": status.as_u16(),
+        "code": "Bad Request",
+        "type": "BAD_REQUEST",
+        "name": "GRAPHQL_BAD_REQUEST",
+        "message": formatted,
+        "data": {
+          "code": apollo_code,
+          "message": message,
+        },
+      }
+    }]
+  })
+  .to_string();
+  (
+    status,
+    [(header::CONTENT_TYPE, "application/json; charset=utf-8")],
+    body,
+  )
+    .into_response()
+}
+
 /// Reads a `/graphql` POST body. A multipart body goes through
 /// [`graphql_multipart::receive_graphql_multipart`]. Any other body must fit
 /// in `MAX_GRAPHQL_JSON_BODY_BYTES`.
@@ -814,14 +848,23 @@ async fn read_graphql_post(
   let rejected = |err: async_graphql::ParseRequestError| {
     Box::new(async_graphql_axum::rejection::GraphQLRejection(err).into_response())
   };
-  if let Some(ct) = content_type.filter(|ct| {
-    ct.trim_start()
-      .get(..19)
-      .is_some_and(|p| p.eq_ignore_ascii_case("multipart/form-data"))
-  }) {
-    return graphql_multipart::receive_graphql_multipart(ct, body)
+  let media_type = content_type
+    .and_then(|ct| ct.split(';').next())
+    .map(str::trim)
+    .unwrap_or("");
+  if media_type.eq_ignore_ascii_case("multipart/form-data") {
+    return graphql_multipart::receive_graphql_multipart(content_type.unwrap_or(""), body)
       .await
       .map_err(rejected);
+  }
+  if !media_type.eq_ignore_ascii_case("application/json")
+    && !media_type.eq_ignore_ascii_case("application/graphql-response+json")
+  {
+    return Err(Box::new(graphql_bad_request_response(
+      StatusCode::BAD_REQUEST,
+      "BAD_REQUEST",
+      "Unsupported Content-Type for GraphQL request",
+    )));
   }
   let bytes = axum::body::to_bytes(body, MAX_GRAPHQL_JSON_BODY_BYTES)
     .await
@@ -835,39 +878,86 @@ async fn read_graphql_post(
   .map_err(rejected)
 }
 
-async fn handle_graphql_post(
-  State(state): State<RouterState>,
-  rest::throttle::PeerAddr(peer): rest::throttle::PeerAddr,
+/// Largest GraphQL query document string (`100 KiB`) to prevent alias-amplification DoS.
+const MAX_GRAPHQL_QUERY_BYTES: usize = 100 * 1024;
+
+async fn execute_graphql_request(
+  state: &RouterState,
+  peer: Option<std::net::SocketAddr>,
   headers: HeaderMap,
-  body: axum::body::Body,
+  inner: async_graphql::Request,
 ) -> Response {
-  let inner = match read_graphql_post(&headers, body).await {
-    Ok(inner) => inner,
-    Err(resp) => return *resp,
-  };
-  if graphql_query_exceeds_depth(&inner.query, MAX_GRAPHQL_BRACKET_DEPTH) {
-    return (
+  if inner.query.len() > MAX_GRAPHQL_QUERY_BYTES {
+    return graphql_bad_request_response(
       StatusCode::BAD_REQUEST,
-      [(header::CONTENT_TYPE, "application/json; charset=utf-8")],
-      r#"{"errors":[{"message":"Query exceeds maximum nesting depth"}]}"#,
-    )
-      .into_response();
+      "GRAPHQL_VALIDATION_FAILED",
+      "Query exceeds maximum allowed size",
+    );
   }
+  if graphql_query_exceeds_depth(&inner.query, MAX_GRAPHQL_BRACKET_DEPTH) {
+    return graphql_bad_request_response(
+      StatusCode::BAD_REQUEST,
+      "GRAPHQL_VALIDATION_FAILED",
+      "Query exceeds maximum nesting depth",
+    );
+  }
+  let introspection_enabled = state
+    .app
+    .app_config
+    .get_effective_app_config_arc()
+    .await
+    .ok()
+    .and_then(|c| c.pointer("/graphql/introspection")?.as_bool())
+    .unwrap_or(true);
+  let is_parse_error = async_graphql::parser::parse_query(&inner.query).is_err();
   let lazy = LazyGraphqlPrincipal::new(state.clone(), headers.clone(), peer);
-  let gql_req = inner.data(lazy.clone()).data(headers);
-  let gql_resp: GraphQLResponse = state.schema.execute(gql_req).await.into();
+  let mut gql_req = inner.data(lazy.clone()).data(headers);
+  if !introspection_enabled {
+    gql_req = gql_req.disable_introspection();
+  }
+  let mut raw_resp = state.schema.execute(gql_req).await;
   if let Some(http_err) = lazy.take_http_error() {
     return http_err;
   }
+  let mut is_bad_request = false;
+  if !raw_resp.errors.is_empty()
+    && matches!(raw_resp.data, async_graphql::Value::Null)
+    && raw_resp
+      .errors
+      .iter()
+      .all(|e| e.path.is_empty() && e.extensions.as_ref().is_none_or(|ext| ext.get("name").is_none()))
+  {
+    is_bad_request = true;
+    let apollo_code = if is_parse_error {
+      "GRAPHQL_PARSE_FAILED"
+    } else {
+      "GRAPHQL_VALIDATION_FAILED"
+    };
+    for err in &mut raw_resp.errors {
+      let formatted = format!("GraphQL bad request, code: {apollo_code}, {}", err.message);
+      let data = async_graphql::Value::from_json(serde_json::json!({
+        "code": apollo_code,
+        "message": err.message,
+      }))
+      .unwrap_or(async_graphql::Value::Null);
+      let ext = err.extensions.get_or_insert_with(Default::default);
+      ext.set("status", async_graphql::Value::from(400));
+      ext.set("code", async_graphql::Value::from("Bad Request"));
+      ext.set("type", async_graphql::Value::from("BAD_REQUEST"));
+      ext.set("name", async_graphql::Value::from("GRAPHQL_BAD_REQUEST"));
+      ext.set("message", async_graphql::Value::from(formatted));
+      ext.set("data", data);
+    }
+  }
+  let gql_resp: GraphQLResponse = raw_resp.into();
   let mut resp = gql_resp.into_response();
+  if is_bad_request {
+    *resp.status_mut() = StatusCode::BAD_REQUEST;
+  }
   let h = resp.headers_mut();
   h.insert(
     header::CONTENT_TYPE,
     HeaderValue::from_static("application/json; charset=utf-8"),
-  );
-  h.insert(
-    header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
-    HeaderValue::from_static("true"),
   );
   h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
   lazy
@@ -885,7 +975,186 @@ async fn handle_graphql_post(
   resp
 }
 
-async fn handle_graphql_get(State(state): State<RouterState>, Query(params): Query<GraphqlGetQuery>) -> Response {
+async fn handle_graphql_post(
+  State(state): State<RouterState>,
+  rest::throttle::PeerAddr(peer): rest::throttle::PeerAddr,
+  headers: HeaderMap,
+  body: axum::body::Body,
+) -> Response {
+  let is_multipart = headers
+    .get(header::CONTENT_TYPE)
+    .and_then(|v| v.to_str().ok())
+    .is_some_and(|ct| {
+      ct.split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .eq_ignore_ascii_case("multipart/form-data")
+    });
+  if is_multipart {
+    let has_session_cookie =
+      rest::extract_cookie(&rest::parse_cookies(&headers), rest::SESSION_COOKIE_NAME).is_some_and(|s| !s.is_empty());
+    let has_preflight = [
+      "x-operation-name",
+      "x-apollo-operation-name",
+      "apollo-require-preflight",
+    ]
+    .iter()
+    .any(|name| {
+      headers
+        .get(*name)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|s| !s.trim().is_empty())
+    });
+    if has_session_cookie && !has_preflight {
+      let csrf_blocked = || {
+        graphql_bad_request_response(
+          StatusCode::BAD_REQUEST,
+          "BAD_REQUEST",
+          "This operation has been blocked as a potential Cross-Site Request Forgery (CSRF).",
+        )
+      };
+      let sec_fetch_site = headers
+        .get("sec-fetch-site")
+        .and_then(|v| v.to_str().ok())
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+      let origin = headers
+        .get(header::ORIGIN)
+        .and_then(|v| v.to_str().ok())
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+      let referer_origin = headers
+        .get(header::REFERER)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|r| url::Url::parse(r.trim()).ok())
+        .map(|u| u.origin().ascii_serialization());
+      let allowed =
+        rest::worker_proxy::allowed_origins_for_state_async(&state, rest::worker_proxy::CorsOriginScope::Global).await;
+      let dev_mode = state.app.config.load().dev_mode;
+      let origin_ok = origin.is_some_and(|o| rest::worker_proxy::is_cors_origin_allowed(o, &allowed, dev_mode));
+      let referer_ok = referer_origin
+        .as_deref()
+        .is_some_and(|r| rest::worker_proxy::is_cors_origin_allowed(r, &allowed, dev_mode));
+      if let Some(sfs) = sec_fetch_site
+        && (sfs.eq_ignore_ascii_case("cross-site")
+          || (sfs.eq_ignore_ascii_case("same-site") && !(origin_ok || referer_ok)))
+      {
+        return csrf_blocked();
+      }
+      if origin.is_some() && !origin_ok {
+        return csrf_blocked();
+      }
+      if referer_origin.is_some() && !referer_ok {
+        return csrf_blocked();
+      }
+      if !(origin_ok || referer_ok) {
+        return csrf_blocked();
+      }
+    }
+  }
+  let inner = match read_graphql_post(&headers, body).await {
+    Ok(inner) => inner,
+    Err(resp) => return *resp,
+  };
+  execute_graphql_request(&state, peer, headers, inner).await
+}
+
+fn has_apollo_csrf_header(headers: &HeaderMap) -> bool {
+  [
+    "x-operation-name",
+    "x-apollo-operation-name",
+    "apollo-require-preflight",
+    "x-affine-version",
+    "x-requested-with",
+  ]
+  .iter()
+  .any(|name| {
+    headers
+      .get(*name)
+      .and_then(|v| v.to_str().ok())
+      .is_some_and(|s| !s.trim().is_empty())
+  })
+}
+
+async fn handle_graphql_get(
+  State(state): State<RouterState>,
+  rest::throttle::PeerAddr(peer): rest::throttle::PeerAddr,
+  headers: HeaderMap,
+  Query(params): Query<GraphqlGetQuery>,
+) -> Response {
+  if let Some(query) = params.query {
+    if !has_apollo_csrf_header(&headers) {
+      return graphql_bad_request_response(
+        StatusCode::BAD_REQUEST,
+        "BAD_REQUEST",
+        "This operation has been blocked as a potential Cross-Site Request Forgery (CSRF).",
+      );
+    }
+    if query.len() > MAX_GRAPHQL_QUERY_BYTES {
+      return graphql_bad_request_response(
+        StatusCode::BAD_REQUEST,
+        "GRAPHQL_VALIDATION_FAILED",
+        "Query exceeds maximum allowed size",
+      );
+    }
+    if graphql_query_exceeds_depth(&query, MAX_GRAPHQL_BRACKET_DEPTH) {
+      return graphql_bad_request_response(
+        StatusCode::BAD_REQUEST,
+        "GRAPHQL_VALIDATION_FAILED",
+        "Query exceeds maximum nesting depth",
+      );
+    }
+    if let Ok(doc) = async_graphql::parser::parse_query(&query) {
+      let target_op_name = params
+        .operation_name
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+      let is_non_query = match &doc.operations {
+        async_graphql::parser::types::DocumentOperations::Single(op) => {
+          target_op_name.is_none() && !matches!(op.node.ty, async_graphql::parser::types::OperationType::Query)
+        }
+        async_graphql::parser::types::DocumentOperations::Multiple(ops) => {
+          if let Some(name) = target_op_name {
+            ops
+              .iter()
+              .find(|(op_name, _)| op_name.as_str() == name)
+              .is_some_and(|(_, op)| !matches!(op.node.ty, async_graphql::parser::types::OperationType::Query))
+          } else if ops.len() == 1 {
+            ops
+              .values()
+              .next()
+              .is_some_and(|op| !matches!(op.node.ty, async_graphql::parser::types::OperationType::Query))
+          } else {
+            false
+          }
+        }
+      };
+      if is_non_query {
+        return graphql_bad_request_response(
+          StatusCode::METHOD_NOT_ALLOWED,
+          "BAD_REQUEST",
+          "GET supports only query operation",
+        );
+      }
+    }
+    let mut req = async_graphql::Request::new(query);
+    if let Some(op_name) = params.operation_name {
+      req = req.operation_name(op_name);
+    }
+    if let Some(vars_str) = params.variables {
+      match serde_json::from_str::<serde_json::Value>(&vars_str) {
+        Ok(val) => {
+          req = req.variables(async_graphql::Variables::from_json(val));
+        }
+        Err(_) => {
+          return graphql_bad_request_response(StatusCode::BAD_REQUEST, "BAD_REQUEST", "Variables are invalid JSON.");
+        }
+      }
+    }
+    return execute_graphql_request(&state, peer, headers, req).await;
+  }
   let cfg = state.app.config.load();
   if !cfg.graphql_playground {
     return StatusCode::METHOD_NOT_ALLOWED.into_response();
@@ -922,7 +1191,7 @@ pub struct RouteMountMatrix {
 
 impl RouteMountMatrix {
   /// Computes the exact mount flags for `(deployment_mode, dev_mode, role)`.
-  pub fn for_mode_and_role(deployment_mode: DeploymentMode, dev_mode: bool, role: ServerRole) -> Self {
+  pub fn for_mode_and_role(deployment_mode: DeploymentMode, _dev_mode: bool, role: ServerRole) -> Self {
     let is_http_role = matches!(role, ServerRole::Front | ServerRole::Graphql | ServerRole::Allinone);
     let is_selfhosted = deployment_mode == DeploymentMode::Selfhosted;
     let is_api_role = matches!(role, ServerRole::Graphql | ServerRole::Allinone);
@@ -936,7 +1205,7 @@ impl RouteMountMatrix {
       auth_and_avatar_api: is_http_role,
       graphql_flavor_api: is_api_role,
       selfhost_setup: is_selfhosted && is_http_role,
-      worker_proxy: (is_selfhosted || dev_mode) && is_http_role,
+      worker_proxy: is_selfhosted && is_http_role,
       selfhost_static: is_selfhosted && is_http_role,
       front_static: role == ServerRole::Front,
       doc_renderer: is_http_role,
@@ -1066,11 +1335,155 @@ pub fn build_router(app: Arc<AppState>) -> Router {
     router = router.merge(rest::static_files::static_router(false));
   }
 
+  let cors_state = state.clone();
+  let base_path = cfg
+    .app_config_baseline
+    .server
+    .path
+    .trim()
+    .trim_end_matches('/')
+    .to_owned();
   let mut router = router.with_state(state);
   if let Some(ext_router) = extra {
     router = router.merge(ext_router);
   }
-  router.layer(TraceLayer::new_for_http())
+  if !base_path.is_empty() && base_path != "/" {
+    let prefix = if base_path.starts_with('/') {
+      base_path
+    } else {
+      format!("/{base_path}")
+    };
+    let health_root = Router::new()
+      .route("/healthz", get(handle_healthz))
+      .route("/readyz", get(handle_readyz))
+      .with_state(cors_state.clone());
+    router = Router::new().nest(&prefix, router).merge(health_root);
+  }
+  router
+    .layer(axum::middleware::from_fn_with_state(cors_state, global_cors_middleware))
+    .layer(TraceLayer::new_for_http())
+}
+
+fn append_vary_origin(headers: &mut HeaderMap) {
+  let has_origin = headers
+    .get_all(header::VARY)
+    .iter()
+    .filter_map(|v| v.to_str().ok())
+    .any(|v| v.split(',').any(|p| p.trim().eq_ignore_ascii_case("origin")));
+  if !has_origin {
+    headers.append(header::VARY, HeaderValue::from_static("Origin"));
+  }
+}
+
+async fn global_cors_middleware(
+  State(state): State<RouterState>,
+  req: axum::http::Request<axum::body::Body>,
+  next: axum::middleware::Next,
+) -> Response {
+  let req_path = req.uri().path().to_owned();
+  let is_options = *req.method() == axum::http::Method::OPTIONS;
+  let origin = req
+    .headers()
+    .get(header::ORIGIN)
+    .and_then(|v| v.to_str().ok())
+    .map(str::to_owned);
+  let has_acrm = req.headers().contains_key(header::ACCESS_CONTROL_REQUEST_METHOD);
+
+  let cfg_snap = state.app.config.load();
+  let stripped_path = {
+    let prefix = cfg_snap.app_config_baseline.server.path.trim().trim_end_matches('/');
+    if !prefix.is_empty() && prefix != "/" {
+      let normalized = if prefix.starts_with('/') {
+        prefix.to_owned()
+      } else {
+        format!("/{prefix}")
+      };
+      req_path
+        .strip_prefix(&normalized)
+        .filter(|rest| rest.is_empty() || rest.starts_with('/'))
+        .unwrap_or(req_path.as_str())
+    } else {
+      req_path.as_str()
+    }
+  };
+  let scope = if stripped_path == "/api/telemetry" || stripped_path.starts_with("/api/telemetry/") {
+    rest::worker_proxy::CorsOriginScope::Telemetry
+  } else if stripped_path == "/api/worker" || stripped_path.starts_with("/api/worker/") {
+    rest::worker_proxy::CorsOriginScope::Worker
+  } else {
+    rest::worker_proxy::CorsOriginScope::Global
+  };
+  let dev_mode = cfg_snap.dev_mode;
+  let allowed = if origin.is_some() || is_options {
+    rest::worker_proxy::allowed_origins_for_state_async(&state, scope).await
+  } else {
+    Vec::new()
+  };
+  let origin_allowed = origin
+    .as_deref()
+    .is_some_and(|o| rest::worker_proxy::is_cors_origin_allowed(o, &allowed, dev_mode));
+
+  let is_route_managed_options = req_path.ends_with("/api/worker/image-proxy")
+    || req_path.ends_with("/api/worker/link-preview")
+    || req_path.ends_with("/api/telemetry/collect")
+    || req_path.contains("/socket.io");
+
+  if is_options && !is_route_managed_options && (has_acrm || origin.is_some()) {
+    let mut resp = StatusCode::NO_CONTENT.into_response();
+    let h = resp.headers_mut();
+    h.insert(
+      header::VARY,
+      HeaderValue::from_static("Origin, Access-Control-Request-Method, Access-Control-Request-Headers"),
+    );
+    if origin_allowed
+      && let Some(ref orig) = origin
+      && let Ok(val) = HeaderValue::from_str(orig)
+    {
+      h.insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, val);
+      h.insert(
+        header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
+        HeaderValue::from_static("true"),
+      );
+      h.insert(
+        header::ACCESS_CONTROL_ALLOW_METHODS,
+        HeaderValue::from_static(rest::worker_proxy::CORS_ALLOWED_METHODS),
+      );
+      h.insert(
+        header::ACCESS_CONTROL_ALLOW_HEADERS,
+        HeaderValue::from_static(rest::worker_proxy::CORS_ALLOWED_HEADERS),
+      );
+      h.insert(header::ACCESS_CONTROL_MAX_AGE, HeaderValue::from_static("86400"));
+    }
+    return resp;
+  }
+
+  let mut resp = next.run(req).await;
+  let is_server_err = resp.status().is_server_error();
+  let h = resp.headers_mut();
+  if is_server_err && !h.contains_key("x-request-id") {
+    let req_id = uuid::Uuid::new_v4().to_string();
+    if let Ok(v) = HeaderValue::from_str(&req_id) {
+      h.insert(header::HeaderName::from_static("x-request-id"), v);
+    }
+  }
+  append_vary_origin(h);
+  if let Some(ref orig) = origin {
+    if origin_allowed && let Ok(val) = HeaderValue::from_str(orig) {
+      h.insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, val);
+      h.insert(
+        header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
+        HeaderValue::from_static("true"),
+      );
+      h.insert(
+        header::ACCESS_CONTROL_EXPOSE_HEADERS,
+        HeaderValue::from_static(rest::worker_proxy::CORS_EXPOSED_HEADERS),
+      );
+    } else {
+      h.remove(header::ACCESS_CONTROL_ALLOW_ORIGIN);
+      h.remove(header::ACCESS_CONTROL_ALLOW_CREDENTIALS);
+    }
+  }
+  resp
 }
 
 #[cfg(test)]
@@ -1157,10 +1570,20 @@ mod tests {
 
       let resp = app
         .clone()
-        .oneshot(Request::builder().uri("/info").body(Body::empty()).unwrap())
+        .oneshot(
+          Request::builder()
+            .uri("/info")
+            .header(header::ORIGIN, "assets://.")
+            .body(Body::empty())
+            .unwrap(),
+        )
         .await
         .expect("info response");
       assert_eq!(resp.status(), StatusCode::OK);
+      assert_eq!(
+        resp.headers().get(header::ACCESS_CONTROL_ALLOW_ORIGIN),
+        Some(&HeaderValue::from_static("assets://."))
+      );
       assert_eq!(
         resp.headers().get(header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
         Some(&HeaderValue::from_static("true"))
@@ -1357,7 +1780,7 @@ mod tests {
           "map field ordered before operations",
           &multipart_type,
           multipart(vec![map(1), operations(1), Part::File("0".into(), 1)]),
-          StatusCode::OK,
+          StatusCode::BAD_REQUEST,
         ),
       ];
       for (name, content_type, body, expected) in cases {
@@ -1717,7 +2140,7 @@ mod tests {
         true,
         true,
       ),
-      // Cloud + dev_mode=true mounts worker_proxy on HTTP roles while keeping selfhost_setup/selfhost_static off.
+      // Cloud + dev_mode=true keeps worker_proxy, selfhost_setup, and selfhost_static unmounted.
       (
         DeploymentMode::Cloud,
         true,
@@ -1727,7 +2150,7 @@ mod tests {
         true,
         false,
         false,
-        true,
+        false,
         false,
         true,
         true,
@@ -1743,7 +2166,7 @@ mod tests {
         true,
         true,
         false,
-        true,
+        false,
         false,
         false,
         true,
@@ -1775,7 +2198,7 @@ mod tests {
         true,
         true,
         false,
-        true,
+        false,
         false,
         false,
         true,
@@ -1888,7 +2311,7 @@ mod tests {
         )
         .await
         .unwrap();
-      assert_eq!(first.status(), StatusCode::CREATED);
+      assert_eq!(first.status(), StatusCode::OK);
 
       let second = selfhost_app
         .oneshot(
@@ -1944,7 +2367,7 @@ mod tests {
         )
         .await
         .unwrap();
-      assert_eq!(create_resp.status(), StatusCode::CREATED);
+      assert_eq!(create_resp.status(), StatusCode::OK);
       let admin_cookie = create_resp
         .headers()
         .get_all(header::SET_COOKIE)
@@ -1954,11 +2377,12 @@ mod tests {
         .collect::<Vec<_>>()
         .join("; ");
 
-      // Enable client.versionControl in app_configs and invalidate the snapshot cache.
+      // Enable client.versionControl in app_configs (and raise sign-in rate limit for repeated test logins).
       sqlx::query(
         r#"INSERT INTO app_configs (id, value, last_updated_by, created_at, updated_at)
            VALUES ('client.versionControl.enabled', 'true'::jsonb, NULL, now(), now()),
-                  ('client.versionControl.requiredVersion', '">=0.25.0"'::jsonb, NULL, now(), now())
+                  ('client.versionControl.requiredVersion', '">=0.25.0"'::jsonb, NULL, now(), now()),
+                  ('auth.signInRateLimit', '{"ttl":60000,"emailLimit":100,"ipLimit":100}'::jsonb, NULL, now(), now())
            ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = now()"#,
       )
       .execute(db.pool())
@@ -2416,10 +2840,10 @@ mod tests {
       // Lazy GraphQL auth: validation-error, @skip(if: true), and pure __typename queries
       // with a low-version Bearer must NOT revoke the auth_session in PostgreSQL.
       let (gql_auth_session_id, gql_access_token) = issue_bearer().await;
-      for non_exec_query in [
-        r#"{"query":"{ nonExistentRootField }"}"#,
-        r#"{"query":"{ currentUser @skip(if: true) { id } }"}"#,
-        r#"{"query":"{ __typename }"}"#,
+      for (non_exec_query, expected_status) in [
+        (r#"{"query":"{ nonExistentRootField }"}"#, StatusCode::BAD_REQUEST),
+        (r#"{"query":"{ currentUser @skip(if: true) { id } }"}"#, StatusCode::OK),
+        (r#"{"query":"{ __typename }"}"#, StatusCode::OK),
       ] {
         let resp = app
           .clone()
@@ -2435,7 +2859,7 @@ mod tests {
           )
           .await
           .unwrap();
-        assert_eq!(resp.status(), StatusCode::OK, "query={non_exec_query}");
+        assert_eq!(resp.status(), expected_status, "query={non_exec_query}");
         let revoked_count: i64 =
           sqlx::query_scalar("SELECT COUNT(*) FROM auth_sessions WHERE id = $1 AND revoked_at IS NOT NULL")
             .bind(&gql_auth_session_id)

@@ -1234,7 +1234,8 @@ fn worker_proxy_doc_renderer_and_telemetry_contracts() {
     assert!(ws_html.contains("apple-touch-icon"));
     assert!(ws_html.contains("emotion-insertion-point"));
     assert!(
-      ws_html.contains("api&#x2f;avatars&#x2f;ws-av-key") || ws_html.contains("/api/avatars/ws-av-key"),
+      ws_html.contains("api&#x2f;workspaces&#x2f;ws-m4&#x2f;blobs&#x2f;v1&#x2f;ws-av-key")
+        || ws_html.contains("/api/workspaces/ws-m4/blobs/v1/ws-av-key"),
       "{ws_html}"
     );
 

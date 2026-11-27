@@ -320,7 +320,7 @@ async fn handle_google_webhook(State(state): State<RouterState>, headers: Header
     .get("x-goog-channel-token")
     .and_then(|v| v.to_str().ok())
     .unwrap_or_default();
-  if !svc.verify_webhook_token(&configs.google, token) {
+  if !svc.verify_webhook_token(&configs.google, token).await {
     return with_cookies(StatusCode::UNAUTHORIZED.into_response(), &cookie_action, https);
   }
   match svc.handle_webhook(CalendarProviderName::Google, channel_id).await {

@@ -133,7 +133,7 @@ fn doc_sharing_histories_comments_notifications_open_app_and_selfhost_license() 
       )
       .await
       .unwrap();
-    assert_eq!(setup_resp.status(), StatusCode::CREATED);
+    assert_eq!(setup_resp.status(), StatusCode::OK);
     let owner_cookie = cookie_header_from_response(&setup_resp);
     let owner_id = body_json(setup_resp).await["id"].as_str().unwrap().to_owned();
 
@@ -546,7 +546,7 @@ fn doc_sharing_histories_comments_notifications_open_app_and_selfhost_license() 
       )
       .await
       .unwrap();
-    assert_eq!(redeem_ok.status(), StatusCode::CREATED);
+    assert_eq!(redeem_ok.status(), StatusCode::OK);
     assert_eq!(body_json(redeem_ok).await["id"], owner_id);
 
     // Second redemption of the same code must fail with 400 INVALID_AUTH_STATE.
@@ -800,7 +800,7 @@ fn billing_spi_hooks_team_owner_delete_block_and_customer_portal() {
       )
       .await
       .unwrap();
-    assert_eq!(setup.status(), StatusCode::CREATED);
+    assert_eq!(setup.status(), StatusCode::OK);
     let owner_cookie = cookie_header_from_response(&setup);
 
     let member_id = format!("usr_{}", uuid::Uuid::new_v4().simple());
@@ -824,7 +824,7 @@ fn billing_spi_hooks_team_owner_delete_block_and_customer_portal() {
       )
       .await
       .unwrap();
-    assert_eq!(member_login.status(), StatusCode::CREATED);
+    assert_eq!(member_login.status(), StatusCode::OK);
     let member_cookie = cookie_header_from_response(&member_login);
 
     // Create workspace owned by owner, mark it as Team in mock QuotaGate.
@@ -934,7 +934,7 @@ async fn create_user_and_cookie(
     )
     .await
     .unwrap();
-  assert_eq!(resp.status(), StatusCode::CREATED);
+  assert_eq!(resp.status(), StatusCode::OK);
   let cookie = cookie_header_from_response(&resp);
   (user_id, cookie)
 }
@@ -1400,7 +1400,7 @@ fn doc_acl_owner_protection_pagination_attachments_open_app_and_licenses() {
       )
       .await
       .unwrap();
-    assert_eq!(native_resp.status(), StatusCode::CREATED);
+    assert_eq!(native_resp.status(), StatusCode::OK);
     let set_cookies: Vec<String> = native_resp
       .headers()
       .get_all(header::SET_COOKIE)

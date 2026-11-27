@@ -27,13 +27,15 @@ use crate::{
   storage::SyncStorage,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct SyncConfig {
   pub redis_url: Option<String>,
   pub session_redis_url: Option<String>,
   pub origin_channel: String,
   pub origin_id: Option<String>,
   pub deployment_prefix: String,
+  /// Public server base URL used to construct workspace invite links.
+  pub external_url: String,
   /// Allowed browser `Origin` values (scheme + host + optional port) for
   /// `/socket.io/` CORS / WebSocket handshake validation.
   pub allowed_origins: Vec<String>,
@@ -41,6 +43,25 @@ pub struct SyncConfig {
   /// permitted in addition to `allowed_origins` and the 6 native client
   /// origins (enabled in dev/test channels, disabled in production/stable).
   pub allow_dev_loopback: bool,
+  /// Optional commercial Copilot realtime handler (`copilot.transcript.task.*`
+  /// and `workspace.embedding.progress.*`). When `None`, those ops return `COPILOT_DISABLED`.
+  pub copilot_realtime: Option<Arc<dyn crate::storage::CopilotRealtimeHandler>>,
+}
+
+impl std::fmt::Debug for SyncConfig {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("SyncConfig")
+      .field("redis_url", &self.redis_url)
+      .field("session_redis_url", &self.session_redis_url)
+      .field("origin_channel", &self.origin_channel)
+      .field("origin_id", &self.origin_id)
+      .field("deployment_prefix", &self.deployment_prefix)
+      .field("external_url", &self.external_url)
+      .field("allowed_origins", &self.allowed_origins)
+      .field("allow_dev_loopback", &self.allow_dev_loopback)
+      .field("copilot_realtime", &self.copilot_realtime.is_some())
+      .finish()
+  }
 }
 
 impl SyncConfig {
@@ -58,8 +79,10 @@ impl SyncConfig {
       origin_channel: format!("v2:{channel}"),
       origin_id: None,
       deployment_prefix: "selfhosted".to_owned(),
+      external_url: String::new(),
       allowed_origins: Vec::new(),
       allow_dev_loopback,
+      copilot_realtime: None,
     }
   }
 }
@@ -108,7 +131,7 @@ impl SyncServer {
     quota_gate: Arc<dyn QuotaGate>,
     config: SyncConfig,
   ) -> Self {
-    let storage = match config.session_redis_url.as_deref() {
+    let mut storage = match config.session_redis_url.as_deref() {
       Some(url) => {
         match SyncStorage::with_quota_gate(db.clone(), Arc::clone(&quota_gate)).with_session_redis_url(url) {
           Ok(s) => s,
@@ -120,6 +143,15 @@ impl SyncServer {
       }
       None => SyncStorage::with_quota_gate(db, quota_gate),
     };
+    if let Some(url) = config.redis_url.as_deref() {
+      storage = storage.with_cache_redis_url(url);
+    }
+    if !config.external_url.is_empty() {
+      storage = storage.with_external_url(config.external_url);
+    }
+    if let Some(handler) = config.copilot_realtime {
+      storage = storage.with_copilot_realtime(handler);
+    }
     let eventbus = match config.origin_id {
       Some(origin_id) => {
         RedisSyncBridge::start_with_origin_id(config.redis_url.as_deref(), config.origin_channel, origin_id).await

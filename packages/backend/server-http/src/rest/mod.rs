@@ -99,12 +99,13 @@ pub(crate) fn format_http_date(dt: DateTime<Utc>) -> String {
   dt.format("%a, %d %b %Y %H:%M:%S GMT").to_string()
 }
 
-pub(crate) fn append_clear_auth_cookies(headers: &mut HeaderMap) {
+pub(crate) fn append_clear_auth_cookies(headers: &mut HeaderMap, https: bool) {
   let expired = "Thu, 01 Jan 1970 00:00:00 GMT";
+  let secure_attr = if https { "; Secure" } else { "" };
   let cookies = [
-    format!("{SESSION_COOKIE_NAME}=; Path=/; Expires={expired}"),
-    format!("{USER_ID_COOKIE_NAME}=; Path=/; Expires={expired}"),
-    format!("{CSRF_COOKIE_NAME}=; Path=/; Expires={expired}"),
+    format!("{SESSION_COOKIE_NAME}=; Path=/; Expires={expired}; HttpOnly; SameSite=Lax{secure_attr}"),
+    format!("{USER_ID_COOKIE_NAME}=; Path=/; Expires={expired}; SameSite=Lax{secure_attr}"),
+    format!("{CSRF_COOKIE_NAME}=; Path=/; Expires={expired}; SameSite=Lax{secure_attr}"),
   ];
   for cookie in cookies {
     if let Ok(val) = HeaderValue::from_str(&cookie) {
@@ -137,9 +138,11 @@ pub(crate) fn append_refresh_auth_cookies(
 pub(crate) enum PrincipalCookieAction {
   None,
   Clear,
+  SetUserId(String),
   Refresh {
     session_id: String,
     expires_at: DateTime<Utc>,
+    sync_user_id: Option<String>,
   },
 }
 
@@ -147,9 +150,25 @@ impl PrincipalCookieAction {
   pub(crate) fn apply_to(&self, headers: &mut HeaderMap, https: bool) {
     match self {
       Self::None => {}
-      Self::Clear => append_clear_auth_cookies(headers),
-      Self::Refresh { session_id, expires_at } => {
+      Self::Clear => append_clear_auth_cookies(headers, https),
+      Self::SetUserId(uid) => {
+        let cookie = format!("{USER_ID_COOKIE_NAME}={uid}; Path=/; SameSite=Lax");
+        if let Ok(val) = HeaderValue::from_str(&cookie) {
+          headers.append(header::SET_COOKIE, val);
+        }
+      }
+      Self::Refresh {
+        session_id,
+        expires_at,
+        sync_user_id,
+      } => {
         append_refresh_auth_cookies(headers, session_id, *expires_at, https);
+        if let Some(uid) = sync_user_id {
+          let cookie = format!("{USER_ID_COOKIE_NAME}={uid}; Path=/; SameSite=Lax");
+          if let Ok(val) = HeaderValue::from_str(&cookie) {
+            headers.append(header::SET_COOKIE, val);
+          }
+        }
       }
     }
   }
@@ -173,17 +192,25 @@ pub enum PrincipalResolutionError {
 impl PrincipalResolutionError {
   pub fn into_envelope(self) -> (LegacyErrorEnvelope, bool) {
     match self {
-      Self::AccessToken(code) => (
-        LegacyErrorEnvelope {
-          status: StatusCode::UNAUTHORIZED.as_u16(),
-          code: code.as_code().to_owned(),
-          error_type: "AUTHENTICATION_REQUIRED".into(),
-          name: code.as_name().to_owned(),
-          message: format!("Authentication failed ({}).", code.as_code()),
-          data: None,
-        },
-        false,
-      ),
+      Self::AccessToken(code) => {
+        let message = match code {
+          AccessTokenErrorCode::AccessTokenExpired => "The access token has expired.",
+          AccessTokenErrorCode::AccessTokenInvalid => "The access token is invalid.",
+          AccessTokenErrorCode::AuthSessionRevoked => "The auth session has been revoked.",
+          AccessTokenErrorCode::AuthSessionExpired => "The auth session has expired.",
+        };
+        (
+          LegacyErrorEnvelope {
+            status: StatusCode::UNAUTHORIZED.as_u16(),
+            code: code.as_code().to_owned(),
+            error_type: "AUTHENTICATION_REQUIRED".into(),
+            name: code.as_name().to_owned(),
+            message: message.to_owned(),
+            data: None,
+          },
+          false,
+        )
+      }
       Self::VersionGuard { error, clear_cookies } => (error.into_envelope(), clear_cookies),
       Self::Domain(err) => (domain_error_to_envelope(&err), false),
     }
@@ -193,7 +220,7 @@ impl PrincipalResolutionError {
     let (env, clear_cookies) = self.into_envelope();
     let mut resp = envelope_to_http_response(env);
     if clear_cookies {
-      append_clear_auth_cookies(resp.headers_mut());
+      append_clear_auth_cookies(resp.headers_mut(), false);
     }
     resp
   }
@@ -207,10 +234,6 @@ pub fn json_utf8_response(status: StatusCode, body: impl Serialize, no_store: bo
     header::CONTENT_TYPE,
     HeaderValue::from_static("application/json; charset=utf-8"),
   );
-  h.insert(
-    header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
-    HeaderValue::from_static("true"),
-  );
   if no_store {
     h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
   }
@@ -219,6 +242,20 @@ pub fn json_utf8_response(status: StatusCode, body: impl Serialize, no_store: bo
 
 pub fn envelope_to_http_response(env: LegacyErrorEnvelope) -> Response {
   let status = StatusCode::from_u16(env.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+  if status.is_server_error() {
+    let request_id = Uuid::new_v4().to_string();
+    let mut val = serde_json::to_value(&env).unwrap_or_default();
+    if let Some(obj) = val.as_object_mut() {
+      obj.insert("requestId".to_owned(), serde_json::Value::String(request_id.clone()));
+    }
+    let mut resp = json_utf8_response(status, val, false);
+    if let Ok(v) = HeaderValue::from_str(&request_id) {
+      resp
+        .headers_mut()
+        .insert(header::HeaderName::from_static("x-request-id"), v);
+    }
+    return resp;
+  }
   json_utf8_response(status, env, false)
 }
 
@@ -367,7 +404,7 @@ pub(crate) async fn resolve_request_principal_with_policy(
   else {
     return Ok(ResolvedRequestPrincipal {
       principal: None,
-      cookie_action: PrincipalCookieAction::None,
+      cookie_action: PrincipalCookieAction::Clear,
       rejected_cookie_version: None,
     });
   };
@@ -401,7 +438,7 @@ pub(crate) async fn resolve_request_principal_with_policy(
     });
   }
 
-  let ttr_window = chrono::Duration::seconds(state.app.auth.config().session_ttr_seconds);
+  let ttr_window = chrono::Duration::seconds(state.app.auth.session_ttr_seconds().await);
   let in_ttr_window = peek.expires_at.is_none_or(|exp| exp - Utc::now() <= ttr_window);
   let p = if in_ttr_window {
     let header_ver_for_refresh = extract_version_header(headers).filter(|s| !s.is_empty());
@@ -416,7 +453,7 @@ pub(crate) async fn resolve_request_principal_with_policy(
       None => {
         return Ok(ResolvedRequestPrincipal {
           principal: None,
-          cookie_action: PrincipalCookieAction::None,
+          cookie_action: PrincipalCookieAction::Clear,
           rejected_cookie_version: None,
         });
       }
@@ -425,12 +462,21 @@ pub(crate) async fn resolve_request_principal_with_policy(
     peek
   };
 
+  let sync_user_id = if user_id != Some(p.user.id.as_str()) {
+    Some(p.user.id.clone())
+  } else {
+    None
+  };
   let cookie_action = match p.refreshed_expires_at {
     Some(expires_at) => PrincipalCookieAction::Refresh {
       session_id: p.session_id.clone(),
       expires_at,
+      sync_user_id,
     },
-    None => PrincipalCookieAction::None,
+    None => match sync_user_id {
+      Some(uid) => PrincipalCookieAction::SetUserId(uid),
+      None => PrincipalCookieAction::None,
+    },
   };
 
   Ok(ResolvedRequestPrincipal {

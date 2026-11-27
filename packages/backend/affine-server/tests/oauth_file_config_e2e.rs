@@ -196,7 +196,7 @@ fn file_configured_oauth_provider_precedence_and_fallback() {
       &json!({ "email": "brand-new-file-cfg@example.test" }),
     )
     .await;
-    assert_eq!(st, 200);
+    assert_eq!(st, 201);
     assert_eq!(preflight_file["methods"]["oauth"]["available"], false);
 
     // Real OAuth callback with file-configured allowSignupForOauth=false returns 403 SIGN_UP_FORBIDDEN and creates 0 users
@@ -242,7 +242,7 @@ fn file_configured_oauth_provider_precedence_and_fallback() {
       &json!({ "email": "brand-new-file-cfg@example.test" }),
     )
     .await;
-    assert_eq!(st, 200);
+    assert_eq!(st, 201);
     assert_eq!(preflight_pg["methods"]["oauth"]["available"], true);
     sqlx::query("DELETE FROM app_configs WHERE id = 'auth.allowSignupForOauth'")
       .execute(running.state.db.pool())
@@ -254,7 +254,7 @@ fn file_configured_oauth_provider_precedence_and_fallback() {
       &json!({ "email": "brand-new-file-cfg@example.test" }),
     )
     .await;
-    assert_eq!(st, 200);
+    assert_eq!(st, 201);
     assert_eq!(preflight_back["methods"]["oauth"]["available"], false);
     let (st, body) = http_post_json(
       running.addr,

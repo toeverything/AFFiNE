@@ -283,7 +283,12 @@ async fn handle_render_workspace_path(
         let avatar = row
           .get::<Option<String>, _>("avatar_key")
           .filter(|k| !k.is_empty())
-          .map(|k| format!("{}/api/avatars/{k}", cfg.external_url.trim_end_matches('/')));
+          .map(|k| {
+            format!(
+              "{}/api/workspaces/{ws_id}/blobs/v1/{k}?sourceType=currentDoc&docId={ws_id}",
+              cfg.external_url.trim_end_matches('/')
+            )
+          });
         meta = Some((name, String::new(), avatar));
       }
     }

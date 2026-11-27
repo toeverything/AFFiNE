@@ -709,6 +709,7 @@ fn to_domain_ws_filter(f: &ListWorkspaceInput) -> AdminWorkspaceFilter {
 }
 
 pub(crate) async fn resolve_server_config(ctx: &Context<'_>) -> Result<ServerConfigType> {
+  super::enforce_default_throttle_if_anonymous_graphql(ctx).await?;
   let state = ctx.data_unchecked::<Arc<AppState>>();
   let cfg = state.config.load();
   let initialized = state

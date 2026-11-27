@@ -99,13 +99,61 @@ pub struct SyncAwarenessEventPayload {
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeTopicChangedPayload {
   pub topic: String,
-  pub room: String,
+  #[serde(default)]
+  pub room: Option<String>,
   #[serde(default)]
   pub input: Value,
   #[serde(default)]
   pub event: Value,
   #[serde(default)]
   pub payload: Value,
+}
+
+impl RealtimeTopicChangedPayload {
+  /// Returns the explicit `room` when present, or derives it from `topic` + `input`
+  /// so cross-generation Node `v0.27.5` events (which omit `room`) are never dropped.
+  pub fn resolved_room(&self) -> Option<String> {
+    if let Some(r) = self.room.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+      return Some(r.to_owned());
+    }
+    let ws = self
+      .input
+      .get("workspaceId")
+      .and_then(Value::as_str)
+      .filter(|s| !s.is_empty());
+    let doc = self
+      .input
+      .get("docId")
+      .and_then(Value::as_str)
+      .filter(|s| !s.is_empty());
+    let uid = self
+      .input
+      .get("userId")
+      .and_then(Value::as_str)
+      .filter(|s| !s.is_empty());
+    let task_id = self
+      .input
+      .get("taskId")
+      .and_then(Value::as_str)
+      .filter(|s| !s.is_empty());
+    match self.topic.as_str() {
+      "workspace.access.changed" => ws.map(|w| format!("workspace:{w}:access")),
+      "workspace.config.changed" => ws.map(|w| format!("workspace:{w}:config")),
+      "workspace.members.changed" => ws.map(|w| format!("workspace:{w}:members")),
+      "workspace.invite-link.changed" => ws.map(|w| format!("workspace:{w}:invite-link")),
+      "workspace.quota-state.changed" => ws.map(|w| format!("workspace:{w}:quota-state")),
+      "workspace.embedding.progress.changed" => ws.map(|w| format!("workspace:{w}:embedding-progress")),
+      "doc.share-state.changed" => ws.zip(doc).map(|(w, d)| format!("workspace:{w}:doc:{d}:share-state")),
+      "doc.grants.changed" => ws.zip(doc).map(|(w, d)| format!("workspace:{w}:doc:{d}:grants")),
+      "comment.changed" => ws.zip(doc).map(|(w, d)| format!("workspace:{w}:doc:{d}:comment")),
+      "copilot.transcript.task.changed" => ws.zip(task_id).map(|(w, t)| format!("copilot:transcript:{w}:{t}")),
+      "notification.count.changed" => uid.map(|u| format!("user:{u}:notification")),
+      "user.settings.changed" => uid.map(|u| format!("user:{u}:settings")),
+      "user.profile.changed" => uid.map(|u| format!("user:{u}:profile")),
+      "user.quota-state.changed" => uid.map(|u| format!("user:{u}:quota-state")),
+      _ => None,
+    }
+  }
 }
 
 /// Incoming cluster events delivered to the local `SpaceSyncGateway`.
@@ -513,5 +561,57 @@ async fn run_subscriber_loop(
         });
       }
     }
+  }
+}
+
+#[cfg(test)]
+mod realtime_topic_tests {
+  use super::*;
+
+  #[test]
+  fn realtime_topic_changed_deserializes_without_room_and_derives_room() {
+    let raw = serde_json::json!({
+      "topic": "doc.share-state.changed",
+      "input": { "workspaceId": "ws-1", "docId": "doc-2" },
+      "event": { "changed": true }
+    });
+    let payload: RealtimeTopicChangedPayload = serde_json::from_value(raw).expect("deserialize without room");
+    assert_eq!(payload.room, None);
+    assert_eq!(
+      payload.resolved_room().as_deref(),
+      Some("workspace:ws-1:doc:doc-2:share-state")
+    );
+
+    let raw_user = serde_json::json!({
+      "topic": "user.quota-state.changed",
+      "input": { "userId": "u-42" },
+      "event": {}
+    });
+    let payload_user: RealtimeTopicChangedPayload = serde_json::from_value(raw_user).expect("deserialize user topic");
+    assert_eq!(payload_user.resolved_room().as_deref(), Some("user:u-42:quota-state"));
+
+    let raw_transcript = serde_json::json!({
+      "topic": "copilot.transcript.task.changed",
+      "input": { "workspaceId": "ws-1", "taskId": "task-9" },
+      "event": {}
+    });
+    let payload_transcript: RealtimeTopicChangedPayload =
+      serde_json::from_value(raw_transcript).expect("deserialize transcript topic");
+    assert_eq!(
+      payload_transcript.resolved_room().as_deref(),
+      Some("copilot:transcript:ws-1:task-9")
+    );
+
+    let raw_embed = serde_json::json!({
+      "topic": "workspace.embedding.progress.changed",
+      "input": { "workspaceId": "ws-1" },
+      "event": {}
+    });
+    let payload_embed: RealtimeTopicChangedPayload =
+      serde_json::from_value(raw_embed).expect("deserialize embedding progress topic");
+    assert_eq!(
+      payload_embed.resolved_room().as_deref(),
+      Some("workspace:ws-1:embedding-progress")
+    );
   }
 }

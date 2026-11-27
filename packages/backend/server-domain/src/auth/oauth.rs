@@ -153,7 +153,7 @@ impl AuthService {
           &input.redirect_allowed_origins,
           &input.redirect_trusted_domains,
         )
-        .ok_or_else(|| val_err("invalid_oauth_preflight"))
+        .ok_or_else(|| DomainError::Forbidden("invalid_oauth_redirect_uri".to_owned()))
       })
       .transpose()?;
     let oidc = if provider == "oidc" {

@@ -67,9 +67,14 @@ struct AuthUserSummary {
 
 pub(crate) async fn handle_create_admin_user(
   State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
   headers: HeaderMap,
   axum::Json(body): axum::Json<CreateAdminUserBody>,
 ) -> Response {
+  let throttle = match enforce_throttle_http(&state, &headers, peer, None, ThrottleSpec::Default).await {
+    Ok(h) => h,
+    Err(resp) => return *resp,
+  };
   let result = state
     .app
     .auth
@@ -81,11 +86,11 @@ pub(crate) async fn handle_create_admin_user(
     })
     .await;
 
-  match result {
+  let mut resp = match result {
     Ok(sign_in) => {
       let cfg = state.app.config.load();
       let mut resp = json_utf8_response(
-        StatusCode::CREATED,
+        StatusCode::OK,
         AuthUserSummary {
           email: sign_in.user.email.clone(),
           id: sign_in.user.id.clone(),
@@ -97,7 +102,9 @@ pub(crate) async fn handle_create_admin_user(
       resp
     }
     Err(err) => domain_error_to_http_response(&err),
-  }
+  };
+  apply_throttle(resp.headers_mut(), throttle);
+  resp
 }
 
 #[derive(Debug, Serialize)]
@@ -249,7 +256,7 @@ pub(crate) async fn handle_preflight(
   let mut resp = match serde_json::from_slice::<PreflightBody>(&body_bytes) {
     Ok(body) => match canonical_email(&body.email) {
       Ok(email) => match state.app.auth.login_preflight(&email).await {
-        Ok(preflight) => json_utf8_response(StatusCode::OK, preflight, true),
+        Ok(preflight) => json_utf8_response(StatusCode::CREATED, preflight, true),
         Err(err) => domain_error_to_http_response(&err),
       },
       Err(_) => invalid_email_response(),
@@ -295,6 +302,154 @@ pub struct SignInBody {
   pub challenge: Option<String>,
 }
 
+async fn check_sign_in_rate_bucket(state: &RouterState, key: &str, limit: u64, ttl_ms: u64) -> Result<(), u64> {
+  if limit == 0 || ttl_ms == 0 {
+    return Ok(());
+  }
+  if let Some(client) = state.app.redis.as_ref() {
+    let mut conn = state.app.throttle_redis_conn.lock().await.clone();
+    if conn.is_none() {
+      conn = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        client.get_multiplexed_async_connection(),
+      )
+      .await
+      .ok()
+      .and_then(Result::ok);
+    }
+    if let Some(mut c) = conn {
+      let script = redis::Script::new(
+        "local h = redis.call('INCR', KEYS[1]) \
+         if h == 1 or redis.call('PTTL', KEYS[1]) == -1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end \
+         local pttl = redis.call('PTTL', KEYS[1]) \
+         if pttl < 0 then pttl = tonumber(ARGV[1]) end \
+         return {h, pttl}",
+      );
+      let res: Option<(u64, i64)> = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        script.key(key).arg(ttl_ms).invoke_async(&mut c),
+      )
+      .await
+      .ok()
+      .and_then(Result::ok);
+      if let Some((hits, rem_ms)) = res {
+        *state.app.throttle_redis_conn.lock().await = Some(c);
+        if hits > limit {
+          let retry_after_secs = (rem_ms.max(1) as u64).div_ceil(1000).max(1);
+          return Err(retry_after_secs);
+        }
+        return Ok(());
+      }
+    }
+  }
+  use std::collections::HashMap;
+  use std::sync::{Mutex, OnceLock};
+  use std::time::{Duration, Instant};
+  struct MemRateTable {
+    map: HashMap<String, (u64, Instant)>,
+    last_gc: Instant,
+  }
+  const MAX_MEM_RATE_KEYS: usize = 4096;
+  static MEM: OnceLock<Mutex<MemRateTable>> = OnceLock::new();
+  let now = Instant::now();
+  let window = Duration::from_millis(ttl_ms);
+  let Ok(mut table) = MEM
+    .get_or_init(|| {
+      Mutex::new(MemRateTable {
+        map: HashMap::new(),
+        last_gc: now,
+      })
+    })
+    .lock()
+  else {
+    return Ok(());
+  };
+  if table.map.len() >= MAX_MEM_RATE_KEYS && now.duration_since(table.last_gc) >= Duration::from_secs(1) {
+    table.map.retain(|_, (_, exp)| *exp > now);
+    table.last_gc = now;
+  }
+  if table.map.len() >= MAX_MEM_RATE_KEYS
+    && !table.map.contains_key(key)
+    && let Some(oldest_key) = table
+      .map
+      .iter()
+      .min_by_key(|(_, (_, exp))| *exp)
+      .map(|(k, _)| k.clone())
+  {
+    table.map.remove(&oldest_key);
+  }
+  let entry = table.map.entry(key.to_owned()).or_insert((0, now + window));
+  if entry.1 <= now {
+    *entry = (0, now + window);
+  }
+  entry.0 += 1;
+  if entry.0 > limit {
+    let rem_ms = entry.1.saturating_duration_since(now).as_millis() as u64;
+    let retry_after_secs = rem_ms.div_ceil(1000).max(1);
+    return Err(retry_after_secs);
+  }
+  Ok(())
+}
+
+async fn enforce_sign_in_rate_limit(
+  state: &RouterState,
+  headers: &HeaderMap,
+  peer: Option<std::net::SocketAddr>,
+  canonical_email_str: &str,
+) -> Result<(), Box<Response>> {
+  let eff = state.app.app_config.get_effective_app_config_arc().await.ok();
+  let rl = eff.as_ref().and_then(|c| c.pointer("/auth/signInRateLimit"));
+  let ttl_ms = rl.and_then(|v| v.get("ttl")?.as_u64()).unwrap_or(60_000);
+  let email_limit = rl.and_then(|v| v.get("emailLimit")?.as_u64()).unwrap_or(5);
+  let ip_limit = rl.and_then(|v| v.get("ipLimit")?.as_u64()).unwrap_or(20);
+  let key_prefix = state
+    .app
+    .app_config
+    .get_internal_redis_key_prefix()
+    .await
+    .unwrap_or_default();
+
+  use sha2::{Digest as _, Sha256};
+  let email_hash = hex::encode(Sha256::digest(canonical_email_str.to_ascii_lowercase().as_bytes()));
+  let email_key = format!("{key_prefix}auth:sign-in-rate:email:{email_hash}");
+  let email_res = check_sign_in_rate_bucket(state, &email_key, email_limit, ttl_ms).await;
+
+  let ip = ["cf-connecting-ip", "x-forwarded-for", "x-real-ip"]
+    .into_iter()
+    .find_map(|name| {
+      let raw = headers.get(name)?.to_str().ok()?;
+      let s = if name == "x-forwarded-for" {
+        raw.split(',').next()?
+      } else {
+        raw
+      }
+      .trim();
+      (!s.is_empty()).then(|| s.to_owned())
+    })
+    .or_else(|| peer.map(|a| a.ip().to_string()));
+  let ip_res = if let Some(ip_str) = ip {
+    let ip_hash = hex::encode(Sha256::digest(ip_str.as_bytes()));
+    let ip_key = format!("{key_prefix}auth:sign-in-rate:ip:{ip_hash}");
+    check_sign_in_rate_bucket(state, &ip_key, ip_limit, ttl_ms).await
+  } else {
+    Ok(())
+  };
+
+  let retry_after = match (email_res, ip_res) {
+    (Err(a), Err(b)) => Some(a.max(b)),
+    (Err(a), Ok(())) | (Ok(()), Err(a)) => Some(a),
+    (Ok(()), Ok(())) => None,
+  };
+  if let Some(retry_after_secs) = retry_after {
+    let mut resp = envelope_to_http_response(super::throttle::too_many_requests_envelope());
+    if let Ok(v) = HeaderValue::from_str(&retry_after_secs.to_string()) {
+      resp.headers_mut().insert(header::RETRY_AFTER, v);
+    }
+    return Err(Box::new(resp));
+  }
+  Ok(())
+}
+
 pub(crate) async fn handle_sign_in(
   State(state): State<RouterState>,
   PeerAddr(peer): PeerAddr,
@@ -329,6 +484,9 @@ pub(crate) async fn handle_sign_in(
     Ok(e) => e,
     Err(_) => return apply_old_cookie(invalid_email_response()),
   };
+  if let Err(resp) = enforce_sign_in_rate_limit(&state, &headers, peer, &email).await {
+    return apply_old_cookie(*resp);
+  }
 
   if let Some(password) = body.password {
     if password.is_empty() {
@@ -336,6 +494,53 @@ pub(crate) async fn handle_sign_in(
         "Password must not be empty.".to_owned(),
       )));
     }
+    if password.len() > server_domain::auth::password::MAX_PASSWORD_BYTES {
+      return apply_old_cookie(domain_error_to_http_response(&DomainError::Validation(
+        "Password exceeds maximum allowed length.".to_owned(),
+      )));
+    }
+    let client_version = extract_non_empty_client_version(&headers);
+    if is_native_client_request(&headers) {
+      return match state
+        .app
+        .auth
+        .sign_in_with_password_native(&email, &password, client_version.as_deref())
+        .await
+      {
+        Ok((user, exchange_code)) => {
+          let mut val = serde_json::to_value(SessionUserDto::from(user)).unwrap_or_default();
+          if let Some(obj) = val.as_object_mut() {
+            obj.insert("exchangeCode".to_owned(), serde_json::Value::String(exchange_code));
+          }
+          let mut resp = json_utf8_response(StatusCode::OK, val, false);
+          append_clear_auth_cookies(resp.headers_mut(), https);
+          apply_throttle(resp.headers_mut(), throttle);
+          resp
+        }
+        Err(DomainError::Unauthorized(code)) if code == "wrong_sign_in_credentials" => {
+          apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
+            status: StatusCode::BAD_REQUEST.as_u16(),
+            code: "Bad Request".into(),
+            error_type: "INVALID_INPUT".into(),
+            name: "WRONG_SIGN_IN_CREDENTIALS".into(),
+            message: format!("Wrong user email or password: {email}"),
+            data: Some(serde_json::json!({ "email": email })),
+          }))
+        }
+        Err(DomainError::Unauthorized(code)) if code == "wrong_sign_in_method" => {
+          apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
+            status: StatusCode::BAD_REQUEST.as_u16(),
+            code: "Bad Request".into(),
+            error_type: "INVALID_INPUT".into(),
+            name: "WRONG_SIGN_IN_METHOD".into(),
+            message: "Wrong sign in method.".into(),
+            data: None,
+          }))
+        }
+        Err(err) => apply_old_cookie(domain_error_to_http_response(&err)),
+      };
+    }
+
     let cookies = parse_cookies(&headers);
     let existing_session_id = extract_cookie(&cookies, SESSION_COOKIE_NAME).map(str::to_owned);
     let result = state
@@ -345,32 +550,13 @@ pub(crate) async fn handle_sign_in(
         email: email.clone(),
         password,
         existing_session_id,
-        client_version: extract_non_empty_client_version(&headers),
+        client_version,
       })
       .await;
     return match result {
       Ok(sign_in) => {
         let cfg = state.app.config.load();
-        let client_version = extract_non_empty_client_version(&headers);
-        let body = if is_native_client_request(&headers) {
-          match state
-            .app
-            .auth
-            .issue_exchange_code(&sign_in.user.id, client_version.as_deref())
-            .await
-          {
-            Ok(exchange_code) => {
-              let mut val = serde_json::to_value(SessionUserDto::from(sign_in.user.clone())).unwrap_or_default();
-              if let Some(obj) = val.as_object_mut() {
-                obj.insert("exchangeCode".to_owned(), serde_json::Value::String(exchange_code));
-              }
-              val
-            }
-            Err(err) => return apply_old_cookie(domain_error_to_http_response(&err)),
-          }
-        } else {
-          serde_json::to_value(SessionUserDto::from(sign_in.user.clone())).unwrap_or_default()
-        };
+        let body = serde_json::to_value(SessionUserDto::from(sign_in.user.clone())).unwrap_or_default();
         let mut resp = json_utf8_response(StatusCode::OK, body, false);
         append_auth_cookies(resp.headers_mut(), &sign_in, cfg.https);
         apply_throttle(resp.headers_mut(), throttle);
@@ -401,7 +587,12 @@ pub(crate) async fn handle_sign_in(
   }
 
   let cfg = state.app.config.load();
-  if cfg.app_config_baseline.smtp.host.trim().is_empty() {
+  let eff_cfg = state.app.app_config.get_effective_app_config().await.ok();
+  let smtp_host = eff_cfg
+    .as_ref()
+    .and_then(|c| c.pointer("/mailer/SMTP/host")?.as_str())
+    .unwrap_or(&cfg.app_config_baseline.smtp.host);
+  if smtp_host.trim().is_empty() {
     return apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
       status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
       code: "Internal Server Error".into(),
@@ -412,12 +603,16 @@ pub(crate) async fn handle_sign_in(
     }));
   }
 
+  let mut dynamic_hosts = cfg.app_config_baseline.server.hosts.clone();
+  if let Some(arr) = eff_cfg.as_ref().and_then(|c| c.pointer("/server/hosts")?.as_array()) {
+    for h in arr.iter().filter_map(serde_json::Value::as_str) {
+      if !h.is_empty() && !dynamic_hosts.iter().any(|x| x == h) {
+        dynamic_hosts.push(h.to_owned());
+      }
+    }
+  }
   let raw_callback = body.callback_url.as_deref().unwrap_or("/magic-link");
-  let callback_url = match validate_and_build_magic_link_callback_url(
-    raw_callback,
-    &cfg.external_url,
-    &cfg.app_config_baseline.server.hosts,
-  ) {
+  let callback_url = match validate_and_build_magic_link_callback_url(raw_callback, &cfg.external_url, &dynamic_hosts) {
     Ok(url) => url,
     Err(err) => return apply_old_cookie(domain_error_to_http_response(&err)),
   };
@@ -428,7 +623,7 @@ pub(crate) async fn handle_sign_in(
     .app
     .auth
     .prepare_magic_link(PrepareMagicLinkInput {
-      email,
+      email: email.clone(),
       callback_url,
       client_nonce: body.client_nonce,
       source: Some(source),
@@ -437,6 +632,26 @@ pub(crate) async fn handle_sign_in(
 
   let resp = match res {
     Ok(prepared) => json_utf8_response(StatusCode::OK, serde_json::json!({ "email": prepared.email }), false),
+    Err(DomainError::Unauthorized(code)) if code == "wrong_sign_in_credentials" => {
+      envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::BAD_REQUEST.as_u16(),
+        code: "Bad Request".into(),
+        error_type: "INVALID_INPUT".into(),
+        name: "WRONG_SIGN_IN_CREDENTIALS".into(),
+        message: format!("Wrong user email or password: {email}"),
+        data: Some(serde_json::json!({ "email": email })),
+      })
+    }
+    Err(DomainError::Forbidden(code)) if code == "sign_up_forbidden" => {
+      envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::FORBIDDEN.as_u16(),
+        code: "Forbidden".into(),
+        error_type: "ACTION_FORBIDDEN".into(),
+        name: "SIGN_UP_FORBIDDEN".into(),
+        message: "Sign up is forbidden.".into(),
+        data: None,
+      })
+    }
     Err(err) => domain_error_to_http_response(&err),
   };
   apply_old_cookie(resp)
@@ -518,7 +733,7 @@ pub(crate) async fn handle_sign_out(
     cookie_action.apply_to(resp.headers_mut(), https);
     append_user_id_cookie(resp.headers_mut(), last_user_id);
   } else {
-    append_clear_auth_cookies(resp.headers_mut());
+    append_clear_auth_cookies(resp.headers_mut(), https);
   }
   finish(resp)
 }
@@ -570,6 +785,55 @@ pub(crate) async fn handle_complete_magic_link(
     Err(_) => return apply_old_cookie(invalid_email_response()),
   };
 
+  let client_version = extract_non_empty_client_version(&headers);
+  if is_native_client_request(&headers) {
+    let res = state
+      .app
+      .auth
+      .complete_magic_link_native(CompleteMagicLinkInput {
+        email,
+        otp: body.token,
+        client_nonce: body.client_nonce,
+        existing_session_id: None,
+        client_version,
+      })
+      .await;
+    return match res {
+      Ok((user, exchange_code)) => {
+        let mut resp = json_utf8_response(
+          StatusCode::OK,
+          serde_json::json!({ "id": user.id, "exchangeCode": exchange_code }),
+          false,
+        );
+        append_clear_auth_cookies(resp.headers_mut(), https);
+        apply_throttle(resp.headers_mut(), throttle);
+        resp
+      }
+      Err(DomainError::Unauthorized(code)) if code == "invalid_auth_state" => {
+        apply_old_cookie(invalid_auth_state_response())
+      }
+      Err(DomainError::Unauthorized(_)) => apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::BAD_REQUEST.as_u16(),
+        code: "Bad Request".into(),
+        error_type: "INVALID_INPUT".into(),
+        name: "INVALID_EMAIL_TOKEN".into(),
+        message: "An invalid email token provided.".into(),
+        data: None,
+      })),
+      Err(DomainError::Forbidden(code)) if code == "sign_up_forbidden" => {
+        apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
+          status: StatusCode::FORBIDDEN.as_u16(),
+          code: "Forbidden".into(),
+          error_type: "ACTION_FORBIDDEN".into(),
+          name: "SIGN_UP_FORBIDDEN".into(),
+          message: "Sign up is forbidden.".into(),
+          data: None,
+        }))
+      }
+      Err(err) => apply_old_cookie(domain_error_to_http_response(&err)),
+    };
+  }
+
   let cookies = parse_cookies(&headers);
   let existing_session_id = extract_cookie(&cookies, SESSION_COOKIE_NAME).map(str::to_owned);
   let res = state
@@ -580,28 +844,14 @@ pub(crate) async fn handle_complete_magic_link(
       otp: body.token,
       client_nonce: body.client_nonce,
       existing_session_id,
-      client_version: extract_non_empty_client_version(&headers),
+      client_version,
     })
     .await;
 
   match res {
     Ok(sign_in) => {
       let cfg = state.app.config.load();
-      let client_version = extract_non_empty_client_version(&headers);
-      let body = if is_native_client_request(&headers) {
-        match state
-          .app
-          .auth
-          .issue_exchange_code(&sign_in.user.id, client_version.as_deref())
-          .await
-        {
-          Ok(exchange_code) => serde_json::json!({ "id": sign_in.user.id, "exchangeCode": exchange_code }),
-          Err(err) => return apply_old_cookie(domain_error_to_http_response(&err)),
-        }
-      } else {
-        serde_json::json!({ "id": sign_in.user.id })
-      };
-      let mut resp = json_utf8_response(StatusCode::CREATED, body, false);
+      let mut resp = json_utf8_response(StatusCode::OK, serde_json::json!({ "id": sign_in.user.id }), false);
       append_auth_cookies(resp.headers_mut(), &sign_in, cfg.https);
       apply_throttle(resp.headers_mut(), throttle);
       resp
@@ -624,6 +874,16 @@ pub(crate) async fn handle_complete_magic_link(
       message: "An invalid email token provided.".into(),
       data: None,
     })),
+    Err(DomainError::Forbidden(code)) if code == "sign_up_forbidden" => {
+      apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::FORBIDDEN.as_u16(),
+        code: "Forbidden".into(),
+        error_type: "ACTION_FORBIDDEN".into(),
+        name: "SIGN_UP_FORBIDDEN".into(),
+        message: "Sign up is forbidden.".into(),
+        data: None,
+      }))
+    }
     Err(err) => apply_old_cookie(domain_error_to_http_response(&err)),
   }
 }
@@ -708,15 +968,15 @@ pub(crate) async fn handle_open_app_sign_in(
   match state.app.auth.complete_open_app(&body.code, target).await {
     Ok(server_domain::auth::OpenAppSignInResult::Native { user, exchange_code }) => {
       let payload = serde_json::json!({ "id": user.id, "exchangeCode": exchange_code });
-      let mut resp = json_utf8_response(StatusCode::CREATED, payload, false);
-      append_clear_auth_cookies(resp.headers_mut());
+      let mut resp = json_utf8_response(StatusCode::OK, payload, false);
+      append_clear_auth_cookies(resp.headers_mut(), https);
       apply_throttle(resp.headers_mut(), throttle);
       resp
     }
     Ok(server_domain::auth::OpenAppSignInResult::Cookie(sign_in)) => {
       let cfg = state.app.config.load();
       let payload = serde_json::json!({ "id": sign_in.user.id });
-      let mut resp = json_utf8_response(StatusCode::CREATED, payload, false);
+      let mut resp = json_utf8_response(StatusCode::OK, payload, false);
       append_auth_cookies(resp.headers_mut(), &sign_in, cfg.https);
       apply_throttle(resp.headers_mut(), throttle);
       resp
@@ -862,6 +1122,7 @@ pub(crate) async fn handle_exchange_session(
     .await
   {
     Ok(pair) => auth_session_json_response(StatusCode::CREATED, pair),
+    Err(DomainError::Unauthorized(code)) if code == "invalid_auth_state" => invalid_auth_state_response(),
     Err(err) => domain_error_to_http_response(&err),
   };
   apply_cookie(resp)
@@ -1046,7 +1307,7 @@ pub(crate) async fn handle_revoke_current_session(
   let resp = match state
     .app
     .auth
-    .revoke_auth_session_by_refresh_token(refresh_token, "current_device_sign_out")
+    .revoke_auth_session_by_refresh_token(refresh_token, "refresh_token_revoke")
     .await
   {
     Ok(_) => auth_session_json_response(StatusCode::CREATED, serde_json::json!({})),
@@ -1109,7 +1370,7 @@ pub(crate) async fn handle_revoke_all_sessions(
   let mut resp = match state
     .app
     .auth
-    .revoke_all_user_sessions(&principal.user().id, "user_action")
+    .revoke_all_user_sessions(&principal.user().id, "security_action")
     .await
   {
     Ok(()) => auth_session_json_response(StatusCode::CREATED, serde_json::json!({})),
@@ -1146,7 +1407,7 @@ pub(crate) async fn handle_revoke_auth_session_by_id(
   let mut resp = match state
     .app
     .auth
-    .revoke_auth_session(&auth_session_id, Some(&principal.user().id), "user_action")
+    .revoke_auth_session(&auth_session_id, Some(&principal.user().id), "security_action")
     .await
   {
     Ok(_) => auth_session_json_response(StatusCode::OK, serde_json::json!({})),

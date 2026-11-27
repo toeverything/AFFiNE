@@ -566,7 +566,7 @@ fn blob_contract_authz_app_config_rollback_smtp_isolation_and_magic_link_e2e() {
       setup_body.to_string().as_bytes(),
     )
     .await;
-    assert_eq!(status, 201);
+    assert_eq!(status, 200);
     let owner_cookie = extract_cookie_header(&head);
 
     let ws_req = serde_json::json!({ "query": "mutation { createWorkspace { id } }" });
@@ -588,7 +588,11 @@ fn blob_contract_authz_app_config_rollback_smtp_isolation_and_magic_link_e2e() {
       running.addr,
       "POST",
       "/graphql",
-      &[("Content-Type", &ct), ("Cookie", &owner_cookie)],
+      &[
+        ("Content-Type", &ct),
+        ("Cookie", &owner_cookie),
+        ("apollo-require-preflight", "true"),
+      ],
       &mp_body,
     )
     .await;
@@ -730,7 +734,11 @@ fn blob_contract_authz_app_config_rollback_smtp_isolation_and_magic_link_e2e() {
       running.addr,
       "POST",
       "/graphql",
-      &[("Content-Type", &ct2), ("Cookie", &owner_cookie)],
+      &[
+        ("Content-Type", &ct2),
+        ("Cookie", &owner_cookie),
+        ("apollo-require-preflight", "true"),
+      ],
       &mp_body2,
     )
     .await;
@@ -967,7 +975,7 @@ fn blob_contract_authz_app_config_rollback_smtp_isolation_and_magic_link_e2e() {
       complete_req.to_string().as_bytes(),
     )
     .await;
-    assert_eq!(comp_status, 201);
+    assert_eq!(comp_status, 200);
     let comp_json: Value = serde_json::from_slice(&comp_bytes).unwrap();
     assert!(comp_json["id"].as_str().is_some_and(|s| !s.is_empty()));
     let ml_cookie = extract_cookie_header(&comp_head);
@@ -2651,4 +2659,457 @@ fn dual_instance_metrics_broadcast_invalidates_cache_and_cli_port_priority() {
     pool.close().await;
   });
   let _ = std::fs::remove_dir_all(&tmp_dir);
+}
+
+#[test]
+fn empty_schema_boot_runs_migrations_before_private_key_lookup() {
+  let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+  let migrations_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+  let migrations = MigrationSet::load(&migrations_dir).expect("load migrations");
+  let template = cluster.ensure_template(&migrations).expect("ensure template");
+  let lease = cluster.lease(&template, DEFAULT_LEASE_TTL).expect("lease db");
+
+  let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
+  rt.block_on(async {
+    // Drop the public schema completely to simulate a brand-new empty PostgreSQL database.
+    let reset_pool = sqlx::PgPool::connect(lease.url()).await.expect("connect reset pool");
+    sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+      .execute(&reset_pool)
+      .await
+      .expect("wipe schema");
+    reset_pool.close().await;
+
+    let cli = ServerCli {
+      port: 0,
+      host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+      role: Some(RoleArg::Allinone),
+      deployment_mode: DeploymentModeArg::Selfhosted,
+      database_url: lease.url().to_owned(),
+      redis_key_prefix: "affine:e2e:empty".to_owned(),
+      server_version: "0.27.5".to_owned(),
+      external_url: Some("http://127.0.0.1:3010".to_owned()),
+      channel: Some("production".to_owned()),
+      skip_schema_check: false,
+      db_max_connections: 4,
+      db_statement_timeout_ms: 5_000,
+      ..ServerCli::default()
+    };
+
+    let shutdown = CancellationToken::new();
+    let running = serve_with_extension(cli, Arc::new(CommunityExtension::new()), shutdown)
+      .await
+      .expect("empty schema boot must run ensure_schema_ready before reading crypto.privateKey");
+    let (status, info) = http_request(running.addr, "GET", "/info", None).await;
+    assert_eq!(status, 200);
+    assert_eq!(info["compatibility"], "0.27.5");
+    running.shutdown.cancel();
+    running
+      .join_handle
+      .await
+      .expect("join server task")
+      .expect("server exited cleanly");
+    running.state.db.pool().close().await;
+  });
+}
+
+#[test]
+fn server_sub_path_and_dev_loopback_socketio_origin_matrix() {
+  let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+  let migrations_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+  let migrations = MigrationSet::load(&migrations_dir).expect("load migrations");
+  let template = cluster.ensure_template(&migrations).expect("ensure template");
+  let lease = cluster.lease(&template, DEFAULT_LEASE_TTL).expect("lease db");
+  let tmp_dir = std::env::temp_dir().join(format!("affine-subpath-cfg-{}", uuid::Uuid::new_v4()));
+  std::fs::create_dir_all(&tmp_dir).expect("mkdir tmp");
+  let cfg_file = tmp_dir.join("config.json");
+  std::fs::write(&cfg_file, r#"{"server":{"path":"/affine"}}"#).expect("write config");
+
+  let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
+  rt.block_on(async {
+    // Boot with server.path="/affine" and channel="dev" (NODE_ENV unset -> dev_mode=false).
+    let cli = ServerCli {
+      port: 0,
+      host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+      role: Some(RoleArg::Allinone),
+      deployment_mode: DeploymentModeArg::Selfhosted,
+      database_url: lease.url().to_owned(),
+      redis_key_prefix: "affine:e2e:subpath".to_owned(),
+      server_version: "0.27.5".to_owned(),
+      external_url: Some("https://example.com".to_owned()),
+      channel: Some("dev".to_owned()),
+      config_path: Some(cfg_file.clone()),
+      skip_schema_check: true,
+      db_max_connections: 4,
+      db_statement_timeout_ms: 5_000,
+      ..ServerCli::default()
+    };
+
+    let shutdown = CancellationToken::new();
+    let running = serve_with_extension(cli, Arc::new(CommunityExtension::new()), shutdown)
+      .await
+      .expect("boot subpath server");
+    let (st_sub, info_sub) = http_request(running.addr, "GET", "/affine/info", None).await;
+    assert_eq!(st_sub, 200);
+    assert_eq!(info_sub["compatibility"], "0.27.5");
+    let (st_hz, _) = http_request(running.addr, "GET", "/healthz", None).await;
+    assert_eq!(st_hz, 200);
+
+    // With channel="dev" but NODE_ENV != "development", dev_mode is false so plain http://localhost:8080
+    // is NOT allowed as a Socket.IO CORS origin when external_url is https://example.com.
+    let (_, sio_head, _) = raw_http_request(
+      running.addr,
+      "GET",
+      "/affine/socket.io/?EIO=4&transport=polling",
+      &[("Origin", "http://localhost:8080")],
+      b"",
+    )
+    .await;
+    assert!(
+      !sio_head.to_ascii_lowercase().contains("access-control-allow-origin:"),
+      "channel=dev without NODE_ENV=development must not allow loopback Origin: {sio_head}"
+    );
+    running.shutdown.cancel();
+    running
+      .join_handle
+      .await
+      .expect("join server task")
+      .expect("server exited cleanly");
+    running.state.db.pool().close().await;
+  });
+  let _ = std::fs::remove_dir_all(&tmp_dir);
+}
+
+#[test]
+fn socketio_jwt_handshake_version_gate_and_realtime_contract_e2e() {
+  let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+  let migrations_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+  let migrations = MigrationSet::load(&migrations_dir).expect("load migrations");
+  let template = cluster.ensure_template(&migrations).expect("ensure template");
+  let lease = cluster.lease(&template, DEFAULT_LEASE_TTL).expect("lease db");
+  let redis_guard = TestRedis::from_env_or_docker().expect("test redis");
+
+  let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
+  rt.block_on(async {
+    let reset_pool = sqlx::PgPool::connect(lease.url()).await.expect("connect reset pool");
+    sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+      .execute(&reset_pool)
+      .await
+      .expect("reset schema");
+    reset_pool.close().await;
+
+    let cli = ServerCli {
+      port: 0,
+      host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+      role: Some(RoleArg::Allinone),
+      deployment_mode: DeploymentModeArg::Selfhosted,
+      database_url: lease.url().to_owned(),
+      redis_url: Some(redis_guard.url().to_owned()),
+      redis_key_prefix: "affine:e2e:sio".to_owned(),
+      server_version: "0.27.5".to_owned(),
+      external_url: Some("http://127.0.0.1:3010".to_owned()),
+      channel: Some("production".to_owned()),
+      skip_schema_check: false,
+      db_max_connections: 4,
+      db_statement_timeout_ms: 5_000,
+      ..ServerCli::default()
+    };
+
+    let shutdown = CancellationToken::new();
+    let running = serve_with_extension(cli, Arc::new(CommunityExtension::new()), shutdown)
+      .await
+      .expect("boot socketio e2e server");
+    let addr = running.addr;
+
+    // 1. Create admin user and sign in as native client to obtain a real Bearer JWT.
+    let (st_su, su_head, _) = raw_http_request(
+      addr,
+      "POST",
+      "/api/setup/create-admin-user",
+      &[("Content-Type", "application/json")],
+      br#"{"name":"SIO Owner","email":"sio-owner@example.com","password":"StrongPassword123!"}"#,
+    )
+    .await;
+    assert_eq!(st_su, 200);
+    let owner_cookie = extract_cookie_header(&su_head);
+
+    let (st_ws, _, ws_bytes) = raw_http_request(
+      addr,
+      "POST",
+      "/graphql",
+      &[("Content-Type", "application/json"), ("Cookie", &owner_cookie)],
+      br#"{"query":"mutation { createWorkspace { id } }"}"#,
+    )
+    .await;
+    assert_eq!(st_ws, 200);
+    let ws_json: Value = serde_json::from_slice(&ws_bytes).unwrap();
+    let ws_id = ws_json["data"]["createWorkspace"]["id"].as_str().unwrap().to_owned();
+
+    let (st_si, _, si_bytes) = raw_http_request(
+      addr,
+      "POST",
+      "/api/auth/sign-in",
+      &[
+        ("Content-Type", "application/json"),
+        ("x-affine-client-kind", "native"),
+        ("x-affine-version", "0.27.5"),
+      ],
+      br#"{"email":"sio-owner@example.com","password":"StrongPassword123!"}"#,
+    )
+    .await;
+    assert_eq!(st_si, 200);
+    let si_json: Value = serde_json::from_slice(&si_bytes).unwrap();
+    let exchange_code = si_json["exchangeCode"].as_str().expect("exchangeCode");
+
+    let (st_ex, _, ex_bytes) = raw_http_request(
+      addr,
+      "POST",
+      "/api/auth/session/exchange",
+      &[
+        ("Content-Type", "application/json"),
+        ("x-affine-client-kind", "native"),
+        ("x-affine-version", "0.27.5"),
+      ],
+      serde_json::json!({
+        "code": exchange_code,
+        "installationId": "550e8400-e29b-41d4-a716-446655440099",
+        "platform": "electron",
+        "deviceName": "SIO Test Client"
+      })
+      .to_string()
+      .as_bytes(),
+    )
+    .await;
+    assert_eq!(st_ex, 201);
+    let ex_json: Value = serde_json::from_slice(&ex_bytes).unwrap();
+    let access_token = ex_json["accessToken"].as_str().expect("accessToken").to_owned();
+
+    // Helper for Engine.IO v4 HTTP polling calls.
+    let sio_open = |headers: &'static [(&'static str, &'static str)]| async move {
+      let (st, _, bytes) = raw_http_request(addr, "GET", "/socket.io/?EIO=4&transport=polling", headers, b"").await;
+      let text = String::from_utf8_lossy(&bytes).into_owned();
+      (st, text)
+    };
+
+    // 2. Enable client.versionControl and verify outdated x-affine-version on Socket.IO handshake is rejected.
+    sqlx::query(
+      r#"INSERT INTO app_configs (id, value, last_updated_by, created_at, updated_at)
+         VALUES ('client.versionControl', '{"enabled":true,"requiredVersion":">=0.27.0"}'::jsonb, NULL, now(), now())
+         ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = now()"#,
+    )
+    .execute(running.state.db.pool())
+    .await
+    .expect("enable client.versionControl");
+    running.state.app_config.invalidate_cache();
+
+    let (st_old, old_body) = sio_open(&[("x-affine-version", "0.0.1")]).await;
+    if st_old == 200 {
+      let open_json: Value = serde_json::from_str(&old_body[1..]).expect("open json");
+      let old_sid = open_json["sid"].as_str().unwrap();
+      let connect_pkt = format!("40{}", serde_json::json!({"tokenType":"jwt","token":access_token}));
+      let _ = raw_http_request(
+        addr,
+        "POST",
+        &format!("/socket.io/?EIO=4&transport=polling&sid={old_sid}"),
+        &[
+          ("x-affine-version", "0.0.1"),
+          ("Content-Type", "text/plain;charset=UTF-8"),
+        ],
+        connect_pkt.as_bytes(),
+      )
+      .await;
+      let (_, _, poll_bytes) = raw_http_request(
+        addr,
+        "GET",
+        &format!("/socket.io/?EIO=4&transport=polling&sid={old_sid}"),
+        &[("x-affine-version", "0.0.1")],
+        b"",
+      )
+      .await;
+      let poll_txt = String::from_utf8_lossy(&poll_bytes);
+      assert!(
+        poll_txt.contains("44") || poll_txt.contains("CLIENT_VERSION_OUTDATED") || poll_txt.contains("OUTDATED"),
+        "expected outdated version rejection, got: {poll_txt}"
+      );
+    } else {
+      assert!(
+        st_old == 400 || st_old == 403 || st_old == 426,
+        "unexpected outdated version status {st_old}: {old_body}"
+      );
+    }
+
+    // 3. Valid Bearer JWT handshake succeeds.
+    let (st_open, open_body) = sio_open(&[("x-affine-version", "0.27.5")]).await;
+    assert_eq!(st_open, 200, "sio open failed: {open_body}");
+    let open_json: Value = serde_json::from_str(&open_body[1..]).expect("parse open json");
+    let sid = open_json["sid"].as_str().expect("sid").to_owned();
+
+    let connect_pkt = format!("40{}", serde_json::json!({"tokenType":"jwt","token":access_token}));
+    let (st_conn, _, _) = raw_http_request(
+      addr,
+      "POST",
+      &format!("/socket.io/?EIO=4&transport=polling&sid={sid}"),
+      &[
+        ("x-affine-version", "0.27.5"),
+        ("Content-Type", "text/plain;charset=UTF-8"),
+      ],
+      connect_pkt.as_bytes(),
+    )
+    .await;
+    assert_eq!(st_conn, 200);
+    let (st_poll0, _, poll0_bytes) = raw_http_request(
+      addr,
+      "GET",
+      &format!("/socket.io/?EIO=4&transport=polling&sid={sid}"),
+      &[("x-affine-version", "0.27.5")],
+      b"",
+    )
+    .await;
+    assert_eq!(st_poll0, 200);
+    let poll0_txt = String::from_utf8_lossy(&poll0_bytes);
+    assert!(
+      poll0_txt.starts_with("40"),
+      "expected Socket.IO CONNECT ack (40...), got: {poll0_txt}"
+    );
+
+    let emit_ack = |pkt_id: u32, event: &'static str, payload: Value| {
+      let sid = sid.clone();
+      async move {
+        let pkt = format!("42{pkt_id}{}", serde_json::json!([event, payload]));
+        let (st_p, _, _) = raw_http_request(
+          addr,
+          "POST",
+          &format!("/socket.io/?EIO=4&transport=polling&sid={sid}"),
+          &[
+            ("x-affine-version", "0.27.5"),
+            ("Content-Type", "text/plain;charset=UTF-8"),
+          ],
+          pkt.as_bytes(),
+        )
+        .await;
+        assert_eq!(st_p, 200);
+        let (st_g, _, bytes) = raw_http_request(
+          addr,
+          "GET",
+          &format!("/socket.io/?EIO=4&transport=polling&sid={sid}"),
+          &[("x-affine-version", "0.27.5")],
+          b"",
+        )
+        .await;
+        assert_eq!(st_g, 200);
+        let txt = String::from_utf8_lossy(&bytes).into_owned();
+        let prefix = format!("43{pkt_id}");
+        let ack_part = txt
+          .split('\x1e')
+          .find(|seg| seg.starts_with(&prefix))
+          .unwrap_or_else(|| panic!("missing ack {prefix} in `{txt}`"));
+        let arr: Value = serde_json::from_str(&ack_part[prefix.len()..]).expect("parse ack json");
+        arr[0].clone()
+      }
+    };
+
+    // 4. realtime:request contract coverage.
+    let prof = emit_ack(1, "realtime:request", serde_json::json!({ "op": "user.profile.get" })).await;
+    assert_eq!(prof["data"]["user"]["email"], "sio-owner@example.com", "got {prof}");
+
+    let uq = emit_ack(
+      2,
+      "realtime:request",
+      serde_json::json!({ "op": "user.quota-state.get" }),
+    )
+    .await;
+    let uq_state = &uq["data"]["state"];
+    assert!(
+      uq_state["plan"]
+        .as_str()
+        .is_some_and(|p| p.chars().all(|c| c.is_ascii_lowercase() || c == '_')),
+      "expected lowercase plan, got {uq}"
+    );
+    assert!(
+      uq_state.as_object().unwrap().contains_key("copilotActionLimit"),
+      "copilotActionLimit must be present: {uq}"
+    );
+
+    let wq = emit_ack(
+      3,
+      "realtime:request",
+      serde_json::json!({ "op": "workspace.quota-state.get", "input": { "workspaceId": ws_id } }),
+    )
+    .await;
+    assert!(wq["data"]["state"]["usesOwnerQuota"].is_boolean(), "got {wq}");
+    assert!(wq["data"]["state"]["readonlyReasons"].is_array(), "got {wq}");
+
+    let wm = emit_ack(
+      4,
+      "realtime:request",
+      serde_json::json!({ "op": "workspace.members.get", "input": { "workspaceId": ws_id, "skip": 0, "take": 20 } }),
+    )
+    .await;
+    assert_eq!(wm["data"]["memberCount"], 1, "got {wm}");
+    assert_eq!(wm["data"]["members"].as_array().unwrap().len(), 1);
+
+    let inv = emit_ack(
+      5,
+      "realtime:request",
+      serde_json::json!({ "op": "workspace.invite-link.get", "input": { "workspaceId": ws_id } }),
+    )
+    .await;
+    assert!(inv.get("error").is_none(), "invite-link.get failed: {inv}");
+
+    let tr = emit_ack(
+      6,
+      "realtime:request",
+      serde_json::json!({ "op": "copilot.transcript.task.get", "input": { "workspaceId": ws_id, "taskId": "t1" } }),
+    )
+    .await;
+    assert_eq!(tr["error"]["name"], "COPILOT_DISABLED", "got {tr}");
+
+    let emb = emit_ack(
+      7,
+      "realtime:request",
+      serde_json::json!({ "op": "workspace.embedding.progress.get", "input": { "workspaceId": ws_id } }),
+    )
+    .await;
+    assert_eq!(emb["error"]["name"], "COPILOT_DISABLED", "got {emb}");
+
+    // 5. realtime:subscribe for 4 topics (authorized succeeds, unauthorized workspace rejected).
+    for (idx, (topic, input)) in [
+      ("user.profile.changed", serde_json::json!({})),
+      ("user.quota-state.changed", serde_json::json!({})),
+      (
+        "workspace.quota-state.changed",
+        serde_json::json!({ "workspaceId": ws_id }),
+      ),
+      ("workspace.members.changed", serde_json::json!({ "workspaceId": ws_id })),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+      let ack = emit_ack(
+        10 + idx as u32,
+        "realtime:subscribe",
+        serde_json::json!({ "topic": topic, "input": input }),
+      )
+      .await;
+      assert!(ack.get("error").is_none(), "subscribe {topic} failed: {ack}");
+    }
+
+    let unauth_sub = emit_ack(
+      20,
+      "realtime:subscribe",
+      serde_json::json!({ "topic": "workspace.members.changed", "input": { "workspaceId": "ws_nonexistent_unauth" } }),
+    )
+    .await;
+    assert!(
+      unauth_sub.get("error").is_some(),
+      "unauthorized workspace.members.changed must be rejected: {unauth_sub}"
+    );
+
+    running.shutdown.cancel();
+    running
+      .join_handle
+      .await
+      .expect("join server task")
+      .expect("server exited cleanly");
+    running.state.db.pool().close().await;
+  });
 }

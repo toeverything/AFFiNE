@@ -121,7 +121,7 @@ fn bearer_jwt_auth_preflight_profile_avatar_and_session_cleanup() {
       )
       .await
       .unwrap();
-    assert_eq!(create_resp.status(), StatusCode::CREATED);
+    assert_eq!(create_resp.status(), StatusCode::OK);
     let set_cookies: Vec<String> = create_resp
       .headers()
       .get_all(header::SET_COOKIE)
@@ -154,7 +154,7 @@ fn bearer_jwt_auth_preflight_profile_avatar_and_session_cleanup() {
       )
       .await
       .unwrap();
-    assert_eq!(preflight_resp.status(), StatusCode::OK);
+    assert_eq!(preflight_resp.status(), StatusCode::CREATED);
     let preflight: serde_json::Value = serde_json::from_slice(
       &axum::body::to_bytes(preflight_resp.into_body(), 64 * 1024)
         .await
@@ -567,8 +567,8 @@ fn bearer_jwt_auth_preflight_profile_avatar_and_session_cleanup() {
       "{ currentUser { id } }",
     )
     .await;
-    assert_eq!(status, StatusCode::UNAUTHORIZED);
-    assert_eq!(json["name"], "AUTH_SESSION_REVOKED");
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["errors"][0]["extensions"]["name"], "AUTH_SESSION_REVOKED");
 
     // 5. updateProfile updates name and persists.
     let (status, json) = post_graphql(
@@ -945,7 +945,7 @@ fn per_doc_acl_invite_link_accept_and_avatar_webp_transcode() {
       }),
     )
     .await;
-    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(status, StatusCode::OK);
 
     let alice_id: String = sqlx::query_scalar("SELECT id FROM users WHERE email = 'alice-acl@affine.test'")
       .fetch_one(db.pool())
@@ -1558,7 +1558,7 @@ fn native_session_exchange_single_connection_pool_and_zod_validation() {
       }),
     )
     .await;
-    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(status, StatusCode::OK);
 
     // Sign in as native client to get exchangeCode.
     let signin = app

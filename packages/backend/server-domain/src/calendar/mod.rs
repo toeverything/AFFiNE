@@ -329,6 +329,8 @@ pub struct CalendarService {
   external_url: String,
   generated_webhook_token: Arc<Mutex<Option<String>>>,
   config_override: Option<EffectiveCalendarConfigs>,
+  file_json: Option<Value>,
+  app_config: Option<crate::app_config::AppConfigService>,
 }
 impl CalendarService {
   pub fn new(db: ServerDb, private_key: String, external_url: String) -> Self {
@@ -338,7 +340,19 @@ impl CalendarService {
       external_url,
       generated_webhook_token: Arc::new(Mutex::new(None)),
       config_override: None,
+      file_json: None,
+      app_config: None,
     }
+  }
+  /// Wires `AppConfigService` so DB `crypto.privateKey` overrides take effect dynamically.
+  pub fn with_app_config(mut self, app_config: crate::app_config::AppConfigService) -> Self {
+    self.app_config = Some(app_config);
+    self
+  }
+  /// Provides `config.json` baseline values (`calendar.google`, `calendar.caldav`, `crypto.privateKey`).
+  pub fn with_file_json(mut self, file_json: Option<Value>) -> Self {
+    self.file_json = file_json;
+    self
   }
   /// Shares a process-wide generated webhook verification token across requests.
   pub fn with_shared_webhook_token(mut self, token: Arc<Mutex<Option<String>>>) -> Self {
@@ -351,8 +365,15 @@ impl CalendarService {
     self.config_override = Some(configs);
     self
   }
-  pub(crate) fn private_key(&self) -> &str {
-    &self.private_key
+  /// Resolves the effective `crypto.privateKey` preserving exact raw bytes (no `.trim()`),
+  /// reading the internal unredacted cache so DB `app_configs` overrides take effect dynamically.
+  pub async fn effective_private_key(&self) -> String {
+    if let Some(ref cfg_svc) = self.app_config
+      && let Ok(Some(raw)) = cfg_svc.get_internal_private_key().await
+    {
+      return raw;
+    }
+    self.private_key.clone()
   }
   pub(crate) async fn read_conn(&self, ctx: &'static str) -> Result<TieredConn, CalendarError> {
     self
@@ -371,11 +392,12 @@ impl CalendarService {
   pub(crate) async fn begin_tx(&self, tier: WorkloadTier, ctx: &'static str) -> Result<TieredTx<'_>, CalendarError> {
     self.db.begin_tiered(tier).await.map_err(internal_err(ctx))
   }
-  fn encrypt_patch(&self, patch: &TokenPatch) -> Result<Option<String>, CalendarError> {
+  async fn encrypt_patch_async(&self, patch: &TokenPatch) -> Result<Option<String>, CalendarError> {
     match patch {
-      TokenPatch::Set(v) => Ok(Some(
-        encrypt_token(&self.private_key, v).map_err(CalendarError::Domain)?,
-      )),
+      TokenPatch::Set(v) => {
+        let key = self.effective_private_key().await;
+        Ok(Some(encrypt_token(&key, v).map_err(CalendarError::Domain)?))
+      }
       TokenPatch::Keep | TokenPatch::Clear => Ok(None),
     }
   }
@@ -385,18 +407,35 @@ impl CalendarService {
   pub fn callback_url_for(&self, external_url: &str) -> String {
     format!("{}/api/calendar/oauth/callback", external_url.trim_end_matches('/'))
   }
-  pub fn webhook_token_from_config(&self, google: &CalendarGoogleConfig) -> String {
+  pub async fn webhook_token_from_config(&self, google: &CalendarGoogleConfig) -> String {
     if let Some(ref configured) = google.webhook_verification_token
       && !configured.is_empty()
     {
       return configured.clone();
     }
-    let mut guard = self.generated_webhook_token.lock().expect("webhook token mutex");
-    guard.get_or_insert_with(|| Uuid::new_v4().to_string()).clone()
+    let key = self.effective_private_key().await;
+    if !key.is_empty() {
+      use hmac::{Hmac, Mac as _};
+      if let Ok(mut mac) = Hmac::<sha2::Sha256>::new_from_slice(key.as_bytes()) {
+        mac.update(b"affine:calendar:google-webhook-token");
+        return hex::encode(mac.finalize().into_bytes());
+      }
+    }
+    if let Ok(guard) = self.generated_webhook_token.lock()
+      && let Some(ref cached) = *guard
+      && !cached.is_empty()
+    {
+      return cached.clone();
+    }
+    let derived = Uuid::new_v4().to_string();
+    if let Ok(mut guard) = self.generated_webhook_token.lock() {
+      *guard = Some(derived.clone());
+    }
+    derived
   }
   /// Verifies an incoming `x-goog-channel-token` header in constant time.
-  pub fn verify_webhook_token(&self, google: &CalendarGoogleConfig, provided: &str) -> bool {
-    let expected = self.webhook_token_from_config(google);
+  pub async fn verify_webhook_token(&self, google: &CalendarGoogleConfig, provided: &str) -> bool {
+    let expected = self.webhook_token_from_config(google).await;
     expected.is_empty()
       || (expected.len() == provided.len() && bool::from(expected.as_bytes().ct_eq(provided.as_bytes())))
   }
@@ -416,12 +455,23 @@ impl CalendarService {
     if let Some(ref ov) = self.config_override {
       return Ok(ov.clone());
     }
+    let mut google = self
+      .file_json
+      .as_ref()
+      .and_then(|v| v.pointer("/calendar/google"))
+      .and_then(|v| serde_json::from_value::<CalendarGoogleConfig>(v.clone()).ok())
+      .unwrap_or_default();
+    let mut caldav = self
+      .file_json
+      .as_ref()
+      .and_then(|v| v.pointer("/calendar/caldav"))
+      .and_then(|v| serde_json::from_value::<CalendarCaldavConfig>(v.clone()).ok())
+      .unwrap_or_default();
     let mut conn = self.read_conn("acquire calendar config read").await?;
     let rows = sqlx::query("SELECT id, value FROM app_configs WHERE id IN ('calendar.google', 'calendar.caldav')")
       .fetch_all(&mut *conn)
       .await
       .map_err(internal_err("load calendar app_configs"))?;
-    let (mut google, mut caldav) = (CalendarGoogleConfig::default(), CalendarCaldavConfig::default());
     for row in rows {
       let (id, val): (String, Value) = (row.get("id"), row.get("value"));
       if id == "calendar.google" {
@@ -784,7 +834,8 @@ impl CalendarService {
         .collect();
       if !channels.is_empty()
         && let Some(enc) = account.access_token_encrypted.as_deref()
-        && let Ok(access_token) = decrypt_token(&self.private_key, enc)
+        && let key = self.effective_private_key().await
+        && let Ok(access_token) = decrypt_token(&key, enc)
         && let Ok(configs) = self.load_configs().await
         && configs.google.is_configured()
       {
@@ -1068,8 +1119,8 @@ impl CalendarService {
     &self,
     params: UpsertCalendarAccountParams,
   ) -> Result<CalendarAccountRecord, CalendarError> {
-    let enc_access = self.encrypt_patch(&params.access_token)?;
-    let enc_refresh = self.encrypt_patch(&params.refresh_token)?;
+    let enc_access = self.encrypt_patch_async(&params.access_token).await?;
+    let enc_refresh = self.encrypt_patch_async(&params.refresh_token).await?;
     let mut conn = self.write_conn("acquire upsert_account").await?;
     let row = sqlx::query(
       r#"INSERT INTO calendar_accounts (
@@ -1130,8 +1181,8 @@ impl CalendarService {
     status: Option<String>,
     last_error: Option<Option<String>>,
   ) -> Result<CalendarAccountRecord, CalendarError> {
-    let enc_access = self.encrypt_patch(&access_token)?;
-    let enc_refresh = self.encrypt_patch(&refresh_token)?;
+    let enc_access = self.encrypt_patch_async(&access_token).await?;
+    let enc_refresh = self.encrypt_patch_async(&refresh_token).await?;
     let mut conn = self.write_conn("acquire update_account_tokens").await?;
     let row = sqlx::query(
       r#"UPDATE calendar_accounts
@@ -1314,5 +1365,124 @@ fn row_to_subscription(row: sqlx::postgres::PgRow) -> CalendarSubscriptionRecord
     custom_channel_id: row.get("custom_channel_id"),
     custom_resource_id: row.get("custom_resource_id"),
     channel_expiration: row.get("channel_expiration"),
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use std::path::Path;
+  use std::sync::Arc;
+
+  use server_db::DbConfig;
+  use server_types::ServerRole;
+  use test_db_harness::{
+    migrations::MigrationSet,
+    pg::{DEFAULT_LEASE_TTL, PgCluster},
+  };
+
+  use super::*;
+  use crate::app_config::{AppConfigService, RuntimeAppConfigBaseline};
+  use crate::events::NoopEventPublisher;
+
+  #[test]
+  fn calendar_private_key_raw_bytes_and_db_override_interop() {
+    let raw_key_with_newline = "calendar-test-key-line-1\ncalendar-test-key-line-2\n";
+    let trimmed_key = raw_key_with_newline.trim();
+    assert_ne!(raw_key_with_newline, trimmed_key);
+
+    // Exact raw bytes (including trailing newline) round-trip cleanly and never collide with trimmed bytes.
+    let ct = encrypt_token(raw_key_with_newline, "oauth-refresh-secret").expect("encrypt with raw key");
+    assert_eq!(
+      decrypt_token(raw_key_with_newline, &ct).expect("decrypt with identical raw key"),
+      "oauth-refresh-secret"
+    );
+    assert!(
+      decrypt_token(trimmed_key, &ct).is_err(),
+      "trimmed key must derive a different SHA-256 key than raw key bytes"
+    );
+
+    let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+    let migrations_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+    let migrations = MigrationSet::load(&migrations_dir).expect("load migrations");
+    let template = cluster.ensure_template(&migrations).expect("ensure template");
+    let lease = cluster.lease(&template, DEFAULT_LEASE_TTL).expect("lease db");
+
+    let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
+    rt.block_on(async {
+      let db = ServerDb::connect(DbConfig {
+        database_url: lease.url().to_owned(),
+        channel: "production".into(),
+        role: ServerRole::Allinone,
+        selfhosted: true,
+        max_connections: 4,
+        statement_timeout_ms: 5_000,
+        tier_permits: [8, 4, 4, 2],
+      })
+      .await
+      .expect("connect db");
+      sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+        .execute(db.pool())
+        .await
+        .expect("reset schema");
+      db.ensure_schema_ready().await.expect("ensure schema ready");
+
+      let baseline = RuntimeAppConfigBaseline {
+        file_json: serde_json::json!({ "crypto": { "privateKey": raw_key_with_newline } }),
+        ..RuntimeAppConfigBaseline::default()
+      };
+      let app_config = AppConfigService::new(db.clone(), baseline, Arc::new(NoopEventPublisher::default()));
+      let calendar = CalendarService::new(
+        db.clone(),
+        raw_key_with_newline.to_owned(),
+        "http://localhost:3010".to_owned(),
+      )
+      .with_app_config(app_config.clone());
+
+      let google_cfg = google::CalendarGoogleConfig::default();
+
+      // 1. Initial key comes from file baseline with exact raw bytes; webhook token derives from it.
+      assert_eq!(calendar.effective_private_key().await, raw_key_with_newline);
+      let k1_webhook = calendar.webhook_token_from_config(&google_cfg).await;
+      assert!(calendar.verify_webhook_token(&google_cfg, &k1_webhook).await);
+
+      // 2. DB override with leading/trailing whitespace takes effect live without leaking via public config.
+      let db_override_key = "  K2-db-override  ";
+      sqlx::query(
+        r#"INSERT INTO app_configs (id, value, last_updated_by, created_at, updated_at)
+           VALUES ('crypto.privateKey', to_jsonb($1::text), NULL, now(), now())
+           ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = now()"#,
+      )
+      .bind(db_override_key)
+      .execute(db.pool())
+      .await
+      .expect("insert db privateKey");
+      app_config.invalidate_cache();
+
+      let public_cfg = app_config.get_effective_app_config().await.expect("public config");
+      assert_ne!(
+        public_cfg.pointer("/crypto/privateKey").and_then(|v| v.as_str()),
+        Some(db_override_key),
+        "public get_effective_app_config must keep crypto.privateKey redacted"
+      );
+      assert_eq!(calendar.effective_private_key().await, db_override_key);
+      let ct2 = encrypt_token(db_override_key, "cal-token").expect("encrypt k2");
+      assert_eq!(decrypt_token(db_override_key, &ct2).expect("decrypt k2"), "cal-token");
+      assert!(decrypt_token(db_override_key.trim(), &ct2).is_err());
+
+      let k2_webhook = calendar.webhook_token_from_config(&google_cfg).await;
+      assert_ne!(k1_webhook, k2_webhook);
+      assert!(calendar.verify_webhook_token(&google_cfg, &k2_webhook).await);
+      assert!(!calendar.verify_webhook_token(&google_cfg, &k1_webhook).await);
+
+      // 3. Deleting DB override falls back to K1 file key live.
+      sqlx::query("DELETE FROM app_configs WHERE id = 'crypto.privateKey'")
+        .execute(db.pool())
+        .await
+        .expect("delete db privateKey");
+      app_config.invalidate_cache();
+      assert_eq!(calendar.effective_private_key().await, raw_key_with_newline);
+      assert_eq!(calendar.webhook_token_from_config(&google_cfg).await, k1_webhook);
+      assert!(calendar.verify_webhook_token(&google_cfg, &k1_webhook).await);
+    });
   }
 }

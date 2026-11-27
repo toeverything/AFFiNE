@@ -2152,6 +2152,7 @@ fn user_by_email_scope_visibility_and_strict_throttle_parity() {
           .method("POST")
           .uri("/graphql")
           .header(header::COOKIE, &alice_cookie)
+          .header("apollo-require-preflight", "true")
           .header(
             header::CONTENT_TYPE,
             format!("multipart/form-data; boundary={boundary}"),

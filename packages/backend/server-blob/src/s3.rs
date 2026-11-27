@@ -27,6 +27,39 @@ use crate::storage::{
 };
 
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+fn is_s3_missing_object_404(body: &str) -> bool {
+  let trimmed = body.trim();
+  if trimmed.is_empty() {
+    return true;
+  }
+  if let Some(start) = trimmed.find("<Code>")
+    && let Some(end) = trimmed[start + 6..].find("</Code>")
+  {
+    let code = trimmed[start + 6..start + 6 + end].trim();
+    return matches!(code, "NoSuchKey" | "NotFound");
+  }
+  true
+}
+
+async fn read_bounded_error_body(context: &str, mut response: reqwest::Response) -> Result<String, StorageError> {
+  let mut buf = Vec::new();
+  while let Some(chunk) = response
+    .chunk()
+    .await
+    .map_err(|err| request_error(context, err.without_url()))?
+  {
+    let remaining = MAX_ERROR_RESPONSE_BODY_BYTES.saturating_sub(buf.len());
+    if remaining == 0 {
+      break;
+    }
+    buf.extend_from_slice(&chunk[..chunk.len().min(remaining)]);
+    if buf.len() >= MAX_ERROR_RESPONSE_BODY_BYTES {
+      break;
+    }
+  }
+  Ok(String::from_utf8_lossy(&buf).into_owned())
+}
+
 const DEFAULT_PRESIGN_EXPIRES: Duration = Duration::from_secs(60);
 const MAX_ERROR_RESPONSE_BODY_BYTES: usize = 64 * 1024;
 const DIRECT_UPLOAD_PRESIGN_EXPIRES: Duration = Duration::from_secs(600);
@@ -361,7 +394,14 @@ impl BlobStorageBackend for S3BlobStorage {
     let context = format!("get {key}");
     let response = self.send(&context, Method::GET, url, &[], None).await?;
     if response.status() == StatusCode::NOT_FOUND {
-      return Ok(None);
+      let body = read_bounded_error_body(&context, response).await?;
+      if is_s3_missing_object_404(&body) {
+        return Ok(None);
+      }
+      return Err(StorageError::Request {
+        context,
+        message: "404 non-missing-object error".to_owned(),
+      });
     }
     let response = Self::ensure_success(&context, response).await?;
     let metadata = metadata_from_headers(response.headers());
@@ -378,7 +418,14 @@ impl BlobStorageBackend for S3BlobStorage {
     let context = format!("get {key}");
     let response = self.send(&context, Method::GET, url, &[], None).await?;
     if response.status() == StatusCode::NOT_FOUND {
-      return Ok(None);
+      let body = read_bounded_error_body(&context, response).await?;
+      if is_s3_missing_object_404(&body) {
+        return Ok(None);
+      }
+      return Err(StorageError::Request {
+        context,
+        message: "404 non-missing-object error".to_owned(),
+      });
     }
     let mut response = Self::ensure_success(&context, response).await?;
     if response.content_length().is_some_and(|len| len > max_bytes as u64) {
@@ -711,5 +758,20 @@ mod tests {
     for secret in ["super-secret-key", "session-token-value"] {
       assert!(!debug.contains(secret), "{debug}");
     }
+  }
+
+  #[test]
+  fn s3_404_classification_distinguishes_missing_key_bucket_and_truncated_body() {
+    assert!(is_s3_missing_object_404(
+      "<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message></Error>"
+    ));
+    assert!(is_s3_missing_object_404("<Error><Code>NotFound</Code></Error>"));
+    assert!(!is_s3_missing_object_404(
+      "<Error><Code>NoSuchBucket</Code><Message>The specified bucket does not exist</Message></Error>"
+    ));
+    assert!(!is_s3_missing_object_404("<Error><Code>AccessDenied</Code></Error>"));
+    // Truncated body without closing </Code> tag must not be misclassified as NoSuchBucket.
+    assert!(is_s3_missing_object_404("<Error><Code>NoSuch"));
+    assert!(is_s3_missing_object_404(""));
   }
 }

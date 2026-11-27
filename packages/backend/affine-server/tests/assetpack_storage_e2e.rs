@@ -146,7 +146,7 @@ fn assetpack_v0275_interop_mixed_boot_and_metadata_exact_keys() {
       br#"{"name":"Admin","email":"ap-admin@affine.test","password":"StrongPassword123"}"#,
     )
     .await;
-    assert_eq!(st_su, 201);
+    assert_eq!(st_su, 200);
     let (st_si, si_head, _) = raw_http(
       addr1,
       "POST",
@@ -245,6 +245,7 @@ fn assetpack_v0275_interop_mixed_boot_and_metadata_exact_keys() {
       "/graphql",
       &[
         ("Cookie", &cookie),
+        ("apollo-require-preflight", "true"),
         ("Content-Type", &format!("multipart/form-data; boundary={boundary}")),
       ],
       mp_body.as_bytes(),
@@ -348,6 +349,7 @@ fn assetpack_v0275_interop_mixed_boot_and_metadata_exact_keys() {
       "/graphql",
       &[
         ("Cookie", &cookie),
+        ("apollo-require-preflight", "true"),
         ("Content-Type", &format!("multipart/form-data; boundary={boundary}")),
       ],
       &mp_p1,
@@ -400,6 +402,7 @@ fn assetpack_v0275_interop_mixed_boot_and_metadata_exact_keys() {
       "/graphql",
       &[
         ("Cookie", &cookie),
+        ("apollo-require-preflight", "true"),
         ("Content-Type", &format!("multipart/form-data; boundary={boundary}")),
       ],
       &mp_p2,
@@ -463,6 +466,7 @@ fn assetpack_v0275_interop_mixed_boot_and_metadata_exact_keys() {
       "/graphql",
       &[
         ("Cookie", &cookie),
+        ("apollo-require-preflight", "true"),
         ("Content-Type", &format!("multipart/form-data; boundary={boundary}")),
       ],
       &mp_p3,
@@ -726,6 +730,7 @@ fn assetpack_v0275_interop_mixed_boot_and_metadata_exact_keys() {
       "/graphql",
       &[
         ("Cookie", &cookie),
+        ("apollo-require-preflight", "true"),
         ("Content-Type", &format!("multipart/form-data; boundary={b3}")),
       ],
       &mp1,
@@ -751,6 +756,7 @@ fn assetpack_v0275_interop_mixed_boot_and_metadata_exact_keys() {
       "/graphql",
       &[
         ("Cookie", &cookie),
+        ("apollo-require-preflight", "true"),
         ("Content-Type", &format!("multipart/form-data; boundary={b3}")),
       ],
       &mp1,
@@ -815,7 +821,8 @@ fn assetpack_v0275_interop_mixed_boot_and_metadata_exact_keys() {
         "/graphql",
         &[
           ("Cookie", &cookie),
-          ("Content-Type", &format!("multipart/form-data; boundary={b3}")),
+          ("apollo-require-preflight", "true"),
+        ("Content-Type", &format!("multipart/form-data; boundary={b3}")),
         ],
         &mp1,
       )
@@ -919,7 +926,8 @@ fn assetpack_v0275_interop_mixed_boot_and_metadata_exact_keys() {
         "/graphql",
         &[
           ("Cookie", &cookie),
-          ("Content-Type", &format!("multipart/form-data; boundary={b3}")),
+          ("apollo-require-preflight", "true"),
+        ("Content-Type", &format!("multipart/form-data; boundary={b3}")),
         ],
         &mp1,
       )

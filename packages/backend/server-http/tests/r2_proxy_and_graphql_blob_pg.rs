@@ -180,7 +180,7 @@ fn create_blob_upload_graphql_then_set_blob_and_r2_proxy_zero_byte_preauth() {
       )
       .await
       .expect("create admin");
-    assert_eq!(setup_resp.status(), StatusCode::CREATED);
+    assert_eq!(setup_resp.status(), StatusCode::OK);
     let sign_in = app
       .clone()
       .oneshot(
@@ -245,6 +245,7 @@ fn create_blob_upload_graphql_then_set_blob_and_r2_proxy_zero_byte_preauth() {
           .method("POST")
           .uri("/graphql")
           .header(header::COOKIE, &cookie)
+          .header("apollo-require-preflight", "true")
           .header(
             header::CONTENT_TYPE,
             format!("multipart/form-data; boundary={boundary}"),
@@ -883,6 +884,7 @@ fn create_blob_upload_graphql_then_set_blob_and_r2_proxy_zero_byte_preauth() {
           .method("POST")
           .uri("/graphql")
           .header(header::COOKIE, &cookie)
+          .header("apollo-require-preflight", "true")
           .header(
             header::CONTENT_TYPE,
             format!("multipart/form-data; boundary={boundary}"),

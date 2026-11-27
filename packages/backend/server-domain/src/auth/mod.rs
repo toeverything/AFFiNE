@@ -293,6 +293,7 @@ pub struct AuthService {
   session_policy: Arc<dyn SessionPolicyHook>,
   rate_limit_policy: Arc<dyn RateLimitPolicy>,
   domain_verifier: Arc<dyn EmailDomainVerifier>,
+  app_config: Option<crate::app_config::AppConfigService>,
   config: AuthConfig,
 }
 
@@ -309,8 +310,14 @@ impl AuthService {
       session_policy,
       rate_limit_policy: Arc::new(CommunityRateLimitPolicy),
       domain_verifier: Arc::new(DnsEmailDomainVerifier),
+      app_config: None,
       config,
     }
+  }
+
+  pub fn with_app_config(mut self, app_config: crate::app_config::AppConfigService) -> Self {
+    self.app_config = Some(app_config);
+    self
   }
 
   pub fn with_rate_limit_policy(mut self, rate_limit_policy: Arc<dyn RateLimitPolicy>) -> Self {
@@ -345,6 +352,10 @@ impl AuthService {
 
   pub fn config(&self) -> &AuthConfig {
     &self.config
+  }
+
+  pub async fn session_ttr_seconds(&self) -> i64 {
+    self.load_dynamic_auth_runtime().await.session_ttr_seconds
   }
 
   /// Idempotently initializes `auth.session.signingKeys` in `public.app_configs`.
@@ -450,17 +461,143 @@ impl AuthService {
     Ok(initialized)
   }
 
+  pub(crate) async fn load_dynamic_auth_runtime(&self) -> DynamicAuthRuntime {
+    let mut rt = DynamicAuthRuntime {
+      allow_signup: self.config.allow_signup,
+      allow_signup_for_oauth: self.config.allow_signup_for_oauth,
+      require_email_domain_verification: self.config.require_email_domain_verification,
+      password_min_length: self.config.password_min_length,
+      password_max_length: self.config.password_max_length,
+      session_ttl_seconds: self.config.session_ttl_seconds,
+      session_ttr_seconds: self.config.session_ttr_seconds,
+    };
+    if let Some(ref cfg_svc) = self.app_config
+      && let Ok(eff) = cfg_svc.get_effective_app_config_arc().await
+    {
+      if let Some(b) = eff.pointer("/auth/allowSignup").and_then(Value::as_bool) {
+        rt.allow_signup = b;
+      }
+      if let Some(b) = eff.pointer("/auth/allowSignupForOauth").and_then(Value::as_bool) {
+        rt.allow_signup_for_oauth = b;
+      }
+      if let Some(b) = eff
+        .pointer("/auth/requireEmailDomainVerification")
+        .and_then(Value::as_bool)
+      {
+        rt.require_email_domain_verification = b;
+      }
+      if let Some(min) = eff.pointer("/auth/passwordRequirements/min").and_then(Value::as_u64) {
+        rt.password_min_length = min as usize;
+      }
+      if let Some(max) = eff.pointer("/auth/passwordRequirements/max").and_then(Value::as_u64) {
+        rt.password_max_length = max as usize;
+      }
+      if let Some(ttl) = eff
+        .pointer("/auth/session/ttl")
+        .and_then(Value::as_i64)
+        .filter(|&v| v > 0)
+      {
+        rt.session_ttl_seconds = ttl;
+      }
+      if let Some(ttr) = eff
+        .pointer("/auth/session/ttr")
+        .and_then(Value::as_i64)
+        .filter(|&v| v >= 0)
+      {
+        rt.session_ttr_seconds = ttr;
+      }
+      return rt;
+    }
+    let Ok(mut conn) = self.db.acquire_tiered(WorkloadTier::InteractiveRead).await else {
+      return rt;
+    };
+    let rows = sqlx::query("SELECT id, value FROM app_configs WHERE id = ANY($1)")
+      .bind(
+        &[
+          "auth.allowSignup",
+          "auth.allowSignupForOauth",
+          "auth.requireEmailDomainVerification",
+          "auth.passwordRequirements",
+          "auth.passwordRequirements.min",
+          "auth.passwordRequirements.max",
+          "auth.session.ttl",
+          "auth.session.ttr",
+          "auth.session",
+        ][..],
+      )
+      .fetch_all(&mut *conn)
+      .await;
+    if let Ok(rows) = rows {
+      for row in rows {
+        let id: String = row.get("id");
+        let val: Value = row.get("value");
+        match id.as_str() {
+          "auth.allowSignup" => {
+            if let Some(b) = val.as_bool() {
+              rt.allow_signup = b;
+            }
+          }
+          "auth.allowSignupForOauth" => {
+            if let Some(b) = val.as_bool() {
+              rt.allow_signup_for_oauth = b;
+            }
+          }
+          "auth.requireEmailDomainVerification" => {
+            if let Some(b) = val.as_bool() {
+              rt.require_email_domain_verification = b;
+            }
+          }
+          "auth.passwordRequirements" => {
+            if let Some(min) = val.get("min").and_then(Value::as_u64) {
+              rt.password_min_length = min as usize;
+            }
+            if let Some(max) = val.get("max").and_then(Value::as_u64) {
+              rt.password_max_length = max as usize;
+            }
+          }
+          "auth.passwordRequirements.min" => {
+            if let Some(min) = val.as_u64() {
+              rt.password_min_length = min as usize;
+            }
+          }
+          "auth.passwordRequirements.max" => {
+            if let Some(max) = val.as_u64() {
+              rt.password_max_length = max as usize;
+            }
+          }
+          "auth.session.ttl" => {
+            if let Some(ttl) = val.as_i64().filter(|&v| v > 0) {
+              rt.session_ttl_seconds = ttl;
+            }
+          }
+          "auth.session.ttr" => {
+            if let Some(ttr) = val.as_i64().filter(|&v| v >= 0) {
+              rt.session_ttr_seconds = ttr;
+            }
+          }
+          "auth.session" => {
+            if let Some(ttl) = val.get("ttl").and_then(Value::as_i64).filter(|&v| v > 0) {
+              rt.session_ttl_seconds = ttl;
+            }
+            if let Some(ttr) = val.get("ttr").and_then(Value::as_i64).filter(|&v| v >= 0) {
+              rt.session_ttr_seconds = ttr;
+            }
+          }
+          _ => {}
+        }
+      }
+    }
+    rt
+  }
+
   /// Atomically creates the initial self-hosted administrator account, grants
   /// the `administrator` user feature, issues a cookie session via
   /// [`SessionRepository`], and invokes [`SessionPolicyHook::on_session_created`]
   /// inside the same transaction (rolling back everything if the hook fails).
   pub async fn create_first_admin_user(&self, input: CreateAdminUserInput) -> Result<CookieSignInResult, DomainError> {
     let email = canonical_email(&input.email)?;
-    password::validate_password_requirements(
-      &input.password,
-      self.config.password_min_length,
-      self.config.password_max_length,
-    )?;
+    let rt = self.load_dynamic_auth_runtime().await;
+    password::validate_password_requirements(&input.password, rt.password_min_length, rt.password_max_length)?;
     let password_hash = password::hash_password(&input.password)?;
 
     let mut tx = self
@@ -558,10 +695,60 @@ impl AuthService {
     })
   }
 
+  /// Authenticates an existing user by email + Argon2id password for a native
+  /// client, issuing ONLY a one-time `exchangeCode` (`runtime_states`) without
+  /// writing `user_sessions` or `multiple_users_sessions`.
+  pub async fn sign_in_with_password_native(
+    &self,
+    email: &str,
+    password: &str,
+    client_version: Option<&str>,
+  ) -> Result<(CurrentUserView, String), DomainError> {
+    let email = canonical_email(email)?;
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveWrite)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin native password sign in: {e}")))?;
+
+    lock_email(tx.tx_mut(), &email).await?;
+
+    let rows =
+      sqlx::query("SELECT id, password, disabled FROM users WHERE lower(email) = lower($1) ORDER BY id FOR UPDATE")
+        .bind(&email)
+        .fetch_all(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("load native password login user: {e}")))?;
+
+    if rows.len() != 1 || rows[0].get::<bool, _>("disabled") {
+      return Err(DomainError::Unauthorized("wrong_sign_in_credentials".to_owned()));
+    }
+    let password_hash: Option<String> = rows[0].get("password");
+    let Some(password_hash) = password_hash else {
+      return Err(DomainError::Unauthorized("wrong_sign_in_method".to_owned()));
+    };
+    if !password::verify_password(password, &password_hash)? {
+      return Err(DomainError::Unauthorized("wrong_sign_in_credentials".to_owned()));
+    }
+
+    let user_id: String = rows[0].get("id");
+    let user = load_current_user_in_tx(tx.tx_mut(), &user_id)
+      .await?
+      .ok_or_else(|| DomainError::Unauthorized("wrong_sign_in_credentials".to_owned()))?;
+
+    tx.commit()
+      .await
+      .map_err(|e| DomainError::Internal(format!("commit native password sign in: {e}")))?;
+
+    let exchange_code = self.issue_exchange_code(&user.id, client_version).await?;
+    Ok((user, exchange_code))
+  }
+
   /// Authenticates an existing user by email + Argon2id password and issues a
   /// cookie session, invoking [`SessionPolicyHook::on_session_created`] inside
   /// the same transaction.
   pub async fn sign_in_with_password(&self, input: PasswordSignInInput) -> Result<CookieSignInResult, DomainError> {
+    let rt = self.load_dynamic_auth_runtime().await;
     let email = canonical_email(&input.email)?;
     let mut tx = self
       .db
@@ -599,7 +786,7 @@ impl AuthService {
         &user_id,
         input.existing_session_id.as_deref(),
         input.client_version.as_deref(),
-        self.config.session_ttl_seconds,
+        rt.session_ttl_seconds,
         now,
       )
       .await
@@ -640,6 +827,7 @@ impl AuthService {
     if session_id.trim().is_empty() {
       return Ok(None);
     }
+    let rt = self.load_dynamic_auth_runtime().await;
     let tier = if refresh {
       WorkloadTier::InteractiveWrite
     } else {
@@ -660,8 +848,8 @@ impl AuthService {
         requested_user_id,
         refresh_client_version,
         refresh,
-        self.config.session_ttl_seconds,
-        self.config.session_ttr_seconds,
+        rt.session_ttl_seconds,
+        rt.session_ttr_seconds,
         now,
       )
       .await
@@ -763,6 +951,7 @@ impl AuthService {
   /// Prepares a 6-digit Magic-Link OTP stored in `public.runtime_states` and
   /// atomically queues a `public.mail_deliveries` row matching `v0.27.5`.
   pub async fn prepare_magic_link(&self, input: PrepareMagicLinkInput) -> Result<PreparedMagicLink, DomainError> {
+    let rt = self.load_dynamic_auth_runtime().await;
     let email = canonical_email(&input.email)?;
     let email_lower = email.to_ascii_lowercase();
     let mut callback = url::Url::parse(&input.callback_url)
@@ -774,7 +963,7 @@ impl AuthService {
     }
 
     // Perform DNS email-domain verification outside the write transaction / row locks.
-    let domain_precheck_ok = if self.config.require_email_domain_verification {
+    let domain_precheck_ok = if rt.require_email_domain_verification {
       let mut read_conn = self
         .db
         .acquire_tiered(WorkloadTier::InteractiveRead)
@@ -811,10 +1000,10 @@ impl AuthService {
         .map_err(|e| DomainError::Internal(format!("lock magic link user: {e}")))?;
 
     if users.is_empty() {
-      if !self.config.allow_signup {
+      if !rt.allow_signup {
         return Err(DomainError::Forbidden("sign_up_forbidden".to_owned()));
       }
-      if self.config.require_email_domain_verification && !domain_precheck_ok {
+      if rt.require_email_domain_verification && !domain_precheck_ok {
         self.verify_signup_domain(&email).await?;
       }
     }
@@ -935,12 +1124,15 @@ impl AuthService {
     })
   }
 
-  /// Completes a Magic-Link OTP challenge from `public.runtime_states`,
-  /// creating or verifying the user, issuing a cookie session, and invoking
-  /// [`SessionPolicyHook::on_session_created`] atomically.
-  pub async fn complete_magic_link(&self, input: CompleteMagicLinkInput) -> Result<CookieSignInResult, DomainError> {
+  /// Shared Magic-Link OTP/nonce verification and user upsert transaction helper
+  /// used by both [`Self::complete_magic_link`] and [`Self::complete_magic_link_native`].
+  async fn verify_and_upsert_magic_link_user(
+    &self,
+    input: &CompleteMagicLinkInput,
+    rt: &DynamicAuthRuntime,
+  ) -> Result<(server_db::TieredTx<'_>, String, DateTime<Utc>, bool), DomainError> {
     let email = canonical_email(&input.email)?;
-    let domain_precheck_ok = if self.config.require_email_domain_verification {
+    let domain_precheck_ok = if rt.require_email_domain_verification {
       let mut read_conn = self
         .db
         .acquire_tiered(WorkloadTier::InteractiveRead)
@@ -986,7 +1178,7 @@ impl AuthService {
         }
       };
       drop(read_conn);
-      if !known_user && valid_signup_challenge {
+      if !known_user && valid_signup_challenge && rt.allow_signup {
         self.verify_signup_domain(&email).await?;
         true
       } else {
@@ -1098,10 +1290,10 @@ impl AuthService {
       if challenge_uid.is_some() || challenge_epoch.is_some() {
         return Err(DomainError::Unauthorized("invalid_email_token".to_owned()));
       }
-      if !self.config.allow_signup {
+      if !rt.allow_signup {
         return Err(DomainError::Forbidden("sign_up_forbidden".to_owned()));
       }
-      if self.config.require_email_domain_verification && !domain_precheck_ok {
+      if rt.require_email_domain_verification && !domain_precheck_ok {
         self.verify_signup_domain(&email).await?;
       }
       let uid = Uuid::new_v4().to_string();
@@ -1121,6 +1313,37 @@ impl AuthService {
     };
 
     consume_magic_state(tx.tx_mut(), &email, now).await?;
+    Ok((tx, user_id, now, created_user))
+  }
+
+  /// Completes a Magic-Link OTP challenge for a native client, creating or
+  /// verifying the user and issuing ONLY an `exchangeCode` (`runtime_states`)
+  /// without writing `user_sessions` or `multiple_users_sessions`.
+  pub async fn complete_magic_link_native(
+    &self,
+    input: CompleteMagicLinkInput,
+  ) -> Result<(CurrentUserView, String), DomainError> {
+    let rt = self.load_dynamic_auth_runtime().await;
+    let (mut tx, user_id, _now, _created_user) = self.verify_and_upsert_magic_link_user(&input, &rt).await?;
+    let user = load_current_user_in_tx(tx.tx_mut(), &user_id)
+      .await?
+      .ok_or_else(|| DomainError::Internal("magic link user missing after upsert".to_owned()))?;
+    tx.commit()
+      .await
+      .map_err(|e| DomainError::Internal(format!("commit complete_magic_link_native: {e}")))?;
+
+    let exchange_code = self
+      .issue_exchange_code(&user.id, input.client_version.as_deref())
+      .await?;
+    Ok((user, exchange_code))
+  }
+
+  /// Completes a Magic-Link OTP challenge from `public.runtime_states`,
+  /// creating or verifying the user, issuing a cookie session, and invoking
+  /// [`SessionPolicyHook::on_session_created`] atomically.
+  pub async fn complete_magic_link(&self, input: CompleteMagicLinkInput) -> Result<CookieSignInResult, DomainError> {
+    let rt = self.load_dynamic_auth_runtime().await;
+    let (mut tx, user_id, now, created_user) = self.verify_and_upsert_magic_link_user(&input, &rt).await?;
 
     let issued = self
       .sessions
@@ -1129,7 +1352,7 @@ impl AuthService {
         &user_id,
         input.existing_session_id.as_deref(),
         input.client_version.as_deref(),
-        self.config.session_ttl_seconds,
+        rt.session_ttl_seconds,
         now,
       )
       .await
@@ -2281,7 +2504,8 @@ impl AuthService {
       .map_err(|e| DomainError::Internal(format!("acquire list_auth_sessions: {e}")))?;
     let rows = sqlx::query(
       r#"SELECT a.id, a.installation_id, a.platform, a.device_name, a.app_version,
-                a.created_at, a.last_seen_at, a.idle_expires_at, a.absolute_expires_at
+                a.created_at, a.last_seen_at, a.idle_expires_at, a.absolute_expires_at,
+                a.revoke_reason
          FROM auth_sessions a
          JOIN user_sessions u ON u.id = a.user_session_id
          WHERE u.user_id = $1
@@ -2309,6 +2533,7 @@ impl AuthService {
           last_seen_at: row.get("last_seen_at"),
           idle_expires_at: row.get("idle_expires_at"),
           absolute_expires_at: row.get("absolute_expires_at"),
+          revoke_reason: row.get("revoke_reason"),
         })
         .collect(),
     )
@@ -2792,6 +3017,16 @@ pub struct AuthTokenPair {
   pub is_new_device: Option<bool>,
 }
 
+pub(crate) struct DynamicAuthRuntime {
+  pub(crate) allow_signup: bool,
+  pub(crate) allow_signup_for_oauth: bool,
+  pub(crate) require_email_domain_verification: bool,
+  pub(crate) password_min_length: usize,
+  pub(crate) password_max_length: usize,
+  pub(crate) session_ttl_seconds: i64,
+  pub(crate) session_ttr_seconds: i64,
+}
+
 #[derive(Clone, Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthSessionSummary {
@@ -2808,6 +3043,7 @@ pub struct AuthSessionSummary {
   pub idle_expires_at: DateTime<Utc>,
   #[serde(serialize_with = "serialize_rfc3339_millis")]
   pub absolute_expires_at: DateTime<Utc>,
+  pub revoke_reason: Option<String>,
 }
 
 /// Generates a `v0.27.5`-compatible 3-segment refresh token

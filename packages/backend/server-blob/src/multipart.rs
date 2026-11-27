@@ -384,7 +384,7 @@ fn sign_proxy(
   fields: &[Value],
   extra: &[(&str, &str)],
 ) -> Result<Option<(String, DateTime<Utc>)>, DomainError> {
-  let exp_dt = Utc::now() + chrono::Duration::seconds(600);
+  let exp_dt = Utc::now() + chrono::Duration::seconds(3600);
   let exp = exp_dt.timestamp();
   let Some(token) = storage.sign_upload_token(path, fields, exp) else {
     return Ok(None);

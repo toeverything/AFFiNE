@@ -18,7 +18,8 @@ use url::Url;
 
 use crate::RouterState;
 use crate::rest::worker_proxy::{
-  allowed_origins_for_state, append_cors_origin, apply_throttle_headers, bad_request_envelope, check_shared_throttle,
+  CorsOriginScope, allowed_origins_for_state_async, append_cors_origin, apply_throttle_headers, bad_request_envelope,
+  check_origin_or_referer, check_shared_throttle,
 };
 use crate::rest::{ResolvedRequestPrincipal, enforce_named_version_guard, resolve_request_principal_with_policy};
 
@@ -182,7 +183,7 @@ fn flatten_object(
 }
 pub fn sanitize_params(input: &Map<String, Value>, max_params: usize) -> Map<String, Value> {
   let (mut flat, mut visited) = (Vec::new(), 0usize);
-  flatten_object(input, "", 0, &mut visited, max_params.min(25), &mut flat);
+  flatten_object(input, "", 0, &mut visited, 128, &mut flat);
   let mut mapped: Vec<(String, Value)> = flat
     .into_iter()
     .filter_map(|(path, value)| {
@@ -351,11 +352,64 @@ fn clean_telemetry_event(
   })
 }
 async fn forward_to_ga4_if_configured(state: &RouterState, events: &[CleanedTelemetryEvent]) {
-  let Ok(Some(cfg)) = state.app.app_config.get_raw_config_value("telemetry").await else {
-    return;
-  };
-  let ps = |p| cfg.pointer(p).and_then(Value::as_str).unwrap_or("").trim();
-  let (mid, secret) = (ps("/ga4/measurementId"), ps("/ga4/apiSecret"));
+  let dotted_mid = state
+    .app
+    .app_config
+    .get_raw_config_value("telemetry.ga4.measurementId")
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v| v.as_str().map(str::to_owned));
+  let dotted_secret = state
+    .app
+    .app_config
+    .get_raw_config_value("telemetry.ga4.apiSecret")
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v| v.as_str().map(str::to_owned));
+  let dotted_max = state
+    .app
+    .app_config
+    .get_raw_config_value("telemetry.batch.maxEvents")
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v| v.as_u64());
+  let raw_telemetry = state
+    .app
+    .app_config
+    .get_raw_config_value("telemetry")
+    .await
+    .ok()
+    .flatten();
+  let mid = dotted_mid
+    .filter(|s| !s.trim().is_empty())
+    .or_else(|| {
+      raw_telemetry
+        .as_ref()
+        .and_then(|c| c.pointer("/ga4/measurementId")?.as_str())
+        .filter(|s| !s.trim().is_empty())
+        .map(str::to_owned)
+    })
+    .or_else(|| {
+      std::env::var("GA4_MEASUREMENT_ID")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+    })
+    .unwrap_or_default();
+  let secret = dotted_secret
+    .filter(|s| !s.trim().is_empty())
+    .or_else(|| {
+      raw_telemetry
+        .as_ref()
+        .and_then(|c| c.pointer("/ga4/apiSecret")?.as_str())
+        .filter(|s| !s.trim().is_empty())
+        .map(str::to_owned)
+    })
+    .or_else(|| std::env::var("GA4_API_SECRET").ok().filter(|s| !s.trim().is_empty()))
+    .unwrap_or_default();
+  let (mid, secret) = (mid.trim(), secret.trim());
   let Ok(mut url) = Url::parse("https://www.google-analytics.com/mp/collect") else {
     return;
   };
@@ -366,9 +420,12 @@ async fn forward_to_ga4_if_configured(state: &RouterState, events: &[CleanedTele
     .query_pairs_mut()
     .append_pair("measurement_id", mid)
     .append_pair("api_secret", secret);
-  let max_ev = cfg
-    .pointer("/batch/maxEvents")
-    .and_then(Value::as_u64)
+  let max_ev = dotted_max
+    .or_else(|| {
+      raw_telemetry
+        .as_ref()
+        .and_then(|c| c.pointer("/batch/maxEvents")?.as_u64())
+    })
     .map_or(25, |n| usize::try_from(n).unwrap_or(25).clamp(1, 25));
   let mut grouped: BTreeMap<_, Vec<&CleanedTelemetryEvent>> = BTreeMap::new();
   for ev in events {
@@ -449,16 +506,16 @@ where
   if let Err(r) = enforce_named_version_guard(st, hdrs, &resolved.cookie_action).await {
     return *r;
   }
-  let (allowed, https) = (allowed_origins_for_state(st, true), st.app.config.load().https);
+  let allowed = allowed_origins_for_state_async(st, CorsOriginScope::Telemetry).await;
+  let (https, dev_mode) = {
+    let cfg = st.app.config.load();
+    (cfg.https, cfg.dev_mode)
+  };
   let (origin, referer) = (
     hdrs.get(header::ORIGIN).and_then(|v| v.to_str().ok()),
     hdrs.get(header::REFERER).and_then(|v| v.to_str().ok()),
   );
-  let origin_ok = (origin.is_none() && referer.is_none())
-    || origin.is_some_and(|o| allowed.iter().any(|a| a == o))
-    || referer
-      .and_then(|r| Url::parse(r).ok())
-      .is_some_and(|u| allowed.iter().any(|a| a == &u.origin().ascii_serialization()));
+  let origin_ok = (origin.is_none() && referer.is_none()) || check_origin_or_referer(hdrs, &allowed, dev_mode);
   let cookie_action = resolved.cookie_action.clone();
   let mut resp = if !origin_ok {
     let o = origin.unwrap_or("undefined");
@@ -504,9 +561,8 @@ async fn handle_collect(State(st): State<RouterState>, peer: PeerExt, hdrs: Head
         .and_then(Value::as_f64)
         .filter(|v| v.is_finite())
         .map_or_else(|| Utc::now().timestamp_micros(), |v| (v * 1000.0) as i64);
-      dropped = events.len().saturating_sub(100);
       let mut accepted_events = Vec::new();
-      for raw in events.iter().take(100) {
+      for raw in events {
         let Some(c) = clean_telemetry_event(raw, uid.as_deref(), fallback) else {
           dropped += 1;
           continue;

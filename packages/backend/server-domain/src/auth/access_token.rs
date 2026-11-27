@@ -98,8 +98,12 @@ struct ParsedAccessTokenClaims {
 }
 
 /// Returns `true` when `token` has the 3-segment base64url JWT shape.
-/// Rejects raw cookie `session_id` UUIDs passed as `Authorization: Bearer`.
+/// Rejects raw cookie `session_id` UUIDs and `aff_mcp_v1.*` MCP tokens passed
+/// as `Authorization: Bearer`.
 pub fn is_likely_jwt(token: &str) -> bool {
+  if token.starts_with("aff_mcp_v1.") {
+    return false;
+  }
   let mut parts = token.split('.');
   let (Some(h), Some(p), Some(s), None) = (parts.next(), parts.next(), parts.next(), parts.next()) else {
     return false;

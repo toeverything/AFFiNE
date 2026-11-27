@@ -769,13 +769,13 @@ fn security_challenges_email_change_password_reset_keyring_and_throttle_adversar
     .await
     .unwrap();
 
-    // Valid changePassword succeeds (including 4,096 and 4,097-byte passwords with no artificial cap), revokes old Cookie + Bearer, emits user.profile.changed + doc.grants.changed for BOTH physical and logical alias rooms
-    let pw_4096 = "a".repeat(4096);
+    // Valid changePassword succeeds within dynamic auth.passwordRequirements, revokes old Cookie + Bearer, emits user.profile.changed + doc.grants.changed for BOTH physical and logical alias rooms
+    let pw_valid = "ValidPassword123456!";
     let (_, resp) = gql(
       &router,
       None,
       "mutation($p: String!, $t: String!, $uid: String!) { changePassword(newPassword: $p, token: $t, userId: $uid) }",
-      json!({ "p": pw_4096, "t": pw_token1, "uid": alice_id }),
+      json!({ "p": pw_valid, "t": pw_token1, "uid": alice_id }),
     )
     .await;
     assert_eq!(resp["data"]["changePassword"], true, "resp: {resp}");
@@ -805,7 +805,7 @@ fn security_challenges_email_change_password_reset_keyring_and_throttle_adversar
       );
     }
 
-    // 4,097-byte password also succeeds and revokes sessions
+    // Oversized 4,097-byte password is rejected with INVALID_PASSWORD_LENGTH; a valid second password succeeds and revokes sessions.
     let (_, url_4097) = gql(
       &router,
       Some(&admin_cookie),
@@ -829,8 +829,19 @@ fn security_challenges_email_change_password_reset_keyring_and_throttle_adversar
     )
     .await;
     assert_eq!(
-      resp_4097["data"]["changePassword"], true,
-      "4097-byte pw failed: {resp_4097}"
+      resp_4097["errors"][0]["extensions"]["name"], "INVALID_PASSWORD_LENGTH",
+      "4097-byte pw must be rejected: {resp_4097}"
+    );
+    let (_, resp_valid2) = gql(
+      &router,
+      None,
+      "mutation($p: String!, $t: String!, $uid: String!) { changePassword(newPassword: $p, token: $t, userId: $uid) }",
+      json!({ "p": "SecondValidPass123!", "t": tok_4097, "uid": alice_id }),
+    )
+    .await;
+    assert_eq!(
+      resp_valid2["data"]["changePassword"], true,
+      "second valid pw failed: {resp_valid2}"
     );
     let (_, sess_after_4097) = send_json(
       &router,
@@ -850,7 +861,7 @@ fn security_challenges_email_change_password_reset_keyring_and_throttle_adversar
       let (_, resp) = gql(
         &router,
         None,
-        "mutation($t: String!, $uid: String!) { changePassword(newPassword: \"Other1!\", token: $t, userId: $uid) }",
+        "mutation($t: String!, $uid: String!) { changePassword(newPassword: \"OtherPass123!\", token: $t, userId: $uid) }",
         json!({ "t": tok, "uid": alice_id }),
       )
       .await;

@@ -67,22 +67,46 @@ pub(crate) async fn handle_get_avatar(
   };
 
   let (bytes, meta) = obj;
-  let mut resp = (StatusCode::OK, bytes).into_response();
+  let last_mod_dt = chrono::DateTime::from_timestamp_millis(meta.last_modified_ms);
+  let last_mod_str = last_mod_dt.map(super::format_http_date);
+  let not_modified = last_mod_dt.is_some_and(|dt| {
+    let mtime_secs = dt.timestamp();
+    headers
+      .get(header::IF_MODIFIED_SINCE)
+      .and_then(|v| v.to_str().ok())
+      .and_then(|raw| {
+        chrono::DateTime::parse_from_rfc2822(raw.trim())
+          .map(|d| d.with_timezone(&chrono::Utc))
+          .or_else(|_| {
+            chrono::NaiveDateTime::parse_from_str(raw.trim(), "%a, %d %b %Y %H:%M:%S GMT").map(|ndt| ndt.and_utc())
+          })
+          .ok()
+      })
+      .is_some_and(|ims| mtime_secs <= ims.timestamp())
+  });
+  let mut resp = if not_modified {
+    StatusCode::NOT_MODIFIED.into_response()
+  } else {
+    (StatusCode::OK, bytes).into_response()
+  };
   let h = resp.headers_mut();
-  if !meta.content_type.is_empty()
-    && let Ok(val) = HeaderValue::from_str(&meta.content_type)
-  {
-    h.insert(header::CONTENT_TYPE, val);
+  if !not_modified {
+    if !meta.content_type.is_empty()
+      && let Ok(val) = HeaderValue::from_str(&meta.content_type)
+    {
+      h.insert(header::CONTENT_TYPE, val);
+    }
+    if let Ok(val) = HeaderValue::from_str(&meta.content_length.to_string()) {
+      h.insert(header::CONTENT_LENGTH, val);
+    }
   }
-  if let Ok(val) = HeaderValue::from_str(&meta.content_length.to_string()) {
-    h.insert(header::CONTENT_LENGTH, val);
-  }
-  if let Some(dt) = chrono::DateTime::from_timestamp_millis(meta.last_modified_ms)
-    && let Ok(val) = HeaderValue::from_str(&dt.to_rfc3339())
+  if let Some(lm) = last_mod_str
+    && let Ok(val) = HeaderValue::from_str(&lm)
   {
     h.insert(header::LAST_MODIFIED, val);
   }
   apply_blob_security_headers(h, Some(&meta.content_type), Some(&id));
+  h.insert(header::CACHE_CONTROL, HeaderValue::from_static("public, max-age=86400"));
   resolved.cookie_action.apply_to(resp.headers_mut(), https);
   resp
 }
@@ -183,6 +207,14 @@ pub(crate) async fn handle_get_blob_v1(
       message: "Blob not found.".into(),
       data: None,
     }),
+    Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
+      status: StatusCode::FORBIDDEN.as_u16(),
+      code: "Forbidden".into(),
+      error_type: "ACTION_FORBIDDEN".into(),
+      name: "ACCESS_DENIED".into(),
+      message: "Access denied.".into(),
+      data: None,
+    }),
     Err(err) => domain_error_to_http_response(&err),
   };
   resolved.cookie_action.apply_to(resp.headers_mut(), https);
@@ -258,6 +290,14 @@ pub(crate) async fn handle_get_blob_manifest_v1(
         true,
       )
     }
+    Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
+      status: StatusCode::FORBIDDEN.as_u16(),
+      code: "Forbidden".into(),
+      error_type: "ACTION_FORBIDDEN".into(),
+      name: "ACCESS_DENIED".into(),
+      message: "Access denied.".into(),
+      data: None,
+    }),
     Err(err) => domain_error_to_http_response(&err),
   };
   resolved.cookie_action.apply_to(resp.headers_mut(), https);
@@ -267,7 +307,7 @@ pub(crate) async fn handle_get_blob_manifest_v1(
 #[derive(Debug, Deserialize)]
 pub struct ReadableManifestQuery {
   pub cursor: Option<String>,
-  pub limit: Option<usize>,
+  pub limit: Option<String>,
 }
 
 /// Workspace readable blob manifest (`GET /api/workspaces/:id/readable-blob-manifest/v1`).
@@ -281,10 +321,19 @@ pub(crate) async fn handle_get_readable_blob_manifest_v1(
     Ok(r) => r,
     Err(err) => return err.into_http_response(),
   };
-  let Some(principal) = resolved.principal else {
-    return domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into()));
-  };
   let https = state.app.config.load().https;
+  let Some(principal) = resolved.principal else {
+    let mut resp = envelope_to_http_response(LegacyErrorEnvelope {
+      status: StatusCode::FORBIDDEN.as_u16(),
+      code: "Forbidden".into(),
+      error_type: "ACTION_FORBIDDEN".into(),
+      name: "ACCESS_DENIED".into(),
+      message: "Access denied.".into(),
+      data: None,
+    });
+    resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    return resp;
+  };
   let user_id = principal.into_user().id;
   if let Err(err) = state
     .app
@@ -296,7 +345,12 @@ pub(crate) async fn handle_get_readable_blob_manifest_v1(
     resolved.cookie_action.apply_to(resp.headers_mut(), https);
     return resp;
   }
-  let limit = query.limit.unwrap_or(25).clamp(1, 100);
+  let limit = query
+    .limit
+    .as_deref()
+    .and_then(|raw| raw.trim().parse::<usize>().ok())
+    .unwrap_or(25)
+    .clamp(1, 100);
   let mut resp = match state
     .app
     .blobs
@@ -326,6 +380,14 @@ pub(crate) async fn handle_get_readable_blob_manifest_v1(
         true,
       )
     }
+    Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
+      status: StatusCode::FORBIDDEN.as_u16(),
+      code: "Forbidden".into(),
+      error_type: "ACTION_FORBIDDEN".into(),
+      name: "ACCESS_DENIED".into(),
+      message: "Access denied.".into(),
+      data: None,
+    }),
     Err(err) => domain_error_to_http_response(&err),
   };
   resolved.cookie_action.apply_to(resp.headers_mut(), https);
@@ -418,6 +480,14 @@ pub(crate) async fn handle_get_doc_snapshot(
       message: "Doc not found.".into(),
       data: Some(serde_json::json!({ "spaceId": workspace_id, "docId": doc_id })),
     }),
+    Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
+      status: StatusCode::FORBIDDEN.as_u16(),
+      code: "Forbidden".into(),
+      error_type: "ACTION_FORBIDDEN".into(),
+      name: "ACCESS_DENIED".into(),
+      message: "Access denied.".into(),
+      data: None,
+    }),
     Err(err) => domain_error_to_http_response(&err),
   };
   resolved
@@ -450,6 +520,14 @@ pub(crate) async fn handle_head_public_doc(
         .insert("publish-mode", HeaderValue::from_static(publish_mode));
       resp
     }
+    Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
+      status: StatusCode::FORBIDDEN.as_u16(),
+      code: "Forbidden".into(),
+      error_type: "ACTION_FORBIDDEN".into(),
+      name: "ACCESS_DENIED".into(),
+      message: "Access denied.".into(),
+      data: None,
+    }),
     Err(err) => domain_error_to_http_response(&err),
   };
   resolved
@@ -492,6 +570,14 @@ pub(crate) async fn handle_get_public_doc(
       h.insert("publish-mode", HeaderValue::from_static(publish_mode));
       resp
     }
+    Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
+      status: StatusCode::FORBIDDEN.as_u16(),
+      code: "Forbidden".into(),
+      error_type: "ACTION_FORBIDDEN".into(),
+      name: "ACCESS_DENIED".into(),
+      message: "Access denied.".into(),
+      data: None,
+    }),
     Err(err) => domain_error_to_http_response(&err),
   };
   resolved
@@ -526,6 +612,14 @@ pub(crate) async fn handle_get_public_root_doc(
       );
       resp
     }
+    Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
+      status: StatusCode::FORBIDDEN.as_u16(),
+      code: "Forbidden".into(),
+      error_type: "ACTION_FORBIDDEN".into(),
+      name: "ACCESS_DENIED".into(),
+      message: "Access denied.".into(),
+      data: None,
+    }),
     Err(err) => domain_error_to_http_response(&err),
   };
   resolved
@@ -535,11 +629,23 @@ pub(crate) async fn handle_get_public_root_doc(
 }
 
 fn parse_history_timestamp(raw: &str) -> Option<chrono::DateTime<chrono::Utc>> {
-  if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(raw) {
+  let trimmed = raw.trim();
+  if trimmed.is_empty() || trimmed.bytes().all(|b| b.is_ascii_digit()) {
+    return None;
+  }
+  if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(trimmed) {
     return Some(dt.with_timezone(&chrono::Utc));
   }
-  if let Ok(ms) = raw.parse::<i64>() {
-    return chrono::DateTime::from_timestamp_millis(ms);
+  if let Ok(dt) = chrono::DateTime::parse_from_rfc2822(trimmed) {
+    return Some(dt.with_timezone(&chrono::Utc));
+  }
+  if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(trimmed, "%a, %d %b %Y %H:%M:%S GMT") {
+    return Some(ndt.and_utc());
+  }
+  if let Ok(nd) = chrono::NaiveDate::parse_from_str(trimmed, "%Y-%m-%d")
+    && let Some(ndt) = nd.and_hms_opt(0, 0, 0)
+  {
+    return Some(ndt.and_utc());
   }
   None
 }
@@ -594,6 +700,14 @@ pub(crate) async fn handle_get_doc_history(
           "docId": guid,
           "timestamp": ts.timestamp_millis(),
         })),
+      }),
+      Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::FORBIDDEN.as_u16(),
+        code: "Forbidden".into(),
+        error_type: "ACTION_FORBIDDEN".into(),
+        name: "ACCESS_DENIED".into(),
+        message: "Access denied.".into(),
+        data: None,
       }),
       Err(err) => domain_error_to_http_response(&err),
     }

@@ -82,6 +82,21 @@ fn db_err<E: std::fmt::Display>(ctx: &str) -> impl FnOnce(E) -> DomainError + '_
   move |e| DomainError::Internal(format!("{ctx}: {e}"))
 }
 pub async fn load_effective_captcha_config(db: &ServerDb) -> Result<EffectiveCaptchaConfig, DomainError> {
+  load_effective_captcha_config_with_file(db, None).await
+}
+
+pub async fn load_effective_captcha_config_with_file(
+  db: &ServerDb,
+  file_json: Option<&serde_json::Value>,
+) -> Result<EffectiveCaptchaConfig, DomainError> {
+  let mut enabled = file_json
+    .and_then(|v| v.pointer("/captcha/enabled")?.as_bool())
+    .unwrap_or(false);
+  let mut config = file_json
+    .and_then(|v| v.pointer("/captcha/config"))
+    .and_then(|v| serde_json::from_value::<CaptchaPluginConfig>(v.clone()).ok())
+    .unwrap_or_default();
+
   let mut conn = db
     .acquire_tiered(WorkloadTier::InteractiveRead)
     .await
@@ -92,13 +107,12 @@ pub async fn load_effective_captcha_config(db: &ServerDb) -> Result<EffectiveCap
     .await
     .map_err(db_err("load captcha config"))?;
   drop(conn);
-  let (mut enabled, mut config) = (false, CaptchaPluginConfig::default());
   for row in rows {
     use sqlx::Row as _;
     let id: String = row.get("id");
     let value: serde_json::Value = row.get("value");
     match id.as_str() {
-      "captcha.enabled" => enabled = value.as_bool().unwrap_or(false),
+      "captcha.enabled" => enabled = value.as_bool().unwrap_or(enabled),
       "captcha.config" => {
         if let Ok(parsed) = serde_json::from_value::<CaptchaPluginConfig>(value) {
           config = parsed;

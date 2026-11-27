@@ -28,6 +28,8 @@ use crate::{
   },
 };
 
+#[path = "storage/realtime_snapshots.rs"]
+mod realtime_snapshots;
 #[path = "legacy_compat/root_lifecycle_migration.rs"]
 mod root_lifecycle_migration;
 #[path = "legacy_compat/userspace_redis_bridge.rs"]
@@ -318,11 +320,43 @@ impl DocRealtimeTopic {
   }
 }
 
+/// Extension hook for commercial Copilot realtime operations
+/// (`copilot.transcript.task.*` and `workspace.embedding.progress.*`).
+/// When unconfigured (community edition), these operations return
+/// [`SyncError::CopilotDisabled`].
+#[async_trait::async_trait]
+pub trait CopilotRealtimeHandler: Send + Sync {
+  async fn get_transcript_task(
+    &self,
+    user_id: &str,
+    workspace_id: &str,
+    blob_id: Option<&str>,
+    task_id: Option<&str>,
+  ) -> Result<serde_json::Value, SyncError>;
+
+  async fn retry_transcript_task(
+    &self,
+    user_id: &str,
+    workspace_id: &str,
+    task_id: &str,
+  ) -> Result<serde_json::Value, SyncError>;
+
+  async fn authorize_transcript_task(&self, user_id: &str, workspace_id: &str, task_id: &str) -> Result<(), SyncError>;
+
+  async fn get_embedding_progress(&self, user_id: &str, workspace_id: &str) -> Result<serde_json::Value, SyncError>;
+
+  async fn authorize_embedding_progress(&self, user_id: &str, workspace_id: &str) -> Result<(), SyncError>;
+}
+
 #[derive(Clone)]
 pub struct SyncStorage {
-  db: ServerDb,
-  quota_gate: Arc<dyn QuotaGate>,
+  pub(super) db: ServerDb,
+  pub(super) quota_gate: Arc<dyn QuotaGate>,
   session_redis: UserspaceRedisLockBackend,
+  pub(super) cache_redis: Option<redis::Client>,
+  pub(super) cache_redis_conn: Arc<tokio::sync::Mutex<Option<redis::aio::MultiplexedConnection>>>,
+  pub(super) external_url: String,
+  pub(super) copilot_realtime: Option<Arc<dyn CopilotRealtimeHandler>>,
   userspace_lock_ttl_ms: u64,
   doc_sharing: server_domain::doc_sharing::DocSharingService,
   users: server_domain::users::UserService,
@@ -361,6 +395,10 @@ impl SyncStorage {
       db,
       quota_gate,
       session_redis: UserspaceRedisLockBackend::Disabled,
+      cache_redis: None,
+      cache_redis_conn: Arc::new(tokio::sync::Mutex::new(None)),
+      external_url: String::new(),
+      copilot_realtime: None,
       userspace_lock_ttl_ms: DEFAULT_LOCK_TTL_SECS * 1_000,
       doc_sharing,
       users,
@@ -368,6 +406,21 @@ impl SyncStorage {
       comments,
       search_projection_ready: Arc::new(std::sync::atomic::AtomicU8::new(0)),
     }
+  }
+
+  pub fn with_cache_redis_url(mut self, redis_url: &str) -> Self {
+    self.cache_redis = redis::Client::open(redis_url).ok();
+    self
+  }
+
+  pub fn with_external_url(mut self, external_url: impl Into<String>) -> Self {
+    self.external_url = external_url.into();
+    self
+  }
+
+  pub fn with_copilot_realtime(mut self, handler: Arc<dyn CopilotRealtimeHandler>) -> Self {
+    self.copilot_realtime = Some(handler);
+    self
   }
 
   /// Configures the `SessionRedis` mutex for userspace document writes using
@@ -1116,6 +1169,39 @@ impl SyncStorage {
     }
     lock_domain_workspace(tx.tx_mut(), workspace_id).await?;
 
+    // Activation guard: Trash and Restore require an active global doc-lifecycle checkpoint;
+    // Delete remains allowed even before activation.
+    if !deleting {
+      let is_active: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints \
+         WHERE kind = 'workspace_doc_lifecycle_activation' AND scope = 'global' AND status = 'active')",
+      )
+      .fetch_one(&mut **tx.tx_mut())
+      .await?;
+      if !is_active {
+        return Err(SyncError::WorkspaceLifecycleNotActive);
+      }
+    }
+
+    // Alias / conflict check when deleting a physical doc alongside a logical doc ID.
+    if let Some(logical_id) = logical_doc_id {
+      let alias_exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM workspace_pages WHERE workspace_id = $1 AND page_id = $2 AND lifecycle_state IS DISTINCT FROM 'deleted') \
+         AND EXISTS(SELECT 1 FROM snapshots WHERE workspace_id = $1 AND guid = $2) \
+         AND EXISTS(SELECT 1 FROM snapshots WHERE workspace_id = $1 AND guid = $3)",
+      )
+      .bind(workspace_id)
+      .bind(logical_id)
+      .bind(doc_id)
+      .fetch_one(&mut **tx.tx_mut())
+      .await?;
+      if alias_exists {
+        return Err(SyncError::BadRequest(
+          "logical document ID conflicts with an existing active document".into(),
+        ));
+      }
+    }
+
     let grant = self
       .quota_gate
       .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
@@ -1216,25 +1302,68 @@ impl SyncStorage {
     for id in &pending_ids {
       if deleting {
         delete_workspace_doc_rows(tx.tx_mut(), workspace_id, id).await?;
+        let _ = sqlx::query(
+          "DELETE FROM embedding_sources WHERE workspace_id = $1 AND source_kind = 'document' AND source_key = $2",
+        )
+        .bind(workspace_id)
+        .bind(id)
+        .execute(&mut **tx.tx_mut())
+        .await?;
+      } else if action == DocLifecycleAction::Trash {
+        let _ = sqlx::query(
+          "UPDATE embedding_sources \
+           SET deleted_at = clock_timestamp(), updated_at = clock_timestamp() \
+           WHERE workspace_id = $1 AND source_kind = 'document' AND source_key = $2 AND deleted_at IS NULL",
+        )
+        .bind(workspace_id)
+        .bind(id)
+        .execute(&mut **tx.tx_mut())
+        .await?;
       }
-      let timestamp: DateTime<Utc> = sqlx::query_scalar(
-        r#"
-        INSERT INTO workspace_pages(workspace_id, page_id, lifecycle_state, lifecycle_changed_at)
-        VALUES ($1, $2, $3::"DocLifecycleState", date_trunc('milliseconds', clock_timestamp()))
-        ON CONFLICT (workspace_id, page_id) DO UPDATE SET
-          lifecycle_state = EXCLUDED.lifecycle_state,
-          lifecycle_changed_at = GREATEST(
-            EXCLUDED.lifecycle_changed_at,
-            workspace_pages.lifecycle_changed_at + interval '1 millisecond'
-          )
-        RETURNING lifecycle_changed_at
-        "#,
-      )
-      .bind(workspace_id)
-      .bind(id)
-      .bind(state)
-      .fetch_one(&mut **tx.tx_mut())
-      .await?;
+      let timestamp: DateTime<Utc> = if deleting {
+        sqlx::query_scalar(
+          r#"
+          INSERT INTO workspace_pages(workspace_id, page_id, lifecycle_state, lifecycle_changed_at)
+          VALUES ($1, $2, $3::"DocLifecycleState", date_trunc('milliseconds', clock_timestamp()))
+          ON CONFLICT (workspace_id, page_id) DO UPDATE SET
+            lifecycle_state = EXCLUDED.lifecycle_state,
+            lifecycle_changed_at = GREATEST(
+              EXCLUDED.lifecycle_changed_at,
+              workspace_pages.lifecycle_changed_at + interval '1 millisecond'
+            ),
+            title = NULL,
+            summary = NULL,
+            mode = 0,
+            blocked = false,
+            published_at = NULL
+          RETURNING lifecycle_changed_at
+          "#,
+        )
+        .bind(workspace_id)
+        .bind(id)
+        .bind(state)
+        .fetch_one(&mut **tx.tx_mut())
+        .await?
+      } else {
+        sqlx::query_scalar(
+          r#"
+          INSERT INTO workspace_pages(workspace_id, page_id, lifecycle_state, lifecycle_changed_at)
+          VALUES ($1, $2, $3::"DocLifecycleState", date_trunc('milliseconds', clock_timestamp()))
+          ON CONFLICT (workspace_id, page_id) DO UPDATE SET
+            lifecycle_state = EXCLUDED.lifecycle_state,
+            lifecycle_changed_at = GREATEST(
+              EXCLUDED.lifecycle_changed_at,
+              workspace_pages.lifecycle_changed_at + interval '1 millisecond'
+            )
+          RETURNING lifecycle_changed_at
+          "#,
+        )
+        .bind(workspace_id)
+        .bind(id)
+        .bind(state)
+        .fetch_one(&mut **tx.tx_mut())
+        .await?
+      };
       timestamps.push(timestamp);
     }
 
@@ -1490,7 +1619,6 @@ impl SyncStorage {
     }))
   }
 
-  /// Resolves the `user.settings.get` realtime snapshot from `user_settings.payload` JSONB.
   pub async fn get_user_settings_snapshot(&self, user_id: &str) -> Result<serde_json::Value, SyncError> {
     let settings = self
       .users
@@ -2095,6 +2223,15 @@ async fn delete_workspace_doc_rows(
     .execute(&mut **tx)
     .await?;
   }
+  sqlx::query(
+    "UPDATE embedding_sources \
+     SET deleted_at = COALESCE(deleted_at, clock_timestamp()), updated_at = clock_timestamp() \
+     WHERE workspace_id = $1 AND source_kind = 'document' AND source_key = $2",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .execute(&mut **tx)
+  .await?;
   Ok(())
 }
 
@@ -2450,6 +2587,165 @@ mod realtime_snapshot_tests {
         Some("trashed"),
         "page-trashed must be persisted with lifecycle_state = 'trashed'"
       );
+
+      db.pool().close().await;
+    });
+  }
+
+  #[test]
+  fn doc_lifecycle_activation_guard_trash_and_hard_delete_against_pg() {
+    let cluster = test_db_harness::pg::PgCluster::from_env_or_docker().expect("test postgres cluster");
+    let migrations_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+    let migrations = test_db_harness::migrations::MigrationSet::load(&migrations_dir).expect("load migrations");
+    let template = cluster.ensure_template(&migrations).expect("ensure template");
+    let lease = cluster
+      .lease(&template, test_db_harness::pg::DEFAULT_LEASE_TTL)
+      .expect("lease test database");
+    let db_url = lease.url().to_owned();
+
+    let rt = tokio::runtime::Builder::new_multi_thread()
+      .enable_all()
+      .build()
+      .expect("build tokio runtime");
+    rt.block_on(async move {
+      let db = ServerDb::connect(server_db::DbConfig {
+        database_url: db_url,
+        channel: "production".into(),
+        role: server_types::ServerRole::Allinone,
+        selfhosted: true,
+        max_connections: 4,
+        statement_timeout_ms: 5_000,
+        tier_permits: [8, 4, 4, 2],
+      })
+      .await
+      .expect("connect db");
+      sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+        .execute(db.pool())
+        .await
+        .expect("reset schema");
+      db.ensure_schema_ready().await.expect("ensure schema ready");
+
+      let user_id = uuid::Uuid::new_v4().to_string();
+      let ws_id = uuid::Uuid::new_v4().to_string();
+      let doc_trash_del = "doc-trash-delete";
+      let doc_pre_act_del = "doc-pre-activation-delete";
+
+      sqlx::query("INSERT INTO users (id, name, email) VALUES ($1, 'Owner', 'owner-lc@example.com')")
+        .bind(&user_id)
+        .execute(db.pool())
+        .await
+        .unwrap();
+      sqlx::query("INSERT INTO workspaces (id, name) VALUES ($1, 'Lifecycle WS')")
+        .bind(&ws_id)
+        .execute(db.pool())
+        .await
+        .unwrap();
+      sqlx::query(
+        "INSERT INTO workspace_members (id, workspace_id, user_id, role, state) \
+         VALUES ($1, $2, $3, 'owner', 'active')",
+      )
+      .bind(uuid::Uuid::new_v4().to_string())
+      .bind(&ws_id)
+      .bind(&user_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+
+      let empty_bin = y_octo::Doc::default()
+        .encode_state_as_update_v1(&Default::default())
+        .unwrap();
+      for doc_id in [doc_trash_del, doc_pre_act_del] {
+        sqlx::query(
+          "INSERT INTO snapshots (workspace_id, guid, blob, updated_at) VALUES ($1, $2, $3, clock_timestamp())",
+        )
+        .bind(&ws_id)
+        .bind(doc_id)
+        .bind(&empty_bin)
+        .execute(db.pool())
+        .await
+        .unwrap();
+        sqlx::query(
+          "INSERT INTO workspace_pages (workspace_id, page_id, title, summary, mode, blocked, published_at) \
+           VALUES ($1, $2, 'My Title', 'My Summary', 1, true, clock_timestamp())",
+        )
+        .bind(&ws_id)
+        .bind(doc_id)
+        .execute(db.pool())
+        .await
+        .unwrap();
+      }
+
+      let storage = SyncStorage::new(db.clone());
+
+      // Before activation: Trash and Restore must fail with WorkspaceLifecycleNotActive,
+      // while Delete remains allowed and clears residual workspace_pages columns.
+      let err_trash = storage
+        .apply_doc_lifecycle(&ws_id, doc_trash_del, None, &user_id, DocLifecycleAction::Trash)
+        .await
+        .unwrap_err();
+      assert!(
+        matches!(err_trash, SyncError::WorkspaceLifecycleNotActive),
+        "expected WorkspaceLifecycleNotActive before activation, got {err_trash:?}"
+      );
+      let err_restore = storage
+        .apply_doc_lifecycle(&ws_id, doc_trash_del, None, &user_id, DocLifecycleAction::Restore)
+        .await
+        .unwrap_err();
+      assert!(
+        matches!(err_restore, SyncError::WorkspaceLifecycleNotActive),
+        "expected WorkspaceLifecycleNotActive on restore before activation, got {err_restore:?}"
+      );
+
+      storage
+        .apply_doc_lifecycle(&ws_id, doc_pre_act_del, None, &user_id, DocLifecycleAction::Delete)
+        .await
+        .expect("Delete must succeed even before lifecycle activation");
+
+      // Activate global workspace doc lifecycle checkpoint.
+      sqlx::query(
+        "INSERT INTO storage_reconciliation_checkpoints (kind, scope, status) \
+         VALUES ('workspace_doc_lifecycle_activation', 'global', 'active') \
+         ON CONFLICT (kind, scope) DO UPDATE SET status = 'active'",
+      )
+      .execute(db.pool())
+      .await
+      .unwrap();
+
+      // After activation: Trash -> Delete runs end-to-end with zero SQL errors.
+      storage
+        .apply_doc_lifecycle(&ws_id, doc_trash_del, None, &user_id, DocLifecycleAction::Trash)
+        .await
+        .expect("Trash after activation");
+      storage
+        .apply_doc_lifecycle(&ws_id, doc_trash_del, None, &user_id, DocLifecycleAction::Delete)
+        .await
+        .expect("Delete after Trash");
+
+      let row = sqlx::query(
+        "SELECT lifecycle_state::text AS state, title, summary, mode, blocked, published_at \
+         FROM workspace_pages WHERE workspace_id = $1 AND page_id = $2",
+      )
+      .bind(&ws_id)
+      .bind(doc_trash_del)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+      use sqlx::Row as _;
+      assert_eq!(row.get::<Option<String>, _>("state").as_deref(), Some("deleted"));
+      assert_eq!(row.get::<Option<String>, _>("title"), None);
+      assert_eq!(row.get::<Option<String>, _>("summary"), None);
+      assert_eq!(row.get::<i16, _>("mode"), 0);
+      assert!(!row.get::<bool, _>("blocked"));
+      assert_eq!(row.get::<Option<DateTime<Utc>>, _>("published_at"), None);
+
+      let snap_exists: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM snapshots WHERE workspace_id = $1 AND guid = $2)")
+          .bind(&ws_id)
+          .bind(doc_trash_del)
+          .fetch_one(db.pool())
+          .await
+          .unwrap();
+      assert!(!snap_exists, "snapshots row must be deleted on hard delete");
 
       db.pool().close().await;
     });

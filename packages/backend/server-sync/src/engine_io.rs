@@ -400,7 +400,7 @@ fn check_origin_with_policy(
   if allowed_origins.iter().any(|allowed| allowed == trimmed_slash) {
     return Ok(Some(origin.to_owned()));
   }
-  if (allow_dev_loopback || allowed_origins.is_empty()) && is_dev_loopback_origin(origin) {
+  if allow_dev_loopback && is_dev_loopback_origin(origin) {
     return Ok(Some(origin.to_owned()));
   }
   Err(())
@@ -581,6 +581,28 @@ impl EngineIoState {
       return;
     };
 
+    let mut arg = arg;
+    if matches!(
+      event_name,
+      "realtime:request" | "realtime:subscribe" | "realtime:unsubscribe" | "space:join-batch"
+    ) && let Some(obj) = arg.as_object_mut()
+    {
+      let has_ver = obj
+        .get("clientVersion")
+        .and_then(Value::as_str)
+        .is_some_and(|s| !s.trim().is_empty());
+      if !has_ver
+        && let Some(hdr_ver) = session
+          .headers
+          .get("x-affine-version")
+          .and_then(|v| v.to_str().ok())
+          .map(str::trim)
+          .filter(|s| !s.is_empty())
+      {
+        obj.insert("clientVersion".to_owned(), Value::String(hdr_ver.to_owned()));
+      }
+    }
+
     let response = self
       .gateway
       .handle_event(self, &session.socket_id, &user, event_name, arg)
@@ -671,7 +693,24 @@ impl EngineIoState {
         if session.sio_connected.load(Ordering::Acquire) {
           return true;
         }
-        match self.authenticator.authenticate(&session.headers).await {
+        let mut effective_headers = session.headers.clone();
+        let auth_json = payload[1..].trim();
+        if auth_json.starts_with('{')
+          && let Ok(auth_obj) = serde_json::from_str::<Value>(auth_json)
+          && auth_obj
+            .get("tokenType")
+            .and_then(Value::as_str)
+            .is_some_and(|t| t.eq_ignore_ascii_case("jwt"))
+          && let Some(tok) = auth_obj
+            .get("token")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+          && let Ok(hv) = header::HeaderValue::from_str(&format!("Bearer {tok}"))
+        {
+          effective_headers.insert(header::AUTHORIZATION, hv);
+        }
+        match self.authenticator.authenticate(&effective_headers).await {
           Ok(user) => {
             if session.sio_connected.swap(true, Ordering::AcqRel) {
               return true;
@@ -814,7 +853,9 @@ async fn handle_options(State(state): State<Arc<EngineIoState>>, headers: Header
   );
   h.insert(
     header::ACCESS_CONTROL_ALLOW_HEADERS,
-    header::HeaderValue::from_static("Content-Type, Authorization, Cookie"),
+    header::HeaderValue::from_static(
+      "accept, authorization, content-type, cookie, x-affine-version, x-affine-client-kind, x-operation-name, x-request-id, x-captcha-token, x-captcha-challenge, x-captcha-provider, x-affine-csrf-token, x-requested-with, range",
+    ),
   );
   attach_cors_headers(resp, origin.as_deref())
 }
@@ -1174,9 +1215,10 @@ mod tests {
     assert!(check(&["http://affine.parity.test"], false, Some("ws://affine.parity.test")).is_ok());
     assert!(check(&["https://app.affine.pro"], false, Some("ws://app.affine.pro")).is_err());
 
-    // 3. Empty allowed_origins NEVER reflects arbitrary external origins; only loopback + native.
+    // 3. Empty allowed_origins NEVER reflects arbitrary external origins or production loopback.
     assert!(check(&[], false, Some("https://evil.example")).is_err());
-    assert!(check(&[], false, Some("http://127.0.0.1:3010")).is_ok());
+    assert!(check(&[], false, Some("http://127.0.0.1:3010")).is_err());
+    assert!(check(&[], true, Some("http://127.0.0.1:3010")).is_ok());
 
     // 4. Production mode (allow_dev_loopback = false) with explicit allowed_origins rejects unconfigured loopback ports.
     assert!(check(&["https://app.affine.pro"], false, Some("http://localhost:8080")).is_err());

@@ -253,8 +253,9 @@ where
       return *r;
     }
   };
-  let allowed = allowed_origins_for_state(state, false);
-  let mut resp = if require_origin && !check_origin_or_referer(headers, &allowed) {
+  let allowed = allowed_origins_for_state_async(state, CorsOriginScope::Worker).await;
+  let dev_mode = state.app.config.load().dev_mode;
+  let mut resp = if require_origin && !check_origin_or_referer(headers, &allowed, dev_mode) {
     bad_request_envelope("Invalid header")
   } else {
     inner(allowed).await
@@ -296,7 +297,12 @@ pub(crate) fn router() -> Router<RouterState> {
   };
   Router::new()
     .route("/api/worker/image-proxy", get(handle_image_proxy).options(img_opt))
-    .route("/api/worker/link-preview", post(handle_link_preview).options(lp_opt))
+    .route(
+      "/api/worker/link-preview",
+      post(handle_link_preview)
+        .options(lp_opt)
+        .layer(axum::extract::DefaultBodyLimit::max(MAX_LINK_PREVIEW_BODY_BYTES)),
+    )
 }
 fn err_env(status: u16, code: &str, ty: &str, name: &str, msg: impl Into<String>) -> Response {
   let e = LegacyErrorEnvelope {
@@ -327,61 +333,179 @@ pub(crate) fn ssrf_error_to_bad_request_reason(err: &SafeFetchError) -> &'static
     },
   }
 }
-pub(crate) fn allowed_origins_for_state(state: &RouterState, include_telemetry: bool) -> Vec<String> {
+pub(crate) const MOBILE_CLIENT_ORIGINS: &[&str] = &["https://localhost", "capacitor://localhost", "ionic://localhost"];
+pub(crate) const DESKTOP_CLIENT_ORIGINS: &[&str] = &["assets://.", "assets://another-host", "file://"];
+pub(crate) const CORS_ALLOWED_METHODS: &str = "GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS";
+pub(crate) const CORS_ALLOWED_HEADERS: &str = "accept, authorization, content-type, x-affine-version, x-affine-client-kind, x-operation-name, x-request-id, x-captcha-token, x-captcha-challenge, x-captcha-provider, x-affine-csrf-token, x-requested-with, range";
+pub(crate) const CORS_EXPOSED_HEADERS: &str = "content-length, content-range, x-request-id";
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum CorsOriginScope {
+  Global,
+  Worker,
+  Telemetry,
+}
+
+fn is_dev_loopback_origin(origin: &str) -> bool {
+  let Ok(parsed) = Url::parse(origin) else {
+    return false;
+  };
+  if !matches!(parsed.scheme(), "http" | "https") {
+    return false;
+  }
+  let Some(host) = parsed.host_str() else {
+    return false;
+  };
+  let norm = host.trim_matches(['[', ']']).to_ascii_lowercase();
+  matches!(norm.as_str(), "localhost" | "127.0.0.1" | "::1")
+}
+
+pub(crate) fn normalize_cors_origin(origin: &str) -> Option<String> {
+  let trimmed = origin.trim();
+  if trimmed.is_empty() || trimmed == "null" {
+    return None;
+  }
+  if DESKTOP_CLIENT_ORIGINS.contains(&trimmed) || MOBILE_CLIENT_ORIGINS.contains(&trimmed) {
+    return Some(trimmed.to_owned());
+  }
+  let mut parsed = Url::parse(trimmed).ok()?;
+  if parsed.scheme() == "ws" {
+    let _ = parsed.set_scheme("http");
+  } else if parsed.scheme() == "wss" {
+    let _ = parsed.set_scheme("https");
+  }
+  match parsed.scheme() {
+    "http" | "https" => Some(parsed.origin().ascii_serialization()),
+    "assets" => {
+      let host = parsed.host_str().unwrap_or("");
+      Some(format!("assets://{host}"))
+    }
+    "file" => Some("file://".to_owned()),
+    _ => None,
+  }
+}
+
+pub(crate) fn is_cors_origin_allowed(origin: &str, allowed: &[String], dev_mode: bool) -> bool {
+  let trimmed = origin.trim();
+  if trimmed.is_empty() || trimmed == "null" {
+    return false;
+  }
+  if allowed.iter().any(|e| e == trimmed) {
+    return true;
+  }
+  if let Some(norm) = normalize_cors_origin(trimmed)
+    && allowed.iter().any(|e| e == &norm)
+  {
+    return true;
+  }
+  dev_mode && is_dev_loopback_origin(trimmed)
+}
+
+fn push_normalized_origin(out: &mut Vec<String>, raw: &str, default_scheme: &str) {
+  let t = raw.trim().trim_end_matches('/');
+  if t.is_empty() {
+    return;
+  }
+  if DESKTOP_CLIENT_ORIGINS.contains(&t) || MOBILE_CLIENT_ORIGINS.contains(&t) {
+    if !out.iter().any(|x| x == t) {
+      out.push(t.to_owned());
+    }
+    return;
+  }
+  let cand = if t.contains("://") {
+    t.to_owned()
+  } else {
+    format!("{default_scheme}://{t}")
+  };
+  if let Ok(u) = Url::parse(&cand)
+    && let Some(o) = match u.scheme() {
+      "http" | "https" => Some(u.origin().ascii_serialization()),
+      "assets" => Some(format!("assets://{}", u.host_str().unwrap_or(""))),
+      "file" => Some("file://".to_owned()),
+      _ => None,
+    }
+    && !out.contains(&o)
+  {
+    out.push(o);
+  }
+}
+
+pub(crate) async fn allowed_origins_for_state_async(state: &RouterState, scope: CorsOriginScope) -> Vec<String> {
   let cfg = state.app.config.load();
   let mut out = Vec::new();
   let scheme = Url::parse(&cfg.external_url).map_or("http".to_owned(), |u| u.scheme().to_owned());
-  let extra = if include_telemetry {
-    &cfg.telemetry_allowed_origins[..]
-  } else {
-    &[]
-  };
-  for raw in std::iter::once(cfg.external_url.as_str())
-    .chain(cfg.app_config_baseline.server.hosts.iter().map(String::as_str))
-    .chain(extra.iter().map(String::as_str))
-  {
-    let t = raw.trim().trim_end_matches('/');
-    let cand = if t.contains("://") {
-      t.to_owned()
-    } else {
-      format!("{scheme}://{t}")
-    };
-    if !t.is_empty()
-      && let Ok(u) = Url::parse(&cand)
-      && let Some(o) = match u.scheme() {
-        "http" | "https" => Some(u.origin().ascii_serialization()),
-        "assets" if include_telemetry => Some(u.as_str().to_owned()),
-        _ => None,
+  for &o in MOBILE_CLIENT_ORIGINS.iter().chain(DESKTOP_CLIENT_ORIGINS.iter()) {
+    out.push(o.to_owned());
+  }
+  push_normalized_origin(&mut out, &cfg.external_url, &scheme);
+  for h in &cfg.app_config_baseline.server.hosts {
+    push_normalized_origin(&mut out, h, &scheme);
+  }
+  if scope == CorsOriginScope::Telemetry {
+    for o in &cfg.telemetry_allowed_origins {
+      push_normalized_origin(&mut out, o, &scheme);
+    }
+  }
+  if let Ok(eff) = state.app.app_config.get_effective_app_config().await {
+    if let Some(hosts) = eff.pointer("/server/hosts").and_then(Value::as_array) {
+      for h in hosts.iter().filter_map(Value::as_str) {
+        push_normalized_origin(&mut out, h, &scheme);
       }
-      && !out.contains(&o)
+    }
+    if let Some(url_origins) = eff.pointer("/url/allowedOrigins").and_then(Value::as_array) {
+      for o in url_origins.iter().filter_map(Value::as_str) {
+        push_normalized_origin(&mut out, o, &scheme);
+      }
+    }
+    if scope == CorsOriginScope::Worker
+      && let Some(worker_origins) = eff.pointer("/worker/allowedOrigin").and_then(Value::as_array)
     {
-      out.push(o);
+      for o in worker_origins.iter().filter_map(Value::as_str) {
+        push_normalized_origin(&mut out, o, &scheme);
+      }
+    }
+    if scope == CorsOriginScope::Telemetry
+      && let Some(tel_origins) = eff.pointer("/telemetry/allowedOrigin").and_then(Value::as_array)
+    {
+      for o in tel_origins.iter().filter_map(Value::as_str) {
+        push_normalized_origin(&mut out, o, &scheme);
+      }
     }
   }
   out
 }
+
 pub(crate) fn append_cors_origin(target: &mut HeaderMap, origin: Option<&str>, allowed: &[String]) {
   if let Some(o) = origin
-    && allowed.iter().any(|e| e == o)
+    && is_cors_origin_allowed(o, allowed, false)
     && let Ok(val) = HeaderValue::from_str(o)
   {
     target.insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, val);
     target.insert(header::VARY, HeaderValue::from_static("Origin"));
   }
 }
-fn check_origin_or_referer(headers: &HeaderMap, allowed: &[String]) -> bool {
-  h_str(headers, header::ORIGIN).is_some_and(|o| allowed.iter().any(|e| e == o))
-    || h_str(headers, header::REFERER)
-      .and_then(|r| Url::parse(r).ok())
-      .is_some_and(|u| {
-        let s = u.origin().ascii_serialization();
-        let o = if s == "null" {
-          format!("{}://{}", u.scheme(), u.host_str().unwrap_or(""))
-        } else {
-          s
-        };
-        allowed.iter().any(|e| e == &o)
-      })
+
+pub(crate) fn check_origin_or_referer(headers: &HeaderMap, allowed: &[String], dev_mode: bool) -> bool {
+  let origin = h_str(headers, header::ORIGIN).map(str::trim);
+  if let Some(o) = origin
+    && o != "null"
+    && !o.is_empty()
+    && is_cors_origin_allowed(o, allowed, dev_mode)
+  {
+    return true;
+  }
+  h_str(headers, header::REFERER).is_some_and(|r| {
+    let Ok(u) = Url::parse(r) else {
+      return false;
+    };
+    let candidate = match u.scheme() {
+      "http" | "https" => u.origin().ascii_serialization(),
+      "assets" => format!("assets://{}", u.host_str().unwrap_or("")),
+      "file" => "file://".to_owned(),
+      _ => return false,
+    };
+    is_cors_origin_allowed(&candidate, allowed, dev_mode)
+  })
 }
 fn fix_url_with_policy(raw: &str, allow_private: &[Origin]) -> Option<Url> {
   let t = raw.trim();
@@ -550,6 +674,7 @@ async fn handle_image_proxy(
         .and_then(|mut s| s.next_back())
         .filter(|s| !s.is_empty());
       apply_blob_security_headers(h, Some(&mime), fname);
+      h.insert(header::CACHE_CONTROL, HeaderValue::from_static("public, max-age=86400"));
       if mime != "image/svg+xml"
         && let Some(val) = cd.as_deref().and_then(|c| HeaderValue::from_str(c).ok())
       {
@@ -619,6 +744,72 @@ fn decode_html_bytes(bytes: &[u8], content_type: Option<&str>) -> String {
       |e| e.decode(bytes).0.into_owned(),
     )
 }
+const MAX_LINK_PREVIEW_BODY_BYTES: usize = 16 * 1024;
+const MAX_PREVIEW_TEXT_BYTES: usize = 4096;
+
+fn clamp_utf8_bytes(s: &str, max_bytes: usize) -> &str {
+  if s.len() <= max_bytes {
+    return s;
+  }
+  let mut end = max_bytes;
+  while end > 0 && !s.is_char_boundary(end) {
+    end -= 1;
+  }
+  &s[..end]
+}
+
+fn decode_html_entities(input: &str) -> String {
+  let input = clamp_utf8_bytes(input, MAX_PREVIEW_TEXT_BYTES);
+  if !input.contains('&') {
+    return input.to_owned();
+  }
+  let mut out = String::with_capacity(input.len());
+  let bytes = input.as_bytes();
+  let mut i = 0;
+  while i < bytes.len() {
+    if bytes[i] == b'&'
+      && let Some(semi_rel) = bytes[i + 1..].iter().take(13).position(|&b| b == b';')
+      && semi_rel > 0
+      && semi_rel <= 12
+    {
+      let entity = &input[i + 1..i + 1 + semi_rel];
+      let decoded = match entity {
+        "amp" => Some('&'.to_string()),
+        "lt" => Some('<'.to_string()),
+        "gt" => Some('>'.to_string()),
+        "quot" => Some('"'.to_string()),
+        "apos" => Some('\''.to_string()),
+        "nbsp" => Some('\u{00A0}'.to_string()),
+        "ndash" => Some('\u{2013}'.to_string()),
+        "mdash" => Some('\u{2014}'.to_string()),
+        "hellip" => Some('\u{2026}'.to_string()),
+        "copy" => Some('\u{00A9}'.to_string()),
+        "reg" => Some('\u{00AE}'.to_string()),
+        "trade" => Some('\u{2122}'.to_string()),
+        s if s.starts_with("#x") || s.starts_with("#X") => u32::from_str_radix(&s[2..], 16)
+          .ok()
+          .and_then(char::from_u32)
+          .map(|c| c.to_string()),
+        s if s.starts_with('#') => s[1..]
+          .parse::<u32>()
+          .ok()
+          .and_then(char::from_u32)
+          .map(|c| c.to_string()),
+        _ => None,
+      };
+      if let Some(rep) = decoded {
+        out.push_str(&rep);
+        i += semi_rel + 2;
+        continue;
+      }
+    }
+    let ch = input[i..].chars().next().unwrap();
+    out.push(ch);
+    i += ch.len_utf8();
+  }
+  out
+}
+
 fn parse_html_preview(html: &str, final_url: &Url) -> (serde_json::Map<String, Value>, Vec<String>) {
   let (mut title, mut site_name, mut desc, mut media_type) = (None, None, None, None);
   let (mut images, mut videos, mut favicons) = (Vec::new(), Vec::new(), Vec::new());
@@ -627,8 +818,8 @@ fn parse_html_preview(html: &str, final_url: &Url) -> (serde_json::Map<String, V
     && let Some(gt) = lower[ts..].find('>')
     && let Some(te) = lower[ts + gt + 1..].find("</title>")
   {
-    let t = html[ts + gt + 1..ts + gt + 1 + te].trim();
-    title = (!t.is_empty()).then(|| t.to_owned());
+    let t = decode_html_entities(html[ts + gt + 1..ts + gt + 1 + te].trim());
+    title = (!t.is_empty()).then_some(t);
   }
   let mut cursor = 0usize;
   while let Some(rs) = html[cursor..].find('<') {
@@ -644,10 +835,11 @@ fn parse_html_preview(html: &str, final_url: &Url) -> (serde_json::Map<String, V
       .to_ascii_lowercase();
     match name.as_str() {
       "meta" => {
-        if let (Some(p), Some(c)) = (
+        if let (Some(p), Some(raw_c)) = (
           extract_attr(tag, "property").or_else(|| extract_attr(tag, "name")),
           extract_attr(tag, "content"),
         ) {
+          let c = decode_html_entities(&raw_c);
           match p.to_ascii_lowercase().as_str() {
             "og:title" => title = Some(c),
             "og:site_name" => site_name = Some(c),
@@ -662,12 +854,16 @@ fn parse_html_preview(html: &str, final_url: &Url) -> (serde_json::Map<String, V
       }
       "link" if extract_attr(tag, "rel").is_some_and(|r| r.to_ascii_lowercase().contains("icon")) => {
         if let Some(href) = extract_attr(tag, "href") {
-          push_unique_url(&href, final_url, &mut favicons);
+          push_unique_url(&decode_html_entities(&href), final_url, &mut favicons);
         }
       }
       "img" | "video" => {
         if let Some(src) = extract_attr(tag, "src") {
-          push_unique_url(&src, final_url, if name == "img" { &mut images } else { &mut videos });
+          push_unique_url(
+            &decode_html_entities(&src),
+            final_url,
+            if name == "img" { &mut images } else { &mut videos },
+          );
         }
       }
       _ => {}
@@ -696,6 +892,9 @@ async fn handle_link_preview(
   hdrs: HeaderMap,
   body: bytes::Bytes,
 ) -> Response {
+  if body.len() > MAX_LINK_PREVIEW_BODY_BYTES {
+    return StatusCode::PAYLOAD_TOO_LARGE.into_response();
+  }
   let (st, hdrs) = (&st, &hdrs);
   with_worker_throttle(
     st,

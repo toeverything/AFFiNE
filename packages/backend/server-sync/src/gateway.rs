@@ -325,11 +325,14 @@ impl SpaceSyncGateway {
             }
           }
           Ok(ClusterSyncEvent::RealtimeTopicChanged(payload)) => {
+            let Some(room) = payload.resolved_room() else {
+              continue;
+            };
             let recipients_with_users: Vec<(String, Option<String>)> = {
               let rooms = gateway.rooms.read().await;
               rooms
                 .room_sockets
-                .get(&payload.room)
+                .get(&room)
                 .map(|s| {
                   s.iter()
                     .map(|sid| (sid.clone(), rooms.socket_users.get(sid).cloned()))
@@ -337,7 +340,7 @@ impl SpaceSyncGateway {
                 })
                 .unwrap_or_default()
             };
-            let doc_room_check = parse_doc_realtime_room(&payload.room);
+            let doc_room_check = parse_doc_realtime_room(&room);
             let event_val = if payload.event.is_null() {
               payload.payload
             } else {
@@ -364,8 +367,8 @@ impl SpaceSyncGateway {
                   let mut rooms = gateway.rooms.write().await;
                   rooms
                     .realtime_subscriptions
-                    .retain(|_, (other_sid, other_room)| !(other_sid == &sid && other_room == &payload.room));
-                  rooms.leave_room(&sid, &payload.room);
+                    .retain(|_, (other_sid, other_room)| !(other_sid == &sid && other_room == &room));
+                  rooms.leave_room(&sid, &room);
                   continue;
                 }
               }
@@ -1364,6 +1367,99 @@ impl SpaceSyncGateway {
           .await?;
         Ok(json!({ "data": changes }))
       }
+      "workspace.members.get" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let skip = input.get("skip").and_then(Value::as_i64).unwrap_or(0).max(0);
+        let take = input.get("take").and_then(Value::as_i64).unwrap_or(8).clamp(1, 100);
+        let query = input.get("query").and_then(Value::as_str);
+        let members = self
+          .storage
+          .get_workspace_members_snapshot(workspace_id, &user.id, skip, take, query)
+          .await?;
+        Ok(json!({ "data": members }))
+      }
+      "workspace.invite-link.get" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let invite_link = self
+          .storage
+          .get_workspace_invite_link_snapshot(workspace_id, &user.id)
+          .await?;
+        Ok(json!({ "data": { "inviteLink": invite_link } }))
+      }
+      "user.profile.get" => {
+        let profile = self.storage.get_user_profile_snapshot(&user.id).await?;
+        Ok(json!({ "data": { "user": profile } }))
+      }
+      "user.quota-state.get" => {
+        let state = self.storage.get_user_quota_state_snapshot(&user.id).await?;
+        Ok(json!({ "data": { "state": state } }))
+      }
+      "workspace.quota-state.get" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let state = self
+          .storage
+          .get_workspace_quota_state_snapshot(workspace_id, &user.id)
+          .await?;
+        Ok(json!({ "data": { "state": state } }))
+      }
+      "workspace.embedding.progress.get" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let progress = self
+          .storage
+          .copilot_realtime_get_embedding_progress(&user.id, workspace_id)
+          .await?;
+        Ok(json!({ "data": progress }))
+      }
+      "copilot.transcript.task.get" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let blob_id = input.get("blobId").and_then(Value::as_str).filter(|s| !s.is_empty());
+        let task_id = input.get("taskId").and_then(Value::as_str).filter(|s| !s.is_empty());
+        if blob_id.is_none() && task_id.is_none() {
+          return Err(SyncError::BadRequest("Missing blobId or taskId".into()));
+        }
+        let task = self
+          .storage
+          .copilot_realtime_get_transcript_task(&user.id, workspace_id, blob_id, task_id)
+          .await?;
+        Ok(json!({ "data": { "task": task } }))
+      }
+      "copilot.transcript.task.retry" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let task_id = input
+          .get("taskId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing taskId".into()))?;
+        let task = self
+          .storage
+          .copilot_realtime_retry_transcript_task(&user.id, workspace_id, task_id)
+          .await?;
+        Ok(json!({ "data": { "task": task } }))
+      }
       other => Err(SyncError::BadRequest(format!("Unsupported realtime op: {other}"))),
     }
   }
@@ -1432,9 +1528,60 @@ impl SpaceSyncGateway {
           .await?;
         format!("workspace:{workspace_id}:doc:{doc_id}:{scope}")
       }
+      "workspace.invite-link.changed" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        self
+          .storage
+          .assert_workspace_invite_manage(workspace_id, &user.id)
+          .await?;
+        format!("workspace:{workspace_id}:invite-link")
+      }
+      "workspace.quota-state.changed" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        self.storage.assert_workspace_readable(workspace_id, &user.id).await?;
+        format!("workspace:{workspace_id}:quota-state")
+      }
+      "workspace.embedding.progress.changed" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        self
+          .storage
+          .copilot_realtime_authorize_embedding_progress(&user.id, workspace_id)
+          .await?;
+        format!("workspace:{workspace_id}:embedding-progress")
+      }
+      "copilot.transcript.task.changed" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let task_id = input
+          .get("taskId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing taskId".into()))?;
+        self
+          .storage
+          .copilot_realtime_authorize_transcript_task(&user.id, workspace_id, task_id)
+          .await?;
+        format!("copilot:transcript:{workspace_id}:{task_id}")
+      }
       "notification.count.changed" => format!("user:{}:notification", user.id),
       "user.settings.changed" => format!("user:{}:settings", user.id),
       "user.profile.changed" => format!("user:{}:profile", user.id),
+      "user.quota-state.changed" => format!("user:{}:quota-state", user.id),
       other => return Err(SyncError::BadRequest(format!("Unsupported realtime topic: {other}"))),
     };
 
@@ -1829,11 +1976,17 @@ fn is_supported_realtime_client_version(ver: &str) -> bool {
   if maj > 0 || min >= 26 {
     return true;
   }
-  // Allow canary date versions (e.g. `0.0.0-canary.20260101` or `0.0.0-20260101`).
+  // Allow non-expired canary date versions (within 30 days of current UTC date).
   if let Some(pre) = pre {
     let digits: String = pre.chars().filter(|c| c.is_ascii_digit()).collect();
-    if digits.len() >= 8 && pre.to_ascii_lowercase().contains("canary") {
-      return true;
+    if digits.len() >= 8
+      && pre.to_ascii_lowercase().contains("canary")
+      && let Ok(date) = chrono::NaiveDate::parse_from_str(&digits[..8], "%Y%m%d")
+    {
+      let today = chrono::Utc::now().date_naive();
+      if (today - date).num_days() <= 30 {
+        return true;
+      }
     }
   }
   false

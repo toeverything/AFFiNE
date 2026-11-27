@@ -337,6 +337,7 @@ const OIDC_DISCOVERY_CACHE_TTL: Duration = Duration::from_secs(60);
 const OIDC_DISCOVERY_CACHE_MAX_ENTRIES: usize = 64;
 
 type CachedAppConfig = Option<(Instant, Arc<Value>)>;
+type CachedPrivateKey = Option<(u64, Instant, Option<String>)>;
 type OidcDiscoveryCache = std::collections::HashMap<(String, bool), (Instant, bool)>;
 
 #[derive(Clone)]
@@ -345,6 +346,8 @@ pub struct AppConfigService {
   baseline: RuntimeAppConfigBaseline,
   event_bus: Arc<dyn EventBusPublisher>,
   cache: Arc<RwLock<CachedAppConfig>>,
+  private_key_cache: Arc<RwLock<CachedPrivateKey>>,
+  redis_key_prefix_cache: Arc<RwLock<Option<(u64, Instant, String)>>>,
   generation: Arc<AtomicU64>,
   oidc_discovery_cache: Arc<RwLock<OidcDiscoveryCache>>,
 }
@@ -388,6 +391,8 @@ impl AppConfigService {
       baseline,
       event_bus,
       cache: Arc::new(RwLock::new(None)),
+      private_key_cache: Arc::new(RwLock::new(None)),
+      redis_key_prefix_cache: Arc::new(RwLock::new(None)),
       generation: Arc::new(AtomicU64::new(0)),
       oidc_discovery_cache: Arc::new(RwLock::new(std::collections::HashMap::new())),
     }
@@ -398,6 +403,12 @@ impl AppConfigService {
   pub fn invalidate_cache(&self) {
     self.generation.fetch_add(1, Ordering::AcqRel);
     if let Ok(mut guard) = self.cache.write() {
+      *guard = None;
+    }
+    if let Ok(mut guard) = self.private_key_cache.write() {
+      *guard = None;
+    }
+    if let Ok(mut guard) = self.redis_key_prefix_cache.write() {
       *guard = None;
     }
   }
@@ -450,6 +461,108 @@ impl AppConfigService {
     let snapshot = self.load_effective_app_config_uncached().await?;
     self.store_snapshot_if_generation_matches(gen_before, &snapshot);
     Ok(snapshot)
+  }
+
+  /// Returns the cached redacted `appConfig` snapshot as an `Arc<Value>`
+  /// without deep-cloning the JSON tree on read-only hot paths.
+  pub async fn get_effective_app_config_arc(&self) -> Result<Arc<Value>, DomainError> {
+    self.get_cached_effective_app_config().await
+  }
+
+  /// Internal backend-only lookup for unredacted `crypto.privateKey`,
+  /// preserving exact raw bytes (never `.trim()`). Precedence: non-blank DB
+  /// `app_configs` row -> non-blank `config.json` `/crypto/privateKey` -> `None`.
+  /// Cached with `self.generation` and `APP_CONFIG_CACHE_TTL`; never exposed over HTTP/GraphQL.
+  pub async fn get_internal_private_key(&self) -> Result<Option<String>, DomainError> {
+    let gen_before = self.generation.load(Ordering::Acquire);
+    if let Ok(guard) = self.private_key_cache.read()
+      && let Some((cached_gen, cached_at, ref key)) = *guard
+      && cached_gen == gen_before
+      && cached_at.elapsed() < APP_CONFIG_CACHE_TTL
+    {
+      return Ok(key.clone());
+    }
+
+    let db_val = self.get_raw_config_value("crypto.privateKey").await?;
+    let resolved = db_val
+      .as_ref()
+      .and_then(Value::as_str)
+      .filter(|s| !s.trim().is_empty())
+      .map(str::to_owned)
+      .or_else(|| {
+        self
+          .baseline
+          .file_json
+          .pointer("/crypto/privateKey")
+          .and_then(Value::as_str)
+          .filter(|s| !s.trim().is_empty())
+          .map(str::to_owned)
+      });
+    if let Ok(mut guard) = self.private_key_cache.write()
+      && self.generation.load(Ordering::Acquire) == gen_before
+    {
+      *guard = Some((gen_before, Instant::now(), resolved.clone()));
+    }
+    Ok(resolved)
+  }
+
+  /// Internal-only reader for the effective `redis.ioredis.keyPrefix` (falling back
+  /// to `redis.keyPrefix`), bypassing `SECRET_CONFIG_KEYS` redaction on `redis.ioredis`.
+  /// Cached with `self.generation` and `APP_CONFIG_CACHE_TTL`.
+  pub async fn get_internal_redis_key_prefix(&self) -> Result<String, DomainError> {
+    let gen_before = self.generation.load(Ordering::Acquire);
+    if let Ok(guard) = self.redis_key_prefix_cache.read()
+      && let Some((cached_gen, cached_at, ref prefix)) = *guard
+      && cached_gen == gen_before
+      && cached_at.elapsed() < APP_CONFIG_CACHE_TTL
+    {
+      return Ok(prefix.clone());
+    }
+
+    let mut conn = self
+      .db
+      .acquire_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("acquire db for redis keyPrefix: {e}")))?;
+    let rows: Vec<(String, Value)> =
+      sqlx::query_as("SELECT id, value FROM app_configs WHERE id IN ('redis.ioredis', 'redis.keyPrefix')")
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(|e| DomainError::Internal(format!("query redis keyPrefix: {e}")))?;
+    let resolved = rows
+      .iter()
+      .find(|(k, _)| k == "redis.ioredis")
+      .and_then(|(_, v)| v.get("keyPrefix").and_then(Value::as_str))
+      .filter(|s| !s.is_empty())
+      .or_else(|| {
+        rows
+          .iter()
+          .find(|(k, _)| k == "redis.keyPrefix")
+          .and_then(|(_, v)| v.as_str())
+          .filter(|s| !s.is_empty())
+      })
+      .or_else(|| {
+        self
+          .baseline
+          .lookup_file_config_value("redis.ioredis")
+          .and_then(|v| v.get("keyPrefix").and_then(Value::as_str))
+          .filter(|s| !s.is_empty())
+      })
+      .or_else(|| {
+        self
+          .baseline
+          .lookup_file_config_value("redis.keyPrefix")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+      })
+      .unwrap_or("")
+      .to_owned();
+    if let Ok(mut guard) = self.redis_key_prefix_cache.write()
+      && self.generation.load(Ordering::Acquire) == gen_before
+    {
+      *guard = Some((gen_before, Instant::now(), resolved.clone()));
+    }
+    Ok(resolved)
   }
 
   /// Builds the exact `v0.27.5` `appConfig` JSON object by combining runtime

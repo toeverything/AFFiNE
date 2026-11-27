@@ -216,7 +216,7 @@ fn community_copilot_schema_guards_role_isolation_and_quota_usage() {
     &setup_body,
   )
   .await;
-  assert_eq!(st, 201);
+  assert_eq!(st, 200);
   let cookie = extract_cookie_header(&head);
   assert!(!cookie.is_empty());
 

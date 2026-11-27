@@ -190,15 +190,21 @@ impl UserType {
 
   async fn quota(&self, ctx: &Context<'_>) -> Result<UserQuotaType> {
     let caller = require_authenticated_user(ctx).await?;
+    if self.view.id != caller.id {
+      return Err(domain_error_to_graphql(&DomainError::Forbidden("access_denied".into())));
+    }
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let (grant, used_storage_quota) = compute_user_quota_and_storage(state, &caller.id).await?;
+    let (grant, used_storage_quota) = compute_user_quota_and_storage(state, &self.view.id).await?;
     Ok(user_quota_from_grant(&grant, used_storage_quota))
   }
 
   async fn quota_usage(&self, ctx: &Context<'_>) -> Result<UserQuotaUsageType> {
     let caller = require_authenticated_user(ctx).await?;
+    if self.view.id != caller.id {
+      return Err(domain_error_to_graphql(&DomainError::Forbidden("access_denied".into())));
+    }
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let (_grant, used_storage_quota) = compute_user_quota_and_storage(state, &caller.id).await?;
+    let (_grant, used_storage_quota) = compute_user_quota_and_storage(state, &self.view.id).await?;
     let safe_used = SafeInt::try_from_i64(used_storage_quota)
       .map_err(|_| domain_error_to_graphql(&DomainError::Internal("storage quota overflow".into())))?;
     Ok(UserQuotaUsageType {
@@ -212,10 +218,13 @@ impl UserType {
 
   async fn settings(&self, ctx: &Context<'_>) -> Result<UserSettingsType> {
     let caller = require_authenticated_user(ctx).await?;
+    if self.view.id != caller.id {
+      return Err(domain_error_to_graphql(&DomainError::Forbidden("access_denied".into())));
+    }
     let state = ctx.data_unchecked::<Arc<AppState>>();
     let s = state
       .users
-      .get_settings(&caller.id)
+      .get_settings(&self.view.id)
       .await
       .map_err(|e| domain_error_to_graphql(&e))?;
     Ok(UserSettingsType {

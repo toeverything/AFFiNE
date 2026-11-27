@@ -76,9 +76,34 @@ pub(crate) fn is_mobile_request(headers: &HeaderMap) -> bool {
 async fn is_file_async(path: &Path) -> bool {
   tokio::fs::metadata(path).await.is_ok_and(|m| m.is_file())
 }
+fn percent_decode_path(raw: &str) -> Option<String> {
+  if !raw.contains('%') {
+    return Some(raw.to_owned());
+  }
+  let bytes = raw.as_bytes();
+  let mut out = Vec::with_capacity(bytes.len());
+  let mut i = 0;
+  while i < bytes.len() {
+    if bytes[i] == b'%' {
+      if i + 2 >= bytes.len() {
+        return None;
+      }
+      let hi = (bytes[i + 1] as char).to_digit(16)?;
+      let lo = (bytes[i + 2] as char).to_digit(16)?;
+      out.push(((hi << 4) | lo) as u8);
+      i += 3;
+    } else {
+      out.push(bytes[i]);
+      i += 1;
+    }
+  }
+  String::from_utf8(out).ok()
+}
+
 fn safe_join(base: &Path, rel_path: &str) -> Option<PathBuf> {
-  let trimmed = rel_path.trim_start_matches('/');
-  if rel_path.contains(['\0', '\\']) || trimmed.is_empty() {
+  let decoded = percent_decode_path(rel_path)?;
+  let trimmed = decoded.trim_start_matches('/');
+  if decoded.contains(['\0', '\\']) || trimmed.is_empty() {
     return None;
   }
   let mut out = base.to_path_buf();
@@ -125,17 +150,29 @@ async fn serve_file(
     return None;
   }
   let mtime = meta.modified().ok().unwrap_or(UNIX_EPOCH);
-  let etag = format!(
-    "W/\"{}-{}\"",
-    meta.len(),
-    mtime.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
-  );
+  let mtime_secs = mtime.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs() as i64;
+  let etag = format!("W/\"{}-{mtime_secs}\"", meta.len());
   let last_mod = DateTime::<Utc>::from(mtime)
     .format("%a, %d %b %Y %H:%M:%S GMT")
     .to_string();
   let hs = |n| h.get(n).and_then(|v| v.to_str().ok());
-  let not_mod = hs(header::IF_NONE_MATCH).is_some_and(|v| v.split(',').any(|t| t.trim() == etag || t.trim() == "*"))
-    || hs(header::IF_MODIFIED_SINCE).is_some_and(|s| s.trim() == last_mod);
+  let not_mod = if let Some(inm) = hs(header::IF_NONE_MATCH) {
+    fn strip_weak(t: &str) -> &str {
+      let t = t.trim();
+      t.strip_prefix("W/").unwrap_or(t)
+    }
+    let strong_etag = strip_weak(&etag);
+    inm.split(',').any(|t| t.trim() == "*" || strip_weak(t) == strong_etag)
+  } else if let Some(ims) = hs(header::IF_MODIFIED_SINCE) {
+    let parsed = DateTime::parse_from_rfc2822(ims.trim())
+      .map(|dt| dt.with_timezone(&Utc))
+      .or_else(|_| {
+        chrono::NaiveDateTime::parse_from_str(ims.trim(), "%a, %d %b %Y %H:%M:%S GMT").map(|ndt| ndt.and_utc())
+      });
+    parsed.is_ok_and(|ims_dt| mtime_secs <= ims_dt.timestamp())
+  } else {
+    false
+  };
   let mut resp = if not_mod {
     StatusCode::NOT_MODIFIED.into_response()
   } else if *m == Method::HEAD {
@@ -144,14 +181,19 @@ async fn serve_file(
     (StatusCode::OK, tokio::fs::read(&path).await.ok()?).into_response()
   };
   let rh = resp.headers_mut();
-  for (name, val) in [
-    (header::CONTENT_TYPE, content_type_for_path(&path).to_owned()),
-    (header::ETAG, etag),
-    (header::LAST_MODIFIED, last_mod),
-    (header::CONTENT_LENGTH, meta.len().to_string()),
-  ] {
+  for (name, val) in [(header::ETAG, etag), (header::LAST_MODIFIED, last_mod)] {
     if let Ok(v) = HeaderValue::from_str(&val) {
       rh.insert(name, v);
+    }
+  }
+  if !not_mod {
+    for (name, val) in [
+      (header::CONTENT_TYPE, content_type_for_path(&path).to_owned()),
+      (header::CONTENT_LENGTH, meta.len().to_string()),
+    ] {
+      if let Ok(v) = HeaderValue::from_str(&val) {
+        rh.insert(name, v);
+      }
     }
   }
   if ns {
@@ -182,6 +224,8 @@ async fn handle_static(state: RouterState, method: Method, uri: Uri, headers: He
   } else {
     "index.html"
   };
+  let is_selfhost_get = !is_front && cfg.deployment_mode == DeploymentMode::Selfhosted && method == Method::GET;
+  let is_setup_path = path == "/admin/setup";
   let (m, h, https) = (&method, &headers, cfg.https);
   if path == "/admin" || path.starts_with("/admin/") {
     let admin_root = static_root.join("admin");
@@ -189,6 +233,14 @@ async fn handle_static(state: RouterState, method: Method, uri: Uri, headers: He
       && let Some(resp) = serve_file(&admin_root, rel, m, h, false, None, https).await
     {
       return resp;
+    }
+    if is_selfhost_get && let Ok(initialized) = state.app.auth.is_server_initialized().await {
+      if !initialized && !is_setup_path {
+        return found_redirect(&state, "/admin/setup");
+      }
+      if initialized && is_setup_path {
+        return found_redirect(&state, "/admin");
+      }
     }
     return or_404(serve_file(&admin_root, html_entry, m, h, true, None, https).await);
   }
@@ -202,6 +254,12 @@ async fn handle_static(state: RouterState, method: Method, uri: Uri, headers: He
       if let Some(resp) = serve_file(root, path, m, h, false, None, https).await {
         return resp;
       }
+    }
+    if is_selfhost_get
+      && let Ok(initialized) = state.app.auth.is_server_initialized().await
+      && !initialized
+    {
+      return found_redirect(&state, "/admin/setup");
     }
     let fb = if mobile && is_file_async(&mobile_root.join(html_entry)).await {
       &mobile_root

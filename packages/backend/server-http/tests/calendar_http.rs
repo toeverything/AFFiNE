@@ -150,12 +150,10 @@ fn calendar_rest_webhook_and_oauth_callback_validation() {
     .execute(state.db.pool())
     .await
     .expect("clear explicit webhook token");
-    let generated_token = {
-      let mut guard = state.calendar_webhook_token.lock().unwrap();
-      let tok = Uuid::new_v4().to_string();
-      *guard = Some(tok.clone());
-      tok
-    };
+    let generated_token = state
+      .calendar
+      .webhook_token_from_config(&server_domain::calendar::google::CalendarGoogleConfig::default())
+      .await;
     let resp = router
       .clone()
       .oneshot(

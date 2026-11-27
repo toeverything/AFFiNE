@@ -161,6 +161,7 @@ impl AuthService {
       return Err(DomainError::Unauthorized("wrong_sign_in_credentials".to_owned()));
     }
     let now = decision_time(tx.tx_mut()).await?;
+
     consume_security_state(
       tx.tx_mut(),
       PURPOSE_CHANGE_EMAIL,
@@ -235,9 +236,8 @@ impl AuthService {
     token: &str,
     new_password: &str,
   ) -> Result<bool, DomainError> {
-    if new_password.is_empty() {
-      return Err(DomainError::Validation("password_required".to_owned()));
-    }
+    let runtime = self.load_dynamic_auth_runtime().await;
+    password::validate_password_requirements(new_password, runtime.password_min_length, runtime.password_max_length)?;
 
     let raw_password = new_password.to_owned();
     let password_hash = tokio::task::spawn_blocking(move || password::hash_password(&raw_password))

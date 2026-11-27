@@ -18,12 +18,17 @@ fn canonical_argon2() -> Argon2<'static> {
   Argon2::new(Algorithm::Argon2id, Version::V0x13, params)
 }
 
-/// Validates password length bounds (default `8..=32` in `v0.27.5`).
+pub const MAX_PASSWORD_BYTES: usize = 1024;
+
+/// Validates password length bounds (default `8..=32` in `v0.27.5`, plus 1024B hard cap).
 pub fn validate_password_requirements(password: &str, min_len: usize, max_len: usize) -> Result<(), DomainError> {
+  if password.is_empty() {
+    return Err(DomainError::Validation("password_required".to_owned()));
+  }
   let len = password.chars().count();
-  if len < min_len || len > max_len {
+  if password.len() > MAX_PASSWORD_BYTES || len < min_len || len > max_len {
     return Err(DomainError::Validation(format!(
-      "password length must be between {min_len} and {max_len} characters"
+      "invalid_password_length:{min_len}:{max_len}"
     )));
   }
   Ok(())

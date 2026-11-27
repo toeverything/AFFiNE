@@ -25,15 +25,15 @@ fn param<'a>(p: &'a HashMap<String, String>, f: &str) -> Result<&'a str, DomainE
   p.get(f)
     .map(String::as_str)
     .filter(|s| !s.is_empty())
-    .ok_or_else(|| DomainError::Validation(format!("Missing {f}.")))
+    .ok_or_else(|| DomainError::Validation(format!("blob_invalid:Missing {f}.")))
 }
 fn param_i64(p: &HashMap<String, String>, f: &str) -> Result<i64, DomainError> {
   param(p, f)?
     .parse()
-    .map_err(|_| DomainError::Validation(format!("Invalid {f}.")))
+    .map_err(|_| DomainError::Validation(format!("blob_invalid:Invalid {f}.")))
 }
 fn bad(m: &str) -> DomainError {
-  DomainError::Validation(m.into())
+  DomainError::Validation(format!("blob_invalid:{m}"))
 }
 async fn read_body_bounded(body: Body, expected_len: usize) -> Result<Vec<u8>, DomainError> {
   let max_allowed = expected_len.min(MAX_PROXY_BODY_BYTES);

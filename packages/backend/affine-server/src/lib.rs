@@ -641,15 +641,78 @@ impl ServerCli {
   }
 }
 
-/// Socket.IO handshake authenticator backed by [`AuthService::resolve_cookie_principal`]
-/// so revoked `auth_sessions` and disabled users are rejected identically on HTTP and WS.
+/// Socket.IO handshake authenticator supporting both native Bearer JWT
+/// (`handshake.auth = { tokenType: "jwt", token }`) and cookie sessions
+/// (`affine_session`), plus `client.versionControl` enforcement.
 struct AuthServiceSyncAuthenticator {
   auth: AuthService,
+  app_config: AppConfigService,
+  channel: String,
 }
 
 #[async_trait::async_trait]
 impl SyncSessionAuthenticator for AuthServiceSyncAuthenticator {
   async fn authenticate(&self, headers: &http::HeaderMap) -> Result<SyncUser, server_sync::error::SyncError> {
+    let allow_canary = self.channel == "canary";
+    let (vc_enabled, vc_required) = self.app_config.get_client_version_control().await.map_err(|e| {
+      tracing::error!(error = %e, "socketio client.versionControl lookup failed");
+      server_sync::error::SyncError::Internal("An internal error occurred.".into())
+    })?;
+    let vc_cfg = server_http::rest::version_guard::ClientVersionControlConfig {
+      enabled: vc_enabled,
+      required_version: vc_required,
+    };
+
+    let bearer_jwt = headers
+      .get(http::header::AUTHORIZATION)
+      .and_then(|v| v.to_str().ok())
+      .and_then(|raw| {
+        let mut parts = raw.split_whitespace();
+        let scheme = parts.next()?;
+        let token = parts.next()?;
+        if parts.next().is_some() || !scheme.eq_ignore_ascii_case("bearer") {
+          return None;
+        }
+        server_domain::auth::access_token::is_likely_jwt(token).then_some(token)
+      });
+
+    if let Some(token) = bearer_jwt {
+      let principal = self
+        .auth
+        .resolve_bearer_principal(token)
+        .await
+        .map_err(|err| match err {
+          server_domain::auth::BearerResolutionError::Token(code) => {
+            server_sync::error::SyncError::AuthenticationRequired(format!("invalid bearer token ({})", code.as_code()))
+          }
+          server_domain::auth::BearerResolutionError::Domain(e) => {
+            tracing::error!(error = %e, "socketio bearer authentication failed");
+            server_sync::error::SyncError::Internal("An internal error occurred.".into())
+          }
+        })?;
+      if vc_cfg.enabled
+        && let Err(ver_err) = server_http::rest::version_guard::verify_session_client_version_now(
+          headers,
+          principal.refresh_client_version.as_deref(),
+          principal.sign_in_client_version.as_deref(),
+          &vc_cfg,
+          allow_canary,
+        )
+      {
+        let (client_version, required_version) = ver_err.into_parts();
+        return Err(server_sync::error::SyncError::UnsupportedClientVersion {
+          client_version,
+          required_version,
+        });
+      }
+      return Ok(SyncUser {
+        id: principal.user.id,
+        email: principal.user.email,
+        name: principal.user.name,
+        session_id: principal.session_id,
+      });
+    }
+
     let cookies = parse_cookies(headers);
     let session_id = cookies
       .iter()
@@ -672,6 +735,22 @@ impl SyncSessionAuthenticator for AuthServiceSyncAuthenticator {
         server_sync::error::SyncError::Internal("An internal error occurred.".into())
       })?
       .ok_or_else(|| server_sync::error::SyncError::AuthenticationRequired("invalid or expired session".into()))?;
+
+    if vc_cfg.enabled
+      && let Err(ver_err) = server_http::rest::version_guard::verify_session_client_version_now(
+        headers,
+        principal.refresh_client_version.as_deref(),
+        principal.sign_in_client_version.as_deref(),
+        &vc_cfg,
+        allow_canary,
+      )
+    {
+      let (client_version, required_version) = ver_err.into_parts();
+      return Err(server_sync::error::SyncError::UnsupportedClientVersion {
+        client_version,
+        required_version,
+      });
+    }
 
     Ok(SyncUser {
       id: principal.user.id,
@@ -725,21 +804,24 @@ async fn build_server_with_bound_port(
   let bind_host = cli.effective_host();
   let effective_port = bound_port.unwrap_or(cli.port);
 
+  let (file_cfg, file_json, file_copilot_storage) = load_home_config_file(cli.config_path.as_deref())?;
   // Fail-fast on explicitly blank AFFINE_PRIVATE_KEY for HTTP-serving roles.
-  let private_key = match cli.private_key.as_deref() {
+  let private_key_from_env_or_file = match cli.private_key.as_deref() {
     Some(raw) if raw.trim().is_empty() => {
       if matches!(role, ServerRole::Allinone | ServerRole::Front | ServerRole::Graphql) {
         return Err(ServerError::InvalidConfig(
           "AFFINE_PRIVATE_KEY must not be empty or whitespace".into(),
         ));
       }
-      String::new()
+      Some(String::new())
     }
-    Some(raw) => raw.to_owned(),
-    None => generate_ephemeral_private_key(),
+    Some(raw) => Some(raw.to_owned()),
+    None => file_json
+      .pointer("/crypto/privateKey")
+      .and_then(|v| v.as_str())
+      .filter(|s| !s.trim().is_empty())
+      .map(str::to_owned),
   };
-
-  let (file_cfg, file_json, file_copilot_storage) = load_home_config_file(cli.config_path.as_deref())?;
   let server_name = file_cfg
     .server
     .as_ref()
@@ -798,6 +880,37 @@ async fn build_server_with_bound_port(
       )));
     }
   };
+  let normalize_sub_path = |raw: &str| -> Option<String> {
+    let trimmed = raw.trim().trim_end_matches('/');
+    if trimmed.is_empty() || trimmed == "/" {
+      None
+    } else if trimmed.starts_with('/') {
+      Some(trimmed.to_owned())
+    } else {
+      Some(format!("/{trimmed}"))
+    }
+  };
+  let env_sub_path = std::env::var("AFFINE_SERVER_SUB_PATH")
+    .ok()
+    .and_then(|s| normalize_sub_path(&s));
+  let file_sub_path = file_json
+    .pointer("/server/path")
+    .and_then(serde_json::Value::as_str)
+    .and_then(normalize_sub_path);
+  let _ = external_path;
+  let external_path = env_sub_path.or(file_sub_path).unwrap_or_default();
+  let mut file_json = file_json;
+  if !external_path.is_empty() {
+    if !file_json.is_object() {
+      file_json = serde_json::json!({});
+    }
+    if let Some(root) = file_json.as_object_mut() {
+      let server_obj = root.entry("server".to_owned()).or_insert_with(|| serde_json::json!({}));
+      if let Some(s) = server_obj.as_object_mut() {
+        s.insert("path".to_owned(), serde_json::Value::String(external_path.clone()));
+      }
+    }
+  }
 
   let db = ServerDb::connect(DbConfig {
     database_url: cli.database_url.clone(),
@@ -809,6 +922,9 @@ async fn build_server_with_bound_port(
     tier_permits: [16, 8, 4, 2],
   })
   .await?;
+  if !cli.skip_schema_check {
+    db.ensure_schema_ready().await?;
+  }
 
   let effective_redis_url = cli.effective_redis_url_with_file(&file_json)?;
   let (redis_client, redis_db_index, session_redis_url_str, session_redis_db_index, session_mutex, redis_runtime_cfg) =
@@ -954,7 +1070,12 @@ async fn build_server_with_bound_port(
     static_dir: cli.static_dir.clone(),
     multipart_part_size: server_blob::MULTIPART_PART_SIZE,
     multipart_threshold: server_blob::MULTIPART_THRESHOLD,
-    telemetry_allowed_origins: Vec::new(),
+    telemetry_allowed_origins: app_config_baseline
+      .file_json
+      .pointer("/telemetry/allowedOrigin")
+      .and_then(|v| v.as_array())
+      .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect())
+      .unwrap_or_default(),
     worker_proxy_allow_private_origins: Vec::new(),
   };
 
@@ -974,6 +1095,25 @@ async fn build_server_with_bound_port(
       (noop.clone(), noop, None)
     }
   };
+
+  let db_private_key: Option<String> =
+    match sqlx::query_scalar::<_, serde_json::Value>("SELECT value FROM app_configs WHERE id = 'crypto.privateKey'")
+      .fetch_optional(db.pool())
+      .await
+    {
+      Ok(val) => val.and_then(|v| v.as_str().filter(|s| !s.trim().is_empty()).map(str::to_owned)),
+      Err(sqlx::Error::Database(ref db_err)) if cli.skip_schema_check && db_err.code().as_deref() == Some("42P01") => {
+        None
+      }
+      Err(e) => {
+        return Err(ServerError::InvalidConfig(format!(
+          "failed to load crypto.privateKey from app_configs: {e}"
+        )));
+      }
+    };
+  let private_key = db_private_key
+    .or(private_key_from_env_or_file)
+    .unwrap_or_else(generate_ephemeral_private_key);
 
   let mut auth_cfg = AuthConfig {
     server_name,
@@ -1122,7 +1262,7 @@ async fn build_server_with_bound_port(
     config,
     Arc::clone(&ext),
     AppServices {
-      auth: auth.clone(),
+      auth: auth.clone().with_app_config(app_config.clone()),
       users,
       workspaces,
       doc_sharing,
@@ -1151,10 +1291,18 @@ async fn build_server_with_bound_port(
       DeploymentMode::Selfhosted => "selfhosted".to_owned(),
       DeploymentMode::Cloud => "cloud".to_owned(),
     };
+    sync_cfg.external_url = state.config.load().external_url.clone();
     sync_cfg.allowed_origins = allowed_origins;
-    let authenticator = Arc::new(AuthServiceSyncAuthenticator { auth });
+    sync_cfg.allow_dev_loopback = state.config.load().dev_mode;
+    let authenticator = Arc::new(AuthServiceSyncAuthenticator {
+      auth: state.auth.clone(),
+      app_config: state.app_config.clone(),
+      channel: channel.clone(),
+    });
     let server = SyncServer::start_with_dependencies(db, authenticator, ext.quota_gate(), sync_cfg).await;
-    router = router.merge(server.router());
+    let sync_router =
+      mount_router_with_server_path(server.router(), &state.config.load().app_config_baseline.server.path);
+    router = router.merge(sync_router);
     Some(server)
   } else {
     None
@@ -1170,6 +1318,21 @@ async fn build_server_with_bound_port(
     sync_server,
     role,
   })
+}
+
+/// Nests `router` under `server_path` when a non-root subpath prefix (e.g. `"/affine"`) is configured.
+fn mount_router_with_server_path(router: Router, server_path: &str) -> Router {
+  let trimmed = server_path.trim().trim_end_matches('/');
+  if trimmed.is_empty() || trimmed == "/" {
+    router
+  } else {
+    let prefix = if trimmed.starts_with('/') {
+      trimmed.to_owned()
+    } else {
+      format!("/{trimmed}")
+    };
+    Router::new().nest(&prefix, router)
+  }
 }
 
 /// Deterministically drains ready `public.mail_deliveries` rows once using the
@@ -1233,7 +1396,6 @@ where
 
   let built = build_server_with_bound_port(&cli, ext, shutdown.clone(), Some(local_addr.port())).await?;
   if !cli.skip_schema_check {
-    built.state.db.ensure_schema_ready().await?;
     built
       .state
       .init_blob_storage_from_app_config()
@@ -1758,8 +1920,13 @@ mod tests {
     assert!(dev_mode);
     let dev_matrix =
       server_http::RouteMountMatrix::for_mode_and_role(DeploymentMode::Cloud, dev_mode, ServerRole::Allinone);
-    assert!(dev_matrix.worker_proxy);
+    assert!(!dev_matrix.worker_proxy);
     assert!(!dev_matrix.selfhost_setup);
+
+    let selfhost_matrix =
+      server_http::RouteMountMatrix::for_mode_and_role(DeploymentMode::Selfhosted, false, ServerRole::Allinone);
+    assert!(selfhost_matrix.worker_proxy);
+    assert!(selfhost_matrix.selfhost_setup);
 
     let (prod_channel, prod_dev_mode) = effective_runtime_flags(Some("dev"), Some("production"));
     assert_eq!(prod_channel, "dev");
@@ -1768,5 +1935,38 @@ mod tests {
       server_http::RouteMountMatrix::for_mode_and_role(DeploymentMode::Cloud, prod_dev_mode, ServerRole::Allinone);
     assert!(!prod_matrix.worker_proxy);
     assert!(!prod_matrix.selfhost_setup);
+  }
+
+  #[tokio::test]
+  async fn sync_router_mounts_under_server_path_prefix() {
+    use axum::routing::get;
+    use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
+
+    let fake_sync = Router::new().route("/socket.io/", get(|| async { "ok" }));
+    let nested = mount_router_with_server_path(fake_sync, "/affine");
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = tokio::spawn(async move {
+      let _ = axum::serve(listener, nested).await;
+    });
+
+    let get_status = |path: &str| {
+      let req = format!("GET {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n");
+      async move {
+        let mut stream = tokio::net::TcpStream::connect(addr).await.unwrap();
+        stream.write_all(req.as_bytes()).await.unwrap();
+        let mut buf = String::new();
+        stream.read_to_string(&mut buf).await.unwrap();
+        buf.lines().next().unwrap_or("").to_owned()
+      }
+    };
+
+    let prefixed_line = get_status("/affine/socket.io/?EIO=4&transport=polling").await;
+    assert!(prefixed_line.contains(" 200 "), "got: {prefixed_line}");
+
+    let root_line = get_status("/socket.io/?EIO=4&transport=polling").await;
+    assert!(root_line.contains(" 404 "), "got: {root_line}");
+    server.abort();
   }
 }

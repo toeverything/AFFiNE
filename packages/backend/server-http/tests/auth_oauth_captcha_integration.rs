@@ -896,7 +896,7 @@ fn oauth_apple_signup_matrix_state_ttl_role_and_strict_throttle_adversarial() {
       Some(json!({ "email": "matrix-new@example.test" })),
     )
     .await;
-    assert_eq!(st, StatusCode::OK);
+    assert_eq!(st, StatusCode::CREATED);
     assert_eq!(body["registered"], false);
     assert_eq!(body["methods"]["magicLink"]["available"], false);
     assert_eq!(body["methods"]["oauth"]["available"], true);
@@ -960,7 +960,7 @@ fn oauth_apple_signup_matrix_state_ttl_role_and_strict_throttle_adversarial() {
       Some(json!({ "email": "invited-placeholder@example.test" })),
     )
     .await;
-    assert_eq!(st, StatusCode::OK);
+    assert_eq!(st, StatusCode::CREATED);
     assert_eq!(body["registered"], false);
     assert_eq!(body["methods"]["magicLink"]["available"], true);
 
@@ -977,7 +977,7 @@ fn oauth_apple_signup_matrix_state_ttl_role_and_strict_throttle_adversarial() {
       Some(json!({ "email": "matrix-new@example.test" })),
     )
     .await;
-    assert_eq!(st, StatusCode::OK);
+    assert_eq!(st, StatusCode::CREATED);
     assert_eq!(body["registered"], false);
     assert_eq!(body["methods"]["password"]["available"], false);
     assert_eq!(body["methods"]["magicLink"]["available"], false);
@@ -1000,7 +1000,7 @@ fn oauth_apple_signup_matrix_state_ttl_role_and_strict_throttle_adversarial() {
       Some(json!({ "email": "brand-new@example.test" })),
     )
     .await;
-    assert_eq!(st, StatusCode::OK);
+    assert_eq!(st, StatusCode::CREATED);
     assert_eq!(body["methods"]["magicLink"]["available"], true);
     assert_eq!(body["methods"]["oauth"]["available"], false);
 
