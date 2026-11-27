@@ -371,6 +371,18 @@ pub trait CopilotRealtimeHandler: Send + Sync {
   ) -> Result<serde_json::Value, SyncError> {
     Err(SyncError::CopilotDisabled)
   }
+
+  async fn ensure_copilot_enabled(&self) -> Result<(), SyncError> {
+    Ok(())
+  }
+
+  fn on_remote_delegated_lease_upserted(&self, _payload: serde_json::Value) {}
+
+  fn on_remote_delegated_lease_released(&self, _payload: serde_json::Value) {}
+
+  fn on_remote_delegated_tool_responded(&self, _payload: serde_json::Value) {}
+
+  fn on_connection_disconnected(&self, _connection_id: &str) {}
 }
 
 #[derive(Clone)]
@@ -460,10 +472,6 @@ impl SyncStorage {
   pub fn with_available_user_features(mut self, features: &'static [&'static str]) -> Self {
     self.available_user_features = features;
     self
-  }
-
-  pub fn has_copilot_realtime(&self) -> bool {
-    self.copilot_realtime.is_some()
   }
 
   pub async fn get_doc_id_aliases(&self, workspace_id: &str) -> Result<HashMap<String, String>, SyncError> {

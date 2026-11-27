@@ -574,6 +574,31 @@ impl SyncStorage {
     };
     handler.delegated_tool_respond(user_id, input).await
   }
+
+  pub async fn copilot_realtime_ensure_enabled(&self) -> Result<(), SyncError> {
+    let Some(handler) = &self.copilot_realtime else {
+      return Err(SyncError::CopilotDisabled);
+    };
+    handler.ensure_copilot_enabled().await
+  }
+
+  pub fn copilot_realtime_on_delegated_event(&self, event: &str, payload: serde_json::Value) {
+    let Some(handler) = &self.copilot_realtime else {
+      return;
+    };
+    match event {
+      "copilot.delegated.editor.upserted" => handler.on_remote_delegated_lease_upserted(payload),
+      "copilot.delegated.editor.released" => handler.on_remote_delegated_lease_released(payload),
+      "copilot.delegated.tool.responded" => handler.on_remote_delegated_tool_responded(payload),
+      _ => {}
+    }
+  }
+
+  pub fn copilot_realtime_on_connection_disconnected(&self, connection_id: &str) {
+    if let Some(handler) = &self.copilot_realtime {
+      handler.on_connection_disconnected(connection_id);
+    }
+  }
 }
 
 #[cfg(test)]

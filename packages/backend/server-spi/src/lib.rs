@@ -237,6 +237,14 @@ pub trait CopilotRealtimeSpi: Send + Sync + 'static {
     user_id: &str,
     input: serde_json::Value,
   ) -> Result<serde_json::Value, DomainError>;
+
+  fn on_remote_delegated_lease_upserted(&self, _payload: serde_json::Value) {}
+
+  fn on_remote_delegated_lease_released(&self, _payload: serde_json::Value) {}
+
+  fn on_remote_delegated_tool_responded(&self, _payload: serde_json::Value) {}
+
+  fn on_connection_disconnected(&self, _connection_id: &str) {}
 }
 
 pub trait ServerExtension: Send + Sync + 'static {

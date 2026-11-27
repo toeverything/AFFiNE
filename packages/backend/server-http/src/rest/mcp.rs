@@ -992,7 +992,7 @@ async fn execute_tool(
         }
         (Err(()), None) => {
           if doc_ids.is_empty() {
-            return Ok(tool_error("SEARCH_UNAVAILABLE"));
+            return Err((-32001, "Error executing tool: SEARCH_UNAVAILABLE".to_owned()));
           }
           let mut seen_ids = HashSet::new();
           let mut readable = Vec::new();
@@ -1011,7 +1011,7 @@ async fn execute_tool(
           let mut scoped_hits = Vec::with_capacity(readable.len());
           for did in readable {
             let Ok(Some((title, md))) = mcp_svc.read_document_title_and_markdown(workspace_id, &did).await else {
-              return Ok(tool_error("SEARCH_UNAVAILABLE"));
+              return Err((-32001, "Error executing tool: SEARCH_UNAVAILABLE".to_owned()));
             };
             scoped_hits.push(json!({
               "doc_id": did,

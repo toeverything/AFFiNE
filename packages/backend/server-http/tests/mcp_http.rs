@@ -633,7 +633,7 @@ fn mcp_default_throttle_enforces_429_and_rate_limit_headers() {
     assert!(!resp_long_3.headers().contains_key("x-ratelimit-limit"));
     assert!(resp_long_3.headers().contains_key(header::RETRY_AFTER));
 
-    // doc_search returns SEARCH_UNAVAILABLE without doc_ids when search is unavailable,
+    // doc_search returns JSON-RPC error SEARCH_UNAVAILABLE without doc_ids when search is unavailable,
     // and falls back to retrieval_mode="scoped", degraded_reason="SEARCH_UNAVAILABLE" when doc_ids are provided.
     let scoped_doc_id = state
       .mcp
@@ -658,8 +658,8 @@ fn mcp_default_throttle_enforces_429_and_rate_limit_headers() {
       .unwrap();
     assert_eq!(search_unavail.status(), StatusCode::OK);
     let unavail_body = read_json(search_unavail).await;
-    assert_eq!(unavail_body["result"]["isError"], true);
-    assert_eq!(unavail_body["result"]["content"][0]["text"], "SEARCH_UNAVAILABLE");
+    assert_eq!(unavail_body["error"]["code"], -32001);
+    assert_eq!(unavail_body["error"]["message"], "Error executing tool: SEARCH_UNAVAILABLE");
 
     let search_scoped = router
       .clone()
@@ -999,8 +999,8 @@ fn mcp_doc_search_lexical_hits_real_search_runtime() {
       .await
       .unwrap();
     let title_fail_no_ids_body = read_json(title_fail_no_ids).await;
-    assert_eq!(title_fail_no_ids_body["result"]["isError"], true);
-    assert_eq!(title_fail_no_ids_body["result"]["content"][0]["text"], "SEARCH_UNAVAILABLE");
+    assert_eq!(title_fail_no_ids_body["error"]["code"], -32001);
+    assert_eq!(title_fail_no_ids_body["error"]["message"], "Error executing tool: SEARCH_UNAVAILABLE");
 
     let title_fail_scoped = lex_router
       .clone()
@@ -1161,8 +1161,8 @@ fn mcp_doc_search_lexical_hits_real_search_runtime() {
       .await
       .unwrap();
     let lim1_fail_body = read_json(lim1_fail).await;
-    assert_eq!(lim1_fail_body["result"]["isError"], true);
-    assert_eq!(lim1_fail_body["result"]["content"][0]["text"], "SEARCH_UNAVAILABLE");
+    assert_eq!(lim1_fail_body["error"]["code"], -32001);
+    assert_eq!(lim1_fail_body["error"]["message"], "Error executing tool: SEARCH_UNAVAILABLE");
     sqlx::raw_sql("ALTER TABLE workspace_pages RENAME COLUMN title_broken TO title")
       .execute(state.db.pool())
       .await

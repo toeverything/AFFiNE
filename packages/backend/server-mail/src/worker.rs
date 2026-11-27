@@ -265,18 +265,88 @@ pub struct MailDeliveryOptions<'a> {
   pub workspace_resolver: Option<&'a dyn WorkspaceMailMetaResolver>,
 }
 
+/// Returns `true` if a workspace name contains a URL or a domain.
+/// It folds invisible characters, full-width ASCII, enclosed alphanumerics and
+/// URL punctuation variants before the scan, as `server_domain::content_policy` does.
 pub fn workspace_name_contains_domain(name: &str) -> bool {
-  let normalized: String = name
-    .chars()
-    .map(|c| match c {
-      '。' | '．' | '｡' => '.',
-      other => other,
+  let folded: String = name.chars().filter_map(fold_domain_char).collect();
+  let mut start = 0;
+  while start < folded.len() {
+    let rest = &folded[start..];
+    if rest.starts_with("http://") || rest.starts_with("https://") || rest.starts_with("www.") {
+      return true;
+    }
+    if is_domain_boundary_before(&folded, start) {
+      let end = start + rest.find(|ch: char| !is_domain_char(ch)).unwrap_or(rest.len());
+      if end > start && is_domain_candidate(&folded[start..end]) && is_domain_boundary_after(&folded, end) {
+        return true;
+      }
+    }
+    start += rest.chars().next().map_or(1, char::len_utf8);
+  }
+  false
+}
+
+fn fold_domain_char(ch: char) -> Option<char> {
+  let code = ch as u32;
+  let folded = match ch {
+    '\u{00ad}'
+    | '\u{034f}'
+    | '\u{061c}'
+    | '\u{180e}'
+    | '\u{200b}'..='\u{200f}'
+    | '\u{202a}'..='\u{202e}'
+    | '\u{2060}'..='\u{206f}'
+    | '\u{fe00}'..='\u{fe0f}'
+    | '\u{feff}'
+    | '\u{e0100}'..='\u{e01ef}' => return None,
+    '。' | '｡' | '․' | '‧' | '∙' | '●' | '•' => '.',
+    '⁄' | '∕' | '╱' => '/',
+    '꞉' | 'ː' | '։' => ':',
+    '‐' | '‑' | '‒' | '–' | '—' | '―' | '−' | '﹘' => '-',
+    '⓿' | '🄌' => '0',
+    // Full-width ASCII, which includes the full-width forms of `.`, `/`, `:`, `-` and `_`.
+    '\u{ff01}'..='\u{ff5e}' => char::from_u32(code - 0xfee0)?,
+    '\u{1f150}'..='\u{1f169}' => char::from_u32('a' as u32 + code - 0x1f150)?,
+    '\u{2776}'..='\u{277e}' => char::from_u32('1' as u32 + code - 0x2776)?,
+    '\u{2780}'..='\u{2788}' => char::from_u32('1' as u32 + code - 0x2780)?,
+    '\u{278a}'..='\u{2792}' => char::from_u32('1' as u32 + code - 0x278a)?,
+    other => other,
+  };
+  Some(folded.to_ascii_lowercase())
+}
+
+fn is_domain_char(ch: char) -> bool {
+  ch.is_ascii_alphanumeric() || ch == '-' || ch == '.'
+}
+
+fn is_domain_candidate(candidate: &str) -> bool {
+  let labels: Vec<&str> = candidate.split('.').collect();
+  let Some(tld) = labels.last().filter(|_| labels.len() >= 2) else {
+    return false;
+  };
+  (2..=63).contains(&tld.len())
+    && tld.chars().all(|ch| ch.is_ascii_alphabetic())
+    && labels.iter().all(|label| {
+      (1..=63).contains(&label.len())
+        && !label.starts_with('-')
+        && !label.ends_with('-')
+        && label.chars().all(|ch| ch.is_ascii_alphanumeric() || ch == '-')
     })
-    .collect();
-  normalized.contains("://")
-    || normalized
-      .split_whitespace()
-      .any(|tok| tok.contains('.') && tok.len() >= 4 && !tok.starts_with('.') && !tok.ends_with('.'))
+}
+
+fn is_domain_boundary_before(value: &str, start: usize) -> bool {
+  value[..start]
+    .chars()
+    .next_back()
+    .is_none_or(|prev| !(prev.is_ascii_alphanumeric() || prev == '-' || prev == '_' || prev == '@'))
+}
+
+fn is_domain_boundary_after(value: &str, end: usize) -> bool {
+  value[end..]
+    .chars()
+    .next()
+    .is_none_or(|next| !(next.is_ascii_alphanumeric() || next == '-' || next == '_' || next == '.'))
 }
 
 async fn resolve_dynamic_payload_props(
@@ -758,5 +828,33 @@ mod tests {
     let long_utf8 = "中🚀".repeat(800);
     let truncated = redact_error(Some(&long_utf8)).expect("truncated");
     assert_eq!(truncated.chars().count(), 1000);
+  }
+
+  #[test]
+  fn workspace_name_contains_domain_detects_folded_urls_and_domains() {
+    let cases: &[(&str, bool)] = &[
+      ("BTC example.com", true),
+      ("evil\u{2024}com", true),
+      ("https://\u{ff45}xample\u{ff0e}com", true),
+      ("exa\u{200b}mple.com", true),
+      ("www.affine", true),
+      ("http://localhost", true),
+      ("Visit \u{1f154}xample.org now", true),
+      ("sub-domain.example.co.uk", true),
+      ("EXAMPLE.COM", true),
+      ("v1.0", false),
+      ("3.14", false),
+      ("Rev.2", false),
+      ("Workspace 2.0", false),
+      ("user@example.com", false),
+      ("My Team", false),
+      ("a.b", false),
+      ("-bad.com", false),
+      ("bad-.com", false),
+      ("", false),
+    ];
+    for (name, expected) in cases {
+      assert_eq!(workspace_name_contains_domain(name), *expected, "{name:?}");
+    }
   }
 }

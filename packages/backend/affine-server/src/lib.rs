@@ -779,7 +779,58 @@ impl SyncSessionAuthenticator for AuthServiceSyncAuthenticator {
   }
 }
 
-struct CopilotRealtimeSpiAdapter(Arc<dyn server_spi::CopilotRealtimeSpi>);
+/// Event bus publisher for a server without Redis.
+/// It delivers each event to the local sync gateway, because no Redis subscriber loop does that.
+struct LocalSyncEventPublisher {
+  inner: Arc<NoopEventPublisher>,
+  bridge: std::sync::OnceLock<Arc<server_sync::eventbus::RedisSyncBridge>>,
+}
+
+impl LocalSyncEventPublisher {
+  fn bind_bridge(&self, bridge: Arc<server_sync::eventbus::RedisSyncBridge>) {
+    let _ = self.bridge.set(bridge);
+  }
+}
+
+#[async_trait::async_trait]
+impl EventBusPublisher for LocalSyncEventPublisher {
+  async fn publish_event(
+    &self,
+    event: &str,
+    payload: serde_json::Value,
+    request_id: Option<&str>,
+  ) -> Result<server_domain::events::EventBusEnvelopeV1, DomainError> {
+    if let Some(bridge) = self.bridge.get() {
+      bridge.emit_local_event(event, &payload);
+    }
+    self.inner.publish_event(event, payload, request_id).await
+  }
+}
+
+struct CopilotRealtimeSpiAdapter {
+  spi: Arc<dyn server_spi::CopilotRealtimeSpi>,
+  app_config: AppConfigService,
+}
+
+impl CopilotRealtimeSpiAdapter {
+  /// Rejects every Copilot realtime operation while `copilot.enabled` is `false`.
+  async fn check_enabled(&self) -> Result<(), server_sync::error::SyncError> {
+    let cfg = self
+      .app_config
+      .get_effective_app_config_arc()
+      .await
+      .map_err(map_copilot_realtime_err)?;
+    let enabled = cfg
+      .pointer("/copilot/enabled")
+      .and_then(serde_json::Value::as_bool)
+      .unwrap_or(true);
+    if enabled {
+      Ok(())
+    } else {
+      Err(server_sync::error::SyncError::CopilotDisabled)
+    }
+  }
+}
 
 fn map_copilot_realtime_err(err: server_types::DomainError) -> server_sync::error::SyncError {
   match err {
@@ -809,8 +860,9 @@ impl server_sync::storage::CopilotRealtimeHandler for CopilotRealtimeSpiAdapter 
     blob_id: Option<&str>,
     task_id: Option<&str>,
   ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self.check_enabled().await?;
     self
-      .0
+      .spi
       .get_transcript_task(user_id, workspace_id, blob_id, task_id)
       .await
       .map_err(map_copilot_realtime_err)
@@ -822,8 +874,9 @@ impl server_sync::storage::CopilotRealtimeHandler for CopilotRealtimeSpiAdapter 
     workspace_id: &str,
     task_id: &str,
   ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self.check_enabled().await?;
     self
-      .0
+      .spi
       .retry_transcript_task(user_id, workspace_id, task_id)
       .await
       .map_err(map_copilot_realtime_err)
@@ -835,8 +888,9 @@ impl server_sync::storage::CopilotRealtimeHandler for CopilotRealtimeSpiAdapter 
     workspace_id: &str,
     task_id: &str,
   ) -> Result<(), server_sync::error::SyncError> {
+    self.check_enabled().await?;
     self
-      .0
+      .spi
       .authorize_transcript_task(user_id, workspace_id, task_id)
       .await
       .map_err(map_copilot_realtime_err)
@@ -847,8 +901,9 @@ impl server_sync::storage::CopilotRealtimeHandler for CopilotRealtimeSpiAdapter 
     user_id: &str,
     workspace_id: &str,
   ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self.check_enabled().await?;
     self
-      .0
+      .spi
       .get_embedding_progress(user_id, workspace_id)
       .await
       .map_err(map_copilot_realtime_err)
@@ -859,8 +914,9 @@ impl server_sync::storage::CopilotRealtimeHandler for CopilotRealtimeSpiAdapter 
     user_id: &str,
     workspace_id: &str,
   ) -> Result<(), server_sync::error::SyncError> {
+    self.check_enabled().await?;
     self
-      .0
+      .spi
       .authorize_embedding_progress(user_id, workspace_id)
       .await
       .map_err(map_copilot_realtime_err)
@@ -872,8 +928,9 @@ impl server_sync::storage::CopilotRealtimeHandler for CopilotRealtimeSpiAdapter 
     connection_id: &str,
     input: serde_json::Value,
   ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self.check_enabled().await?;
     self
-      .0
+      .spi
       .delegated_editor_upsert(user_id, connection_id, input)
       .await
       .map_err(map_copilot_realtime_err)
@@ -884,8 +941,9 @@ impl server_sync::storage::CopilotRealtimeHandler for CopilotRealtimeSpiAdapter 
     user_id: &str,
     input: serde_json::Value,
   ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self.check_enabled().await?;
     self
-      .0
+      .spi
       .delegated_editor_release(user_id, input)
       .await
       .map_err(map_copilot_realtime_err)
@@ -896,11 +954,32 @@ impl server_sync::storage::CopilotRealtimeHandler for CopilotRealtimeSpiAdapter 
     user_id: &str,
     input: serde_json::Value,
   ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self.check_enabled().await?;
     self
-      .0
+      .spi
       .delegated_tool_respond(user_id, input)
       .await
       .map_err(map_copilot_realtime_err)
+  }
+
+  async fn ensure_copilot_enabled(&self) -> Result<(), server_sync::error::SyncError> {
+    self.check_enabled().await
+  }
+
+  fn on_remote_delegated_lease_upserted(&self, payload: serde_json::Value) {
+    self.spi.on_remote_delegated_lease_upserted(payload);
+  }
+
+  fn on_remote_delegated_lease_released(&self, payload: serde_json::Value) {
+    self.spi.on_remote_delegated_lease_released(payload);
+  }
+
+  fn on_remote_delegated_tool_responded(&self, payload: serde_json::Value) {
+    self.spi.on_remote_delegated_tool_responded(payload);
+  }
+
+  fn on_connection_disconnected(&self, connection_id: &str) {
+    self.spi.on_connection_disconnected(connection_id);
   }
 }
 
@@ -1247,6 +1326,7 @@ async fn build_server_with_bound_port(
   };
 
   let origin_channel = format!("v2:{channel}");
+  let mut local_sync_relay: Option<Arc<LocalSyncEventPublisher>> = None;
   let (invalidation, event_bus, process_origin_id): (
     Arc<dyn InvalidationPublisher>,
     Arc<dyn EventBusPublisher>,
@@ -1259,7 +1339,12 @@ async fn build_server_with_bound_port(
     }
     None => {
       let noop = Arc::new(NoopEventPublisher::default());
-      (noop.clone(), noop, None)
+      let relay = Arc::new(LocalSyncEventPublisher {
+        inner: noop.clone(),
+        bridge: std::sync::OnceLock::new(),
+      });
+      local_sync_relay = Some(Arc::clone(&relay));
+      (noop, relay, None)
     }
   };
 
@@ -1497,9 +1582,12 @@ async fn build_server_with_bound_port(
     sync_cfg.external_url = state.config.load().external_url.clone();
     sync_cfg.allowed_origins = allowed_origins;
     sync_cfg.allow_dev_loopback = state.config.load().dev_mode;
-    sync_cfg.copilot_realtime = ext
-      .copilot_realtime_spi()
-      .map(|spi| Arc::new(CopilotRealtimeSpiAdapter(spi)) as Arc<dyn server_sync::storage::CopilotRealtimeHandler>);
+    sync_cfg.copilot_realtime = ext.copilot_realtime_spi().map(|spi| {
+      Arc::new(CopilotRealtimeSpiAdapter {
+        spi,
+        app_config: state.app_config.clone(),
+      }) as Arc<dyn server_sync::storage::CopilotRealtimeHandler>
+    });
     sync_cfg.available_user_features = ext.available_user_features();
     sync_cfg.redis_key_prefix = state.app_config.internal_redis_key_prefix();
     let authenticator = Arc::new(AuthServiceSyncAuthenticator {
@@ -1508,6 +1596,9 @@ async fn build_server_with_bound_port(
       channel: channel.clone(),
     });
     let server = SyncServer::start_with_dependencies(db, authenticator, ext.quota_gate(), sync_cfg).await;
+    if let Some(relay) = &local_sync_relay {
+      relay.bind_bridge(Arc::clone(server.eventbus()));
+    }
     let sync_router =
       mount_router_with_server_path(server.router(), &state.config.load().app_config_baseline.server.path);
     router = router.merge(sync_router);
@@ -2474,5 +2565,247 @@ mod tests {
     // Explicit AFFINE_INDEXER_ENABLED=false must not be overridden by file enabled=true.
     let disabled_cfg = resolve_search_config_from_cli_and_file(&cli, Some(&v0275_indexer), true, false);
     assert!(!disabled_cfg.enabled);
+  }
+
+  #[derive(Default)]
+  struct RecordingCopilotRealtimeSpi {
+    calls: std::sync::Mutex<Vec<String>>,
+  }
+
+  impl RecordingCopilotRealtimeSpi {
+    fn record(&self, call: impl Into<String>) {
+      self.calls.lock().unwrap().push(call.into());
+    }
+
+    fn take_calls(&self) -> Vec<String> {
+      std::mem::take(&mut *self.calls.lock().unwrap())
+    }
+  }
+
+  #[async_trait::async_trait]
+  impl server_spi::CopilotRealtimeSpi for RecordingCopilotRealtimeSpi {
+    async fn get_transcript_task(
+      &self,
+      _user_id: &str,
+      _workspace_id: &str,
+      _blob_id: Option<&str>,
+      _task_id: Option<&str>,
+    ) -> Result<serde_json::Value, DomainError> {
+      self.record("get_transcript_task");
+      Ok(serde_json::Value::Null)
+    }
+
+    async fn retry_transcript_task(
+      &self,
+      _user_id: &str,
+      _workspace_id: &str,
+      _task_id: &str,
+    ) -> Result<serde_json::Value, DomainError> {
+      self.record("retry_transcript_task");
+      Ok(serde_json::Value::Null)
+    }
+
+    async fn authorize_transcript_task(
+      &self,
+      _user_id: &str,
+      _workspace_id: &str,
+      _task_id: &str,
+    ) -> Result<(), DomainError> {
+      self.record("authorize_transcript_task");
+      Ok(())
+    }
+
+    async fn get_embedding_progress(
+      &self,
+      _user_id: &str,
+      _workspace_id: &str,
+    ) -> Result<serde_json::Value, DomainError> {
+      self.record("get_embedding_progress");
+      Ok(serde_json::Value::Null)
+    }
+
+    async fn authorize_embedding_progress(&self, _user_id: &str, _workspace_id: &str) -> Result<(), DomainError> {
+      self.record("authorize_embedding_progress");
+      Ok(())
+    }
+
+    async fn delegated_editor_upsert(
+      &self,
+      _user_id: &str,
+      _connection_id: &str,
+      _input: serde_json::Value,
+    ) -> Result<serde_json::Value, DomainError> {
+      self.record("delegated_editor_upsert");
+      Ok(serde_json::Value::Null)
+    }
+
+    async fn delegated_editor_release(
+      &self,
+      _user_id: &str,
+      _input: serde_json::Value,
+    ) -> Result<serde_json::Value, DomainError> {
+      self.record("delegated_editor_release");
+      Ok(serde_json::Value::Null)
+    }
+
+    async fn delegated_tool_respond(
+      &self,
+      _user_id: &str,
+      _input: serde_json::Value,
+    ) -> Result<serde_json::Value, DomainError> {
+      self.record("delegated_tool_respond");
+      Ok(serde_json::Value::Null)
+    }
+
+    fn on_remote_delegated_lease_upserted(&self, _payload: serde_json::Value) {
+      self.record("on_remote_delegated_lease_upserted");
+    }
+
+    fn on_remote_delegated_lease_released(&self, _payload: serde_json::Value) {
+      self.record("on_remote_delegated_lease_released");
+    }
+
+    fn on_remote_delegated_tool_responded(&self, _payload: serde_json::Value) {
+      self.record("on_remote_delegated_tool_responded");
+    }
+
+    fn on_connection_disconnected(&self, connection_id: &str) {
+      self.record(format!("on_connection_disconnected:{connection_id}"));
+    }
+  }
+
+  /// Runs every Copilot realtime operation and returns one result per operation.
+  async fn run_copilot_realtime_operations(
+    handler: &dyn server_sync::storage::CopilotRealtimeHandler,
+  ) -> Vec<(&'static str, Result<(), server_sync::error::SyncError>)> {
+    let input = serde_json::json!({});
+    vec![
+      ("ensure_copilot_enabled", handler.ensure_copilot_enabled().await),
+      (
+        "get_transcript_task",
+        handler.get_transcript_task("u", "w", None, Some("t")).await.map(drop),
+      ),
+      (
+        "retry_transcript_task",
+        handler.retry_transcript_task("u", "w", "t").await.map(drop),
+      ),
+      (
+        "authorize_transcript_task",
+        handler.authorize_transcript_task("u", "w", "t").await,
+      ),
+      (
+        "get_embedding_progress",
+        handler.get_embedding_progress("u", "w").await.map(drop),
+      ),
+      (
+        "authorize_embedding_progress",
+        handler.authorize_embedding_progress("u", "w").await,
+      ),
+      (
+        "delegated_editor_upsert",
+        handler.delegated_editor_upsert("u", "c", input.clone()).await.map(drop),
+      ),
+      (
+        "delegated_editor_release",
+        handler.delegated_editor_release("u", input.clone()).await.map(drop),
+      ),
+      (
+        "delegated_tool_respond",
+        handler.delegated_tool_respond("u", input).await.map(drop),
+      ),
+    ]
+  }
+
+  #[test]
+  fn copilot_realtime_adapter_follows_copilot_enabled_and_forwards_delegated_events() {
+    use test_db_harness::migrations::MigrationSet;
+    use test_db_harness::pg::{DEFAULT_LEASE_TTL, PgCluster};
+
+    let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+    let migrations_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+    let migrations = MigrationSet::load(&migrations_dir).expect("load prisma migrations");
+    let template = cluster.ensure_template(&migrations).expect("ensure migrated template");
+    let lease = cluster
+      .lease(&template, DEFAULT_LEASE_TTL)
+      .expect("lease test database");
+    let db_url = lease.url().to_owned();
+
+    let rt = tokio::runtime::Builder::new_multi_thread()
+      .enable_all()
+      .build()
+      .expect("build tokio runtime");
+    rt.block_on(async move {
+      let db = ServerDb::connect(DbConfig {
+        database_url: db_url,
+        channel: "production".into(),
+        role: ServerRole::Allinone,
+        selfhosted: true,
+        max_connections: 4,
+        statement_timeout_ms: 10_000,
+        tier_permits: [8, 4, 4, 2],
+      })
+      .await
+      .expect("connect db");
+      let spi = Arc::new(RecordingCopilotRealtimeSpi::default());
+      let adapter_for = |db: &ServerDb| CopilotRealtimeSpiAdapter {
+        spi: Arc::clone(&spi) as Arc<dyn server_spi::CopilotRealtimeSpi>,
+        app_config: AppConfigService::new(
+          db.clone(),
+          RuntimeAppConfigBaseline::default(),
+          Arc::new(NoopEventPublisher::default()),
+        ),
+      };
+
+      // The default `copilot.enabled` is `false`. When it is `false`, every operation
+      // fails before it reaches the SPI. When it is `true`, every operation reaches the SPI.
+      for stored in [None, Some(true), Some(false)] {
+        if let Some(enabled) = stored {
+          sqlx::query(
+            "INSERT INTO app_configs (id, value, created_at, updated_at) VALUES ('copilot.enabled', $1, now(), now())
+             ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value",
+          )
+          .bind(serde_json::json!(enabled))
+          .execute(db.pool())
+          .await
+          .expect("store copilot.enabled");
+        }
+        let enabled = stored.unwrap_or(false);
+        let adapter = adapter_for(&db);
+        let results = run_copilot_realtime_operations(&adapter).await;
+        for (name, result) in &results {
+          if enabled {
+            assert!(result.is_ok(), "{name} with copilot.enabled={stored:?}: {result:?}");
+          } else {
+            assert!(
+              matches!(result, Err(server_sync::error::SyncError::CopilotDisabled)),
+              "{name} with copilot.enabled={stored:?}: {result:?}"
+            );
+          }
+        }
+        let expected_calls: Vec<String> = if enabled {
+          results.iter().skip(1).map(|(name, _)| (*name).to_owned()).collect()
+        } else {
+          Vec::new()
+        };
+        assert_eq!(spi.take_calls(), expected_calls, "copilot.enabled={stored:?}");
+      }
+
+      // Delegated events and disconnects reach the SPI whatever `copilot.enabled` is.
+      use server_sync::storage::CopilotRealtimeHandler as _;
+      let adapter = adapter_for(&db);
+      adapter.on_remote_delegated_lease_upserted(serde_json::json!({}));
+      adapter.on_remote_delegated_lease_released(serde_json::json!({}));
+      adapter.on_remote_delegated_tool_responded(serde_json::json!({}));
+      adapter.on_connection_disconnected("socket-1");
+      assert_eq!(
+        spi.take_calls(),
+        [
+          "on_remote_delegated_lease_upserted",
+          "on_remote_delegated_lease_released",
+          "on_remote_delegated_tool_responded",
+          "on_connection_disconnected:socket-1",
+        ]
+      );
+    });
   }
 }

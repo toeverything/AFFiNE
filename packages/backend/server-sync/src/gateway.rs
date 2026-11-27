@@ -404,6 +404,14 @@ impl SpaceSyncGateway {
               .revalidate_subscriptions(&engine, Some((workspace_id.as_str(), doc_id.as_deref())))
               .await;
           }
+          Ok(ClusterSyncEvent::CopilotDelegatedEvent { event, payload }) => {
+            gateway.storage.copilot_realtime_on_delegated_event(&event, payload);
+          }
+          Ok(ClusterSyncEvent::ConnectionDisconnected { connection_id }) => {
+            gateway
+              .storage
+              .copilot_realtime_on_connection_disconnected(&connection_id);
+          }
           Ok(ClusterSyncEvent::Reconnected) => {
             warn!("server-sync Redis pub/sub reconnected; revalidating active doc subscriptions");
             gateway.revalidate_subscriptions(&engine, None).await;
@@ -721,6 +729,7 @@ impl SpaceSyncGateway {
       rooms.remove_socket(socket_id);
     }
     self.presence_notify.notify_one();
+    self.storage.copilot_realtime_on_connection_disconnected(socket_id);
     self.eventbus.publish_connection_disconnected(socket_id).await;
   }
 
@@ -1689,9 +1698,7 @@ impl SpaceSyncGateway {
         format!("copilot:transcript:{workspace_id}:{task_id}")
       }
       "copilot.delegated.tool.requested" => {
-        if !self.storage.has_copilot_realtime() {
-          return Err(SyncError::CopilotDisabled);
-        }
+        self.storage.copilot_realtime_ensure_enabled().await?;
         let client_id = input
           .get("clientId")
           .and_then(Value::as_str)

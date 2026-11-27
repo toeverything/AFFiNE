@@ -174,6 +174,13 @@ pub enum ClusterSyncEvent {
     workspace_id: String,
     doc_id: Option<String>,
   },
+  CopilotDelegatedEvent {
+    event: String,
+    payload: Value,
+  },
+  ConnectionDisconnected {
+    connection_id: String,
+  },
   /// Fired when the Redis pub/sub loop recovers from a disconnect so the
   /// gateway revalidates active document subscriptions before resuming fan-out.
   Reconnected,
@@ -270,6 +277,34 @@ impl RedisSyncBridge {
 
   pub fn subscribe(&self) -> broadcast::Receiver<ClusterSyncEvent> {
     self.incoming_tx.subscribe()
+  }
+
+  /// Delivers an event bus event to local subscribers without Redis.
+  /// Use it only when no Redis subscriber loop runs, or the event arrives twice.
+  pub fn emit_local_event(&self, event: &str, payload: &Value) {
+    match event {
+      "realtime.topic.changed" => {
+        if let Ok(parsed) = serde_json::from_value::<RealtimeTopicChangedPayload>(payload.clone()) {
+          let _ = self.incoming_tx.send(ClusterSyncEvent::RealtimeTopicChanged(parsed));
+        }
+      }
+      "copilot.delegated.editor.upserted"
+      | "copilot.delegated.editor.released"
+      | "copilot.delegated.tool.responded" => {
+        let _ = self.incoming_tx.send(ClusterSyncEvent::CopilotDelegatedEvent {
+          event: event.to_owned(),
+          payload: payload.clone(),
+        });
+      }
+      "realtime.connection.disconnected" => {
+        if let Some(connection_id) = disconnected_connection_id(payload) {
+          let _ = self
+            .incoming_tx
+            .send(ClusterSyncEvent::ConnectionDisconnected { connection_id });
+        }
+      }
+      _ => {}
+    }
   }
 
   pub async fn stop(&self) {
@@ -477,6 +512,14 @@ impl RedisSyncBridge {
   }
 }
 
+fn disconnected_connection_id(payload: &Value) -> Option<String> {
+  payload
+    .get("connectionId")
+    .and_then(Value::as_str)
+    .filter(|id| !id.is_empty())
+    .map(ToOwned::to_owned)
+}
+
 async fn run_subscriber_loop(
   client: redis::Client,
   origin_id: String,
@@ -551,6 +594,19 @@ async fn run_subscriber_loop(
           "sync.awareness.updated" => {
             if let Ok(payload) = serde_json::from_value::<SyncAwarenessEventPayload>(envelope.payload) {
               let _ = incoming_tx.send(ClusterSyncEvent::AwarenessUpdated(payload));
+            }
+          }
+          "copilot.delegated.editor.upserted"
+          | "copilot.delegated.editor.released"
+          | "copilot.delegated.tool.responded" => {
+            let _ = incoming_tx.send(ClusterSyncEvent::CopilotDelegatedEvent {
+              event: envelope.event,
+              payload: envelope.payload,
+            });
+          }
+          "realtime.connection.disconnected" => {
+            if let Some(connection_id) = disconnected_connection_id(&envelope.payload) {
+              let _ = incoming_tx.send(ClusterSyncEvent::ConnectionDisconnected { connection_id });
             }
           }
           _ => {}
@@ -665,5 +721,60 @@ mod realtime_topic_tests {
       payload_embed.resolved_room().as_deref(),
       Some("workspace:ws-1:embedding-progress")
     );
+  }
+
+  #[tokio::test]
+  async fn emit_local_event_delivers_topic_delegated_and_disconnect_events_without_redis() {
+    let bridge = RedisSyncBridge::start(None, "v2:test").await;
+    let mut rx = bridge.subscribe();
+    let topic =
+      json!({ "topic": "workspace.embedding.progress.changed", "input": { "workspaceId": "ws-1" }, "event": {} });
+    let delegated = json!({ "clientId": "c-1" });
+    let cases: &[(&str, Value, Option<&str>)] = &[
+      (
+        "realtime.topic.changed",
+        topic,
+        Some("topic:workspace:ws-1:embedding-progress"),
+      ),
+      ("realtime.topic.changed", json!({ "bad": true }), None),
+      (
+        "copilot.delegated.editor.upserted",
+        delegated.clone(),
+        Some("delegated:copilot.delegated.editor.upserted"),
+      ),
+      (
+        "copilot.delegated.editor.released",
+        delegated.clone(),
+        Some("delegated:copilot.delegated.editor.released"),
+      ),
+      (
+        "copilot.delegated.tool.responded",
+        delegated,
+        Some("delegated:copilot.delegated.tool.responded"),
+      ),
+      (
+        "realtime.connection.disconnected",
+        json!({ "connectionId": "socket-1" }),
+        Some("disconnected:socket-1"),
+      ),
+      ("realtime.connection.disconnected", json!({ "connectionId": "" }), None),
+      ("copilot.delegated.tool.requested", json!({}), None),
+    ];
+    for (event, payload, expected) in cases {
+      bridge.emit_local_event(event, payload);
+      let received = rx.try_recv().ok().map(|incoming| match incoming {
+        ClusterSyncEvent::RealtimeTopicChanged(parsed) => {
+          format!("topic:{}", parsed.resolved_room().unwrap_or_default())
+        }
+        ClusterSyncEvent::CopilotDelegatedEvent { event, payload: got } => {
+          assert_eq!(&got, payload, "{event}");
+          format!("delegated:{event}")
+        }
+        ClusterSyncEvent::ConnectionDisconnected { connection_id } => format!("disconnected:{connection_id}"),
+        other => format!("unexpected:{other:?}"),
+      });
+      assert_eq!(received.as_deref(), *expected, "{event} {payload}");
+    }
+    bridge.stop().await;
   }
 }
