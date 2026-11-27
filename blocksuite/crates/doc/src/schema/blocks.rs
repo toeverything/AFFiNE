@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 use y_octo::{Any, SessionValue};
 
-use super::{DEFAULT_NOTE_HEIGHT, DEFAULT_NOTE_WIDTH, NATIVE_UNIQ_IDENTIFIER, text_value};
+use super::{
+    DEFAULT_NOTE_HEIGHT, DEFAULT_NOTE_WIDTH, DatabaseSpec, NATIVE_UNIQ_IDENTIFIER, text_value,
+};
 
 /// Supported block flavours authored natively with full default properties.
 #[derive(Debug, Clone, PartialEq)]
@@ -81,6 +83,7 @@ pub enum BlockSpec {
         ref_flavour: String,
         caption: String,
     },
+    Database(DatabaseSpec),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -191,12 +194,14 @@ impl BlockSpec {
             Self::EmbedLinkedDoc { .. } => "affine:embed-linked-doc",
             Self::EmbedSyncedDoc { .. } => "affine:embed-synced-doc",
             Self::SurfaceRef { .. } => "affine:surface-ref",
+            Self::Database(_) => "affine:database",
         }
     }
 
     pub fn version(&self) -> i32 {
         match self {
             Self::Page { .. } => 2,
+            Self::Database(_) => 3,
             Self::Surface => 5,
             _ => 1,
         }
@@ -767,6 +772,9 @@ impl BlockSpec {
                 ]);
                 push_edgeless_props(&mut entries);
             }
+            Self::Database(spec) => {
+                entries.extend(spec.into_prop_entries());
+            }
         }
 
         entries
@@ -774,22 +782,12 @@ impl BlockSpec {
 }
 
 fn push_edgeless_props(entries: &mut Vec<(String, SessionValue)>) {
-    entries.extend([
-        (
-            "prop:index".to_string(),
-            SessionValue::Any(Any::String("a0".to_string())),
-        ),
-        (
-            "prop:xywh".to_string(),
-            SessionValue::Any(Any::String("[0,0,0,0]".to_string())),
-        ),
-        (
-            "prop:lockedBySelf".to_string(),
-            SessionValue::Any(Any::False),
-        ),
-        (
-            "prop:rotate".to_string(),
-            SessionValue::Any(Any::Integer(0)),
-        ),
-    ]);
+    for (k, v) in [
+        ("prop:index", Any::String("a0".to_string())),
+        ("prop:xywh", Any::String("[0,0,0,0]".to_string())),
+        ("prop:lockedBySelf", Any::False),
+        ("prop:rotate", Any::Integer(0)),
+    ] {
+        entries.push((k.to_string(), SessionValue::Any(v)));
+    }
 }

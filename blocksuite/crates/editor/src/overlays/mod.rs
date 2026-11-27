@@ -713,9 +713,18 @@ impl Overlays {
         self.drag.as_ref()?.slot.as_ref()
     }
 
-    /// Sideways scroll of a code block.
+    /// Sideways scroll of a code/table/database block.
     pub fn code_scroll_x(&self, block_id: &str) -> f32 {
         self.code_scroll.get(block_id).copied().unwrap_or(0.0)
+    }
+
+    /// Effective sideways scroll of a block, falling back to `code.initial_x` until the user
+    /// scrolls it manually.
+    pub fn code_scroll_x_for(&self, block_id: &str, code: CodeScroll) -> f32 {
+        self.code_scroll
+            .get(block_id)
+            .copied()
+            .unwrap_or(code.initial_x)
     }
 
     /// The code blocks of `layout` that are scrolled sideways.

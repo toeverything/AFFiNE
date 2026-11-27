@@ -565,6 +565,7 @@ dependencies = [
  "ui-tokens",
  "unicode-bidi",
  "unicode-linebreak",
+ "unicode-normalization",
  "unicode-segmentation",
  "wasm-bindgen",
  "y-octo",

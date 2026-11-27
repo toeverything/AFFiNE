@@ -363,6 +363,7 @@ impl FlowPass<'_> {
         let code_scroll = (!wrap && max_scroll_x > 0.0).then(|| CodeScroll {
             area: FlowRect::new(code_x, pad_y, code_width, y - pad_y),
             max_x: max_scroll_x,
+            initial_x: 0.0,
         });
 
         prims.insert(
@@ -669,6 +670,76 @@ impl FlowPass<'_> {
         };
         self.push_caption(&mut body, caption);
         body
+    }
+
+    pub(super) fn database_body(
+        &mut self,
+        block_id: &str,
+        data: &blocksuite_playground_doc::read::DatabaseData,
+        width: f32,
+    ) -> BlockBody {
+        let ui_state = self.database_state.state_for(block_id);
+        let offset_at = |ms: i64| self.input.utc_offset_for(ms);
+        let output = crate::database::layout_database_block(
+            data,
+            &ui_state,
+            width,
+            self.input.theme,
+            self.direction,
+            self.database_state.mobile_readonly,
+            self.database_state.clock_ms,
+            &offset_at,
+            self.window,
+        );
+        self.database_hits.insert(block_id.to_string(), output.hits);
+        let prims = output
+            .prims
+            .into_iter()
+            .map(|p| match p {
+                crate::database::DatabasePrim::Quad {
+                    rect,
+                    fill,
+                    border,
+                    radius,
+                    dashed,
+                } => Prim::Quad {
+                    rect,
+                    fill,
+                    border,
+                    radius,
+                    dashed,
+                },
+                crate::database::DatabasePrim::Text { x, y, layout, clip } => {
+                    Prim::Text { x, y, layout, clip }
+                }
+                crate::database::DatabasePrim::Icon { rect, icon, color } => {
+                    Prim::Icon { rect, icon, color }
+                }
+                crate::database::DatabasePrim::Chevron {
+                    rect,
+                    collapsed,
+                    color,
+                } => Prim::Chevron {
+                    rect,
+                    collapsed,
+                    color,
+                },
+            })
+            .collect();
+        BlockBody {
+            kind: FlowKind::Database,
+            width,
+            height: output.height,
+            margin_top: CARD_BLOCK_MARGIN,
+            margin_bottom: CARD_BLOCK_MARGIN,
+            plain: output.plain,
+            prims,
+            text: None,
+            prefix: None,
+            code_scroll: output.code_scroll,
+            pdf_controls: None,
+            table_cells: Vec::new(),
+        }
     }
 }
 

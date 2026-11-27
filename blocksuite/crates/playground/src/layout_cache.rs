@@ -329,7 +329,9 @@ impl PlaygroundView {
 
         let snapshot = self.snapshot.clone()?;
         let is_rtl = window.layout_direction().is_rtl();
-        let utc_offset_minutes = self.current_utc_offset_minutes();
+        let (now_ms, utc_offset_minutes) = self.local_calendar_clock();
+        let local_day =
+            (now_ms.saturating_add(i64::from(utc_offset_minutes) * 60_000)).div_euclid(86_400_000);
         let preview_rev = crate::block_flow::preview_revision();
         let equation_draft = self
             .overlays
@@ -364,6 +366,7 @@ impl PlaygroundView {
             draft_hash,
             is_rtl,
             utc_offset_minutes,
+            local_day,
         );
         if let Some((cached, layout)) = &self.layout
             && *cached == key
@@ -379,6 +382,7 @@ impl PlaygroundView {
                     && old.4 == key.4
                     && old.6 == key.6
                     && old.7 == key.7
+                    && old.8 == key.8
             })
         });
         // If only the live equation draft changed, mark just the target block dirty so sibling
@@ -401,6 +405,8 @@ impl PlaygroundView {
                 }
             }
         }
+        self.flow.database_state.mobile_readonly = self.database_readonly;
+        self.flow.database_state.clock_ms = now_ms;
         let offset_at = self.utc_offset_resolver();
         let doc_dir = self
             .custom_doc_directory

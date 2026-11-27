@@ -34,6 +34,7 @@ pub enum FlowKind {
     EmbedLinkedDoc,
     EmbedSyncedDoc,
     SurfaceRef,
+    Database,
     Unknown,
 }
 
@@ -214,12 +215,15 @@ pub struct BlockBody {
     pub(super) prims: Vec<Prim>,
 }
 
-/// The scrollable code area of an unwrapped code block, relative to the block.
+/// The scrollable code/table/database area of a block, relative to the block.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CodeScroll {
     pub area: FlowRect,
     /// Largest horizontal scroll offset: the widest line minus the code area width.
     pub max_x: f32,
+    /// Initial horizontal scroll offset before any manual scroll is recorded (`0.0` for LTR,
+    /// `max_x` for RTL overflowing database Table/Kanban views so logical first column is visible).
+    pub initial_x: f32,
 }
 
 /// Per-frame paint state of one block that is not part of its laid-out body.
@@ -355,6 +359,32 @@ impl BlockBody {
             );
             return;
         }
+        if self.kind == FlowKind::Database
+            && let Some(scroll_cfg) = self.code_scroll
+        {
+            let scroll = state.code_scroll_x.clamp(0.0, scroll_cfg.max_x);
+            let shifted = point(origin.x - px(scroll), origin.y);
+            let split_y = scroll_cfg.area.y;
+            let (fixed, scrolled): (Vec<_>, Vec<_>) = self
+                .prims
+                .iter()
+                .enumerate()
+                .partition(|(idx, prim)| *idx == 0 || prim_top_y(prim) < split_y);
+            for (_, prim) in fixed {
+                self.paint_single_prim(prim, origin, state, window, cx);
+            }
+            window.with_local_paint_mask(
+                ui::ContentMask {
+                    bounds: scroll_cfg.area.bounds(origin),
+                },
+                |window| {
+                    for (_, prim) in scrolled {
+                        self.paint_single_prim(prim, shifted, state, window, cx);
+                    }
+                },
+            );
+            return;
+        }
         self.paint_prims(origin, state, window, cx);
     }
 
@@ -366,93 +396,115 @@ impl BlockBody {
         cx: &mut App,
     ) {
         for prim in &self.prims {
-            match prim {
-                Prim::CodeLine { x, y, layout, clip } => {
-                    let scroll = self
-                        .code_scroll
-                        .map_or(0.0, |code| state.code_scroll_x.clamp(0.0, code.max_x));
-                    let text_origin = point(origin.x + px(*x - scroll), origin.y + px(*y));
-                    window.with_local_paint_mask(
+            self.paint_single_prim(prim, origin, state, window, cx);
+        }
+    }
+
+    fn paint_single_prim(
+        &self,
+        prim: &Prim,
+        origin: Point<Pixels>,
+        state: BlockPaint,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
+        match prim {
+            Prim::CodeLine { x, y, layout, clip } => {
+                let scroll = self
+                    .code_scroll
+                    .map_or(0.0, |code| state.code_scroll_x.clamp(0.0, code.max_x));
+                let text_origin = point(origin.x + px(*x - scroll), origin.y + px(*y));
+                window.with_local_paint_mask(
+                    ui::ContentMask {
+                        bounds: clip.bounds(origin),
+                    },
+                    |window| layout.paint(text_origin, window, cx),
+                );
+            }
+            Prim::Chevron {
+                rect,
+                collapsed,
+                color,
+            } => paint_chevron(
+                rect.bounds(origin),
+                state.chevron.unwrap_or(if *collapsed { 0.0 } else { 1.0 }),
+                *color,
+                window,
+                cx,
+            ),
+            Prim::Quad {
+                rect,
+                fill,
+                border,
+                radius,
+                dashed,
+            } => paint_quad(
+                window,
+                rect.bounds(origin),
+                *radius,
+                *fill,
+                *border,
+                *dashed,
+            ),
+            Prim::Text { x, y, layout, clip } => {
+                let text_origin = point(origin.x + px(*x), origin.y + px(*y));
+                match clip {
+                    Some(clip) => window.with_local_paint_mask(
                         ui::ContentMask {
                             bounds: clip.bounds(origin),
                         },
                         |window| layout.paint(text_origin, window, cx),
-                    );
-                }
-                Prim::Chevron {
-                    rect,
-                    collapsed,
-                    color,
-                } => paint_chevron(
-                    rect.bounds(origin),
-                    state.chevron.unwrap_or(if *collapsed { 0.0 } else { 1.0 }),
-                    *color,
-                    window,
-                    cx,
-                ),
-                Prim::Quad {
-                    rect,
-                    fill,
-                    border,
-                    radius,
-                    dashed,
-                } => paint_quad(
-                    window,
-                    rect.bounds(origin),
-                    *radius,
-                    *fill,
-                    *border,
-                    *dashed,
-                ),
-                Prim::Text { x, y, layout, clip } => {
-                    let text_origin = point(origin.x + px(*x), origin.y + px(*y));
-                    match clip {
-                        Some(clip) => window.with_local_paint_mask(
-                            ui::ContentMask {
-                                bounds: clip.bounds(origin),
-                            },
-                            |window| layout.paint(text_origin, window, cx),
-                        ),
-                        None => layout.paint(text_origin, window, cx),
-                    }
-                }
-                Prim::Rich { x, y, layout } => layout.paint_at(
-                    point(origin.x + px(*x), origin.y + px(*y)),
-                    &[],
-                    &[],
-                    None,
-                    window,
-                    cx,
-                ),
-                Prim::Icon { rect, icon, color } => {
-                    icon.paint(rect.bounds(origin), *color, window, cx);
-                }
-                Prim::Image { rect, image } => {
-                    let bounds = rect.bounds(origin);
-                    let _ = window.paint_image(
-                        bounds,
-                        bounds,
-                        Corners::all(px(0.0)),
-                        image.clone(),
-                        0,
-                        false,
-                    );
-                }
-                Prim::Surface {
-                    rect,
-                    layout,
-                    world_origin: (wx, wy),
-                    scale,
-                } => {
-                    let bounds = rect.bounds(origin);
-                    let matrix = crate::edgeless::EdgelessCamera::new(*wx, *wy, *scale)
-                        .to_transformation_matrix(bounds.origin);
-                    window.with_local_paint_mask(ui::ContentMask { bounds }, |window| {
-                        crate::surface::paint_surface_transformed(layout, matrix, window, cx);
-                    });
+                    ),
+                    None => layout.paint(text_origin, window, cx),
                 }
             }
+            Prim::Rich { x, y, layout } => layout.paint_at(
+                point(origin.x + px(*x), origin.y + px(*y)),
+                &[],
+                &[],
+                None,
+                window,
+                cx,
+            ),
+            Prim::Icon { rect, icon, color } => {
+                icon.paint(rect.bounds(origin), *color, window, cx);
+            }
+            Prim::Image { rect, image } => {
+                let bounds = rect.bounds(origin);
+                let _ = window.paint_image(
+                    bounds,
+                    bounds,
+                    Corners::all(px(0.0)),
+                    image.clone(),
+                    0,
+                    false,
+                );
+            }
+            Prim::Surface {
+                rect,
+                layout,
+                world_origin: (wx, wy),
+                scale,
+            } => {
+                let bounds = rect.bounds(origin);
+                let matrix = crate::edgeless::EdgelessCamera::new(*wx, *wy, *scale)
+                    .to_transformation_matrix(bounds.origin);
+                window.with_local_paint_mask(ui::ContentMask { bounds }, |window| {
+                    crate::surface::paint_surface_transformed(layout, matrix, window, cx);
+                });
+            }
         }
+    }
+}
+
+fn prim_top_y(prim: &Prim) -> f32 {
+    match prim {
+        Prim::Quad { rect, .. }
+        | Prim::Chevron { rect, .. }
+        | Prim::Icon { rect, .. }
+        | Prim::Image { rect, .. }
+        | Prim::Surface { rect, .. } => rect.y,
+        Prim::Text { y, .. } | Prim::CodeLine { y, .. } | Prim::Rich { y, .. } => *y,
     }
 }
 
@@ -610,5 +662,76 @@ impl FlowLayout {
 
     pub fn block(&self, block_id: &str) -> Option<&FlowBlock> {
         self.blocks.iter().find(|block| block.block_id == block_id)
+    }
+}
+
+/// Applies an in-flight committed equation draft to a single inline latex unit at `utf16_offset`
+/// without mutating the CRDT document.
+pub(super) fn patch_inline_latex_draft(
+    text: &blocksuite_playground_doc::read::RichText,
+    target_utf16: u64,
+    draft: &str,
+) -> blocksuite_playground_doc::read::RichText {
+    let mut patched = Vec::with_capacity(text.delta.len() + 2);
+    let mut pos = 0u64;
+    for op in &text.delta {
+        match op {
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text(s),
+                format,
+            } => {
+                let len = s.encode_utf16().count() as u64;
+                if target_utf16 >= pos
+                    && target_utf16 < pos + len
+                    && format.as_ref().is_some_and(|f| f.contains_key("latex"))
+                {
+                    let rel = (target_utf16 - pos) as usize;
+                    let mut u16_cursor = 0usize;
+                    let mut byte_start = 0usize;
+                    let mut byte_end = s.len();
+                    for (b, ch) in s.char_indices() {
+                        if u16_cursor == rel {
+                            byte_start = b;
+                            byte_end = b + ch.len_utf8();
+                            break;
+                        }
+                        u16_cursor += ch.len_utf16();
+                    }
+                    if byte_start > 0 {
+                        patched.push(y_octo::TextDeltaOp::Insert {
+                            insert: y_octo::TextInsert::Text(s[..byte_start].to_string()),
+                            format: format.clone(),
+                        });
+                    }
+                    let mut new_fmt = format.clone().unwrap_or_default();
+                    new_fmt.insert("latex".into(), y_octo::Any::String(draft.into()));
+                    patched.push(y_octo::TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(s[byte_start..byte_end].to_string()),
+                        format: Some(new_fmt),
+                    });
+                    if byte_end < s.len() {
+                        patched.push(y_octo::TextDeltaOp::Insert {
+                            insert: y_octo::TextInsert::Text(s[byte_end..].to_string()),
+                            format: format.clone(),
+                        });
+                    }
+                } else {
+                    patched.push(op.clone());
+                }
+                pos += len;
+            }
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Embed(v),
+                ..
+            } => {
+                patched.push(op.clone());
+                pos += v.len() as u64;
+            }
+            _ => patched.push(op.clone()),
+        }
+    }
+    blocksuite_playground_doc::read::RichText {
+        plain: text.plain.clone(),
+        delta: patched,
     }
 }

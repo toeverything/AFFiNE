@@ -295,6 +295,30 @@ impl PlaygroundView {
         self.keyboard_toolbar_dismissed = false;
         self.editor.slash_trigger = None;
         self.editor.block_selection.clear();
+        if let Some(layout) = self.flow_layout() {
+            let geometry = crate::page_geometry(f32::from(window.viewport_size().width));
+            let world_x = f32::from(event.position.x) - geometry.column_x;
+            let world_y = f32::from(event.position.y) - crate::TOPBAR_HEIGHT + self.scroll_y;
+            if let Some((block_id, local_x, local_y)) = layout
+                .blocks
+                .iter()
+                .find(|block| {
+                    block.body.kind == FlowKind::Database && block.rect().contains(world_x, world_y)
+                })
+                .map(|block| {
+                    let rect = block.rect();
+                    (block.block_id.clone(), world_x - rect.x, world_y - rect.y)
+                })
+            {
+                let consumed =
+                    self.click_database_point(&block_id, local_x, local_y, Some(window), cx);
+                if consumed || self.database_readonly {
+                    self.editor.dragging = false;
+                    cx.notify();
+                    return;
+                }
+            }
+        }
         self.editor_mouse_down(event, window, cx);
         // A double or triple click selects at once; only a plain press starts a drag.
         if event.click_count >= 2 {

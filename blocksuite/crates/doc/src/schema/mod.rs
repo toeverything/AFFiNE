@@ -1,4 +1,5 @@
 mod blocks;
+mod database;
 mod surface;
 
 use std::collections::BTreeMap;
@@ -6,6 +7,9 @@ use std::collections::BTreeMap;
 use y_octo::{SessionValue, TextDeltaOp, TextInsert};
 
 pub use blocks::{BlockSpec, ListType, ParagraphType, UnknownBlock, is_leaf_flavour};
+pub use database::{
+    DatabaseCellSpec, DatabaseColumnSpec, DatabaseSpec, DatabaseViewSpec, json_to_session_value,
+};
 pub use surface::{ConnectorEndpointSpec, MindmapNodeSpec, SurfaceElementSpec, map_array_any};
 
 /// BlockSuite internal marker for `Boxed` values inside a `Y.Map`.

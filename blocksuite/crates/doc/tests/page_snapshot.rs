@@ -418,15 +418,16 @@ fn page_snapshot_reads_ordered_typed_tree_without_losing_properties() {
         }
     );
 
-    // Unknown flavours keep identity, version, children and property keys.
+    // Database blocks read as typed `BlockContent::Database` while preserving all raw props.
     let database = child(note, "database");
-    let BlockContent::Unknown(unknown) = &database.content else {
-        panic!("affine:database must read as Unknown");
+    let BlockContent::Database(db) = &database.content else {
+        panic!("affine:database must read as BlockContent::Database");
     };
-    assert_eq!(unknown.id, "database");
-    assert_eq!(unknown.flavour, "affine:database");
-    assert_eq!(unknown.version, Some(3));
-    assert_eq!(unknown.prop_keys, ["prop:title", "prop:views"]);
+    assert_eq!(database.id, "database");
+    assert_eq!(database.flavour, "affine:database");
+    assert_eq!(database.version, Some(3));
+    assert_eq!(db.title.plain, "Tasks");
+    assert!(db.views.is_empty());
     assert_eq!(database.props["prop:title"][0]["insert"], "Tasks");
 
     // Every `prop:*` of every block survives, identical to the normalized doc export.

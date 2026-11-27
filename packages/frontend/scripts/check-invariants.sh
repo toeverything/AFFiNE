@@ -507,11 +507,11 @@ if ! LINK_LOG=$(CARGO_ENCODED_RUSTFLAGS="" cargo rustc -p playground --bin bs-ha
   echo "$LINK_LOG" >&2
   fail "cargo rustc link-args check failed"
 fi
-if ! echo "$LINK_LOG" | grep -qE '(cc|clang|gcc|ld|lld|"[^"]*bs_harness|bs_harness)'; then
+if ! grep -qE '(cc|clang|gcc|ld|lld|"[^"]*bs_harness|bs_harness)' <<<"$LINK_LOG"; then
   echo "$LINK_LOG" >&2
   fail "cargo rustc did not emit a linker invocation (cache bypass failed)"
 fi
-if echo "$LINK_LOG" | grep -E '(-all_load|-undefined[ ,]+dynamic_lookup|-z[ ,]+nodelete)' >/dev/null 2>&1; then
+if grep -qE '(-all_load|-undefined[ ,]+dynamic_lookup|-z[ ,]+nodelete)' <<<"$LINK_LOG"; then
   echo "$LINK_LOG" >&2
   fail "Detected leaked root NAPI linker flags in rustc invocation"
 fi

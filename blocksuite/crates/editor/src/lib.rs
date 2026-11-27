@@ -4,6 +4,7 @@
 
 pub mod block_flow;
 pub mod clipboard;
+pub mod database;
 pub mod directory;
 pub mod edgeless;
 pub mod editor_session;

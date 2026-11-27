@@ -728,7 +728,7 @@ mod tests {
             .expect("Attachment declared");
         assert!(!top_att.is_visible());
 
-        // Database views are declared and hidden by schema showWhen before S4.
+        // Database views stay schema-gated while mobile database editing is read-only.
         let db = MORE_TOOL_PANEL_GROUPS
             .iter()
             .find(|g| g.name == "Database")

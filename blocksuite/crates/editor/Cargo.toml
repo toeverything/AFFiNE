@@ -25,6 +25,7 @@ ui = { path = "../../../packages/ui/ui" }
 ui-tokens = { path = "../../../packages/ui/tokens" }
 unicode-bidi.workspace = true
 unicode-linebreak = "0.1"
+unicode-normalization.workspace = true
 unicode-segmentation.workspace = true
 y-octo = { version = "0.4.0", default-features = false, features = ["session"] }
 

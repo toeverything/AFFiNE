@@ -193,6 +193,7 @@ const chromeProc = spawn(
     '--no-sandbox',
     '--enable-unsafe-swiftshader',
     '--disable-dev-shm-usage',
+    '--disable-background-networking',
     '--no-first-run',
     '--no-default-browser-check',
     '--password-store=basic',

@@ -90,8 +90,14 @@ impl TextAlign {
     }
 }
 
+mod database;
 mod rich_blocks;
 mod surface;
+pub use database::{
+    DatabaseCalendarCard, DatabaseCalendarDate, DatabaseCellValue, DatabaseColumn, DatabaseData,
+    DatabaseGroupBy, DatabaseGroupProperty, DatabaseRow, DatabaseSelectOption, DatabaseView,
+    DatabaseViewColumn, DatabaseViewHeader, DatabaseViewMode,
+};
 pub use rich_blocks::{TableCell, TableColumn, TableData, TableRow};
 pub use surface::*;
 
@@ -188,6 +194,7 @@ pub enum BlockContent {
         ref_flavour: String,
         caption: String,
     },
+    Database(DatabaseData),
     /// Any flavour without a typed reader, kept with its identity and property keys.
     Unknown(UnknownBlock),
 }
@@ -396,7 +403,7 @@ impl SnapshotReader<'_> {
                 props.insert(key.clone(), self.page.export_y_value(value)?);
             }
         }
-        let content = self.read_content(id, block, &props)?;
+        let content = self.read_content(id, block, &props, &children)?;
         Ok(Some(BlockNode {
             id: id.to_string(),
             flavour: block.flavour.clone(),
@@ -412,6 +419,7 @@ impl SnapshotReader<'_> {
         id: &str,
         block: &RawBlock,
         props: &BTreeMap<String, JsonValue>,
+        children: &[BlockNode],
     ) -> DocResult<BlockContent> {
         let entries = &block.entries;
         Ok(match block.flavour.as_str() {
@@ -514,6 +522,9 @@ impl SnapshotReader<'_> {
                     .unwrap_or_else(|| "affine:frame".to_string()),
                 caption: string(entries.get("prop:caption")).unwrap_or_default(),
             },
+            "affine:database" => {
+                BlockContent::Database(self.read_database(block, props, children)?)
+            }
             _ => BlockContent::Unknown(UnknownBlock {
                 id: id.to_string(),
                 flavour: block.flavour.clone(),

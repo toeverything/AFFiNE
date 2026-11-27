@@ -65,7 +65,13 @@ pub(crate) fn start_headless_session(
                     ))),
                     ..WindowOptions::default()
                 },
-                |_, cx| cx.new(|cx| PlaygroundView::with_options(options, cx)),
+                |_, cx| {
+                    cx.new(|cx| {
+                        let mut view = PlaygroundView::with_options(options, cx);
+                        view.set_calendar_clock(Some(Rc::new(|| (1_773_057_600_000, 0))));
+                        view
+                    })
+                },
             )
             .context("opening headless PlaygroundView window")
         })();

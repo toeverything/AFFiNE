@@ -556,7 +556,7 @@ impl Overlays {
             if !block.rect().contains(world_x, world_y) {
                 continue;
             }
-            let current = self.code_scroll_x(&block.block_id);
+            let current = self.code_scroll_x_for(&block.block_id, code);
             let next = (current - delta_x).clamp(0.0, code.max_x).round();
             self.code_scroll.insert(block.block_id.clone(), next);
             return true;
@@ -577,7 +577,7 @@ impl Overlays {
             {
                 Some(code) => {
                     *scroll = scroll.clamp(0.0, code.max_x);
-                    *scroll > 0.0
+                    (*scroll - code.initial_x).abs() > f32::EPSILON
                 }
                 None => false,
             }

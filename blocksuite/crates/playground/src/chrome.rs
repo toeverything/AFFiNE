@@ -325,6 +325,8 @@ impl PlaygroundView {
             .on_scroll(cx.listener(Self::on_scroll))
             .snapshot(PAGE_SURFACE_ID, Some("root.canvas"));
 
+        self.flow.database_state.mobile_readonly = self.database_readonly;
+        self.flow.database_state.clock_ms = self.local_calendar_now(cx).0;
         let Some(layout) = self.ensure_layout(geometry.column_width, window) else {
             self.max_scroll = 0.0;
             self.scroll_y = 0.0;

@@ -89,6 +89,10 @@ impl PlaygroundView {
     /// date insertion actions (such as KeyboardToolbar `Today` / `Yesterday` / `Tomorrow` / `Now`).
     pub fn set_calendar_clock(&mut self, clock: Option<crate::CalendarClockFn>) {
         self.calendar_clock = clock;
+        if let Some(ref f) = self.calendar_clock {
+            self.flow.database_state.clock_ms = f().0;
+            self.env_rev += 1;
+        }
     }
 
     /// Override the host file-picker callback triggered by the KeyboardToolbar `Image` button.
@@ -129,12 +133,6 @@ impl PlaygroundView {
     /// Returns `(utc_epoch_ms, utc_offset_minutes)` from the configured override or host clock.
     pub(crate) fn local_calendar_now(&self, _cx: &Context<Self>) -> (i64, i32) {
         self.local_calendar_clock()
-    }
-
-    /// Returns the active local timezone offset in minutes east of UTC from the configured
-    /// `calendar_clock` override or the host system clock.
-    pub(crate) fn current_utc_offset_minutes(&self) -> i32 {
-        self.local_calendar_clock().1
     }
 
     /// Returns a self-contained `utc_ms -> utc_offset_minutes` resolver that evaluates DST rules
@@ -200,7 +198,7 @@ impl PlaygroundView {
         Ok(())
     }
 
-    fn local_calendar_clock(&self) -> (i64, i32) {
+    pub(crate) fn local_calendar_clock(&self) -> (i64, i32) {
         if let Some(clock) = &self.calendar_clock {
             return clock();
         }

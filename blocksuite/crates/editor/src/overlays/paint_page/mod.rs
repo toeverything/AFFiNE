@@ -45,6 +45,18 @@ impl Overlays {
             paint.blocks.entry(block_id.clone()).or_default().chevron =
                 Some(motion.value_at(now_ms) as f32);
         }
+        for block in &scene.layout.blocks {
+            if let Some(code) = block.body.code_scroll
+                && code.initial_x > 0.0
+                && !self.code_scroll.contains_key(&block.block_id)
+            {
+                paint
+                    .blocks
+                    .entry(block.block_id.clone())
+                    .or_default()
+                    .code_scroll_x = code.initial_x;
+            }
+        }
         for (block_id, scroll) in &self.code_scroll {
             paint
                 .blocks

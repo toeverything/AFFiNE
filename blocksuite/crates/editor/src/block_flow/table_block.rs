@@ -38,10 +38,8 @@ fn resolve_table_bg(raw: Option<&str>, theme: crate::theme::PlaygroundTheme) -> 
 impl FlowPass<'_> {
     pub(super) fn table_body(&mut self, data: &TableData, width: f32) -> BlockBody {
         let row_count = data.rows.len().max(1);
-        let ordered_cols: Vec<usize> = match self.direction {
-            ui::Direction::Ltr => (0..data.columns.len()).collect(),
-            ui::Direction::Rtl => (0..data.columns.len()).rev().collect(),
-        };
+        let axis = crate::database::InlineAxis::new(self.direction, width);
+        let ordered_cols = axis.order_indices(data.columns.len());
         let spec = TextSpec {
             font_size: TYPOGRAPHY.font_sm_px,
             font_weight: 400.0,
@@ -165,6 +163,7 @@ impl FlowPass<'_> {
         let code_scroll = (max_scroll_x > 0.0).then(|| CodeScroll {
             area: FlowRect::new(0.0, 0.0, width, height),
             max_x: max_scroll_x,
+            initial_x: 0.0,
         });
 
         BlockBody {

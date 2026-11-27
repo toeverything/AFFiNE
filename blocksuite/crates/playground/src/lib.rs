@@ -5,7 +5,7 @@
 //! rendered by [`block_flow`], with the popovers and block controls of [`overlays`] on top.
 
 pub use blocksuite_editor::{
-    TOPBAR_HEIGHT, block_flow, clipboard, directory, rich_text, surface, theme,
+    TOPBAR_HEIGHT, block_flow, clipboard, database, directory, rich_text, surface, theme,
 };
 mod chrome;
 pub mod edgeless;
@@ -163,7 +163,7 @@ pub(crate) const THEME_TOGGLE_SIZE: f32 = 32.0;
 pub(crate) const TOPBAR_EDGE: f32 = 12.0;
 pub(crate) const SCROLL_LINE: f32 = 20.0;
 
-type LayoutKey = (u64, u32, PlaygroundTheme, u64, u64, u64, bool, i32);
+type LayoutKey = (u64, u32, PlaygroundTheme, u64, u64, u64, bool, i32, i64);
 
 #[cfg(test)]
 pub(crate) static GLOBAL_PREVIEW_PROVIDER_TEST_LOCK: std::sync::Mutex<()> =
@@ -225,6 +225,7 @@ pub struct PlaygroundView {
     pub(crate) window_size: (f32, f32),
     pub(crate) edgeless: edgeless::EdgelessCanvasState,
     pub(crate) edgeless_readonly: bool,
+    pub(crate) database_readonly: bool,
     pub(crate) overlays: Overlays,
     pub(crate) equation_snapshot: Option<blocksuite_playground_doc::session::SelectionSnapshot>,
     pub(crate) calendar_clock: Option<CalendarClockFn>,
@@ -296,6 +297,8 @@ impl PlaygroundView {
             "doc:{:x}",
             state.awareness.local_client_id()
         ));
+        let mut flow = BlockFlow::new();
+        flow.database_state.mobile_readonly = options.edgeless_readonly;
         let mut view = Self {
             mode: options.mode,
             theme: options.theme,
@@ -329,13 +332,14 @@ impl PlaygroundView {
             dirty_text: None,
             doc_rev: 0,
             env_rev: 0,
-            flow: BlockFlow::new(),
+            flow,
             layout: None,
             scroll_y: 0.0,
             max_scroll: 0.0,
             window_size: (0.0, 0.0),
             edgeless: edgeless::EdgelessCanvasState::new(),
             edgeless_readonly: options.edgeless_readonly,
+            database_readonly: options.edgeless_readonly,
             overlays: Overlays::new(),
             equation_snapshot: None,
             calendar_clock: None,
@@ -344,6 +348,8 @@ impl PlaygroundView {
             copied_timer: None,
             _tasks: tasks,
         };
+        view.flow.database_state.mobile_readonly = view.database_readonly;
+        view.flow.database_state.clock_ms = view.local_calendar_now(cx).0;
         view.refresh_document();
         view
     }
@@ -569,6 +575,8 @@ impl PlaygroundView {
         self.overlays.reset();
         self.reading_anchor = None;
         self.flow = BlockFlow::new();
+        self.flow.database_state.mobile_readonly = self.database_readonly;
+        self.flow.database_state.clock_ms = self.local_calendar_now(cx).0;
         self.layout = None;
         self.edgeless = edgeless::EdgelessCanvasState::new();
         self.state = state;
@@ -946,7 +954,7 @@ pub(crate) mod tests {
 
     #[test]
     fn showcase_covers_every_block_kind_with_zero_violations_across_themes_and_viewports() {
-        for (width, height) in [(1280_u32, 1700_u32), (800, 1900), (390, 2800), (320, 3600)] {
+        for (width, height) in [(1280_u32, 2000_u32), (800, 2200), (390, 3100), (320, 3900)] {
             for theme in [PlaygroundTheme::Light, PlaygroundTheme::Dark] {
                 let context = format!("{width}x{height} {}", theme.as_str());
                 let session = open(
@@ -980,7 +988,7 @@ pub(crate) mod tests {
                     FlowKind::Code,
                     FlowKind::Bookmark,
                     FlowKind::Image,
-                    FlowKind::Unknown,
+                    FlowKind::Database,
                 ] {
                     assert!(
                         layout.blocks.iter().any(|block| block.body.kind == kind),
@@ -1013,11 +1021,14 @@ pub(crate) mod tests {
                         );
                     }
                 }
-                assert_eq!(
-                    snapshot.elements["page.block.showcase-database"]
-                        .text
-                        .as_deref(),
-                    Some("[Unsupported block: affine:database]")
+                let db_text = snapshot.elements["page.block.showcase-database"]
+                    .text
+                    .as_deref()
+                    .unwrap_or("");
+                assert!(
+                    db_text.contains("Tasks [table: Table View]")
+                        && db_text.contains("Native Database Views"),
+                    "expected rendered database snapshot text, got {db_text:?}"
                 );
                 // The image blob decoded: the block shows the picture, not the loading frame.
                 assert_ne!(

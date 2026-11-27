@@ -517,27 +517,19 @@ pub fn seed_showcase_doc() -> DocResult<DocState> {
         },
         Some(note),
     )?;
-    let now_ms = seed.tick();
-    seed.page.add_raw_block(
+    seed.add(
         "showcase-database",
-        "affine:database",
-        3,
-        vec![
-            (
-                "prop:title".to_string(),
-                SessionValue::Text(vec![y_octo::TextDeltaOp::Insert {
-                    insert: y_octo::TextInsert::Text("Tasks".to_string()),
-                    format: None,
-                }]),
-            ),
-            ("prop:views".to_string(), SessionValue::Array(Vec::new())),
-            ("prop:columns".to_string(), SessionValue::Array(Vec::new())),
-            ("prop:cells".to_string(), SessionValue::Map(Vec::new())),
-        ],
+        BlockSpec::Database(crate::PlaygroundView::showcase_database_spec()),
         Some(note),
-        None,
-        now_ms,
     )?;
+    for (row_id, text) in [
+        ("showcase-db-row-1", "Native Database Views"),
+        ("showcase-db-row-2", "Offline Sync Engine"),
+        ("showcase-db-row-3", "RTL & Bidi Polish"),
+        ("showcase-db-row-4", "Calendar DST Audit"),
+    ] {
+        seed.paragraph(row_id, ParagraphType::Text, text, "showcase-database")?;
+    }
 
     // Edgeless-only spatial blocks (excluded from Page mode by `is_edgeless_only`).
     seed.add(

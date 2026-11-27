@@ -22,6 +22,8 @@ use super::*;
 #[derive(Default)]
 pub struct BlockFlow {
     bodies: HashMap<String, (u64, Rc<BlockBody>)>,
+    database_hits: HashMap<String, Vec<crate::database::DatabaseHitTarget>>,
+    pub database_state: crate::database::DatabaseFlowState,
 }
 
 pub(super) struct FlowPass<'a> {
@@ -32,6 +34,8 @@ pub(super) struct FlowPass<'a> {
     pub(super) direction: ui::Direction,
     pub(super) previous: HashMap<String, (u64, Rc<BlockBody>)>,
     pub(super) next: HashMap<String, (u64, Rc<BlockBody>)>,
+    pub(super) database_state: &'a crate::database::DatabaseFlowState,
+    pub(super) database_hits: HashMap<String, Vec<crate::database::DatabaseHitTarget>>,
     pub(super) blocks: Vec<FlowBlock>,
     pub(super) stats: FlowStats,
     pub(super) y: f32,
@@ -44,6 +48,11 @@ pub(super) struct FlowPass<'a> {
 impl BlockFlow {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Clickable regions recorded for `block_id` during the latest layout pass.
+    pub fn database_hits(&self, block_id: &str) -> &[crate::database::DatabaseHitTarget] {
+        self.database_hits.get(block_id).map_or(&[], Vec::as_slice)
     }
 
     /// Lay the snapshot out in world space, reusing the body of every block whose content,
@@ -73,6 +82,8 @@ impl BlockFlow {
             direction,
             previous: std::mem::take(&mut self.bodies),
             next: HashMap::new(),
+            database_state: &self.database_state,
+            database_hits: std::mem::take(&mut self.database_hits),
             blocks: Vec::new(),
             stats: FlowStats::default(),
             y: 0.0,
@@ -125,6 +136,7 @@ impl BlockFlow {
         }
 
         self.bodies = pass.next;
+        self.database_hits = pass.database_hits;
         FlowLayout {
             blocks: pass.blocks,
             width: input.width,
@@ -166,6 +178,8 @@ impl BlockFlow {
             direction,
             previous: std::mem::take(&mut self.bodies),
             next: HashMap::new(),
+            database_state: &self.database_state,
+            database_hits: std::mem::take(&mut self.database_hits),
             blocks: Vec::new(),
             stats: FlowStats::default(),
             y: 0.0,
@@ -176,6 +190,7 @@ impl BlockFlow {
         pass.flow(nodes, 0.0, input.width, 0, default_align);
         pass.y += pass.pending_margin.take().unwrap_or(0.0);
         self.bodies = pass.next;
+        self.database_hits = pass.database_hits;
         FlowLayout {
             blocks: pass.blocks,
             width: input.width,
@@ -202,19 +217,16 @@ fn heading_level(node: &BlockNode) -> Option<u8> {
 }
 
 fn node_has_gutter_chevron(kind: FlowKind, node: &BlockNode) -> bool {
+    use blocksuite_playground_doc::schema::ListType;
     if heading_level(node).is_some() {
         return true;
     }
-    let supports_gutter_fold = matches!(
+    let supports_fold = matches!(
         kind,
         FlowKind::Paragraph(ParagraphType::Text | ParagraphType::Quote)
-            | FlowKind::List(
-                blocksuite_playground_doc::schema::ListType::Bulleted
-                    | blocksuite_playground_doc::schema::ListType::Numbered
-                    | blocksuite_playground_doc::schema::ListType::Todo
-            )
+            | FlowKind::List(ListType::Bulleted | ListType::Numbered | ListType::Todo)
     );
-    supports_gutter_fold
+    supports_fold
         && (!node.children.is_empty()
             || matches!(
                 node.content,
@@ -337,6 +349,19 @@ impl<'a> FlowPass<'a> {
                 .map_or(self.input.utc_offset_minutes, |p| {
                     self.input.utc_offset_for(p.updated_at_ms)
                 });
+            let db_sig = matches!(node.content, BlockContent::Database(_)).then(|| {
+                let offset_min = self.input.utc_offset_for(self.database_state.clock_ms);
+                let today_day = (self
+                    .database_state
+                    .clock_ms
+                    .saturating_add(i64::from(offset_min) * 60_000))
+                .div_euclid(86_400_000);
+                (
+                    self.database_state.state_for(&node.id),
+                    self.database_state.mobile_readonly,
+                    today_day,
+                )
+            });
             let fingerprint = (
                 &node.content,
                 node.children.is_empty(),
@@ -348,6 +373,7 @@ impl<'a> FlowPass<'a> {
                 embed_preview,
                 block_utc_offset,
                 surface_ref_sig,
+                db_sig,
             );
             let body = self.body(&node.id, &fingerprint, |pass| {
                 pass.block_body(node, width, list_depth, align)
@@ -378,7 +404,7 @@ impl<'a> FlowPass<'a> {
             let (shows_children, child_depth) = match &node.content {
                 BlockContent::List { collapsed, .. } => (!collapsed, list_depth + 1),
                 BlockContent::Paragraph { collapsed, .. } => (!collapsed, 0),
-                BlockContent::Unknown(_) => (false, 0),
+                BlockContent::Database(_) | BlockContent::Unknown(_) => (false, 0),
                 _ => (true, 0),
             };
             if shows_children && !node.children.is_empty() {
@@ -601,7 +627,7 @@ impl<'a> FlowPass<'a> {
                 }) = self.input.equation_draft
                     && block_id == &node.id
                 {
-                    let patched = patch_inline_latex_draft(text, *utf16_offset, latex);
+                    let patched = body::patch_inline_latex_draft(text, *utf16_offset, latex);
                     return self.paragraph_body(*kind, &patched, *collapsed, width, align);
                 }
                 self.paragraph_body(*kind, text, *collapsed, width, align)
@@ -621,7 +647,7 @@ impl<'a> FlowPass<'a> {
                 }) = self.input.equation_draft
                     && block_id == &node.id
                 {
-                    let patched = patch_inline_latex_draft(text, *utf16_offset, latex);
+                    let patched = body::patch_inline_latex_draft(text, *utf16_offset, latex);
                     return self.list_body(
                         *kind,
                         *checked,
@@ -712,74 +738,8 @@ impl<'a> FlowPass<'a> {
                 ref_flavour,
                 caption,
             } => self.surface_ref_body(&node.id, reference, ref_flavour, caption, width),
+            BlockContent::Database(db) => self.database_body(&node.id, db, width),
             _ => self.unknown_body(&node.flavour, &node.id, width),
         }
-    }
-}
-
-/// Applies an in-flight committed equation draft to a single inline latex unit at `utf16_offset`
-/// without mutating the CRDT document.
-fn patch_inline_latex_draft(text: &RichText, target_utf16: u64, draft: &str) -> RichText {
-    let mut patched = Vec::with_capacity(text.delta.len() + 2);
-    let mut pos = 0u64;
-    for op in &text.delta {
-        match op {
-            y_octo::TextDeltaOp::Insert {
-                insert: y_octo::TextInsert::Text(s),
-                format,
-            } => {
-                let len = s.encode_utf16().count() as u64;
-                if target_utf16 >= pos
-                    && target_utf16 < pos + len
-                    && format.as_ref().is_some_and(|f| f.contains_key("latex"))
-                {
-                    let rel = (target_utf16 - pos) as usize;
-                    let mut u16_cursor = 0usize;
-                    let mut byte_start = 0usize;
-                    let mut byte_end = s.len();
-                    for (b, ch) in s.char_indices() {
-                        if u16_cursor == rel {
-                            byte_start = b;
-                            byte_end = b + ch.len_utf8();
-                            break;
-                        }
-                        u16_cursor += ch.len_utf16();
-                    }
-                    if byte_start > 0 {
-                        patched.push(y_octo::TextDeltaOp::Insert {
-                            insert: y_octo::TextInsert::Text(s[..byte_start].to_string()),
-                            format: format.clone(),
-                        });
-                    }
-                    let mut new_fmt = format.clone().unwrap_or_default();
-                    new_fmt.insert("latex".to_string(), y_octo::Any::String(draft.to_string()));
-                    patched.push(y_octo::TextDeltaOp::Insert {
-                        insert: y_octo::TextInsert::Text(s[byte_start..byte_end].to_string()),
-                        format: Some(new_fmt),
-                    });
-                    if byte_end < s.len() {
-                        patched.push(y_octo::TextDeltaOp::Insert {
-                            insert: y_octo::TextInsert::Text(s[byte_end..].to_string()),
-                            format: format.clone(),
-                        });
-                    }
-                } else {
-                    patched.push(op.clone());
-                }
-                pos += len;
-            }
-            y_octo::TextDeltaOp::Insert {
-                insert: y_octo::TextInsert::Embed(v),
-                ..
-            } => {
-                patched.push(op.clone());
-                pos += v.len() as u64;
-            }
-            _ => patched.push(op.clone()),
-        }
-    }
-    RichText {
-        plain: text.plain.clone(),
-        delta: patched,
     }
 }

@@ -2,8 +2,13 @@
 //! table cell editing, and embedded doc navigation handlers for `PlaygroundView`.
 
 mod actions;
+mod database;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_database;
+#[cfg(test)]
+mod tests_database_interactions;
 #[cfg(test)]
 mod tests_edgeless_geometry;
 #[cfg(test)]
