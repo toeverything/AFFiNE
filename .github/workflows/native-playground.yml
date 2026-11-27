@@ -22,8 +22,10 @@ jobs:
     name: Changed Paths
     runs-on: ubuntu-24.04
     outputs:
-      web: ${{ steps.filter.outputs.web }}
-      web-build: ${{ steps.filter.outputs.web-build }}
+      web: ${{ steps.base.outputs.force_all == 'true' && 'true' || steps.filter.outputs.web }}
+      web-build: ${{ steps.base.outputs.force_all == 'true' && 'true' || steps.filter.outputs.web-build }}
+      backend: ${{ steps.base.outputs.force_all == 'true' && 'true' || steps.filter.outputs.backend }}
+      native-ui: ${{ steps.base.outputs.force_all == 'true' && 'true' || steps.filter.outputs.native-ui }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,26 +33,43 @@ jobs:
           # Full history so the merge base and the previous push are present.
           fetch-depth: 0
 
+      - name: L0 Tier A static gates
+        run: node scripts/ci/check-l0-tier-a.mjs
+
       - name: Resolve the base commit
         id: base
         env:
           BEFORE: ${{ github.event.before }}
-        # Topic branches compare with their merge base on the integration
-        # branch; the integration branch compares with the commit before this
-        # push, or its parent when that commit is unknown (new branch, force
-        # push). Always a commit SHA, never a branch name.
+        # Topic branches compare with their merge base on the parent integration
+        # branch (`darksky/np/mobile` for `darksky/np/mobile-*`, otherwise
+        # `darksky/native-playground`); integration branches compare with the
+        # commit before this push, or conservatively force all lanes when that
+        # commit is unknown (branch creation or force-push).
         run: |
           set -euo pipefail
-          if [ "$GITHUB_REF_NAME" = darksky/native-playground ]; then
-            if [ -n "${BEFORE//0/}" ] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
-              sha=$BEFORE
-            else
-              sha=$(git rev-parse HEAD~1)
-            fi
-          else
-            sha=$(git merge-base origin/darksky/native-playground HEAD)
-          fi
+          force_all=false
+          case "$GITHUB_REF_NAME" in
+            darksky/native-playground|darksky/np/mobile)
+              if [ -n "${BEFORE//0/}" ] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+                sha=$BEFORE
+              else
+                force_all=true
+                sha=$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)
+              fi
+              ;;
+            darksky/np/mobile-*)
+              if git rev-parse --verify origin/darksky/np/mobile >/dev/null 2>&1; then
+                sha=$(git merge-base origin/darksky/np/mobile HEAD)
+              else
+                sha=$(git merge-base origin/darksky/native-playground HEAD)
+              fi
+              ;;
+            *)
+              sha=$(git merge-base origin/darksky/native-playground HEAD)
+              ;;
+          esac
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "force_all=$force_all" >> "$GITHUB_OUTPUT"
 
       - name: Detect changed paths
         id: filter
@@ -111,6 +130,47 @@ jobs:
               - '.yarn/**'
               - '.github/actions/setup-node/**'
               - '.github/workflows/np-web-build.yml'
+            backend:
+              - 'packages/backend/**'
+              - 'packages/common/graphql/**'
+              - 'packages/common/realtime/**'
+              - 'packages/frontend/component/**'
+              - 'scripts/oracle/**'
+              - 'scripts/ci/check-csf-frame-audit.mjs'
+              - 'tools/parity-harness/**'
+              - 'tools/frame-audit/**'
+              - 'tests/oracle-contracts/**'
+              - 'tests/affine-cloud/**'
+              - 'tests/kit/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - '.cargo/**'
+              - 'package.json'
+              - 'yarn.lock'
+              - '.yarnrc.yml'
+              - '.yarn/**'
+              - '.github/actions/setup-node/**'
+              - '.github/workflows/native-playground.yml'
+            native-ui:
+              - 'blocksuite/**'
+              - 'packages/ui/**'
+              - 'packages/frontend/**'
+              - 'packages/common/store/**'
+              - 'tools/frame-audit/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - '.cargo/**'
+              - 'package.json'
+              - 'yarn.lock'
+              - '.yarnrc.yml'
+              - '.yarn/**'
+              - '.oxlintrc.json'
+              - '.oxfmtrc.json'
+              - '**/tsconfig*.json'
+              - '.github/workflows/build-test.yml'
+              - '.github/workflows/native-playground.yml'
 
   web-fast:
     name: Web Fast Checks
@@ -125,7 +185,9 @@ jobs:
     uses: ./.github/workflows/np-web-build.yml
 
   server-harness-check:
-    name: L0 Tier A, Server Contracts & Test Harness
+    name: Server Contracts & Test Harness
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     env:
       # One installed toolchain for packages/backend/ and tools/parity-harness alike.
@@ -140,9 +202,6 @@ jobs:
           electron-install: false
           playwright-install: false
           full-cache: true
-
-      - name: L0 Tier A static gates
-        run: node scripts/ci/check-l0-tier-a.mjs
 
       - name: Frozen v0.27.5 server contracts
         run: |
@@ -219,6 +278,8 @@ jobs:
 
   lint-and-wasm:
     name: Lint, Invariants & Wasm Check
+    needs: changes
+    if: needs.changes.outputs.native-ui == 'true'
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -286,6 +347,8 @@ jobs:
 
   headless-linux-and-perf:
     name: Headless Linux, Web Smoke & Perf
+    needs: changes
+    if: needs.changes.outputs.native-ui == 'true'
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -463,6 +526,8 @@ jobs:
 
   macos-headless:
     name: macOS Metal + CoreText Headless
+    needs: changes
+    if: needs.changes.outputs.native-ui == 'true'
     runs-on: macos-15
     defaults:
       run:
@@ -527,6 +592,8 @@ jobs:
 
   js-room-coop:
     name: JS Room Coop & Rust-JS E2E
+    needs: changes
+    if: needs.changes.outputs.native-ui == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
@@ -606,6 +673,8 @@ jobs:
 
   cloud-e2e-rust-server:
     name: Cloud E2E (Rust affine-server)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:

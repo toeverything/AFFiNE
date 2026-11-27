@@ -331,6 +331,12 @@ export function selectBaselineRun(runs, options = null) {
     typeof options === 'object' && options?.currentCreatedAt
       ? options.currentCreatedAt
       : null;
+  const maxCandidates =
+    typeof options === 'object' &&
+    Number.isInteger(options?.maxCandidates) &&
+    options.maxCandidates > 0
+      ? options.maxCandidates
+      : 3;
 
   const validRuns = runs.filter(
     run =>
@@ -384,7 +390,7 @@ export function selectBaselineRun(runs, options = null) {
 
     seen.add(sha);
     distinctPrior.push(run);
-    if (distinctPrior.length === 3) break;
+    if (distinctPrior.length === maxCandidates) break;
   }
 
   if (distinctPrior.length === 0) {
@@ -1057,29 +1063,26 @@ function downloadArtifactMetricsJson(repo, runId, artifactName) {
 }
 
 /**
- * Walk eligible prior runs from oldest (`N-3`) down to newest (`N-1`) and
- * choose the oldest run whose artifact loader returns a valid perf-metrics
- * payload, plus load intermediate `N-1`/`N-2` payloads for trend & acceptance.
+ * Walk eligible prior runs from newest to oldest, skipping runs that produced
+ * no valid perf-metrics artifact (e.g. backend-only or docs-only pushes whose
+ * native-ui lane was path-filtered), and collect up to 3 valid prior commits
+ * (`N-1`, `N-2`, `N-3`), using the 3rd valid commit as the `N-3` baseline.
  */
 export function resolveWindowFromEligibleRuns(eligibleRuns, loadRun) {
-  const loaded = new Array(eligibleRuns.length).fill(null);
-
-  let baselineIdx = -1;
-  for (let i = eligibleRuns.length - 1; i >= 0; i -= 1) {
+  const validPayloads = [];
+  for (let i = 0; i < eligibleRuns.length; i += 1) {
     const payload = loadRun(eligibleRuns[i]);
-    if (payload) {
-      try {
-        validatePerfMetrics(payload, `run:${eligibleRuns[i].id ?? i}`);
-        loaded[i] = payload;
-        baselineIdx = i;
-        break;
-      } catch {
-        // invalid artifact payload; fall back toward newer commit
-      }
+    if (!payload) continue;
+    try {
+      validatePerfMetrics(payload, `run:${eligibleRuns[i].id ?? i}`);
+      validPayloads.push(payload);
+      if (validPayloads.length === 3) break;
+    } catch {
+      // invalid artifact payload; skip and continue searching older runs
     }
   }
 
-  if (baselineIdx === -1) {
+  if (validPayloads.length === 0) {
     return {
       baseline: null,
       n1: null,
@@ -1088,23 +1091,11 @@ export function resolveWindowFromEligibleRuns(eligibleRuns, loadRun) {
     };
   }
 
-  // Load newer intermediate runs in the window (for N-1 / N-2 trends & accepted.json checks)
-  for (let i = 0; i < baselineIdx; i += 1) {
-    const payload = loadRun(eligibleRuns[i]);
-    if (payload) {
-      try {
-        validatePerfMetrics(payload, `run:${eligibleRuns[i].id ?? i}`);
-        loaded[i] = payload;
-      } catch {
-        loaded[i] = null;
-      }
-    }
-  }
-
-  const baseline = loaded[baselineIdx];
+  const baselineIdx = validPayloads.length - 1;
+  const baseline = validPayloads[baselineIdx];
   const baselineDepth = `N-${baselineIdx + 1}`;
-  const n1 = baselineIdx > 0 ? loaded[0] : null;
-  const n2 = baselineIdx > 1 ? loaded[1] : null;
+  const n1 = baselineIdx > 0 ? validPayloads[0] : null;
+  const n2 = baselineIdx > 1 ? validPayloads[1] : null;
 
   return { baseline, n1, n2, baselineDepth };
 }
@@ -1151,33 +1142,43 @@ function fetchGithubHistory({
     : '';
   const baseEndpoint = `repos/${repo}/actions/workflows/${encodedWorkflow}/runs?branch=${encodedBranch}&event=push&status=completed&per_page=30${createdFilter}`;
 
+  const artifactCache = new Map();
+  const loadCachedRun = run => {
+    if (!artifactCache.has(run.id)) {
+      artifactCache.set(
+        run.id,
+        downloadArtifactMetricsJson(repo, run.id, artifactName)
+      );
+    }
+    return artifactCache.get(run.id);
+  };
+
   const collectedRuns = [];
-  let selection = { eligibleRuns: [] };
+  let resolved = {
+    baseline: null,
+    n1: null,
+    n2: null,
+    baselineDepth: 'bootstrap',
+  };
   for (let page = 1; page <= 3; page += 1) {
     const resp = runGhApiJson(`${baseEndpoint}&page=${page}`);
     const pageRuns = resp.workflow_runs ?? [];
     collectedRuns.push(...pageRuns);
-    selection = selectBaselineRun(collectedRuns, {
+    const selection = selectBaselineRun(collectedRuns, {
       currentCommit,
       currentCreatedAt: anchorCreatedAt,
+      maxCandidates: 90,
     });
-    if (selection.eligibleRuns.length >= 3 || pageRuns.length < 30) {
+    resolved = resolveWindowFromEligibleRuns(
+      selection.eligibleRuns,
+      loadCachedRun
+    );
+    if (resolved.baselineDepth === 'N-3' || pageRuns.length < 30) {
       break;
     }
   }
 
-  if (selection.eligibleRuns.length === 0) {
-    return {
-      baseline: null,
-      n1: null,
-      n2: null,
-      baselineDepth: 'bootstrap',
-    };
-  }
-
-  return resolveWindowFromEligibleRuns(selection.eligibleRuns, run =>
-    downloadArtifactMetricsJson(repo, run.id, artifactName)
-  );
+  return resolved;
 }
 
 export function parseArgs(argv) {

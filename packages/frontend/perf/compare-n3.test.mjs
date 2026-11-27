@@ -198,7 +198,9 @@ test('selectBaselineRun handles bootstrap, rerun deduplication, and strict older
   assert.equal(empty.baselineDepth, 'bootstrap');
 });
 
-test('resolveWindowFromEligibleRuns falls back from missing N-3 artifact to N-2', () => {
+test(
+  'resolveWindowFromEligibleRuns falls back to N-2 and skips artifact-less runs',
+  () => {
   const s = n => String(n).repeat(40);
   const eligible = [
     { id: 30, head_sha: s(3) }, // N-1
@@ -218,6 +220,40 @@ test('resolveWindowFromEligibleRuns falls back from missing N-3 artifact to N-2'
   assert.equal(resolved.baseline?.commit, s(2));
   assert.equal(resolved.n1?.commit, s(3));
   assert.equal(resolved.n2, null);
+
+  // Path-filtered backend/docs runs with no perf-metrics artifact must not
+  // push valid UI runs out of the N-3 window.
+  const mkRun = n => ({
+    id: n * 10,
+    head_sha: s(n),
+    status: 'completed',
+    conclusion: 'success',
+    created_at: `2026-11-21T0${n}:00:00Z`,
+  });
+  const mixedRuns = [8, 7, 6, 5, 4, 3, 2, 1].map(mkRun);
+  const sel = selectBaselineRun(mixedRuns, {
+    currentCommit: s(8),
+    maxCandidates: 90,
+  });
+  const mixedPayloads = new Map([
+    [70, null],
+    [60, null],
+    [50, null],
+    [40, makeMetrics(s(4))],
+    [30, makeMetrics(s(3))],
+    [20, makeMetrics(s(2))],
+    [10, makeMetrics(s(1))],
+  ]);
+  const visited = [];
+  const mixedResolved = resolveWindowFromEligibleRuns(sel.eligibleRuns, r => {
+    visited.push(r.id);
+    return mixedPayloads.get(r.id);
+  });
+  assert.equal(mixedResolved.baselineDepth, 'N-3');
+  assert.equal(mixedResolved.baseline?.commit, s(2));
+  assert.equal(mixedResolved.n1?.commit, s(4));
+  assert.equal(mixedResolved.n2?.commit, s(3));
+  assert.deepEqual(visited, [70, 60, 50, 40, 30, 20]);
 });
 
 test('selectPerfMetricsZipEntry rejects verdict-only zips and never falls back to arbitrary json', () => {
