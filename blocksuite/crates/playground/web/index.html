@@ -29,16 +29,64 @@
     <script type="module">
       import init, * as playgroundWasm from './pkg/playground.js';
       import { installPlaygroundPreviewBridge } from './preview-workers.js';
+      // Registration order of the static fonts. A deployment that renames them
+      // sets `window.__AFFINE_FONT_ASSETS__` to the URLs in this order.
+      const DEFAULT_FONT_URLS = [
+        './assets/fonts/Inter-VariableFont_slnt,wght.ttf',
+        './assets/fonts/IBMPlexMono-Regular.ttf',
+        './assets/fonts/IBMPlexMono-Bold.ttf',
+        './assets/fonts/IBMPlexMono-Italic.ttf',
+        './assets/fonts/IBMPlexMono-BoldItalic.ttf',
+        './assets/fonts/NotoSansArabic-Regular.ttf',
+        './assets/fonts/NotoSansHebrew-Regular.ttf',
+      ];
+      async function fetchFont(url) {
+        const response = await fetch(new URL(url, window.location.href));
+        if (!response.ok) {
+          throw new Error(`font ${url} returned HTTP ${response.status}`);
+        }
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        // An sfnt font starts with a version tag and a non-zero table count;
+        // a collection starts with `ttcf` and a non-zero font count.
+        const view = new DataView(bytes.buffer);
+        const tag = bytes.byteLength >= 12 ? view.getUint32(0) : 0;
+        const isFont =
+          ([0x00010000, 0x4f54544f, 0x74727565].includes(tag) &&
+            view.getUint16(4) > 0) ||
+          (tag === 0x74746366 &&
+            bytes.byteLength >= 16 &&
+            view.getUint32(8) > 0);
+        if (!isFont) {
+          throw new Error(`font ${url} parsed 0 font faces`);
+        }
+        return bytes;
+      }
       window.__playgroundReady = false;
       window.__playgroundError = null;
       installPlaygroundPreviewBridge(playgroundWasm, window.location.href);
-      init()
-        .then(() => {
+      const fontUrls = window.__AFFINE_FONT_ASSETS__ || DEFAULT_FONT_URLS;
+      Promise.all([init(), Promise.all(fontUrls.map(fetchFont))])
+        .then(([, fonts]) => {
+          fonts.forEach((bytes, index) => {
+            try {
+              playgroundWasm.register_web_font(bytes);
+            } catch (err) {
+              throw new Error(`font ${fontUrls[index]}: ${err.message || err}`);
+            }
+          });
+          playgroundWasm.wasm_main();
           window.__playgroundReady = true;
         })
         .catch((err) => {
+          window.__playgroundReady = false;
           window.__playgroundError = String(err && err.stack ? err.stack : err);
           console.error('playground wasm init failed:', err);
+          const notice = document.createElement('p');
+          notice.setAttribute('role', 'alert');
+          notice.style.cssText =
+            'margin: 0; padding: 16px; font: 14px/1.5 sans-serif; color: #b42318;';
+          notice.textContent = `The playground failed to start: ${err && err.message ? err.message : err}`;
+          document.body.append(notice);
         });
     </script>
   </body>

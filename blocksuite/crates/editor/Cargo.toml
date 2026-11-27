@@ -16,9 +16,11 @@ harness = ["ui/harness"]
 [dependencies]
 anyhow.workspace = true
 blocksuite-playground-doc = { path = "../doc", default-features = false }
+fontdb.workspace = true
 image.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+ttf-parser.workspace = true
 ui = { path = "../../../packages/ui/ui" }
 ui-tokens = { path = "../../../packages/ui/tokens" }
 unicode-bidi.workspace = true

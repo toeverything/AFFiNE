@@ -28,8 +28,6 @@ pub mod typst_world;
 pub mod pdf;
 
 #[cfg(feature = "wasm-worker")]
-pub mod wasm;
-#[cfg(feature = "wasm-worker")]
 pub mod wasm_worker;
 
 #[cfg(all(test, any(feature = "mermaid", feature = "typst", feature = "math")))]

@@ -471,23 +471,33 @@ fn web_options() -> PlaygroundOptions {
 
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
-pub fn wasm_main() {
+pub fn install_panic_hook() {
     console_error_panic_hook::set_once();
-    let Some(window) = web_sys::window() else {
-        // Node / headless Wasm test environment: skip DOM canvas bootstrap so callers can
-        // invoke exported CRDT helpers directly without side effects.
-        return;
-    };
-    if js_sys::Reflect::get(
-        &window,
-        &wasm_bindgen::JsValue::from_str("__AFFINE_WEB_HOST__"),
-    )
-    .ok()
-    .is_some_and(|v| v.is_truthy())
-    {
-        // Web thin host (`/host/`): avoid mounting a second fullscreen playground window.
-        return;
-    }
+}
+
+/// Validates and queues one font for the window that [`wasm_main`] opens.
+///
+/// The page fetches the fonts from its static font assets, which the preview
+/// workers share through the browser HTTP cache, and calls this once per font
+/// before [`wasm_main`]. Data with zero usable font faces throws.
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub fn register_web_font(bytes: &[u8]) -> Result<(), wasm_bindgen::JsError> {
+    crate::theme::register_web_font_bytes(bytes.to_vec())
+        .map_err(|err| wasm_bindgen::JsError::new(&format!("{err:#}")))
+}
+
+/// Opens the fullscreen playground window on the page canvas.
+///
+/// The standalone playground page calls this after it registered its fonts with
+/// [`register_web_font`]. It throws before it starts the application when the
+/// fonts miss a required family. The Web thin host (`/host/`) loads the same
+/// module only for its CRDT helpers and never calls it.
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub fn wasm_main() -> Result<(), wasm_bindgen::JsError> {
+    crate::theme::check_web_fonts()
+        .map_err(|err| wasm_bindgen::JsError::new(&format!("{err:#}")))?;
     let platform = std::rc::Rc::new(ui::WebPlatform::new(false));
     ui::Application::with_platform(platform).run(|cx| {
         if let Err(err) = register_bundled_fonts(cx) {
@@ -502,4 +512,5 @@ pub fn wasm_main() {
             panic!("failed to open playground web window: {err:#}");
         }
     });
+    Ok(())
 }

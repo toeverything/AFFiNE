@@ -60,19 +60,21 @@ Each preview capability builds independently under the unified `packages/fronten
 
 Production web packaging strips DWARF debug info (`debug = 0`) and post-processes every `.wasm` with Binaryen `wasm-opt -Oz --strip-debug --strip-producers`, selecting `opt-level = 3` (`--profile wasm-release`) for latency-sensitive `math` (`svg-raster` outline-only) and `pdf` (pure `hayro`, zero `resvg`/`usvg`) and `opt-level = "s"` (`--profile wasm-release-size`) for `mermaid` and `typst` (`svg-text`) so `typst` keeps comfortable headroom under Cloudflare Workers' 25 MiB single-asset limit without `opt-level = "z"` runtime slowdowns:
 
-| Worker Feature | Profile | Stripped + `wasm-opt -Oz` Raw Size | `gzip -9` Size | Unstripped `--release` Raw (`debug = "limited"`) |
+| Worker Feature | Profile | Stripped + `wasm-opt -Oz` Raw Size | `gzip -9` Size | `brotli -q 11` Size |
 | --- | --- | ---: | ---: | ---: |
-| `math,wasm-worker` (RaTeX + `svg-raster` outlines) | `wasm-release` (`opt-level = 3`) | ~3.72 MiB | ~1.40 MiB | 28.87 MiB |
-| `pdf,wasm-worker` (`hayro 0.9.0`, zero `resvg`) | `wasm-release` (`opt-level = 3`) | ~3.99 MiB | ~1.74 MiB | 48.92 MiB |
-| `mermaid,wasm-worker` (`merman 0.11.0` + `svg-text`) | `wasm-release-size` (`opt-level = "s"`) | ~15.53 MiB | ~5.79 MiB | 179.34 MiB |
-| `typst,wasm-worker` (`typst 0.15.1` + `svg-text`) | `wasm-release-size` (`opt-level = "s"`) | ~21.08 MiB | ~7.96 MiB | 167.39 MiB |
+| `math,wasm-worker` (RaTeX + `svg-raster` outlines) | `wasm-release` (`opt-level = 3`) | 3,891,848 B (3.71 MiB) | 1,494,340 B (1.43 MiB) | 1,118,553 B (1.07 MiB) |
+| `pdf,wasm-worker` (`hayro 0.9.0`, zero `resvg`) | `wasm-release` (`opt-level = 3`) | 4,169,271 B (3.98 MiB) | 1,828,122 B (1.74 MiB) | 1,462,210 B (1.39 MiB) |
+| `mermaid,wasm-worker` (`merman 0.11.0` + `svg-text`) | `wasm-release-size` (`opt-level = "s"`) | 15,509,926 B (14.79 MiB) | 5,859,601 B (5.59 MiB) | 4,269,645 B (4.07 MiB) |
+| `typst,wasm-worker` (`typst 0.15.1` + `svg-text`) | `wasm-release-size` (`opt-level = "s"`) | 21,509,557 B (20.51 MiB) | 8,273,986 B (7.89 MiB) | 6,214,687 B (5.93 MiB) |
+
+Measured on Linux x86-64 with Rust `1.98.1` and Binaryen `version_123` (`wasm-opt -Oz --strip-debug --strip-producers --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals`).
 
 ## 4. Native Build and Toolchain Audit
 
 - `math`, `mermaid`, and `pdf` are pure safe Rust with zero `cc` build scripts and zero native C or C++ libraries.
 - `typst` depends on `stacker` -> `psm`, which compiles a small stack-probe assembly stub via `cc` on native targets (`wasm32-unknown-unknown` builds do not invoke `psm`).
 - `blocksuite-preview` itself enforces `#![forbid(unsafe_code)]`, zero wall-clock calls, zero host font discovery, strict CSS color validation with XML attribute escaping, and zero external SVG `<image href>` filesystem or network resolution.
-- Across the Wasm Worker boundary, Mermaid and Typst copy cached RGBA pixels once from the shared `Arc<RgbaImageBuffer>` (or move them via `Arc::try_unwrap` when unshared), while `take_pixels(&mut self)` eliminates a second clone on JS property access.
+- The Wasm Worker boundary is four scalar exports (`affine_worker_reset_input`, `affine_worker_push_input_u32`, `affine_worker_invoke`, `affine_worker_output_u32`) that stream one binary request and response frame through 32-bit words. The workers export no `wasm-bindgen` classes, so `wasm-opt` removes every engine method that no opcode reaches.
 
 ## 5. S1 Release Probe Measurements and Verification Boundaries
 

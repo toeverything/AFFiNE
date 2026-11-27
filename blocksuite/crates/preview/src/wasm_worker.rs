@@ -340,3 +340,30 @@ pub fn affine_worker_output_u32(word_index: usize) -> u32 {
         u32::from_le_bytes(chunk)
     })
 }
+
+#[cfg(all(test, feature = "mermaid"))]
+mod tests {
+    use super::*;
+    use crate::test_support::build_test_font_pool;
+
+    #[test]
+    fn mermaid_opcode_theme_tags_render_distinct_light_dark_svg() {
+        let mut state = RawWorkerState::new();
+        for blob in build_test_font_pool().font_blobs() {
+            state.engine.register_font(blob.to_vec()).unwrap();
+        }
+        let mut render = |theme_tag: u8| {
+            state.input = [&[2, theme_tag][..], b"flowchart TD\n  A[Start] --> B[End]"].concat();
+            state.dispatch()
+        };
+        let default = render(0).unwrap();
+        let light = render(1).unwrap();
+        let dark = render(2).unwrap();
+        assert_eq!(render(3), Err("invalid mermaid theme tag 3".to_string()));
+        for frame in [&default, &light, &dark] {
+            assert_eq!(frame[0], 1);
+            assert!(frame[1..].starts_with(b"<svg"));
+        }
+        assert_ne!(light, dark);
+    }
+}

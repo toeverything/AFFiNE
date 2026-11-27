@@ -22,11 +22,118 @@ pub use ui_tokens::{
 /// and `Noto Sans Hebrew`) into the active `TextSystem`.
 ///
 /// Must be called before opening any window across macOS, Linux headless, and Web Wasm.
+/// Native targets read the bytes that `ui-tokens` embeds.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn register_bundled_fonts(cx: &App) -> anyhow::Result<()> {
     let fonts: Vec<Cow<'static, [u8]>> = bundled_font_bytes()
         .into_iter()
         .chain(bundled_script_font_bytes())
         .map(Cow::Borrowed)
+        .collect();
+    cx.text_system().add_fonts(fonts)
+}
+
+/// Family names that the editor theme renders with. The Web page must supply a
+/// font for each of them.
+pub const REQUIRED_FONT_FAMILIES: [&str; 4] =
+    [FONT_SANS, FONT_CODE, "Noto Sans Arabic", "Noto Sans Hebrew"];
+
+/// Number of fonts the Web page supplies, one per `ui-tokens` font file.
+pub const WEB_FONT_COUNT: usize = bundled_font_bytes().len() + bundled_script_font_bytes().len();
+
+/// Loads a TrueType or OpenType font (or collection) with the same `fontdb`
+/// loader as the text system and returns the family names of its usable faces.
+///
+/// A face is usable when `fontdb` accepts it and it has glyphs. Data with zero
+/// usable faces is an error, so a server that answers a font request with an
+/// empty body or an HTML page is caught before the font reaches the text
+/// system, which skips such faces without an error.
+pub fn validate_font_bytes(bytes: &[u8]) -> anyhow::Result<Vec<String>> {
+    anyhow::ensure!(!bytes.is_empty(), "font data is empty");
+    let mut db = fontdb::Database::new();
+    db.load_font_source(fontdb::Source::Binary(Arc::new(bytes.to_vec())));
+    let mut families: Vec<String> = db
+        .faces()
+        .filter(|face| {
+            db.with_face_data(face.id, |data, index| {
+                ttf_parser::Face::parse(data, index).is_ok_and(|f| f.number_of_glyphs() > 0)
+            }) == Some(true)
+        })
+        .flat_map(|face| face.families.iter().map(|(name, _)| name.clone()))
+        .filter(|name| !name.is_empty())
+        .collect();
+    anyhow::ensure!(!families.is_empty(), "font data contains 0 usable faces");
+    families.sort_unstable();
+    families.dedup();
+    Ok(families)
+}
+
+/// Checks that the Web page supplied [`WEB_FONT_COUNT`] fonts that together
+/// cover [`REQUIRED_FONT_FAMILIES`]. `font_families` holds the families of
+/// each font, as [`validate_font_bytes`] returns them.
+pub fn check_web_font_set(font_families: &[Vec<String>]) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        font_families.len() == WEB_FONT_COUNT,
+        "expected {WEB_FONT_COUNT} web fonts, got {}",
+        font_families.len()
+    );
+    let available: Vec<&String> = font_families.iter().flatten().collect();
+    let missing: Vec<&str> = REQUIRED_FONT_FAMILIES
+        .into_iter()
+        .filter(|required| !available.iter().any(|family| family == required))
+        .collect();
+    anyhow::ensure!(
+        missing.is_empty(),
+        "web fonts do not contain the families {}",
+        missing.join(", ")
+    );
+    Ok(())
+}
+
+std::thread_local! {
+    static WEB_FONTS: std::cell::RefCell<Vec<(Vec<u8>, Vec<String>)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// Validates and queues font bytes that the Web page fetched from its static
+/// font assets.
+///
+/// The page calls this for each font before it opens the window. The Wasm build
+/// never references the `ui-tokens` font bytes, so the bundle carries no fonts.
+/// A rejected font clears the queue, so the page starts the next attempt from an
+/// empty queue.
+pub fn register_web_font_bytes(bytes: Vec<u8>) -> anyhow::Result<()> {
+    let families = validate_font_bytes(&bytes).inspect_err(|_| clear_web_fonts())?;
+    WEB_FONTS.with(|fonts| fonts.borrow_mut().push((bytes, families)));
+    Ok(())
+}
+
+/// Checks the fonts queued by [`register_web_font_bytes`] with
+/// [`check_web_font_set`], and clears the queue when they fail.
+pub fn check_web_fonts() -> anyhow::Result<()> {
+    let font_families: Vec<Vec<String>> = WEB_FONTS.with(|fonts| {
+        fonts
+            .borrow()
+            .iter()
+            .map(|(_, families)| families.clone())
+            .collect()
+    });
+    check_web_font_set(&font_families).inspect_err(|_| clear_web_fonts())
+}
+
+fn clear_web_fonts() {
+    WEB_FONTS.with(|fonts| fonts.borrow_mut().clear());
+}
+
+/// Registers the fonts queued by [`register_web_font_bytes`] into the active
+/// `TextSystem`, in the order the page queued them.
+#[cfg(target_arch = "wasm32")]
+pub fn register_bundled_fonts(cx: &App) -> anyhow::Result<()> {
+    check_web_fonts()?;
+    let fonts: Vec<Cow<'static, [u8]>> = WEB_FONTS
+        .with(|fonts| std::mem::take(&mut *fonts.borrow_mut()))
+        .into_iter()
+        .map(|(bytes, _)| Cow::Owned(bytes))
         .collect();
     cx.text_system().add_fonts(fonts)
 }
@@ -436,6 +543,93 @@ impl IconPaint {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Returns `font` with every PostScript name record (name ID 6) renamed to an
+    /// unused name ID, keeping the glyphs and the family names.
+    fn without_post_script_name(font: &[u8]) -> Vec<u8> {
+        let mut out = font.to_vec();
+        let be16 = |at: usize| usize::from(u16::from_be_bytes([font[at], font[at + 1]]));
+        let be32 = |at: usize| {
+            u32::from_be_bytes([font[at], font[at + 1], font[at + 2], font[at + 3]]) as usize
+        };
+        let record = (0..be16(4))
+            .map(|i| 12 + i * 16)
+            .find(|&at| &font[at..at + 4] == b"name")
+            .expect("name table");
+        let name = be32(record + 8);
+        for i in 0..be16(name + 2) {
+            let name_id = name + 6 + i * 12 + 6;
+            if be16(name_id) == 6 {
+                out[name_id..name_id + 2].copy_from_slice(&0x7fff_u16.to_be_bytes());
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn validate_font_bytes_accepts_bundled_fonts_and_rejects_broken_data() {
+        let [inter, plex_mono, ..] = bundled_font_bytes();
+        let [arabic, hebrew] = bundled_script_font_bytes();
+        let html: &[u8] = b"<!doctype html>";
+        let no_post_script_name = without_post_script_name(hebrew);
+        let no_faces = "font data contains 0 usable faces";
+        let cases: [(&str, &[u8], Result<&str, &str>); 8] = [
+            ("inter", inter, Ok("Inter")),
+            ("plex mono", plex_mono, Ok("IBM Plex Mono")),
+            ("arabic", arabic, Ok("Noto Sans Arabic")),
+            ("hebrew", hebrew, Ok("Noto Sans Hebrew")),
+            ("empty", b"", Err("font data is empty")),
+            ("html", html, Err(no_faces)),
+            ("truncated", &inter[..1024], Err(no_faces)),
+            ("no postscript name", &no_post_script_name, Err(no_faces)),
+        ];
+        for (name, bytes, expected) in cases {
+            match (validate_font_bytes(bytes), expected) {
+                (Ok(families), Ok(family)) => {
+                    assert!(families.iter().any(|f| f == family), "{name}: {families:?}");
+                }
+                (Err(err), Err(message)) => assert_eq!(err.to_string(), message, "{name}"),
+                (result, _) => panic!("{name}: unexpected {result:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn web_font_queue_clears_on_failure_and_accepts_a_new_attempt() {
+        let bundled: Vec<&[u8]> = bundled_font_bytes()
+            .into_iter()
+            .chain(bundled_script_font_bytes())
+            .collect();
+        for bytes in &bundled[..3] {
+            register_web_font_bytes(bytes.to_vec()).unwrap();
+        }
+        assert!(register_web_font_bytes(Vec::new()).is_err());
+        for bytes in &bundled[..WEB_FONT_COUNT - 1] {
+            register_web_font_bytes(bytes.to_vec()).unwrap();
+        }
+        assert!(check_web_fonts().is_err());
+        for bytes in &bundled {
+            register_web_font_bytes(bytes.to_vec()).unwrap();
+        }
+        check_web_fonts().unwrap();
+    }
+
+    #[test]
+    fn check_web_font_set_requires_every_font_and_family() {
+        let bundled: Vec<Vec<String>> = bundled_font_bytes()
+            .into_iter()
+            .chain(bundled_script_font_bytes())
+            .map(|bytes| validate_font_bytes(bytes).unwrap())
+            .collect();
+        check_web_font_set(&bundled).unwrap();
+
+        let without_hebrew = &bundled[..WEB_FONT_COUNT - 1];
+        assert!(check_web_font_set(without_hebrew).is_err());
+        let mut hebrew_replaced = bundled.clone();
+        hebrew_replaced[WEB_FONT_COUNT - 1] = bundled[0].clone();
+        let err = check_web_font_set(&hebrew_replaced).unwrap_err();
+        assert!(err.to_string().contains("Noto Sans Hebrew"), "{err}");
+    }
 
     #[test]
     fn css_colors_resolve_variables_fallbacks_and_hex() {

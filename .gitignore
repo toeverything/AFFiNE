@@ -108,6 +108,7 @@ storageState.json
 /packages/frontend/artifacts/
 /packages/frontend/hosts/web/assets/*.wasm
 /packages/frontend/hosts/web/assets/fonts/*.ttf
+/blocksuite/crates/playground/web/assets/
 /blocksuite/crates/playground/web/pkg/
 /blocksuite/crates/playground/web/wasm-scalar-rpc.js
 /blocksuite/crates/playground/web/workers/

@@ -161,6 +161,23 @@ const server = createServer((req, res) => {
   res.end(readFileSync(full));
 });
 
+/**
+ * Returns the browser environment with a usable D-Bus session address.
+ *
+ * A runner that sets `DBUS_SESSION_BUS_ADDRESS` to a value without a
+ * `unix:` or `tcp:` transport (GitHub Ubuntu runners use `/dev/null`) makes
+ * Chromium retry the bus synchronously for more than 10 s at startup. A
+ * nonexistent socket path fails at once.
+ * @returns {NodeJS.ProcessEnv}
+ */
+function chromeEnv() {
+  const env = { ...process.env };
+  if (!/^(unix|tcp):/.test(env.DBUS_SESSION_BUS_ADDRESS || '')) {
+    env.DBUS_SESSION_BUS_ADDRESS = 'unix:path=/nonexistent/affine-no-dbus';
+  }
+  return env;
+}
+
 const chromeBin = findChromiumBinary();
 const profileDir = mkdtempSync(join(tmpdir(), 'affine-s3-web-e2e-'));
 await new Promise(resolveListen =>
@@ -178,11 +195,18 @@ const chromeProc = spawn(
     '--disable-dev-shm-usage',
     '--no-first-run',
     '--no-default-browser-check',
+    '--password-store=basic',
+    '--use-mock-keychain',
+    '--disable-background-networking',
+    '--disable-sync',
+    '--disable-extensions',
+    '--disable-component-update',
+    '--metrics-recording-only',
     '--remote-debugging-port=0',
     `--user-data-dir=${profileDir}`,
     'about:blank',
   ],
-  { stdio: ['ignore', 'ignore', 'pipe'] }
+  { stdio: ['ignore', 'ignore', 'pipe'], env: chromeEnv() }
 );
 
 let ws = null;

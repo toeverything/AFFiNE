@@ -30,6 +30,14 @@ const ROOT = path.resolve(SCRIPT_DIR, '..');
 const REPO_ROOT = path.resolve(ROOT, '../..');
 const WEB_DIR = path.join(REPO_ROOT, 'blocksuite/crates/playground/web');
 const ORACLE_DIR = path.join(REPO_ROOT, 'blocksuite/crates/oracle');
+// `web/index.html` fetches the tracked `ui-tokens` fonts from `assets/fonts/<file>`.
+const FONTS_DIR = path.join(REPO_ROOT, 'packages/ui/tokens/fonts');
+const FONT_FILES = new Map(
+  fs
+    .readdirSync(FONTS_DIR, { recursive: true })
+    .filter((rel) => rel.endsWith('.ttf'))
+    .map((rel) => [path.basename(rel), path.join(FONTS_DIR, rel)])
+);
 
 function parseArgs(argv) {
   const args = {
@@ -94,8 +102,11 @@ function startStaticServer(dir) {
     const server = http.createServer((req, res) => {
       const urlPath = (req.url || '/').split('?')[0];
       const rel = urlPath === '/' ? 'index.html' : urlPath.replace(/^\/+/, '');
-      const abs = path.resolve(dir, rel);
-      if (!abs.startsWith(dir) || !fs.existsSync(abs) || fs.statSync(abs).isDirectory()) {
+      const fontFile = rel.startsWith('assets/fonts/')
+        ? FONT_FILES.get(decodeURIComponent(rel.slice('assets/fonts/'.length)))
+        : undefined;
+      const abs = fontFile ?? path.resolve(dir, rel);
+      if ((!fontFile && !abs.startsWith(dir)) || !fs.existsSync(abs) || fs.statSync(abs).isDirectory()) {
         res.writeHead(404);
         res.end('Not found');
         return;

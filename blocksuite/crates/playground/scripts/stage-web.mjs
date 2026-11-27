@@ -4,22 +4,25 @@
 // Stages standalone `playground/web` (`pkg/playground.{js,_bg.wasm}`)
 // and shared Web Worker preview scripts (`wasm-scalar-rpc.js`,
 // `workers/preview-worker-core.js`, `workers/*-worker.js`) and built preview
-// Wasm binaries (`workers/*-worker.wasm`), then verifies all relative ESM
-// imports resolve inside the staged output directory.
+// Wasm binaries (`workers/*-worker.wasm`) and the tracked `ui-tokens` fonts
+// (`assets/fonts/*.ttf`, fetched by `index.html` before the window opens), then
+// verifies all relative ESM imports resolve inside the staged output directory.
 
 import {
   copyFileSync,
   cpSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
 } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const PLAYGROUND_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const REPO_ROOT = resolve(PLAYGROUND_ROOT, '../../..');
 const HOST_WEB_SRC = join(REPO_ROOT, 'packages/frontend/hosts/web/src');
+const FONTS_SRC = join(REPO_ROOT, 'packages/ui/tokens/fonts');
 
 const args = process.argv.slice(2);
 let sourceDirArg = '/tmp/preview-wasm';
@@ -86,6 +89,15 @@ for (const kind of KINDS) {
   }
 }
 
+const fontsDst = join(WEB_DIR, 'assets', 'fonts');
+mkdirSync(fontsDst, { recursive: true });
+const fontFiles = readdirSync(FONTS_SRC, { recursive: true }).filter(rel =>
+  rel.endsWith('.ttf')
+);
+for (const rel of fontFiles) {
+  copyFileSync(join(FONTS_SRC, rel), join(fontsDst, basename(rel)));
+}
+
 const stagedJsFiles = [
   join(WEB_DIR, 'wasm-scalar-rpc.js'),
   ...WORKER_FILES.map(f => join(workersDst, f)),
@@ -105,5 +117,5 @@ for (const jsPath of stagedJsFiles) {
 }
 
 console.log(
-  `Staged worker scripts and ${stagedWasmCount} .wasm files into ${WEB_DIR}`
+  `Staged worker scripts, ${stagedWasmCount} .wasm files and ${fontFiles.length} fonts into ${WEB_DIR}`
 );

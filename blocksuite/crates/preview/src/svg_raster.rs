@@ -273,9 +273,10 @@ impl SvgRasterizer {
                 usvg::roxmltree::Document::parse_with_options(svg, xml_opt).map_err(|err| {
                     PreviewError::SvgParse(usvg::Error::ParsingFailed(err).to_string())
                 })?;
-            if xml_contains_svg_text_element(xml_doc.root()) {
+            if xml_requires_svg_text(xml_doc.root()) {
                 return Err(PreviewError::SvgParse(
-                    "SVG <text> requires the `svg-text` feature".to_string(),
+                    "SVG <text> and inline `data:image/svg+xml` images require the `svg-text` feature"
+                        .to_string(),
                 ));
             }
             usvg::Tree::from_xmltree(&xml_doc, &self.options)
@@ -625,29 +626,39 @@ fn build_minimal_probe_ttf() -> Vec<u8> {
     out
 }
 
-/// Walks parsed XML elements (matching `usvg`'s SVG namespace and container rules) and returns
-/// `true` when any SVG `<text>` element (`http://www.w3.org/2000/svg` or unqualified) is present,
-/// ignoring XML comments, CDATA, foreign namespaces, and non-rendered metadata/style subtrees.
+/// Walks every parsed XML element and returns `true` when the SVG needs the `svg-text`
+/// feature to render: an SVG `<text>` element (`http://www.w3.org/2000/svg` or unqualified),
+/// or an SVG `<image>` whose `href` / `xlink:href` is an inline `data:image/svg+xml` document.
+///
+/// The walk visits every element, inside `<metadata>`, `<desc>` and foreign-namespace
+/// containers too, because `usvg` indexes `id`s across the whole tree and a `<use>` can
+/// render text defined anywhere. XML comments, CDATA, and elements in foreign namespaces
+/// are not SVG elements.
 #[cfg(all(feature = "svg-raster", not(feature = "svg-text")))]
-fn xml_contains_svg_text_element(root: usvg::roxmltree::Node<'_, '_>) -> bool {
-    let mut stack = vec![root];
-    while let Some(node) = stack.pop() {
-        for child in node.children() {
-            if !child.is_element() {
-                continue;
-            }
-            let tag = child.tag_name();
-            if !matches!(tag.namespace(), None | Some("http://www.w3.org/2000/svg")) {
-                continue;
-            }
-            match tag.name() {
-                "text" => return true,
-                "metadata" | "title" | "desc" | "style" | "script" | "foreignObject" => {}
-                _ => stack.push(child),
-            }
+fn xml_requires_svg_text(root: usvg::roxmltree::Node<'_, '_>) -> bool {
+    const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
+    let is_inline_svg = |href: &str| {
+        href.trim()
+            .get(..18)
+            .is_some_and(|scheme| scheme.eq_ignore_ascii_case("data:image/svg+xml"))
+    };
+    root.descendants().any(|node| {
+        if !node.is_element() {
+            return false;
         }
-    }
-    false
+        let tag = node.tag_name();
+        if !matches!(tag.namespace(), None | Some("http://www.w3.org/2000/svg")) {
+            return false;
+        }
+        match tag.name() {
+            "text" => true,
+            "image" => [node.attribute("href"), node.attribute((XLINK_NS, "href"))]
+                .into_iter()
+                .flatten()
+                .any(is_inline_svg),
+            _ => false,
+        }
+    })
 }
 
 /// Returns true for whitespace, control characters, and Unicode `Default_Ignorable_Code_Point`
@@ -740,31 +751,69 @@ mod tests {
             rasterizer.rasterize(valid, f32::NAN),
             Err(PreviewError::InvalidSize(_))
         ));
+    }
 
-        let text_svg = r#"<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><text x="2" y="14">Hi</text></svg>"#;
-        let prefixed_text_svg = r#"<s:svg xmlns:s="http://www.w3.org/2000/svg" width="40" height="20"><s:text x="2" y="14">Hi</s:text></s:svg>"#;
-        let mixed_prefixed_text_svg = r#"<svg xmlns="http://www.w3.org/2000/svg" xmlns:s="http://www.w3.org/2000/svg" width="40" height="20"><s:text x="2" y="14">Hi</s:text></svg>"#;
-        for candidate in [text_svg, prefixed_text_svg, mixed_prefixed_text_svg] {
+    #[cfg(feature = "svg-raster")]
+    #[test]
+    fn enforces_svg_text_feature_gate_across_xml_constructs() {
+        let rasterizer = SvgRasterizer::new(&FontPool::new());
+        let wrap = |body: &str| {
+            format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="20" viewBox="0 0 40 20">{body}</svg>"#
+            )
+        };
+        let text_svgs = [
+            wrap(r#"<text x="2" y="14">Hi</text>"#),
+            r#"<s:svg xmlns:s="http://www.w3.org/2000/svg" width="40" height="20"><s:text x="2" y="14">Hi</s:text></s:svg>"#.to_string(),
+            wrap(r#"<s:text xmlns:s="http://www.w3.org/2000/svg" x="2" y="14">Hi</s:text>"#),
+            wrap(r##"<metadata><text id="t" x="2" y="14">Hi</text></metadata><use href="#t"/>"##),
+            wrap(r##"<desc><text id="t" x="2" y="14">Hi</text></desc><use href="#t"/>"##),
+            wrap(
+                r##"<metadata><x:wrap xmlns:x="urn:meta"><s:text xmlns:s="http://www.w3.org/2000/svg" id="t" x="2" y="14">Hi</s:text></x:wrap></metadata><use href="#t"/>"##,
+            ),
+        ];
+        for candidate in &text_svgs {
             #[cfg(feature = "svg-text")]
-            assert!(matches!(
-                rasterizer.rasterize(candidate, 1.0),
-                Err(PreviewError::MissingGlyphFont(_))
-            ));
+            assert!(
+                matches!(
+                    rasterizer.rasterize(candidate, 1.0),
+                    Err(PreviewError::MissingGlyphFont(_))
+                ),
+                "{candidate}"
+            );
             #[cfg(not(feature = "svg-text"))]
             match rasterizer.rasterize(candidate, 1.0) {
                 Err(PreviewError::SvgParse(msg)) => assert!(msg.contains("svg-text"), "{msg}"),
-                other => panic!("expected SvgParse requiring svg-text, got {other:?}"),
+                other => {
+                    panic!("expected SvgParse requiring svg-text for {candidate}, got {other:?}")
+                }
             }
         }
 
-        // Path-only SVG with `<text> legend` inside an XML comment and foreign-namespace metadata
-        // has 0 SVG text elements and must rasterize cleanly regardless of `svg-text`.
-        let commented_path_svg = r##"<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20">
-            <!-- <text> legend -->
-            <metadata><x:text xmlns:x="urn:meta">legend</x:text></metadata>
-            <path d="M2 2 H38 V18 H2 Z" fill="#1e66f5"/>
-        </svg>"##;
-        let rendered = rasterizer.rasterize(commented_path_svg, 1.0).unwrap();
+        // An inline SVG image can carry `<text>` of its own.
+        #[cfg(not(feature = "svg-text"))]
+        for candidate in [
+            wrap(
+                r#"<image href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ctext y='12'%3EHi%3C/text%3E%3C/svg%3E" width="16" height="16"/>"#,
+            ),
+            wrap(
+                r#"<image xlink:href="  DATA:image/SVG+xml;base64,PHN2Zy8+" width="16" height="16"/>"#,
+            ),
+        ] {
+            match rasterizer.rasterize(&candidate, 1.0) {
+                Err(PreviewError::SvgParse(msg)) => assert!(msg.contains("svg-text"), "{msg}"),
+                other => {
+                    panic!("expected SvgParse requiring svg-text for {candidate}, got {other:?}")
+                }
+            }
+        }
+
+        // `<text>` inside an XML comment and in a foreign namespace is no SVG text element:
+        // the path renders with or without `svg-text`.
+        let commented_path_svg = wrap(
+            r##"<!-- <text> legend --><metadata><x:text xmlns:x="urn:meta">legend</x:text></metadata><path d="M2 2 H38 V18 H2 Z" fill="#1e66f5"/>"##,
+        );
+        let rendered = rasterizer.rasterize(&commented_path_svg, 1.0).unwrap();
         assert!(rendered.count_non_transparent_pixels() > 0);
     }
 
