@@ -45,6 +45,29 @@ const bindKeys = (
   };
 };
 
+// On macOS, Option+letter types a character (e.g. "ß" on the US layout,
+// "ś" on the Polish one) and the event alone cannot tell which the user meant.
+// Inside an editable element it is text input; elsewhere there is no text to
+// type, so the shortcut bound to the physical key runs.
+const isAltTextInput = (event: KeyboardEvent) => {
+  if (
+    !event.altKey ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.key.length !== 1 ||
+    event.key.charCodeAt(0) <= 0x7e
+  ) {
+    return false;
+  }
+  const target = event.composedPath()[0];
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement)
+  );
+};
+
 export const AffineCommandRegistry = new (class {
   readonly commands: Map<string, AffineCommand> = new Map();
 
@@ -68,18 +91,7 @@ export const AffineCommandRegistry = new (class {
         window,
         {
           [keybinding]: (e: Event) => {
-            // Skip when Alt produces a locale input character (e.g. macOS
-            // Polish layout: Option+S → "ś"). The user is typing the
-            // character, not invoking the shortcut bound to the physical
-            // key. Matches the handling in blocksuite's keymap.ts.
-            if (
-              e instanceof KeyboardEvent &&
-              e.altKey &&
-              !e.metaKey &&
-              !e.ctrlKey &&
-              e.key.length === 1 &&
-              e.key.charCodeAt(0) > 0x7e
-            ) {
+            if (e instanceof KeyboardEvent && isAltTextInput(e)) {
               return;
             }
             e.preventDefault();
