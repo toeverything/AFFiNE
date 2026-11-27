@@ -264,9 +264,7 @@ pub(super) fn record_authoring_demo(dir: PathBuf) -> Result<()> {
     }
     session.update(|v, w, cx| {
         v.edgeless_select_tool(
-            playground::edgeless::EdgelessTool::Shape(
-                blocksuite_playground_doc::read::ShapeType::Diamond,
-            ),
+            playground::edgeless::EdgelessTool::Shape(playground::edgeless::ShapePreset::Diamond),
             w,
             cx,
         );

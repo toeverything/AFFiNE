@@ -344,8 +344,8 @@ impl PlaygroundView {
         if key == "enter" && !sel.empty() && !shift && !code {
             return self.paste_slice(crate::clipboard::Slice::from_plain("\n"), false, w, cx);
         }
-        if key == "tab" && code {
-            return self.replace_selection(sel, "  ", w, cx);
+        if key == "tab" && code && sel.anchor.block_id == sel.focus.block_id {
+            return self.indent_code_block(sel, shift, w, cx);
         }
         if key == "enter" && !shift && self.apply_markdown(&sel, "\n", w, cx)? {
             return Ok(());

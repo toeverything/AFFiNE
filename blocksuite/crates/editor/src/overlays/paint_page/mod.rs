@@ -1,8 +1,8 @@
 mod geometry;
 
 pub(super) use geometry::{
-    align_glyph, caret_world_rect, drag_handle_rect, drop_slot, emit, hover_block, icon,
-    is_heading, place, text_len,
+    align_glyph, caret_world_rect, drag_handle_rect, drop_slot, emit, hover_block, icon, place,
+    text_len,
 };
 pub use geometry::{block_text, bounding_rect, find_parent, shared_alignment};
 
@@ -85,63 +85,21 @@ impl Overlays {
                 continue;
             }
             let hovered = self.hovered.as_deref() == Some(block.block_id.as_str());
-            match block.body.kind {
-                FlowKind::List(kind @ (ListType::Todo | ListType::Toggle)) => {
-                    let Some(prefix) = block.body.prefix else {
-                        continue;
+            if block.has_gutter_chevron {
+                let own_marker = block.body.chevron();
+                let turning = paint
+                    .blocks
+                    .get(&block.block_id)
+                    .and_then(|state| state.chevron);
+                if own_marker.is_some() || hovered || turning.is_some() {
+                    let line_height = match block.body.kind {
+                        FlowKind::Paragraph(paragraph) => paragraph_spec(paragraph).line_height,
+                        _ => {
+                            paragraph_spec(blocksuite_playground_doc::schema::ParagraphType::Text)
+                                .line_height
+                        }
                     };
-                    let target_x = match direction {
-                        ui::Direction::Ltr => rect.x,
-                        ui::Direction::Rtl => rect.right() - CONTROL_HIT_SIZE,
-                    };
-                    let target = FlowRect::new(
-                        target_x,
-                        rect.y + prefix.y + (prefix.h - CONTROL_HIT_SIZE) / 2.0,
-                        CONTROL_HIT_SIZE,
-                        CONTROL_HIT_SIZE,
-                    );
-                    let (suffix, event) = match kind {
-                        ListType::Todo => (
-                            "checkbox",
-                            OverlayEvent::ToggleChecked(block.block_id.clone()),
-                        ),
-                        _ => (
-                            "toggle",
-                            OverlayEvent::ToggleCollapsed(block.block_id.clone()),
-                        ),
-                    };
-                    let mut element = place(viewport.to_local(&target))
-                        .id(SharedString::from(format!("{suffix}-{}", block.block_id)))
-                        .cursor_pointer()
-                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                        .on_click(emit(cx, move |_: &ClickEvent| event.clone()));
-                    if viewport.fully_visible(&target) {
-                        element = element.snapshot(
-                            SharedString::from(format!("{}.{suffix}", block.snapshot_id)),
-                            Some(PAGE_SURFACE_ID),
-                        );
-                    }
-                    elements.push(element.into_any_element());
-                }
-                kind if is_heading(kind) => {
-                    // A collapsed heading paints its own marker; an expanded one shows a
-                    // chevron only while the pointer is on its row or while it turns.
-                    let own_marker = block.body.chevron();
-                    let turning = paint
-                        .blocks
-                        .get(&block.block_id)
-                        .and_then(|state| state.chevron);
-                    if own_marker.is_none() && !hovered && turning.is_none() {
-                        continue;
-                    }
-                    let FlowKind::Paragraph(paragraph) = kind else {
-                        continue;
-                    };
-                    let marker = heading_marker_rect_for_direction(
-                        paragraph_spec(paragraph).line_height,
-                        rect.w,
-                        direction,
-                    );
+                    let marker = heading_marker_rect_for_direction(line_height, rect.w, direction);
                     let target = FlowRect::new(
                         rect.x + marker.x + (marker.w - CONTROL_HIT_SIZE) / 2.0,
                         rect.y + marker.y + (marker.h - CONTROL_HIT_SIZE) / 2.0,
@@ -179,6 +137,45 @@ impl Overlays {
                                 },
                             )
                             .size_full(),
+                        );
+                    }
+                    elements.push(element.into_any_element());
+                }
+            }
+            match block.body.kind {
+                FlowKind::List(kind @ (ListType::Todo | ListType::Toggle)) => {
+                    let Some(prefix) = block.body.prefix else {
+                        continue;
+                    };
+                    let target_x = match direction {
+                        ui::Direction::Ltr => rect.x,
+                        ui::Direction::Rtl => rect.right() - CONTROL_HIT_SIZE,
+                    };
+                    let target = FlowRect::new(
+                        target_x,
+                        rect.y + prefix.y + (prefix.h - CONTROL_HIT_SIZE) / 2.0,
+                        CONTROL_HIT_SIZE,
+                        CONTROL_HIT_SIZE,
+                    );
+                    let (suffix, event) = match kind {
+                        ListType::Todo => (
+                            "checkbox",
+                            OverlayEvent::ToggleChecked(block.block_id.clone()),
+                        ),
+                        _ => (
+                            "toggle",
+                            OverlayEvent::ToggleCollapsed(block.block_id.clone()),
+                        ),
+                    };
+                    let mut element = place(viewport.to_local(&target))
+                        .id(SharedString::from(format!("{suffix}-{}", block.block_id)))
+                        .cursor_pointer()
+                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                        .on_click(emit(cx, move |_: &ClickEvent| event.clone()));
+                    if viewport.fully_visible(&target) {
+                        element = element.snapshot(
+                            SharedString::from(format!("{}.{suffix}", block.snapshot_id)),
+                            Some(PAGE_SURFACE_ID),
                         );
                     }
                     elements.push(element.into_any_element());
@@ -439,8 +436,13 @@ impl Overlays {
             .or(self.hovered.as_deref())
             .and_then(|block_id| layout.block(block_id));
         if let Some(block) = handle_block
-            && let Some(target) =
-                drag_handle_rect(block, scene.geometry.column_x, scene.window.0, direction)
+            && let Some(target) = drag_handle_rect(
+                block,
+                scene.geometry.column_x,
+                scene.window.0,
+                direction,
+                block.has_gutter_chevron,
+            )
             && viewport.intersects(&target)
         {
             let block_id = block.block_id.clone();

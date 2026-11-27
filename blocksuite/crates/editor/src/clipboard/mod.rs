@@ -509,6 +509,12 @@ impl Slice {
         }
     }
 
+    /// Unwrap outer `affine:note` and `affine:page` containers before pasting into a note
+    /// (`0.27.5` `paste.ts` `flatNote`), while preserving childless `affine:page` title stubs.
+    pub fn unwrap_for_note_paste(&mut self) {
+        self.content = unwrap_paste_blocks(std::mem::take(&mut self.content));
+    }
+
     pub fn to_markdown(&self) -> String {
         markdown::slice_to_markdown(self)
     }
@@ -534,6 +540,25 @@ impl Slice {
         sanitize::sanitize_slice(&mut slice);
         Some(slice)
     }
+}
+
+fn unwrap_paste_blocks(blocks: Vec<SliceBlock>) -> Vec<SliceBlock> {
+    let mut out = Vec::new();
+    for mut block in blocks {
+        match block.flavour.as_str() {
+            "affine:surface" => {}
+            "affine:note" => out.extend(unwrap_paste_blocks(block.children)),
+            "affine:page" if !block.children.is_empty() => {
+                let children = std::mem::take(&mut block.children);
+                if !block.plain().is_empty() {
+                    out.push(block);
+                }
+                out.extend(unwrap_paste_blocks(children));
+            }
+            _ => out.push(block),
+        }
+    }
+    out
 }
 
 /// Write multi-format clipboard slices (`text/plain`, `text/html`, `text/markdown`,
@@ -791,5 +816,71 @@ mod tests {
             callout_slice.content[0].props.get("icon"),
             Some(&json!("\u{1F4A1}"))
         );
+    }
+
+    #[test]
+    fn parse_json_preserves_containers_and_unwrap_for_note_paste_flattens_wrappers() {
+        let p1 = json!({
+            "type": "block",
+            "id": "p1",
+            "flavour": "affine:paragraph",
+            "props": {"type": "text", "text": {"$blocksuite:internal:text$": true, "delta": [{"insert": "First"}]}},
+            "children": []
+        });
+        let p2 = json!({
+            "type": "block",
+            "id": "p2",
+            "flavour": "affine:paragraph",
+            "props": {"type": "text", "text": {"$blocksuite:internal:text$": true, "delta": [{"insert": "Second"}]}},
+            "children": []
+        });
+        let note_wrapped = json!({
+            "type": "slice",
+            "content": [{
+                "type": "block",
+                "id": "note-1",
+                "flavour": "affine:note",
+                "props": {},
+                "children": [p1, p2]
+            }],
+            "pageId": "doc-1",
+            "workspaceId": "ws-1"
+        });
+        let mut parsed = Slice::parse_json(note_wrapped).expect("note-wrapped slice");
+        assert_eq!(parsed.content.len(), 1);
+        assert_eq!(parsed.content[0].flavour, "affine:note");
+        parsed.unwrap_for_note_paste();
+        assert_eq!(parsed.content.len(), 2);
+        assert_eq!(parsed.content[0].flavour, "affine:paragraph");
+        assert_eq!(parsed.content[0].plain(), "First");
+        assert_eq!(parsed.content[1].plain(), "Second");
+
+        let page_wrapped = json!({
+            "type": "slice",
+            "content": [{
+                "type": "block",
+                "id": "page-1",
+                "flavour": "affine:page",
+                "props": {},
+                "children": [
+                    {"type": "block", "id": "surf-1", "flavour": "affine:surface", "props": {}, "children": []},
+                    {
+                        "type": "block",
+                        "id": "note-2",
+                        "flavour": "affine:note",
+                        "props": {},
+                        "children": [p1]
+                    }
+                ]
+            }],
+            "pageId": "doc-1",
+            "workspaceId": "ws-1"
+        });
+        let mut parsed_page = Slice::parse_json(page_wrapped).expect("page-wrapped slice");
+        assert_eq!(parsed_page.content[0].flavour, "affine:page");
+        parsed_page.unwrap_for_note_paste();
+        assert_eq!(parsed_page.content.len(), 1);
+        assert_eq!(parsed_page.content[0].flavour, "affine:paragraph");
+        assert_eq!(parsed_page.content[0].plain(), "First");
     }
 }

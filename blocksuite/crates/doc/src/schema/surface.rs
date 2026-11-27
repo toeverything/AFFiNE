@@ -160,7 +160,7 @@ impl SurfaceElementSpec {
                 } else {
                     (shape_type, 0.0)
                 };
-                let yellow = color_any("#f5c211", "#f5c211");
+                let yellow = color_any("#fcd34d", "#fcd34d");
                 entries.extend([
                     (
                         "seed".to_string(),
@@ -218,7 +218,7 @@ impl SurfaceElementSpec {
                     ),
                     (
                         "strokeWidth".to_string(),
-                        SessionValue::Any(Any::Integer(4)),
+                        SessionValue::Any(Any::Integer(2)),
                     ),
                     (
                         "textAlign".to_string(),
@@ -284,7 +284,7 @@ impl SurfaceElementSpec {
                     ),
                     (
                         "strokeWidth".to_string(),
-                        SessionValue::Any(Any::Integer(4)),
+                        SessionValue::Any(Any::Integer(2)),
                     ),
                     (
                         "strokeStyle".to_string(),

@@ -456,7 +456,7 @@ impl PlaygroundView {
         let delta = event.delta.pixel_delta(px(SCROLL_LINE));
         let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
         if event.modifiers.control || event.modifiers.platform {
-            let factor = (-f32::from(delta.y) * 0.002).exp();
+            let factor = (f32::from(delta.y) * 0.002).exp();
             let target_zoom = self.edgeless.camera.zoom * factor;
             self.edgeless
                 .camera
@@ -9259,9 +9259,9 @@ pub(crate) mod tests {
             );
         }
 
-        // Shift+Enter newline, tab-to-space paste, and Enter/Escape/remote row delete keep
-        // editor_focus on both frames while suppressing residual typing into the page title.
-        for how in ["enter", "escape", "peer deletes the row"] {
+        // Enter / Shift+Enter insert newlines inside the cell; Tab stays consumed; Escape and
+        // remote row delete exit while keeping editor_focus and suppressing residual title typing.
+        for how in ["escape", "peer deletes the row"] {
             let state = make_table_doc_state(
                 "doc:cell-exit",
                 "Probe",
@@ -9273,15 +9273,8 @@ pub(crate) mod tests {
             let (snap, _) = session.frame();
             session.click(&snap, "page.block.tbl.cell.row-1.col-0");
             let _ = session.frame();
-            if how == "enter" {
-                send_key(
-                    &session,
-                    "enter",
-                    ui::Modifiers {
-                        shift: true,
-                        ..Default::default()
-                    },
-                );
+            if how == "escape" {
+                send_key(&session, "enter", ui::Modifiers::default());
                 assert!(session.view(|v, _| v.active_table_cell().is_some()));
                 session.app.update(|cx| {
                     session

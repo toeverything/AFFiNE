@@ -570,4 +570,60 @@ impl PlaygroundView {
         self.editor.goal_x = goal;
         Some(())
     }
+
+    pub(crate) fn indent_code_block(
+        &mut self,
+        sel: DocumentSelection,
+        outdent: bool,
+        w: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> blocksuite_playground_doc::DocResult {
+        let id = sel.focus.block_id.clone();
+        let Some(text) = self.block_text(&id).map(str::to_string) else {
+            return Ok(());
+        };
+        let backward = sel.focus.offset() < sel.anchor.offset();
+        let sel_start = sel.anchor.offset().min(sel.focus.offset());
+        let sel_end = sel.anchor.offset().max(sel.focus.offset());
+        let (splices, new_start, new_end) =
+            blocksuite_editor::editor_session::code_block_indent_plan(
+                &text, sel_start, sel_end, outdent,
+            );
+        if splices.is_empty() {
+            return Ok(());
+        }
+        let now = self.now_ms(cx) as u64;
+        let page = self.page_mut()?;
+        let before = sel.snapshot(page)?;
+        page.stop_capturing()?;
+        let commit = page.structural_edit(now, |page| {
+            for (offset, del_len, insert) in &splices {
+                if *del_len > 0 {
+                    page.remove_text(&id, "prop:text", *offset, *del_len, now)?;
+                }
+                if !insert.is_empty() {
+                    page.insert_text(&id, "prop:text", *offset, insert, now)?;
+                }
+            }
+            Ok(())
+        })?;
+        if commit.is_some() {
+            page.set_undo_selection_snapshot(before)?;
+        }
+        let next_sel = if backward {
+            DocumentSelection {
+                anchor: DocPoint::new(&id, new_end),
+                focus: DocPoint::new(&id, new_start),
+            }
+        } else {
+            DocumentSelection {
+                anchor: DocPoint::new(&id, new_start),
+                focus: DocPoint::new(&id, new_end),
+            }
+        };
+        self.editor.selection = Some(next_sel);
+        self.editor.last_typing = None;
+        self.did_edit(commit, Some(&id), w, cx);
+        Ok(())
+    }
 }

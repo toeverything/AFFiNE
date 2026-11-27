@@ -51,10 +51,9 @@ impl FlowPass<'_> {
                 dashed: false,
             });
         }
-        let is_heading = !matches!(kind, ParagraphType::Text | ParagraphType::Quote);
-        if collapsed && is_heading {
-            // A collapsed heading hides the blocks under it; a marker in the logical
-            // inline-start gutter, on the heading's first line, says so.
+        if collapsed {
+            // A collapsed heading or paragraph with children hides its subtree; a marker in
+            // the logical inline-start gutter, on its first line, makes the fold reachable.
             prims.push(Prim::Chevron {
                 rect: heading_marker_rect_for_direction(spec.line_height, width, self.direction),
                 collapsed: true,
@@ -179,6 +178,13 @@ impl FlowPass<'_> {
             }
         }
 
+        if collapsed && kind != ListType::Toggle {
+            prims.push(Prim::Chevron {
+                rect: heading_marker_rect_for_direction(line_height, width, self.direction),
+                collapsed: true,
+                color: self.palette.icon,
+            });
+        }
         // The prefix stays at the logical start edge; only the text box follows the alignment.
         let text_x = match self.direction {
             ui::Direction::Ltr => prefix_span,

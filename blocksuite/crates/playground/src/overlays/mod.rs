@@ -1921,13 +1921,14 @@ mod tests {
         session.release(handle_x, handle_y + 6.0);
         assert_eq!(session.children("showcase-note"), after);
 
-        // A nested block moves among its own siblings only.
+        // A nested block moves among its own siblings only; `showcase-bullet-nested` has a
+        // child (`showcase-bullet-deep`), so its drag handle sits one step left of its gutter chevron.
         let frame = session.frame();
         let nested = center(element(&frame, "page.block.showcase-bullet-nested").bounds);
         session.pointer(nested.0, nested.1, false);
         let hovered = session.frame();
         let handle = element(&hovered, "overlay.drag_handle").bounds;
-        assert_eq!(handle.right(), geometry.column_x + 24.0);
+        assert_eq!(handle.right(), geometry.column_x);
         session.press(center(handle).0, center(handle).1, 1);
         session.pointer(center(handle).0, 700.0, true);
         let slot = session

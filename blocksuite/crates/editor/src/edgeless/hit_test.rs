@@ -5,10 +5,11 @@ use std::{
     rc::Rc,
 };
 
-use blocksuite_playground_doc::read::ShapeType;
 use ui::{Pixels, Point, point, px};
 
-use super::{EdgelessCamera, EdgelessInlineEdit, EdgelessLabelEditor, EdgelessTool, WorldRect};
+use super::{
+    EdgelessCamera, EdgelessInlineEdit, EdgelessLabelEditor, EdgelessTool, ShapePreset, WorldRect,
+};
 
 /// Interactive handle on the current Edgeless selection box.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -86,6 +87,7 @@ impl SpatialItemKind {
 pub struct SpatialItemInfo {
     pub id: String,
     pub kind: SpatialItemKind,
+    pub shape_type: Option<blocksuite_playground_doc::read::ShapeType>,
     pub surface_id: Option<String>,
     pub rect: WorldRect,
     pub rotate_deg: f32,
@@ -143,7 +145,7 @@ pub enum EdgelessGesture {
         current_rotate: f64,
     },
     CreateShape {
-        shape_type: ShapeType,
+        shape_type: ShapePreset,
         start_world: (f32, f32),
         current_world: (f32, f32),
     },
@@ -182,7 +184,8 @@ pub struct LiveGeomOverride {
 #[derive(Default)]
 pub struct EdgelessAuthoringState {
     pub tool: EdgelessTool,
-    pub last_shape_type: Option<ShapeType>,
+    pub last_shape_type: Option<ShapePreset>,
+    pub shape_picker_open: bool,
     pub selection: BTreeSet<String>,
     pub gesture: Option<EdgelessGesture>,
     pub inline_edit: Option<EdgelessInlineEdit>,
@@ -198,10 +201,10 @@ impl EdgelessAuthoringState {
         self.space_pan = false;
     }
 
-    pub fn active_shape_type(&self) -> ShapeType {
+    pub fn active_shape_type(&self) -> ShapePreset {
         match self.tool {
             EdgelessTool::Shape(t) => t,
-            _ => self.last_shape_type.unwrap_or(ShapeType::Rect),
+            _ => self.last_shape_type.unwrap_or(ShapePreset::Rect),
         }
     }
 
@@ -655,6 +658,7 @@ mod tests {
             SpatialItemInfo {
                 id: "frame1".into(),
                 kind: SpatialItemKind::Frame,
+                shape_type: None,
                 surface_id: None,
                 rect: WorldRect::new(0.0, 0.0, 400.0, 300.0),
                 rotate_deg: 0.0,
@@ -668,6 +672,7 @@ mod tests {
             SpatialItemInfo {
                 id: "rot_shape".into(),
                 kind: SpatialItemKind::Shape,
+                shape_type: Some(blocksuite_playground_doc::read::ShapeType::Rect),
                 surface_id: Some("surf".into()),
                 rect: WorldRect::new(100.0, 100.0, 100.0, 40.0),
                 rotate_deg: 90.0,
@@ -681,6 +686,7 @@ mod tests {
             SpatialItemInfo {
                 id: "brush1".into(),
                 kind: SpatialItemKind::Brush,
+                shape_type: None,
                 surface_id: Some("surf".into()),
                 rect: WorldRect::new(250.0, 50.0, 100.0, 10.0),
                 rotate_deg: 0.0,
@@ -819,6 +825,10 @@ mod tests {
                 items.push(SpatialItemInfo {
                     id: id.to_string(),
                     kind,
+                    shape_type: match &el.kind {
+                        SurfaceElementKind::Shape(s) => Some(s.shape_type),
+                        _ => None,
+                    },
                     surface_id: Some(surf.clone()),
                     rect,
                     rotate_deg: el.rotate as f32,

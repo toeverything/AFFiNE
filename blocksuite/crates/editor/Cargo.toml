@@ -29,8 +29,12 @@ y-octo = { version = "0.4.0", default-features = false, features = ["session"] }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 blocksuite-preview = { path = "../preview", default-features = false, features = ["math", "pdf"] }
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+icu_segmenter.workspace = true
+
 [dev-dependencies]
 ui = { path = "../../../packages/ui/ui", features = ["harness"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
+js-sys.workspace = true
 wasm-bindgen.workspace = true

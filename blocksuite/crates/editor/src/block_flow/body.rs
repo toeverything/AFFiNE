@@ -463,6 +463,8 @@ pub struct FlowBlock {
     pub snapshot_id: SharedString,
     pub x: f32,
     pub y: f32,
+    /// Whether this block renders a hover/collapsed chevron in the inline-start gutter.
+    pub has_gutter_chevron: bool,
     pub body: Rc<BlockBody>,
 }
 

@@ -1,7 +1,8 @@
 //! Screen-space Edgeless authoring toolbar, shape picker popover, and zoom controls.
 
-use blocksuite_playground_doc::read::ShapeType;
-use ui::{AnyElement, Context, MouseButton, Window, canvas, div, prelude::*, px};
+use ui::{
+    AnyElement, Context, MouseButton, PathBuilder, Window, canvas, div, point, prelude::*, px,
+};
 
 use crate::theme::{IconPaint, Palette, PlaygroundTheme};
 
@@ -10,10 +11,34 @@ use super::{
     ZOOM_BTN_RADIUS,
 };
 
+/// Shape variant selectable in the Edgeless Shape tool subpanel.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum ShapePreset {
+    #[default]
+    Rect,
+    Ellipse,
+    Diamond,
+    Triangle,
+    RoundedRect,
+}
+
+impl ShapePreset {
+    pub fn as_spec_str(self) -> &'static str {
+        match self {
+            Self::Rect => "rect",
+            Self::Ellipse => "ellipse",
+            Self::Diamond => "diamond",
+            Self::Triangle => "triangle",
+            Self::RoundedRect => "rounded",
+        }
+    }
+}
+
 /// Host callbacks required by the Edgeless creation toolbar.
 pub trait EdgelessToolbarHost: 'static + Sized {
     fn edgeless_active_tool(&self) -> EdgelessTool;
-    fn edgeless_active_shape_type(&self) -> ShapeType;
+    fn edgeless_active_shape_type(&self) -> ShapePreset;
+    fn edgeless_toggle_shape_picker(&mut self, window: &mut Window, cx: &mut Context<Self>);
     fn edgeless_select_tool(
         &mut self,
         tool: EdgelessTool,
@@ -29,7 +54,7 @@ pub enum EdgelessTool {
     Select,
     Hand,
     Note,
-    Shape(ShapeType),
+    Shape(ShapePreset),
     Connector,
     Brush,
     Highlighter,
@@ -47,6 +72,7 @@ impl EdgelessTool {
 /// Concentric radii: outer `8px`, padding `4px`, buttons `4px` (`28×28`, `2px` gap).
 pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
     tool: EdgelessTool,
+    shape_picker_open: bool,
     viewport_width: f32,
     palette: &Palette,
     theme: PlaygroundTheme,
@@ -83,7 +109,7 @@ pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
             "edgeless-tool-shape",
             "chrome.edgeless_toolbar.shape",
             "ShapeIcon",
-            EdgelessTool::Shape(ShapeType::Rect),
+            EdgelessTool::Shape(ShapePreset::Rect),
         ),
         (
             "edgeless-tool-connector",
@@ -158,17 +184,11 @@ pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
                     cx.stop_propagation();
                     let chosen = match target_tool {
                         EdgelessTool::Shape(_) => {
-                            if let EdgelessTool::Shape(cur) = this.edgeless_active_tool() {
-                                let next = match cur {
-                                    ShapeType::Rect => ShapeType::Ellipse,
-                                    ShapeType::Ellipse => ShapeType::Diamond,
-                                    ShapeType::Diamond => ShapeType::Triangle,
-                                    ShapeType::Triangle => ShapeType::Rect,
-                                };
-                                EdgelessTool::Shape(next)
-                            } else {
-                                EdgelessTool::Shape(this.edgeless_active_shape_type())
+                            if this.edgeless_active_tool().is_shape() {
+                                this.edgeless_toggle_shape_picker(window, cx);
+                                return;
                             }
+                            EdgelessTool::Shape(this.edgeless_active_shape_type())
                         }
                         other => other,
                     };
@@ -195,32 +215,45 @@ pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
         bar = bar.shadow(shadows.clone().into());
     }
 
-    // When the Shape tool is active, mount a compact concentric shape-variant sub-pill above the bar.
-    if let EdgelessTool::Shape(active_shape) = tool {
-        let variants: [(&'static str, &'static str, &'static str, ShapeType); 4] = [
+    // When the Shape tool is active and its picker is open, mount the 5-shape sub-pill above the bar.
+    if let EdgelessTool::Shape(active_shape) = tool
+        && shape_picker_open
+    {
+        let variants: [(
+            &'static str,
+            &'static str,
+            Option<&'static str>,
+            ShapePreset,
+        ); 5] = [
             (
                 "shape-rect",
                 "chrome.edgeless_toolbar.shape.rect",
-                "SquareIcon",
-                ShapeType::Rect,
+                Some("SquareIcon"),
+                ShapePreset::Rect,
             ),
             (
                 "shape-ellipse",
                 "chrome.edgeless_toolbar.shape.ellipse",
-                "RoundedRectangleIcon",
-                ShapeType::Ellipse,
+                None,
+                ShapePreset::Ellipse,
             ),
             (
                 "shape-diamond",
                 "chrome.edgeless_toolbar.shape.diamond",
-                "DiamondIcon",
-                ShapeType::Diamond,
+                Some("DiamondIcon"),
+                ShapePreset::Diamond,
             ),
             (
                 "shape-triangle",
                 "chrome.edgeless_toolbar.shape.triangle",
-                "TriangleIcon",
-                ShapeType::Triangle,
+                Some("TriangleIcon"),
+                ShapePreset::Triangle,
+            ),
+            (
+                "shape-rounded-rect",
+                "chrome.edgeless_toolbar.shape.rounded_rect",
+                Some("RoundedRectangleIcon"),
+                ShapePreset::RoundedRect,
             ),
         ];
         let sub_w = variants.len() as f32 * BTN_SIZE
@@ -272,7 +305,11 @@ pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
                     canvas(
                         |_, _, _| (),
                         move |bounds, _, window, cx| {
-                            IconPaint::named(icon_name).paint(bounds, icon_color, window, cx);
+                            if let Some(name) = icon_name {
+                                IconPaint::named(name).paint(bounds, icon_color, window, cx);
+                            } else {
+                                paint_ellipse_icon(bounds, icon_color, window);
+                            }
                         },
                     )
                     .w(px(16.0))
@@ -292,6 +329,40 @@ pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
     }
 
     bar.into_any_element()
+}
+
+fn paint_ellipse_icon(bounds: ui::Bounds<ui::Pixels>, color: ui::Hsla, window: &mut Window) {
+    const K: f32 = 0.552_284_75;
+    let cx = f32::from(bounds.origin.x) + f32::from(bounds.size.width) * 0.5;
+    let cy = f32::from(bounds.origin.y) + f32::from(bounds.size.height) * 0.5;
+    let rx = f32::from(bounds.size.width) * 0.38;
+    let ry = f32::from(bounds.size.height) * 0.38;
+    let mut pb = PathBuilder::stroke(px(1.25));
+    pb.move_to(point(px(cx), px(cy - ry)));
+    pb.cubic_bezier_to(
+        point(px(cx + rx), px(cy)),
+        point(px(cx + rx * K), px(cy - ry)),
+        point(px(cx + rx), px(cy - ry * K)),
+    );
+    pb.cubic_bezier_to(
+        point(px(cx), px(cy + ry)),
+        point(px(cx + rx), px(cy + ry * K)),
+        point(px(cx + rx * K), px(cy + ry)),
+    );
+    pb.cubic_bezier_to(
+        point(px(cx - rx), px(cy)),
+        point(px(cx - rx * K), px(cy + ry)),
+        point(px(cx - rx), px(cy + ry * K)),
+    );
+    pb.cubic_bezier_to(
+        point(px(cx), px(cy - ry)),
+        point(px(cx - rx), px(cy - ry * K)),
+        point(px(cx - rx * K), px(cy - ry)),
+    );
+    pb.close();
+    if let Ok(path) = pb.build() {
+        window.paint_path(path, color);
+    }
 }
 
 /// Build the bottom-right screen-space zoom control bar (`chrome.edgeless_zoom`).

@@ -11,7 +11,7 @@ use crate::PlaygroundView;
 
 use super::{EdgelessGesture, EdgelessTool, SpatialItemInfo};
 #[cfg(test)]
-use super::{HandleKind, SpatialItemKind, collect_frame_children};
+use super::{HandleKind, ShapePreset, SpatialItemKind, collect_frame_children};
 
 /// Helper to compute the highest existing fractional index across all spatial items in a snapshot.
 pub fn max_spatial_index(snapshot: &PageSnapshot) -> Option<String> {
@@ -91,10 +91,22 @@ impl PlaygroundView {
         }
         if let EdgelessTool::Shape(s) = tool {
             self.edgeless.authoring.last_shape_type = Some(s);
+            self.edgeless.authoring.shape_picker_open = true;
+        } else {
+            self.edgeless.authoring.shape_picker_open = false;
         }
         self.edgeless_commit_inline_edit(window, cx);
         self.edgeless.authoring.tool = tool;
         self.edgeless.authoring.gesture = None;
+        cx.notify();
+    }
+
+    /// Toggle the Edgeless Shape subpanel visibility without altering the active shape preset.
+    pub fn edgeless_toggle_shape_picker(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.edgeless_readonly {
+            return;
+        }
+        self.edgeless.authoring.shape_picker_open = !self.edgeless.authoring.shape_picker_open;
         cx.notify();
     }
 
@@ -683,7 +695,6 @@ mod tests {
 
     #[test]
     fn edgeless_view_authoring_gestures_and_note_preedit_parity() {
-        use blocksuite_playground_doc::read::ShapeType;
         use ui::EntityInputHandler;
 
         let platform = ui::HeadlessPlatform::new(1280, 800, 1.0);
@@ -700,7 +711,7 @@ mod tests {
                 let top = crate::TOPBAR_HEIGHT;
 
                 // 1. Create Shape via pointer gesture.
-                view.edgeless_select_tool(EdgelessTool::Shape(ShapeType::Rect), window, cx);
+                view.edgeless_select_tool(EdgelessTool::Shape(ShapePreset::Rect), window, cx);
                 view.on_edgeless_left_down(&mouse_down(100.0, top + 100.0, 1), window, cx);
                 view.on_edgeless_pointer_move(&mouse_move(220.0, top + 180.0, true), window, cx);
                 view.on_edgeless_left_up(&mouse_up(220.0, top + 180.0), window, cx);
@@ -1336,6 +1347,772 @@ mod tests {
                     unreachable!()
                 };
                 assert_eq!(s2.text.plain, "a文aa");
+            })
+            .unwrap();
+        });
+    }
+
+    #[test]
+    fn edgeless_wheel_zoom_shape_presets_defaults_and_transparent_shape_edit() {
+        use blocksuite_playground_doc::read::{ColorValue, ConnectorMode, SurfaceElementKind};
+        use ui::{Modifiers, ScrollDelta, ScrollEvent, point, px};
+
+        let platform = ui::HeadlessPlatform::new(1280, 800, 1.0);
+        let app = ui::Application::with_platform(platform.clone()).run_embedded(|cx| {
+            crate::register_bundled_fonts(cx).unwrap();
+        });
+        let win = open_edgeless_view(&app, &platform);
+        let hw = platform.windows().into_iter().next().unwrap();
+
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.edgeless.set_camera(0.0, 0.0, 1.0);
+                let top = crate::TOPBAR_HEIGHT;
+
+                // 1. Ctrl+wheel up (positive delta.y) zooms in; down (negative delta.y) zooms out.
+                let scroll_up = ScrollEvent {
+                    position: point(px(400.0), px(top + 300.0)),
+                    delta: ScrollDelta::Pixels(point(px(0.0), px(100.0))),
+                    modifiers: Modifiers {
+                        control: true,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                };
+                view.on_edgeless_scroll(&scroll_up, window, cx);
+                assert!(
+                    view.edgeless.camera.zoom > 1.0,
+                    "Ctrl+wheel up must zoom in, got {}",
+                    view.edgeless.camera.zoom
+                );
+                let zoomed_in = view.edgeless.camera.zoom;
+                let scroll_down = ScrollEvent {
+                    delta: ScrollDelta::Pixels(point(px(0.0), px(-200.0))),
+                    ..scroll_up
+                };
+                view.on_edgeless_scroll(&scroll_down, window, cx);
+                assert!(
+                    view.edgeless.camera.zoom < zoomed_in,
+                    "Ctrl+wheel down must zoom out"
+                );
+                view.edgeless.set_camera(0.0, 0.0, 1.0);
+
+                // 2. Shape preset selection + repeat toggle does not cycle shape type.
+                view.edgeless_select_tool(EdgelessTool::Shape(ShapePreset::Ellipse), window, cx);
+                assert!(view.edgeless.authoring.shape_picker_open);
+                view.edgeless_toggle_shape_picker(window, cx);
+                assert!(!view.edgeless.authoring.shape_picker_open);
+                assert_eq!(
+                    view.edgeless.authoring.tool,
+                    EdgelessTool::Shape(ShapePreset::Ellipse)
+                );
+                view.edgeless_toggle_shape_picker(window, cx);
+                assert!(view.edgeless.authoring.shape_picker_open);
+                assert_eq!(
+                    view.edgeless.authoring.tool,
+                    EdgelessTool::Shape(ShapePreset::Ellipse)
+                );
+
+                // 3. RoundedRect preset creates shapeType="rect" with radius=0.1, #fcd34d fill/stroke, strokeWidth=2.
+                view.edgeless_select_tool(
+                    EdgelessTool::Shape(ShapePreset::RoundedRect),
+                    window,
+                    cx,
+                );
+                view.on_edgeless_left_down(&mouse_down(120.0, top + 120.0, 1), window, cx);
+                view.on_edgeless_pointer_move(&mouse_move(280.0, top + 220.0, true), window, cx);
+                view.on_edgeless_left_up(&mouse_up(280.0, top + 220.0), window, cx);
+                let shape_id = view
+                    .edgeless
+                    .authoring
+                    .selection
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .clone();
+                let (_, shape_el) =
+                    find_surface_element(view.snapshot.as_ref().unwrap(), &shape_id).unwrap();
+                let SurfaceElementKind::Shape(shape) = &shape_el.kind else {
+                    panic!("expected shape");
+                };
+                assert!((shape.radius - 0.1).abs() < 1e-6);
+                assert!((shape.stroke_width - 2.0).abs() < 1e-6);
+                assert_eq!(
+                    shape.fill_color,
+                    ColorValue::Themed {
+                        light: "#fcd34d".into(),
+                        dark: "#fcd34d".into(),
+                    }
+                );
+
+                // 4. Newly created Connector defaults to Curve mode and strokeWidth=2.
+                view.edgeless_select_tool(EdgelessTool::Connector, window, cx);
+                view.on_edgeless_left_down(&mouse_down(320.0, top + 140.0, 1), window, cx);
+                view.on_edgeless_pointer_move(&mouse_move(480.0, top + 220.0, true), window, cx);
+                view.on_edgeless_left_up(&mouse_up(480.0, top + 220.0), window, cx);
+                let conn_id = view
+                    .edgeless
+                    .authoring
+                    .selection
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .clone();
+                let (_, conn_el) =
+                    find_surface_element(view.snapshot.as_ref().unwrap(), &conn_id).unwrap();
+                let SurfaceElementKind::Connector(conn) = &conn_el.kind else {
+                    panic!("expected connector");
+                };
+                assert_eq!(conn.mode, ConnectorMode::Curve);
+                assert!((conn.stroke_width - 2.0).abs() < 1e-6);
+
+                // 5. Double-clicking a Shape populates shape_style for transparent centered editing.
+                let _ = shape_id;
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                let shape_id = view
+                    .edgeless
+                    .authoring
+                    .painted_items
+                    .iter()
+                    .find(|i| i.kind == SpatialItemKind::Shape)
+                    .unwrap()
+                    .id
+                    .clone();
+                assert!(view.edgeless_begin_inline_edit(&shape_id, window, cx));
+                let ed = view.edgeless.authoring.label_editor().unwrap();
+                assert!(
+                    ed.shape_style.is_some(),
+                    "shape inline editor must carry ShapeTextStyle for transparent centered editing"
+                );
+            })
+            .unwrap();
+        });
+    }
+
+    #[test]
+    fn shape_inline_edit_edge_and_zoom_connector_curve_preview_and_code_outdent_undo() {
+        use blocksuite_editor::edgeless::{
+            label_editor_text_origin, layout_label_editor_paragraph,
+        };
+        use blocksuite_editor::surface::preview_curve_cubic;
+        use blocksuite_playground_doc::schema::SurfaceElementSpec;
+        use ui::AppContext;
+
+        let platform = ui::HeadlessPlatform::new(600, 480, 1.0);
+        let app = ui::Application::with_platform(platform.clone()).run_embedded(|cx| {
+            crate::register_bundled_fonts(cx).unwrap();
+        });
+        let win = app
+            .update(|cx| {
+                cx.open_window(ui::WindowOptions::default(), |_window, cx| {
+                    cx.new(|cx| {
+                        PlaygroundView::with_options(
+                            crate::PlaygroundOptions {
+                                mode: crate::PlaygroundMode::Edgeless,
+                                ..Default::default()
+                            },
+                            cx,
+                        )
+                    })
+                })
+            })
+            .unwrap();
+        let hw = platform.windows().into_iter().next().unwrap();
+        hw.request_frame();
+
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                // 1. Place a 300x100 Shape at world [-100, 100] with camera origin=(0,0), zoom=1.0
+                //    so screen x spans [-100, 200] with centered text center at x=50.
+                let commit = view
+                    .page_mut()
+                    .unwrap()
+                    .structural_edit(1, |page| {
+                        let sid = page.ensure_surface_block(1)?;
+                        page.add_surface_element(
+                            &sid,
+                            "edge-shape",
+                            "z9",
+                            SurfaceElementSpec::Shape {
+                                shape_type: "rect".into(),
+                                xywh: "[-100,100,300,100]".into(),
+                                seed: 11,
+                                filled: true,
+                                text: Some("AB".into()),
+                            },
+                            1,
+                        )?;
+                        Ok(())
+                    })
+                    .unwrap()
+                    .unwrap();
+                view.did_edgeless_doc_commit(commit, cx);
+                view.edgeless.camera.pan_x = 0.0;
+                view.edgeless.camera.pan_y = 0.0;
+                view.edgeless.camera.zoom = 1.0;
+                view.edgeless.camera_initialized = true;
+                cx.notify();
+                let _ = window;
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                assert!(view.edgeless_begin_inline_edit("edge-shape", window, cx));
+                let layout_bounds = view.edgeless_label_layout_screen_bounds().unwrap();
+                assert!(
+                    (f32::from(layout_bounds.origin.x) - (-100.0)).abs() < 0.01
+                        && (f32::from(layout_bounds.size.width) - 300.0).abs() < 0.01,
+                    "unclamped shape layout bounds must stay at [-100, 200], got {layout_bounds:?}"
+                );
+                let ed = view.edgeless.authoring.label_editor().unwrap();
+                let laid = layout_label_editor_paragraph(ed, 300.0, 1.0, view.theme, window).unwrap();
+                let (ox, oy) =
+                    label_editor_text_origin(ed, 100.0, f32::from(laid.size().height), 1.0);
+                // Centered glyph line midpoint inside [-100, 200] must sit at screen x = 50.0 (not 158.0).
+                let line = &laid.lines()[0];
+                let line_left = -100.0 + ox + f32::from(line.x);
+                let line_center = line_left + f32::from(line.width) * 0.5;
+                assert!(
+                    (line_center - 50.0).abs() < 1.0,
+                    "centered shape label at [-100, 200] must stay centered at x=50, got {line_center}"
+                );
+                // Clicking just left vs right of x=50.0 hits offset 1 ('A'|'B'), not clamped offset 0.
+                let click_y = crate::TOPBAR_HEIGHT + 100.0 + oy + f32::from(laid.size().height) * 0.5;
+                view.on_edgeless_left_down(&mouse_down(50.0, click_y, 1), window, cx);
+                let caret = view.edgeless.authoring.label_editor().unwrap().input.selection.start;
+                assert_eq!(caret, 1, "clicking x=50 center of 'AB' must place caret between A and B");
+
+                // 2. At 25% zoom, a 16px shape label lays out at 4px (not clamped to 6px).
+                view.edgeless.camera.zoom = 0.25;
+                let ed = view.edgeless.authoring.label_editor().unwrap();
+                let laid_100 =
+                    layout_label_editor_paragraph(ed, 300.0, 1.0, view.theme, window).unwrap();
+                let laid_25 =
+                    layout_label_editor_paragraph(ed, 75.0, 0.25, view.theme, window).unwrap();
+                let ratio =
+                    f32::from(laid_25.size().height) / f32::from(laid_100.size().height).max(1.0);
+                assert!(
+                    (ratio - 0.25).abs() < 0.05,
+                    "25% zoom shape label height must scale by 0.25 (4px vs 16px), got ratio {ratio}"
+                );
+                view.edgeless_commit_inline_edit(window, cx);
+
+                // 3. Free-endpoint CreateConnector preview curve control points match committed Curve.
+                let (s, c1, c2, e) = preview_curve_cubic(
+                    None,
+                    None,
+                    (100.0, 120.0),
+                    None,
+                    None,
+                    (400.0, 240.0),
+                    &view.edgeless.authoring.painted_items,
+                );
+                assert_eq!(s, (100.0, 120.0));
+                assert_eq!(e, (400.0, 240.0));
+                // dx = 300 > dy = 120 => horizontal tangents of 2/3 * dx = 200 -> c1=(300,120), c2=(200,240).
+                assert!((c1.0 - 300.0).abs() < 0.01 && (c1.1 - 120.0).abs() < 0.01);
+                assert!((c2.0 - 200.0).abs() < 0.01 && (c2.1 - 240.0).abs() < 0.01);
+
+                // 4. Code block mixed-indent Shift+Tab (" a\n  b" -> " a\nb") + single-step undo.
+                view.set_mode(crate::PlaygroundMode::Page, window, cx);
+                let note_id = view
+                    .snapshot
+                    .as_ref()
+                    .unwrap()
+                    .root
+                    .as_ref()
+                    .unwrap()
+                    .children
+                    .iter()
+                    .find(|c| c.is_page_visible_note())
+                    .unwrap()
+                    .id
+                    .clone();
+                let commit = view
+                    .page_mut()
+                    .unwrap()
+                    .structural_edit(2, |page| {
+                        page.add_block(
+                            "code-mix",
+                            blocksuite_playground_doc::schema::BlockSpec::Code {
+                                text: " a\n  b".into(),
+                                language: None,
+                                caption: String::new(),
+                            },
+                            Some(&note_id),
+                            Some(0),
+                            2,
+                        )?;
+                        Ok(())
+                    })
+                    .unwrap()
+                    .unwrap();
+                view.did_edit(Some(commit), None, window, cx);
+                let sel = blocksuite_editor::editor_session::DocumentSelection {
+                    anchor: blocksuite_editor::editor_session::DocPoint::new("code-mix", 0),
+                    focus: blocksuite_editor::editor_session::DocPoint::new("code-mix", 6),
+                };
+                view.indent_code_block(sel, true, window, cx).unwrap();
+                assert_eq!(view.block_text("code-mix"), Some(" a\nb"));
+                let undo = view.page_mut().unwrap().undo().unwrap().unwrap();
+                view.did_edit(Some(undo), None, window, cx);
+                assert_eq!(view.block_text("code-mix"), Some(" a\n  b"));
+            })
+            .unwrap();
+        });
+    }
+
+    #[test]
+    fn rotated_shape_inline_edit_baseline_and_click_and_bound_connector_drag_preview_match_commit()
+    {
+        use blocksuite_editor::edgeless::{EdgelessGesture, EdgelessTool};
+        use blocksuite_editor::surface::preview_curve_cubic;
+        use blocksuite_playground_doc::schema::SurfaceElementSpec;
+        use ui::AppContext;
+        use y_octo::{Any, SessionValue};
+
+        let platform = ui::HeadlessPlatform::new(640, 520, 1.0);
+        let app = ui::Application::with_platform(platform.clone()).run_embedded(|cx| {
+            crate::register_bundled_fonts(cx).unwrap();
+        });
+        let win = app
+            .update(|cx| {
+                cx.open_window(ui::WindowOptions::default(), |_window, cx| {
+                    cx.new(|cx| {
+                        PlaygroundView::with_options(
+                            crate::PlaygroundOptions {
+                                mode: crate::PlaygroundMode::Edgeless,
+                                ..Default::default()
+                            },
+                            cx,
+                        )
+                    })
+                })
+            })
+            .unwrap();
+        let hw = platform.windows().into_iter().next().unwrap();
+        hw.request_frame();
+
+        app.update(|cx| {
+            win.update(cx, |view, _window, cx| {
+                let commit = view
+                    .page_mut()
+                    .unwrap()
+                    .structural_edit(1, |page| {
+                        let sid = page.ensure_surface_block(1)?;
+                        // (a) 90°-rotated square `rot-sq` fully inside viewport with label "ABCD".
+                        page.add_surface_element(
+                            &sid,
+                            "rot-sq",
+                            "z8",
+                            SurfaceElementSpec::Shape {
+                                shape_type: "rect".into(),
+                                xywh: "[360,120,120,120]".into(),
+                                seed: 21,
+                                filled: true,
+                                text: Some("ABCD".into()),
+                            },
+                            1,
+                        )?;
+                        for (k, v) in [
+                            ("rotate", SessionValue::Any(Any::Float64(90.0.into()))),
+                            (
+                                "fillColor",
+                                SessionValue::Any(Any::String("#ffffff".into())),
+                            ),
+                            ("strokeWidth", SessionValue::Any(Any::Float64(0.0.into()))),
+                            ("color", SessionValue::Any(Any::String("#000000".into()))),
+                        ] {
+                            page.set_surface_element_field(&sid, "rot-sq", k, v, 1)?;
+                        }
+                        // (b) 90°-rotated stroke-less, label-less rectangle `[100,100,200,40]`.
+                        page.add_surface_element(
+                            &sid,
+                            "rot-rect",
+                            "z9",
+                            SurfaceElementSpec::Shape {
+                                shape_type: "rect".into(),
+                                xywh: "[100,100,200,40]".into(),
+                                seed: 22,
+                                filled: false,
+                                text: None,
+                            },
+                            1,
+                        )?;
+                        for (k, v) in [
+                            ("rotate", SessionValue::Any(Any::Float64(90.0.into()))),
+                            ("strokeWidth", SessionValue::Any(Any::Float64(0.0.into()))),
+                        ] {
+                            page.set_surface_element_field(&sid, "rot-rect", k, v, 1)?;
+                        }
+                        // (c) Clean white backdrop + 90°-rotated single-line `SurfaceText` `[440,220,200,40]` ("ABCDEFGH").
+                        page.add_surface_element(
+                            &sid,
+                            "bg-txt",
+                            "z7",
+                            SurfaceElementSpec::Shape {
+                                shape_type: "rect".into(),
+                                xywh: "[500,130,80,220]".into(),
+                                seed: 20,
+                                filled: true,
+                                text: None,
+                            },
+                            1,
+                        )?;
+                        for (k, v) in [
+                            (
+                                "fillColor",
+                                SessionValue::Any(Any::String("#ffffff".into())),
+                            ),
+                            ("strokeWidth", SessionValue::Any(Any::Float64(0.0.into()))),
+                        ] {
+                            page.set_surface_element_field(&sid, "bg-txt", k, v, 1)?;
+                        }
+                        page.add_surface_element(
+                            &sid,
+                            "rot-txt",
+                            "z8",
+                            SurfaceElementSpec::Text {
+                                seed: 23,
+                                text: "ABCDEFGH".into(),
+                                xywh: "[440,220,200,40]".into(),
+                            },
+                            1,
+                        )?;
+                        for (k, v) in [
+                            ("rotate", SessionValue::Any(Any::Float64(90.0.into()))),
+                            ("color", SessionValue::Any(Any::String("#000000".into()))),
+                        ] {
+                            page.set_surface_element_field(&sid, "rot-txt", k, v, 1)?;
+                        }
+                        Ok(())
+                    })
+                    .unwrap()
+                    .unwrap();
+                view.did_edgeless_doc_commit(commit, cx);
+                view.edgeless.camera.pan_x = 0.0;
+                view.edgeless.camera.pan_y = 0.0;
+                view.edgeless.camera.zoom = 1.0;
+                view.edgeless.camera_initialized = true;
+                cx.notify();
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+
+        let top = crate::TOPBAR_HEIGHT;
+        let dark_ink_bbox_in =
+            |img: &image::RgbaImage, xr: std::ops::Range<u32>, yr: std::ops::Range<u32>| {
+                let (mut x0, mut x1, mut y0, mut y1, mut n) = (u32::MAX, 0, u32::MAX, 0, 0usize);
+                for y in yr {
+                    for x in xr.clone() {
+                        let p = img.get_pixel(x, y).0;
+                        // Pure black glyph ink (caret is brand blue `p[2] > 150`, excluded by `p[2] < 80`).
+                        if p[0] < 80 && p[1] < 80 && p[2] < 80 {
+                            x0 = x0.min(x);
+                            x1 = x1.max(x);
+                            y0 = y0.min(y);
+                            y1 = y1.max(y);
+                            n += 1;
+                        }
+                    }
+                }
+                (x0, x1, y0, y1, n)
+            };
+        let sq_yr = (120 + top as u32 + 4)..(240 + top as u32 - 4);
+        let txt_yr = (138 + top as u32)..(342 + top as u32);
+
+        // 1. Capture pre-edit static glyph baseline bboxes for 90° Shape ("ABCD") & 90° SurfaceText ("ABCDEFGH").
+        let (static_bbox, static_txt_bbox) = app.update(|cx| {
+            win.update(cx, |_, window, _| {
+                let img = window.render_to_image().unwrap();
+                (
+                    dark_ink_bbox_in(&img, 364..476, sq_yr.clone()),
+                    dark_ink_bbox_in(&img, 516..564, txt_yr.clone()),
+                )
+            })
+            .unwrap()
+        });
+        assert!(
+            static_bbox.4 > 30
+                && (static_bbox.3 - static_bbox.2) > (static_bbox.1 - static_bbox.0) + 12,
+            "static 90° 'ABCD' must orient vertically: bbox={static_bbox:?}"
+        );
+        assert!(
+            static_txt_bbox.4 > 40
+                && (static_txt_bbox.3 - static_txt_bbox.2)
+                    > (static_txt_bbox.1 - static_txt_bbox.0) + 40,
+            "static 90° SurfaceText 'ABCDEFGH' must orient vertically: bbox={static_txt_bbox:?}"
+        );
+
+        // Double-click `rot-sq` to enter inline edit and render the live overlay frame.
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.on_edgeless_left_down(&mouse_down(420.0, top + 180.0, 2), window, cx);
+                assert!(view.edgeless.authoring.label_editor().is_some());
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+        let edit_bbox = app.update(|cx| {
+            win.update(cx, |_, window, _| {
+                dark_ink_bbox_in(&window.render_to_image().unwrap(), 364..476, sq_yr.clone())
+            })
+            .unwrap()
+        });
+        assert!(
+            edit_bbox.4 > 30 && (edit_bbox.3 - edit_bbox.2) > (edit_bbox.1 - edit_bbox.0) + 12,
+            "inline-edited 90° 'ABCD' must stay vertical: bbox={edit_bbox:?}"
+        );
+        assert!(
+            static_bbox.0.abs_diff(edit_bbox.0) <= 1
+                && static_bbox.1.abs_diff(edit_bbox.1) <= 1
+                && static_bbox.2.abs_diff(edit_bbox.2) <= 1
+                && static_bbox.3.abs_diff(edit_bbox.3) <= 1,
+            "90° 'ABCD' glyph baseline bbox must not shift on double-click: static={static_bbox:?}, edit={edit_bbox:?}"
+        );
+
+        // Click off-center near 'A' `(420, top + 160)`, center `(420, top + 180)`, and off-center near 'D' `(420, top + 200)`!
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.on_edgeless_left_down(&mouse_down(420.0, top + 160.0, 1), window, cx);
+                let sel_head = view
+                    .edgeless
+                    .authoring
+                    .label_editor()
+                    .unwrap()
+                    .input
+                    .selection
+                    .clone();
+                assert!(
+                    sel_head.start == sel_head.end && sel_head.start <= 1,
+                    "off-center upper click (420, 160) on 90° 'ABCD' must map before B (<= 1), got {sel_head:?}"
+                );
+
+                view.on_edgeless_left_down(&mouse_down(420.0, top + 180.0, 1), window, cx);
+                let sel_mid = view
+                    .edgeless
+                    .authoring
+                    .label_editor()
+                    .unwrap()
+                    .input
+                    .selection
+                    .clone();
+                assert_eq!(
+                    sel_mid,
+                    2..2,
+                    "clicking between rotated B and C at center (420, 180) must place caret at UTF-16 offset 2"
+                );
+
+                view.on_edgeless_left_down(&mouse_down(420.0, top + 200.0, 1), window, cx);
+                let sel_tail = view
+                    .edgeless
+                    .authoring
+                    .label_editor()
+                    .unwrap()
+                    .input
+                    .selection
+                    .clone();
+                assert!(
+                    sel_tail.start == sel_tail.end && sel_tail.start >= 3,
+                    "off-center lower click (420, 200) on 90° 'ABCD' must map after C (>= 3), got {sel_tail:?}"
+                );
+                view.edgeless_commit_inline_edit(window, cx);
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+
+        // 1b. Double-click 90°-rotated `SurfaceText` `rot-txt` (`[440,220,200,40]`, center `(540, 240)`).
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.on_edgeless_left_down(&mouse_down(540.0, top + 240.0, 2), window, cx);
+                assert!(matches!(
+                    view.edgeless.authoring.label_editor().map(|e| &e.target),
+                    Some(blocksuite_editor::edgeless::LabelTarget::SurfaceText { .. })
+                ));
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+        let edit_txt_bbox = app.update(|cx| {
+            win.update(cx, |_, window, _| {
+                dark_ink_bbox_in(&window.render_to_image().unwrap(), 516..564, txt_yr.clone())
+            })
+            .unwrap()
+        });
+        assert!(
+            edit_txt_bbox.4 > 40
+                && (edit_txt_bbox.3 - edit_txt_bbox.2) > (edit_txt_bbox.1 - edit_txt_bbox.0) + 40,
+            "inline-edited 90° SurfaceText 'ABCDEFGH' must stay vertical: bbox={edit_txt_bbox:?}"
+        );
+        assert!(
+            static_txt_bbox.0.abs_diff(edit_txt_bbox.0) <= 1
+                && static_txt_bbox.1.abs_diff(edit_txt_bbox.1) <= 1
+                && static_txt_bbox.2.abs_diff(edit_txt_bbox.2) <= 1
+                && static_txt_bbox.3.abs_diff(edit_txt_bbox.3) <= 1,
+            "90° SurfaceText glyph baseline bbox must not shift on double-click: static={static_txt_bbox:?}, edit={edit_txt_bbox:?}"
+        );
+
+        // Click two distinct inter-character positions along the SAME vertical column `x = 550.0`
+        // (`y = 212` vs `y = 268` in world coords) and assert their exact UTF-16 offsets!
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                let (exp_1, exp_2) = {
+                    let ed = view.edgeless.authoring.label_editor().unwrap();
+                    let laid_out = blocksuite_editor::edgeless::layout_label_editor_paragraph(
+                        ed,
+                        200.0,
+                        1.0,
+                        view.theme,
+                        window,
+                    )
+                    .unwrap();
+                    // Inverse-rotating `(550, 212)` and `(550, 268)` around `(540, 240)` by `-90°`
+                    // yields `(512, 230)` -> local `(72, 10)` and `(568, 230)` -> local `(128, 10)`.
+                    let o1 =
+                        laid_out.hit_test(ui::point(ui::px(72.0), ui::px(10.0))).utf16_offset
+                            as usize;
+                    let o2 =
+                        laid_out.hit_test(ui::point(ui::px(128.0), ui::px(10.0))).utf16_offset
+                            as usize;
+                    (o1, o2)
+                };
+                assert!(
+                    exp_1 >= 1 && exp_1 <= 3 && exp_2 >= 5 && exp_2 <= 7 && exp_2 >= exp_1 + 3,
+                    "expected distinct UTF-16 offsets along 'ABCDEFGH', got ({exp_1}, {exp_2})"
+                );
+
+                view.on_edgeless_left_down(&mouse_down(550.0, top + 212.0, 1), window, cx);
+                let sel_1 = view
+                    .edgeless
+                    .authoring
+                    .label_editor()
+                    .unwrap()
+                    .input
+                    .selection
+                    .clone();
+                assert_eq!(
+                    sel_1,
+                    exp_1..exp_1,
+                    "first click at (550, 212) on 90° SurfaceText must hit UTF-16 offset {exp_1}"
+                );
+
+                view.on_edgeless_left_down(&mouse_down(550.0, top + 268.0, 1), window, cx);
+                let sel_2 = view
+                    .edgeless
+                    .authoring
+                    .label_editor()
+                    .unwrap()
+                    .input
+                    .selection
+                    .clone();
+                assert_eq!(
+                    sel_2,
+                    exp_2..exp_2,
+                    "second click at (550, 268) on 90° SurfaceText must hit distinct UTF-16 offset {exp_2}"
+                );
+                view.edgeless_commit_inline_edit(window, cx);
+
+                // 2. Drag a Connector from `(40, 220)` to port `[1, 0.5]` of 90°-rotated `[100,100,200,40]`
+                //    (world port = `(200, 220)`, NOT `(200, 140)`!) and verify preview == committed route.
+                view.edgeless_select_tool(EdgelessTool::Connector, window, cx);
+                view.on_edgeless_left_down(&mouse_down(40.0, top + 220.0, 1), window, cx);
+                view.on_edgeless_pointer_move(&mouse_move(201.0, top + 221.0, true), window, cx);
+                let (ps, pc1, pc2, pe) = match view.edgeless.authoring.gesture.as_ref().unwrap() {
+                    EdgelessGesture::CreateConnector {
+                        source_id,
+                        source_port,
+                        source_world,
+                        current_world,
+                        target_id,
+                        target_port,
+                        target_world,
+                    } => {
+                        assert_eq!(target_id.as_deref(), Some("rot-rect"));
+                        assert_eq!(*target_port, Some([1.0, 0.5]));
+                        let tw = target_world.unwrap();
+                        assert!(
+                            (tw.0 - 200.0).abs() < 0.05 && (tw.1 - 220.0).abs() < 0.05,
+                            "snapped port [1,0.5] on 90° [100,100,200,40] must be (200, 220), got {tw:?}"
+                        );
+                        preview_curve_cubic(
+                            source_id.as_deref(),
+                            *source_port,
+                            *source_world,
+                            target_id.as_deref(),
+                            *target_port,
+                            target_world.unwrap_or(*current_world),
+                            &view.edgeless.authoring.painted_items,
+                        )
+                    }
+                    other => panic!("expected CreateConnector gesture, got {other:?}"),
+                };
+                assert!(
+                    (pe.0 - 200.0).abs() < 0.05 && (pe.1 - 220.0).abs() < 0.05,
+                    "live preview endpoint must be (200, 220), got {pe:?}"
+                );
+                view.on_edgeless_left_up(&mouse_up(201.0, top + 221.0), window, cx);
+                (ps, pc1, pc2, pe)
+            })
+            .unwrap()
+        });
+        hw.request_frame();
+
+        app.update(|cx| {
+            win.update(cx, |view, _, _| {
+                let conn_id = view
+                    .edgeless
+                    .authoring
+                    .selection
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .clone();
+                let item = view
+                    .edgeless
+                    .authoring
+                    .painted_items
+                    .iter()
+                    .find(|i| i.id == conn_id)
+                    .unwrap();
+                let first = *item.polyline.first().unwrap();
+                let last = *item.polyline.last().unwrap();
+                assert!(
+                    (first.0 - 40.0).abs() < 0.05
+                        && (first.1 - 220.0).abs() < 0.05
+                        && (last.0 - 200.0).abs() < 0.05
+                        && (last.1 - 220.0).abs() < 0.05,
+                    "committed connector route endpoints must match live preview (40,220)->(200,220), got {first:?}->{last:?}"
+                );
+                // Recompute preview cubic on identical endpoints and compare midpoint `t = 0.5` (`polyline[32]`).
+                let (ps, pc1, pc2, pe) = preview_curve_cubic(
+                    None,
+                    None,
+                    (40.0, 220.0),
+                    Some("rot-rect"),
+                    Some([1.0, 0.5]),
+                    (200.0, 220.0),
+                    &view.edgeless.authoring.painted_items,
+                );
+                let mid_expected = (
+                    0.125 * ps.0 + 0.375 * pc1.0 + 0.375 * pc2.0 + 0.125 * pe.0,
+                    0.125 * ps.1 + 0.375 * pc1.1 + 0.375 * pc2.1 + 0.125 * pe.1,
+                );
+                let mid_committed = item.polyline[item.polyline.len() / 2];
+                assert!(
+                    (mid_committed.0 - mid_expected.0).abs() < 0.05
+                        && (mid_committed.1 - mid_expected.1).abs() < 0.05,
+                    "bound connector curve controls/midpoint must match between preview {mid_expected:?} and committed {mid_committed:?}"
+                );
             })
             .unwrap();
         });

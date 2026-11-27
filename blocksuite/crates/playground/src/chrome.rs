@@ -505,6 +505,7 @@ impl PlaygroundView {
         let toolbar = toolbar_visible.then(|| {
             edgeless::build_edgeless_toolbar(
                 self.edgeless.authoring.tool,
+                self.edgeless.authoring.shape_picker_open,
                 viewport_width,
                 palette,
                 self.theme,

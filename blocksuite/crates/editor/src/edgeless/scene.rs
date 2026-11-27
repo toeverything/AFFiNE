@@ -445,6 +445,7 @@ pub fn prepare_edgeless_scene(
                         built_items.push(SpatialItemInfo {
                             id: f.id.clone(),
                             kind: SpatialItemKind::Frame,
+                            shape_type: None,
                             surface_id: None,
                             rect: f.rect,
                             rotate_deg: 0.0,
@@ -461,6 +462,7 @@ pub fn prepare_edgeless_scene(
                         built_items.push(SpatialItemInfo {
                             id: n.id.clone(),
                             kind: SpatialItemKind::Note,
+                            shape_type: None,
                             surface_id: None,
                             rect: n.rect,
                             rotate_deg: 0.0,
@@ -477,6 +479,7 @@ pub fn prepare_edgeless_scene(
                         built_items.push(SpatialItemInfo {
                             id: t.id.clone(),
                             kind: SpatialItemKind::EdgelessText,
+                            shape_type: None,
                             surface_id: None,
                             rect: t.rect,
                             rotate_deg: t.rotate_deg,
@@ -557,6 +560,12 @@ pub fn prepare_edgeless_scene(
                         built_items.push(SpatialItemInfo {
                             id: el.id.clone(),
                             kind,
+                            shape_type: match &el.kind {
+                                blocksuite_playground_doc::read::SurfaceElementKind::Shape(s) => {
+                                    Some(s.shape_type)
+                                }
+                                _ => None,
+                            },
                             surface_id: Some((*surface_id).to_string()),
                             rect: final_rect,
                             rotate_deg: final_rot,

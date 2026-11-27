@@ -411,7 +411,7 @@ impl PlaygroundView {
                 let Some((surface_id, el)) = find_surface_element(&snapshot, item_id) else {
                     return false;
                 };
-                let (target, initial, multiline, edit_rect) = match &el.kind {
+                let (target, initial, multiline, edit_rect, shape_style) = match &el.kind {
                     SurfaceElementKind::Shape(s) => (
                         LabelTarget::Shape {
                             surface_id: surface_id.to_string(),
@@ -420,6 +420,22 @@ impl PlaygroundView {
                         s.text.plain.clone(),
                         true,
                         info.rect,
+                        Some(super::ShapeTextStyle {
+                            font_family: s.font_family.clone(),
+                            font_size: s.font_size as f32,
+                            font_weight: s.font_weight.parse().unwrap_or(
+                                if s.font_weight == "bold" {
+                                    700.0
+                                } else {
+                                    400.0
+                                },
+                            ),
+                            font_style: s.font_style.clone(),
+                            color: s.color.clone(),
+                            text_align: s.text_align,
+                            vertical_align: s.text_vertical_align,
+                            padding: [s.padding[0] as f32, s.padding[1] as f32],
+                        }),
                     ),
                     SurfaceElementKind::Connector(c) => {
                         let p = connector_label_anchor_point(
@@ -436,6 +452,7 @@ impl PlaygroundView {
                             c.text.plain.clone(),
                             false,
                             WorldRect::new(p.0 as f32 - 80.0, p.1 as f32 - 18.0, 160.0, 36.0),
+                            None,
                         )
                     }
                     SurfaceElementKind::Text(t) => (
@@ -446,6 +463,22 @@ impl PlaygroundView {
                         t.text.plain.clone(),
                         true,
                         info.rect,
+                        Some(super::ShapeTextStyle {
+                            font_family: t.font_family.clone(),
+                            font_size: t.font_size as f32,
+                            font_weight: t.font_weight.parse().unwrap_or(
+                                if t.font_weight == "bold" {
+                                    700.0
+                                } else {
+                                    400.0
+                                },
+                            ),
+                            font_style: t.font_style.clone(),
+                            color: t.color.clone(),
+                            text_align: t.text_align,
+                            vertical_align: blocksuite_playground_doc::read::VerticalAlign::Top,
+                            padding: [0.0, 0.0],
+                        }),
                     ),
                     _ => return false,
                 };
@@ -455,14 +488,17 @@ impl PlaygroundView {
                     .authoring
                     .selection
                     .insert(item_id.to_string());
-                self.edgeless.authoring.inline_edit =
-                    Some(EdgelessInlineEdit::Label(EdgelessLabelEditor::new(
-                        target,
-                        initial,
-                        edit_rect,
-                        info.rotate_deg,
-                        multiline,
-                    )));
+                let eff_rotate = if target.rotates_in_place() {
+                    info.rotate_deg
+                } else {
+                    0.0
+                };
+                let mut label_ed =
+                    EdgelessLabelEditor::new(target, initial, edit_rect, eff_rotate, multiline);
+                if let Some(style) = shape_style {
+                    label_ed = label_ed.with_shape_style(style);
+                }
+                self.edgeless.authoring.inline_edit = Some(EdgelessInlineEdit::Label(label_ed));
                 if let Ok(page) = self.page_mut() {
                     let _ = page.stop_capturing();
                 }
@@ -527,6 +563,24 @@ impl PlaygroundView {
         Some(out)
     }
 
+    pub(crate) fn edgeless_label_layout_screen_bounds(&self) -> Option<Bounds<Pixels>> {
+        let ed = self.edgeless.authoring.label_editor()?;
+        if ed.target.rotates_in_place() {
+            let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+            let cam = self.edgeless.camera;
+            let tl =
+                cam.world_to_screen(point(px(ed.world_rect.x), px(ed.world_rect.y)), vp_origin);
+            let br = cam.world_to_screen(
+                point(px(ed.world_rect.right()), px(ed.world_rect.bottom())),
+                vp_origin,
+            );
+            let w = (f32::from(br.x) - f32::from(tl.x)).max(0.5);
+            let h = (f32::from(br.y) - f32::from(tl.y)).max(0.5);
+            return Some(Bounds::new(tl, size(px(w), px(h))));
+        }
+        self.edgeless_label_screen_bounds()
+    }
+
     pub(crate) fn edgeless_label_screen_bounds(&self) -> Option<Bounds<Pixels>> {
         let ed = self.edgeless.authoring.label_editor()?;
         let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
@@ -538,6 +592,34 @@ impl PlaygroundView {
             point(px(ed.world_rect.right()), px(ed.world_rect.bottom())),
             vp_origin,
         );
+        if ed.target.rotates_in_place() {
+            let aabb_w = blocksuite_editor::edgeless::rotated_bounds(
+                ed.world_rect,
+                ed.effective_rotate_deg(),
+            );
+            let aabb_tl = cam.world_to_screen(point(px(aabb_w.x), px(aabb_w.y)), vp_origin);
+            let aabb_br =
+                cam.world_to_screen(point(px(aabb_w.right()), px(aabb_w.bottom())), vp_origin);
+            let bleed = if matches!(ed.target, LabelTarget::SurfaceText { .. }) {
+                2.0
+            } else {
+                0.0
+            };
+            let raw_x = f32::from(aabb_tl.x) - bleed;
+            let raw_y = f32::from(aabb_tl.y) - TOPBAR_HEIGHT - bleed;
+            let raw_w = (f32::from(aabb_br.x) + bleed - raw_x).max(0.5);
+            let raw_h = (f32::from(aabb_br.y) - TOPBAR_HEIGHT + bleed - raw_y).max(0.5);
+            let x0 = raw_x.clamp(0.0, vp_w);
+            let y0 = raw_y.clamp(0.0, vp_h);
+            let x1 = (raw_x + raw_w).clamp(0.0, vp_w);
+            let y1 = (raw_y + raw_h).clamp(0.0, vp_h);
+            let w = (x1 - x0).max(1.0);
+            let h = (y1 - y0).max(1.0);
+            return Some(Bounds::new(
+                point(px(x0), px(y0 + TOPBAR_HEIGHT)),
+                size(px(w), px(h)),
+            ));
+        }
         let w = (f32::from(br.x) - f32::from(tl.x))
             .max(120.0)
             .min(vp_w - 16.0);

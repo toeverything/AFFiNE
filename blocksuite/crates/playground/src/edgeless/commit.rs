@@ -2,7 +2,7 @@
 
 use blocksuite_playground_doc::{
     fractional_index::generate_key_between,
-    read::{BlockContent, ShapeType, SurfaceElementKind},
+    read::{BlockContent, SurfaceElementKind},
     schema::{ConnectorEndpointSpec, SurfaceElementSpec, map_array_any},
     session::PageDocSession,
 };
@@ -283,12 +283,7 @@ impl PlaygroundView {
                     .and_then(max_spatial_index)
                     .and_then(|m| generate_key_between(Some(&m), None).ok())
                     .unwrap_or_else(|| "a0".to_string());
-                let shape_str = match shape_type {
-                    ShapeType::Rect => "rect",
-                    ShapeType::Ellipse => "ellipse",
-                    ShapeType::Diamond => "diamond",
-                    ShapeType::Triangle => "triangle",
-                };
+                let shape_str = shape_type.as_spec_str();
                 let seed = (self.edgeless.authoring.next_id_seq as i32 + 17) * 97;
                 let cid = self.page().map(|p| p.client_id());
                 let id_opt = cid.map(|c| self.edgeless.authoring.next_id("shape", c));
@@ -505,7 +500,7 @@ impl PlaygroundView {
                                 conn_id_clone.clone(),
                                 &next_idx,
                                 SurfaceElementSpec::Connector {
-                                    mode: 1, // Orthogonal
+                                    mode: 2, // Curve
                                     seed,
                                     source: source.clone(),
                                     target: target.clone(),
@@ -658,6 +653,27 @@ impl PlaygroundView {
             self.edgeless.authoring.selection.clear();
             self.edgeless.authoring.selection.insert(text_id.clone());
             self.edgeless.authoring.tool = EdgelessTool::Select;
+            let style = self
+                .snapshot
+                .as_deref()
+                .and_then(|snap| super::find_surface_element(snap, &text_id))
+                .and_then(|(_, el)| match &el.kind {
+                    SurfaceElementKind::Text(t) => Some(super::ShapeTextStyle {
+                        font_family: t.font_family.clone(),
+                        font_size: t.font_size as f32,
+                        font_weight: t.font_weight.parse().unwrap_or(if t.font_weight == "bold" {
+                            700.0
+                        } else {
+                            400.0
+                        }),
+                        font_style: t.font_style.clone(),
+                        color: t.color.clone(),
+                        text_align: t.text_align,
+                        vertical_align: blocksuite_playground_doc::read::VerticalAlign::Top,
+                        padding: [0.0, 0.0],
+                    }),
+                    _ => None,
+                });
             let mut ed = EdgelessLabelEditor::new(
                 LabelTarget::SurfaceText {
                     surface_id: surface_id_out.borrow().clone(),
@@ -668,6 +684,9 @@ impl PlaygroundView {
                 0.0,
                 true,
             );
+            if let Some(style) = style {
+                ed = ed.with_shape_style(style);
+            }
             ed.created_new_text = true;
             self.suppress_unselected_root_input = false;
             self.edgeless.authoring.inline_edit = Some(EdgelessInlineEdit::Label(ed));

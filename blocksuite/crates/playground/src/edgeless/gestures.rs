@@ -9,8 +9,8 @@ use crate::{PlaygroundView, TOPBAR_HEIGHT, editor_session::DocumentSelection};
 
 use super::{
     DragItemInitial, EdgelessGesture, EdgelessTool, HandleKind, NOTE_CARD_PADDING, SpatialItemKind,
-    find_surface_element, layout_label_editor_paragraph, normalized_rect, point_in_rotated_rect,
-    rotate_point_around,
+    find_surface_element, label_editor_text_origin, layout_label_editor_paragraph, normalized_rect,
+    point_in_rotated_rect, rotate_point_around,
 };
 
 impl PlaygroundView {
@@ -76,9 +76,14 @@ impl PlaygroundView {
         // If currently inline-editing a label (Shape/Connector/SurfaceText/Frame) and clicking
         // inside its overlay bounds, hit-test the laid-out RichParagraph and place the caret.
         if let Some(ed) = self.edgeless.authoring.label_editor() {
-            let bounds = self.edgeless_label_screen_bounds();
-            let inside_overlay = bounds.is_some_and(|b| b.contains(&event.position))
-                || point_in_rotated_rect(wx, wy, ed.world_rect, ed.rotate_deg);
+            let eff_rot = ed.effective_rotate_deg();
+            let inside_overlay = if ed.target.rotates_in_place() {
+                point_in_rotated_rect(wx, wy, ed.world_rect, eff_rot)
+            } else {
+                let bounds = self.edgeless_label_screen_bounds();
+                bounds.is_some_and(|b| b.contains(&event.position))
+                    || point_in_rotated_rect(wx, wy, ed.world_rect, 0.0)
+            };
             if inside_overlay {
                 if self
                     .edgeless
@@ -89,7 +94,7 @@ impl PlaygroundView {
                     let _ =
                         self.edgeless_label_edit(window, cx, super::EdgelessLabelEditor::unmark);
                 }
-                let bounds = self.edgeless_label_screen_bounds();
+                let bounds = self.edgeless_label_layout_screen_bounds();
                 let off = self
                     .edgeless
                     .authoring
@@ -97,15 +102,39 @@ impl PlaygroundView {
                     .map(|ed| {
                         bounds
                             .and_then(|b| {
+                                let zoom = self.edgeless.camera.zoom;
                                 let laid_out = layout_label_editor_paragraph(
                                     ed,
                                     f32::from(b.size.width),
+                                    zoom,
                                     self.theme,
                                     window,
                                 )?;
+                                let (ox, oy) = label_editor_text_origin(
+                                    ed,
+                                    f32::from(b.size.height),
+                                    f32::from(laid_out.size().height),
+                                    zoom,
+                                );
+                                let rot = ed.effective_rotate_deg();
+                                let (ux, uy) = if rot.abs() > 1e-4 {
+                                    let cx_s =
+                                        f32::from(b.origin.x) + f32::from(b.size.width) * 0.5;
+                                    let cy_s =
+                                        f32::from(b.origin.y) + f32::from(b.size.height) * 0.5;
+                                    rotate_point_around(
+                                        f32::from(event.position.x),
+                                        f32::from(event.position.y),
+                                        cx_s,
+                                        cy_s,
+                                        -rot,
+                                    )
+                                } else {
+                                    (f32::from(event.position.x), f32::from(event.position.y))
+                                };
                                 let local_pt = point(
-                                    event.position.x - b.origin.x - px(6.0),
-                                    event.position.y - b.origin.y - px(6.0),
+                                    px(ux) - b.origin.x - px(ox),
+                                    px(uy) - b.origin.y - px(oy),
                                 );
                                 Some(laid_out.hit_test(local_pt).utf16_offset as usize)
                             })

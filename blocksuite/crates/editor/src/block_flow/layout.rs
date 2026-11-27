@@ -95,6 +95,7 @@ impl BlockFlow {
                 snapshot_id: SharedString::from("page.title_block"),
                 x: 0.0,
                 y: pass.y,
+                has_gutter_chevron: false,
                 body: body.clone(),
             });
             pass.y += body.height + TITLE_SPEC.margin_bottom;
@@ -198,6 +199,33 @@ fn heading_level(node: &BlockNode) -> Option<u8> {
         },
         _ => None,
     }
+}
+
+fn node_has_gutter_chevron(kind: FlowKind, node: &BlockNode) -> bool {
+    if heading_level(node).is_some() {
+        return true;
+    }
+    let supports_gutter_fold = matches!(
+        kind,
+        FlowKind::Paragraph(ParagraphType::Text | ParagraphType::Quote)
+            | FlowKind::List(
+                blocksuite_playground_doc::schema::ListType::Bulleted
+                    | blocksuite_playground_doc::schema::ListType::Numbered
+                    | blocksuite_playground_doc::schema::ListType::Todo
+            )
+    );
+    supports_gutter_fold
+        && (!node.children.is_empty()
+            || matches!(
+                node.content,
+                BlockContent::List {
+                    collapsed: true,
+                    ..
+                } | BlockContent::Paragraph {
+                    collapsed: true,
+                    ..
+                }
+            ))
 }
 
 impl<'a> FlowPass<'a> {
@@ -341,6 +369,7 @@ impl<'a> FlowPass<'a> {
                 snapshot_id: SharedString::from(format!("page.block.{}", node.id)),
                 x: block_x,
                 y: self.y,
+                has_gutter_chevron: node_has_gutter_chevron(body.kind, node),
                 body: body.clone(),
             });
             self.y += body.height;
@@ -348,10 +377,7 @@ impl<'a> FlowPass<'a> {
 
             let (shows_children, child_depth) = match &node.content {
                 BlockContent::List { collapsed, .. } => (!collapsed, list_depth + 1),
-                // A collapsed heading hides its own children as well as the siblings under it.
-                BlockContent::Paragraph {
-                    collapsed: true, ..
-                } if heading_level(node).is_some() => (false, 0),
+                BlockContent::Paragraph { collapsed, .. } => (!collapsed, 0),
                 BlockContent::Unknown(_) => (false, 0),
                 _ => (true, 0),
             };

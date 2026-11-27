@@ -495,12 +495,9 @@ impl PlaygroundView {
                 self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
                 true
             }
-            "enter" if m.shift => {
-                let _ = self.table_cell_edit(window, cx, |c| c.input.replace(None, "\n"));
-                true
-            }
+            "tab" => true,
             "enter" => {
-                self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
+                let _ = self.table_cell_edit(window, cx, |c| c.input.replace(None, "\n"));
                 true
             }
             "up" | "down" if !cmd => {
@@ -565,5 +562,244 @@ impl PlaygroundView {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use blocksuite_playground_doc::schema::{BlockSpec, ListType};
+    use ui::{AppContext, KeyDownEvent, Keystroke, Modifiers};
+    use y_octo::{Any, SessionValue};
+
+    use crate::{
+        PlaygroundView,
+        editor_session::{DocPoint, DocumentSelection},
+        overlays::OverlayEvent,
+        room_client::DocState,
+    };
+
+    fn key_down(key: &str, shift: bool) -> KeyDownEvent {
+        KeyDownEvent {
+            keystroke: Keystroke {
+                key: key.to_string(),
+                modifiers: Modifiers {
+                    shift,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            is_held: false,
+            prefer_character_input: false,
+        }
+    }
+
+    #[test]
+    fn table_cell_consumes_tab_and_inserts_newline_on_enter() {
+        let mut state = DocState::new("table-keys", 41).unwrap();
+        state
+            .workspace
+            .create_page(crate::HOME_PAGE_ID, "Table", 1)
+            .unwrap();
+        {
+            let page = state.workspace.ensure_page(crate::HOME_PAGE_ID).unwrap();
+            page.add_block(
+                "root",
+                BlockSpec::Page {
+                    title: "Table".into(),
+                },
+                None,
+                None,
+                1,
+            )
+            .unwrap();
+            page.add_block(
+                "note",
+                BlockSpec::Note { xywh: None },
+                Some("root"),
+                None,
+                2,
+            )
+            .unwrap();
+            page.add_block(
+                "tbl",
+                BlockSpec::Table {
+                    rows: vec![vec!["A".into(), "B".into()]],
+                },
+                Some("note"),
+                None,
+                3,
+            )
+            .unwrap();
+        }
+        let platform = ui::HeadlessPlatform::new(1280, 800, 1.0);
+        let app = ui::Application::with_platform(platform.clone()).run_embedded(|cx| {
+            crate::register_bundled_fonts(cx).unwrap();
+        });
+        let win = app.update(|cx| {
+            cx.open_window(ui::WindowOptions::default(), |_w, cx| {
+                cx.new(|cx| {
+                    let mut v = PlaygroundView::new(cx);
+                    v.set_document(state, cx);
+                    v
+                })
+            })
+            .unwrap()
+        });
+        let hw = platform.windows().into_iter().next().unwrap();
+        hw.request_frame();
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.focus_table_cell(
+                    "tbl".into(),
+                    "row-0".into(),
+                    "col-0".into(),
+                    None,
+                    window,
+                    cx,
+                );
+                assert!(view.table_cell.is_some());
+                // Tab and Shift+Tab must be consumed without exiting the cell.
+                assert!(view.table_cell_key_down(&key_down("tab", false), window, cx));
+                assert!(view.table_cell.is_some());
+                assert!(view.table_cell_key_down(&key_down("tab", true), window, cx));
+                assert!(view.table_cell.is_some());
+                // Plain Enter inserts a newline and stays focused in the cell.
+                assert!(view.table_cell_key_down(&key_down("enter", false), window, cx));
+                assert!(view.table_cell.is_some());
+                assert_eq!(view.table_cell.as_ref().unwrap().input.text, "A\n");
+                // Escape exits the cell.
+                assert!(view.table_cell_key_down(&key_down("escape", false), window, cx));
+                assert!(view.table_cell.is_none());
+            })
+            .unwrap();
+        });
+    }
+
+    #[test]
+    fn code_block_tab_outdent_and_bulleted_list_collapse_chevron() {
+        let mut state = DocState::new("code-list-parity", 42).unwrap();
+        state
+            .workspace
+            .create_page(crate::HOME_PAGE_ID, "Parity", 1)
+            .unwrap();
+        {
+            let page = state.workspace.ensure_page(crate::HOME_PAGE_ID).unwrap();
+            page.add_block(
+                "root",
+                BlockSpec::Page {
+                    title: "Parity".into(),
+                },
+                None,
+                None,
+                1,
+            )
+            .unwrap();
+            page.add_block(
+                "note",
+                BlockSpec::Note { xywh: None },
+                Some("root"),
+                None,
+                2,
+            )
+            .unwrap();
+            page.add_block(
+                "code1",
+                BlockSpec::Code {
+                    language: Some("rust".into()),
+                    text: "a()\nb()\nc()".into(),
+                    caption: String::new(),
+                },
+                Some("note"),
+                None,
+                3,
+            )
+            .unwrap();
+            page.add_block(
+                "b1",
+                BlockSpec::List {
+                    list_type: ListType::Bulleted,
+                    text: "Parent bullet".into(),
+                    checked: false,
+                    order: None,
+                },
+                Some("note"),
+                None,
+                4,
+            )
+            .unwrap();
+            page.add_block(
+                "b1c",
+                BlockSpec::List {
+                    list_type: ListType::Bulleted,
+                    text: "Hidden child".into(),
+                    checked: false,
+                    order: None,
+                },
+                Some("b1"),
+                None,
+                5,
+            )
+            .unwrap();
+            page.set_block_prop("b1", "prop:collapsed", SessionValue::Any(Any::True), 6)
+                .unwrap();
+        }
+        let platform = ui::HeadlessPlatform::new(1280, 800, 1.0);
+        let app = ui::Application::with_platform(platform.clone()).run_embedded(|cx| {
+            crate::register_bundled_fonts(cx).unwrap();
+        });
+        let win = app.update(|cx| {
+            cx.open_window(ui::WindowOptions::default(), |_w, cx| {
+                cx.new(|cx| {
+                    let mut v = PlaygroundView::new(cx);
+                    v.set_document(state, cx);
+                    v
+                })
+            })
+            .unwrap()
+        });
+        let hw = platform.windows().into_iter().next().unwrap();
+        hw.request_frame();
+
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                // Multi-line Tab indents all 3 lines instead of replacing selection with "  ".
+                view.editor.selection = Some(DocumentSelection {
+                    anchor: DocPoint::new("code1", 0),
+                    focus: DocPoint::new("code1", 11),
+                });
+                view.edit_key("tab", false, window, cx).unwrap();
+                assert_eq!(view.block_text("code1"), Some("  a()\n  b()\n  c()"));
+                // Single-step Shift+Tab restores all 3 lines.
+                view.edit_key("tab", true, window, cx).unwrap();
+                assert_eq!(view.block_text("code1"), Some("a()\nb()\nc()"));
+                // Single-step undo restores indented text.
+                view.history(false, window, cx).unwrap();
+                assert_eq!(view.block_text("code1"), Some("  a()\n  b()\n  c()"));
+
+                // Collapsed bulleted list renders its collapse chevron and clicking expands it.
+                let snap = window.frame_snapshot();
+                assert!(
+                    snap.elements.contains_key("page.block.b1.collapse"),
+                    "collapsed bulleted list must expose .collapse control"
+                );
+                assert!(
+                    !snap.elements.contains_key("page.block.b1c"),
+                    "collapsed bulleted list child must be hidden"
+                );
+                view.dispatch_overlay(OverlayEvent::ToggleCollapsed("b1".into()), window, cx);
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+        app.update(|cx| {
+            win.update(cx, |_view, window, _cx| {
+                let snap = window.frame_snapshot();
+                assert!(
+                    snap.elements.contains_key("page.block.b1c"),
+                    "clicking .collapse on collapsed bulleted list must expand its child"
+                );
+            })
+            .unwrap();
+        });
     }
 }

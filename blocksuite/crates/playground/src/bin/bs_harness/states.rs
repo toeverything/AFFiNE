@@ -22,16 +22,18 @@ pub(super) enum OverlayState {
     MobileKeyboardSelection,
     DragHandleHover,
     DragDropIndicator,
+    ListCollapseHover,
     CodeHover,
     CodeHoverCopied,
     EdgelessSelected,
     EdgelessMarquee,
     EdgelessInlineEdit,
     EdgelessAuthoring,
+    EdgelessShapePicker,
 }
 
 impl OverlayState {
-    pub(super) const ALL: [Self; 13] = [
+    pub(super) const ALL: [Self; 14] = [
         Self::Default,
         Self::SlashMenuOpen,
         Self::SlashMenuFiltered,
@@ -43,15 +45,17 @@ impl OverlayState {
         Self::MobileKeyboardSelection,
         Self::DragHandleHover,
         Self::DragDropIndicator,
+        Self::ListCollapseHover,
         Self::CodeHover,
         Self::CodeHoverCopied,
     ];
 
-    const ALL_EDGELESS: [Self; 4] = [
+    const ALL_EDGELESS: [Self; 5] = [
         Self::EdgelessSelected,
         Self::EdgelessMarquee,
         Self::EdgelessInlineEdit,
         Self::EdgelessAuthoring,
+        Self::EdgelessShapePicker,
     ];
 
     pub(super) fn name(self) -> &'static str {
@@ -67,12 +71,14 @@ impl OverlayState {
             Self::MobileKeyboardSelection => "mobile_keyboard_selection",
             Self::DragHandleHover => "drag_handle_hover",
             Self::DragDropIndicator => "drag_drop_indicator",
+            Self::ListCollapseHover => "list_collapse_hover",
             Self::CodeHover => "code_hover",
             Self::CodeHoverCopied => "code_hover_copied",
             Self::EdgelessSelected => "edgeless_selected",
             Self::EdgelessMarquee => "edgeless_marquee",
             Self::EdgelessInlineEdit => "edgeless_inline_edit",
             Self::EdgelessAuthoring => "edgeless_authoring",
+            Self::EdgelessShapePicker => "edgeless_shape_picker",
         }
     }
 
@@ -90,6 +96,7 @@ impl OverlayState {
                 | Self::EdgelessMarquee
                 | Self::EdgelessInlineEdit
                 | Self::EdgelessAuthoring
+                | Self::EdgelessShapePicker
         )
     }
 
@@ -115,6 +122,7 @@ impl OverlayState {
             Self::MobileKeyboardSelection => &["overlay.keyboard_toolbar"],
             Self::DragHandleHover => &["overlay.drag_handle"],
             Self::DragDropIndicator => &["overlay.drag_handle", "overlay.drop_indicator"],
+            Self::ListCollapseHover => &["page.block.showcase-bullet.collapse"],
             Self::CodeHover | Self::CodeHoverCopied => &["page.block.showcase-code.copy"],
             Self::EdgelessSelected => &[
                 "edgeless.viewport",
@@ -135,6 +143,13 @@ impl OverlayState {
                 "edgeless.viewport",
                 "chrome.edgeless_toolbar",
                 "chrome.edgeless_zoom",
+            ],
+            Self::EdgelessShapePicker => &[
+                "edgeless.viewport",
+                "chrome.edgeless_toolbar",
+                "chrome.edgeless_toolbar.shape_picker",
+                "chrome.edgeless_toolbar.shape.ellipse",
+                "chrome.edgeless_toolbar.shape.rounded_rect",
             ],
         }
     }
@@ -242,6 +257,11 @@ pub(super) fn apply_overlay_state(session: &HeadlessSession, state: OverlayState
                 session.pointer_move(handle_x, target.bottom() + 2.0, true);
             }
         }
+        OverlayState::ListCollapseHover => {
+            let snapshot = session.scroll_block_to("showcase-bullet", 80.0)?;
+            let (x, y) = element_center(&snapshot, "page.block.showcase-bullet")?;
+            session.pointer_move(x, y, false);
+        }
         OverlayState::CodeHover | OverlayState::CodeHoverCopied => {
             let snapshot = session.scroll_block_to(CODE, 120.0)?;
             let (x, y) = element_center(&snapshot, &format!("page.block.{CODE}"))?;
@@ -268,8 +288,9 @@ pub(super) fn apply_overlay_state(session: &HeadlessSession, state: OverlayState
         OverlayState::EdgelessInlineEdit => {
             session.frame()?;
             session.update(|v, w, cx| {
-                // Zoom to 1.4x centered on "collect" [818, 522, 150, 82] so inline edit is crisp and non-overlapping.
-                v.set_edgeless_camera(436.0, 296.0, 1.4, cx);
+                // Zoom to 1.4x centered on "collect" [818, 522, 150, 82] across both 1280px and 320px viewports.
+                let pan_x = 893.0 - (f32::from(w.viewport_size().width) * 0.5) / 1.4;
+                v.set_edgeless_camera(pan_x, 296.0, 1.4, cx);
                 v.edgeless_begin_inline_edit("collect", w, cx);
                 v.replace_and_mark_text_in_range(None, " + edit", None, w, cx);
             })?;
@@ -286,7 +307,7 @@ pub(super) fn apply_overlay_state(session: &HeadlessSession, state: OverlayState
             session.update(|v, w, cx| {
                 v.edgeless_select_tool(
                     playground::edgeless::EdgelessTool::Shape(
-                        blocksuite_playground_doc::read::ShapeType::Diamond,
+                        playground::edgeless::ShapePreset::Diamond,
                     ),
                     w,
                     cx,
@@ -317,6 +338,18 @@ pub(super) fn apply_overlay_state(session: &HeadlessSession, state: OverlayState
             // 4. Show marquee selection around the open-space authored elements.
             session.update(|v, _, cx| {
                 v.edgeless_set_marquee((1220.0, 210.0), (1620.0, 620.0), cx);
+            })?;
+        }
+        OverlayState::EdgelessShapePicker => {
+            session.frame()?;
+            session.update(|v, w, cx| {
+                v.edgeless_select_tool(
+                    playground::edgeless::EdgelessTool::Shape(
+                        playground::edgeless::ShapePreset::Ellipse,
+                    ),
+                    w,
+                    cx,
+                );
             })?;
         }
     }

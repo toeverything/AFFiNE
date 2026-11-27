@@ -21,6 +21,10 @@ pub enum LabelTarget {
 }
 
 impl LabelTarget {
+    pub fn rotates_in_place(&self) -> bool {
+        matches!(self, Self::Shape { .. } | Self::SurfaceText { .. })
+    }
+
     pub fn item_id(&self) -> &str {
         match self {
             Self::Shape { id, .. }
@@ -90,6 +94,20 @@ impl LabelTarget {
     }
 }
 
+/// Visual text layout parameters copied from a Shape or SurfaceText element so in-place editing
+/// matches the static label's font, color, alignment, and padding.
+#[derive(Clone, Debug)]
+pub struct ShapeTextStyle {
+    pub font_family: String,
+    pub font_size: f32,
+    pub font_weight: f32,
+    pub font_style: String,
+    pub color: blocksuite_playground_doc::read::ColorValue,
+    pub text_align: blocksuite_playground_doc::read::TextAlign,
+    pub vertical_align: blocksuite_playground_doc::read::VerticalAlign,
+    pub padding: [f32; 2],
+}
+
 /// Inline UTF-16 + IME editor for Shape, Connector, SurfaceText, and Frame title labels.
 #[derive(Clone, Debug)]
 pub struct EdgelessLabelEditor {
@@ -98,6 +116,7 @@ pub struct EdgelessLabelEditor {
     pub anchored: AnchoredInlineInput,
     pub world_rect: WorldRect,
     pub rotate_deg: f32,
+    pub shape_style: Option<ShapeTextStyle>,
     pub created_new_text: bool,
     pub dirty: bool,
 }
@@ -130,9 +149,23 @@ impl EdgelessLabelEditor {
             anchored: AnchoredInlineInput::new(initial, multiline),
             world_rect,
             rotate_deg,
+            shape_style: None,
             created_new_text: false,
             dirty: false,
         }
+    }
+
+    pub fn effective_rotate_deg(&self) -> f32 {
+        if self.target.rotates_in_place() {
+            self.rotate_deg
+        } else {
+            0.0
+        }
+    }
+
+    pub fn with_shape_style(mut self, style: ShapeTextStyle) -> Self {
+        self.shape_style = Some(style);
+        self
     }
 
     pub fn composing(&self) -> bool {

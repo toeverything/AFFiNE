@@ -168,6 +168,7 @@ impl Overlays {
                                     scene.geometry.column_x,
                                     scene.window.0,
                                     scene.direction,
+                                    block.has_gutter_chevron,
                                 )
                             })
                             .is_some_and(|handle| handle.contains(world_x, world_y));

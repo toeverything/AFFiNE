@@ -23,12 +23,17 @@ pub use hit_test::{
     SpatialItemKind, normalized_rect, point_in_rotated_rect, resized_rect, rotate_point_around,
 };
 pub use label_editor::{
-    EdgelessInlineEdit, EdgelessLabelEditor, LabelSplice, LabelTarget, utf16_len, utf16_to_byte,
+    EdgelessInlineEdit, EdgelessLabelEditor, LabelSplice, LabelTarget, ShapeTextStyle, utf16_len,
+    utf16_to_byte,
 };
 pub use order::{Layers, PaintItem};
-pub use overlay::{build_edgeless_authoring_overlay, layout_label_editor_paragraph};
+pub use overlay::{
+    build_edgeless_authoring_overlay, label_editor_text_origin, layout_label_editor_paragraph,
+};
 pub use scene::{PreparedEdgelessScene, collect_frame_children, prepare_edgeless_scene};
-pub use toolbar::{EdgelessTool, EdgelessToolbarHost, build_edgeless_toolbar, build_zoom_controls};
+pub use toolbar::{
+    EdgelessTool, EdgelessToolbarHost, ShapePreset, build_edgeless_toolbar, build_zoom_controls,
+};
 
 use canvas::{
     CachedNoteFlow, CachedSurfaces, FRAME_RADIUS, FRAME_TITLE_GAP, FRAME_TITLE_HEIGHT,

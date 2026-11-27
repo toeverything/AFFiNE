@@ -72,6 +72,7 @@ impl PlaygroundView {
         let Some((start, end, a, b, _)) = sel.ordered(&layout) else {
             return Ok(());
         };
+        slice.unwrap_for_note_paste();
         if slice.content.is_empty() {
             return Ok(());
         }

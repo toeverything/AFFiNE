@@ -15,7 +15,8 @@ use crate::{
 
 use super::{
     EDGELESS_VIEWPORT_ID, EdgelessAuthoringState, EdgelessCamera, EdgelessGesture,
-    EdgelessLabelEditor, HandleKind, normalized_rect, rotate_point_around, utf16_to_byte,
+    EdgelessLabelEditor, HandleKind, normalized_rect, rotate_point_around, rotated_bounds,
+    utf16_to_byte,
 };
 
 /// Screen-space selection frame, 8 resize handles, rotation handle, Edgeless `2×3` `gfx` drag handle,
@@ -322,16 +323,28 @@ pub fn build_edgeless_authoring_overlay(
             );
         }
         Some(EdgelessGesture::CreateConnector {
+            source_id,
+            source_port,
             source_world,
             current_world,
+            target_id,
+            target_port,
             target_world,
-            ..
         }) => {
-            let src = *source_world;
             let dst = target_world.unwrap_or(*current_world);
-            let p0 = camera.world_to_screen(point(px(src.0), px(src.1)), vp_origin);
-            let p1 = camera.world_to_screen(point(px(dst.0), px(dst.1)), vp_origin);
-            let mid_x = (f32::from(p0.x) + f32::from(p1.x)) * 0.5;
+            let (s_w, c1_w, c2_w, e_w) = crate::surface::preview_curve_cubic(
+                source_id.as_deref(),
+                *source_port,
+                *source_world,
+                target_id.as_deref(),
+                *target_port,
+                dst,
+                &authoring.painted_items,
+            );
+            let p0 = camera.world_to_screen(point(px(s_w.0), px(s_w.1)), vp_origin);
+            let ctrl1 = camera.world_to_screen(point(px(c1_w.0), px(c1_w.1)), vp_origin);
+            let ctrl2 = camera.world_to_screen(point(px(c2_w.0), px(c2_w.1)), vp_origin);
+            let p1 = camera.world_to_screen(point(px(e_w.0), px(e_w.1)), vp_origin);
             let snapped_target = target_world.is_some();
             elements.push(
                 canvas(
@@ -340,14 +353,12 @@ pub fn build_edgeless_authoring_overlay(
                         let ox = f32::from(bounds.origin.x);
                         let oy = f32::from(bounds.origin.y);
                         let a = point(px(ox + f32::from(p0.x)), px(oy + f32::from(p0.y)));
-                        let m1 = point(px(ox + mid_x), px(oy + f32::from(p0.y)));
-                        let m2 = point(px(ox + mid_x), px(oy + f32::from(p1.y)));
+                        let c1 = point(px(ox + f32::from(ctrl1.x)), px(oy + f32::from(ctrl1.y)));
+                        let c2 = point(px(ox + f32::from(ctrl2.x)), px(oy + f32::from(ctrl2.y)));
                         let b = point(px(ox + f32::from(p1.x)), px(oy + f32::from(p1.y)));
                         let mut pb = PathBuilder::stroke(px(2.0));
                         pb.move_to(a);
-                        pb.line_to(m1);
-                        pb.line_to(m2);
-                        pb.line_to(b);
+                        pb.cubic_bezier_to(b, c1, c2);
                         if let Ok(path) = pb.build() {
                             window.paint_path(path, brand);
                         }
@@ -435,75 +446,190 @@ pub fn build_edgeless_authoring_overlay(
             ),
             vp_origin,
         );
-        let w = (f32::from(br.x) - f32::from(tl.x))
-            .max(120.0)
-            .min(viewport_width - 16.0);
-        let h = (f32::from(br.y) - f32::from(tl.y))
-            .max(32.0)
-            .min(viewport_height - 16.0);
-        let x = f32::from(tl.x).clamp(8.0, (viewport_width - w - 8.0).max(8.0));
-        let y = f32::from(tl.y).clamp(8.0, (viewport_height - h - 8.0).max(8.0));
-        let display = editor.display_text();
-        let (sel, reversed) = editor.shown_selection();
-        let selection_color = palette.brand.opacity(0.22);
-        let caret_color = palette.brand;
-        let bg = palette.panel;
-        let border = palette.brand;
-        let editor_clone = editor.clone();
+        let in_place = editor.target.rotates_in_place();
+        let eff_rotate = editor.effective_rotate_deg();
+        let raw_x = f32::from(tl.x);
+        let raw_y = f32::from(tl.y);
+        let raw_w = (f32::from(br.x) - raw_x).max(0.5);
+        let raw_h = (f32::from(br.y) - raw_y).max(0.5);
+        let (box_x, box_y, box_w, box_h, layout_x, layout_y, layout_w, layout_h) = if in_place {
+            let aabb_w = rotated_bounds(editor.world_rect, eff_rotate);
+            let aabb_tl = camera.world_to_screen(point(px(aabb_w.x), px(aabb_w.y)), vp_origin);
+            let aabb_br =
+                camera.world_to_screen(point(px(aabb_w.right()), px(aabb_w.bottom())), vp_origin);
+            let bleed = if matches!(editor.target, super::LabelTarget::SurfaceText { .. }) {
+                2.0
+            } else {
+                0.0
+            };
+            let x0 = (f32::from(aabb_tl.x) - bleed).clamp(0.0, viewport_width);
+            let y0 = (f32::from(aabb_tl.y) - bleed).clamp(0.0, viewport_height);
+            let x1 = (f32::from(aabb_br.x) + bleed).clamp(0.0, viewport_width);
+            let y1 = (f32::from(aabb_br.y) + bleed).clamp(0.0, viewport_height);
+            (x0, y0, x1 - x0, y1 - y0, raw_x, raw_y, raw_w, raw_h)
+        } else {
+            let w = raw_w.max(120.0).min(viewport_width - 16.0);
+            let h = raw_h.max(32.0).min(viewport_height - 16.0);
+            let x = raw_x.clamp(8.0, (viewport_width - w - 8.0).max(8.0));
+            let y = raw_y.clamp(8.0, (viewport_height - h - 8.0).max(8.0));
+            (x, y, w, h, x, y, w, h)
+        };
+        if box_w > 0.0 && box_h > 0.0 {
+            let display = editor.display_text();
+            let (sel, reversed) = editor.shown_selection();
+            let selection_color = palette.brand.opacity(0.22);
+            let caret_color = palette.brand;
+            let bg = palette.panel;
+            let border = palette.brand;
+            let zoom = camera.zoom;
+            let editor_clone = editor.clone();
 
-        let el = div()
-            .absolute()
-            .left(px(x))
-            .top(px(y))
-            .w(px(w))
-            .h(px(h))
-            .rounded(px(4.0))
-            .bg(bg)
-            .border_2()
-            .border_color(border)
-            .snapshot("edgeless.inline_edit", Some(EDGELESS_VIEWPORT_ID))
-            .snapshot_text(display)
-            .child(
-                canvas(
-                    |_, _, _| (),
-                    move |bounds, _, window, cx| {
-                        let pad = 6.0;
-                        if let Some(laid_out) = layout_label_editor_paragraph(
-                            &editor_clone,
-                            f32::from(bounds.size.width),
-                            theme,
-                            window,
-                        ) {
-                            let mut selections = Vec::new();
-                            if sel.start != sel.end {
-                                selections
-                                    .push((sel.start as u64..sel.end as u64, selection_color));
-                            }
-                            let focus = if reversed { sel.start } else { sel.end };
-                            let carets = [(
-                                CaretPosition {
-                                    utf16_offset: focus as u64,
-                                    affinity: WrapAffinity::Upstream,
-                                },
-                                caret_color,
-                            )];
-                            laid_out.paint_at(
-                                point(bounds.origin.x + px(pad), bounds.origin.y + px(pad)),
-                                &selections,
-                                &carets,
-                                None,
+            let mut el = div()
+                .absolute()
+                .left(px(box_x))
+                .top(px(box_y))
+                .w(px(box_w))
+                .h(px(box_h))
+                .overflow_hidden();
+            if !in_place {
+                el = el.rounded(px(4.0)).bg(bg).border_2().border_color(border);
+            }
+            let el = el
+                .snapshot("edgeless.inline_edit", Some(EDGELESS_VIEWPORT_ID))
+                .snapshot_text(display)
+                .child(
+                    canvas(
+                        |_, _, _| (),
+                        move |bounds, _, window, cx| {
+                            if let Some(laid_out) = layout_label_editor_paragraph(
+                                &editor_clone,
+                                layout_w,
+                                zoom,
+                                theme,
                                 window,
-                                cx,
-                            );
-                        }
-                    },
-                )
-                .size_full(),
-            );
-        elements.push(el.into_any_element());
+                            ) {
+                                let (ox, oy) = label_editor_text_origin(
+                                    &editor_clone,
+                                    layout_h,
+                                    f32::from(laid_out.size().height),
+                                    zoom,
+                                );
+                                let mut selections = Vec::new();
+                                if sel.start != sel.end {
+                                    selections
+                                        .push((sel.start as u64..sel.end as u64, selection_color));
+                                }
+                                let focus = if reversed { sel.start } else { sel.end };
+                                let carets = [(
+                                    CaretPosition {
+                                        utf16_offset: focus as u64,
+                                        affinity: WrapAffinity::Upstream,
+                                    },
+                                    caret_color,
+                                )];
+                                let shape_x = f32::from(bounds.origin.x) + layout_x - box_x;
+                                let shape_y = f32::from(bounds.origin.y) + layout_y - box_y;
+                                let origin_pt = point(px(shape_x + ox), px(shape_y + oy));
+                                if in_place {
+                                    let pad_x = editor_clone
+                                        .shape_style
+                                        .as_ref()
+                                        .map_or(0.0, |st| st.padding[1] * zoom);
+                                    let inner_w = (layout_w - 2.0 * pad_x).max(0.0);
+                                    if inner_w > 0.0 && layout_h > 0.0 {
+                                        let cx_win = shape_x + layout_w * 0.5;
+                                        let cy_win = shape_y + layout_h * 0.5;
+                                        let rot = if eff_rotate.abs() > 1e-4 {
+                                            ui::TransformationMatrix::unit()
+                                                .translate(point(
+                                                    ui::ScaledPixels(cx_win),
+                                                    ui::ScaledPixels(cy_win),
+                                                ))
+                                                .rotate(ui::radians(eff_rotate.to_radians()))
+                                                .translate(point(
+                                                    ui::ScaledPixels(-cx_win),
+                                                    ui::ScaledPixels(-cy_win),
+                                                ))
+                                        } else {
+                                            ui::TransformationMatrix::unit()
+                                        };
+                                        let mask_bleed = if matches!(
+                                            editor_clone.target,
+                                            super::LabelTarget::SurfaceText { .. }
+                                        ) {
+                                            2.0
+                                        } else {
+                                            0.0
+                                        };
+                                        let mask = Bounds::new(
+                                            point(
+                                                px(shape_x + pad_x - mask_bleed),
+                                                px(shape_y - mask_bleed),
+                                            ),
+                                            size(
+                                                px(inner_w + 2.0 * mask_bleed),
+                                                px(layout_h + 2.0 * mask_bleed),
+                                            ),
+                                        );
+                                        window.with_paint_transformation(rot, |window| {
+                                            window.with_local_paint_mask(
+                                                ui::ContentMask { bounds: mask },
+                                                |window| {
+                                                    laid_out.paint_at(
+                                                        origin_pt,
+                                                        &selections,
+                                                        &carets,
+                                                        None,
+                                                        window,
+                                                        cx,
+                                                    );
+                                                },
+                                            );
+                                        });
+                                    }
+                                } else {
+                                    laid_out.paint_at(
+                                        origin_pt,
+                                        &selections,
+                                        &carets,
+                                        None,
+                                        window,
+                                        cx,
+                                    );
+                                }
+                            }
+                        },
+                    )
+                    .size_full(),
+                );
+            elements.push(el.into_any_element());
+        }
     }
 
     elements
+}
+
+/// Local `(x, y)` origin for the laid-out text inside an open [`EdgelessLabelEditor`] box.
+pub fn label_editor_text_origin(
+    editor: &EdgelessLabelEditor,
+    box_height: f32,
+    text_height: f32,
+    zoom: f32,
+) -> (f32, f32) {
+    if let Some(st) = &editor.shape_style {
+        let py = st.padding[0] * zoom;
+        let pad_x = st.padding[1] * zoom;
+        let top = match st.vertical_align {
+            blocksuite_playground_doc::read::VerticalAlign::Top => py,
+            blocksuite_playground_doc::read::VerticalAlign::Center => {
+                ((box_height - text_height) * 0.5).max(py)
+            }
+            blocksuite_playground_doc::read::VerticalAlign::Bottom => box_height - py - text_height,
+        };
+        (pad_x, top)
+    } else {
+        (6.0, 6.0)
+    }
 }
 
 /// Lay out an open [`EdgelessLabelEditor`]'s display text (including IME underline marks)
@@ -511,11 +637,20 @@ pub fn build_edgeless_authoring_overlay(
 pub fn layout_label_editor_paragraph(
     editor: &EdgelessLabelEditor,
     width: f32,
+    zoom: f32,
     theme: PlaygroundTheme,
     window: &ui::Window,
 ) -> Option<crate::rich_text::LaidOutRichParagraph> {
-    let pad = 6.0;
-    let wrap_w = (width - 2.0 * pad).max(20.0);
+    let pad_x = editor
+        .shape_style
+        .as_ref()
+        .map_or(6.0, |st| st.padding[1] * zoom);
+    let min_wrap = if editor.shape_style.is_some() {
+        zoom.max(0.25)
+    } else {
+        20.0
+    };
+    let wrap_w = (width - 2.0 * pad_x).max(min_wrap);
     let display = editor.display_text();
     let marked = editor.marked_range();
     let mut delta = Vec::new();
@@ -546,13 +681,74 @@ pub fn layout_label_editor_paragraph(
             format: None,
         });
     }
-    let style = RichParagraphStyle {
-        font_family: FONT_SANS.into(),
-        font_size: 14.0,
-        line_height: 20.0,
-        text_color: theme.palette().text_primary,
-        gfx_per_delta_rtl: !matches!(editor.target, super::LabelTarget::FrameTitle { .. }),
-        ..RichParagraphStyle::from_theme(theme.mode())
+    if let Some(st) = &editor.shape_style
+        && matches!(st.font_style.as_str(), "italic" | "oblique")
+    {
+        for op in &mut delta {
+            if let TextDeltaOp::Insert { format, .. } = op {
+                format
+                    .get_or_insert_with(Default::default)
+                    .entry("italic".into())
+                    .or_insert(Any::True);
+            }
+        }
+    }
+    let style = if let Some(st) = &editor.shape_style {
+        let color_str = match &st.color {
+            blocksuite_playground_doc::read::ColorValue::Single(v) => v.as_str(),
+            blocksuite_playground_doc::read::ColorValue::Themed { light, dark } => {
+                if theme == PlaygroundTheme::Light {
+                    light.as_str()
+                } else {
+                    dark.as_str()
+                }
+            }
+        };
+        let text_color = theme
+            .css_color(color_str)
+            .or_else(|| theme.css_var(color_str))
+            .unwrap_or_else(|| theme.palette().text_primary);
+        let font_family: ui::SharedString = if st.font_family.is_empty() {
+            FONT_SANS.into()
+        } else {
+            st.font_family
+                .trim_start_matches("blocksuite:surface:")
+                .to_string()
+                .into()
+        };
+        let font_size = (st.font_size * zoom).max(0.5);
+        let base_weight = ui::FontWeight(st.font_weight);
+        let ts = window.text_system();
+        let mut face = ui::font(font_family.clone());
+        face.weight = base_weight;
+        let font_id = ts.resolve_font(&face);
+        let font_px = px(font_size);
+        let ascent = f32::from(ts.ascent(font_id, font_px));
+        let descent = f32::from(ts.descent(font_id, font_px)).abs();
+        RichParagraphStyle {
+            font_family,
+            font_size,
+            base_weight,
+            line_height: (ascent + descent).max(0.5),
+            baseline_offset: Some(ascent),
+            text_color,
+            align: match st.text_align {
+                blocksuite_playground_doc::read::TextAlign::Left => ui::TextAlign::Left,
+                blocksuite_playground_doc::read::TextAlign::Center => ui::TextAlign::Center,
+                blocksuite_playground_doc::read::TextAlign::Right => ui::TextAlign::Right,
+            },
+            gfx_per_delta_rtl: true,
+            ..RichParagraphStyle::from_theme(theme.mode())
+        }
+    } else {
+        RichParagraphStyle {
+            font_family: FONT_SANS.into(),
+            font_size: 14.0,
+            line_height: 20.0,
+            text_color: theme.palette().text_primary,
+            gfx_per_delta_rtl: !matches!(editor.target, super::LabelTarget::FrameTitle { .. }),
+            ..RichParagraphStyle::from_theme(theme.mode())
+        }
     };
     let para = RichParagraph::from_delta(delta).ok()?;
     Some(para.layout(window.text_system(), &style, wrap_w))

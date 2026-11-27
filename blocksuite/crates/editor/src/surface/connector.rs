@@ -176,6 +176,80 @@ fn cubic(a: P, b: P, c: P, d: P, t: f64) -> P {
         .lerp(middle.lerp(c.lerp(d, t), t), t)
 }
 
+fn curve_controls(a: Port, b: Port) -> (P, P) {
+    let delta = b.p.sub(a.p);
+    let tangent = |port: &Port, v: P| {
+        if port.bound.is_some() {
+            let projection = (v.0 * port.normal.0 + v.1 * port.normal.1).abs();
+            if port.normal.length() < 1e-8 {
+                P(-v.1, v.0).unit().scale(20.)
+            } else {
+                port.normal
+                    .scale((projection / port.normal.length() / 3.).max(100.))
+            }
+        } else if a.bound.is_none() && b.bound.is_none() {
+            if v.0.abs() > v.1.abs() {
+                P(v.0 * 2. / 3., 0.)
+            } else {
+                P(0., v.1 * 2. / 3.)
+            }
+        } else {
+            P::default()
+        }
+    };
+    (
+        a.p.add(tangent(&a, delta)),
+        b.p.add(tangent(&b, delta.scale(-1.))),
+    )
+}
+
+pub fn preview_curve_cubic(
+    source_id: Option<&str>,
+    source_port: Option<[f64; 2]>,
+    source_world: (f32, f32),
+    target_id: Option<&str>,
+    target_port: Option<[f64; 2]>,
+    target_world: (f32, f32),
+    items: &[crate::edgeless::SpatialItemInfo],
+) -> ((f32, f32), (f32, f32), (f32, f32), (f32, f32)) {
+    let resolve_port = |id: Option<&str>, port: Option<[f64; 2]>, fallback: (f32, f32)| -> Port {
+        if let Some(id) = id
+            && let Some(item) = items.iter().find(|i| i.id == id)
+        {
+            let target = Target {
+                bounds: WorldBounds {
+                    xywh: [
+                        f64::from(item.rect.x),
+                        f64::from(item.rect.y),
+                        f64::from(item.rect.w),
+                        f64::from(item.rect.h),
+                    ],
+                    rotate: f64::from(item.rotate_deg),
+                },
+                kind: item.shape_type.unwrap_or(ShapeType::Rect),
+            };
+            if let Some([rx, ry]) = port {
+                return target.port(P(rx, ry), false);
+            }
+            return target.nearest(P(f64::from(fallback.0), f64::from(fallback.1)));
+        }
+        Port {
+            p: P(f64::from(fallback.0), f64::from(fallback.1)),
+            normal: P::default(),
+            bound: None,
+        }
+    };
+    let a = resolve_port(source_id, source_port, source_world);
+    let b = resolve_port(target_id, target_port, target_world);
+    let (p, q) = curve_controls(a, b);
+    (
+        (a.p.0 as f32, a.p.1 as f32),
+        (p.0 as f32, p.1 as f32),
+        (q.0 as f32, q.1 as f32),
+        (b.p.0 as f32, b.p.1 as f32),
+    )
+}
+
 pub(super) fn route(
     c: &SurfaceConnector,
     bounds: &BTreeMap<String, WorldBounds>,
@@ -192,28 +266,7 @@ pub(super) fn route(
     let (sa, ea) = (target(&c.source), target(&c.target));
     let (a, b) = endpoints(c, sa, ea)?;
     if c.mode == ConnectorMode::Curve {
-        let delta = b.p.sub(a.p);
-        let tangent = |port: &Port, v: P| {
-            if port.bound.is_some() {
-                let projection = (v.0 * port.normal.0 + v.1 * port.normal.1).abs();
-                if port.normal.length() < 1e-8 {
-                    P(-v.1, v.0).unit().scale(20.)
-                } else {
-                    port.normal
-                        .scale((projection / port.normal.length() / 3.).max(100.))
-                }
-            } else if a.bound.is_none() && b.bound.is_none() {
-                if v.0.abs() > v.1.abs() {
-                    P(v.0 * 2. / 3., 0.)
-                } else {
-                    P(0., v.1 * 2. / 3.)
-                }
-            } else {
-                P::default()
-            }
-        };
-        let p = a.p.add(tangent(&a, delta));
-        let q = b.p.add(tangent(&b, delta.scale(-1.)));
+        let (p, q) = curve_controls(a, b);
         let samples = (0..=64)
             .map(|i| cubic(a.p, p, q, b.p, i as f64 / 64.))
             .collect();

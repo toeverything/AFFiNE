@@ -7,7 +7,6 @@ mod inline_edit;
 
 pub use blocksuite_editor::edgeless::*;
 
-use blocksuite_playground_doc::read::ShapeType;
 use commands::{find_block, find_surface_element, max_spatial_index};
 
 impl EdgelessToolbarHost for crate::PlaygroundView {
@@ -15,8 +14,16 @@ impl EdgelessToolbarHost for crate::PlaygroundView {
         self.edgeless.authoring.tool
     }
 
-    fn edgeless_active_shape_type(&self) -> ShapeType {
+    fn edgeless_active_shape_type(&self) -> ShapePreset {
         self.edgeless.authoring.active_shape_type()
+    }
+
+    fn edgeless_toggle_shape_picker(
+        &mut self,
+        window: &mut ui::Window,
+        cx: &mut ui::Context<Self>,
+    ) {
+        crate::PlaygroundView::edgeless_toggle_shape_picker(self, window, cx);
     }
 
     fn edgeless_select_tool(

@@ -2,10 +2,7 @@
 
 use std::collections::HashMap;
 
-use blocksuite_playground_doc::{
-    read::{BlockContent, BlockNode, RichText, TextAlign as BlockAlign},
-    schema::ParagraphType,
-};
+use blocksuite_playground_doc::read::{BlockContent, BlockNode, RichText, TextAlign as BlockAlign};
 use ui::{App, Context, Div, Hsla, Window, canvas, div, point, prelude::*, px, size};
 
 use crate::{
@@ -20,14 +17,15 @@ use super::{
 };
 
 /// Hit target of a block's gutter handle in world space, `None` where the gutter has no
-/// room for it. The handle hangs left of the block on its first line; a heading keeps the
-/// place next to its text for its collapse chevron, so its handle sits one step further
-/// out and is left away where the gutter is too narrow for both.
+/// room for it. The handle hangs left of the block on its first line; a block with a
+/// gutter collapse chevron keeps the place next to its text for that chevron, so its
+/// handle sits one step further out and is left away where the gutter is too narrow for both.
 pub(crate) fn drag_handle_rect(
     block: &FlowBlock,
     column_x: f32,
     window_width: f32,
     direction: ui::Direction,
+    has_gutter_chevron: bool,
 ) -> Option<FlowRect> {
     let body = &block.body;
     if body.kind == FlowKind::Title {
@@ -37,21 +35,31 @@ pub(crate) fn drag_handle_rect(
         Some(text) if body.kind != FlowKind::Code => text.y + text.layout.line_height() / 2.0,
         _ => (body.height / 2.0).min(18.0),
     };
-    let heading = is_heading(body.kind);
     let handle_x = match direction {
         ui::Direction::Ltr => {
-            let wanted = block.x - DRAG_HANDLE_SIZE - if heading { CONTROL_HIT_SIZE } else { 0.0 };
+            let wanted = block.x
+                - DRAG_HANDLE_SIZE
+                - if has_gutter_chevron {
+                    CONTROL_HIT_SIZE
+                } else {
+                    0.0
+                };
             // `DRAG_HANDLE_MIN_X` is a screen coordinate; the world starts at `column_x`.
             let min_x = DRAG_HANDLE_MIN_X - column_x;
-            if heading && wanted < min_x {
+            if has_gutter_chevron && wanted < min_x {
                 return None;
             }
             wanted.max(min_x)
         }
         ui::Direction::Rtl => {
-            let wanted = block.rect().right() + if heading { CONTROL_HIT_SIZE } else { 0.0 };
+            let wanted = block.rect().right()
+                + if has_gutter_chevron {
+                    CONTROL_HIT_SIZE
+                } else {
+                    0.0
+                };
             let max_x = window_width - DRAG_HANDLE_MIN_X - column_x - DRAG_HANDLE_SIZE;
-            if heading && wanted > max_x {
+            if has_gutter_chevron && wanted > max_x {
                 return None;
             }
             wanted.min(max_x)
@@ -150,20 +158,6 @@ pub fn shared_alignment(
     for child in &node.children {
         shared_alignment(child, own, ids, shared);
     }
-}
-
-pub(crate) fn is_heading(kind: FlowKind) -> bool {
-    matches!(
-        kind,
-        FlowKind::Paragraph(
-            ParagraphType::H1
-                | ParagraphType::H2
-                | ParagraphType::H3
-                | ParagraphType::H4
-                | ParagraphType::H5
-                | ParagraphType::H6
-        )
-    )
 }
 
 /// Parent of block `id` and the block's index among the parent's children.

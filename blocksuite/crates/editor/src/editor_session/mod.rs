@@ -7,6 +7,7 @@ use blocksuite_playground_doc::{
     read::{BlockContent, BlockNode, PageSnapshot},
     session::{PageDocSession, SelectionSnapshot},
 };
+#[cfg(target_family = "wasm")]
 use unicode_segmentation::UnicodeSegmentation;
 use y_octo::{Any, SessionCommit};
 
@@ -182,33 +183,36 @@ impl EditorSession {
     }
 }
 
-/// Select the UAX #29 word boundary span (in UTF-16 code units) containing `offset`.
+/// Select the word boundary span (in UTF-16 code units) containing `offset`.
 ///
-/// Uses `unicode_segmentation::UnicodeSegmentation::split_word_bound_indices` for zero-bloat
-/// Latin, Arabic, Hebrew, CJK, and mixed bidirectional word selection. When `offset` lands
-/// on inter-word whitespace, snaps to the nearest adjacent word rather than selecting spaces.
+/// Uses the browser's native `Intl.Segmenter` (`granularity: "word"`) on WebAssembly (zero
+/// bundle-size cost and exact parity with browser `contenteditable`), and ICU's compiled
+/// dictionary segmenter (`icu_segmenter::WordSegmenter::try_new_dictionary`) on native targets.
+/// When `offset` lands on inter-word whitespace, snaps to the nearest adjacent word.
 pub fn word_range(text: &str, offset: u64) -> Range<u64> {
     if text.is_empty() {
         return 0..0;
     }
-    let index = TextBiIndex::new(text);
-    let byte = index.utf16_to_utf8_clamped(offset);
-    let segments: Vec<(usize, usize, bool)> = text
-        .split_word_bound_indices()
-        .map(|(start, word)| {
-            (
-                start,
-                start + word.len(),
-                word.chars().all(char::is_whitespace),
-            )
-        })
-        .collect();
+    #[cfg(target_family = "wasm")]
+    {
+        if let Some(range) = wasm_intl_word_range(text, offset) {
+            return range;
+        }
+        return uax29_word_range(text, offset);
+    }
+    #[cfg(not(target_family = "wasm"))]
+    {
+        icu_word_range(text, offset)
+    }
+}
+
+fn pick_word_segment(segments: &[(u64, u64, bool)], offset: u64) -> Range<u64> {
     if segments.is_empty() {
         return 0..0;
     }
     let hit_idx = segments
         .iter()
-        .position(|&(_, end, _)| end > byte)
+        .position(|&(_, end, _)| end > offset)
         .unwrap_or(segments.len() - 1);
     let chosen = if !segments[hit_idx].2 {
         segments[hit_idx]
@@ -217,8 +221,8 @@ pub fn word_range(text: &str, offset: u64) -> Range<u64> {
         let next = segments[hit_idx + 1..].iter().find(|s| !s.2).copied();
         match (prev, next) {
             (Some(p), Some(n)) => {
-                let dist_prev = byte.saturating_sub(p.1);
-                let dist_next = n.0.saturating_sub(byte);
+                let dist_prev = offset.saturating_sub(p.1);
+                let dist_next = n.0.saturating_sub(offset);
                 if dist_prev < dist_next { p } else { n }
             }
             (Some(p), None) => p,
@@ -226,35 +230,264 @@ pub fn word_range(text: &str, offset: u64) -> Range<u64> {
             (None, None) => segments[hit_idx],
         }
     };
-    index.utf8_to_utf16(chosen.0)..index.utf8_to_utf16(chosen.1)
+    chosen.0..chosen.1
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn icu_word_range(text: &str, offset: u64) -> Range<u64> {
+    let index = TextBiIndex::new(text);
+    let clamped = offset.min(index.utf16_len());
+    thread_local! {
+        static SEGMENTER: icu_segmenter::WordSegmenter =
+            icu_segmenter::WordSegmenter::try_new_dictionary(Default::default())
+                .expect("compiled word segmenter dictionary");
+    }
+    let bounds: Vec<usize> = SEGMENTER.with(|seg| seg.as_borrowed().segment_str(text).collect());
+    let segments: Vec<(u64, u64, bool)> = bounds
+        .windows(2)
+        .filter(|w| w[0] < w[1])
+        .map(|w| {
+            let word = &text[w[0]..w[1]];
+            (
+                index.utf8_to_utf16(w[0]),
+                index.utf8_to_utf16(w[1]),
+                word.chars().all(char::is_whitespace),
+            )
+        })
+        .collect();
+    pick_word_segment(&segments, clamped)
+}
+
+#[cfg(target_family = "wasm")]
+fn wasm_intl_word_range(text: &str, offset: u64) -> Option<Range<u64>> {
+    use wasm_bindgen::JsValue;
+
+    thread_local! {
+        static INTL_SEGMENTER: Option<JsValue> = {
+            let intl = js_sys::Reflect::get(&js_sys::global(), &JsValue::from_str("Intl")).ok()?;
+            let ctor = js_sys::Reflect::get(&intl, &JsValue::from_str("Segmenter")).ok()?;
+            let ctor_fn: js_sys::Function = ctor.try_into().ok()?;
+            let opts = js_sys::Object::new();
+            js_sys::Reflect::set(
+                &opts,
+                &JsValue::from_str("granularity"),
+                &JsValue::from_str("word"),
+            )
+            .ok()?;
+            let args = js_sys::Array::of2(&JsValue::UNDEFINED, &opts.into());
+            js_sys::Reflect::construct(&ctor_fn, &args).ok()
+        };
+    }
+    let seg_obj = INTL_SEGMENTER.with(|cell| cell.clone())?;
+    let segment_fn: js_sys::Function =
+        js_sys::Reflect::get(&seg_obj, &JsValue::from_str("segment"))
+            .ok()?
+            .try_into()
+            .ok()?;
+    let iterable = segment_fn.call1(&seg_obj, &JsValue::from_str(text)).ok()?;
+    let iter = js_sys::try_iter(&iterable).ok()??;
+    let mut segments: Vec<(u64, u64, bool)> = Vec::new();
+    for item in iter {
+        let entry = item.ok()?;
+        let start = js_sys::Reflect::get(&entry, &JsValue::from_str("index"))
+            .ok()?
+            .as_f64()? as u64;
+        let seg_str = js_sys::Reflect::get(&entry, &JsValue::from_str("segment"))
+            .ok()?
+            .as_string()?;
+        let len = seg_str.encode_utf16().count() as u64;
+        if len > 0 {
+            segments.push((start, start + len, seg_str.chars().all(char::is_whitespace)));
+        }
+    }
+    if segments.is_empty() {
+        return None;
+    }
+    let total = text.encode_utf16().count() as u64;
+    Some(pick_word_segment(&segments, offset.min(total)))
+}
+
+#[cfg(target_family = "wasm")]
+fn uax29_word_range(text: &str, offset: u64) -> Range<u64> {
+    let index = TextBiIndex::new(text);
+    let clamped = offset.min(index.utf16_len());
+    let segments: Vec<(u64, u64, bool)> = text
+        .split_word_bound_indices()
+        .map(|(start, word)| {
+            (
+                index.utf8_to_utf16(start),
+                index.utf8_to_utf16(start + word.len()),
+                word.chars().all(char::is_whitespace),
+            )
+        })
+        .collect();
+    pick_word_segment(&segments, clamped)
+}
+
+/// Plan line-level `Tab` / `Shift+Tab` indent or outdent splices for a code block.
+///
+/// Returns `(splices_descending, new_start, new_end)` where each splice is
+/// `(utf16_offset, delete_utf16_len, insert_str)` ordered from highest offset to lowest
+/// so applying them sequentially in one `structural_edit` preserves earlier offsets.
+pub fn code_block_indent_plan(
+    text: &str,
+    sel_start: u64,
+    sel_end: u64,
+    outdent: bool,
+) -> (Vec<(u64, u64, &'static str)>, u64, u64) {
+    const INDENT: &str = "  ";
+    let units: Vec<u16> = text.encode_utf16().collect();
+    let len = units.len() as u64;
+    let start = sel_start.min(len);
+    let end = sel_end.min(len).max(start);
+
+    let first_line_start = units[..start as usize]
+        .iter()
+        .rposition(|&u| u == b'\n' as u16)
+        .map_or(0u64, |i| i as u64 + 1);
+
+    let mut line_starts = vec![first_line_start];
+    for (idx, &u) in units[start as usize..end as usize].iter().enumerate() {
+        if u == b'\n' as u16 {
+            line_starts.push(start + idx as u64 + 1);
+        }
+    }
+
+    if !outdent {
+        let splices: Vec<(u64, u64, &'static str)> = line_starts
+            .iter()
+            .rev()
+            .map(|&ls| (ls, 0u64, INDENT))
+            .collect();
+        let new_start = start + 2;
+        let new_end = end + 2 * line_starts.len() as u64;
+        return (splices, new_start, new_end);
+    }
+
+    let mut removals: Vec<(u64, u64)> = Vec::new();
+    let mut start_shift = 0u64;
+    let mut end_shift = 0u64;
+    for (i, &ls) in line_starts.iter().enumerate() {
+        let rem = &units[ls as usize..];
+        let count = if rem.starts_with(&[b' ' as u16, b' ' as u16]) {
+            2u64
+        } else {
+            0u64
+        };
+        if count > 0 {
+            removals.push((ls, count));
+            if i == 0 {
+                start_shift = start.saturating_sub(ls).min(count);
+            }
+            end_shift += end.saturating_sub(ls).min(count);
+        }
+    }
+    let splices: Vec<(u64, u64, &'static str)> = removals
+        .into_iter()
+        .rev()
+        .map(|(ls, count)| (ls, count, ""))
+        .collect();
+    let new_start = start.saturating_sub(start_shift);
+    let new_end = end.saturating_sub(end_shift).max(new_start);
+    (splices, new_start, new_end)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::word_range;
+    use super::{code_block_indent_plan, word_range};
+
+    fn apply_plan(text: &str, splices: &[(u64, u64, &str)]) -> String {
+        let mut units: Vec<u16> = text.encode_utf16().collect();
+        for &(offset, del_len, insert) in splices {
+            let ins: Vec<u16> = insert.encode_utf16().collect();
+            let start = offset as usize;
+            let end = (start + del_len as usize).min(units.len());
+            units.splice(start..end, ins);
+        }
+        String::from_utf16(&units).unwrap()
+    }
 
     #[test]
-    fn uax29_word_range_handles_mixed_ltr_arabic_hebrew_and_whitespace_snap() {
+    fn word_range_handles_mixed_ltr_arabic_hebrew_cjk_and_whitespace_snap() {
         let text =
             "Hello \u{05E9}\u{05DC}\u{05D5}\u{05DD} \u{0645}\u{0631}\u{062D}\u{0628}\u{0627} world";
-        let slice_u16 = |range: std::ops::Range<u64>| -> String {
-            let units: Vec<u16> = text.encode_utf16().collect();
+        let slice_u16 = |s: &str, range: std::ops::Range<u64>| -> String {
+            let units: Vec<u16> = s.encode_utf16().collect();
             String::from_utf16(&units[range.start as usize..range.end as usize]).unwrap()
         };
-        assert_eq!(slice_u16(word_range(text, 1)), "Hello");
+        assert_eq!(slice_u16(text, word_range(text, 1)), "Hello");
         // Pressing on whitespace snaps to the nearest word (offset 5 touches end of "Hello").
-        assert_eq!(slice_u16(word_range(text, 5)), "Hello");
+        assert_eq!(slice_u16(text, word_range(text, 5)), "Hello");
         assert_eq!(word_range("Hello   world", 5), 0..5);
         assert_eq!(word_range("Hello   world", 7), 8..13);
         assert_eq!(
-            slice_u16(word_range(text, 7)),
+            slice_u16(text, word_range(text, 7)),
             "\u{05E9}\u{05DC}\u{05D5}\u{05DD}"
         );
         assert_eq!(
-            slice_u16(word_range(text, 13)),
+            slice_u16(text, word_range(text, 13)),
             "\u{0645}\u{0631}\u{062D}\u{0628}\u{0627}"
         );
-        assert_eq!(slice_u16(word_range(text, 18)), "world");
+        assert_eq!(slice_u16(text, word_range(text, 18)), "world");
+
+        let zh = "中文测试文本在这里";
+        for (offset, expected) in [
+            (0, "中文"),
+            (1, "中文"),
+            (2, "测试"),
+            (3, "测试"),
+            (4, "文本"),
+            (5, "文本"),
+            (6, "在"),
+            (7, "这里"),
+            (8, "这里"),
+        ] {
+            assert_eq!(
+                slice_u16(zh, word_range(zh, offset)),
+                expected,
+                "offset {offset}"
+            );
+        }
+
+        // Everyday non-technical Chinese sentences must also segment into real compounds.
+        let daily = "今天天气非常不错，苹果手机很好用";
+        for (offset, expected) in [
+            (0, "今天"),
+            (2, "天气"),
+            (4, "非常"),
+            (6, "不错"),
+            (9, "苹果"),
+            (11, "手机"),
+            (13, "很好"),
+        ] {
+            assert_eq!(
+                slice_u16(daily, word_range(daily, offset)),
+                expected,
+                "daily offset {offset}"
+            );
+        }
+    }
+
+    #[test]
+    fn code_block_indent_plan_handles_single_and_multiline_tab_and_shift_tab() {
+        let cases: &[(&str, u64, u64, bool, &str, u64, u64)] = &[
+            // Multi-line selection Tab indents every covered line and keeps selection.
+            ("a()\nb()\nc()", 1, 9, false, "  a()\n  b()\n  c()", 3, 15),
+            // Caret mid-line Tab indents line start and shifts caret by 2.
+            ("y()", 2, 2, false, "  y()", 4, 4),
+            // Caret mid-line Shift+Tab removes 2 leading spaces and shifts caret by 2.
+            ("  y()", 4, 4, true, "y()", 2, 2),
+            // Multi-line Shift+Tab only strips a full 2-space INDENT_SYMBOL (0.27.5 parity).
+            (" a\n  b", 0, 6, true, " a\nb", 0, 4),
+            ("  a\n b\nc", 0, 8, true, "a\n b\nc", 0, 6),
+            // Shift+Tab with no leading spaces is a no-op.
+            ("abc", 1, 1, true, "abc", 1, 1),
+        ];
+        for &(text, start, end, outdent, want_text, want_start, want_end) in cases {
+            let (splices, new_start, new_end) = code_block_indent_plan(text, start, end, outdent);
+            assert_eq!(apply_plan(text, &splices), want_text);
+            assert_eq!((new_start, new_end), (want_start, want_end));
+        }
     }
 }
 
