@@ -655,11 +655,12 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
       .expect("re-invite after expired invitation must succeed");
     assert_ne!(reinv.id, expired_inv.id);
 
-    let promoted = ws_service
+    // Non-commercial workspaces reject promoting members to Admin.
+    let promote_err = ws_service
       .update_member_role(&admin.user.id, &ws.id, &member1.user.id, WorkspaceRole::Admin)
       .await
-      .unwrap();
-    assert_eq!(promoted.role, WorkspaceRole::Admin);
+      .expect_err("non-commercial workspace must reject member role change");
+    assert!(matches!(promote_err, DomainError::Forbidden(_)));
 
     // Usage query with active + deleted blobs.
     {
@@ -1173,10 +1174,15 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
         Ok(grant)
       }
     }
-    community_ws
+    let commercial_ws = WorkspaceService::new(
+      db.clone(),
+      Arc::new(CommercialQuotaGate),
+      Arc::new(NoopEventPublisher::default()),
+    );
+    commercial_ws
       .update_member_role(&admin.user.id, &concurrent_ws.id, &member1.user.id, WorkspaceRole::Admin)
       .await
-      .expect("owner promotes member1 to admin");
+      .expect("owner promotes member1 to admin in commercial workspace");
     assert!(matches!(
       community_ws
         .update_workspace(
@@ -1201,11 +1207,6 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
         .await,
       Err(DomainError::Forbidden(_))
     ));
-    let commercial_ws = WorkspaceService::new(
-      db.clone(),
-      Arc::new(CommercialQuotaGate),
-      Arc::new(NoopEventPublisher::default()),
-    );
     let updated_by_admin = commercial_ws
       .update_workspace(
         &member1.user.id,

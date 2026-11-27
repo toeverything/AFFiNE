@@ -510,15 +510,10 @@ pub(crate) async fn mutate_update_profile(ctx: &Context<'_>, input: UpdateUserIn
   Ok(UserType::session(updated))
 }
 
-fn image_format_not_supported_error() -> async_graphql::Error {
-  use async_graphql::ErrorExtensions as _;
-  async_graphql::Error::new("Image format not supported.").extend_with(|_, ext| {
-    ext.set("status", 400);
-    ext.set("code", "Bad Request");
-    ext.set("type", "INVALID_INPUT");
-    ext.set("name", "IMAGE_FORMAT_NOT_SUPPORTED");
-    ext.set("message", "Image format not supported.");
-  })
+fn image_format_not_supported_error(format_name: &str) -> async_graphql::Error {
+  domain_error_to_graphql(&DomainError::Validation(format!(
+    "image_format_not_supported:{format_name}"
+  )))
 }
 
 fn transcode_avatar_to_webp(bytes: &[u8]) -> std::result::Result<Vec<u8>, async_graphql::Error> {
@@ -532,7 +527,8 @@ fn transcode_avatar_to_webp(bytes: &[u8]) -> std::result::Result<Vec<u8>, async_
   const MAX_AVATAR_PIXELS: u64 = 40_000_000;
   const MAX_AVATAR_DECODE_ALLOC: u64 = 192 * 1024 * 1024;
 
-  let format = image::guess_format(bytes).map_err(|_| image_format_not_supported_error())?;
+  let format = image::guess_format(bytes).map_err(|_| image_format_not_supported_error("unknown"))?;
+  let format_label = format.extensions_str().first().copied().unwrap_or("unknown");
   let mut limits = Limits::default();
   limits.max_image_width = Some(MAX_AVATAR_DIMENSION);
   limits.max_image_height = Some(MAX_AVATAR_DIMENSION);
@@ -543,21 +539,49 @@ fn transcode_avatar_to_webp(bytes: &[u8]) -> std::result::Result<Vec<u8>, async_
   dim_reader.limits(limits.clone());
   let (width, height) = dim_reader
     .into_dimensions()
-    .map_err(|_| image_format_not_supported_error())?;
+    .map_err(|_| image_format_not_supported_error(format_label))?;
   if width == 0
     || height == 0
     || width > MAX_AVATAR_DIMENSION
     || height > MAX_AVATAR_DIMENSION
     || u64::from(width) * u64::from(height) > MAX_AVATAR_PIXELS
   {
-    return Err(image_format_not_supported_error());
+    return Err(image_format_not_supported_error(format_label));
+  }
+
+  // Animated WebP: validate via WebPDecoder and preserve animation directly when within bounds.
+  if format == ImageFormat::WebP
+    && let Ok(mut webp_dec) = image::codecs::webp::WebPDecoder::new(Cursor::new(bytes))
+    && webp_dec.set_limits(limits.clone()).is_ok()
+    && webp_dec.has_animation()
+  {
+    if width <= 512 && height <= 512 {
+      return Ok(bytes.to_vec());
+    }
+    // Oversized animated WebP: fall back to decoding the first frame and resizing.
+    use image::AnimationDecoder as _;
+    let first_frame = webp_dec
+      .into_frames()
+      .next()
+      .and_then(std::result::Result::ok)
+      .ok_or_else(|| image_format_not_supported_error(format_label))?;
+    let img = image::DynamicImage::ImageRgba8(first_frame.into_buffer());
+    let resized = img.resize(512, 512, FilterType::Lanczos3);
+    let mut out = Cursor::new(Vec::new());
+    resized
+      .write_to(&mut out, ImageFormat::WebP)
+      .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("encode webp avatar: {e}"))))?;
+    return Ok(out.into_inner());
   }
 
   let mut reader = ImageReader::with_format(Cursor::new(bytes), format);
   reader.limits(limits);
-  let mut decoder = reader.into_decoder().map_err(|_| image_format_not_supported_error())?;
+  let mut decoder = reader
+    .into_decoder()
+    .map_err(|_| image_format_not_supported_error(format_label))?;
   let orientation = decoder.orientation().unwrap_or(Orientation::NoTransforms);
-  let mut img = image::DynamicImage::from_decoder(decoder).map_err(|_| image_format_not_supported_error())?;
+  let mut img =
+    image::DynamicImage::from_decoder(decoder).map_err(|_| image_format_not_supported_error(format_label))?;
   img.apply_orientation(orientation);
 
   let (w, h) = img.dimensions();
@@ -571,7 +595,17 @@ fn transcode_avatar_to_webp(bytes: &[u8]) -> std::result::Result<Vec<u8>, async_
   resized
     .write_to(&mut out, ImageFormat::WebP)
     .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("encode webp avatar: {e}"))))?;
-  Ok(out.into_inner())
+  let encoded = out.into_inner();
+  // If original upload was already a compact lossy WebP within 512x512, keep the smaller payload.
+  if format == ImageFormat::WebP
+    && w <= 512
+    && h <= 512
+    && orientation == Orientation::NoTransforms
+    && bytes.len() < encoded.len()
+  {
+    return Ok(bytes.to_vec());
+  }
+  Ok(encoded)
 }
 
 fn is_owned_avatar_key(user_id: &str, key: &str) -> bool {
@@ -665,6 +699,8 @@ pub(crate) async fn mutate_upload_avatar(ctx: &Context<'_>, avatar: Upload) -> R
     let _ = state.avatars.delete(old_key).await;
   }
 
+  publish_user_updated_realtime(state, &updated.id).await;
+
   Ok(UserType {
     view: updated,
     created_at: Some(created_at),
@@ -732,7 +768,7 @@ pub(crate) async fn mutate_update_settings(ctx: &Context<'_>, input: UpdateUserS
   Ok(true)
 }
 
-async fn cleanup_deleted_workspace_objects(
+pub(crate) async fn cleanup_deleted_workspace_objects(
   state: &AppState,
   workspace_id: &str,
   blob_keys: &[String],
@@ -767,8 +803,12 @@ async fn cleanup_deleted_workspace_objects(
       let _ = state.blobs.storage().delete(&object_key).await;
     }
     for (doc_id, key) in comment_attachments {
-      let object_key = format!("{workspace_id}/{doc_id}/{key}");
-      let _ = state.comment_attachments.delete(&object_key).await;
+      let _ = state
+        .comment_attachments
+        .delete(&format!("{workspace_id}/{doc_id}/{key}"))
+        .await;
+      let object_key = format!("comment-attachments/{workspace_id}/{doc_id}/{key}");
+      let _ = state.blobs.storage().delete(&object_key).await;
     }
   }
 
@@ -998,7 +1038,12 @@ pub(crate) async fn mutate_admin_update_user(
 }
 
 pub(crate) async fn mutate_admin_ban_user(ctx: &Context<'_>, id: String) -> Result<UserType> {
-  let _admin = super::require_admin_user(ctx).await?;
+  let admin = super::require_admin_user(ctx).await?;
+  if admin.id == id {
+    return Err(domain_error_to_graphql(&DomainError::Forbidden(
+      "cannot_ban_self".into(),
+    )));
+  }
   let state = ctx.data_unchecked::<Arc<AppState>>();
   let quota_gate = state.extension.quota_gate();
   let billing = state.extension.billing_spi();

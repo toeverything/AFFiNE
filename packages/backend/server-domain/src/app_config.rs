@@ -101,6 +101,7 @@ pub const NATIVE_MANAGED_CONFIG_KEYS: &[&str] = &[
   "oauth.providers.oidc",
   "payment.enabled",
   "payment.revenuecat",
+  "payment.showLifetimePrice",
   "payment.stripe",
   "storages.avatar.storage",
   "storages.blob.storage",
@@ -347,7 +348,6 @@ pub struct AppConfigService {
   event_bus: Arc<dyn EventBusPublisher>,
   cache: Arc<RwLock<CachedAppConfig>>,
   private_key_cache: Arc<RwLock<CachedPrivateKey>>,
-  redis_key_prefix_cache: Arc<RwLock<Option<(u64, Instant, String)>>>,
   generation: Arc<AtomicU64>,
   oidc_discovery_cache: Arc<RwLock<OidcDiscoveryCache>>,
 }
@@ -392,7 +392,6 @@ impl AppConfigService {
       event_bus,
       cache: Arc::new(RwLock::new(None)),
       private_key_cache: Arc::new(RwLock::new(None)),
-      redis_key_prefix_cache: Arc::new(RwLock::new(None)),
       generation: Arc::new(AtomicU64::new(0)),
       oidc_discovery_cache: Arc::new(RwLock::new(std::collections::HashMap::new())),
     }
@@ -408,9 +407,11 @@ impl AppConfigService {
     if let Ok(mut guard) = self.private_key_cache.write() {
       *guard = None;
     }
-    if let Ok(mut guard) = self.redis_key_prefix_cache.write() {
-      *guard = None;
-    }
+  }
+
+  /// Returns the current monotonic cache generation counter.
+  pub fn current_generation(&self) -> u64 {
+    self.generation.load(Ordering::Acquire)
   }
 
   fn store_snapshot_if_generation_matches(&self, gen_before: u64, snapshot: &Arc<Value>) -> bool {
@@ -506,48 +507,41 @@ impl AppConfigService {
     Ok(resolved)
   }
 
-  /// Internal-only reader for the effective `redis.ioredis.keyPrefix` (falling back
-  /// to `redis.keyPrefix`), bypassing `SECRET_CONFIG_KEYS` redaction on `redis.ioredis`.
-  /// Cached with `self.generation` and `APP_CONFIG_CACHE_TTL`.
-  pub async fn get_internal_redis_key_prefix(&self) -> Result<String, DomainError> {
-    let gen_before = self.generation.load(Ordering::Acquire);
-    if let Ok(guard) = self.redis_key_prefix_cache.read()
-      && let Some((cached_gen, cached_at, ref prefix)) = *guard
-      && cached_gen == gen_before
-      && cached_at.elapsed() < APP_CONFIG_CACHE_TTL
-    {
-      return Ok(prefix.clone());
-    }
-
+  /// Internal-only reader for the effective `mailer` configuration, merging the
+  /// startup baseline with all `app_configs` rows matching `mailer` or
+  /// `mailer.%` without secret redaction. Never expose over HTTP or GraphQL.
+  pub async fn get_internal_mailer_config(&self) -> Result<Value, DomainError> {
+    let baseline = default_app_config_json(&self.baseline);
+    let mut root = json!({
+      "mailer": baseline.get("mailer").cloned().unwrap_or_else(|| json!({})),
+    });
     let mut conn = self
       .db
       .acquire_tiered(WorkloadTier::InteractiveRead)
       .await
-      .map_err(|e| DomainError::Internal(format!("acquire db for redis keyPrefix: {e}")))?;
-    let rows: Vec<(String, Value)> =
-      sqlx::query_as("SELECT id, value FROM app_configs WHERE id IN ('redis.ioredis', 'redis.keyPrefix')")
+      .map_err(|e| DomainError::Internal(format!("acquire app_configs mailer read: {e}")))?;
+    let rows =
+      sqlx::query("SELECT id, value FROM app_configs WHERE id = 'mailer' OR id LIKE 'mailer.%' ORDER BY id ASC")
         .fetch_all(&mut *conn)
         .await
-        .map_err(|e| DomainError::Internal(format!("query redis keyPrefix: {e}")))?;
-    let resolved = rows
-      .iter()
-      .find(|(k, _)| k == "redis.ioredis")
-      .and_then(|(_, v)| v.get("keyPrefix").and_then(Value::as_str))
+        .map_err(|e| DomainError::Internal(format!("load internal mailer app_configs: {e}")))?;
+    for row in rows {
+      let key: String = row.get("id");
+      let value: Value = row.get("value");
+      set_nested_path(&mut root, &key, value);
+    }
+    Ok(root.get("mailer").cloned().unwrap_or_else(|| json!({})))
+  }
+
+  /// Internal-only reader for the startup file baseline `redis.ioredis.keyPrefix`
+  /// (falling back to `redis.keyPrefix`), bypassing `SECRET_CONFIG_KEYS` redaction
+  /// on `redis.ioredis` and ignoring any legacy `app_configs` `redis.*` rows.
+  pub async fn get_internal_redis_key_prefix(&self) -> Result<String, DomainError> {
+    let resolved = self
+      .baseline
+      .lookup_file_config_value("redis.ioredis")
+      .and_then(|v| v.get("keyPrefix").and_then(Value::as_str))
       .filter(|s| !s.is_empty())
-      .or_else(|| {
-        rows
-          .iter()
-          .find(|(k, _)| k == "redis.keyPrefix")
-          .and_then(|(_, v)| v.as_str())
-          .filter(|s| !s.is_empty())
-      })
-      .or_else(|| {
-        self
-          .baseline
-          .lookup_file_config_value("redis.ioredis")
-          .and_then(|v| v.get("keyPrefix").and_then(Value::as_str))
-          .filter(|s| !s.is_empty())
-      })
       .or_else(|| {
         self
           .baseline
@@ -557,11 +551,6 @@ impl AppConfigService {
       })
       .unwrap_or("")
       .to_owned();
-    if let Ok(mut guard) = self.redis_key_prefix_cache.write()
-      && self.generation.load(Ordering::Acquire) == gen_before
-    {
-      *guard = Some((gen_before, Instant::now(), resolved.clone()));
-    }
     Ok(resolved)
   }
 

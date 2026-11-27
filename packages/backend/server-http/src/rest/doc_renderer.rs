@@ -260,7 +260,8 @@ async fn handle_render_workspace_path(
             });
           if rec {
             let (ds, w, d) = (state.app.doc_sharing.clone(), ws_id.to_owned(), raw_doc_id.to_owned());
-            tokio::spawn(async move { ds.record_doc_view(&w, &d, true).await });
+            let visitor_hex = hex::encode(key);
+            tokio::spawn(async move { ds.record_doc_view(&w, &d, true, None, Some(&visitor_hex)).await });
           }
         }
       }

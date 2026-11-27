@@ -214,6 +214,7 @@ pub struct WorkspaceService {
   billing_spi: Arc<dyn BillingSpi>,
   redis: Option<redis::Client>,
   base_url: String,
+  private_key: String,
   fallback_invite_links: Arc<tokio::sync::RwLock<std::collections::HashMap<String, WorkspaceInviteLink>>>,
 }
 
@@ -228,12 +229,18 @@ impl WorkspaceService {
       billing_spi: Arc::new(CommunityBillingSpi),
       redis: None,
       base_url: "http://localhost:3010".to_owned(),
+      private_key: String::new(),
       fallback_invite_links: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
     }
   }
 
   pub fn with_base_url(mut self, base_url: impl Into<String>) -> Self {
     self.base_url = base_url.into();
+    self
+  }
+
+  pub fn with_private_key(mut self, private_key: impl Into<String>) -> Self {
+    self.private_key = private_key.into();
     self
   }
 
@@ -1011,7 +1018,7 @@ impl WorkspaceService {
         .map_err(|e| DomainError::Internal(format!("insert workspace invitation: {e}")))?;
 
         if let Some(ref uid) = invitee_user_id {
-          crate::notifications::insert_invitation_notification_in_tx(
+          crate::notifications::insert_invitation_notification_with_key_in_tx(
             tx.tx_mut(),
             uid,
             actor_user_id,
@@ -1019,6 +1026,7 @@ impl WorkspaceService {
             &invitation_id,
             "Invitation",
             &self.base_url,
+            &self.private_key,
           )
           .await?;
           notified_invitees.push(uid.clone());
@@ -1234,7 +1242,7 @@ impl WorkspaceService {
     if let Some(ref inviter_id) = inviter_user_id
       && inviter_id != invitee_user_id
     {
-      crate::notifications::insert_invitation_notification_in_tx(
+      crate::notifications::insert_invitation_notification_with_key_in_tx(
         tx.tx_mut(),
         inviter_id,
         invitee_user_id,
@@ -1242,6 +1250,7 @@ impl WorkspaceService {
         invitation_id,
         "InvitationAccepted",
         &self.base_url,
+        &self.private_key,
       )
       .await?;
     }
@@ -1309,56 +1318,178 @@ impl WorkspaceService {
       .await
       .map_err(|e| DomainError::Internal(format!("load update_member_role time: {e}")))?;
     let actor_role = require_active_member_role(tx.tx_mut(), workspace_id, actor_user_id).await?;
-    let target_role = require_active_member_role(tx.tx_mut(), workspace_id, target_user_id).await?;
     let grant = self
       .quota_gate
       .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
       .await?;
-    let effective_actor_role = actor_role.effective(grant.rights.commercial);
-
-    if target_role == WorkspaceRole::Owner {
-      return Err(DomainError::Forbidden("workspace_owner_must_transfer".to_owned()));
+    if !grant.rights.commercial {
+      return Err(DomainError::Forbidden(
+        "commercial entitlement required to change member role".to_owned(),
+      ));
     }
+    if crate::doc_sharing::DocSharingService::is_workspace_readonly_in(
+      tx.tx_mut(),
+      self.quota_gate.as_ref(),
+      workspace_id,
+      now,
+    )
+    .await?
+    {
+      return Err(DomainError::Forbidden(
+        "workspace is readonly and cannot change member role".to_owned(),
+      ));
+    }
+    let effective_actor_role = actor_role.effective(grant.rights.commercial);
     if !matches!(effective_actor_role, WorkspaceRole::Owner | WorkspaceRole::Admin) {
       return Err(DomainError::Forbidden(
         "insufficient permissions to change member role".to_owned(),
       ));
     }
-    if effective_actor_role == WorkspaceRole::Admin && target_role == WorkspaceRole::Admin {
+    if new_role == WorkspaceRole::Owner {
+      return Err(DomainError::Forbidden("workspace_owner_must_transfer".to_owned()));
+    }
+
+    let active_target_role: Option<String> = sqlx::query_scalar(
+      "SELECT role::text FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active' FOR UPDATE",
+    )
+    .bind(workspace_id)
+    .bind(target_user_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("load target member role: {e}")))?;
+
+    if let Some(target_role_str) = active_target_role {
+      let target_role = WorkspaceRole::parse(&target_role_str)?;
+      if target_role == WorkspaceRole::Owner {
+        return Err(DomainError::Forbidden("workspace_owner_must_transfer".to_owned()));
+      }
+      if effective_actor_role == WorkspaceRole::Admin && target_role == WorkspaceRole::Admin {
+        return Err(DomainError::Forbidden(
+          "admin cannot modify another admin's role".to_owned(),
+        ));
+      }
+
+      let row = sqlx::query(
+        r#"UPDATE workspace_members
+           SET role = $3, updated_at = clock_timestamp()
+           WHERE workspace_id = $1 AND user_id = $2 AND state = 'active'
+           RETURNING id, workspace_id, user_id, role, state, source, created_at, updated_at"#,
+      )
+      .bind(workspace_id)
+      .bind(target_user_id)
+      .bind(new_role.as_str())
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("update workspace member role: {e}")))?;
+
+      if target_role != new_role {
+        let mail_name = match new_role {
+          WorkspaceRole::Admin => Some("TeamBecomeAdmin"),
+          WorkspaceRole::Member => Some("TeamBecomeCollaborator"),
+          WorkspaceRole::Owner => None,
+        };
+        if let Some(mail_name) = mail_name {
+          let ws_name = load_workspace_display_name_for_mail(tx.tx_mut(), workspace_id).await?;
+          let base = self.base_url.trim_end_matches('/');
+          let url = format!("{base}/workspace/{workspace_id}");
+          crate::notifications::enqueue_notification_mail_in_tx(
+            tx.tx_mut(),
+            crate::notifications::EnqueueNotificationMail {
+              private_key: &self.private_key,
+              mail_name,
+              mail_class: "workspace_lifecycle",
+              recipient_user_id: target_user_id,
+              actor_user_id: Some(actor_user_id),
+              workspace_id: Some(workspace_id),
+              notification_id: None,
+              pref_field: None,
+              props: serde_json::json!({
+                "workspace": { "name": ws_name },
+                "url": url,
+              }),
+              skip_if_domain_in_workspace_name: None,
+            },
+          )
+          .await?;
+        }
+      }
+
+      tx.commit()
+        .await
+        .map_err(|e| DomainError::Internal(format!("commit update_member_role: {e}")))?;
+      self
+        .publish_workspace_members_changed(workspace_id, "member-role-changed")
+        .await;
+
+      return Ok(WorkspaceMemberRecord {
+        id: row.get("id"),
+        workspace_id: row.get("workspace_id"),
+        user_id: row.get("user_id"),
+        role: WorkspaceRole::parse(&row.get::<String, _>("role"))?,
+        state: row.get("state"),
+        source: row.get("source"),
+        created_at: row.get("created_at"),
+        updated_at: row.get("updated_at"),
+      });
+    }
+
+    let inv_row = sqlx::query(
+      r#"SELECT id, invitee_user_id, requested_role::text AS requested_role, status::text AS status, kind::text AS kind
+         FROM workspace_invitations
+         WHERE workspace_id = $1
+           AND (invitee_user_id = $2 OR id = $2)
+           AND status::text IN ('pending', 'waiting_review')
+         FOR UPDATE"#,
+    )
+    .bind(workspace_id)
+    .bind(target_user_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("load target invitation role: {e}")))?;
+
+    let Some(inv) = inv_row else {
+      return Err(DomainError::Forbidden(format!(
+        "member_not_found_in_space:{workspace_id}"
+      )));
+    };
+    let inv_id: String = inv.get("id");
+    let current_inv_role = WorkspaceRole::parse(&inv.get::<String, _>("requested_role"))?;
+    if effective_actor_role == WorkspaceRole::Admin && current_inv_role == WorkspaceRole::Admin {
       return Err(DomainError::Forbidden(
         "admin cannot modify another admin's role".to_owned(),
       ));
     }
 
-    let row = sqlx::query(
-      r#"UPDATE workspace_members
-         SET role = $3, updated_at = clock_timestamp()
-         WHERE workspace_id = $1 AND user_id = $2 AND state = 'active'
-         RETURNING id, workspace_id, user_id, role, state, source, created_at, updated_at"#,
+    let updated = sqlx::query(
+      r#"UPDATE workspace_invitations
+         SET requested_role = $2, updated_at = clock_timestamp()
+         WHERE id = $1
+         RETURNING id, workspace_id, COALESCE(invitee_user_id, id) AS user_id,
+                   requested_role::text AS role, status::text AS state, kind::text AS source,
+                   created_at, updated_at"#,
     )
-    .bind(workspace_id)
-    .bind(target_user_id)
+    .bind(&inv_id)
     .bind(new_role.as_str())
     .fetch_one(&mut **tx.tx_mut())
     .await
-    .map_err(|e| DomainError::Internal(format!("update workspace member role: {e}")))?;
+    .map_err(|e| DomainError::Internal(format!("update workspace invitation role: {e}")))?;
 
     tx.commit()
       .await
-      .map_err(|e| DomainError::Internal(format!("commit update_member_role: {e}")))?;
+      .map_err(|e| DomainError::Internal(format!("commit update_member_role invitation: {e}")))?;
     self
       .publish_workspace_members_changed(workspace_id, "member-role-changed")
       .await;
 
     Ok(WorkspaceMemberRecord {
-      id: row.get("id"),
-      workspace_id: row.get("workspace_id"),
-      user_id: row.get("user_id"),
-      role: WorkspaceRole::parse(&row.get::<String, _>("role"))?,
-      state: row.get("state"),
-      source: row.get("source"),
-      created_at: row.get("created_at"),
-      updated_at: row.get("updated_at"),
+      id: updated.get("id"),
+      workspace_id: updated.get("workspace_id"),
+      user_id: updated.get("user_id"),
+      role: WorkspaceRole::parse(&updated.get::<String, _>("role"))?,
+      state: updated.get("state"),
+      source: updated.get("source"),
+      created_at: updated.get("created_at"),
+      updated_at: updated.get("updated_at"),
     })
   }
 
@@ -1431,29 +1562,77 @@ impl WorkspaceService {
       .await
       .map_err(|e| DomainError::Internal(format!("load target email for revoke: {e}")))?;
 
-    let deleted_invites = sqlx::query(
+    let deleted_invites_rows = sqlx::query(
       "DELETE FROM workspace_invitations
        WHERE workspace_id = $1
          AND (
            invitee_user_id = $2
            OR (invitee_user_id IS NULL AND $3::text IS NOT NULL AND lower(normalized_email) = lower($3))
-         )",
+         )
+       RETURNING id, invitee_user_id, status::text AS status",
     )
     .bind(workspace_id)
     .bind(target_user_id)
     .bind(target_email.as_deref())
-    .execute(&mut **tx.tx_mut())
+    .fetch_all(&mut **tx.tx_mut())
     .await
-    .map_err(|e| DomainError::Internal(format!("delete workspace invitation: {e}")))?
-    .rows_affected();
+    .map_err(|e| DomainError::Internal(format!("delete workspace invitation: {e}")))?;
+    let deleted_invites = deleted_invites_rows.len() as u64;
 
     if deleted_members == 0 && deleted_invites == 0 {
       return Err(DomainError::NotFound("workspace_member_not_found".to_owned()));
     }
 
+    let mut declined_notify_user: Option<String> = None;
+    if deleted_members > 0 {
+      let ws_name = load_workspace_display_name_for_mail(tx.tx_mut(), workspace_id).await?;
+      crate::notifications::enqueue_notification_mail_in_tx(
+        tx.tx_mut(),
+        crate::notifications::EnqueueNotificationMail {
+          private_key: &self.private_key,
+          mail_name: "MemberRemoved",
+          mail_class: "workspace_lifecycle",
+          recipient_user_id: target_user_id,
+          actor_user_id: Some(actor_user_id),
+          workspace_id: Some(workspace_id),
+          notification_id: None,
+          pref_field: None,
+          props: serde_json::json!({ "workspace": { "name": ws_name } }),
+          skip_if_domain_in_workspace_name: None,
+        },
+      )
+      .await?;
+    } else {
+      for inv in &deleted_invites_rows {
+        let status: String = inv.get("status");
+        if status == "waiting_review"
+          && let Some(uid) = inv.get::<Option<String>, _>("invitee_user_id")
+        {
+          let inv_id: String = inv.get("id");
+          crate::notifications::insert_invitation_notification_with_key_in_tx(
+            tx.tx_mut(),
+            &uid,
+            actor_user_id,
+            workspace_id,
+            &inv_id,
+            "InvitationReviewDeclined",
+            &self.base_url,
+            &self.private_key,
+          )
+          .await?;
+          declined_notify_user = Some(uid);
+        }
+      }
+    }
+
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit revoke_member: {e}")))?;
+
+    if let Some(uid) = declined_notify_user {
+      crate::notifications::publish_notification_count_changed(&self.db, self.event_bus.as_ref(), &uid, "created")
+        .await;
+    }
 
     for hint in [
       InvalidationHintV1::QuotaSeatUsage {
@@ -1758,7 +1937,7 @@ impl WorkspaceService {
     if let Some(q) = query
       && q.len() > 255
     {
-      return Err(DomainError::Validation("query exceeds 255 characters".to_owned()));
+      return Err(DomainError::Validation("query_too_long:255".to_owned()));
     }
     let _ = self.require_active_member_role(workspace_id, actor_user_id).await?;
     let mut conn = self
@@ -1778,7 +1957,7 @@ impl WorkspaceService {
                   (u.email_verified IS NOT NULL) AS email_verified,
                   u.disabled,
                   m.role::text AS role,
-                  m.id AS invite_id,
+                  u.id AS invite_id,
                   'Accepted'::text AS status,
                   m.created_at AS sort_at
            FROM workspace_members m
@@ -1836,8 +2015,13 @@ impl WorkspaceService {
     Ok(out)
   }
 
-  /// Permanently deletes a workspace (Owner only).
-  pub async fn delete_workspace(&self, actor_user_id: &str, workspace_id: &str) -> Result<(), DomainError> {
+  /// Permanently deletes a workspace (Owner only) and returns object-storage
+  /// keys that must be removed after the database transaction commits.
+  pub async fn delete_workspace_with_cleanup(
+    &self,
+    actor_user_id: &str,
+    workspace_id: &str,
+  ) -> Result<DeletedWorkspaceCleanup, DomainError> {
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -1850,6 +2034,18 @@ impl WorkspaceService {
         "only workspace owner may delete workspace".to_owned(),
       ));
     }
+    let blob_keys: Vec<String> = sqlx::query_scalar("SELECT key FROM blobs WHERE workspace_id = $1")
+      .bind(workspace_id)
+      .fetch_all(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load deleted workspace blobs: {e}")))?;
+    let comment_attachments: Vec<(String, String)> =
+      sqlx::query_as("SELECT doc_id, key FROM comment_attachments WHERE workspace_id = $1")
+        .bind(workspace_id)
+        .fetch_all(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("load deleted workspace comment attachments: {e}")))?;
+
     sqlx::query("DELETE FROM workspaces WHERE id = $1")
       .bind(workspace_id)
       .execute(&mut **tx.tx_mut())
@@ -1866,6 +2062,15 @@ impl WorkspaceService {
         doc_id: None,
       })
       .await;
+    Ok(DeletedWorkspaceCleanup {
+      blob_keys,
+      comment_attachments,
+    })
+  }
+
+  /// Permanently deletes a workspace (Owner only).
+  pub async fn delete_workspace(&self, actor_user_id: &str, workspace_id: &str) -> Result<(), DomainError> {
+    let _ = self.delete_workspace_with_cleanup(actor_user_id, workspace_id).await?;
     Ok(())
   }
 
@@ -1904,6 +2109,43 @@ impl WorkspaceService {
       .execute(&mut **tx.tx_mut())
       .await
       .map_err(|e| DomainError::Internal(format!("delete leaving workspace invitation: {e}")))?;
+
+    let owner_id: Option<String> = sqlx::query_scalar(
+      "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("load owner for member leave mail: {e}")))?;
+    if let Some(owner_id) = owner_id {
+      let actor_email: String = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+        .bind(actor_user_id)
+        .fetch_optional(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("load leaving member email: {e}")))?
+        .unwrap_or_default();
+      let ws_name = load_workspace_display_name_for_mail(tx.tx_mut(), workspace_id).await?;
+      crate::notifications::enqueue_notification_mail_in_tx(
+        tx.tx_mut(),
+        crate::notifications::EnqueueNotificationMail {
+          private_key: &self.private_key,
+          mail_name: "MemberLeave",
+          mail_class: "workspace_lifecycle",
+          recipient_user_id: &owner_id,
+          actor_user_id: Some(actor_user_id),
+          workspace_id: Some(workspace_id),
+          notification_id: None,
+          pref_field: None,
+          props: serde_json::json!({
+            "user": { "email": actor_email },
+            "workspace": { "name": ws_name },
+          }),
+          skip_if_domain_in_workspace_name: None,
+        },
+      )
+      .await?;
+    }
+
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit leave_workspace: {e}")))?;
@@ -2030,6 +2272,42 @@ impl WorkspaceService {
     .fetch_one(&mut **tx.tx_mut())
     .await
     .map_err(|e| DomainError::Internal(format!("promote new owner: {e}")))?;
+
+    if actor_user_id != target_user_id {
+      let ws_name = load_workspace_display_name_for_mail(tx.tx_mut(), workspace_id).await?;
+      crate::notifications::enqueue_notification_mail_in_tx(
+        tx.tx_mut(),
+        crate::notifications::EnqueueNotificationMail {
+          private_key: &self.private_key,
+          mail_name: "OwnershipTransferred",
+          mail_class: "workspace_lifecycle",
+          recipient_user_id: actor_user_id,
+          actor_user_id: Some(actor_user_id),
+          workspace_id: Some(workspace_id),
+          notification_id: None,
+          pref_field: None,
+          props: serde_json::json!({ "workspace": { "name": ws_name } }),
+          skip_if_domain_in_workspace_name: None,
+        },
+      )
+      .await?;
+      crate::notifications::enqueue_notification_mail_in_tx(
+        tx.tx_mut(),
+        crate::notifications::EnqueueNotificationMail {
+          private_key: &self.private_key,
+          mail_name: "OwnershipReceived",
+          mail_class: "workspace_lifecycle",
+          recipient_user_id: target_user_id,
+          actor_user_id: Some(actor_user_id),
+          workspace_id: Some(workspace_id),
+          notification_id: None,
+          pref_field: None,
+          props: serde_json::json!({ "workspace": { "name": ws_name } }),
+          skip_if_domain_in_workspace_name: None,
+        },
+      )
+      .await?;
+    }
 
     tx.commit()
       .await
@@ -2168,7 +2446,7 @@ impl WorkspaceService {
       .await
       .map_err(|e| DomainError::Internal(format!("delete approved invitation: {e}")))?;
 
-    crate::notifications::insert_invitation_notification_in_tx(
+    crate::notifications::insert_invitation_notification_with_key_in_tx(
       tx.tx_mut(),
       target_user_id,
       actor_user_id,
@@ -2176,6 +2454,7 @@ impl WorkspaceService {
       &inv_id,
       "InvitationReviewApproved",
       &self.base_url,
+      &self.private_key,
     )
     .await?;
 
@@ -2609,9 +2888,40 @@ impl WorkspaceService {
     .await
     .map_err(|e| DomainError::Internal(format!("insert waiting_review link invitation: {e}")))?;
 
+    let reviewers: Vec<String> = sqlx::query_scalar(
+      "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role IN ('owner', 'admin') AND state = 'active'",
+    )
+    .bind(&ws_id)
+    .fetch_all(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("load reviewers for link invitation: {e}")))?;
+    for reviewer_id in &reviewers {
+      crate::notifications::insert_invitation_notification_with_key_in_tx(
+        tx.tx_mut(),
+        reviewer_id,
+        invitee_user_id,
+        &ws_id,
+        &review_id,
+        "InvitationReviewRequest",
+        &self.base_url,
+        &self.private_key,
+      )
+      .await?;
+    }
+
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit waiting_review link invitation: {e}")))?;
+
+    for reviewer_id in &reviewers {
+      crate::notifications::publish_notification_count_changed(
+        &self.db,
+        self.event_bus.as_ref(),
+        reviewer_id,
+        "created",
+      )
+      .await;
+    }
 
     let _ = self
       .invalidation
@@ -2759,8 +3069,21 @@ impl WorkspaceService {
       .await
       .map_err(|e| DomainError::Internal(format!("load invite workspace info: {e}")))?
       .ok_or_else(|| DomainError::NotFound("workspace not found".to_owned()))?;
-    let workspace_name: Option<String> = ws_row.get("name");
-    let workspace_avatar_key: Option<String> = ws_row.get("avatar_key");
+    let db_workspace_name: Option<String> = ws_row
+      .get::<Option<String>, _>("name")
+      .map(|s| s.trim().to_owned())
+      .filter(|s| !s.is_empty());
+    let db_avatar_key: Option<String> = ws_row
+      .get::<Option<String>, _>("avatar_key")
+      .map(|s| s.trim().to_owned())
+      .filter(|s| !s.is_empty());
+
+    let (yjs_name, yjs_avatar) = load_workspace_root_meta_in_tx(tx.tx_mut(), &workspace_id).await?;
+    let workspace_name = yjs_name
+      .or(db_workspace_name)
+      .unwrap_or_else(|| "Untitled Workspace".to_owned());
+    let workspace_avatar_key = yjs_avatar.or(db_avatar_key);
+
     let invitee = crate::users::load_current_user_in_tx(tx.tx_mut(), &invitee_user_id)
       .await?
       .ok_or_else(|| DomainError::NotFound("user not found".to_owned()))?;
@@ -2769,7 +3092,7 @@ impl WorkspaceService {
 
     Ok(InviteInfoView {
       workspace_id,
-      workspace_name: workspace_name.unwrap_or_else(|| "AFFiNE".to_owned()),
+      workspace_name,
       workspace_avatar_key,
       owner,
       invitee,
@@ -2787,30 +3110,18 @@ impl WorkspaceService {
       .begin_tiered(WorkloadTier::InteractiveRead)
       .await
       .map_err(|e| DomainError::Internal(format!("begin load_workspace_usage: {e}")))?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load_workspace_usage clock: {e}")))?;
 
-    let used_storage_quota: i64 = sqlx::query_scalar(
-      r#"SELECT
-           COALESCE(
-             (SELECT SUM(size)::bigint
-              FROM blobs
-              WHERE workspace_id = $1
-                AND deleted_at IS NULL
-                AND (status = 'completed' OR (status = 'pending' AND reservation_expires_at > clock_timestamp()))),
-             0
-           )
-           + COALESCE(
-             (SELECT SUM(size)::bigint
-              FROM comment_attachments
-              WHERE workspace_id = $1
-                AND deleted_at IS NULL
-                AND (status = 'completed' OR (status = 'pending' AND reservation_expires_at > clock_timestamp()))),
-             0
-           )"#,
-    )
-    .bind(workspace_id)
-    .fetch_one(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| DomainError::Internal(format!("load workspace storage usage: {e}")))?;
+    let grant = self
+      .quota_gate
+      .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
+      .await?;
+
+    let used_storage_quota =
+      load_effective_storage_usage_in_tx(tx.tx_mut(), self.quota_gate.as_ref(), workspace_id, &grant, now).await?;
 
     let member_count = count_charged_seats_in_tx(tx.tx_mut(), workspace_id).await?;
 
@@ -2823,6 +3134,278 @@ impl WorkspaceService {
       member_count,
     })
   }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct DeletedWorkspaceCleanup {
+  pub blob_keys: Vec<String>,
+  pub comment_attachments: Vec<(String, String)>,
+}
+
+async fn load_workspace_display_name_for_mail(
+  tx: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+) -> Result<String, DomainError> {
+  let db_name: Option<String> = sqlx::query_scalar("SELECT NULLIF(trim(name), '') FROM workspaces WHERE id = $1")
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("load workspace name for mail: {e}")))?
+    .flatten();
+  if let Some(name) = db_name {
+    return Ok(name);
+  }
+  let (yjs_name, _) = load_workspace_root_meta_in_tx(tx, workspace_id).await?;
+  Ok(yjs_name.unwrap_or_else(|| "Untitled Workspace".to_owned()))
+}
+
+/// Loads `(name, avatar_key)` for `workspace_id` from the Yjs root doc
+/// (`snapshots` + `updates` where `guid = workspace_id`) with fallback to the
+/// `workspaces` table. Returns `Ok(None)` if neither the `workspaces` row nor
+/// any root doc snapshot exists.
+pub async fn load_workspace_root_meta_from_pool(
+  pool: &sqlx::PgPool,
+  workspace_id: &str,
+) -> Result<Option<(Option<String>, Option<String>)>, DomainError> {
+  let ws_row = sqlx::query("SELECT name, avatar_key FROM workspaces WHERE id = $1")
+    .bind(workspace_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| DomainError::Internal(format!("load workspace meta from pool: {e}")))?;
+
+  let mut parts: Vec<Vec<u8>> = Vec::new();
+  if let Some(snap) =
+    sqlx::query_scalar::<_, Vec<u8>>("SELECT blob FROM snapshots WHERE workspace_id = $1 AND guid = $1")
+      .bind(workspace_id)
+      .fetch_optional(pool)
+      .await
+      .map_err(|e| DomainError::Internal(format!("load workspace root snapshot from pool: {e}")))?
+    && !snap.is_empty()
+  {
+    parts.push(snap);
+  }
+  let updates: Vec<Vec<u8>> =
+    sqlx::query_scalar("SELECT blob FROM updates WHERE workspace_id = $1 AND guid = $1 ORDER BY created_at ASC")
+      .bind(workspace_id)
+      .fetch_all(pool)
+      .await
+      .map_err(|e| DomainError::Internal(format!("load workspace root updates from pool: {e}")))?;
+  parts.extend(updates.into_iter().filter(|b| !b.is_empty()));
+
+  if ws_row.is_none() && parts.is_empty() {
+    return Ok(None);
+  }
+
+  let (yjs_name, yjs_avatar) = if parts.is_empty() {
+    (None, None)
+  } else {
+    let merged = if parts.len() == 1 {
+      Some(parts.remove(0))
+    } else {
+      y_octo::merge_updates_v1(&parts).and_then(|u| u.encode_v1()).ok()
+    };
+    merged
+      .and_then(|bin| y_octo::Doc::try_from_binary_v1(&bin).ok())
+      .and_then(|doc| doc.get_or_create_map("meta").ok())
+      .map(|meta| {
+        let extract = |key: &str| -> Option<String> {
+          match meta.get(key) {
+            Some(y_octo::Value::Any(y_octo::Any::String(raw))) => {
+              let trimmed = raw.trim();
+              (!trimmed.is_empty()).then(|| trimmed.to_owned())
+            }
+            _ => None,
+          }
+        };
+        (extract("name"), extract("avatar"))
+      })
+      .unwrap_or((None, None))
+  };
+
+  let db_name = ws_row
+    .as_ref()
+    .and_then(|r| r.get::<Option<String>, _>("name"))
+    .map(|s| s.trim().to_owned())
+    .filter(|s| !s.is_empty());
+  let db_avatar = ws_row
+    .as_ref()
+    .and_then(|r| r.get::<Option<String>, _>("avatar_key"))
+    .map(|s| s.trim().to_owned())
+    .filter(|s| !s.is_empty());
+
+  Ok(Some((yjs_name.or(db_name), yjs_avatar.or(db_avatar))))
+}
+
+async fn load_workspace_root_meta_in_tx(
+  tx: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+) -> Result<(Option<String>, Option<String>), DomainError> {
+  let mut parts: Vec<Vec<u8>> = Vec::new();
+  if let Some(snap) =
+    sqlx::query_scalar::<_, Vec<u8>>("SELECT blob FROM snapshots WHERE workspace_id = $1 AND guid = $1")
+      .bind(workspace_id)
+      .fetch_optional(&mut **tx)
+      .await
+      .map_err(|e| DomainError::Internal(format!("load workspace root snapshot for meta: {e}")))?
+    && !snap.is_empty()
+  {
+    parts.push(snap);
+  }
+  let updates: Vec<Vec<u8>> =
+    sqlx::query_scalar("SELECT blob FROM updates WHERE workspace_id = $1 AND guid = $1 ORDER BY created_at ASC")
+      .bind(workspace_id)
+      .fetch_all(&mut **tx)
+      .await
+      .map_err(|e| DomainError::Internal(format!("load workspace root updates for meta: {e}")))?;
+  parts.extend(updates.into_iter().filter(|b| !b.is_empty()));
+  if parts.is_empty() {
+    return Ok((None, None));
+  }
+  let merged = if parts.len() == 1 {
+    Some(parts.remove(0))
+  } else {
+    y_octo::merge_updates_v1(&parts).and_then(|u| u.encode_v1()).ok()
+  };
+  let Some(bin) = merged else {
+    return Ok((None, None));
+  };
+  let Ok(doc) = y_octo::Doc::try_from_binary_v1(&bin) else {
+    return Ok((None, None));
+  };
+  let Ok(meta) = doc.get_or_create_map("meta") else {
+    return Ok((None, None));
+  };
+  let extract_str = |key: &str| -> Option<String> {
+    match meta.get(key) {
+      Some(y_octo::Value::Any(y_octo::Any::String(raw))) => {
+        let trimmed = raw.trim();
+        if trimmed.is_empty() {
+          None
+        } else {
+          Some(trimmed.to_owned())
+        }
+      }
+      _ => None,
+    }
+  };
+  Ok((extract_str("name"), extract_str("avatar")))
+}
+
+/// Computes effective storage usage (in bytes) for `workspace_id` under `grant`.
+/// For `BillingSubject::Owner` (personal cloud workspaces), sums `blobs` and
+/// `comment_attachments` across all personal workspaces owned by the same owner.
+/// For `BillingSubject::Workspace`, sums only `workspace_id`.
+pub async fn load_effective_storage_usage_in_tx(
+  tx: &mut Transaction<'_, Postgres>,
+  quota_gate: &dyn QuotaGate,
+  workspace_id: &str,
+  grant: &server_types::AccessGrant,
+  now: DateTime<Utc>,
+) -> Result<i64, DomainError> {
+  if grant.billing_subject == server_types::BillingSubject::Owner {
+    let owner_id: Option<String> = sqlx::query_scalar(
+      "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("load owner for storage usage: {e}")))?;
+
+    if let Some(owner_id) = owner_id {
+      let owned_ws_ids: Vec<(String, bool)> = sqlx::query_as(
+        r#"SELECT
+             wm.workspace_id,
+             (
+               EXISTS (
+                 SELECT 1
+                 FROM entitlements e
+                 WHERE e.target_type = 'workspace'
+                   AND e.target_id = wm.workspace_id
+                   AND e.status IN ('active', 'grace')
+                   AND (e.starts_at IS NULL OR e.starts_at <= $2)
+                   AND (e.expires_at IS NULL OR e.expires_at > $2 OR e.grace_until > $2)
+               )
+               OR EXISTS (
+                 SELECT 1
+                 FROM installed_licenses il
+                 WHERE il.workspace_id = wm.workspace_id
+               )
+             ) AS has_candidate_entitlement
+           FROM workspace_members wm
+           WHERE wm.user_id = $1
+             AND wm.role = 'owner'
+             AND wm.state = 'active'
+           ORDER BY wm.workspace_id"#,
+      )
+      .bind(&owner_id)
+      .bind(now)
+      .fetch_all(&mut **tx)
+      .await
+      .map_err(|e| DomainError::Internal(format!("list owner workspaces for storage usage: {e}")))?;
+
+      let mut personal_ws_ids = Vec::with_capacity(owned_ws_ids.len());
+      for (ws_id, has_candidate_entitlement) in owned_ws_ids {
+        if ws_id == workspace_id || !has_candidate_entitlement {
+          personal_ws_ids.push(ws_id);
+        } else {
+          let ws_grant = quota_gate.resolve_workspace_grant(tx, &ws_id, now).await?;
+          if ws_grant.billing_subject == server_types::BillingSubject::Owner {
+            personal_ws_ids.push(ws_id);
+          }
+        }
+      }
+      if !personal_ws_ids.is_empty() {
+        let used: i64 = sqlx::query_scalar(
+          r#"SELECT
+               COALESCE(
+                 (SELECT SUM(size)::bigint
+                  FROM blobs
+                  WHERE workspace_id = ANY($1)
+                    AND deleted_at IS NULL
+                    AND (status = 'completed' OR (status = 'pending' AND reservation_expires_at > clock_timestamp()))),
+                 0
+               )
+               + COALESCE(
+                 (SELECT SUM(size)::bigint
+                  FROM comment_attachments
+                  WHERE workspace_id = ANY($1)
+                    AND deleted_at IS NULL
+                    AND (status = 'completed' OR (status = 'pending' AND reservation_expires_at > clock_timestamp()))),
+                 0
+               )"#,
+        )
+        .bind(&personal_ws_ids)
+        .fetch_one(&mut **tx)
+        .await
+        .map_err(|e| DomainError::Internal(format!("load owner storage usage: {e}")))?;
+        return Ok(used);
+      }
+    }
+  }
+
+  sqlx::query_scalar(
+    r#"SELECT
+         COALESCE(
+           (SELECT SUM(size)::bigint
+            FROM blobs
+            WHERE workspace_id = $1
+              AND deleted_at IS NULL
+              AND (status = 'completed' OR (status = 'pending' AND reservation_expires_at > clock_timestamp()))),
+           0
+         )
+         + COALESCE(
+           (SELECT SUM(size)::bigint
+            FROM comment_attachments
+            WHERE workspace_id = $1
+              AND deleted_at IS NULL
+              AND (status = 'completed' OR (status = 'pending' AND reservation_expires_at > clock_timestamp()))),
+           0
+         )"#,
+  )
+  .bind(workspace_id)
+  .fetch_one(&mut **tx)
+  .await
+  .map_err(|e| DomainError::Internal(format!("load workspace storage usage: {e}")))
 }
 
 async fn lock_workspace_row(tx: &mut Transaction<'_, Postgres>, workspace_id: &str) -> Result<(), DomainError> {

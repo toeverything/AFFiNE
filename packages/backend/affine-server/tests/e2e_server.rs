@@ -2754,9 +2754,38 @@ fn server_sub_path_and_dev_loopback_socketio_origin_matrix() {
     let (st_hz, _) = http_request(running.addr, "GET", "/healthz", None).await;
     assert_eq!(st_hz, 200);
 
+    // File server.path takes precedence over AFFINE_SERVER_SUB_PATH env default.
+    assert_eq!(
+      affine_server::resolve_server_sub_path(Some("/affine".to_owned()), Some("/legacy".to_owned())),
+      "/affine"
+    );
+    assert_eq!(
+      affine_server::resolve_server_sub_path(None, Some("/legacy".to_owned())),
+      "/legacy"
+    );
+
+    // Trusted external_url origin reaches the mounted subpath Engine.IO handler and returns a real open packet.
+    let (ok_st, ok_head, ok_body) = raw_http_request(
+      running.addr,
+      "GET",
+      "/affine/socket.io/?EIO=4&transport=polling",
+      &[("Origin", "https://example.com")],
+      b"",
+    )
+    .await;
+    assert_eq!(
+      ok_st, 200,
+      "mounted subpath Engine.IO handshake with trusted origin must return 200: {ok_head}"
+    );
+    let ok_body_str = String::from_utf8_lossy(&ok_body);
+    assert!(
+      ok_body_str.starts_with('0') && ok_body_str.contains("\"sid\""),
+      "expected real Engine.IO open packet, got: {ok_body_str}"
+    );
+
     // With channel="dev" but NODE_ENV != "development", dev_mode is false so plain http://localhost:8080
     // is NOT allowed as a Socket.IO CORS origin when external_url is https://example.com.
-    let (_, sio_head, _) = raw_http_request(
+    let (sio_st, sio_head, _) = raw_http_request(
       running.addr,
       "GET",
       "/affine/socket.io/?EIO=4&transport=polling",
@@ -2764,6 +2793,7 @@ fn server_sub_path_and_dev_loopback_socketio_origin_matrix() {
       b"",
     )
     .await;
+    assert_eq!(sio_st, 403, "untrusted loopback origin must be rejected: {sio_head}");
     assert!(
       !sio_head.to_ascii_lowercase().contains("access-control-allow-origin:"),
       "channel=dev without NODE_ENV=development must not allow loopback Origin: {sio_head}"

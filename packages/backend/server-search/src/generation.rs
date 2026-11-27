@@ -206,7 +206,7 @@ pub async fn cleanup_retired_generation(
   config: &SearchConfig,
 ) -> SearchResult<bool> {
   let row = sqlx::query(
-    r#"SELECT id, manifest,
+    r#"SELECT id, manifest, schema_version,
               generation.state = 'failed'
                 AND generation.last_error IS DISTINCT FROM $4
                 AND NOT EXISTS (SELECT 1 FROM search_projection.generations active
@@ -241,12 +241,18 @@ pub async fn cleanup_retired_generation(
   let retain_failure_marker: bool = row
     .try_get("retain_failure_marker")
     .map_err(|error| SearchError::database("decode retired search generation state", error))?;
+  let schema_version: i32 = row
+    .try_get("schema_version")
+    .map_err(|error| SearchError::database("decode retired search generation schema", error))?;
   let generation = decode(row)?;
   if let Some(provider) = remote {
-    for table in [SearchTable::Doc, SearchTable::Block] {
-      provider
-        .drop_generation_asset(generation.physical_table(table)?)
-        .await?;
+    // Preserve schema_version <= 1 remote physical tables for cross-generation v0.27.5 read coexistence.
+    if schema_version > 1 {
+      for table in [SearchTable::Doc, SearchTable::Block] {
+        provider
+          .drop_generation_asset(generation.physical_table(table)?)
+          .await?;
+      }
     }
   } else {
     embedded.remove_generation(generation.id).await;

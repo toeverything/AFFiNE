@@ -29,7 +29,10 @@ use server_domain::users::UserService;
 use server_domain::workspaces::WorkspaceService;
 pub use server_http;
 use server_http::{AppServices, AppState, RuntimeConfig, build_router};
-use server_mail::{MailWorkerError, SmtpConfig, SmtpMailer, process_ready_mail_deliveries};
+use server_mail::{
+  MailDeliveryOptions, MailWorkerError, SmtpConfig, SmtpMailer, process_ready_mail_deliveries,
+  process_ready_mail_deliveries_with_options,
+};
 use server_search::{SearchConfig, SearchError, SearchRuntime};
 use server_spi::ServerExtension;
 use server_sync::auth::{SESSION_COOKIE_NAME, SyncSessionAuthenticator, SyncUser, USER_ID_COOKIE_NAME, parse_cookies};
@@ -453,6 +456,12 @@ fn generate_ephemeral_private_key() -> String {
 /// Returns `true` when `NODE_ENV` is `"development"` (matching `v0.27.5` `env.dev`).
 pub fn is_dev_node_env(node_env: Option<&str>) -> bool {
   node_env.is_some_and(|v| v.trim().eq_ignore_ascii_case("development"))
+}
+
+/// Resolves the effective `server.path` sub-path. Explicit config file values
+/// override the `AFFINE_SERVER_SUB_PATH` environment default.
+pub fn resolve_server_sub_path(file_sub_path: Option<String>, env_sub_path: Option<String>) -> String {
+  file_sub_path.or(env_sub_path).unwrap_or_default()
 }
 
 /// Resolves `(channel, dev_mode)` from `AFFINE_CHANNEL` and `NODE_ENV`.
@@ -898,7 +907,7 @@ async fn build_server_with_bound_port(
     .and_then(serde_json::Value::as_str)
     .and_then(normalize_sub_path);
   let _ = external_path;
-  let external_path = env_sub_path.or(file_sub_path).unwrap_or_default();
+  let external_path = resolve_server_sub_path(file_sub_path, env_sub_path);
   let mut file_json = file_json;
   if !external_path.is_empty() {
     if !file_json.is_object() {
@@ -1052,7 +1061,7 @@ async fn build_server_with_bound_port(
     redis_url_has_password,
   };
 
-  let config = RuntimeConfig {
+  let mut config = RuntimeConfig {
     server_version: cli.server_version.clone(),
     server_name: server_name.clone(),
     external_url: external_url.clone(),
@@ -1077,6 +1086,7 @@ async fn build_server_with_bound_port(
       .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect())
       .unwrap_or_default(),
     worker_proxy_allow_private_origins: Vec::new(),
+    calendar_fallback_private_key: None,
   };
 
   let origin_channel = format!("v2:{channel}");
@@ -1111,13 +1121,15 @@ async fn build_server_with_bound_port(
         )));
       }
     };
+  let env_or_file_private_key = private_key_from_env_or_file.clone();
   let private_key = db_private_key
     .or(private_key_from_env_or_file)
     .unwrap_or_else(generate_ephemeral_private_key);
+  config.calendar_fallback_private_key = Some(env_or_file_private_key.unwrap_or_else(generate_ephemeral_private_key));
 
   let mut auth_cfg = AuthConfig {
     server_name,
-    private_key,
+    private_key: private_key.clone(),
     ..AuthConfig::default()
   };
   if let Some(a) = file_cfg.auth.as_ref() {
@@ -1181,15 +1193,29 @@ async fn build_server_with_bound_port(
   let workspaces = WorkspaceService::new(db.clone(), ext.quota_gate(), Arc::clone(&invalidation))
     .with_event_bus(Arc::clone(&event_bus))
     .with_base_url(external_url.clone())
+    .with_private_key(private_key.clone())
     .with_rate_limit_policy(ext.rate_limit_policy())
     .with_billing_spi(effective_billing)
     .with_redis(redis_client.clone());
+  let doc_uv_redis_prefix = app_config_baseline
+    .lookup_file_config_value("redis.ioredis")
+    .and_then(|v| v.get("keyPrefix").and_then(serde_json::Value::as_str))
+    .filter(|s| !s.is_empty())
+    .or_else(|| {
+      app_config_baseline
+        .lookup_file_config_value("redis.keyPrefix")
+        .and_then(serde_json::Value::as_str)
+        .filter(|s| !s.is_empty())
+    })
+    .unwrap_or("")
+    .to_owned();
   let doc_sharing = DocSharingService::new(
     db.clone(),
     ext.quota_gate(),
     Arc::clone(&invalidation),
     Arc::clone(&event_bus),
-  );
+  )
+  .with_redis(redis_client.clone(), doc_uv_redis_prefix);
   let histories = DocHistoryService::new(db.clone(), ext.quota_gate(), doc_sharing.clone());
   let comments = CommentService::new(
     db.clone(),
@@ -1197,13 +1223,17 @@ async fn build_server_with_bound_port(
     doc_sharing.clone(),
     Arc::clone(&event_bus),
   )
-  .with_invalidation(Arc::clone(&invalidation));
+  .with_invalidation(Arc::clone(&invalidation))
+  .with_base_url(external_url.clone())
+  .with_private_key(private_key.clone());
   let notifications = NotificationService::new(
     db.clone(),
     ext.quota_gate(),
     doc_sharing.clone(),
     Arc::clone(&event_bus),
-  );
+  )
+  .with_base_url(external_url.clone())
+  .with_private_key(private_key.clone());
   let blob_root = std::env::var_os("HOME")
     .map(PathBuf::from)
     .unwrap_or_else(std::env::temp_dir)
@@ -1342,22 +1372,193 @@ pub async fn drain_mail_deliveries_once(db: &ServerDb, mailer: &SmtpMailer) -> R
   Ok(process_ready_mail_deliveries(db.pool(), mailer, &worker_id, 50, 120_000).await?)
 }
 
-async fn spawn_mail_delivery_worker(supervisor: &WorkerSupervisor, db: ServerDb, mailer: SmtpMailer) {
+struct AffineWorkspaceMailResolver {
+  state: Arc<AppState>,
+}
+
+impl server_mail::WorkspaceMailMetaResolver for AffineWorkspaceMailResolver {
+  fn resolve_workspace_meta<'a>(
+    &'a self,
+    workspace_id: &'a str,
+  ) -> std::pin::Pin<
+    Box<
+      dyn std::future::Future<
+          Output = Result<Option<server_mail::ResolvedWorkspaceMailMeta>, server_mail::MailWorkerError>,
+        > + Send
+        + 'a,
+    >,
+  > {
+    Box::pin(async move {
+      let meta = server_domain::workspaces::load_workspace_root_meta_from_pool(self.state.db.pool(), workspace_id)
+        .await
+        .map_err(|err| server_mail::MailWorkerError::Db(sqlx::Error::Protocol(err.to_string())))?;
+      let Some((raw_name, avatar_key)) = meta else {
+        return Ok(None);
+      };
+      let name = raw_name.unwrap_or_else(|| "Untitled".to_owned());
+      let name_contains_domain = server_domain::content_policy::contains_url_or_domain(&name);
+      let avatar = match avatar_key
+        .as_deref()
+        .map(str::trim)
+        .filter(|k| !k.is_empty() && server_blob::validate_blob_key(k).is_ok())
+      {
+        Some(key) => match self.state.blobs.get_blob(workspace_id, key).await {
+          Ok(Some((record, bytes))) if !bytes.is_empty() => Some(server_mail::InlineAttachment {
+            content_id: "workspaceAvatar".to_owned(),
+            content_type: record.mime,
+            data: bytes,
+          }),
+          _ => None,
+        },
+        None => None,
+      };
+      Ok(Some(server_mail::ResolvedWorkspaceMailMeta {
+        name,
+        avatar,
+        name_contains_domain,
+      }))
+    })
+  }
+}
+
+async fn load_dynamic_mailers(
+  app_config: &AppConfigService,
+  startup_smtp: Option<&SmtpConfig>,
+) -> Result<Option<(SmtpMailer, Option<SmtpMailer>, Vec<String>)>, server_types::DomainError> {
+  let mailer_cfg = app_config.get_internal_mailer_config().await?;
+  let raw_smtp = mailer_cfg.get("SMTP");
+  let mut cfg = startup_smtp.cloned().unwrap_or_else(|| SmtpConfig {
+    port: 465,
+    sender: "AFFiNE <noreply@affine.pro>".to_owned(),
+    ..SmtpConfig::default()
+  });
+  if let Some(obj) = raw_smtp.and_then(|v| v.as_object()) {
+    if let Some(v) = obj.get("host").and_then(|v| v.as_str()) {
+      cfg.host = v.trim().to_owned();
+    }
+    if let Some(v) = obj
+      .get("port")
+      .and_then(|v| v.as_u64())
+      .and_then(|n| u16::try_from(n).ok())
+      .filter(|&p| p > 0)
+    {
+      cfg.port = v;
+    }
+    if let Some(v) = obj.get("name").and_then(|v| v.as_str()) {
+      cfg.name = v.to_owned();
+    }
+    if let Some(v) = obj.get("username").and_then(|v| v.as_str()) {
+      cfg.username = v.to_owned();
+    }
+    if let Some(v) = obj.get("password").and_then(|v| v.as_str()) {
+      cfg.password = v.to_owned();
+    }
+    if let Some(v) = obj.get("ignoreTLS").and_then(|v| v.as_bool()) {
+      cfg.ignore_tls = v;
+    }
+    if let Some(v) = obj
+      .get("sender")
+      .and_then(|v| v.as_str())
+      .filter(|s| !s.trim().is_empty())
+    {
+      cfg.sender = v.to_owned();
+    }
+  }
+  if cfg.host.trim().is_empty() {
+    return Ok(None);
+  }
+  let primary = match SmtpMailer::new(&cfg) {
+    Ok(mailer) => mailer,
+    Err(err) => {
+      tracing::warn!(error = %err, "invalid dynamic primary SMTP configuration");
+      return Ok(None);
+    }
+  };
+  let fallback = mailer_cfg
+    .get("fallbackSMTP")
+    .and_then(|v| serde_json::from_value::<SmtpConfig>(v.clone()).ok())
+    .filter(|c| !c.host.trim().is_empty())
+    .and_then(|mut c| {
+      if c.port == 0 {
+        c.port = 465;
+      }
+      if c.sender.trim().is_empty() {
+        c.sender = cfg.sender.clone();
+      }
+      match SmtpMailer::new(&c) {
+        Ok(mailer) => Some(mailer),
+        Err(err) => {
+          tracing::warn!(error = %err, "invalid dynamic fallback SMTP configuration");
+          None
+        }
+      }
+    });
+  let fallback_domains = mailer_cfg
+    .get("fallbackDomains")
+    .and_then(|v| v.as_array())
+    .map(|arr| {
+      arr
+        .iter()
+        .filter_map(|v| v.as_str().map(str::to_owned))
+        .collect::<Vec<_>>()
+    })
+    .unwrap_or_default();
+  Ok(Some((primary, fallback, fallback_domains)))
+}
+
+async fn spawn_dynamic_mail_delivery_worker(
+  supervisor: &WorkerSupervisor,
+  state: Arc<AppState>,
+  base_url: String,
+  startup_smtp: Option<SmtpConfig>,
+) {
   let worker_id = format!("mail-delivery-{}-{}", std::process::id(), uuid::Uuid::new_v4());
   supervisor
     .spawn(move |shutdown| async move {
+      // Align with v0.27.5 `@Cron(EVERY_MINUTE)` using a minute-boundary interval ticker.
+      let now_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64;
+      let delay_ms = (60_000 - (now_ms % 60_000)).max(1);
+      let mut ticker = tokio::time::interval_at(
+        tokio::time::Instant::now() + Duration::from_millis(delay_ms),
+        Duration::from_secs(60),
+      );
+      ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+      let mut last_gen: Option<u64> = None;
+      let mut cached_mailers: Option<(SmtpMailer, Option<SmtpMailer>, Vec<String>)> = None;
+      let ws_resolver = AffineWorkspaceMailResolver {
+        state: Arc::clone(&state),
+      };
       loop {
-        // Align with v0.27.5 `@Cron(EVERY_MINUTE)`: sleep until the next whole minute boundary.
-        let now_ms = std::time::SystemTime::now()
-          .duration_since(std::time::UNIX_EPOCH)
-          .unwrap_or_default()
-          .as_millis() as u64;
-        let delay_ms = 60_000 - (now_ms % 60_000);
         tokio::select! {
           () = shutdown.cancelled() => break,
-          () = tokio::time::sleep(Duration::from_millis(delay_ms)) => {
-            if let Err(err) = process_ready_mail_deliveries(db.pool(), &mailer, &worker_id, 50, 120_000).await {
-              tracing::warn!(error = %err, "mail delivery worker tick failed");
+          _ = ticker.tick() => {
+            let current_gen = state.app_config.current_generation();
+            if last_gen != Some(current_gen) {
+              match load_dynamic_mailers(&state.app_config, startup_smtp.as_ref()).await {
+                Ok(loaded) => {
+                  cached_mailers = loaded;
+                  last_gen = Some(current_gen);
+                }
+                Err(err) => {
+                  tracing::warn!(error = %err, "failed to load dynamic mailer configuration; will retry on next tick");
+                }
+              }
+            }
+            if let Some((mailer, fallback, fallback_domains)) = cached_mailers.as_ref() {
+              let opts = MailDeliveryOptions {
+                base_url: &base_url,
+                fallback_mailer: fallback.as_ref(),
+                fallback_domains: fallback_domains.as_slice(),
+                workspace_resolver: Some(&ws_resolver),
+              };
+              if let Err(err) =
+                process_ready_mail_deliveries_with_options(state.db.pool(), mailer, &worker_id, 50, 120_000, &opts).await
+              {
+                tracing::warn!(error = %err, "mail delivery worker tick failed");
+              }
             }
           }
         }
@@ -1416,6 +1617,18 @@ where
       .init_blob_storage_from_app_config_for_boot(true)
       .await
       .map_err(|e| ServerError::InvalidConfig(format!("invalid blob storage app_config: {e}")))?;
+  }
+
+  if !cli.skip_schema_check
+    && built.state.config.load().deployment_mode == DeploymentMode::Selfhosted
+    && built.role != ServerRole::Script
+  {
+    built
+      .state
+      .licenses
+      .admit_offline_licenses()
+      .await
+      .map_err(|err| ServerError::InvalidConfig(format!("startup offline license admission failed: {err}")))?;
   }
 
   before_serve(&built).await?;
@@ -1686,28 +1899,32 @@ where
     }
   }
 
-  if matches!(built.role, ServerRole::Allinone | ServerRole::Worker)
-    && let Some(host) = cli.mailer_host.as_deref().map(str::trim).filter(|s| !s.is_empty())
-  {
-    let smtp_cfg = SmtpConfig {
-      name: cli.mailer_servername.clone().unwrap_or_default(),
-      host: host.to_owned(),
-      port: cli.mailer_port.unwrap_or(465),
-      username: cli.mailer_user.clone().unwrap_or_default(),
-      password: cli.mailer_password.clone().unwrap_or_default(),
-      ignore_tls: cli.mailer_ignore_tls,
-      sender: cli
-        .mailer_sender
-        .clone()
-        .filter(|s| !s.trim().is_empty())
-        .unwrap_or_else(|| "AFFiNE <noreply@affine.pro>".to_owned()),
-    };
-    match SmtpMailer::new(&smtp_cfg) {
-      Ok(mailer) => spawn_mail_delivery_worker(&built.supervisor, built.state.db.clone(), mailer).await,
-      Err(err) => {
-        tracing::warn!(error = %err, "mail delivery worker disabled due to invalid SMTP config");
-      }
-    }
+  if matches!(built.role, ServerRole::Allinone | ServerRole::Worker) {
+    let startup_smtp = cli
+      .mailer_host
+      .as_deref()
+      .map(str::trim)
+      .filter(|s| !s.is_empty())
+      .map(|host| SmtpConfig {
+        name: cli.mailer_servername.clone().unwrap_or_default(),
+        host: host.to_owned(),
+        port: cli.mailer_port.unwrap_or(465),
+        username: cli.mailer_user.clone().unwrap_or_default(),
+        password: cli.mailer_password.clone().unwrap_or_default(),
+        ignore_tls: cli.mailer_ignore_tls,
+        sender: cli
+          .mailer_sender
+          .clone()
+          .filter(|s| !s.trim().is_empty())
+          .unwrap_or_else(|| "AFFiNE <noreply@affine.pro>".to_owned()),
+      });
+    spawn_dynamic_mail_delivery_worker(
+      &built.supervisor,
+      Arc::clone(&built.state),
+      built.state.config.load().external_url.clone(),
+      startup_smtp,
+    )
+    .await;
   }
 
   built

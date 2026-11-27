@@ -458,7 +458,7 @@ pub(crate) async fn resolve_workspace_comment_changes(
       doc_id,
       comment_updated_at,
       reply_updated_at,
-      i64::from(pagination.resolved_first(100)),
+      i64::from(pagination.first.unwrap_or(100).clamp(1, 10_000)),
     )
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;

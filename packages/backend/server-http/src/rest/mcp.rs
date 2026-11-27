@@ -360,14 +360,80 @@ fn parse_request_id(obj: &Map<String, Value>) -> Result<Option<Value>, ()> {
 }
 fn build_tool_list(write_tools_enabled: bool) -> Vec<Value> {
   let mut tools = vec![
-    json!({"name":"read_document","title":"Read Document","description":"Read a document with given ID","inputSchema":{"type":"object","properties":{"docId":{"type":"string"}},"required":["docId"],"additionalProperties":false}}),
-    json!({"name":"doc_search","title":"Document Search","description":"Search persisted workspace documents and return bounded passages with Page or canvas locators.","inputSchema":{"type":"object","properties":{"query":{"type":"string"},"doc_ids":{"type":"array","items":{"type":"string"},"maxItems":50},"limit":{"type":"integer","minimum":1,"maximum":20}},"required":["query"],"additionalProperties":false}}),
+    json!({
+      "name": "read_document",
+      "title": "Read Document",
+      "description": "Read a document with given ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "docId": { "type": "string", "description": "The ID of the document to read." }
+        },
+        "required": ["docId"],
+        "additionalProperties": false
+      }
+    }),
+    json!({
+      "name": "doc_search",
+      "title": "Document Search",
+      "description": "Search persisted workspace documents and return bounded passages with Page or canvas locators.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Search query string (1 to 2000 characters)." },
+          "doc_ids": { "type": "array", "items": { "type": "string" }, "maxItems": 50, "description": "Optional list of document IDs to restrict search scope." },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 20, "description": "Maximum number of document hits to return (1 to 20)." }
+        },
+        "required": ["query"],
+        "additionalProperties": false
+      }
+    }),
   ];
   if write_tools_enabled {
     tools.extend([
-      json!({"name":"create_document","title":"Create Document","description":"Create a new document in the workspace with the given title and markdown content.","inputSchema":{"type":"object","properties":{"title":{"type":"string"},"content":{"type":"string"},"docId":{"type":"string"}},"required":["title","content"],"additionalProperties":false}}),
-      json!({"name":"update_document","title":"Update Document","description":"Update an existing document with new markdown content (body only).","inputSchema":{"type":"object","properties":{"docId":{"type":"string"},"content":{"type":"string"}},"required":["docId","content"],"additionalProperties":false}}),
-      json!({"name":"update_document_meta","title":"Update Document Metadata","description":"Update document metadata (currently title only).","inputSchema":{"type":"object","properties":{"docId":{"type":"string"},"title":{"type":"string"}},"required":["docId","title"],"additionalProperties":false}}),
+      json!({
+        "name": "create_document",
+        "title": "Create Document",
+        "description": "Create a new document in the workspace with the given title and markdown content.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string", "description": "Title of the new document." },
+            "content": { "type": "string", "description": "Markdown body content of the new document." },
+            "docId": { "type": "string", "description": "Optional explicit document ID." }
+          },
+          "required": ["title", "content"],
+          "additionalProperties": false
+        }
+      }),
+      json!({
+        "name": "update_document",
+        "title": "Update Document",
+        "description": "Update an existing document with new markdown content (body only).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "docId": { "type": "string", "description": "ID of the document to update." },
+            "content": { "type": "string", "description": "Replacement markdown body content." }
+          },
+          "required": ["docId", "content"],
+          "additionalProperties": false
+        }
+      }),
+      json!({
+        "name": "update_document_meta",
+        "title": "Update Document Metadata",
+        "description": "Update document metadata (currently title only).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "docId": { "type": "string", "description": "ID of the document whose metadata will be updated." },
+            "title": { "type": "string", "description": "New title for the document." }
+          },
+          "required": ["docId", "title"],
+          "additionalProperties": false
+        }
+      }),
     ]);
   }
   tools
@@ -774,11 +840,84 @@ async fn execute_tool(
         )
       }
       .await;
-      match lexical_hits {
-        Ok(hits) => tool_text(
+      let embedding_spi = state.app.extension.copilot_embedding_spi();
+      let vector_hits: Option<Vec<server_spi::VectorDocSearchHit>> = if embedding_spi.is_enabled() {
+        embedding_spi
+          .search_workspace_docs_vector(workspace_id, query_str, &doc_ids, limit)
+          .await
+          .ok()
+          .flatten()
+      } else {
+        None
+      };
+
+      match (lexical_hits, vector_hits) {
+        (Ok(lex_hits), Some(vec_hits)) => {
+          let mut authorized_vec = Vec::new();
+          for hit in vec_hits {
+            if matches!(
+              check_doc_perm(state, workspace_id, user_id, &hit.doc_id, false).await,
+              Ok(true)
+            ) {
+              authorized_vec.push(hit);
+            }
+          }
+          let mut fused: HashMap<String, (f64, Value)> = HashMap::new();
+          for (idx, h) in lex_hits.into_iter().enumerate() {
+            let did = h.get("doc_id").and_then(Value::as_str).unwrap_or_default().to_owned();
+            if did.is_empty() {
+              continue;
+            }
+            let rrf = 1.0 / (60.0 + (idx + 1) as f64);
+            fused.insert(did, (rrf, h));
+          }
+          for (idx, vh) in authorized_vec.into_iter().enumerate() {
+            let rrf = 1.0 / (60.0 + (idx + 1) as f64);
+            fused
+              .entry(vh.doc_id.clone())
+              .and_modify(|(score, _)| *score += rrf)
+              .or_insert_with(|| {
+                (
+                  rrf,
+                  json!({
+                    "doc_id": vh.doc_id,
+                    "title": vh.title.unwrap_or_default(),
+                    "excerpt": vh.excerpt,
+                    "visibility": "page",
+                  }),
+                )
+              });
+          }
+          let mut items: Vec<(String, f64, Value)> = fused.into_iter().map(|(k, (s, v))| (k, s, v)).collect();
+          items.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+          items.truncate(limit as usize);
+          let hits: Vec<Value> = items.into_iter().map(|(_, _, v)| v).collect();
+          tool_text(json!({ "retrieval_mode": "hybrid", "hits": hits }).to_string())
+        }
+        (Err(()), Some(vec_hits)) => {
+          let mut hits = Vec::new();
+          for vh in vec_hits {
+            if matches!(
+              check_doc_perm(state, workspace_id, user_id, &vh.doc_id, false).await,
+              Ok(true)
+            ) {
+              hits.push(json!({
+                "doc_id": vh.doc_id,
+                "title": vh.title.unwrap_or_default(),
+                "excerpt": vh.excerpt,
+                "visibility": "page",
+              }));
+              if hits.len() >= limit as usize {
+                break;
+              }
+            }
+          }
+          tool_text(json!({ "retrieval_mode": "vector", "hits": hits }).to_string())
+        }
+        (Ok(hits), None) => tool_text(
           json!({ "retrieval_mode": "lexical", "degraded_reason": "VECTOR_UNAVAILABLE", "hits": hits }).to_string(),
         ),
-        Err(()) => {
+        (Err(()), None) => {
           if doc_ids.is_empty() {
             return tool_error("SEARCH_UNAVAILABLE");
           }
@@ -829,11 +968,17 @@ async fn execute_tool(
       if sanitized_title.is_empty() {
         return tool_error("Failed to create document: Title cannot be empty");
       }
-      let explicit_doc_id = args
-        .get("docId")
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .filter(|s| !s.is_empty());
+      let explicit_doc_id = match args.get("docId") {
+        None | Some(Value::Null) => None,
+        Some(Value::String(raw)) => {
+          let trimmed = raw.trim();
+          if trimmed.is_empty() {
+            return tool_error("Invalid arguments: docId cannot be empty");
+          }
+          Some(trimmed)
+        }
+        Some(_) => return tool_error("Invalid arguments: docId must be a string"),
+      };
       if let Some(doc_id) = explicit_doc_id {
         if is_reserved_doc_id(workspace_id, doc_id) {
           return tool_error("Failed to create document: Invalid document ID.");

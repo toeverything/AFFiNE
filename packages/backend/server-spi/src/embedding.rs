@@ -68,12 +68,33 @@ pub struct AddWorkspaceArtifactInput {
   pub bytes: Vec<u8>,
 }
 
+/// Vector search hit returned by [`CopilotEmbeddingSpi::search_workspace_docs_vector`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct VectorDocSearchHit {
+  pub doc_id: String,
+  pub title: Option<String>,
+  pub excerpt: String,
+  pub score: f64,
+}
+
 /// Commercial SPI for workspace embedding config, artifacts, and ignored documents.
 #[async_trait::async_trait]
 pub trait CopilotEmbeddingSpi: Send + Sync + 'static {
   /// Returns true when the commercial embedding runtime is enabled and ready.
   fn is_enabled(&self) -> bool {
     false
+  }
+
+  /// Optional vector retrieval hook for MCP hybrid document search.
+  /// Returns `Ok(None)` when vector retrieval is unavailable for this workspace.
+  async fn search_workspace_docs_vector(
+    &self,
+    _workspace_id: &str,
+    _query: &str,
+    _doc_ids: &[String],
+    _limit: u32,
+  ) -> Result<Option<Vec<VectorDocSearchHit>>, DomainError> {
+    Ok(None)
   }
 
   /// Lists all ignored documents for a workspace in descending `created_at` order.

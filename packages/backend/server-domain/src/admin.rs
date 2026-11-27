@@ -835,8 +835,22 @@ impl AdminService {
       .await
       .map_err(|e| DomainError::Internal(format!("admin get_dashboard clock: {e}")))?;
     let sync_to = floor_minute(now);
-    let sync_from = sync_to - Duration::hours(i64::from(sync_hours - 1));
-    let current_day = now.date_naive();
+    let sync_from = sync_to - Duration::hours(i64::from(sync_hours));
+    let current_day = jiff::tz::TimeZone::get(&timezone)
+      .ok()
+      .and_then(|tz| {
+        jiff::Timestamp::from_second(now.timestamp())
+          .ok()
+          .map(|ts| ts.to_zoned(tz).date())
+      })
+      .and_then(|d| {
+        NaiveDate::from_ymd_opt(
+          i32::from(d.year()),
+          u32::from(d.month() as u8),
+          u32::from(d.day() as u8),
+        )
+      })
+      .unwrap_or_else(|| now.date_naive());
     let storage_from_day = current_day - Duration::days(i64::from(storage_days - 1));
     let shared_from_day = current_day - Duration::days(i64::from(shared_days - 1));
     let copilot_from_day = current_day - Duration::days(i64::from(copilot_days - 1));

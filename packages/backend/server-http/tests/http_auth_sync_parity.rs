@@ -968,7 +968,15 @@ fn sign_in_rate_limit_honors_ioredis_key_prefix_and_ms_pttl() {
       app_config_baseline: baseline,
       ..RuntimeConfig::default()
     };
-    let app = AppState::new(db, Some(redis_client.clone()), cfg, Arc::new(CommunityExtension::new()));
+    let app = AppState::new(db.clone(), Some(redis_client.clone()), cfg, Arc::new(CommunityExtension::new()));
+    // Insert a conflicting legacy app_configs('redis.keyPrefix') row; rate-limit must ignore it and keep file baseline prefix.
+    sqlx::query(
+      "INSERT INTO app_configs (id, value, created_at, updated_at) VALUES ('redis.keyPrefix', '\"db_conflict_prefix:\"'::jsonb, now(), now())",
+    )
+    .execute(db.pool())
+    .await
+    .expect("insert conflicting redis.keyPrefix");
+    app.app_config.invalidate_cache();
     let router = build_router(Arc::clone(&app));
 
     let email = "ioredis-prefix-test@example.com";

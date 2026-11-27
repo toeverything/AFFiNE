@@ -114,6 +114,8 @@ pub struct CommentService {
   doc_sharing: DocSharingService,
   event_bus: Arc<dyn EventBusPublisher>,
   invalidation: Arc<dyn InvalidationPublisher>,
+  base_url: String,
+  private_key: String,
 }
 
 impl CommentService {
@@ -129,11 +131,23 @@ impl CommentService {
       doc_sharing,
       event_bus,
       invalidation: Arc::new(NoopEventPublisher::default()),
+      base_url: "http://localhost:3010".to_owned(),
+      private_key: String::new(),
     }
   }
 
   pub fn with_invalidation(mut self, invalidation: Arc<dyn InvalidationPublisher>) -> Self {
     self.invalidation = invalidation;
+    self
+  }
+
+  pub fn with_base_url(mut self, base_url: impl Into<String>) -> Self {
+    self.base_url = base_url.into();
+    self
+  }
+
+  pub fn with_private_key(mut self, private_key: impl Into<String>) -> Self {
+    self.private_key = private_key.into();
     self
   }
 
@@ -207,6 +221,8 @@ impl CommentService {
       &target,
       None,
       notification,
+      &self.base_url,
+      &self.private_key,
       now,
     )
     .await?;
@@ -367,6 +383,8 @@ impl CommentService {
       &comment,
       Some(&reply_id),
       notification,
+      &self.base_url,
+      &self.private_key,
       now,
     )
     .await?;
@@ -890,17 +908,31 @@ impl CommentService {
       .quota_gate
       .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
       .await?;
-    let used: i64 = sqlx::query_scalar(
-      r#"SELECT
-        COALESCE((SELECT SUM(size)::bigint FROM blobs WHERE workspace_id = $1 AND deleted_at IS NULL
-          AND (status = 'completed' OR (status = 'pending' AND reservation_expires_at > clock_timestamp()))), 0)
-        + COALESCE((SELECT SUM(size)::bigint FROM comment_attachments WHERE workspace_id = $1 AND deleted_at IS NULL
-          AND (status = 'completed' OR (status = 'pending' AND reservation_expires_at > clock_timestamp()))), 0)"#,
+    if grant.billing_subject == server_types::BillingSubject::Owner {
+      let owner_id: Option<String> = sqlx::query_scalar(
+        "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
+      )
+      .bind(workspace_id)
+      .fetch_optional(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load owner for comment attachment quota lock: {e}")))?;
+      if let Some(ref oid) = owner_id {
+        let lock_key = format!("owner-storage-quota:{oid}");
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+          .bind(&lock_key)
+          .execute(&mut **tx.tx_mut())
+          .await
+          .map_err(|e| DomainError::Internal(format!("lock owner user for comment attachment quota: {e}")))?;
+      }
+    }
+    let used = crate::workspaces::load_effective_storage_usage_in_tx(
+      tx.tx_mut(),
+      self.quota_gate.as_ref(),
+      workspace_id,
+      &grant,
+      now,
     )
-    .bind(workspace_id)
-    .fetch_one(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| DomainError::Internal(format!("load workspace storage usage for comment attachment: {e}")))?;
+    .await?;
     if used
       .checked_add(size_i64)
       .is_none_or(|projected| projected > grant.limits.storage_quota_bytes)
@@ -1100,19 +1132,7 @@ impl CommentService {
 
   async fn publish_notification_counts(&self, user_ids: &[String]) {
     for uid in user_ids {
-      let _ = self
-        .event_bus
-        .publish_event(
-          "realtime.topic.changed",
-          json!({
-            "topic": "notification.count.changed",
-            "room": format!("user:{uid}:notification"),
-            "input": {},
-            "event": { "changed": true },
-          }),
-          None,
-        )
-        .await;
+      crate::notifications::publish_notification_count_changed(&self.db, self.event_bus.as_ref(), uid, "created").await;
     }
   }
 }
@@ -1214,6 +1234,7 @@ async fn assert_comment_mutation_in(
   Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn create_comment_notifications_in(
   tx: &mut Transaction<'_, Postgres>,
   quota_gate: &dyn QuotaGate,
@@ -1221,6 +1242,8 @@ async fn create_comment_notifications_in(
   comment: &TargetRow,
   reply_id: Option<&str>,
   notification: CommentNotificationContext,
+  base_url: &str,
+  private_key: &str,
   now: DateTime<Utc>,
 ) -> Result<Vec<String>, DomainError> {
   let mention_user_ids: BTreeSet<String> = notification.mentions.into_iter().collect();
@@ -1248,6 +1271,22 @@ async fn create_comment_notifications_in(
   notify_user_ids.extend(mention_user_ids.iter().cloned());
   notify_user_ids.remove(sender_user_id);
 
+  let actor_email: String = if notify_user_ids.is_empty() {
+    String::new()
+  } else {
+    sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+      .bind(sender_user_id)
+      .fetch_optional(&mut **tx)
+      .await
+      .map_err(|e| DomainError::Internal(format!("load comment actor email: {e}")))?
+      .unwrap_or_default()
+  };
+  let base = base_url.trim_end_matches('/');
+  let doc_url = format!(
+    "{base}/workspace/{}/{}?commentId={}",
+    comment.workspace_id, comment.doc_id, comment.id
+  );
+
   let mut notified = Vec::new();
   for user_id in notify_user_ids {
     let access = load_workspace_docs_access_in(
@@ -1266,11 +1305,8 @@ async fn create_comment_notifications_in(
     {
       continue;
     }
-    let notification_type = if mention_user_ids.contains(&user_id) {
-      "CommentMention"
-    } else {
-      "Comment"
-    };
+    let is_mention = mention_user_ids.contains(&user_id);
+    let notification_type = if is_mention { "CommentMention" } else { "Comment" };
     let body = json!({
       "workspaceId": comment.workspace_id,
       "createdByUserId": sender_user_id,
@@ -1282,16 +1318,43 @@ async fn create_comment_notifications_in(
         "mode": notification.doc_mode,
       },
     });
-    sqlx::query(
+    let notif_id: String = sqlx::query_scalar(
       r#"INSERT INTO notifications (id, user_id, level, type, body)
-         VALUES (gen_random_uuid()::text, $1, 'Default', $2::"NotificationType", $3)"#,
+         VALUES (gen_random_uuid()::text, $1, 'Default', $2::"NotificationType", $3)
+         RETURNING id"#,
     )
     .bind(&user_id)
     .bind(notification_type)
     .bind(Json(body))
-    .execute(&mut **tx)
+    .fetch_one(&mut **tx)
     .await
     .map_err(|e| DomainError::Internal(format!("insert comment notification: {e}")))?;
+
+    let (mail_class, pref_field) = if is_mention {
+      ("comment_mention", "receiveMentionEmail")
+    } else {
+      ("comment", "receiveCommentEmail")
+    };
+    crate::notifications::enqueue_notification_mail_in_tx(
+      tx,
+      crate::notifications::EnqueueNotificationMail {
+        private_key,
+        mail_name: notification_type,
+        mail_class,
+        recipient_user_id: &user_id,
+        actor_user_id: Some(sender_user_id),
+        workspace_id: Some(&comment.workspace_id),
+        notification_id: Some(&notif_id),
+        pref_field: Some(pref_field),
+        props: json!({
+          "user": { "email": actor_email },
+          "doc": { "title": notification.doc_title, "url": doc_url },
+        }),
+        skip_if_domain_in_workspace_name: None,
+      },
+    )
+    .await?;
+
     notified.push(user_id);
   }
   Ok(notified)

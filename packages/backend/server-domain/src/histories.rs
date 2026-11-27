@@ -78,7 +78,7 @@ impl DocHistoryService {
       )));
     }
 
-    let limit = i64::from(take.unwrap_or(10).clamp(1, 100));
+    let limit = i64::from(take.unwrap_or(100).clamp(1, 100));
     let rows = sqlx::query(
       r#"SELECT sh.timestamp, u.name AS editor_name, u.avatar_url AS editor_avatar_url
          FROM snapshot_histories sh
@@ -86,14 +86,12 @@ impl DocHistoryService {
          WHERE sh.workspace_id = $1
            AND sh.guid = $2
            AND sh.timestamp < $3
-           AND sh.expired_at > $4
          ORDER BY sh.timestamp DESC
-         LIMIT $5"#,
+         LIMIT $4"#,
     )
     .bind(workspace_id)
     .bind(&doc_id)
     .bind(before)
-    .bind(now)
     .bind(limit)
     .fetch_all(&mut **tx.tx_mut())
     .await

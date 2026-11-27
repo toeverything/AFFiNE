@@ -291,7 +291,7 @@ fn put_get_list_delete_release_round_trip_with_dedup_conflicts_and_reserved_keys
       Err(DomainError::Conflict(message)) => assert_eq!(message, "blob content mismatch"),
       other => panic!("expected content conflict, got {other:?}"),
     }
-    for key in ["../key", "key-a.metadata.json", "KEY-A.METADATA.JSON", "key-a.tmp-0"] {
+    for key in ["../key", "key-a.metadata.json", "KEY-A.METADATA.JSON", "key%20a"] {
       assert!(
         matches!(
           service.put_blob(&ws, key, "image/png", b"x".to_vec()).await,
@@ -300,6 +300,33 @@ fn put_get_list_delete_release_round_trip_with_dedup_conflicts_and_reserved_keys
         "{key}"
       );
     }
+
+    // Keys containing `.tmp-` are valid user blob keys and must round-trip cleanly.
+    service
+      .put_blob(&ws, "key-a.tmp-0", "image/png", b"tmp-body".to_vec())
+      .await
+      .expect("put .tmp- key");
+    assert!(
+      service
+        .list_blobs(&ws)
+        .await
+        .expect("list_blobs")
+        .iter()
+        .any(|item| item.key == "key-a.tmp-0")
+    );
+    assert!(
+      fx.storage
+        .inner
+        .list_prefix(&format!("{ws}/"), None, 100)
+        .await
+        .expect("list_prefix")
+        .iter()
+        .any(|(key, _)| key == &format!("{ws}/key-a.tmp-0"))
+    );
+    service
+      .delete_blob(&ws, "key-a.tmp-0", true)
+      .await
+      .expect("delete .tmp- key");
 
     let (got, body) = service.get_blob(&ws, "key-a").await.unwrap().expect("live blob");
     assert_eq!((got, body), (record.clone(), b"hello".to_vec()));
@@ -782,5 +809,91 @@ fn reconcile_storage_orphans_exempts_copilot_and_artifact_prefixes() {
       );
     }
     assert!(storage.get("deleted-ws-999/stale-orphan").await.unwrap().is_none());
+  });
+}
+
+#[test]
+fn owner_storage_quota_aggregates_past_64_personal_workspaces() {
+  struct OwnerQuotaGate {
+    storage_quota: i64,
+  }
+
+  #[async_trait::async_trait]
+  impl QuotaGate for OwnerQuotaGate {
+    async fn resolve_workspace_grant(
+      &self,
+      _tx: &mut Transaction<'_, Postgres>,
+      _workspace_id: &str,
+      _now: DateTime<Utc>,
+    ) -> Result<AccessGrant, DomainError> {
+      let mut grant = server_types::license::default_selfhost_access_grant();
+      grant.billing_subject = server_types::BillingSubject::Owner;
+      grant.limits.blob_limit_bytes = 1 << 20;
+      grant.limits.storage_quota_bytes = self.storage_quota;
+      grant.limits.seat_limit = 10;
+      Ok(grant)
+    }
+
+    async fn check_seat_admission(
+      &self,
+      tx: &mut Transaction<'_, Postgres>,
+      workspace_id: &str,
+      _current_active_seats: i32,
+      _adding_seats: i32,
+      now: DateTime<Utc>,
+    ) -> Result<AccessGrant, DomainError> {
+      self.resolve_workspace_grant(tx, workspace_id, now).await
+    }
+  }
+
+  let lease = leased_0275_database();
+  runtime().block_on(async {
+    let fx = Fixture::new(lease.url()).await;
+    let service = BlobService::new(
+      fx.db.clone(),
+      fx.storage.clone(),
+      Arc::new(OwnerQuotaGate { storage_quota: 100 }),
+    );
+    let owner_id = format!("owner-{}", uuid::Uuid::new_v4().simple());
+    sqlx::query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)")
+      .bind(&owner_id)
+      .bind("Owner 66")
+      .bind(format!("{owner_id}@example.test"))
+      .execute(fx.db.pool())
+      .await
+      .expect("insert owner user");
+
+    let mut ws_ids = Vec::with_capacity(66);
+    for idx in 0..66 {
+      let ws_id = format!("ws-{idx:03}-{}", uuid::Uuid::new_v4().simple());
+      sqlx::query("INSERT INTO workspaces (id) VALUES ($1)")
+        .bind(&ws_id)
+        .execute(fx.db.pool())
+        .await
+        .expect("insert workspace");
+      sqlx::query(
+        "INSERT INTO workspace_members (id, workspace_id, user_id, role, source, state, created_at, updated_at) VALUES ($1, $2, $3, 'owner', 'legacy', 'active', now(), now())",
+      )
+      .bind(uuid::Uuid::new_v4().to_string())
+      .bind(&ws_id)
+      .bind(&owner_id)
+      .execute(fx.db.pool())
+      .await
+      .expect("insert workspace owner");
+      ws_ids.push(ws_id);
+    }
+    ws_ids.sort();
+
+    // Workspaces 0..64 remain empty; write 90 bytes into workspace 65 (index 64).
+    service
+      .put_blob(&ws_ids[64], "blob-65", "application/octet-stream", vec![b'a'; 90])
+      .await
+      .expect("90 bytes into 65th workspace fits within 100-byte owner quota");
+
+    // Writing 20 bytes into workspace 66 (index 65) must exceed the shared 100-byte owner quota.
+    let err = service
+      .put_blob(&ws_ids[65], "blob-66", "application/octet-stream", vec![b'b'; 20])
+      .await;
+    assert_eq!(quota_kind(err), "storage_quota");
   });
 }

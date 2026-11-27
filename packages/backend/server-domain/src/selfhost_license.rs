@@ -694,7 +694,10 @@ impl SelfhostLicenseService {
       let _ = tx.rollback().await;
       return Err(DomainError::NotFound("license_not_found".to_owned()));
     }
-    revoke_workspace_entitlements_in_tx(tx.tx_mut(), workspace_id, now).await?;
+    let revoked = revoke_workspace_entitlements_in_tx(tx.tx_mut(), workspace_id, now).await?;
+    if revoked > 0 {
+      downgrade_workspace_after_license_loss_in_tx(tx.tx_mut(), workspace_id, now).await?;
+    }
 
     tx.commit()
       .await
@@ -1162,7 +1165,11 @@ impl SelfhostLicenseService {
         .execute(&mut **tx.tx_mut())
         .await
         .map_err(|e| DomainError::Internal(format!("touch expired offline license validated_at: {e}")))?;
-        if let Some((ent_id, _, _)) = existing_entitlement {
+        let mut transitioned_from_commercial = false;
+        if let Some((ent_id, prev_status, _)) = existing_entitlement {
+          if matches!(prev_status.as_str(), "active" | "grace") {
+            transitioned_from_commercial = true;
+          }
           sqlx::query(
             "UPDATE entitlements
              SET status = $2,
@@ -1178,6 +1185,9 @@ impl SelfhostLicenseService {
           .execute(&mut **tx.tx_mut())
           .await
           .map_err(|e| DomainError::Internal(format!("mark offline entitlement {new_status}: {e}")))?;
+        }
+        if transitioned_from_commercial {
+          downgrade_workspace_after_license_loss_in_tx(tx.tx_mut(), &row.workspace_id, now).await?;
         }
         tx.commit()
           .await
@@ -1349,6 +1359,17 @@ impl SelfhostLicenseService {
       return Ok(false);
     }
 
+    sqlx::query(
+      "UPDATE installed_licenses SET validated_at = $4 WHERE workspace_id = $1 AND key = $2 AND validate_key = $3",
+    )
+    .bind(&row.workspace_id)
+    .bind(&row.key)
+    .bind(&row.validate_key)
+    .bind(now)
+    .execute(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("touch denied license validated_at: {e}")))?;
+
     let updated = sqlx::query(
       r#"UPDATE entitlements
          SET status = $3,
@@ -1370,6 +1391,10 @@ impl SelfhostLicenseService {
     .map_err(|e| DomainError::Internal(format!("update denied license entitlement: {e}")))?
     .rows_affected();
 
+    if updated > 0 {
+      downgrade_workspace_after_license_loss_in_tx(tx.tx_mut(), &row.workspace_id, now).await?;
+    }
+
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit license denial: {e}")))?;
@@ -1379,6 +1404,41 @@ impl SelfhostLicenseService {
     } else {
       Ok(false)
     }
+  }
+
+  /// Startup reconciliation for all installed offline (`variant = 'onetime'`)
+  /// self-hosted licenses: verifies signatures, repairs missing entitlements,
+  /// and downgrades expired or invalid workspaces.
+  pub async fn admit_offline_licenses(&self) -> Result<usize, DomainError> {
+    let mut conn = self
+      .db
+      .acquire_tiered(WorkloadTier::LongQuery)
+      .await
+      .map_err(|e| DomainError::Unavailable(format!("acquire admit_offline_licenses: {e}")))?;
+    let rows = sqlx::query(
+      r#"SELECT workspace_id, key, validate_key, variant
+         FROM installed_licenses
+         WHERE COALESCE(lower(variant), '') = 'onetime'
+         ORDER BY workspace_id ASC"#,
+    )
+    .fetch_all(&mut *conn)
+    .await
+    .map_err(|e| DomainError::Internal(format!("list offline licenses for startup admission: {e}")))?;
+    drop(conn);
+
+    let mut processed = 0usize;
+    for r in rows {
+      let row = InstalledRow {
+        workspace_id: r.get("workspace_id"),
+        key: r.get("key"),
+        validate_key: r.get("validate_key"),
+        variant: r.get("variant"),
+      };
+      if self.check_offline_license(&row).await? {
+        processed += 1;
+      }
+    }
+    Ok(processed)
   }
 
   pub fn preview_license(&self, payload: &[u8]) -> Result<LicensePreviewView, DomainError> {
@@ -1564,8 +1624,8 @@ async fn revoke_workspace_entitlements_in_tx(
   tx: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
   now: DateTime<Utc>,
-) -> Result<(), DomainError> {
-  sqlx::query(
+) -> Result<u64, DomainError> {
+  let affected = sqlx::query(
     "UPDATE entitlements
      SET status = 'revoked', updated_at = $2
      WHERE source = 'selfhost_license'
@@ -1577,7 +1637,36 @@ async fn revoke_workspace_entitlements_in_tx(
   .bind(now)
   .execute(&mut **tx)
   .await
-  .map_err(|e| DomainError::Internal(format!("revoke selfhost license entitlements: {e}")))?;
+  .map_err(|e| DomainError::Internal(format!("revoke selfhost license entitlements: {e}")))?
+  .rows_affected();
+  Ok(affected)
+}
+
+/// Downgrades workspace state after losing a commercial self-hosted license:
+/// revokes pending invitations and demotes non-owner admins to collaborators.
+async fn downgrade_workspace_after_license_loss_in_tx(
+  tx: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  now: DateTime<Utc>,
+) -> Result<(), DomainError> {
+  sqlx::query(
+    "DELETE FROM workspace_invitations \
+     WHERE workspace_id = $1 AND status::text IN ('pending', 'waiting_review', 'waiting_seat')",
+  )
+  .bind(workspace_id)
+  .execute(&mut **tx)
+  .await
+  .map_err(|e| DomainError::Internal(format!("revoke invitations on license downgrade: {e}")))?;
+  sqlx::query(
+    "UPDATE workspace_members
+     SET role = 'member', updated_at = $2
+     WHERE workspace_id = $1 AND role = 'admin' AND state = 'active'",
+  )
+  .bind(workspace_id)
+  .bind(now)
+  .execute(&mut **tx)
+  .await
+  .map_err(|e| DomainError::Internal(format!("demote admins on license downgrade: {e}")))?;
   Ok(())
 }
 

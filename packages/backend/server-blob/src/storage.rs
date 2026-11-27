@@ -132,12 +132,10 @@ const METADATA_SUFFIX: &str = ".metadata.json";
 const TEMPORARY_MARKER: &str = ".tmp-";
 const MULTIPART_ROOT_DIR: &str = ".multipart";
 
-/// Whether a key segment could collide with the local storage's own files:
-/// a `<object>.metadata.json` sidecar or a `<object>.tmp-<id>` partial write
-/// (ASCII case-insensitive, for case-insensitive file systems).
+/// Whether a key segment could collide with the local storage's own metadata
+/// sidecar (`<object>.metadata.json`, ASCII case-insensitive).
 pub fn is_reserved_segment(segment: &str) -> bool {
-  let lower = segment.to_ascii_lowercase();
-  lower.ends_with(METADATA_SUFFIX) || lower.contains(TEMPORARY_MARKER)
+  segment.to_ascii_lowercase().ends_with(METADATA_SUFFIX)
 }
 
 /// Reference `normalize_storage_key`: `\` counts as `/`, and empty, `.` and
@@ -470,7 +468,10 @@ fn io(context: &'static str) -> impl FnOnce(std::io::Error) -> StorageError {
 /// readers never observe a partially written object or sidecar.
 fn write_atomically(path: &Path, bytes: &[u8]) -> Result<(), StorageError> {
   let mut tmp = path.as_os_str().to_owned();
-  tmp.push(format!("{TEMPORARY_MARKER}{}", uuid::Uuid::new_v4().simple()));
+  tmp.push(format!(
+    "{TEMPORARY_MARKER}{}{METADATA_SUFFIX}",
+    uuid::Uuid::new_v4().simple()
+  ));
   let tmp = PathBuf::from(tmp);
   std::fs::write(&tmp, bytes).map_err(io("write temporary object"))?;
   std::fs::rename(&tmp, path).map_err(|source| {
@@ -790,7 +791,10 @@ impl BlobStorageBackend for LocalFsBlobStorage {
         std::fs::create_dir_all(p).map_err(io("create object directory"))?;
       }
       let mut tmp = path.as_os_str().to_owned();
-      tmp.push(format!("{TEMPORARY_MARKER}{}", uuid::Uuid::new_v4().simple()));
+      tmp.push(format!(
+        "{TEMPORARY_MARKER}{}{METADATA_SUFFIX}",
+        uuid::Uuid::new_v4().simple()
+      ));
       let tmp = PathBuf::from(tmp);
       let mut out = std::fs::File::create(&tmp).map_err(io("create temp multipart object"))?;
       let (mut hasher, mut total, mut buf) = (crc32fast::Hasher::new(), 0u64, [0u8; 64 * 1024]);

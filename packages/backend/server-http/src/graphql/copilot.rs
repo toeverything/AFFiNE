@@ -613,7 +613,7 @@ impl CopilotMutation {
         doc_id: options.doc_id,
         prompt_name: options.prompt_name,
         pinned: options.pinned.unwrap_or(false),
-        reuse_latest_chat: options.reuse_latest_chat.unwrap_or(false),
+        reuse_latest_chat: options.reuse_latest_chat.unwrap_or(true),
       })
       .await
       .map_err(|e| domain_error_to_graphql(&e))
@@ -639,7 +639,7 @@ impl CopilotMutation {
         doc_id: options.doc_id,
         prompt_name: options.prompt_name,
         pinned: options.pinned.unwrap_or(false),
-        reuse_latest_chat: options.reuse_latest_chat.unwrap_or(false),
+        reuse_latest_chat: options.reuse_latest_chat.unwrap_or(true),
       })
       .await
       .map_err(|e| domain_error_to_graphql(&e))?;

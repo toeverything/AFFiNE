@@ -312,18 +312,23 @@ impl StorageBackendSpec {
           .or_else(|| first_raw_nonempty_str(cfg, &["proxyUploadSecret"]))
           .map(str::to_owned);
         let upload_url_prefix = pu_or(&["urlPrefix"], &["uploadUrlPrefix"]);
-        let presign_expires = match cfg.get("presign") {
-          None | Some(Value::Null) => None,
+        let (presign_expires, sign_content_type_for_put) = match cfg.get("presign") {
+          None | Some(Value::Null) => (None, true),
           Some(presign) => {
             let presign = presign
               .as_object()
               .ok_or_else(|| DomainError::Validation("invalid S3 presign config".into()))?;
-            match presign.get("expiresInSeconds") {
+            let exp = match presign.get("expiresInSeconds") {
               None | Some(Value::Null) => None,
               Some(v) => Some(std::time::Duration::from_secs(v.as_u64().ok_or_else(|| {
                 DomainError::Validation("invalid S3 presign.expiresInSeconds".into())
               })?)),
-            }
+            };
+            let sign_ct = presign
+              .get("signContentTypeForPut")
+              .and_then(Value::as_bool)
+              .unwrap_or(true);
+            (exp, sign_ct)
           }
         };
         let request_timeout = match cfg.get("requestTimeoutMs") {
@@ -359,6 +364,7 @@ impl StorageBackendSpec {
             proxy_upload,
             upload_url_prefix,
             proxy_upload_secret,
+            sign_content_type_for_put,
           },
         }))
       }

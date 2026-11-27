@@ -192,7 +192,76 @@ fn extract_aliases_from_doc(doc: &y_octo::Doc) -> HashMap<String, String> {
 /// workspace-level metadata (`name`, `avatar`, `blockVersions`,
 /// `workspaceVersion`) and `meta.pages` entries for explicitly published
 /// `public_docs`. Never leaks private document IDs or titles.
-pub fn build_public_root_doc(
+pub fn parse_doc_cursor(raw: &str) -> Result<(DateTime<Utc>, Option<String>), DomainError> {
+  let err = || DomainError::Validation("Invalid document pagination cursor".into());
+  let trimmed = raw.trim();
+  if trimmed.is_empty() {
+    return Err(err());
+  }
+  if trimmed.starts_with('[') {
+    let val: serde_json::Value = serde_json::from_str(trimmed).map_err(|_| err())?;
+    let arr = val.as_array().ok_or_else(err)?;
+    if arr.len() != 2 {
+      return Err(err());
+    }
+    let ts_str = arr[0].as_str().ok_or_else(err)?;
+    let ts = DateTime::parse_from_rfc3339(ts_str)
+      .map_err(|_| err())?
+      .with_timezone(&Utc);
+    let doc_id = match &arr[1] {
+      serde_json::Value::Null => None,
+      serde_json::Value::String(s) => {
+        let s = s.trim();
+        if s.is_empty() { None } else { Some(s.to_owned()) }
+      }
+      _ => return Err(err()),
+    };
+    Ok((ts, doc_id))
+  } else {
+    let ts = DateTime::parse_from_rfc3339(trimmed)
+      .map_err(|_| err())?
+      .with_timezone(&Utc);
+    Ok((ts, None))
+  }
+}
+
+#[cfg(test)]
+mod doc_cursor_tests {
+  use super::parse_doc_cursor;
+  use server_types::DomainError;
+
+  #[test]
+  fn parse_doc_cursor_accepts_tuple_and_bare_timestamp_and_rejects_malformed() {
+    let (ts, id) = parse_doc_cursor(r#"["2026-11-27T01:02:03Z","doc-42"]"#).unwrap();
+    assert_eq!(ts.to_rfc3339(), "2026-11-27T01:02:03+00:00");
+    assert_eq!(id.as_deref(), Some("doc-42"));
+
+    let (ts_null, id_null) = parse_doc_cursor(r#"["2026-11-27T01:02:03Z",null]"#).unwrap();
+    assert_eq!(ts_null, ts);
+    assert_eq!(id_null, None);
+
+    let (ts_bare, id_bare) = parse_doc_cursor("2026-11-27T01:02:03Z").unwrap();
+    assert_eq!(ts_bare, ts);
+    assert_eq!(id_bare, None);
+
+    for bad in [
+      "",
+      "not-a-timestamp",
+      "[123, \"doc-1\"]",
+      r#"["2026-11-27T01:02:03Z"]"#,
+      r#"["2026-11-27T01:02:03Z","doc-1","extra"]"#,
+      r#"["2026-11-27T01:02:03Z",42]"#,
+      r#"["bad-ts","doc-1"]"#,
+    ] {
+      assert!(
+        matches!(parse_doc_cursor(bad), Err(DomainError::Validation(_))),
+        "expected validation error for {bad:?}"
+      );
+    }
+  }
+}
+
+fn build_public_root_doc(
   root_doc_bin: &[u8],
   public_docs: &[(String, Option<String>)],
 ) -> Result<Vec<u8>, DomainError> {
@@ -290,6 +359,9 @@ pub struct DocSharingService {
   quota_gate: Arc<dyn QuotaGate>,
   invalidation: Arc<dyn InvalidationPublisher>,
   event_bus: Arc<dyn EventBusPublisher>,
+  redis: Option<redis::Client>,
+  redis_conn: Arc<tokio::sync::Mutex<Option<redis::aio::MultiplexedConnection>>>,
+  redis_key_prefix: String,
 }
 
 impl DocSharingService {
@@ -304,11 +376,21 @@ impl DocSharingService {
       quota_gate,
       invalidation,
       event_bus,
+      redis: None,
+      redis_conn: Arc::new(tokio::sync::Mutex::new(None)),
+      redis_key_prefix: String::new(),
     }
   }
 
+  pub fn with_redis(mut self, redis: Option<redis::Client>, key_prefix: impl Into<String>) -> Self {
+    self.redis = redis;
+    self.redis_conn = Arc::new(tokio::sync::Mutex::new(None));
+    self.redis_key_prefix = key_prefix.into();
+    self
+  }
+
   /// Checks whether the workspace is currently in a readonly/over-quota state
-  /// (seat_limit <= 0 or active seats > seat_limit).
+  /// (seat_limit <= 0, charged seats > seat_limit, or storage > storage_quota_bytes).
   pub(crate) async fn is_workspace_readonly_in(
     tx: &mut Transaction<'_, Postgres>,
     quota_gate: &dyn QuotaGate,
@@ -325,7 +407,24 @@ impl DocSharingService {
         .fetch_one(&mut **tx)
         .await
         .map_err(|e| DomainError::Internal(format!("count active workspace seats: {e}")))?;
-    Ok(active_seats > i64::from(grant.limits.seat_limit))
+
+    let inv_statuses: &[&str] = &["pending", "waiting_review", "waiting_seat"];
+    let pending_seats: i64 = sqlx::query_scalar(
+      "SELECT COUNT(*)::bigint FROM workspace_invitations WHERE workspace_id = $1 AND status::text = ANY($2)",
+    )
+    .bind(workspace_id)
+    .bind(inv_statuses)
+    .fetch_one(&mut **tx)
+    .await
+    .map_err(|e| DomainError::Internal(format!("count chargeable invitations: {e}")))?;
+
+    if active_seats.saturating_add(pending_seats) > i64::from(grant.limits.seat_limit) {
+      return Ok(true);
+    }
+
+    let used_storage =
+      crate::workspaces::load_effective_storage_usage_in_tx(tx, quota_gate, workspace_id, &grant, now).await?;
+    Ok(used_storage > grant.limits.storage_quota_bytes)
   }
 
   /// Loads merged Yjs document bytes (`snapshots` + `updates`) inside an
@@ -652,9 +751,6 @@ impl DocSharingService {
     }
     target_user_ids.sort();
     target_user_ids.dedup();
-    if target_user_ids.is_empty() {
-      return Ok(());
-    }
 
     let mut tx = self
       .db
@@ -674,7 +770,11 @@ impl DocSharingService {
       .await
       .map_err(|e| DomainError::Internal(format!("grant_doc_roles clock: {e}")))?;
 
-    let located = load_doc_roles_in(tx.tx_mut(), workspace_id, &doc_id, &target_user_ids, false).await?;
+    let located = if target_user_ids.is_empty() {
+      std::collections::BTreeMap::new()
+    } else {
+      load_doc_roles_in(tx.tx_mut(), workspace_id, &doc_id, &target_user_ids, false).await?
+    };
     let access = load_workspace_docs_access_in(
       tx.tx_mut(),
       self.quota_gate.as_ref(),
@@ -700,14 +800,19 @@ impl DocSharingService {
     }
     let readonly = Self::is_workspace_readonly_in(tx.tx_mut(), self.quota_gate.as_ref(), workspace_id, now).await?;
     if readonly {
-      let all_strict_demotion = target_user_ids
-        .iter()
-        .all(|uid| matches!(located.get(uid).copied(), Some(cur) if new_role < cur));
+      let all_strict_demotion = !target_user_ids.is_empty()
+        && target_user_ids
+          .iter()
+          .all(|uid| matches!(located.get(uid).copied(), Some(cur) if new_role < cur));
       if !all_strict_demotion {
         return Err(DomainError::Forbidden(format!(
           "doc_action_denied:{workspace_id}:{doc_id}:Doc.Users.Manage"
         )));
       }
+    }
+    if target_user_ids.is_empty() {
+      let _ = tx.rollback().await;
+      return Ok(());
     }
 
     let locked = load_doc_roles_in(tx.tx_mut(), workspace_id, &doc_id, &target_user_ids, true).await?;
@@ -945,6 +1050,11 @@ impl DocSharingService {
       return Err(DomainError::Validation("invalid_doc_default_role".to_owned()));
     }
     let doc_id = self.resolve_storage_doc_id(workspace_id, raw_doc_id).await?;
+    if workspace_id == doc_id {
+      return Err(DomainError::Validation(format!(
+        "expect_to_update_doc_user_role:{workspace_id}:{doc_id}"
+      )));
+    }
 
     let mut tx = self
       .db
@@ -1128,7 +1238,7 @@ impl DocSharingService {
     let default_role = load_doc_default_role_in(tx, workspace_id, doc_id).await?;
 
     let page_row = sqlx::query(
-      "SELECT mode, title, summary, published_at FROM workspace_pages WHERE workspace_id = $1 AND page_id = $2",
+      "SELECT mode, title, summary, published_at, lifecycle_state::text AS lifecycle_state FROM workspace_pages WHERE workspace_id = $1 AND page_id = $2",
     )
     .bind(workspace_id)
     .bind(doc_id)
@@ -1136,22 +1246,49 @@ impl DocSharingService {
     .await
     .map_err(|e| DomainError::Internal(format!("load workspace_pages info: {e}")))?;
 
-    let snap_row = sqlx::query(
-      "SELECT created_at, updated_at, created_by, updated_by FROM snapshots WHERE workspace_id = $1 AND guid = $2",
+    if page_row
+      .as_ref()
+      .and_then(|r| r.get::<Option<String>, _>("lifecycle_state"))
+      .as_deref()
+      == Some("deleted")
+    {
+      return Ok(None);
+    }
+
+    let source_row = sqlx::query(
+      r#"SELECT
+           MIN(created_at) AS created_at,
+           MAX(updated_at) AS updated_at,
+           (array_agg(created_by ORDER BY created_at ASC) FILTER (WHERE created_by IS NOT NULL))[1] AS created_by,
+           (array_agg(updated_by ORDER BY updated_at DESC) FILTER (WHERE updated_by IS NOT NULL))[1] AS updated_by
+         FROM (
+           SELECT created_at, updated_at, created_by, updated_by
+           FROM snapshots
+           WHERE workspace_id = $1 AND guid = $2
+           UNION ALL
+           SELECT created_at, created_at AS updated_at, created_by, created_by AS updated_by
+           FROM updates
+           WHERE workspace_id = $1 AND guid = $2
+         ) raw_sources
+         HAVING COUNT(*) > 0"#,
     )
     .bind(workspace_id)
     .bind(doc_id)
     .fetch_optional(&mut **tx)
     .await
-    .map_err(|e| DomainError::Internal(format!("load snapshot info: {e}")))?;
+    .map_err(|e| DomainError::Internal(format!("load doc source info: {e}")))?;
+
+    let Some(source_row) = source_row else {
+      return Ok(None);
+    };
 
     let mode: i16 = page_row.as_ref().map(|r| r.get("mode")).unwrap_or(0);
     let title: Option<String> = page_row.as_ref().and_then(|r| r.get("title"));
     let summary: Option<String> = page_row.as_ref().and_then(|r| r.get("summary"));
-    let created_at: Option<DateTime<Utc>> = snap_row.as_ref().map(|r| r.get("created_at"));
-    let updated_at: Option<DateTime<Utc>> = snap_row.as_ref().map(|r| r.get("updated_at"));
-    let creator_id: Option<String> = snap_row.as_ref().and_then(|r| r.get("created_by"));
-    let last_updater_id: Option<String> = snap_row.as_ref().and_then(|r| r.get("updated_by"));
+    let created_at: Option<DateTime<Utc>> = source_row.get("created_at");
+    let updated_at: Option<DateTime<Utc>> = source_row.get("updated_at");
+    let creator_id: Option<String> = source_row.get("created_by");
+    let last_updater_id: Option<String> = source_row.get("updated_by");
 
     Ok(Some(DocInfoView {
       workspace_id: workspace_id.to_owned(),
@@ -1325,7 +1462,7 @@ impl DocSharingService {
     actor_user_id: &str,
     first: i64,
     offset: i64,
-    after_doc_id: Option<&str>,
+    after_cursor: Option<&str>,
     require_manage: bool,
   ) -> Result<(i64, Vec<DocInfoView>, bool), DomainError> {
     let mut tx = self
@@ -1351,25 +1488,51 @@ impl DocSharingService {
       return Err(DomainError::Forbidden("Workspace.Users.Manage denied".to_owned()));
     }
 
-    let all_ids: Vec<String> = sqlx::query_scalar(
-      r#"SELECT s.guid
-         FROM snapshots s
-         LEFT JOIN workspace_pages wp ON wp.workspace_id = s.workspace_id AND wp.page_id = s.guid
-         WHERE s.workspace_id = $1
-           AND s.guid <> $1
-           AND s.guid NOT LIKE 'db$%'
-           AND s.guid NOT LIKE 'userdata$%'
-           AND COALESCE(wp.lifecycle_state::text <> 'deleted', true)
-         ORDER BY s.updated_at DESC, s.guid ASC"#,
-    )
-    .bind(workspace_id)
-    .fetch_all(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| DomainError::Internal(format!("list workspace doc ids: {e}")))?;
-
-    let filtered_ids = if require_manage {
-      all_ids
+    let order_sql = if require_manage {
+      "ORDER BY src.created_at ASC, src.doc_id ASC"
     } else {
+      "ORDER BY src.updated_at DESC, src.doc_id ASC"
+    };
+    let query_sql = format!(
+      r#"WITH doc_sources AS (
+           SELECT guid AS doc_id,
+                  MIN(created_at) AS created_at,
+                  MAX(updated_at) AS updated_at
+           FROM (
+             SELECT guid, created_at, updated_at
+             FROM snapshots
+             WHERE workspace_id = $1
+             UNION ALL
+             SELECT guid, created_at, created_at AS updated_at
+             FROM updates
+             WHERE workspace_id = $1
+           ) raw_sources
+           GROUP BY guid
+         )
+         SELECT src.doc_id, src.created_at, src.updated_at
+         FROM doc_sources src
+         LEFT JOIN workspace_pages wp ON wp.workspace_id = $1 AND wp.page_id = src.doc_id
+         WHERE src.doc_id <> $1
+           AND src.doc_id NOT LIKE 'db$%'
+           AND src.doc_id NOT LIKE 'userdata$%'
+           AND wp.lifecycle_state IS NULL
+         {order_sql}"#
+    );
+    let source_rows = sqlx::query(&query_sql)
+      .bind(workspace_id)
+      .fetch_all(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("list workspace doc ids: {e}")))?;
+
+    let all_entries: Vec<(String, DateTime<Utc>, DateTime<Utc>)> = source_rows
+      .into_iter()
+      .map(|r| (r.get("doc_id"), r.get("created_at"), r.get("updated_at")))
+      .collect();
+
+    let filtered_entries: Vec<(String, DateTime<Utc>, DateTime<Utc>)> = if require_manage {
+      all_entries
+    } else {
+      let all_ids: Vec<String> = all_entries.iter().map(|(id, _, _)| id.clone()).collect();
       let docs_access = load_workspace_docs_access_in(
         tx.tx_mut(),
         self.quota_gate.as_ref(),
@@ -1379,19 +1542,47 @@ impl DocSharingService {
         now,
       )
       .await?;
-      all_ids
+      all_entries
         .into_iter()
-        .filter(|id| docs_access.docs.get(id).is_some_and(|e| e.permissions.doc_read))
+        .filter(|(id, _, _)| docs_access.docs.get(id).is_some_and(|e| e.permissions.doc_read))
         .collect()
     };
 
-    let total = filtered_ids.len() as i64;
-    let cursor_start = after_doc_id
-      .and_then(|after_id| filtered_ids.iter().position(|id| id == after_id).map(|idx| idx + 1))
-      .unwrap_or(0);
-    let start = cursor_start.saturating_add(usize::try_from(offset.max(0)).unwrap_or(0));
+    let total = filtered_entries.len() as i64;
+    let parsed_cursor: Option<(DateTime<Utc>, Option<String>)> = match after_cursor {
+      Some(raw) => Some(parse_doc_cursor(raw)?),
+      None => None,
+    };
+
+    let after_filtered: Vec<String> = match parsed_cursor {
+      Some((cursor_ts, Some(cursor_doc_id))) => filtered_entries
+        .into_iter()
+        .filter(|(id, created_at, updated_at)| {
+          if require_manage {
+            (*created_at > cursor_ts) || (*created_at == cursor_ts && id.as_str() > cursor_doc_id.as_str())
+          } else {
+            (*updated_at < cursor_ts) || (*updated_at == cursor_ts && id.as_str() > cursor_doc_id.as_str())
+          }
+        })
+        .map(|(id, _, _)| id)
+        .collect(),
+      Some((cursor_ts, None)) => filtered_entries
+        .into_iter()
+        .filter(|(_, created_at, updated_at)| {
+          if require_manage {
+            *created_at > cursor_ts
+          } else {
+            *updated_at < cursor_ts
+          }
+        })
+        .map(|(id, _, _)| id)
+        .collect(),
+      None => filtered_entries.into_iter().map(|(id, _, _)| id).collect(),
+    };
+
+    let start = usize::try_from(offset.max(0)).unwrap_or(0);
     let take = usize::try_from(first.clamp(1, 100)).unwrap_or(20);
-    let mut page_ids: Vec<String> = filtered_ids.into_iter().skip(start).take(take + 1).collect();
+    let mut page_ids: Vec<String> = after_filtered.into_iter().skip(start).take(take + 1).collect();
     let has_next_page = page_ids.len() > take;
     page_ids.truncate(take);
 
@@ -1763,9 +1954,73 @@ impl DocSharingService {
     build_public_root_doc(&root_bin, &metas)
   }
 
-  /// Best-effort daily view counter upsert into `workspace_doc_view_daily`.
-  pub async fn record_doc_view(&self, workspace_id: &str, doc_id: &str, is_guest: bool) {
+  /// Best-effort daily view counter upsert into `workspace_doc_view_daily`
+  /// (with Redis Set UV deduplication when configured) and
+  /// `workspace_member_last_access` tracking for authenticated viewers.
+  pub async fn record_doc_view(
+    &self,
+    workspace_id: &str,
+    doc_id: &str,
+    is_guest: bool,
+    viewer_user_id: Option<&str>,
+    visitor_id: Option<&str>,
+  ) {
     let guest_inc: i64 = if is_guest { 1 } else { 0 };
+    let effective_visitor = viewer_user_id.or(visitor_id).filter(|v| !v.is_empty());
+
+    // Run Redis UV deduplication before acquiring a LongQuery DB slot so a slow
+    // Redis round-trip never holds one of the global LongQuery connections.
+    let redis_unique_inc: Option<i64> =
+      if let (Some(vid), Some(redis_client)) = (effective_visitor, self.redis.as_ref()) {
+        let today = Utc::now().format("%Y-%m-%d");
+        let uv_key = format!(
+          "{}analytics:doc_uv:{workspace_id}:{doc_id}:{today}",
+          self.redis_key_prefix
+        );
+        let mut cached = self.redis_conn.lock().await.clone();
+        if cached.is_none()
+          && let Ok(Ok(conn)) = tokio::time::timeout(
+            std::time::Duration::from_secs(1),
+            redis_client.get_multiplexed_async_connection(),
+          )
+          .await
+        {
+          *self.redis_conn.lock().await = Some(conn.clone());
+          cached = Some(conn);
+        }
+        let redis_res: Result<i64, ()> = if let Some(mut rconn) = cached {
+          let added_res = tokio::time::timeout(
+            std::time::Duration::from_secs(1),
+            redis::cmd("SADD").arg(&uv_key).arg(vid).query_async::<i64>(&mut rconn),
+          )
+          .await;
+          match added_res {
+            Ok(Ok(added)) => {
+              if added > 0 {
+                let _ = tokio::time::timeout(
+                  std::time::Duration::from_secs(1),
+                  redis::cmd("EXPIRE")
+                    .arg(&uv_key)
+                    .arg(90_i64 * 86_400)
+                    .query_async::<()>(&mut rconn),
+                )
+                .await;
+              }
+              Ok(if added > 0 { 1 } else { 0 })
+            }
+            _ => {
+              *self.redis_conn.lock().await = None;
+              Err(())
+            }
+          }
+        } else {
+          Err(())
+        };
+        Some(redis_res.unwrap_or(1))
+      } else {
+        None
+      };
+
     let mut conn = match self.db.acquire_tiered(WorkloadTier::LongQuery).await {
       Ok(conn) => conn,
       Err(err) => {
@@ -1773,18 +2028,67 @@ impl DocSharingService {
         return;
       }
     };
+
+    let already_today_db: Option<bool> = if self.redis.is_none()
+      && let Some(uid) = viewer_user_id
+    {
+      Some(
+        sqlx::query_scalar(
+          r#"SELECT EXISTS(
+               SELECT 1 FROM workspace_member_last_access
+               WHERE workspace_id = $1 AND user_id = $2
+                 AND last_doc_id = $3
+                 AND last_accessed_at::date = CURRENT_DATE
+             )"#,
+        )
+        .bind(workspace_id)
+        .bind(uid)
+        .bind(doc_id)
+        .fetch_one(&mut *conn)
+        .await
+        .unwrap_or(false),
+      )
+    } else {
+      None
+    };
+
+    if let Some(uid) = viewer_user_id {
+      let _ = sqlx::query(
+        r#"INSERT INTO workspace_member_last_access (workspace_id, user_id, last_doc_id, last_accessed_at)
+           VALUES ($1, $2, $3, now())
+           ON CONFLICT (workspace_id, user_id) DO UPDATE SET
+             last_doc_id = EXCLUDED.last_doc_id,
+             last_accessed_at = now()"#,
+      )
+      .bind(workspace_id)
+      .bind(uid)
+      .bind(doc_id)
+      .execute(&mut *conn)
+      .await;
+    }
+
+    let unique_inc: i64 = if let Some(inc) = redis_unique_inc {
+      inc
+    } else if let Some(seen) = already_today_db {
+      if seen { 0 } else { 1 }
+    } else {
+      1
+    };
+
     let res = sqlx::query(
       r#"INSERT INTO workspace_doc_view_daily
            (workspace_id, doc_id, date, total_views, unique_views, guest_views, last_accessed_at, updated_at)
-         VALUES ($1, $2, CURRENT_DATE, 1, 1, $3, now(), now())
+         VALUES ($1, $2, CURRENT_DATE, 1, $3, $4, now(), now())
          ON CONFLICT (workspace_id, doc_id, date) DO UPDATE SET
            total_views = workspace_doc_view_daily.total_views + 1,
+           unique_views = workspace_doc_view_daily.unique_views + EXCLUDED.unique_views,
            guest_views = workspace_doc_view_daily.guest_views + EXCLUDED.guest_views,
            last_accessed_at = now(),
            updated_at = now()"#,
     )
     .bind(workspace_id)
     .bind(doc_id)
+    .bind(unique_inc)
     .bind(guest_inc)
     .execute(&mut *conn)
     .await;

@@ -62,7 +62,6 @@ async fn read_bounded_error_body(context: &str, mut response: reqwest::Response)
 
 const DEFAULT_PRESIGN_EXPIRES: Duration = Duration::from_secs(60);
 const MAX_ERROR_RESPONSE_BODY_BYTES: usize = 64 * 1024;
-const DIRECT_UPLOAD_PRESIGN_EXPIRES: Duration = Duration::from_secs(600);
 
 /// Connection settings of one S3-compatible bucket.
 #[derive(Clone)]
@@ -81,7 +80,7 @@ pub struct S3Config {
 }
 
 /// Optional direct/proxied upload policy attached to [`S3BlobStorage`].
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct S3UploadOptions {
   pub use_presigned_url: bool,
   pub proxy_upload: bool,
@@ -90,6 +89,44 @@ pub struct S3UploadOptions {
   /// Signs downloads as `{upload_url_prefix}/{key}?sign=...` with
   /// `proxy_upload_secret` instead of SigV4 (R2 behind a signing worker).
   pub custom_get_sign: bool,
+  /// Whether SigV4 presigned PUT URLs include `content-type` in signed headers.
+  pub sign_content_type_for_put: bool,
+}
+
+impl Default for S3UploadOptions {
+  fn default() -> Self {
+    Self {
+      use_presigned_url: false,
+      proxy_upload: false,
+      upload_url_prefix: None,
+      proxy_upload_secret: None,
+      custom_get_sign: false,
+      sign_content_type_for_put: true,
+    }
+  }
+}
+
+fn rewrite_presigned_url_prefix(url: Url, prefix: Option<&str>) -> Result<String, StorageError> {
+  let Some(raw_prefix) = prefix.map(str::trim).filter(|s| !s.is_empty()) else {
+    return Ok(url.into());
+  };
+  let err = || StorageError::Config("blob_invalid:Upload URL prefix must contain only an origin".into());
+  let base = Url::parse(raw_prefix).map_err(|_| err())?;
+  if !matches!(base.scheme(), "http" | "https")
+    || base.host_str().is_none()
+    || !base.username().is_empty()
+    || base.password().is_some()
+    || base.path() != "/"
+    || base.query().is_some()
+    || base.fragment().is_some()
+  {
+    return Err(err());
+  }
+  let mut rewritten = url;
+  rewritten.set_scheme(base.scheme()).map_err(|_| err())?;
+  rewritten.set_host(base.host_str()).map_err(|_| err())?;
+  rewritten.set_port(base.port()).map_err(|_| err())?;
+  Ok(rewritten.into())
 }
 
 impl std::fmt::Debug for S3UploadOptions {
@@ -524,14 +561,22 @@ impl BlobStorageBackend for S3BlobStorage {
       return Ok(None);
     }
     normalize_storage_key(k)?;
+    let expires = self.presign_expires;
     let mut action = PutObject::new(&self.bucket, Some(&self.credentials), k);
     let len_str = len.to_string();
-    action.headers_mut().insert("content-type", ct);
+    let headers = BTreeMap::from([
+      ("content-type".into(), ct.into()),
+      ("content-length".into(), len_str.clone()),
+    ]);
+    if self.upload_options.sign_content_type_for_put {
+      action.headers_mut().insert("content-type", ct);
+    }
     action.headers_mut().insert("content-length", len_str.as_str());
+    let signed = action.sign(expires);
     Ok(Some(PresignedUpload {
-      url: action.sign(DIRECT_UPLOAD_PRESIGN_EXPIRES).into(),
-      headers: BTreeMap::from([("content-type".into(), ct.into()), ("content-length".into(), len_str)]),
-      expires_at: Utc::now() + chrono::Duration::seconds(DIRECT_UPLOAD_PRESIGN_EXPIRES.as_secs() as i64),
+      url: rewrite_presigned_url_prefix(signed, self.upload_options.upload_url_prefix.as_deref())?,
+      headers,
+      expires_at: Utc::now() + chrono::Duration::seconds(expires.as_secs() as i64),
     }))
   }
   async fn create_multipart_upload(&self, k: &str, ct: &str) -> Result<Option<MultipartUploadInit>, StorageError> {
@@ -555,12 +600,12 @@ impl BlobStorageBackend for S3BlobStorage {
       return Ok(None);
     }
     normalize_storage_key(k)?;
-    let url = UploadPart::new(&self.bucket, Some(&self.credentials), k, Self::part_u16(pn)?, uid)
-      .sign(DIRECT_UPLOAD_PRESIGN_EXPIRES);
+    let expires = self.presign_expires;
+    let signed = UploadPart::new(&self.bucket, Some(&self.credentials), k, Self::part_u16(pn)?, uid).sign(expires);
     Ok(Some(PresignedUpload {
-      url: url.into(),
+      url: rewrite_presigned_url_prefix(signed, self.upload_options.upload_url_prefix.as_deref())?,
       headers: BTreeMap::new(),
-      expires_at: Utc::now() + chrono::Duration::seconds(DIRECT_UPLOAD_PRESIGN_EXPIRES.as_secs() as i64),
+      expires_at: Utc::now() + chrono::Duration::seconds(expires.as_secs() as i64),
     }))
   }
   async fn upload_part(&self, k: &str, uid: &str, pn: i32, body: Vec<u8>) -> Result<String, StorageError> {
@@ -620,10 +665,11 @@ impl BlobStorageBackend for S3BlobStorage {
     let sorted = crate::storage::validate_multipart_parts(parts)?;
     let mut xml = String::from("<CompleteMultipartUpload>");
     for p in &sorted {
+      let clean_etag = p.etag.trim().trim_matches('"');
       xml.push_str(&format!(
         "<Part><PartNumber>{}</PartNumber><ETag>{}</ETag></Part>",
         p.part_number,
-        xml_escape(&p.etag)
+        xml_escape(clean_etag)
       ));
     }
     xml.push_str("</CompleteMultipartUpload>");
@@ -773,5 +819,61 @@ mod tests {
     // Truncated body without closing </Code> tag must not be misclassified as NoSuchBucket.
     assert!(is_s3_missing_object_404("<Error><Code>NoSuch"));
     assert!(is_s3_missing_object_404(""));
+  }
+
+  #[test]
+  fn rewrite_presigned_url_prefix_requires_origin_only() {
+    let signed = Url::parse("https://s3.internal:9000/bucket/ws/blob?X-Amz-Signature=abc").unwrap();
+    let ok = rewrite_presigned_url_prefix(signed.clone(), Some("https://cdn.example.com:8443")).unwrap();
+    assert_eq!(ok, "https://cdn.example.com:8443/bucket/ws/blob?X-Amz-Signature=abc");
+    let ok_slash = rewrite_presigned_url_prefix(signed.clone(), Some("https://cdn.example.com/")).unwrap();
+    assert_eq!(ok_slash, "https://cdn.example.com/bucket/ws/blob?X-Amz-Signature=abc");
+
+    for bad in [
+      "https://cdn.example.com/subpath",
+      "https://cdn.example.com/?foo=1",
+      "https://cdn.example.com/#frag",
+      "https://user:pass@cdn.example.com",
+      "ftp://cdn.example.com",
+      "not-a-url",
+    ] {
+      let err = rewrite_presigned_url_prefix(signed.clone(), Some(bad)).unwrap_err();
+      assert!(
+        matches!(err, StorageError::Config(ref m) if m == "blob_invalid:Upload URL prefix must contain only an origin"),
+        "{bad}: {err:?}"
+      );
+    }
+  }
+
+  #[tokio::test]
+  async fn presign_put_always_returns_content_type_header_even_when_unsigned() {
+    let cfg = S3Config {
+      endpoint: Some("https://r2.example.com".into()),
+      region: "auto".into(),
+      bucket: "blobs".into(),
+      access_key_id: "AKID".into(),
+      secret_access_key: "SECRET".into(),
+      session_token: None,
+      force_path_style: true,
+      request_timeout: None,
+      presign_expires: None,
+    };
+    let opts = S3UploadOptions {
+      use_presigned_url: true,
+      sign_content_type_for_put: false,
+      ..S3UploadOptions::default()
+    };
+    let storage = S3BlobStorage::new(cfg).unwrap().with_upload_options(opts);
+    let presigned = storage
+      .presign_put("ws-1/blob-1", "image/png", 42)
+      .await
+      .unwrap()
+      .unwrap();
+    assert_eq!(
+      presigned.headers.get("content-type").map(String::as_str),
+      Some("image/png")
+    );
+    assert_eq!(presigned.headers.get("content-length").map(String::as_str), Some("42"));
+    assert!(!presigned.url.contains("content-type"), "{}", presigned.url);
   }
 }

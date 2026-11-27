@@ -342,10 +342,19 @@ fn gql_err(e: DomainError) -> async_graphql::Error {
 
 async fn enforce_copilot_enabled(state: &AppState) -> std::result::Result<(), DomainError> {
   let cfg = state.app_config.get_effective_app_config().await?;
-  if cfg.pointer("/copilot/enabled").and_then(serde_json::Value::as_bool) == Some(false) {
-    return Err(DomainError::Forbidden("Copilot is disabled.".to_owned()));
+  let cfg_enabled = cfg
+    .pointer("/copilot/enabled")
+    .and_then(serde_json::Value::as_bool)
+    .unwrap_or(true);
+  if !cfg_enabled {
+    return Err(DomainError::Forbidden("copilot_disabled".to_owned()));
   }
-  Ok(())
+  state
+    .extension
+    .copilot_runtime()
+    .assert_enabled(cfg_enabled)
+    .await
+    .map_err(|_| DomainError::Forbidden("copilot_disabled".to_owned()))
 }
 
 /// Keeps the upload in its multipart temporary file. The transcript runtime
@@ -844,6 +853,18 @@ mod tests {
       }
     }
 
+    struct EnabledCopilotRuntime;
+    #[async_trait::async_trait]
+    impl server_spi::CopilotRuntimeSpi for EnabledCopilotRuntime {
+      async fn assert_enabled(&self, cfg_enabled: bool) -> std::result::Result<(), DomainError> {
+        if cfg_enabled {
+          Ok(())
+        } else {
+          Err(DomainError::Forbidden("copilot_disabled".to_owned()))
+        }
+      }
+    }
+
     struct CountingExt(Arc<AtomicUsize>, server_spi::CommunityExtension);
     impl ServerExtension for CountingExt {
       fn edition_name(&self) -> &'static str {
@@ -857,6 +878,9 @@ mod tests {
       }
       fn copilot_policy(&self) -> Arc<dyn server_spi::CopilotPolicySpi> {
         self.1.copilot_policy()
+      }
+      fn copilot_runtime(&self) -> Arc<dyn server_spi::CopilotRuntimeSpi> {
+        Arc::new(EnabledCopilotRuntime)
       }
       fn copilot_transcript_spi(&self) -> Arc<dyn CopilotTranscriptSpi> {
         Arc::new(CountingTranscriptSpi(Arc::clone(&self.0)))
@@ -1034,6 +1058,18 @@ mod tests {
       }
     }
 
+    struct EnabledCopilotRuntime;
+    #[async_trait::async_trait]
+    impl server_spi::CopilotRuntimeSpi for EnabledCopilotRuntime {
+      async fn assert_enabled(&self, cfg_enabled: bool) -> std::result::Result<(), DomainError> {
+        if cfg_enabled {
+          Ok(())
+        } else {
+          Err(DomainError::Forbidden("copilot_disabled".to_owned()))
+        }
+      }
+    }
+
     struct RecordingExt(Arc<RecordingTranscriptSpi>, server_spi::CommunityExtension);
     impl ServerExtension for RecordingExt {
       fn edition_name(&self) -> &'static str {
@@ -1047,6 +1083,9 @@ mod tests {
       }
       fn copilot_policy(&self) -> Arc<dyn server_spi::CopilotPolicySpi> {
         self.1.copilot_policy()
+      }
+      fn copilot_runtime(&self) -> Arc<dyn server_spi::CopilotRuntimeSpi> {
+        Arc::new(EnabledCopilotRuntime)
       }
       fn copilot_transcript_spi(&self) -> Arc<dyn CopilotTranscriptSpi> {
         Arc::clone(&self.0) as Arc<dyn CopilotTranscriptSpi>

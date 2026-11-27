@@ -158,8 +158,8 @@ pub fn user_quota_from_grant(grant: &AccessGrant, used_storage_quota: i64) -> Us
     history_period: format_date(history_period),
     member_limit: member_limit.to_string(),
     copilot_action_limit: copilot_action_limit
-      .map(|n| n.to_string())
-      .unwrap_or_else(|| "unlimited".to_owned()),
+      .map(|n| format!("{n} times"))
+      .unwrap_or_else(|| "Unlimited".to_owned()),
   };
 
   UserQuotaType {

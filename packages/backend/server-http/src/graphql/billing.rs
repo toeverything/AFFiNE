@@ -1085,13 +1085,43 @@ impl BillingMutation {
   ) -> Result<bool> {
     let _admin = require_admin_user(ctx).await?;
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    state
+    match state
       .extension
       .billing_spi()
       .revoke_admin_grant(&target_type, &target_id)
       .await
-      .map_err(|e| map_billing_error(e, None, None))?;
-    Ok(true)
+    {
+      Ok(()) => Ok(true),
+      Err(DomainError::Forbidden(ref msg) | DomainError::Internal(ref msg))
+        if matches!(msg.as_str(), "payment_not_configured" | "payment_runtime_not_ready")
+          && state.config.load().deployment_mode == server_types::DeploymentMode::Selfhosted =>
+      {
+        if !matches!(target_type.as_str(), "user" | "workspace") {
+          return Err(domain_error_to_graphql(&DomainError::Validation(
+            "admin grant target must be user or workspace".into(),
+          )));
+        }
+        let subject = format!("admin_grant:{target_type}:{target_id}");
+        let mut tx = state
+          .db
+          .begin_tiered(server_db::WorkloadTier::InteractiveWrite)
+          .await
+          .map_err(|e| domain_error_to_graphql(&DomainError::Unavailable(e.to_string())))?;
+        sqlx::query(
+          "UPDATE entitlements SET status = 'revoked', updated_at = clock_timestamp() \
+           WHERE source = 'admin_grant' AND subject_id = $1 AND status IN ('active', 'grace')",
+        )
+        .bind(&subject)
+        .execute(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("revoke admin grant: {e}"))))?;
+        tx.commit()
+          .await
+          .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("commit revoke admin grant: {e}"))))?;
+        Ok(true)
+      }
+      Err(e) => Err(map_billing_error(e, None, None)),
+    }
   }
 }
 
@@ -1176,6 +1206,23 @@ pub(crate) async fn resolve_user_invoice_count(ctx: &Context<'_>, user_id: &str)
   Ok(i32::try_from(count).unwrap_or(i32::MAX))
 }
 
+fn validate_invoice_pagination(take: Option<i32>, skip: Option<i32>) -> Result<(i64, Option<i64>)> {
+  let resolved_take = take.unwrap_or(8);
+  if resolved_take < 0 {
+    return Err(domain_error_to_graphql(&DomainError::Validation(
+      "take must be non-negative".to_owned(),
+    )));
+  }
+  if let Some(s) = skip
+    && s < 0
+  {
+    return Err(domain_error_to_graphql(&DomainError::Validation(
+      "skip must be non-negative".to_owned(),
+    )));
+  }
+  Ok((i64::from(resolved_take.min(100)), skip.map(i64::from)))
+}
+
 pub(crate) async fn resolve_user_invoices(
   ctx: &Context<'_>,
   user_id: &str,
@@ -1188,15 +1235,11 @@ pub(crate) async fn resolve_user_invoices(
       "access_denied".to_owned(),
     )));
   }
+  let (resolved_take, resolved_skip) = validate_invoice_pagination(take, skip)?;
   let state = ctx.data_unchecked::<Arc<AppState>>();
-  let rows = server_domain::disposition::list_invoices_by_target(
-    &state.db,
-    user_id,
-    skip.map(i64::from),
-    i64::from(take.unwrap_or(8)),
-  )
-  .await
-  .map_err(|e| domain_error_to_graphql(&e))?;
+  let rows = server_domain::disposition::list_invoices_by_target(&state.db, user_id, resolved_skip, resolved_take)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
   Ok(rows.into_iter().map(Into::into).collect())
 }
 
@@ -1235,13 +1278,9 @@ pub(crate) async fn resolve_workspace_invoices(
   let me = require_authenticated_user(ctx).await?;
   let state = ctx.data_unchecked::<Arc<AppState>>();
   assert_workspace_payment_manage(state, &me.id, workspace_id).await?;
-  let rows = server_domain::disposition::list_invoices_by_target(
-    &state.db,
-    workspace_id,
-    skip.map(i64::from),
-    i64::from(take.unwrap_or(8)),
-  )
-  .await
-  .map_err(|e| domain_error_to_graphql(&e))?;
+  let (resolved_take, resolved_skip) = validate_invoice_pagination(take, skip)?;
+  let rows = server_domain::disposition::list_invoices_by_target(&state.db, workspace_id, resolved_skip, resolved_take)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
   Ok(rows.into_iter().map(Into::into).collect())
 }

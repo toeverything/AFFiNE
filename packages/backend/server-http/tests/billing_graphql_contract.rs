@@ -1082,7 +1082,7 @@ fn billing_graphql_enforces_payment_feature_permissions_and_error_envelopes() {
     for root in ["currentUser", "workspace"] {
       assert_eq!(inv_json[root]["invoiceCount"], 105, "{root} invoiceCount");
       assert_eq!(inv_json[root]["defInv"].as_array().unwrap().len(), 8, "{root} default take");
-      assert_eq!(inv_json[root]["bigInv"].as_array().unwrap().len(), 101, "{root} take 101");
+      assert_eq!(inv_json[root]["bigInv"].as_array().unwrap().len(), 100, "{root} take clamped at 100");
     }
 
     // reconcileAdminPayment evidence: 2000 CJK chars (6000 UTF-8 bytes, 2000 UTF-16 units) succeeds;

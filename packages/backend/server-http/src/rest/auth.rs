@@ -344,15 +344,13 @@ async fn check_sign_in_rate_bucket(state: &RouterState, key: &str, limit: u64, t
   }
   use std::collections::HashMap;
   use std::sync::{Mutex, OnceLock};
-  use std::time::{Duration, Instant};
+  use std::time::Instant;
   struct MemRateTable {
     map: HashMap<String, (u64, Instant)>,
     last_gc: Instant,
   }
-  const MAX_MEM_RATE_KEYS: usize = 4096;
   static MEM: OnceLock<Mutex<MemRateTable>> = OnceLock::new();
   let now = Instant::now();
-  let window = Duration::from_millis(ttl_ms);
   let Ok(mut table) = MEM
     .get_or_init(|| {
       Mutex::new(MemRateTable {
@@ -364,21 +362,38 @@ async fn check_sign_in_rate_bucket(state: &RouterState, key: &str, limit: u64, t
   else {
     return Ok(());
   };
-  if table.map.len() >= MAX_MEM_RATE_KEYS && now.duration_since(table.last_gc) >= Duration::from_secs(1) {
-    table.map.retain(|_, (_, exp)| *exp > now);
-    table.last_gc = now;
+  const MAX_MEM_RATE_KEYS: usize = 65_536;
+  let table = &mut *table;
+  check_mem_rate_table(
+    &mut table.map,
+    &mut table.last_gc,
+    now,
+    key,
+    limit,
+    ttl_ms,
+    MAX_MEM_RATE_KEYS,
+  )
+}
+
+fn check_mem_rate_table(
+  map: &mut std::collections::HashMap<String, (u64, std::time::Instant)>,
+  last_gc: &mut std::time::Instant,
+  now: std::time::Instant,
+  key: &str,
+  limit: u64,
+  ttl_ms: u64,
+  max_keys: usize,
+) -> Result<(), u64> {
+  use std::time::Duration;
+  let window = Duration::from_millis(ttl_ms);
+  if now.duration_since(*last_gc) >= Duration::from_secs(1) {
+    map.retain(|_, (_, exp)| *exp > now);
+    *last_gc = now;
   }
-  if table.map.len() >= MAX_MEM_RATE_KEYS
-    && !table.map.contains_key(key)
-    && let Some(oldest_key) = table
-      .map
-      .iter()
-      .min_by_key(|(_, (_, exp))| *exp)
-      .map(|(k, _)| k.clone())
-  {
-    table.map.remove(&oldest_key);
+  if map.len() >= max_keys && !map.contains_key(key) {
+    return Err(ttl_ms.div_ceil(1000).max(1));
   }
-  let entry = table.map.entry(key.to_owned()).or_insert((0, now + window));
+  let entry = map.entry(key.to_owned()).or_insert((0, now + window));
   if entry.1 <= now {
     *entry = (0, now + window);
   }
@@ -389,6 +404,35 @@ async fn check_sign_in_rate_bucket(state: &RouterState, key: &str, limit: u64, t
     return Err(retry_after_secs);
   }
   Ok(())
+}
+
+#[cfg(test)]
+mod mem_rate_limit_tests {
+  use super::check_mem_rate_table;
+  use std::collections::HashMap;
+  use std::time::{Duration, Instant};
+
+  #[test]
+  fn mem_rate_table_fails_closed_at_cap_without_evicting_active_buckets() {
+    let mut map = HashMap::new();
+    let start = Instant::now();
+    let mut last_gc = start;
+
+    assert!(check_mem_rate_table(&mut map, &mut last_gc, start, "k1", 1, 60_000, 2).is_ok());
+    assert!(check_mem_rate_table(&mut map, &mut last_gc, start, "k2", 1, 60_000, 2).is_ok());
+    // Table is full with 2 active keys: new key must fail closed with 60s retry-after.
+    assert_eq!(
+      check_mem_rate_table(&mut map, &mut last_gc, start, "k3", 1, 60_000, 2),
+      Err(60)
+    );
+    // Existing active buckets must remain intact (not evicted).
+    assert!(map.contains_key("k1") && map.contains_key("k2"));
+    assert!(check_mem_rate_table(&mut map, &mut last_gc, start, "k1", 1, 60_000, 2).is_err());
+
+    // Once active entries expire, new keys are accepted again.
+    let later = start + Duration::from_secs(61);
+    assert!(check_mem_rate_table(&mut map, &mut last_gc, later, "k3", 1, 60_000, 2).is_ok());
+  }
 }
 
 async fn enforce_sign_in_rate_limit(
@@ -410,10 +454,6 @@ async fn enforce_sign_in_rate_limit(
     .unwrap_or_default();
 
   use sha2::{Digest as _, Sha256};
-  let email_hash = hex::encode(Sha256::digest(canonical_email_str.to_ascii_lowercase().as_bytes()));
-  let email_key = format!("{key_prefix}auth:sign-in-rate:email:{email_hash}");
-  let email_res = check_sign_in_rate_bucket(state, &email_key, email_limit, ttl_ms).await;
-
   let ip = ["cf-connecting-ip", "x-forwarded-for", "x-real-ip"]
     .into_iter()
     .find_map(|name| {
@@ -427,20 +467,21 @@ async fn enforce_sign_in_rate_limit(
       (!s.is_empty()).then(|| s.to_owned())
     })
     .or_else(|| peer.map(|a| a.ip().to_string()));
-  let ip_res = if let Some(ip_str) = ip {
+  if let Some(ip_str) = ip {
     let ip_hash = hex::encode(Sha256::digest(ip_str.as_bytes()));
     let ip_key = format!("{key_prefix}auth:sign-in-rate:ip:{ip_hash}");
-    check_sign_in_rate_bucket(state, &ip_key, ip_limit, ttl_ms).await
-  } else {
-    Ok(())
-  };
+    if let Err(retry_after_secs) = check_sign_in_rate_bucket(state, &ip_key, ip_limit, ttl_ms).await {
+      let mut resp = envelope_to_http_response(super::throttle::too_many_requests_envelope());
+      if let Ok(v) = HeaderValue::from_str(&retry_after_secs.to_string()) {
+        resp.headers_mut().insert(header::RETRY_AFTER, v);
+      }
+      return Err(Box::new(resp));
+    }
+  }
 
-  let retry_after = match (email_res, ip_res) {
-    (Err(a), Err(b)) => Some(a.max(b)),
-    (Err(a), Ok(())) | (Ok(()), Err(a)) => Some(a),
-    (Ok(()), Ok(())) => None,
-  };
-  if let Some(retry_after_secs) = retry_after {
+  let email_hash = hex::encode(Sha256::digest(canonical_email_str.to_ascii_lowercase().as_bytes()));
+  let email_key = format!("{key_prefix}auth:sign-in-rate:email:{email_hash}");
+  if let Err(retry_after_secs) = check_sign_in_rate_bucket(state, &email_key, email_limit, ttl_ms).await {
     let mut resp = envelope_to_http_response(super::throttle::too_many_requests_envelope());
     if let Ok(v) = HeaderValue::from_str(&retry_after_secs.to_string()) {
       resp.headers_mut().insert(header::RETRY_AFTER, v);

@@ -126,9 +126,8 @@ impl SyncStorage {
     let clamped_take = take.clamp(1, 100);
     let mut conn = self.db.acquire_tiered(WorkloadTier::InteractiveRead).await?;
     let kw = query
-      .map(str::trim)
       .filter(|s| !s.is_empty())
-      .map(|s| format!("%{}%", escape_like_pattern(&s.to_ascii_lowercase())));
+      .map(|s| format!("%{}%", escape_like_pattern(s)));
     let member_count: i64 = sqlx::query_scalar(
       "SELECT (
          (SELECT COUNT(*) FROM workspace_members WHERE workspace_id = $1 AND state = 'active')
@@ -165,7 +164,7 @@ impl SyncStorage {
            INNER JOIN users u ON u.id = i.invitee_user_id
            WHERE i.workspace_id = $1
          ) combined
-         WHERE ($2::text IS NULL OR lower(combined.name) LIKE $2 ESCAPE '\' OR lower(combined.email) LIKE $2 ESCAPE '\')
+         WHERE ($2::text IS NULL OR combined.name ILIKE $2 ESCAPE '\' OR combined.email ILIKE $2 ESCAPE '\')
          ORDER BY combined.sort_at ASC, combined.user_id ASC
          OFFSET $3 LIMIT $4"#,
     )
@@ -278,16 +277,37 @@ impl SyncStorage {
     owner_user_id: &str,
     now: DateTime<Utc>,
   ) -> Result<Vec<String>, SyncError> {
-    let candidate_ws_ids: Vec<String> = sqlx::query_scalar(
-      "SELECT workspace_id FROM workspace_members \
-       WHERE user_id = $1 AND role = 'owner' AND state = 'active' \
-       ORDER BY workspace_id",
+    let candidate_ws_ids: Vec<(String, bool)> = sqlx::query_as(
+      "SELECT \
+         wm.workspace_id, \
+         ( \
+           EXISTS ( \
+             SELECT 1 FROM entitlements e \
+             WHERE e.target_type = 'workspace' \
+               AND e.target_id = wm.workspace_id \
+               AND e.status IN ('active', 'grace') \
+               AND (e.starts_at IS NULL OR e.starts_at <= $2) \
+               AND (e.expires_at IS NULL OR e.expires_at > $2 OR e.grace_until > $2) \
+           ) \
+           OR EXISTS ( \
+             SELECT 1 FROM installed_licenses il \
+             WHERE il.workspace_id = wm.workspace_id \
+           ) \
+         ) AS has_candidate_entitlement \
+       FROM workspace_members wm \
+       WHERE wm.user_id = $1 AND wm.role = 'owner' AND wm.state = 'active' \
+       ORDER BY wm.workspace_id",
     )
     .bind(owner_user_id)
+    .bind(now)
     .fetch_all(&mut **tx)
     .await?;
     let mut owner_billed = Vec::with_capacity(candidate_ws_ids.len());
-    for ws_id in candidate_ws_ids {
+    for (ws_id, has_candidate_entitlement) in candidate_ws_ids {
+      if !has_candidate_entitlement {
+        owner_billed.push(ws_id);
+        continue;
+      }
       let ws_grant = self
         .quota_gate
         .resolve_workspace_grant(tx, &ws_id, now)
@@ -336,16 +356,27 @@ impl SyncStorage {
       .await?
     };
     let _ = tx.rollback().await;
-    Ok(serde_json::json!({
-      "plan": external_plan_name(grant.tier),
-      "seatLimit": grant.limits.seat_limit,
-      "blobLimit": grant.limits.blob_limit_bytes,
-      "storageQuota": grant.limits.storage_quota_bytes,
-      "usedStorageQuota": used_storage,
-      "historyPeriodSeconds": grant.limits.history_period_seconds,
-      "copilotActionLimit": grant.limits.copilot_action_limit,
-      "unlimitedCopilot": grant.rights.unlimited_copilot,
-    }))
+    let mut out = serde_json::Map::new();
+    out.insert("plan".to_owned(), serde_json::json!(external_plan_name(grant.tier)));
+    out.insert("seatLimit".to_owned(), serde_json::json!(grant.limits.seat_limit));
+    out.insert("blobLimit".to_owned(), serde_json::json!(grant.limits.blob_limit_bytes));
+    out.insert(
+      "storageQuota".to_owned(),
+      serde_json::json!(grant.limits.storage_quota_bytes),
+    );
+    out.insert("usedStorageQuota".to_owned(), serde_json::json!(used_storage));
+    out.insert(
+      "historyPeriodSeconds".to_owned(),
+      serde_json::json!(grant.limits.history_period_seconds),
+    );
+    if let Some(limit) = grant.limits.copilot_action_limit {
+      out.insert("copilotActionLimit".to_owned(), serde_json::json!(limit));
+    }
+    out.insert(
+      "unlimitedCopilot".to_owned(),
+      serde_json::json!(grant.rights.unlimited_copilot),
+    );
+    Ok(serde_json::Value::Object(out))
   }
 
   pub async fn get_workspace_quota_state_snapshot(
@@ -643,7 +674,55 @@ mod tests {
         Err(SyncError::QueryTooLong { max: 255 })
       ));
 
-      // Quota snapshots emit lowercase snake_case plan, explicit copilotActionLimit key, and valid readonlyReasons.
+      // Raw non-empty query semantics: single space " " is preserved (not trimmed away),
+      // and non-ASCII case folding is handled by PostgreSQL ILIKE.
+      let umlaut_id = "usr_rt_umlaut";
+      sqlx::query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)")
+        .bind(umlaut_id)
+        .bind("ÜserNoSpace")
+        .bind("umlaut-rt@example.com")
+        .execute(db.pool())
+        .await
+        .expect("insert umlaut user");
+      sqlx::query(
+        "INSERT INTO workspace_members (id, workspace_id, user_id, role, state, source) VALUES ('wm_3', $1, $2, 'member', 'active', 'legacy')",
+      )
+      .bind(ws_id)
+      .bind(umlaut_id)
+      .execute(db.pool())
+      .await
+      .expect("insert umlaut member");
+
+      let space_snap = storage
+        .get_workspace_members_snapshot(ws_id, owner_id, 0, 20, Some(" "))
+        .await
+        .expect("single-space query");
+      let space_ids: Vec<&str> = space_snap["members"]
+        .as_array()
+        .expect("space members")
+        .iter()
+        .filter_map(|m| m["id"].as_str())
+        .collect();
+      assert!(space_ids.contains(&owner_id), "space query must match 'Owner User'");
+      assert!(
+        !space_ids.contains(&umlaut_id),
+        "space query must not match space-free 'ÜserNoSpace': {space_ids:?}"
+      );
+
+      let umlaut_snap = storage
+        .get_workspace_members_snapshot(ws_id, owner_id, 0, 20, Some("üser"))
+        .await
+        .expect("non-ASCII case-insensitive query");
+      let umlaut_ids: Vec<&str> = umlaut_snap["members"]
+        .as_array()
+        .expect("umlaut members")
+        .iter()
+        .filter_map(|m| m["id"].as_str())
+        .collect();
+      assert_eq!(umlaut_ids, vec![umlaut_id]);
+
+      // Quota snapshots emit lowercase snake_case plan, omit copilotActionLimit when None,
+      // emit 0 when Some(0), and return valid readonlyReasons.
       let user_q = storage
         .get_user_quota_state_snapshot(owner_id)
         .await
@@ -654,10 +733,61 @@ mod tests {
           .is_some_and(|p| p.chars().all(|c| c.is_ascii_lowercase() || c == '_')),
         "plan must be lowercase snake_case, got {user_q}"
       );
-      assert!(
-        user_q.as_object().unwrap().contains_key("copilotActionLimit"),
-        "copilotActionLimit key must always be present"
+      assert_eq!(
+        user_q.get("copilotActionLimit"),
+        Some(&serde_json::json!(10)),
+        "default selfhost grant has copilotActionLimit = 10, got {user_q}"
       );
+
+      struct FixedCopilotQuotaGate(Option<i32>);
+      #[async_trait::async_trait]
+      impl server_spi::QuotaGate for FixedCopilotQuotaGate {
+        async fn resolve_workspace_grant(
+          &self,
+          _tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+          _workspace_id: &str,
+          _now: chrono::DateTime<chrono::Utc>,
+        ) -> Result<server_types::AccessGrant, server_types::DomainError> {
+          let mut g = server_types::license::default_selfhost_access_grant();
+          g.limits.copilot_action_limit = self.0;
+          Ok(g)
+        }
+        async fn resolve_user_grant(
+          &self,
+          _tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+          _user_id: &str,
+          _now: chrono::DateTime<chrono::Utc>,
+        ) -> Result<server_types::AccessGrant, server_types::DomainError> {
+          let mut g = server_types::license::default_selfhost_access_grant();
+          g.limits.copilot_action_limit = self.0;
+          Ok(g)
+        }
+        async fn check_seat_admission(
+          &self,
+          tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+          workspace_id: &str,
+          _current_seats: i32,
+          _requested_delta: i32,
+          now: chrono::DateTime<chrono::Utc>,
+        ) -> Result<server_types::AccessGrant, server_types::DomainError> {
+          self.resolve_workspace_grant(tx, workspace_id, now).await
+        }
+      }
+      let none_storage = SyncStorage::with_quota_gate(db.clone(), std::sync::Arc::new(FixedCopilotQuotaGate(None)));
+      let none_q = none_storage
+        .get_user_quota_state_snapshot(owner_id)
+        .await
+        .expect("unlimited copilot quota state");
+      assert!(
+        !none_q.as_object().unwrap().contains_key("copilotActionLimit"),
+        "copilotActionLimit key must be omitted when None, got {none_q}"
+      );
+      let zero_storage = SyncStorage::with_quota_gate(db.clone(), std::sync::Arc::new(FixedCopilotQuotaGate(Some(0))));
+      let zero_q = zero_storage
+        .get_user_quota_state_snapshot(owner_id)
+        .await
+        .expect("zero copilot quota state");
+      assert_eq!(zero_q.get("copilotActionLimit"), Some(&serde_json::json!(0)));
 
       let ws_q = storage
         .get_workspace_quota_state_snapshot(ws_id, owner_id)

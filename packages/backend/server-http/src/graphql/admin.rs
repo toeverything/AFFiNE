@@ -728,7 +728,19 @@ pub(crate) async fn resolve_server_config(ctx: &Context<'_>) -> Result<ServerCon
     DeploymentMode::Cloud => ServerDeploymentType::Affine,
   };
 
-  let mut features = vec![ServerFeature::Comment, ServerFeature::LocalWorkspace];
+  let effective_cfg = state
+    .app_config
+    .get_effective_app_config()
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  let allow_guest_demo = effective_cfg
+    .pointer("/flags/allowGuestDemoWorkspace")
+    .and_then(|v| v.as_bool())
+    .unwrap_or(true);
+  let mut features = vec![ServerFeature::Comment];
+  if allow_guest_demo {
+    features.push(ServerFeature::LocalWorkspace);
+  }
   if state.extension.copilot_embedding_spi().is_enabled() {
     features.push(ServerFeature::CopilotEmbedding);
   }
@@ -756,11 +768,6 @@ pub(crate) async fn resolve_server_config(ctx: &Context<'_>) -> Result<ServerCon
   if auth_caps.captcha_enabled {
     features.push(ServerFeature::Captcha);
   }
-  let effective_cfg = state
-    .app_config
-    .get_effective_app_config()
-    .await
-    .map_err(|e| domain_error_to_graphql(&e))?;
   let cfg_copilot_enabled = effective_cfg
     .pointer("/copilot/enabled")
     .and_then(|v| v.as_bool())
@@ -788,9 +795,16 @@ pub(crate) async fn resolve_server_config(ctx: &Context<'_>) -> Result<ServerCon
     read_pw_limit("/auth/passwordRequirements/min", default_min),
     read_pw_limit("/auth/passwordRequirements/max", default_max),
   );
+  let server_name = effective_cfg
+    .pointer("/server/name")
+    .and_then(|v| v.as_str())
+    .map(str::trim)
+    .filter(|s| !s.is_empty())
+    .map(str::to_owned)
+    .unwrap_or_else(|| cfg.server_name.clone());
   Ok(ServerConfigType {
     version: cfg.server_version.clone(),
-    name: cfg.server_name.clone(),
+    name: server_name,
     deployment_type,
     initialized,
     base_url: cfg.external_url.clone(),
@@ -954,7 +968,22 @@ pub(crate) async fn mutate_update_app_config(
       .await
       .map_err(|e| domain_error_to_graphql(&e))?;
   }
-  Ok(JsonObjectScalar(effective))
+  let touched_modules: std::collections::BTreeSet<String> = domain_updates
+    .iter()
+    .filter_map(|u| u.key.split('.').next())
+    .map(str::trim)
+    .filter(|m| !m.is_empty())
+    .map(str::to_owned)
+    .collect();
+  let mut filtered = serde_json::Map::new();
+  if let Some(obj) = effective.as_object() {
+    for module in touched_modules {
+      if let Some(val) = obj.get(&module) {
+        filtered.insert(module, val.clone());
+      }
+    }
+  }
+  Ok(JsonObjectScalar(serde_json::Value::Object(filtered)))
 }
 
 pub(crate) async fn mutate_send_test_email(ctx: &Context<'_>, config: JsonObjectScalar) -> Result<bool> {
@@ -963,6 +992,19 @@ pub(crate) async fn mutate_send_test_email(ctx: &Context<'_>, config: JsonObject
     .map_err(|e| domain_error_to_graphql(&DomainError::Validation(format!("invalid SMTP config: {e}"))))?;
   let mailer = SmtpMailer::new(&smtp_cfg)
     .map_err(|e| domain_error_to_graphql(&DomainError::Validation(format!("invalid SMTP config: {e}"))))?;
+  match mailer.verify().await {
+    Ok(true) => {}
+    Ok(false) => {
+      return Err(domain_error_to_graphql(&DomainError::Validation(
+        "SMTP verification failed".into(),
+      )));
+    }
+    Err(err) => {
+      return Err(domain_error_to_graphql(&DomainError::Validation(format!(
+        "SMTP verification failed: {err}"
+      ))));
+    }
+  }
   let rendered = MailTemplate::TestMail(TestMailProps {}).render();
   match mailer.send(&admin.email, &rendered).await {
     MailSendResult::Accepted { .. } => Ok(true),
@@ -973,7 +1015,7 @@ pub(crate) async fn mutate_send_test_email(ctx: &Context<'_>, config: JsonObject
       "test email rejected ({error_code}): {}",
       provider_response.unwrap_or_default()
     )))),
-    MailSendResult::Failed { error_code, error, .. } => Err(domain_error_to_graphql(&DomainError::Unavailable(
+    MailSendResult::Failed { error_code, error, .. } => Err(domain_error_to_graphql(&DomainError::Validation(
       format!("test email failed ({error_code}): {error}"),
     ))),
   }

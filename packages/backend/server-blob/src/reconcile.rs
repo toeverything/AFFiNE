@@ -157,7 +157,7 @@ impl BlobService {
     let mut report = StorageOrphanReconcileReport::default();
     let claimed = sqlx::query_scalar::<_, String>(
       "INSERT INTO storage_reconciliation_checkpoints (kind, scope, status, metadata, updated_at) \
-       VALUES ('storage_orphan_lease', 'global', 'running', jsonb_build_object('claimId', $1), clock_timestamp()) \
+       VALUES ('workspace_storage_namespace', 'global', 'running', jsonb_build_object('claimId', $1), clock_timestamp()) \
        ON CONFLICT (kind, scope) DO UPDATE SET status = 'running', metadata = jsonb_build_object('claimId', $1), \
          updated_at = clock_timestamp() \
        WHERE storage_reconciliation_checkpoints.status <> 'running' \
@@ -172,73 +172,158 @@ impl BlobService {
     report.leased = true;
     let sweep_result = async {
       if is_cancelled() { return Ok::<_, DomainError>(()); }
-      let cursor_key = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT last_key FROM storage_reconciliation_checkpoints WHERE kind = 'storage_orphan_sweep' AND scope = 'global'",
+      let object_cursor = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT last_key FROM storage_reconciliation_checkpoints WHERE kind = 'workspace_storage_namespace' AND scope = 'global'",
       ).fetch_optional(self.long_conn().await?.as_conn()).await
-        .map_err(db_error("load storage reconciliation cursor"))?.flatten().filter(|s| !s.is_empty());
+        .map_err(db_error("load storage namespace cursor"))?.flatten().filter(|s| !s.is_empty());
       let storage = self.dynamic_storage.current();
-      let objects = storage.list_prefix("", cursor_key.as_deref(), limit).await.map_err(storage_error)?;
+      let objects = storage.list_prefix("", object_cursor.as_deref(), limit).await.map_err(storage_error)?;
       report.scanned_objects = objects.len();
+      let mut objects_completed = false;
       if objects.is_empty() {
-        self.save_orphan_cursor(None, true).await?;
-        report.completed = true;
-        return Ok(());
-      }
-      let grace_cutoff = Utc::now() - Duration::hours(24);
-      let ws_list: Vec<String> = objects.iter()
-        .filter_map(|(k, _)| object_key_workspace(k).map(str::to_owned))
-        .collect::<HashSet<_>>().into_iter().collect();
-      let live_workspaces: HashSet<String> = if ws_list.is_empty() {
-        HashSet::new()
+        self.save_namespace_cursor(None, true).await?;
+        objects_completed = true;
       } else {
-        sqlx::query_scalar::<_, String>("SELECT id FROM workspaces WHERE id = ANY($1)")
-          .bind(&ws_list).fetch_all(self.long_conn().await?.as_conn()).await
-          .map_err(db_error("check live workspaces"))?.into_iter().collect()
-      };
-      let mut last_scanned: Option<String> = None;
-      for (key, last_modified) in &objects {
-        if is_cancelled() { break; }
-        last_scanned = Some(key.clone());
-        let Some(ws_id) = object_key_workspace(key) else { report.skipped_unknown_prefix += 1; continue; };
-        if live_workspaces.contains(ws_id) { continue; }
-        if last_modified.is_none_or(|ts| ts > grace_cutoff) { report.skipped_within_grace += 1; continue; }
-        let lock = StorageObjectLock::acquire(&self.db, &self.lock_permits, ws_id, key).await?;
-        let del_res = async {
-          let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1)")
-            .bind(ws_id).fetch_one(self.long_conn().await?.as_conn()).await
-            .map_err(db_error("recheck workspace absence under lock"))?;
-          if !exists {
-            storage.delete(key).await.map_err(storage_error)?;
-            report.deleted_objects += 1;
-          }
-          Ok::<_, DomainError>(())
-        }.await;
-        lock.release().await;
-        del_res?;
+        let grace_cutoff = Utc::now() - Duration::hours(24);
+        let ws_list: Vec<String> = objects.iter()
+          .filter_map(|(k, _)| object_key_workspace(k).map(str::to_owned))
+          .collect::<HashSet<_>>().into_iter().collect();
+        let live_workspaces: HashSet<String> = if ws_list.is_empty() {
+          HashSet::new()
+        } else {
+          sqlx::query_scalar::<_, String>("SELECT id FROM workspaces WHERE id = ANY($1)")
+            .bind(&ws_list).fetch_all(self.long_conn().await?.as_conn()).await
+            .map_err(db_error("check live workspaces"))?.into_iter().collect()
+        };
+        let mut last_scanned: Option<String> = None;
+        for (key, last_modified) in &objects {
+          if is_cancelled() { break; }
+          last_scanned = Some(key.clone());
+          let Some(ws_id) = object_key_workspace(key) else { report.skipped_unknown_prefix += 1; continue; };
+          if live_workspaces.contains(ws_id) { continue; }
+          if last_modified.is_none_or(|ts| ts > grace_cutoff) { report.skipped_within_grace += 1; continue; }
+          let lock = StorageObjectLock::acquire(&self.db, &self.lock_permits, ws_id, key).await?;
+          let del_res = async {
+            let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1)")
+              .bind(ws_id).fetch_one(self.long_conn().await?.as_conn()).await
+              .map_err(db_error("recheck workspace absence under lock"))?;
+            if !exists {
+              storage.delete(key).await.map_err(storage_error)?;
+              report.deleted_objects += 1;
+            }
+            Ok::<_, DomainError>(())
+          }.await;
+          lock.release().await;
+          del_res?;
+        }
+        if objects.len() < limit && !is_cancelled() {
+          self.save_namespace_cursor(None, true).await?;
+          objects_completed = true;
+        } else if let Some(last) = last_scanned {
+          self.save_namespace_cursor(Some(&last), false).await?;
+        }
       }
+
+      let mut pg_completed = false;
       if !is_cancelled() {
-        let deleted_rows = sqlx::query(
-          "WITH orphan AS (SELECT b.workspace_id, b.key FROM blobs b LEFT JOIN workspaces w ON w.id = b.workspace_id \
-             WHERE w.id IS NULL ORDER BY b.workspace_id, b.key LIMIT $1) \
-           DELETE FROM blobs b USING orphan o WHERE b.workspace_id = o.workspace_id AND b.key = o.key",
-        )
-        .bind(i64::try_from(limit).unwrap_or(1000))
-        .execute(self.long_conn().await?.as_conn()).await
-        .map_err(db_error("delete orphan blob rows"))?.rows_affected();
-        report.deleted_orphan_rows = usize::try_from(deleted_rows).unwrap_or(0);
+        let pg_cursor = sqlx::query_scalar::<_, Option<String>>(
+          "SELECT last_key FROM storage_reconciliation_checkpoints WHERE kind = 'workspace_storage_orphan_rows' AND scope = 'storage'",
+        ).fetch_optional(self.long_conn().await?.as_conn()).await
+          .map_err(db_error("load orphan row cursor"))?.flatten().unwrap_or_default();
+        let ws_limit = i64::try_from(limit).unwrap_or(1000);
+        let has_embeddings: bool = sqlx::query_scalar("SELECT to_regclass('embedding_sources') IS NOT NULL")
+          .fetch_one(self.long_conn().await?.as_conn())
+          .await
+          .map_err(db_error("check embedding_sources table"))?;
+
+        let orphan_ws_ids: Vec<String> = if has_embeddings {
+          sqlx::query_scalar(
+            r#"SELECT DISTINCT ws_id
+               FROM (
+                 SELECT workspace_id AS ws_id FROM blobs WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM comment_attachments WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM snapshots WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM updates WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM snapshot_histories WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM workspace_pages WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM replies WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM comments WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM embedding_sources WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM embedding_workspace_states WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM embedding_indexes WHERE workspace_id > $1
+               ) candidates
+               WHERE NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = candidates.ws_id)
+               ORDER BY ws_id ASC
+               LIMIT $2"#,
+          )
+        } else {
+          sqlx::query_scalar(
+            r#"SELECT DISTINCT ws_id
+               FROM (
+                 SELECT workspace_id AS ws_id FROM blobs WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM comment_attachments WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM snapshots WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM updates WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM snapshot_histories WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM workspace_pages WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM replies WHERE workspace_id > $1
+                 UNION SELECT workspace_id FROM comments WHERE workspace_id > $1
+               ) candidates
+               WHERE NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = candidates.ws_id)
+               ORDER BY ws_id ASC
+               LIMIT $2"#,
+          )
+        }
+        .bind(&pg_cursor)
+        .bind(ws_limit)
+        .fetch_all(self.long_conn().await?.as_conn())
+        .await
+        .map_err(db_error("find orphan workspace ids"))?;
+
+        let mut total_deleted: u64 = 0;
+        if !orphan_ws_ids.is_empty() {
+          let mut delete_tables: Vec<&'static str> = vec![
+            "DELETE FROM blobs WHERE workspace_id = ANY($1) AND NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = blobs.workspace_id)",
+            "DELETE FROM comment_attachments WHERE workspace_id = ANY($1) AND NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = comment_attachments.workspace_id)",
+            "DELETE FROM snapshots WHERE workspace_id = ANY($1) AND NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = snapshots.workspace_id)",
+            "DELETE FROM updates WHERE workspace_id = ANY($1) AND NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = updates.workspace_id)",
+            "DELETE FROM snapshot_histories WHERE workspace_id = ANY($1) AND NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = snapshot_histories.workspace_id)",
+            "DELETE FROM workspace_pages WHERE workspace_id = ANY($1) AND NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = workspace_pages.workspace_id)",
+            "DELETE FROM replies WHERE workspace_id = ANY($1) AND NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = replies.workspace_id)",
+            "DELETE FROM comments WHERE workspace_id = ANY($1) AND NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = comments.workspace_id)",
+          ];
+          if has_embeddings {
+            delete_tables.extend([
+              "DELETE FROM embedding_sources WHERE workspace_id = ANY($1) AND NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = embedding_sources.workspace_id)",
+              "DELETE FROM embedding_workspace_states WHERE workspace_id = ANY($1) AND NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = embedding_workspace_states.workspace_id)",
+              "DELETE FROM embedding_indexes WHERE workspace_id = ANY($1) AND NOT EXISTS (SELECT 1 FROM workspaces w WHERE w.id = embedding_indexes.workspace_id)",
+            ]);
+          }
+          for sql in delete_tables {
+            let deleted = sqlx::query(sql)
+              .bind(&orphan_ws_ids)
+              .execute(self.long_conn().await?.as_conn())
+              .await
+              .map_err(db_error("delete orphan workspace rows"))?
+              .rows_affected();
+            total_deleted = total_deleted.saturating_add(deleted);
+          }
+        }
+        report.deleted_orphan_rows = usize::try_from(total_deleted).unwrap_or(0);
+        if orphan_ws_ids.len() < limit {
+          self.save_orphan_cursor(Some(""), true).await?;
+          pg_completed = true;
+        } else if let Some(last_ws) = orphan_ws_ids.last() {
+          self.save_orphan_cursor(Some(last_ws.as_str()), false).await?;
+        }
       }
-      if objects.len() < limit && !is_cancelled() {
-        self.save_orphan_cursor(None, true).await?;
-        report.completed = true;
-      } else if let Some(last) = last_scanned {
-        self.save_orphan_cursor(Some(&last), false).await?;
-      }
+      report.completed = objects_completed && pg_completed;
       Ok(())
     }.await;
     if let Ok(mut conn) = self.long_conn().await {
       let _ = sqlx::query(
         "UPDATE storage_reconciliation_checkpoints SET status = 'idle', updated_at = clock_timestamp() \
-         WHERE kind = 'storage_orphan_lease' AND scope = 'global' AND metadata->>'claimId' = $1",
+         WHERE kind = 'workspace_storage_namespace' AND scope = 'global' AND metadata->>'claimId' = $1",
       )
       .bind(&claim_id)
       .execute(conn.as_conn())
@@ -247,10 +332,23 @@ impl BlobService {
     sweep_result?;
     Ok(report)
   }
+  async fn save_namespace_cursor(&self, last_key: Option<&str>, completed: bool) -> Result<(), DomainError> {
+    sqlx::query(
+      "UPDATE storage_reconciliation_checkpoints \
+       SET last_key = $1, completed_at = CASE WHEN $2 THEN clock_timestamp() ELSE completed_at END, updated_at = clock_timestamp() \
+       WHERE kind = 'workspace_storage_namespace' AND scope = 'global'",
+    )
+    .bind(last_key)
+    .bind(completed)
+    .execute(self.long_conn().await?.as_conn())
+    .await
+    .map_err(db_error("save storage namespace cursor"))?;
+    Ok(())
+  }
   async fn save_orphan_cursor(&self, last_key: Option<&str>, completed: bool) -> Result<(), DomainError> {
     sqlx::query(
       "INSERT INTO storage_reconciliation_checkpoints (kind, scope, status, last_key, completed_at, updated_at) \
-       VALUES ('storage_orphan_sweep', 'global', $1, $2, CASE WHEN $3 THEN clock_timestamp() ELSE NULL END, clock_timestamp()) \
+       VALUES ('workspace_storage_orphan_rows', 'storage', $1, $2, CASE WHEN $3 THEN clock_timestamp() ELSE NULL END, clock_timestamp()) \
        ON CONFLICT (kind, scope) DO UPDATE SET status = EXCLUDED.status, last_key = EXCLUDED.last_key, \
          completed_at = COALESCE(EXCLUDED.completed_at, storage_reconciliation_checkpoints.completed_at), updated_at = clock_timestamp()",
     )

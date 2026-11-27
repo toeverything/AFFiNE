@@ -578,7 +578,7 @@ impl WorkspaceType {
     let state = ctx.data_unchecked::<Arc<AppState>>();
     let first = pagination.resolved_first(20);
     let offset = pagination.resolved_offset();
-    let after_doc = pagination.after.as_deref().and_then(super::doc::decode_cursor);
+    let after_cursor = pagination.validate_and_resolve_after()?;
     let (total, docs, has_next_page) = state
       .doc_sharing
       .list_docs(
@@ -586,7 +586,7 @@ impl WorkspaceType {
         &user.id,
         i64::from(first),
         i64::from(offset),
-        after_doc.as_deref(),
+        after_cursor.as_deref(),
         true,
       )
       .await
@@ -594,7 +594,11 @@ impl WorkspaceType {
     let edges: Vec<super::doc::DocTypeEdge> = docs
       .into_iter()
       .map(|info| {
-        let cursor = super::doc::encode_cursor(&info.doc_id);
+        let ts = info
+          .created_at
+          .unwrap_or_else(Utc::now)
+          .to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+        let cursor = super::doc::encode_json_cursor(&serde_json::json!([ts, info.doc_id]));
         super::doc::DocTypeEdge {
           cursor,
           node: super::doc::DocType::from_info(info),
@@ -625,7 +629,7 @@ impl WorkspaceType {
     let state = ctx.data_unchecked::<Arc<AppState>>();
     let first = pagination.resolved_first(20);
     let offset = pagination.resolved_offset();
-    let after_doc = pagination.after.as_deref().and_then(super::doc::decode_cursor);
+    let after_cursor = pagination.validate_and_resolve_after()?;
     let (total, docs, has_next_page) = state
       .doc_sharing
       .list_docs(
@@ -633,7 +637,7 @@ impl WorkspaceType {
         &user.id,
         i64::from(first),
         i64::from(offset),
-        after_doc.as_deref(),
+        after_cursor.as_deref(),
         false,
       )
       .await
@@ -641,7 +645,11 @@ impl WorkspaceType {
     let edges: Vec<super::doc::DocTypeEdge> = docs
       .into_iter()
       .map(|info| {
-        let cursor = super::doc::encode_cursor(&info.doc_id);
+        let ts = info
+          .updated_at
+          .unwrap_or_else(Utc::now)
+          .to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+        let cursor = super::doc::encode_json_cursor(&serde_json::json!([ts, info.doc_id]));
         super::doc::DocTypeEdge {
           cursor,
           node: super::doc::DocType::from_info(info),
@@ -847,11 +855,26 @@ pub(crate) async fn resolve_get_invite_info(ctx: &Context<'_>, invite_id: String
     .get_invite_info(&user.id, &invite_id)
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
+  let avatar = match info
+    .workspace_avatar_key
+    .as_deref()
+    .map(str::trim)
+    .filter(|k| !k.is_empty() && server_blob::validate_blob_key(k).is_ok())
+  {
+    Some(key) => match state.blobs.get_blob(&info.workspace_id, key).await {
+      Ok(Some((_, bytes))) => {
+        use base64::Engine as _;
+        base64::engine::general_purpose::STANDARD.encode(&bytes)
+      }
+      _ => String::new(),
+    },
+    None => String::new(),
+  };
   Ok(InvitationType {
     workspace: InvitationWorkspaceType {
       id: ID(info.workspace_id),
       name: info.workspace_name,
-      avatar: String::new(),
+      avatar,
     },
     user: WorkspaceUserType {
       id: info.owner.id,
@@ -981,11 +1004,12 @@ pub(crate) async fn publish_workspace_updated_events(state: &AppState, ws_id: &s
 pub(crate) async fn mutate_delete_workspace(ctx: &Context<'_>, id: String) -> Result<bool> {
   let user = require_authenticated_user(ctx).await?;
   let state = ctx.data_unchecked::<Arc<AppState>>();
-  state
+  let cleanup = state
     .workspaces
-    .delete_workspace(&user.id, &id)
+    .delete_workspace_with_cleanup(&user.id, &id)
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
+  super::user::cleanup_deleted_workspace_objects(state, &id, &cleanup.blob_keys, &cleanup.comment_attachments).await;
   Ok(true)
 }
 
@@ -1203,11 +1227,26 @@ pub(crate) async fn mutate_create_invite_link(
 pub(crate) async fn mutate_revoke_invite_link(ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
   let user = require_authenticated_user(ctx).await?;
   let state = ctx.data_unchecked::<Arc<AppState>>();
-  state
+  let revoked = state
     .workspaces
     .revoke_invite_link(&user.id, &workspace_id)
     .await
-    .map_err(|e| domain_error_to_graphql(&e))
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  let req_id = super::graphql_request_id(state);
+  let _ = state
+    .event_bus
+    .publish_event(
+      "realtime.topic.changed",
+      serde_json::json!({
+        "topic": "workspace.invite-link.changed",
+        "room": format!("workspace:{workspace_id}:invite-link"),
+        "input": { "workspaceId": workspace_id },
+        "event": { "changed": true, "reason": "invite-link-revoked" },
+      }),
+      Some(req_id.as_str()),
+    )
+    .await;
+  Ok(revoked)
 }
 
 pub(crate) async fn resolve_workspace_role_permissions(

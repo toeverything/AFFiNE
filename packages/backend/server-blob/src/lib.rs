@@ -95,7 +95,7 @@ pub fn validate_blob_key(key: &str) -> Result<(), DomainError> {
     && key.len() <= MAX_BLOB_KEY_BYTES
     && key != "."
     && key != ".."
-    && !key.chars().any(|c| c == '/' || c == '\\' || c.is_control())
+    && !key.chars().any(|c| c == '/' || c == '\\' || c == '%' || c.is_control())
     && !is_reserved_segment(key);
   if valid {
     Ok(())
@@ -123,6 +123,7 @@ pub(crate) fn db_error(context: &'static str) -> impl FnOnce(sqlx::Error) -> Dom
 pub(crate) fn storage_error(err: StorageError) -> DomainError {
   match err {
     StorageError::InvalidKey(key) => DomainError::Validation(format!("invalid storage key `{key}`")),
+    StorageError::Config(msg) if msg.starts_with("blob_invalid:") => DomainError::Validation(msg),
     other => {
       tracing::warn!(error = %other, "blob storage operation failed");
       DomainError::Unavailable("blob storage unavailable".into())
@@ -937,21 +938,52 @@ impl BlobService {
       .map_err(db_error("load workspace owner for quota"))?;
       let mut list = vec![workspace_id.to_owned()];
       if let Some(owner_id) = owner_id {
-        let owned: Vec<String> = sqlx::query_scalar(
-          "SELECT workspace_id FROM workspace_members WHERE user_id=$1 AND role='owner' AND state='active' \
-           ORDER BY workspace_id",
+        let lock_key = format!("owner-storage-quota:{owner_id}");
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+          .bind(&lock_key)
+          .execute(&mut **tx)
+          .await
+          .map_err(db_error("lock workspace owner for quota"))?;
+        let owned: Vec<(String, bool)> = sqlx::query_as(
+          r#"SELECT
+               wm.workspace_id,
+               (
+                 EXISTS (
+                   SELECT 1
+                   FROM entitlements e
+                   WHERE e.target_type = 'workspace'
+                     AND e.target_id = wm.workspace_id
+                     AND e.status IN ('active', 'grace')
+                     AND (e.starts_at IS NULL OR e.starts_at <= $2)
+                     AND (e.expires_at IS NULL OR e.expires_at > $2 OR e.grace_until > $2)
+                 )
+                 OR EXISTS (
+                   SELECT 1
+                   FROM installed_licenses il
+                   WHERE il.workspace_id = wm.workspace_id
+                 )
+               ) AS has_candidate_entitlement
+             FROM workspace_members wm
+             WHERE wm.user_id = $1
+               AND wm.role = 'owner'
+               AND wm.state = 'active'
+             ORDER BY wm.workspace_id"#,
         )
         .bind(&owner_id)
+        .bind(now)
         .fetch_all(&mut **tx)
         .await
         .map_err(db_error("load owner workspaces for quota"))?;
-        for wid in owned {
+        for (wid, has_candidate_entitlement) in owned {
           if wid == workspace_id {
             continue;
           }
-          if let Ok(other_grant) = self.quota.resolve_workspace_grant(tx, &wid, now).await
-            && other_grant.billing_subject == server_types::BillingSubject::Owner
-          {
+          if !has_candidate_entitlement {
+            list.push(wid);
+            continue;
+          }
+          let other_grant = self.quota.resolve_workspace_grant(tx, &wid, now).await?;
+          if other_grant.billing_subject == server_types::BillingSubject::Owner {
             list.push(wid);
           }
         }
@@ -1098,8 +1130,9 @@ mod tests {
       ("a\nb", false),
       ("foo.metadata.json", false),
       ("FOO.Metadata.JSON", false),
-      ("foo.tmp-1234", false),
-      ("foo.TMP-1234", false),
+      ("foo.tmp-1234", true),
+      ("foo.TMP-1234", true),
+      ("abc%20def", false),
     ] {
       assert_eq!(validate_blob_key(key).is_ok(), valid, "{key:?}");
     }
@@ -1116,7 +1149,7 @@ mod tests {
       ("a/./b", false),
       ("a/../b", false),
       ("ws/foo.metadata.json", false),
-      ("ws.tmp-1/foo", false),
+      ("ws.tmp-1/foo", true),
     ] {
       assert_eq!(normalize_storage_key(key).is_ok(), valid, "{key:?}");
     }

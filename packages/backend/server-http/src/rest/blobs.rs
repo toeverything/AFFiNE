@@ -454,9 +454,13 @@ pub(crate) async fn handle_get_doc_snapshot(
         let doc_sharing = state.app.doc_sharing.clone();
         let ws = workspace_id.clone();
         let did = doc_id.clone();
-        let is_guest = user_id.is_none();
+        let uid = user_id.clone();
+        let is_guest = uid.is_none();
+        let anon_visitor = is_guest.then(|| anonymous_doc_visitor_id(&ws, &did, &headers));
         tokio::spawn(async move {
-          doc_sharing.record_doc_view(&ws, &did, is_guest).await;
+          doc_sharing
+            .record_doc_view(&ws, &did, is_guest, uid.as_deref(), anon_visitor.as_deref())
+            .await;
         });
       }
       let mut resp = Response::new(axum::body::Body::from(bytes));
@@ -494,6 +498,25 @@ pub(crate) async fn handle_get_doc_snapshot(
     .cookie_action
     .apply_to(resp.headers_mut(), state.app.config.load().https);
   resp
+}
+
+fn anonymous_doc_visitor_id(workspace_id: &str, doc_id: &str, headers: &HeaderMap) -> String {
+  use sha2::{Digest as _, Sha256};
+  let ip = headers
+    .get("x-forwarded-for")
+    .and_then(|v| v.to_str().ok())
+    .and_then(|s| s.split(',').next())
+    .or_else(|| headers.get("x-real-ip").and_then(|v| v.to_str().ok()))
+    .map(str::trim)
+    .unwrap_or("");
+  let ua: String = headers
+    .get(header::USER_AGENT)
+    .and_then(|v| v.to_str().ok())
+    .unwrap_or("")
+    .chars()
+    .take(256)
+    .collect();
+  hex::encode(Sha256::digest(format!("{workspace_id}:{doc_id}:{ip}:{ua}").as_bytes()))
 }
 
 /// `HEAD /api/workspaces/:workspace_id/public-docs/:doc_id`
@@ -556,9 +579,13 @@ pub(crate) async fn handle_get_public_doc(
     Ok((bytes, publish_mode, storage_doc_id)) => {
       let doc_sharing = state.app.doc_sharing.clone();
       let ws = workspace_id.clone();
-      let is_guest = user_id.is_none();
+      let uid = user_id.clone();
+      let is_guest = uid.is_none();
+      let anon_visitor = is_guest.then(|| anonymous_doc_visitor_id(&ws, &storage_doc_id, &headers));
       tokio::spawn(async move {
-        doc_sharing.record_doc_view(&ws, &storage_doc_id, is_guest).await;
+        doc_sharing
+          .record_doc_view(&ws, &storage_doc_id, is_guest, uid.as_deref(), anon_visitor.as_deref())
+          .await;
       });
       let mut resp = Response::new(axum::body::Body::from(bytes));
       *resp.status_mut() = StatusCode::OK;

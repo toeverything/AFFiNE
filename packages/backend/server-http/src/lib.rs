@@ -63,6 +63,9 @@ pub struct RuntimeConfig {
   pub multipart_threshold: i64,
   pub telemetry_allowed_origins: Vec<String>,
   pub worker_proxy_allow_private_origins: Vec<String>,
+  /// Optional startup env/file private key fallback for `CalendarService`
+  /// when `app_configs('crypto.privateKey')` is absent or removed at runtime.
+  pub calendar_fallback_private_key: Option<String>,
 }
 
 impl std::fmt::Debug for RuntimeConfig {
@@ -110,6 +113,7 @@ impl Default for RuntimeConfig {
       multipart_threshold: server_blob::MULTIPART_THRESHOLD,
       telemetry_allowed_origins: Vec::new(),
       worker_proxy_allow_private_origins: Vec::new(),
+      calendar_fallback_private_key: None,
     }
   }
 }
@@ -209,9 +213,10 @@ impl AppState {
     extension: Arc<dyn ServerExtension>,
   ) -> Arc<Self> {
     let sessions = Arc::new(PhaseASessionRepository);
+    let private_key = format!("ephemeral-test-key-{}", uuid::Uuid::new_v4());
     let auth_cfg = AuthConfig {
       server_name: config.server_name.clone(),
-      private_key: format!("ephemeral-test-key-{}", uuid::Uuid::new_v4()),
+      private_key: private_key.clone(),
       ..AuthConfig::default()
     };
     let auth = AuthService::new(db.clone(), sessions, extension.session_policy(), auth_cfg)
@@ -223,6 +228,7 @@ impl AppState {
     let workspaces = WorkspaceService::new(db.clone(), extension.quota_gate(), Arc::clone(&invalidation))
       .with_event_bus(Arc::clone(&event_bus))
       .with_base_url(config.external_url.clone())
+      .with_private_key(private_key.clone())
       .with_rate_limit_policy(extension.rate_limit_policy())
       .with_billing_spi(extension.billing_spi())
       .with_redis(redis.clone());
@@ -231,7 +237,8 @@ impl AppState {
       extension.quota_gate(),
       Arc::clone(&invalidation),
       Arc::clone(&event_bus),
-    );
+    )
+    .with_redis(redis.clone(), "");
     let histories = DocHistoryService::new(db.clone(), extension.quota_gate(), doc_sharing.clone());
     let comments = CommentService::new(
       db.clone(),
@@ -239,13 +246,17 @@ impl AppState {
       doc_sharing.clone(),
       Arc::clone(&event_bus),
     )
-    .with_invalidation(Arc::clone(&invalidation));
+    .with_invalidation(Arc::clone(&invalidation))
+    .with_base_url(config.external_url.clone())
+    .with_private_key(private_key.clone());
     let notifications = NotificationService::new(
       db.clone(),
       extension.quota_gate(),
       doc_sharing.clone(),
       Arc::clone(&event_bus),
-    );
+    )
+    .with_base_url(config.external_url.clone())
+    .with_private_key(private_key);
     let licenses = SelfhostLicenseService::new(db.clone(), extension.quota_gate(), Arc::clone(&invalidation));
     let app_config = AppConfigService::new(db.clone(), config.app_config_baseline.clone(), Arc::clone(&event_bus));
     let blob_root = std::env::temp_dir().join(format!("affine-server-blobs-{}", uuid::Uuid::new_v4()));
@@ -300,14 +311,14 @@ impl AppState {
     let admin = server_domain::admin::AdminService::new(db.clone());
     let calendar_webhook_token = Arc::new(std::sync::Mutex::new(None));
     let auth = services.auth.with_app_config(services.app_config.clone());
-    let calendar = CalendarService::new(
-      db.clone(),
-      auth.config().private_key.clone(),
-      config.external_url.clone(),
-    )
-    .with_app_config(services.app_config.clone())
-    .with_file_json(Some(config.app_config_baseline.file_json.clone()))
-    .with_shared_webhook_token(Arc::clone(&calendar_webhook_token));
+    let calendar_fallback_key = config
+      .calendar_fallback_private_key
+      .clone()
+      .unwrap_or_else(|| auth.config().private_key.clone());
+    let calendar = CalendarService::new(db.clone(), calendar_fallback_key, config.external_url.clone())
+      .with_app_config(services.app_config.clone())
+      .with_file_json(Some(config.app_config_baseline.file_json.clone()))
+      .with_shared_webhook_token(Arc::clone(&calendar_webhook_token));
     let calendar_oauth = CalendarOAuthStore::new(redis.clone(), config.session_redis_db_index).ok();
     let mcp = McpCredentialService::new(db.clone(), Arc::clone(&services.event_bus))
       .with_quota_gate(extension.quota_gate())
@@ -1031,11 +1042,12 @@ async fn handle_graphql_post(
         .map(|u| u.origin().ascii_serialization());
       let allowed =
         rest::worker_proxy::allowed_origins_for_state_async(&state, rest::worker_proxy::CorsOriginScope::Global).await;
-      let dev_mode = state.app.config.load().dev_mode;
-      let origin_ok = origin.is_some_and(|o| rest::worker_proxy::is_cors_origin_allowed(o, &allowed, dev_mode));
+      let cfg_snap = state.app.config.load();
+      let allow_loopback = cfg_snap.dev_mode;
+      let origin_ok = origin.is_some_and(|o| rest::worker_proxy::is_cors_origin_allowed(o, &allowed, allow_loopback));
       let referer_ok = referer_origin
         .as_deref()
-        .is_some_and(|r| rest::worker_proxy::is_cors_origin_allowed(r, &allowed, dev_mode));
+        .is_some_and(|r| rest::worker_proxy::is_cors_origin_allowed(r, &allowed, allow_loopback));
       if let Some(sfs) = sec_fetch_site
         && (sfs.eq_ignore_ascii_case("cross-site")
           || (sfs.eq_ignore_ascii_case("same-site") && !(origin_ok || referer_ok)))
@@ -1413,7 +1425,7 @@ async fn global_cors_middleware(
   } else {
     rest::worker_proxy::CorsOriginScope::Global
   };
-  let dev_mode = cfg_snap.dev_mode;
+  let allow_loopback = cfg_snap.dev_mode;
   let allowed = if origin.is_some() || is_options {
     rest::worker_proxy::allowed_origins_for_state_async(&state, scope).await
   } else {
@@ -1421,7 +1433,7 @@ async fn global_cors_middleware(
   };
   let origin_allowed = origin
     .as_deref()
-    .is_some_and(|o| rest::worker_proxy::is_cors_origin_allowed(o, &allowed, dev_mode));
+    .is_some_and(|o| rest::worker_proxy::is_cors_origin_allowed(o, &allowed, allow_loopback));
 
   let is_route_managed_options = req_path.ends_with("/api/worker/image-proxy")
     || req_path.ends_with("/api/worker/link-preview")

@@ -84,7 +84,27 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           code: "Forbidden".into(),
           error_type: "NO_PERMISSION".into(),
           name: "SPACE_ACCESS_DENIED".into(),
-          message: format!("You do not have permission to access space {space_id}."),
+          message: format!("You do not have permission to access Space {space_id}."),
+          data: Some(serde_json::json!({ "spaceId": space_id })),
+        };
+      }
+      if let Some(space_id) = msg.strip_prefix("member_not_found_in_space:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::FORBIDDEN.as_u16(),
+          code: "Forbidden".into(),
+          error_type: "ACTION_FORBIDDEN".into(),
+          name: "MEMBER_NOT_FOUND_IN_SPACE".into(),
+          message: format!("Member not found in Space {space_id}."),
+          data: Some(serde_json::json!({ "spaceId": space_id })),
+        };
+      }
+      if let Some(space_id) = msg.strip_prefix("no_more_seat:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "BAD_REQUEST".into(),
+          name: "NO_MORE_SEAT".into(),
+          message: format!("No more seat available in the Space {space_id}."),
           data: Some(serde_json::json!({ "spaceId": space_id })),
         };
       }
@@ -119,6 +139,16 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
         };
       }
       if let Some((name, message)) = match msg.as_str() {
+        "workspace_owner_cannot_leave" | "owner_can_not_leave_workspace" => {
+          Some(("OWNER_CAN_NOT_LEAVE_WORKSPACE", "Owner can not leave the workspace."))
+        }
+        "cannot_revoke_self" | "can_not_revoke_yourself" => {
+          Some(("CAN_NOT_REVOKE_YOURSELF", "You can not revoke your own permission."))
+        }
+        "invitation_account_mismatch" => Some((
+          "INVITATION_ACCOUNT_MISMATCH",
+          "This invitation belongs to another account.",
+        )),
         "managed_by_app_store_or_play" => Some((
           "MANAGED_BY_APP_STORE_OR_PLAY",
           "This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.",
@@ -272,6 +302,26 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           data: Some(serde_json::json!({ "name": prompt_name })),
         };
       }
+      if msg == "invalid_invitation" || msg == "Invitation not found" {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "INVALID_INPUT".into(),
+          name: "INVALID_INVITATION".into(),
+          message: "Invalid invitation provided.".into(),
+          data: None,
+        };
+      }
+      if msg == "workspace_member_not_found" {
+        return LegacyErrorEnvelope {
+          status: StatusCode::FORBIDDEN.as_u16(),
+          code: "Forbidden".into(),
+          error_type: "ACTION_FORBIDDEN".into(),
+          name: "MEMBER_NOT_FOUND_IN_SPACE".into(),
+          message: "Member not found in Space.".into(),
+          data: None,
+        };
+      }
       let (name, message) = match msg.as_str() {
         "doc_not_found" => ("DOC_NOT_FOUND", "Doc not found."),
         "doc_history_not_found" => ("DOC_HISTORY_NOT_FOUND", "Doc history not found."),
@@ -279,6 +329,7 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
         "reply_not_found" => ("REPLY_NOT_FOUND", "Reply not found."),
         "license_not_found" => ("LICENSE_NOT_FOUND", "License not found."),
         "user_not_found" => ("USER_NOT_FOUND", "User not found."),
+        "notification_not_found" => ("NOTIFICATION_NOT_FOUND", "Notification not found."),
         "copilot_session_not_found" => ("COPILOT_SESSION_NOT_FOUND", "Copilot session not found."),
         "copilot_docs_not_found" => ("COPILOT_DOCS_NOT_FOUND", "Some docs not found."),
         _ => ("RESOURCE_NOT_FOUND", msg.as_str()),
@@ -303,6 +354,21 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           data: None,
         };
       }
+      if msg == "already_in_space" || msg.starts_with("already_in_space:") {
+        let space_id = msg.strip_prefix("already_in_space:").unwrap_or("");
+        return LegacyErrorEnvelope {
+          status: StatusCode::FORBIDDEN.as_u16(),
+          code: "Forbidden".into(),
+          error_type: "ACTION_FORBIDDEN".into(),
+          name: "ALREADY_IN_SPACE".into(),
+          message: if space_id.is_empty() {
+            "You have already joined in Space.".into()
+          } else {
+            format!("You have already joined in Space {space_id}.")
+          },
+          data: (!space_id.is_empty()).then(|| serde_json::json!({ "spaceId": space_id })),
+        };
+      }
       if let Some(plan) = msg.strip_prefix("subscription_already_exists:") {
         return LegacyErrorEnvelope {
           status: StatusCode::BAD_REQUEST.as_u16(),
@@ -323,7 +389,10 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
       }
     }
     DomainError::QuotaExceeded { kind, message } => {
-      if matches!(*kind, "copilot_quota" | "copilot_action_limit") {
+      if matches!(
+        *kind,
+        "copilot_quota" | "copilot_action_limit" | "copilot_quota_exceeded"
+      ) {
         return LegacyErrorEnvelope {
           status: StatusCode::PAYMENT_REQUIRED.as_u16(),
           code: "Payment Required".into(),
@@ -336,6 +405,8 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
       let (name, error_type, data) = match *kind {
         "blob_limit" => ("BLOB_QUOTA_EXCEEDED", "QUOTA_EXCEEDED", None),
         "storage_quota" => ("STORAGE_QUOTA_EXCEEDED", "QUOTA_EXCEEDED", None),
+        "seat_limit" | "member_quota_exceeded" => ("MEMBER_QUOTA_EXCEEDED", "QUOTA_EXCEEDED", None),
+        "comment_attachment_quota_exceeded" => ("COMMENT_ATTACHMENT_QUOTA_EXCEEDED", "QUOTA_EXCEEDED", None),
         _ => (
           "QUOTA_EXCEEDED",
           "QUOTA_EXCEEDED",
@@ -435,6 +506,36 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           name: "QUERY_TOO_LONG".into(),
           message: format!("Query is too long, max length is {max_num}."),
           data: Some(serde_json::json!({ "max": max_num })),
+        };
+      }
+      if msg == "new_owner_is_not_active_member" || msg == "new workspace owner must be an active member" {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "BAD_REQUEST".into(),
+          name: "NEW_OWNER_IS_NOT_ACTIVE_MEMBER".into(),
+          message: "Can not set a non-active member as owner.".into(),
+          data: None,
+        };
+      }
+      if msg == "invalid_invitation" {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "INVALID_INPUT".into(),
+          name: "INVALID_INVITATION".into(),
+          message: "Invalid invitation provided.".into(),
+          data: None,
+        };
+      }
+      if let Some(space_id) = msg.strip_prefix("no_more_seat:") {
+        return LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "BAD_REQUEST".into(),
+          name: "NO_MORE_SEAT".into(),
+          message: format!("No more seat available in the Space {space_id}."),
+          data: Some(serde_json::json!({ "spaceId": space_id })),
         };
       }
       if msg == "doc_is_not_public" {
@@ -812,7 +913,7 @@ mod tests {
     assert_eq!(ext.get("status"), Some(&Value::from(402)));
     assert_eq!(ext.get("code"), Some(&Value::from("Payment Required")));
     assert_eq!(ext.get("type"), Some(&Value::from("QUOTA_EXCEEDED")));
-    assert_eq!(ext.get("name"), Some(&Value::from("QUOTA_EXCEEDED")));
+    assert_eq!(ext.get("name"), Some(&Value::from("MEMBER_QUOTA_EXCEEDED")));
 
     let doc_denied = domain_error_to_envelope(&DomainError::Forbidden("doc_action_denied:ws1:doc1:Doc.Read".into()));
     assert_eq!(doc_denied.status, 403);

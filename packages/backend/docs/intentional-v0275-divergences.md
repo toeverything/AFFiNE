@@ -55,6 +55,7 @@ This document lists intentional improvements in the native Rust backend. Each en
 - Native behavior: Derives a deterministic HMAC-SHA256 token from the configured private key when `webhookVerificationToken` has no value.
 
 - Database updates to `crypto.privateKey` take effect live without restarting the server.
+- Rotating `crypto.privateKey` live invalidates existing calendar credentials and Google webhook tokens. Session signing keys switch on restart.
 
 - Test: `calendar_private_key_raw_bytes_and_db_override_interop` in `packages/backend/server-domain/src/calendar/mod.rs`.
 
@@ -73,3 +74,51 @@ This document lists intentional improvements in the native Rust backend. Each en
 - Native behavior: Cloud mode never mounts `/api/worker/*` routes and returns `404` regardless of `dev_mode`. Only Selfhosted HTTP roles mount them.
 
 - Test: `route_mount_matrix_truth_table_covers_all_mode_and_role_combinations` in `packages/backend/server-http/src/lib.rs`.
+
+## Admin Role Protection and Self-Ban Guard
+
+- Area: `packages/backend/server-domain/src/workspaces.rs` (`update_member_role`), `packages/backend/server-http/src/graphql/user.rs` (`mutate_admin_ban_user`).
+- Node `v0.27.5` behavior: Commercial Admins could modify or demote another Admin. `banUser` did not block an admin from banning their own account.
+- Native behavior: Only the workspace Owner can modify or demote another Admin. `banUser` rejects self-ban with `Forbidden`.
+
+- Test: `grant_member_owner_and_divergence_guards_parity` and `workspace_doc_notification_config_and_error_parity` in `packages/backend/server-http/tests/workspace_mail_search_blob_parity.rs`.
+
+## Granted Users List Disabled User Resilience
+
+- Area: `packages/backend/server-domain/src/doc_sharing.rs` (`paginate_granted_users`).
+- Node `v0.27.5` behavior: Querying `DocType.grantedUsersList` failed with `500` when a granted user had disabled status.
+- Native behavior: Returns the granted user list cleanly without a `500` error for disabled accounts.
+
+- Test: `grant_member_owner_and_divergence_guards_parity` in `packages/backend/server-http/tests/workspace_mail_search_blob_parity.rs`.
+
+## Admin Dashboard Timezone and Sync Window
+
+- Area: `packages/backend/server-domain/src/admin.rs` (`get_dashboard`).
+- Node `v0.27.5` behavior: Ignored the `timezone` parameter when computing daily bucket boundaries and computed `syncHistoryHours` one hour short.
+- Native behavior: Applies the requested IANA `timezone` to daily bucket boundaries (falling back to UTC when invalid) and spans the full `syncHistoryHours` window.
+
+- Test: `grant_member_owner_and_divergence_guards_parity` in `packages/backend/server-http/tests/workspace_mail_search_blob_parity.rs`.
+
+## Copilot Quota Limit Label for Zero
+
+- Area: `packages/backend/server-http/src/legacy_compat/quota.rs` (`user_quota_from_grant`).
+- Node `v0.27.5` behavior: Formatted `copilotActionLimit = 0` as `"Unlimited"`.
+- Native behavior: Formats `0` as `"0 times"`, positive `n` as `"{n} times"`, and `None` as `"Unlimited"`.
+
+- Test: `copilot_session_defaults_reuse_latest_chat_to_true_and_quota_labels` in `packages/backend/server-http/tests/workspace_mail_search_blob_parity.rs`.
+
+## Invoice Pagination Bounds
+
+- Area: `packages/backend/server-http/src/graphql/billing.rs` (`resolve_user_invoices`, `resolve_workspace_invoices`).
+- Node `v0.27.5` behavior: Allowed negative `take` or `skip` values and unbounded `take` sizes on `invoices`.
+- Native behavior: Defaults `take` to `8`, rejects negative `take` or `skip` with `400`, and clamps `take` to at most `100`.
+
+- Test: `workspace_doc_notification_config_and_error_parity` in `packages/backend/server-http/tests/workspace_mail_search_blob_parity.rs`.
+
+## Sign-In Memory Fallback Rate-Limit Cap
+
+- Area: `packages/backend/server-http/src/rest/auth.rs` (`check_mem_rate_table`, `enforce_sign_in_rate_limit`).
+- Node `v0.27.5` behavior: Relied on Redis throttling without a bounded in-process fallback table.
+- Native behavior: Checks the IP bucket before the email bucket and sweeps expired entries every second. Full `65,536`-key tables return `429` in `O(1)` for new keys without evicting active buckets.
+
+- Test: `mem_rate_table_fails_closed_at_cap_without_evicting_active_buckets` in `packages/backend/server-http/src/rest/auth.rs`.

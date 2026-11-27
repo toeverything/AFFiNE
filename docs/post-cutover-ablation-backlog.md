@@ -102,6 +102,18 @@ Kinds:
 
 - Removal: Delete the module and let `schema.rs` apply only the native component migrations.
 
+### search-highlight-raw-tags
+
+- Kind: `parity`.
+
+- Code: `packages/backend/server-http/src/graphql/search.rs`.
+
+- Reason: `searchDocs` emits raw text with highlight tags like `v0.27.5`. The client `@` mention menu does not escape highlight HTML yet.
+
+- Exit check: The frontend `@` mention menu escapes untrusted highlight text before rendering.
+
+- Removal: Keep or tighten highlight output after the client escaping fix lands.
+
 ### sync-lazy-root-doc-lifecycle-migration
 
 - Kind: `data`.

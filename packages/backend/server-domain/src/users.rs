@@ -563,7 +563,7 @@ impl UserService {
                settled_at = $3,
                anonymized_at = $3,
                updated_at = $3
-           WHERE status = 'queued'
+           WHERE status IN ('queued', 'retry_wait', 'sending')
              AND (recipient_user_id = $1 OR actor_user_id = $1 OR lower(recipient_email) = lower($2))"#,
       )
       .bind(target_user_id)
@@ -1070,7 +1070,7 @@ impl UserService {
         .await
         .map_err(|e| DomainError::Internal(format!("ban delete user_snapshots: {e}")))?;
       sqlx::query(
-        "UPDATE mail_deliveries SET status = 'canceled', retention_state = 'anonymized', recipient_email = NULL, payload = NULL, canceled_at = $3, settled_at = $3, anonymized_at = $3, updated_at = $3 WHERE status = 'queued' AND (recipient_user_id = $1 OR actor_user_id = $1 OR lower(recipient_email) = lower($2))",
+        "UPDATE mail_deliveries SET status = 'canceled', retention_state = 'anonymized', recipient_email = NULL, payload = NULL, canceled_at = $3, settled_at = $3, anonymized_at = $3, updated_at = $3 WHERE status IN ('queued', 'retry_wait', 'sending') AND (recipient_user_id = $1 OR actor_user_id = $1 OR lower(recipient_email) = lower($2))",
       )
       .bind(target_user_id)
       .bind(&user_email)
@@ -1090,13 +1090,14 @@ impl UserService {
         .map_err(|e| DomainError::Internal(format!("ban delete old user: {e}")))?;
       let new_user_id = uuid::Uuid::new_v4().to_string();
       sqlx::query(
-        "INSERT INTO users (id, name, email, password, email_verified, avatar_url, registered, created_at, disabled, auth_epoch) VALUES ($1, $2, $3, $4, $5, NULL, $6, $7, true, $8)",
+        "INSERT INTO users (id, name, email, password, email_verified, avatar_url, registered, created_at, disabled, auth_epoch) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9)",
       )
       .bind(&new_user_id)
       .bind(user_row.get::<String, _>("name"))
       .bind(&user_email)
       .bind(user_row.get::<Option<String>, _>("password"))
       .bind(user_row.get::<Option<DateTime<Utc>>, _>("email_verified"))
+      .bind(&avatar_url)
       .bind(user_row.get::<bool, _>("registered"))
       .bind(user_row.get::<DateTime<Utc>, _>("created_at"))
       .bind(user_row.get::<i32, _>("auth_epoch").saturating_add(1))
@@ -1109,7 +1110,6 @@ impl UserService {
       tx.commit()
         .await
         .map_err(|e| DomainError::Internal(format!("commit ban_user: {e}")))?;
-      cleanup.avatar_url = avatar_url;
       return Ok(new_view);
     }
     Err(DomainError::Conflict(

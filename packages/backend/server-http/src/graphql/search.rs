@@ -373,7 +373,13 @@ pub(crate) async fn resolve_workspace_search(
     .await
     .map_err(|e| search_error_to_graphql(&e, workspace_id))?;
 
-  let nodes = format_nodes(raw.get("nodes").and_then(JsonValue::as_array));
+  let mut physical_to_logical: HashMap<String, String> = HashMap::new();
+  if let Ok(aliases) = state.doc_sharing.get_doc_id_aliases(workspace_id).await {
+    for (logical, physical) in aliases {
+      physical_to_logical.entry(physical).or_insert(logical);
+    }
+  }
+  let nodes = format_nodes(raw.get("nodes").and_then(JsonValue::as_array), &physical_to_logical);
   let next_cursor = raw.get("nextCursor").and_then(JsonValue::as_str).map(str::to_owned);
   let count = i32::try_from(nodes.len()).unwrap_or(i32::MAX);
   let has_more = next_cursor.is_some();
@@ -414,6 +420,7 @@ pub(crate) async fn resolve_workspace_aggregate(
     .unwrap_or_default()
     .try_into()
     .map_err(|e| search_error_to_graphql(&e, workspace_id))?;
+  let is_doc_id_field = input.field == "docId" || input.field == "doc_id";
   let request = DomainAggregateRequest {
     table: input.table.into(),
     query: input.query.into(),
@@ -440,15 +447,30 @@ pub(crate) async fn resolve_workspace_aggregate(
     .await
     .map_err(|e| search_error_to_graphql(&e, workspace_id))?;
 
+  let mut physical_to_logical: HashMap<String, String> = HashMap::new();
+  if let Ok(aliases) = state.doc_sharing.get_doc_id_aliases(workspace_id).await {
+    for (logical, physical) in aliases {
+      physical_to_logical.entry(physical).or_insert(logical);
+    }
+  }
+
   let mut buckets = Vec::new();
   if let Some(raw_buckets) = raw.get("buckets").and_then(JsonValue::as_array) {
     for bucket in raw_buckets {
-      let key = bucket
+      let raw_key = bucket
         .get("key")
         .and_then(|k| k.as_str().map(str::to_owned).or_else(|| Some(k.to_string())))
         .unwrap_or_default();
+      let key = if is_doc_id_field {
+        physical_to_logical.get(&raw_key).cloned().unwrap_or(raw_key)
+      } else {
+        raw_key
+      };
       let count = bucket.get("count").and_then(JsonValue::as_i64).unwrap_or(0) as i32;
-      let nodes = format_nodes(bucket.pointer("/hits/nodes").and_then(JsonValue::as_array));
+      let nodes = format_nodes(
+        bucket.pointer("/hits/nodes").and_then(JsonValue::as_array),
+        &physical_to_logical,
+      );
       buckets.push(AggregateBucketObjectType {
         key,
         count,
@@ -468,6 +490,7 @@ pub(crate) async fn resolve_workspace_aggregate(
   })
 }
 
+// compat(parity): search-highlight-raw-tags -- emits unescaped v0.27.5 highlight tags while client mention menu HTML escaping remains unfixed
 pub(crate) async fn resolve_workspace_search_docs(
   ctx: &Context<'_>,
   workspace_id: &str,
@@ -585,15 +608,58 @@ pub(crate) async fn resolve_workspace_search_docs(
     ));
   }
 
+  let mut missing_title_doc_ids: Vec<String> = Vec::new();
+  let mut missing_title_seen = HashSet::new();
+  for (doc, _, _) in &docs {
+    if doc.title.is_empty() && !doc.doc_id.is_empty() && missing_title_seen.insert(doc.doc_id.clone()) {
+      missing_title_doc_ids.push(doc.doc_id.clone());
+    }
+  }
+  let mut page_titles: HashMap<String, String> = HashMap::new();
+  if !missing_title_doc_ids.is_empty()
+    && let Ok(mut conn) = state.db.acquire_tiered(server_db::WorkloadTier::InteractiveRead).await
+    && let Ok(rows) = sqlx::query(
+      "SELECT page_id, title FROM workspace_pages WHERE workspace_id = $1 AND page_id = ANY($2) AND title IS NOT NULL AND lifecycle_state IS DISTINCT FROM 'deleted'",
+    )
+    .bind(workspace_id)
+    .bind(&missing_title_doc_ids)
+    .fetch_all(&mut *conn)
+    .await
+  {
+    use sqlx::Row as _;
+    for row in rows {
+      let page_id: String = row.get("page_id");
+      if let Some(title) = row.get::<Option<String>, _>("title") {
+        page_titles.insert(page_id, title);
+      }
+    }
+  }
+
+  let mut physical_to_logical: HashMap<String, String> = HashMap::new();
+  if let Ok(aliases) = state.doc_sharing.get_doc_id_aliases(workspace_id).await {
+    for (logical, physical) in aliases {
+      physical_to_logical.entry(physical).or_insert(logical);
+    }
+  }
+
   let mut users_map: HashMap<String, PublicUserType> = HashMap::new();
-  for uid in user_ids {
-    if let Ok(Some(public_user)) = state.users.get_public_user(&uid).await {
+  let user_id_vec: Vec<String> = user_ids.into_iter().collect();
+  if !user_id_vec.is_empty()
+    && let Ok(mut conn) = state.db.acquire_tiered(server_db::WorkloadTier::InteractiveRead).await
+    && let Ok(rows) = sqlx::query("SELECT id, name, avatar_url FROM users WHERE id = ANY($1)")
+      .bind(&user_id_vec)
+      .fetch_all(&mut *conn)
+      .await
+  {
+    use sqlx::Row as _;
+    for row in rows {
+      let id: String = row.get("id");
       users_map.insert(
-        uid,
+        id.clone(),
         PublicUserType {
-          id: public_user.id,
-          name: public_user.name,
-          avatar_url: public_user.avatar_url,
+          id,
+          name: row.get("name"),
+          avatar_url: row.get("avatar_url"),
         },
       );
     }
@@ -602,6 +668,14 @@ pub(crate) async fn resolve_workspace_search_docs(
   let result = docs
     .into_iter()
     .map(|(mut doc, created_by, updated_by)| {
+      if doc.title.is_empty()
+        && let Some(title) = page_titles.get(&doc.doc_id)
+      {
+        doc.title = title.clone();
+      }
+      if let Some(logical) = physical_to_logical.get(&doc.doc_id) {
+        doc.doc_id = logical.clone();
+      }
       doc.created_by_user = users_map.get(&created_by).cloned();
       doc.updated_by_user = users_map.get(&updated_by).cloned();
       doc
@@ -772,12 +846,48 @@ fn build_basic_search_docs_request(workspace_id: &str, keyword: &str, limit: u32
   }
 }
 
-fn format_nodes(nodes: Option<&Vec<JsonValue>>) -> Vec<SearchNodeObjectType> {
+fn remap_doc_id_value(val: &mut JsonValue, physical_to_logical: &HashMap<String, String>) {
+  match val {
+    JsonValue::String(s) => {
+      if let Some(logical) = physical_to_logical.get(s.as_str()) {
+        *s = logical.clone();
+      }
+    }
+    JsonValue::Array(arr) => {
+      for item in arr {
+        if let JsonValue::String(s) = item
+          && let Some(logical) = physical_to_logical.get(s.as_str())
+        {
+          *s = logical.clone();
+        }
+      }
+    }
+    _ => {}
+  }
+}
+
+fn format_nodes(
+  nodes: Option<&Vec<JsonValue>>,
+  physical_to_logical: &HashMap<String, String>,
+) -> Vec<SearchNodeObjectType> {
   nodes
     .into_iter()
     .flatten()
     .map(|node| {
-      let fields = camel_case_object(node.get("fields").and_then(JsonValue::as_object));
+      let mut fields = camel_case_object(node.get("fields").and_then(JsonValue::as_object));
+      if !physical_to_logical.is_empty() {
+        if let Some(val) = fields.get_mut("docId") {
+          remap_doc_id_value(val, physical_to_logical);
+        }
+        if let Some(JsonValue::Object(src)) = fields.get_mut("_source") {
+          if let Some(val) = src.get_mut("docId") {
+            remap_doc_id_value(val, physical_to_logical);
+          }
+          if let Some(val) = src.get_mut("doc_id") {
+            remap_doc_id_value(val, physical_to_logical);
+          }
+        }
+      }
       let highlights = node
         .get("highlights")
         .and_then(JsonValue::as_object)

@@ -129,13 +129,13 @@ fn render_highlight(text: &str, spans: &[(u32, u32)], before: &str, after: &str)
     if start < cursor || end < start || end > text.len() {
       continue;
     }
-    output.push_str(&v_htmlescape::escape(&text[cursor..start]).to_string());
+    output.push_str(&text[cursor..start]);
     output.push_str(before);
-    output.push_str(&v_htmlescape::escape(&text[start..end]).to_string());
+    output.push_str(&text[start..end]);
     output.push_str(after);
     cursor = end;
   }
-  output.push_str(&v_htmlescape::escape(&text[cursor..]).to_string());
+  output.push_str(&text[cursor..]);
   output
 }
 

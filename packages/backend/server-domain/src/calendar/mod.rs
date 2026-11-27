@@ -366,14 +366,24 @@ impl CalendarService {
     self
   }
   /// Resolves the effective `crypto.privateKey` preserving exact raw bytes (no `.trim()`),
+  /// propagating transient DB errors instead of silently falling back to an ephemeral key.
+  pub async fn try_effective_private_key(&self) -> Result<String, CalendarError> {
+    if let Some(ref cfg_svc) = self.app_config {
+      return match cfg_svc.get_internal_private_key().await {
+        Ok(Some(raw)) => Ok(raw),
+        Ok(None) => Ok(self.private_key.clone()),
+        Err(err) => Err(CalendarError::Domain(err)),
+      };
+    }
+    Ok(self.private_key.clone())
+  }
+  /// Resolves the effective `crypto.privateKey` preserving exact raw bytes (no `.trim()`),
   /// reading the internal unredacted cache so DB `app_configs` overrides take effect dynamically.
   pub async fn effective_private_key(&self) -> String {
-    if let Some(ref cfg_svc) = self.app_config
-      && let Ok(Some(raw)) = cfg_svc.get_internal_private_key().await
-    {
-      return raw;
-    }
-    self.private_key.clone()
+    self
+      .try_effective_private_key()
+      .await
+      .unwrap_or_else(|_| self.private_key.clone())
   }
   pub(crate) async fn read_conn(&self, ctx: &'static str) -> Result<TieredConn, CalendarError> {
     self
@@ -395,7 +405,7 @@ impl CalendarService {
   async fn encrypt_patch_async(&self, patch: &TokenPatch) -> Result<Option<String>, CalendarError> {
     match patch {
       TokenPatch::Set(v) => {
-        let key = self.effective_private_key().await;
+        let key = self.try_effective_private_key().await?;
         Ok(Some(encrypt_token(&key, v).map_err(CalendarError::Domain)?))
       }
       TokenPatch::Keep | TokenPatch::Clear => Ok(None),
@@ -834,7 +844,7 @@ impl CalendarService {
         .collect();
       if !channels.is_empty()
         && let Some(enc) = account.access_token_encrypted.as_deref()
-        && let key = self.effective_private_key().await
+        && let Ok(key) = self.try_effective_private_key().await
         && let Ok(access_token) = decrypt_token(&key, enc)
         && let Ok(configs) = self.load_configs().await
         && configs.google.is_configured()
@@ -1483,6 +1493,47 @@ mod tests {
       assert_eq!(calendar.effective_private_key().await, raw_key_with_newline);
       assert_eq!(calendar.webhook_token_from_config(&google_cfg).await, k1_webhook);
       assert!(calendar.verify_webhook_token(&google_cfg, &k1_webhook).await);
+
+      // 4. Env key E with empty file config and pre-existing DB key D at startup:
+      //    deleting DB D immediately falls back to E on the hot instance, matching a cold-started instance with E.
+      let env_key_e = "env-private-key-E\n";
+      let db_key_d = "preexisting-db-key-D\n";
+      sqlx::query(
+        r#"INSERT INTO app_configs (id, value, last_updated_by, created_at, updated_at)
+           VALUES ('crypto.privateKey', to_jsonb($1::text), NULL, now(), now())
+           ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = now()"#,
+      )
+      .bind(db_key_d)
+      .execute(db.pool())
+      .await
+      .expect("insert pre-existing db key D");
+      let empty_file_app_config = AppConfigService::new(
+        db.clone(),
+        RuntimeAppConfigBaseline::default(),
+        Arc::new(NoopEventPublisher::default()),
+      );
+      let hot_calendar = CalendarService::new(db.clone(), env_key_e.to_owned(), "http://localhost:3010".to_owned())
+        .with_app_config(empty_file_app_config.clone());
+      assert_eq!(hot_calendar.effective_private_key().await, db_key_d);
+
+      sqlx::query("DELETE FROM app_configs WHERE id = 'crypto.privateKey'")
+        .execute(db.pool())
+        .await
+        .expect("delete db key D");
+      empty_file_app_config.invalidate_cache();
+
+      let cold_calendar = CalendarService::new(db.clone(), env_key_e.to_owned(), "http://localhost:3010".to_owned())
+        .with_app_config(empty_file_app_config);
+      assert_eq!(hot_calendar.effective_private_key().await, env_key_e);
+      assert_eq!(
+        hot_calendar.webhook_token_from_config(&google_cfg).await,
+        cold_calendar.webhook_token_from_config(&google_cfg).await
+      );
+      let ct_e = encrypt_token(&hot_calendar.effective_private_key().await, "env-cal-secret").expect("encrypt E");
+      assert_eq!(
+        decrypt_token(&cold_calendar.effective_private_key().await, &ct_e).expect("decrypt E"),
+        "env-cal-secret"
+      );
     });
   }
 }

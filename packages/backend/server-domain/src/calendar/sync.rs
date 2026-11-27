@@ -336,7 +336,7 @@ pub(crate) async fn ensure_access_token(
   google_cfg: &super::google::CalendarGoogleConfig,
   claim: Option<(&str, DateTime<Utc>)>,
 ) -> Result<Option<String>, CalendarError> {
-  let private_key = service.effective_private_key().await;
+  let private_key = service.try_effective_private_key().await?;
   let access_token = match account.access_token_encrypted.as_deref() {
     Some(enc) => Some(decrypt_token(&private_key, enc).map_err(CalendarError::Domain)?),
     None => None,
@@ -445,7 +445,7 @@ async fn update_tokens_under_claim(
   expires_at: Option<DateTime<Utc>>,
   scope: Option<&str>,
 ) -> Result<bool, CalendarError> {
-  let private_key = service.effective_private_key().await;
+  let private_key = service.try_effective_private_key().await?;
   let enc_access = super::crypto::encrypt_token(&private_key, access_token).map_err(CalendarError::Domain)?;
   let enc_refresh = super::crypto::encrypt_token(&private_key, refresh_token).map_err(CalendarError::Domain)?;
   let mut tx = service

@@ -44,8 +44,8 @@ pub use copilot::{
 pub use disposition::DomainDispositionHandler;
 pub use embedding::{
   AddWorkspaceArtifactInput, BoxedWorkspaceArtifactLock, CommunityCopilotEmbeddingSpi, CopilotEmbeddingSpi,
-  EmbeddingPagination, WorkspaceArtifactLock, WorkspaceArtifactPage, WorkspaceArtifactRecord, WorkspaceIgnoredDocPage,
-  WorkspaceIgnoredDocRecord,
+  EmbeddingPagination, VectorDocSearchHit, WorkspaceArtifactLock, WorkspaceArtifactPage, WorkspaceArtifactRecord,
+  WorkspaceIgnoredDocPage, WorkspaceIgnoredDocRecord,
 };
 pub use server_types::BillingSubject;
 use server_types::{AccessGrant, DomainError};

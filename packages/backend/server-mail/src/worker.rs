@@ -14,7 +14,7 @@ use chrono::{DateTime, Duration, Utc};
 use serde_json::Value;
 use sqlx::{PgPool, Row};
 
-use crate::{MailSendResult, MailTemplate, SmtpMailer};
+use crate::{InlineAttachment, MailSendResult, MailTemplate, SmtpMailer};
 
 #[derive(Debug, thiserror::Error)]
 pub enum MailWorkerError {
@@ -236,22 +236,174 @@ async fn mark_terminal(
   Ok(())
 }
 
-/// Processes a single batch of ready `public.mail_deliveries` rows:
-/// 1. Marks expired pending/stale-sending rows as `failed` and anonymizes them.
-/// 2. Claims up to `batch_size` direct-render rows (never claiming rows with
-///    legacy dynamic `$$...` placeholders) via `FOR UPDATE SKIP LOCKED`.
-/// 3. Validates payload, expiry, disabled recipient, and template parsing
-///    BEFORE incrementing `attempt_count`.
-/// 4. Sends via [`SmtpMailer`], writes `provider_message_id` on `sent`, and
-///    retries transient failures with exponential backoff capped at 30 min.
-///
-/// Returns the number of deliveries attempted in this pass.
+/// Runtime delivery options for [`process_ready_mail_deliveries_with_options`].
+/// Workspace metadata resolved for dynamic `$$workspaceId` mail templates.
+#[derive(Clone, Debug, Default)]
+pub struct ResolvedWorkspaceMailMeta {
+  pub name: String,
+  pub avatar: Option<InlineAttachment>,
+  pub name_contains_domain: bool,
+}
+
+/// Optional host-supplied resolver for dynamic `$$workspaceId` placeholders
+/// (Yjs root doc `meta.name`/`meta.avatar`, content-policy domain checks, and
+/// workspace avatar blob loading).
+pub trait WorkspaceMailMetaResolver: Send + Sync {
+  fn resolve_workspace_meta<'a>(
+    &'a self,
+    workspace_id: &'a str,
+  ) -> std::pin::Pin<
+    Box<dyn std::future::Future<Output = Result<Option<ResolvedWorkspaceMailMeta>, MailWorkerError>> + Send + 'a>,
+  >;
+}
+
+#[derive(Clone, Default)]
+pub struct MailDeliveryOptions<'a> {
+  pub base_url: &'a str,
+  pub fallback_mailer: Option<&'a SmtpMailer>,
+  pub fallback_domains: &'a [String],
+  pub workspace_resolver: Option<&'a dyn WorkspaceMailMetaResolver>,
+}
+
+async fn resolve_dynamic_payload_props(
+  pool: &PgPool,
+  payload: &mut Value,
+  options: &MailDeliveryOptions<'_>,
+) -> Result<(Option<&'static str>, Vec<InlineAttachment>), MailWorkerError> {
+  let mail_name = payload
+    .get("name")
+    .and_then(Value::as_str)
+    .unwrap_or_default()
+    .to_owned();
+  let mut inline_attachments = Vec::new();
+  let Some(props) = payload.get_mut("props").and_then(Value::as_object_mut) else {
+    return Ok((None, inline_attachments));
+  };
+  let base = options.base_url.trim_end_matches('/');
+  let keys: Vec<String> = props.keys().cloned().collect();
+  for key in keys {
+    let Some(obj) = props.get(&key).and_then(Value::as_object).cloned() else {
+      continue;
+    };
+    if let Some(ws_id) = obj.get("$$workspaceUrl").and_then(Value::as_str) {
+      props.insert(key, Value::String(format!("{base}/workspace/{ws_id}")));
+      continue;
+    }
+    if let Some(ws_id) = obj.get("$$workspaceId").and_then(Value::as_str) {
+      let resolved = if let Some(resolver) = options.workspace_resolver {
+        resolver.resolve_workspace_meta(ws_id).await?
+      } else {
+        let ws_name: Option<String> = sqlx::query_scalar("SELECT NULLIF(trim(name), '') FROM workspaces WHERE id = $1")
+          .bind(ws_id)
+          .fetch_optional(pool)
+          .await?
+          .flatten();
+        let exists: bool = if ws_name.is_some() {
+          true
+        } else {
+          sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1) \
+             OR EXISTS(SELECT 1 FROM snapshots WHERE workspace_id = $1 AND guid = $1)",
+          )
+          .bind(ws_id)
+          .fetch_one(pool)
+          .await?
+        };
+        exists.then(|| {
+          let name = ws_name.unwrap_or_else(|| "Untitled".to_owned());
+          let name_contains_domain = name.contains("://")
+            || name
+              .split_whitespace()
+              .any(|tok| tok.contains('.') && tok.len() >= 4 && !tok.starts_with('.') && !tok.ends_with('.'));
+          ResolvedWorkspaceMailMeta {
+            name,
+            avatar: None,
+            name_contains_domain,
+          }
+        })
+      };
+      let Some(meta) = resolved else {
+        return Ok((Some("workspace_not_found"), inline_attachments));
+      };
+      if mail_name == "MemberInvitation" && meta.name_contains_domain {
+        return Ok((Some("workspace_name_contains_domain"), inline_attachments));
+      }
+      let mut merged = obj;
+      merged.remove("$$workspaceId");
+      merged.insert("name".to_owned(), Value::String(meta.name));
+      if let Some(att) = meta.avatar {
+        merged.insert("avatar".to_owned(), Value::String(format!("cid:{}", att.content_id)));
+        inline_attachments.push(att);
+      }
+      props.insert(key, Value::Object(merged));
+      continue;
+    }
+    if let Some(uid) = obj.get("$$userId").and_then(Value::as_str) {
+      let email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+        .bind(uid)
+        .fetch_optional(pool)
+        .await?;
+      let Some(email) = email else {
+        return Ok((Some("user_not_found"), inline_attachments));
+      };
+      let mut merged = obj;
+      merged.remove("$$userId");
+      merged.insert("email".to_owned(), Value::String(email));
+      props.insert(key, Value::Object(merged));
+    }
+  }
+  Ok((None, inline_attachments))
+}
+
+fn should_use_fallback_mailer(recipient_email: &str, fallback_domains: &[String]) -> bool {
+  if fallback_domains.is_empty() {
+    return false;
+  }
+  let Some((_, domain)) = recipient_email.rsplit_once('@') else {
+    return false;
+  };
+  let domain_lower = domain.trim().to_ascii_lowercase();
+  fallback_domains
+    .iter()
+    .any(|d| d.trim().eq_ignore_ascii_case(&domain_lower))
+}
+
+/// Processes a single batch of ready `public.mail_deliveries` rows using the
+/// primary [`SmtpMailer`] and default options.
 pub async fn process_ready_mail_deliveries(
   pool: &PgPool,
   mailer: &SmtpMailer,
   worker_id: &str,
   batch_size: i64,
   lease_ms: i64,
+) -> Result<usize, MailWorkerError> {
+  process_ready_mail_deliveries_with_options(
+    pool,
+    mailer,
+    worker_id,
+    batch_size,
+    lease_ms,
+    &MailDeliveryOptions {
+      base_url: "http://localhost:3010",
+      fallback_mailer: None,
+      fallback_domains: &[],
+      workspace_resolver: None,
+    },
+  )
+  .await
+}
+
+/// Processes a single batch of ready `public.mail_deliveries` rows across all
+/// 30 `v0.27.5` mail templates, resolving dynamic `$$workspaceId`, `$$userId`,
+/// and `$$workspaceUrl` placeholders from PostgreSQL before rendering, and
+/// routing matching domains (or fallback retries) to `fallback_mailer`.
+pub async fn process_ready_mail_deliveries_with_options(
+  pool: &PgPool,
+  mailer: &SmtpMailer,
+  worker_id: &str,
+  batch_size: i64,
+  lease_ms: i64,
+  options: &MailDeliveryOptions<'_>,
 ) -> Result<usize, MailWorkerError> {
   let batch_size = batch_size.max(1);
   let lease_ms = lease_ms.max(1_000);
@@ -271,12 +423,6 @@ pub async fn process_ready_mail_deliveries(
              status IN ('queued', 'retry_wait')
              OR (status = 'sending' AND locked_until < now())
            )
-           AND mail_name IN (
-             'TestMail', 'SignIn', 'SignUp', 'SetPassword', 'ChangePassword',
-             'VerifyEmail', 'ChangeEmail', 'VerifyChangeEmail', 'EmailChanged',
-             'TeamLicense', 'MemberInvitation', 'MemberAccepted', 'LinkInvitationApprove'
-           )
-           AND (payload IS NULL OR payload::text NOT LIKE '%"$$%')
            AND send_after <= now()
            AND (expires_at IS NULL OR expires_at > now())
            AND (locked_until IS NULL OR locked_until < now())
@@ -318,7 +464,7 @@ pub async fn process_ready_mail_deliveries(
     // 1. Pre-attempt checks (NEVER increment `attempt_count` before these pass).
     let recipient_email = item.recipient_email.as_deref().map(str::trim).filter(|s| !s.is_empty());
     let payload = item.payload.filter(|v| !v.is_null());
-    let (Some(recipient_email), Some(payload)) = (recipient_email, payload) else {
+    let (Some(recipient_email), Some(mut payload)) = (recipient_email, payload) else {
       mark_terminal(
         pool,
         &item.id,
@@ -367,7 +513,24 @@ pub async fn process_ready_mail_deliveries(
       continue;
     }
 
-    // 2. Parse template before incrementing attempt_count; if unrecognized / dynamic,
+    // 2. Resolve dynamic `$$workspaceId` / `$$userId` / `$$workspaceUrl` props.
+    let (skip_reason, inline_attachments) = resolve_dynamic_payload_props(pool, &mut payload, options).await?;
+    if let Some(skip_reason) = skip_reason {
+      mark_terminal(
+        pool,
+        &item.id,
+        worker_id,
+        "skipped",
+        None,
+        None,
+        Some(skip_reason),
+        None,
+      )
+      .await?;
+      continue;
+    }
+
+    // 3. Parse template before incrementing attempt_count; if unrecognized,
     //    release lease back to `queued` without modifying payload or attempt_count.
     let template: MailTemplate = match serde_json::from_value(payload) {
       Ok(tpl) => tpl,
@@ -378,7 +541,7 @@ pub async fn process_ready_mail_deliveries(
       }
     };
 
-    // 3. Mark attempt started (atomically guards lease & attempt budget).
+    // 4. Mark attempt started (atomically guards lease & attempt budget).
     let attempt_started: Option<i32> = sqlx::query_scalar(
       r#"UPDATE mail_deliveries
          SET attempt_count = attempt_count + 1,
@@ -403,7 +566,15 @@ pub async fn process_ready_mail_deliveries(
     processed += 1;
 
     let rendered = template.render();
-    match mailer.send(recipient_email, &rendered).await {
+    let active_mailer = if should_use_fallback_mailer(recipient_email, options.fallback_domains) {
+      options.fallback_mailer.unwrap_or(mailer)
+    } else {
+      mailer
+    };
+    let send_res = active_mailer
+      .send_with_attachments(recipient_email, &rendered, &inline_attachments)
+      .await;
+    match send_res {
       MailSendResult::Accepted {
         message_id,
         provider_response,

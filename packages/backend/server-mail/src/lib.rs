@@ -14,8 +14,11 @@ mod worker;
 use chrono::{DateTime, Datelike, Utc};
 use serde::{Deserialize, Serialize};
 
-pub use crate::smtp::{MailSendResult, SmtpConfig, SmtpError, SmtpMailer, normalize_helo_hostname};
-pub use crate::worker::{MailWorkerError, process_ready_mail_deliveries};
+pub use crate::smtp::{InlineAttachment, MailSendResult, SmtpConfig, SmtpError, SmtpMailer, normalize_helo_hostname};
+pub use crate::worker::{
+  MailDeliveryOptions, MailWorkerError, ResolvedWorkspaceMailMeta, WorkspaceMailMetaResolver,
+  process_ready_mail_deliveries, process_ready_mail_deliveries_with_options,
+};
 
 /// Subject and HTML body of a rendered mail.
 #[derive(Clone, Debug, Eq, PartialEq)]

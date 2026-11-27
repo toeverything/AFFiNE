@@ -15,7 +15,10 @@ use std::{str::FromStr, time::Duration};
 
 use lettre::{
   AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
-  message::{Mailbox, SinglePart, header::ContentTransferEncoding},
+  message::{
+    Mailbox, MultiPart, SinglePart,
+    header::{ContentDisposition, ContentId, ContentTransferEncoding, ContentType},
+  },
   transport::smtp::{
     authentication::Credentials,
     client::{Tls, TlsParameters},
@@ -70,6 +73,14 @@ pub enum SmtpError {
   Message(#[from] lettre::error::Error),
   #[error("SMTP transport error: {0}")]
   Transport(#[from] lettre::transport::smtp::Error),
+}
+
+/// Inline MIME attachment referenced by `cid:<content_id>` in rendered HTML.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InlineAttachment {
+  pub content_id: String,
+  pub content_type: String,
+  pub data: Vec<u8>,
 }
 
 /// Outcome of one delivery attempt, mirroring the reference `MailSendResult`.
@@ -172,23 +183,53 @@ impl SmtpMailer {
     Ok(self.transport.test_connection().await?)
   }
 
-  /// Builds the single-part HTML message the reference `sendMail` produces
-  /// along with its RFC 5322 `Message-ID` header value.
-  pub fn build_message_with_id(&self, to: &str, mail: &RenderedMail) -> Result<(Message, String), SmtpError> {
+  /// Builds the HTML message (single-part when `attachments` is empty, or
+  /// `multipart/related` with inline CID parts otherwise) along with its
+  /// RFC 5322 `Message-ID` header value.
+  pub fn build_message_with_attachments(
+    &self,
+    to: &str,
+    mail: &RenderedMail,
+    attachments: &[InlineAttachment],
+  ) -> Result<(Message, String), SmtpError> {
     let recipient = Mailbox::from_str(to).map_err(|_| SmtpError::InvalidRecipient(to.to_owned()))?;
     let domain = self.sender.email.domain();
     let message_id = format!("<{}@{}>", uuid::Uuid::new_v4(), domain);
-    let part = SinglePart::builder()
-      .header(lettre::message::header::ContentType::TEXT_HTML)
+    let html_part = SinglePart::builder()
+      .header(ContentType::TEXT_HTML)
       .header(ContentTransferEncoding::QuotedPrintable)
       .body(mail.html.clone());
-    let msg = Message::builder()
+    let builder = Message::builder()
       .from(self.sender.clone())
       .to(recipient)
       .subject(mail.subject.clone())
-      .message_id(Some(message_id.clone()))
-      .singlepart(part)?;
+      .message_id(Some(message_id.clone()));
+    let msg = if attachments.is_empty() {
+      builder.singlepart(html_part)?
+    } else {
+      let mut related = MultiPart::related().singlepart(html_part);
+      for att in attachments {
+        let ct = ContentType::parse(&att.content_type)
+          .unwrap_or_else(|_| ContentType::parse("application/octet-stream").expect("static content-type"));
+        let cid = format!("<{}>", att.content_id.trim_matches(|c| c == '<' || c == '>'));
+        related = related.singlepart(
+          SinglePart::builder()
+            .header(ct)
+            .header(ContentDisposition::inline())
+            .header(ContentId::from(cid))
+            .header(ContentTransferEncoding::Base64)
+            .body(att.data.clone()),
+        );
+      }
+      builder.multipart(related)?
+    };
     Ok((msg, message_id))
+  }
+
+  /// Builds the single-part HTML message the reference `sendMail` produces
+  /// along with its RFC 5322 `Message-ID` header value.
+  pub fn build_message_with_id(&self, to: &str, mail: &RenderedMail) -> Result<(Message, String), SmtpError> {
+    self.build_message_with_attachments(to, mail, &[])
   }
 
   /// Builds the single-part HTML message the reference `sendMail` produces.
@@ -196,8 +237,14 @@ impl SmtpMailer {
     self.build_message_with_id(to, mail).map(|(msg, _)| msg)
   }
 
-  /// Sends one mail and classifies the outcome like `MailSender.send`.
-  pub async fn send(&self, to: &str, mail: &RenderedMail) -> MailSendResult {
+  /// Sends one mail with optional inline CID attachments and classifies the
+  /// outcome like `MailSender.send`.
+  pub async fn send_with_attachments(
+    &self,
+    to: &str,
+    mail: &RenderedMail,
+    attachments: &[InlineAttachment],
+  ) -> MailSendResult {
     let mut parts = to.split('@');
     let domain_ok = parts.next().is_some() && parts.next().is_some_and(|domain| !domain.is_empty());
     if !domain_ok || parts.next().is_some() {
@@ -206,7 +253,7 @@ impl SmtpMailer {
         error_code: "invalid_recipient",
       };
     }
-    let (message, message_id) = match self.build_message_with_id(to, mail) {
+    let (message, message_id) = match self.build_message_with_attachments(to, mail, attachments) {
       Ok(pair) => pair,
       Err(_) => {
         return MailSendResult::Rejected {
@@ -234,6 +281,11 @@ impl SmtpMailer {
         error: err.to_string(),
       },
     }
+  }
+
+  /// Sends one mail and classifies the outcome like `MailSender.send`.
+  pub async fn send(&self, to: &str, mail: &RenderedMail) -> MailSendResult {
+    self.send_with_attachments(to, mail, &[]).await
   }
 }
 
@@ -295,5 +347,35 @@ mod tests {
       };
       assert!(SmtpMailer::new(&config).is_err(), "{host:?} {sender:?}");
     }
+  }
+
+  #[test]
+  fn build_message_with_inline_png_attachment_uses_related_cid_and_base64() {
+    let config = SmtpConfig {
+      host: "127.0.0.1".into(),
+      port: 2525,
+      ignore_tls: true,
+      sender: "AFFiNE <noreply@affine.test>".into(),
+      ..SmtpConfig::default()
+    };
+    let mailer = SmtpMailer::new(&config).unwrap();
+    let mail = RenderedMail {
+      subject: "Invite".into(),
+      html: r#"<img src="cid:workspaceAvatar" />"#.into(),
+    };
+    let png_bytes = vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
+    let att = InlineAttachment {
+      content_id: "workspaceAvatar".into(),
+      content_type: "image/png".into(),
+      data: png_bytes,
+    };
+    let (msg, _) = mailer
+      .build_message_with_attachments("alice@example.com", &mail, &[att])
+      .unwrap();
+    let raw = String::from_utf8(msg.formatted()).unwrap();
+    let lower = raw.to_ascii_lowercase();
+    assert!(lower.contains("multipart/related"), "{raw}");
+    assert!(raw.contains("Content-ID: <workspaceAvatar>"), "{raw}");
+    assert!(lower.contains("content-transfer-encoding: base64"), "{raw}");
   }
 }
