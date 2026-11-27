@@ -166,7 +166,9 @@ impl PlaygroundView {
         });
         delta.extend(right);
         if start.block_id != end.block_id {
-            let blocks = RangeBlocks::between(&snapshot, &start.block_id, &end.block_id)?;
+            let scope = self.active_content_scope();
+            let blocks =
+                RangeBlocks::between_in_scope(&snapshot, &scope, &start.block_id, &end.block_id)?;
             let leaf_parent = if blocksuite_playground_doc::schema::is_leaf_flavour(
                 &snapshot.block(&start.block_id)?.flavour,
             ) {
@@ -241,8 +243,10 @@ impl PlaygroundView {
         Some(self.editor.selection.as_ref()?.focus.clone())
     }
     pub(crate) fn reveal_caret(&mut self, height: f32) {
-        if std::mem::take(&mut self.editor.reveal)
-            && let Some(focus) = self.visual_focus()
+        if !std::mem::take(&mut self.editor.reveal) {
+            return;
+        }
+        if let Some(focus) = self.visual_focus()
             && let Some(rect) = self.geometry(&focus)
         {
             if rect.y < self.scroll_y {
@@ -251,6 +255,21 @@ impl PlaygroundView {
                 self.scroll_y = (rect.bottom() - height).round();
             }
             self.reveal_code_caret(&focus.block_id, rect.x);
+        } else if let Some(cell) = self.table_cell.as_ref()
+            && let Some(layout) = self.flow_layout()
+            && let Some(block) = layout.block(&cell.block_id)
+            && let Some(hit) = block
+                .body
+                .table_cells
+                .iter()
+                .find(|c| c.row_id == cell.row_id && c.column_id == cell.column_id)
+        {
+            let rect = hit.rect.translated(block.x, block.y);
+            if rect.y < self.scroll_y {
+                self.scroll_y = rect.y.round();
+            } else if rect.bottom() > self.scroll_y + height {
+                self.scroll_y = (rect.bottom() - height).round();
+            }
         }
     }
     pub(super) fn world_spans(block: &FlowBlock, r: Range<u64>) -> Vec<FlowRect> {
@@ -391,13 +410,22 @@ impl PlaygroundView {
             && let Some(pre) = &self.editor.preedit
             && let Some(block) = layout.block(&id)
         {
-            for mut rect in Self::world_spans(
-                block,
-                r.start..r.start + pre.text.encode_utf16().count() as u64,
-            ) {
+            let total_end = r.start + pre.text.encode_utf16().count() as u64;
+            for mut rect in Self::world_spans(block, r.start..total_end) {
                 rect.y += rect.h - 1.0;
                 rect.h = 1.0;
                 draw(rect, palette.text_secondary, false, true);
+            }
+            if !pre.selected.is_empty() {
+                let sel_start = r.start + pre.selected.start as u64;
+                let sel_end = (r.start + pre.selected.end as u64).min(total_end);
+                for rect in Self::world_spans(block, sel_start..sel_end) {
+                    draw(rect, palette.brand.opacity(0.18), false, true);
+                    let mut thick = rect;
+                    thick.y += thick.h - 2.0;
+                    thick.h = 2.0;
+                    draw(thick, palette.brand, false, true);
+                }
             }
         } else {
             for r in self.painted_selection_rects(layout) {
@@ -596,9 +624,11 @@ impl PlaygroundView {
             && sel.empty()
             && !cross
             && extra_delete == 0;
-        let blocks = RangeBlocks::between(
+        let scope = self.active_content_scope();
+        let blocks = RangeBlocks::between_in_scope(
             self.page_snapshot()
                 .ok_or_else(|| DocError::InvalidState("missing page".into()))?,
+            &scope,
             &id,
             &end.block_id,
         )

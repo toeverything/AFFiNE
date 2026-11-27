@@ -38,9 +38,12 @@ impl PlaygroundView {
             || self.edgeless.authoring.space_pan
         {
             self.edgeless_camera_transition = None;
+            self.edgeless_pan_fling = None;
             self.edgeless_commit_inline_edit(window, cx);
             self.edgeless.authoring.gesture = Some(EdgelessGesture::Pan {
+                start_screen: event.position,
                 last_screen: event.position,
+                moved: false,
             });
             cx.notify();
             return;
@@ -135,7 +138,7 @@ impl PlaygroundView {
                         .hit_test_world(wx, wy, self.edgeless.camera.zoom)
                         .cloned()
                     {
-                        self.edgeless_begin_inline_edit(&hit.id, window, cx);
+                        self.edgeless_begin_inline_edit_at(&hit.id, Some((wx, wy)), window, cx);
                         return;
                     }
                 }
@@ -334,9 +337,18 @@ impl PlaygroundView {
         };
 
         match self.edgeless.authoring.gesture.as_mut() {
-            Some(EdgelessGesture::Pan { last_screen }) => {
+            Some(EdgelessGesture::Pan {
+                start_screen,
+                last_screen,
+                moved,
+            }) => {
                 let dx = f32::from(event.position.x) - f32::from(last_screen.x);
                 let dy = f32::from(event.position.y) - f32::from(last_screen.y);
+                let total_dx = f32::from(event.position.x) - f32::from(start_screen.x);
+                let total_dy = f32::from(event.position.y) - f32::from(start_screen.y);
+                if total_dx.hypot(total_dy) > 4.0 {
+                    *moved = true;
+                }
                 self.edgeless.camera.pan_by_screen_delta(dx, dy);
                 *last_screen = event.position;
                 self.edgeless.camera_initialized = true;
@@ -585,4 +597,45 @@ impl PlaygroundView {
         let flow_y = (ly - info.rect.y) / info.scale - pad;
         Some((flow_x, flow_y))
     }
+}
+
+/// Sample the routed connector polyline at `distance` (`0.0..=1.0`), matching
+/// `surface::paint`'s `route.point_at_distance(mode, distance)`.
+pub(super) fn connector_label_anchor_point(
+    polyline: &[(f32, f32)],
+    fallback_center: (f32, f32),
+    mode: blocksuite_playground_doc::read::ConnectorMode,
+    distance: f64,
+) -> (f64, f64) {
+    if polyline.len() < 2 {
+        return (fallback_center.0 as f64, fallback_center.1 as f64);
+    }
+    let d = distance.clamp(0.0, 1.0);
+    if mode == blocksuite_playground_doc::read::ConnectorMode::Curve {
+        let f = d * (polyline.len() - 1) as f64;
+        let i = (f.floor() as usize).min(polyline.len() - 2);
+        let t = f - i as f64;
+        let a = polyline[i];
+        let b = polyline[i + 1];
+        return (
+            a.0 as f64 + (b.0 as f64 - a.0 as f64) * t,
+            a.1 as f64 + (b.1 as f64 - a.1 as f64) * t,
+        );
+    }
+    let seg_len = |a: (f32, f32), b: (f32, f32)| ((b.0 - a.0) as f64).hypot((b.1 - a.1) as f64);
+    let total: f64 = polyline.windows(2).map(|w| seg_len(w[0], w[1])).sum();
+    let mut rem = total * d;
+    for w in polyline.windows(2) {
+        let l = seg_len(w[0], w[1]);
+        if rem <= l && l > 0.0 {
+            let t = rem / l;
+            return (
+                w[0].0 as f64 + (w[1].0 as f64 - w[0].0 as f64) * t,
+                w[0].1 as f64 + (w[1].1 as f64 - w[0].1 as f64) * t,
+            );
+        }
+        rem -= l;
+    }
+    let last = *polyline.last().unwrap();
+    (last.0 as f64, last.1 as f64)
 }

@@ -422,6 +422,7 @@ fn transient_503_blob_upload_retries_and_delivers_original_bytes_to_peer() {
     });
 
     let mut recovered_on_b = false;
+    let mut upload_queue_empty = false;
     for _ in 0..250 {
         for (plat, app, win) in [(&plat_a, &app_a, &win_a), (&plat_b, &app_b, &win_b)] {
             plat.advance_clock(std::time::Duration::from_millis(600));
@@ -434,6 +435,11 @@ fn transient_503_blob_upload_retries_and_delivers_original_bytes_to_peer() {
             });
             plat.run_until_parked();
         }
+        upload_queue_empty = app_a.update(|cx| {
+            win_a
+                .read_with(cx, |v, _| v.blob_uploads.is_empty())
+                .unwrap()
+        });
         recovered_on_b = app_b.update(|cx| {
             win_b
                 .read_with(cx, |v, _| {
@@ -461,7 +467,7 @@ fn transient_503_blob_upload_retries_and_delivers_original_bytes_to_peer() {
                 })
                 .unwrap()
         });
-        if recovered_on_b && put_attempts.load(Ordering::SeqCst) >= 2 {
+        if recovered_on_b && upload_queue_empty && put_attempts.load(Ordering::SeqCst) >= 2 {
             break;
         }
         std::thread::sleep(std::time::Duration::from_millis(25));
@@ -476,11 +482,6 @@ fn transient_503_blob_upload_retries_and_delivers_original_bytes_to_peer() {
         recovered_on_b,
         "second peer must fetch exact original PNG bytes once uploader recovers from initial 503"
     );
-    let upload_queue_empty = app_a.update(|cx| {
-        win_a
-            .read_with(cx, |v, _| v.blob_uploads.is_empty())
-            .unwrap()
-    });
     assert!(
         upload_queue_empty,
         "blob_uploads must clear once retry succeeds"

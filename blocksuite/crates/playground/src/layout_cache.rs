@@ -282,6 +282,12 @@ impl PlaygroundView {
             self.announce_selection(cx);
         }
         self.edgeless.authoring.reset_transient();
+        self.page_scroll_fling = None;
+        self.code_scroll_fling = None;
+        self.edgeless_pan_fling = None;
+        self.touch_long_press_anchor = None;
+        self.touch_selection_menu_open = false;
+        self.edgeless_readonly_selection_target = None;
         self.mode = target;
         self.dirty_text = None;
         self.context_paste_task = None;
@@ -303,6 +309,8 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut ui::Context<Self>,
     ) {
+        self.page_scroll_fling = None;
+        self.code_scroll_fling = None;
         let delta = event.delta.pixel_delta(px(SCROLL_LINE));
         // A sideways scroll over an unwrapped code block or wide table scrolls it, not the page.
         if let Some((snapshot, layout)) = self.snapshot.clone().zip(self.flow_layout()) {
@@ -367,6 +375,7 @@ impl PlaygroundView {
             preview_rev,
             draft_hash,
             is_rtl,
+            self.form_factor,
             utc_offset_minutes,
             local_day,
         );
@@ -385,6 +394,7 @@ impl PlaygroundView {
                     && old.6 == key.6
                     && old.7 == key.7
                     && old.8 == key.8
+                    && old.9 == key.9
             })
         });
         // If only the live equation draft changed, mark just the target block dirty so sibling
@@ -426,6 +436,7 @@ impl PlaygroundView {
                 equation_draft: equation_draft.as_ref(),
                 env_rev: self.env_rev,
                 direction: window.layout_direction(),
+                form_factor: self.form_factor,
                 utc_offset_minutes,
                 utc_offset_at: Some(&offset_at),
             },

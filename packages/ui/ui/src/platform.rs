@@ -17,6 +17,9 @@ pub mod macos;
 #[cfg(target_family = "wasm")]
 pub mod web;
 #[cfg(all(test, not(target_family = "wasm")))]
+#[path = "platform/web/fast/ime_edit.rs"]
+mod web_ime_edit_unit_tests;
+#[cfg(all(test, not(target_family = "wasm")))]
 #[path = "platform/web/viewport.rs"]
 mod web_viewport_unit_tests;
 #[cfg(any(target_os = "linux", target_os = "android", target_family = "wasm"))]

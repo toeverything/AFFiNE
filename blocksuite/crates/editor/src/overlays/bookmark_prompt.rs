@@ -243,6 +243,23 @@ impl Overlays {
                 1.0,
                 palette.text_secondary,
             ));
+            if !selection.is_empty() {
+                inner = inner
+                    .child(strip(
+                        selection.start,
+                        selection.end,
+                        caret_top,
+                        caret_height,
+                        palette.brand.opacity(0.18),
+                    ))
+                    .child(strip(
+                        selection.start,
+                        selection.end,
+                        caret_top + caret_height - 2.0,
+                        2.0,
+                        palette.brand,
+                    ));
+            }
         }
         inner = inner.child(
             div()

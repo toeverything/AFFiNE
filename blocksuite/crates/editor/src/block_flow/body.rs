@@ -608,6 +608,8 @@ pub enum EquationDraft {
     },
 }
 
+pub use crate::capabilities::FormFactor;
+
 /// Everything the layout pass reads besides the window's text system.
 pub struct FlowInput<'a> {
     pub snapshot: &'a PageSnapshot,
@@ -628,6 +630,8 @@ pub struct FlowInput<'a> {
     pub env_rev: u64,
     /// Explicit layout direction supplied by the host shell.
     pub direction: ui::Direction,
+    /// Explicit device form factor supplied by the host shell.
+    pub form_factor: FormFactor,
     /// Fallback local timezone offset in minutes east of UTC (e.g. `+480` for UTC+8, `-300` for EST).
     pub utc_offset_minutes: i32,
     /// Optional per-timestamp timezone offset resolver (`utc_ms -> offset_minutes_east`) so historical

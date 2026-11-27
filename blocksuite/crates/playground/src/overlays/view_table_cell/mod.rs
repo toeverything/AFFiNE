@@ -418,52 +418,54 @@ impl PlaygroundView {
     }
 
     /// Move the table cell caret one visual line up or down using `TableCellHit` geometry.
-    fn move_table_cell_vertical(&mut self, down: bool, shift: bool) -> bool {
-        let Some((block_id, row_id, column_id, focus, display)) =
-            self.table_cell.as_ref().map(|c| {
-                (
-                    c.block_id.clone(),
-                    c.row_id.clone(),
-                    c.column_id.clone(),
-                    c.input.focus(),
-                    c.input.display_text(),
-                )
-            })
-        else {
-            return false;
-        };
+    /// Returns `Some(moved_within_cell)` or `None` when at the top/bottom visual edge (unshifted).
+    fn move_table_cell_vertical(&mut self, down: bool, shift: bool) -> Option<bool> {
+        let (block_id, row_id, column_id, focus, display) = self.table_cell.as_ref().map(|c| {
+            (
+                c.block_id.clone(),
+                c.row_id.clone(),
+                c.column_id.clone(),
+                c.input.focus(),
+                c.input.display_text(),
+            )
+        })?;
         let end = utf16_len(&display);
-        let to = self
-            .flow_layout()
-            .and_then(|layout| {
-                let (_, _, hit) =
-                    Self::find_table_cell_hit(&layout, &block_id, &row_id, &column_id)?;
-                let lh = hit.text.line_height();
-                let (cx_local, line) = hit.text.caret(focus);
-                let lines = (hit.text.height() / lh.max(1.0)).round().max(1.0) as usize;
-                let target = if down {
-                    if line + 1 >= lines {
-                        return Some(end);
-                    }
-                    line + 1
-                } else if line == 0 {
-                    return Some(0);
+        let at_edge = self.flow_layout().and_then(|layout| {
+            let (_, _, hit) = Self::find_table_cell_hit(&layout, &block_id, &row_id, &column_id)?;
+            let lh = hit.text.line_height();
+            let (cx_local, line) = hit.text.caret(focus);
+            let lines = (hit.text.height() / lh.max(1.0)).round().max(1.0) as usize;
+            if down && line + 1 >= lines {
+                return Some(Err(end));
+            }
+            if !down && line == 0 {
+                return Some(Err(0));
+            }
+            let target = if down { line + 1 } else { line - 1 };
+            let y = hit.text_origin.1 + target as f32 * lh + lh * 0.5;
+            Some(Ok(hit
+                .hit_text(hit.text_origin.0 + cx_local, y, &display)
+                .utf16_offset as usize))
+        });
+        let to = match at_edge {
+            Some(Ok(pos)) => pos,
+            Some(Err(_)) if !shift => return None,
+            Some(Err(edge)) => edge,
+            None if !shift => return None,
+            None => {
+                if down {
+                    end
                 } else {
-                    line - 1
-                };
-                let y = hit.text_origin.1 + target as f32 * lh + lh * 0.5;
-                Some(
-                    hit.hit_text(hit.text_origin.0 + cx_local, y, &display)
-                        .utf16_offset as usize,
-                )
-            })
-            .unwrap_or(if down { end } else { 0 });
+                    0
+                }
+            }
+        };
         if let Some(cell) = self.table_cell.as_mut() {
             cell.input.move_caret(to, shift);
             cell.clear_preedit_anchors();
-            true
+            Some(true)
         } else {
-            false
+            Some(false)
         }
     }
 
@@ -492,7 +494,15 @@ impl PlaygroundView {
         }
         match key {
             "escape" => {
+                let table_block_id = self.table_cell.as_ref().map(|c| c.block_id.clone());
                 self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
+                if let Some(id) = table_block_id {
+                    self.suppress_unselected_root_input = false;
+                    self.editor.block_selection = vec![id];
+                    self.announce_selection(cx);
+                    window.notify_text_selection_changed(&self.editor_focus);
+                    cx.notify();
+                }
                 true
             }
             "tab" => true,
@@ -500,13 +510,138 @@ impl PlaygroundView {
                 let _ = self.table_cell_edit(window, cx, |c| c.input.replace(None, "\n"));
                 true
             }
-            "up" | "down" if !cmd => {
-                if self.move_table_cell_vertical(key == "down", m.shift) {
+            "left" if !cmd && !m.shift => {
+                let at_start = self
+                    .table_cell
+                    .as_ref()
+                    .is_some_and(|c| c.input.selection == (0..0));
+                if at_start && let Some((bid, rows, cols, r, c)) = self.focused_table_grid() {
+                    if c > 0 {
+                        self.focus_table_cell_at_edge(
+                            bid,
+                            rows[r].clone(),
+                            cols[c - 1].clone(),
+                            true,
+                            window,
+                            cx,
+                        );
+                    } else if r > 0 {
+                        self.focus_table_cell_at_edge(
+                            bid,
+                            rows[r - 1].clone(),
+                            cols[cols.len() - 1].clone(),
+                            true,
+                            window,
+                            cx,
+                        );
+                    } else {
+                        self.exit_table_to_adjacent_block(&bid, false, false, window, cx);
+                    }
+                    return true;
+                }
+                if let Some(Some(splice)) = self
+                    .table_cell
+                    .as_mut()
+                    .and_then(|c| c.input.key(key, false, false))
+                {
+                    let _ = self.table_cell_edit(window, cx, |_| Some(splice));
+                } else {
                     self.table_cell_update_anchors();
                     self.reset_caret_blink(cx);
-                    window.notify_text_input_changed(&self.editor_focus);
                     window.notify_text_selection_changed(&self.editor_focus);
                     cx.notify();
+                }
+                true
+            }
+            "right" if !cmd && !m.shift => {
+                let at_end = self.table_cell.as_ref().is_some_and(|c| {
+                    let len = utf16_len(&c.input.text);
+                    c.input.selection == (len..len)
+                });
+                if at_end && let Some((bid, rows, cols, r, c)) = self.focused_table_grid() {
+                    if c + 1 < cols.len() {
+                        self.focus_table_cell_at_edge(
+                            bid,
+                            rows[r].clone(),
+                            cols[c + 1].clone(),
+                            false,
+                            window,
+                            cx,
+                        );
+                    } else if r + 1 < rows.len() {
+                        self.focus_table_cell_at_edge(
+                            bid,
+                            rows[r + 1].clone(),
+                            cols[0].clone(),
+                            false,
+                            window,
+                            cx,
+                        );
+                    } else {
+                        self.exit_table_to_adjacent_block(&bid, true, false, window, cx);
+                    }
+                    return true;
+                }
+                if let Some(Some(splice)) = self
+                    .table_cell
+                    .as_mut()
+                    .and_then(|c| c.input.key(key, false, false))
+                {
+                    let _ = self.table_cell_edit(window, cx, |_| Some(splice));
+                } else {
+                    self.table_cell_update_anchors();
+                    self.reset_caret_blink(cx);
+                    window.notify_text_selection_changed(&self.editor_focus);
+                    cx.notify();
+                }
+                true
+            }
+            "up" | "down" if !cmd => {
+                let down = key == "down";
+                match self.move_table_cell_vertical(down, m.shift) {
+                    Some(true) => {
+                        self.table_cell_update_anchors();
+                        self.reset_caret_blink(cx);
+                        window.notify_text_input_changed(&self.editor_focus);
+                        window.notify_text_selection_changed(&self.editor_focus);
+                        cx.notify();
+                    }
+                    None if !m.shift => {
+                        if let Some((bid, rows, cols, r, c)) = self.focused_table_grid() {
+                            if down && r + 1 < rows.len() {
+                                self.focus_table_cell_at_edge(
+                                    bid,
+                                    rows[r + 1].clone(),
+                                    cols[c].clone(),
+                                    false,
+                                    window,
+                                    cx,
+                                );
+                            } else if !down && r > 0 {
+                                self.focus_table_cell_at_edge(
+                                    bid,
+                                    rows[r - 1].clone(),
+                                    cols[c].clone(),
+                                    true,
+                                    window,
+                                    cx,
+                                );
+                            } else if !self
+                                .exit_table_to_adjacent_block(&bid, down, true, window, cx)
+                            {
+                                // R1: last block in document — keep cell focus and move to edge.
+                                if let Some(cell) = self.table_cell.as_mut() {
+                                    let pos = if down { utf16_len(&cell.input.text) } else { 0 };
+                                    cell.input.select(pos..pos);
+                                }
+                                self.table_cell_update_anchors();
+                                self.reset_caret_blink(cx);
+                                window.notify_text_selection_changed(&self.editor_focus);
+                                cx.notify();
+                            }
+                        }
+                    }
+                    _ => {}
                 }
                 true
             }

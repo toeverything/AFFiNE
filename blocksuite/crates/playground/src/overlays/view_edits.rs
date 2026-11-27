@@ -58,6 +58,9 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> DocResult {
+        if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
+            return Ok(());
+        }
         let now = self.now_ms(cx) as u64;
         match edit {
             DocEdit::Mark(key) => self.format_mark(key, window, cx),

@@ -158,6 +158,7 @@ pub fn prepare_edgeless_scene(
                         input.preview_rev,
                         input.preedit_nonce,
                         is_rtl,
+                        input.form_factor,
                         input.utc_offset_minutes,
                     );
                     let layout = match state.note_flows.get_mut(&child.id) {
@@ -174,6 +175,7 @@ pub fn prepare_edgeless_scene(
                                 equation_draft: None,
                                 env_rev: input.env_rev,
                                 direction: input.direction,
+                                form_factor: input.form_factor,
                                 utc_offset_minutes: input.utc_offset_minutes,
                                 utc_offset_at: input.utc_offset_at,
                             };
@@ -181,7 +183,18 @@ pub fn prepare_edgeless_scene(
                                 state.note_flows.entry(child.id.clone()).or_insert_with(|| {
                                     CachedNoteFlow {
                                         flow: BlockFlow::new(),
-                                        key: (u64::MAX, 0, 0, input.theme, 0, 0, 0, !is_rtl, 0),
+                                        key: (
+                                            u64::MAX,
+                                            0,
+                                            0,
+                                            input.theme,
+                                            0,
+                                            0,
+                                            0,
+                                            !is_rtl,
+                                            input.form_factor,
+                                            0,
+                                        ),
                                         layout: Rc::new(FlowLayout {
                                             blocks: Vec::new(),
                                             width: inner_width,
@@ -259,6 +272,7 @@ pub fn prepare_edgeless_scene(
                             input.preview_rev,
                             input.preedit_nonce,
                             is_rtl,
+                            input.form_factor,
                             input.utc_offset_minutes,
                         );
                         let layout = match state.text_flows.get_mut(&child.id) {
@@ -276,6 +290,7 @@ pub fn prepare_edgeless_scene(
                                         equation_draft: None,
                                         env_rev: input.env_rev,
                                         direction,
+                                        form_factor: input.form_factor,
                                         utc_offset_minutes: input.utc_offset_minutes,
                                         utc_offset_at: input.utc_offset_at,
                                     };
@@ -284,7 +299,18 @@ pub fn prepare_edgeless_scene(
                                     .entry(child.id.clone())
                                     .or_insert_with(|| CachedNoteFlow {
                                         flow: BlockFlow::new(),
-                                        key: (u64::MAX, 0, 0, input.theme, 0, 0, 0, !is_rtl, 0),
+                                        key: (
+                                            u64::MAX,
+                                            0,
+                                            0,
+                                            input.theme,
+                                            0,
+                                            0,
+                                            0,
+                                            !is_rtl,
+                                            input.form_factor,
+                                            0,
+                                        ),
                                         layout: Rc::new(FlowLayout {
                                             blocks: Vec::new(),
                                             width: min_unscaled_w,

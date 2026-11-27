@@ -6,6 +6,12 @@ mod database;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
+mod tests_batch3;
+#[cfg(test)]
+mod tests_batch3_extra;
+#[cfg(test)]
+mod tests_batch3_unified;
+#[cfg(test)]
 mod tests_database;
 #[cfg(test)]
 mod tests_database_interactions;
@@ -414,11 +420,60 @@ impl PlaygroundView {
         cx.notify();
     }
 
-    /// Touch long-press at window coordinates `(x, y)`: selects the ICU word at that point.
+    /// Touch long-press at window coordinates `(x, y)`: selects the ICU word at that point,
+    /// or selects the word inside a tapped table cell / selects a non-editable block (`L3`).
     pub fn long_press_word(&mut self, x: f32, y: f32, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(layout) = self.flow_layout() {
+            let geom = crate::block_flow::page_geometry(f32::from(window.viewport_size().width));
+            let wx = x - geom.column_x;
+            let wy = y - crate::TOPBAR_HEIGHT + self.scroll_y;
+            if let Some(block) = layout
+                .blocks
+                .iter()
+                .find(|b| !b.editable() && b.rect().contains(wx, wy))
+            {
+                if block.body.kind == crate::block_flow::FlowKind::Table {
+                    let scroll_x = self.overlays.code_scroll_x(&block.block_id);
+                    let lx = wx - block.x + scroll_x;
+                    let ly = wy - block.y;
+                    if let Some(hit) = block
+                        .body
+                        .table_cells
+                        .iter()
+                        .find(|c| c.rect.contains(lx, ly))
+                    {
+                        let (bid, rid, cid) = (
+                            block.block_id.clone(),
+                            hit.row_id.clone(),
+                            hit.column_id.clone(),
+                        );
+                        self.focus_table_cell(bid, rid, cid, Some((x, y)), window, cx);
+                        if let Some(cell) = self.table_cell.as_mut() {
+                            let off = cell.input.focus() as u64;
+                            let r = word_range(&cell.input.text, off);
+                            cell.input.select(r.start as usize..r.end as usize);
+                        }
+                        self.table_cell_update_anchors();
+                        cx.notify();
+                        return;
+                    }
+                }
+                self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
+                self.commit_active_preedit(window, cx);
+                self.editor.selection = None;
+                self.editor.block_selection = vec![block.block_id.clone()];
+                self.editor.dragging = false;
+                self.editor_focus.focus(window, cx);
+                self.announce_selection(cx);
+                window.notify_text_selection_changed(&self.editor_focus);
+                cx.notify();
+                return;
+            }
+        }
         let Some(p) = self.input_point(point(px(x), px(y)), window) else {
             return;
         };
+        self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
         let text = self.block_text(&p.block_id).unwrap_or("");
         let range = word_range(text, p.offset());
         self.editor.dragging = false;
@@ -512,11 +567,16 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) {
         let caps = crate::EditorCapabilities::for_form_factor(form_factor);
+        let changed =
+            self.form_factor != caps.form_factor || self.pointer_kind != caps.pointer_kind;
         self.form_factor = caps.form_factor;
         self.pointer_kind = caps.pointer_kind;
         self.page_readonly = self.page_readonly || caps.page_readonly;
         self.set_edgeless_readonly(caps.edgeless_readonly, window, cx);
         self.set_database_mobile_readonly(caps.database_readonly, cx);
+        if changed {
+            cx.notify();
+        }
     }
 
     /// Whether Database-block mutations are gated read-only.

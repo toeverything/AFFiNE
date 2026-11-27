@@ -714,23 +714,7 @@ impl PlaygroundView {
             },
             "enter" | "tab" => self.edit_key(key, m.shift, w, cx),
             "a" if cmd => {
-                let width = page_geometry(f32::from(w.viewport_size().width)).column_width;
-                if let Some(sel) = self.editor.selection.clone()
-                    && let Some(layout) = self.ensure_layout(width, w)
-                    && let Some(block) = layout.block(&sel.focus.block_id)
-                {
-                    let full_len = block.body.plain.encode_utf16().count() as u64;
-                    let anchor = DocPoint::new(&block.block_id, 0);
-                    let focus = DocPoint::new(&block.block_id, full_len);
-                    let already_full_block = full_len == 0
-                        || (sel.anchor == anchor && sel.focus == focus)
-                        || (sel.focus == anchor && sel.anchor == focus);
-                    if already_full_block {
-                        self.select_all_blocks(w, cx);
-                    } else {
-                        self.change_selection(DocumentSelection { anchor, focus }, w, cx);
-                    }
-                }
+                self.run_selection_select_all(None, w, cx);
                 Ok(())
             }
             "k" if cmd && !m.alt && !m.shift && !page_ro => {
@@ -738,16 +722,12 @@ impl PlaygroundView {
                 Ok(())
             }
             "c" | "x" if cmd => {
-                if let Some(slice) = self.clipboard_slice() {
-                    crate::clipboard::write_slice(&slice, cx);
-                    if key == "x" {
-                        self.edit_key("backspace", false, w, cx)
-                    } else {
-                        Ok(())
-                    }
+                if key == "x" {
+                    self.run_selection_cut(None, w, cx);
                 } else {
-                    Ok(())
+                    self.run_selection_copy(None, w, cx);
                 }
+                Ok(())
             }
             "v" if cmd => {
                 if let Some(item) = cx.read_from_clipboard() {

@@ -494,6 +494,7 @@ impl PlaygroundView {
         anchor_block_id: &str,
         spec: BlockSpec,
         child_paragraph: bool,
+        remove_empty_line: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> DocResult<Option<String>> {
@@ -508,6 +509,11 @@ impl PlaygroundView {
         else {
             return Ok(None);
         };
+        let drop_empty = remove_empty_line
+            && parent.children.get(slot).is_some_and(|n| {
+                n.children.is_empty()
+                    && matches!(&n.content, BlockContent::Paragraph { text, .. } if text.plain.is_empty())
+            });
         let parent_id = parent.id.clone();
         let fresh = self.fresh_block_id();
         let child_id = child_paragraph.then(|| self.fresh_block_id());
@@ -529,6 +535,9 @@ impl PlaygroundView {
                     now,
                 )?;
             }
+            if drop_empty {
+                page.delete_block_subtree(&parent_id, anchor_block_id, now)?;
+            }
             Ok(())
         })?;
         if commit.is_some()
@@ -539,6 +548,8 @@ impl PlaygroundView {
         page.stop_capturing()?;
         if let Some(ref cid) = child_id {
             self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(cid, 0)));
+        } else if drop_empty {
+            self.editor.selection = None;
         }
         self.editor.last_typing = None;
         self.did_edit(commit, None, window, cx);
@@ -549,6 +560,7 @@ impl PlaygroundView {
         &mut self,
         spec: BlockSpec,
         child_paragraph: bool,
+        remove_empty_line: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> DocResult<Option<String>> {
@@ -556,7 +568,14 @@ impl PlaygroundView {
             return Ok(None);
         };
         let block_id = sel.focus.block_id.clone();
-        self.insert_sibling_after_block(&block_id, spec, child_paragraph, window, cx)
+        self.insert_sibling_after_block(
+            &block_id,
+            spec,
+            child_paragraph,
+            remove_empty_line,
+            window,
+            cx,
+        )
     }
 
     pub(super) fn insert_equation_block_from_toolbar(
@@ -569,6 +588,7 @@ impl PlaygroundView {
                 latex: String::new(),
             },
             false,
+            true,
             window,
             cx,
         )? {
@@ -597,6 +617,7 @@ impl PlaygroundView {
                 ],
             },
             false,
+            true,
             window,
             cx,
         )?;
@@ -614,6 +635,7 @@ impl PlaygroundView {
                 background_color: None,
             },
             true,
+            false,
             window,
             cx,
         )?;
@@ -676,6 +698,7 @@ impl PlaygroundView {
                 xywh: None,
             },
             false,
+            false,
             window,
             cx,
         )?;
@@ -713,7 +736,7 @@ impl PlaygroundView {
             caption: String::new(),
         };
         if self.editor.selection.is_some() {
-            let _ = self.insert_sibling_block(spec, false, window, cx)?;
+            let _ = self.insert_sibling_block(spec, false, false, window, cx)?;
             return Ok(());
         }
         let Some(anchor_id) = self.snapshot.as_ref().and_then(|snap| {
@@ -728,7 +751,7 @@ impl PlaygroundView {
         }) else {
             return Ok(());
         };
-        let _ = self.insert_sibling_after_block(&anchor_id, spec, false, window, cx)?;
+        let _ = self.insert_sibling_after_block(&anchor_id, spec, false, false, window, cx)?;
         Ok(())
     }
 
@@ -751,6 +774,7 @@ impl PlaygroundView {
                 title: None,
                 description: None,
             },
+            false,
             false,
             window,
             cx,

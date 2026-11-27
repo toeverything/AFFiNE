@@ -23,11 +23,11 @@ pub(crate) struct ContextTargetSnapshot {
     doc_epoch: u64,
     page_id: Option<String>,
     mode: PlaygroundMode,
-    kind: ContextTargetKind,
+    pub(crate) kind: ContextTargetKind,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum ContextTargetKind {
+pub(crate) enum ContextTargetKind {
     TableCell {
         block_id: String,
         row_id: String,
@@ -442,7 +442,7 @@ impl PlaygroundView {
 
     /// Detect whether window coordinates `(x, y)` hit an inline link mark or a Bookmark block,
     /// returning only allowlisted external URLs.
-    fn hit_link_url_at(&self, x: f32, y: f32, window: &Window) -> Option<String> {
+    pub(crate) fn hit_link_url_at(&self, x: f32, y: f32, window: &Window) -> Option<String> {
         let snapshot = self.page_snapshot()?;
         if self.mode == PlaygroundMode::Page {
             let layout = self.flow_layout()?;
@@ -458,7 +458,7 @@ impl PlaygroundView {
         self.hit_link_in_layout(&layout, flow_x, flow_y, &snapshot)
     }
 
-    fn hit_link_in_layout(
+    pub(crate) fn hit_link_in_layout(
         &self,
         layout: &FlowLayout,
         wx: f32,
@@ -527,7 +527,8 @@ impl PlaygroundView {
                     self.edgeless
                         .authoring
                         .editing_spatial_block()
-                        .map(|(id, n)| (id.to_string(), n))?,
+                        .map(|(id, n)| (id.to_string(), n))
+                        .or_else(|| self.edgeless_readonly_selection_target.clone())?,
                 ),
             };
             ContextTargetKind::BodySelection {
@@ -578,7 +579,7 @@ impl PlaygroundView {
         }
     }
 
-    fn clipboard_item_has_pasteable_content(item: &ClipboardItem) -> bool {
+    pub(crate) fn clipboard_item_has_pasteable_content(item: &ClipboardItem) -> bool {
         item.text().is_some_and(|t| !t.is_empty()) || crate::clipboard::read_slice(item).is_some()
     }
 
@@ -605,34 +606,9 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) {
         match action {
-            ContextMenuAction::Copy => {
-                if let Some(target) = menu_target.or_else(|| self.capture_context_target()) {
-                    self.execute_copy_or_cut_on_target(&target, false, window, cx);
-                }
-            }
-            ContextMenuAction::Cut => {
-                if let Some(target) = menu_target.or_else(|| self.capture_context_target()) {
-                    self.execute_copy_or_cut_on_target(&target, true, window, cx);
-                }
-            }
-            ContextMenuAction::Paste => {
-                let Some(target) = menu_target.or_else(|| self.capture_context_target()) else {
-                    return;
-                };
-                if !self.can_execute_paste_on_target(&target) {
-                    return;
-                }
-                if let Some(item) = cx.read_from_clipboard()
-                    && Self::clipboard_item_has_pasteable_content(&item)
-                {
-                    self.execute_paste_on_target(&target, item, window, cx);
-                    return;
-                }
-                // Initiate async clipboard read synchronously inside the user-gesture handler
-                // (required by Web `navigator.clipboard.read()` user-activation rules).
-                let read_task = cx.read_from_clipboard_async();
-                self.spawn_context_paste_task(read_task, target, window, cx);
-            }
+            ContextMenuAction::Copy => self.run_selection_copy(menu_target, window, cx),
+            ContextMenuAction::Cut => self.run_selection_cut(menu_target, window, cx),
+            ContextMenuAction::Paste => self.run_selection_paste(menu_target, window, cx),
             ContextMenuAction::OpenLink(url) => {
                 if let Some(clean) = sanitize_external_link_url(&url) {
                     self.last_opened_link_url = Some(clean.clone());
@@ -647,8 +623,9 @@ impl PlaygroundView {
         }
     }
 
-    fn can_execute_paste_on_target(&self, target: &ContextTargetSnapshot) -> bool {
-        !self.edgeless_readonly
+    pub(crate) fn can_execute_paste_on_target(&self, target: &ContextTargetSnapshot) -> bool {
+        !(self.mode == PlaygroundMode::Edgeless && self.edgeless_readonly)
+            && !(self.mode == PlaygroundMode::Page && self.page_readonly)
             && !matches!(target.kind, ContextTargetKind::NonEditableSurface)
             && self.overlays.active_text_field().is_none()
             && self.capture_context_target().as_ref() == Some(target)
@@ -682,7 +659,7 @@ impl PlaygroundView {
         }));
     }
 
-    fn execute_paste_on_target(
+    pub(crate) fn execute_paste_on_target(
         &mut self,
         target: &ContextTargetSnapshot,
         item: ClipboardItem,
@@ -719,14 +696,16 @@ impl PlaygroundView {
         }
     }
 
-    fn execute_copy_or_cut_on_target(
+    pub(crate) fn execute_copy_or_cut_on_target(
         &mut self,
         target: &ContextTargetSnapshot,
         cut: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if (cut && self.edgeless_readonly)
+        if (cut
+            && ((self.mode == PlaygroundMode::Edgeless && self.edgeless_readonly)
+                || (self.mode == PlaygroundMode::Page && self.page_readonly)))
             || self.overlays.active_text_field().is_some()
             || self.capture_context_target().as_ref() != Some(target)
         {
@@ -2512,7 +2491,12 @@ mod tests {
                 assert!(v.active_table_cell().is_some());
                 assert!(
                     !v.editor.composing(),
-                    "switching to table cell via right-click must clear body preedit"
+                    "switching to table cell via right-click must commit body preedit"
+                );
+                assert!(
+                    v.block_text("showcase-intro")
+                        .is_some_and(|t| t.starts_with("PREEDITXYZ")),
+                    "body preedit must commit in place when focusing table cell"
                 );
             })
             .unwrap();
@@ -2529,8 +2513,8 @@ mod tests {
             .unwrap()
         });
         assert!(
-            !intro_rendered.contains("PREEDITXYZ"),
-            "stale preedit must not render in body after focusing table cell: {intro_rendered:?}"
+            intro_rendered.starts_with("PREEDITXYZ"),
+            "committed preedit must render as normal body text after focusing table cell: {intro_rendered:?}"
         );
 
         // 3. Two-line Edgeless shape label (`first line\nsecond line`): with `second` (`11..17`)

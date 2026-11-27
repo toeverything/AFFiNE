@@ -39,7 +39,18 @@ pub(super) const ZOOM_BAR_RADIUS: f32 = 8.0;
 pub(super) const ZOOM_BTN_RADIUS: f32 = 4.0;
 pub(super) const ZOOM_BTN_HEIGHT: f32 = 28.0;
 
-type NoteLayoutKey = (u64, u32, u32, PlaygroundTheme, u64, u64, u64, bool, i32);
+type NoteLayoutKey = (
+    u64,
+    u32,
+    u32,
+    PlaygroundTheme,
+    u64,
+    u64,
+    u64,
+    bool,
+    crate::block_flow::FormFactor,
+    i32,
+);
 
 pub(super) struct CachedNoteFlow {
     pub(super) flow: BlockFlow,
@@ -435,6 +446,7 @@ pub struct EdgelessRenderInput<'a> {
     pub viewport_width: f32,
     pub viewport_height: f32,
     pub direction: ui::Direction,
+    pub form_factor: crate::block_flow::FormFactor,
     pub utc_offset_minutes: i32,
     pub utc_offset_at: Option<&'a dyn Fn(i64) -> i32>,
     pub editing_selection: Option<(String, bool, DocumentSelection, DocPoint)>,

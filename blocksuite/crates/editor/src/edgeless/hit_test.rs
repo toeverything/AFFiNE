@@ -117,7 +117,9 @@ pub struct DragItemInitial {
 #[derive(Clone, Debug)]
 pub enum EdgelessGesture {
     Pan {
+        start_screen: Point<Pixels>,
         last_screen: Point<Pixels>,
+        moved: bool,
     },
     Marquee {
         start_world: (f32, f32),

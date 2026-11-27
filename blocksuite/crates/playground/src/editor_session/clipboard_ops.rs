@@ -25,13 +25,16 @@ impl PlaygroundView {
         let (start, end, _, _, _) = sel.ordered(&layout)?;
         let snapshot = self.page_snapshot()?;
         let page = self.page()?;
-        let range = RangeBlocks::between(snapshot, &start.block_id, &end.block_id)?;
+        let scope = self.active_content_scope();
+        let range =
+            RangeBlocks::between_in_scope(snapshot, &scope, &start.block_id, &end.block_id)?;
         let mut ids: BTreeSet<_> = range.intermediate.iter().map(String::as_str).collect();
         ids.extend([start.block_id.as_str(), end.block_id.as_str()]);
         let root = snapshot.root.as_ref()?;
+        let scope_roots = scope.content_roots(root);
         let mut selected = BTreeMap::new();
         let content =
-            std::iter::once(root).chain(page_content_roots(root).flat_map(BlockNode::walk));
+            std::iter::once(root).chain(scope_roots.iter().copied().flat_map(BlockNode::walk));
         for node in content.filter(|n| ids.contains(n.id.as_str())) {
             let delta = if text_content(node).is_some() {
                 let (rich, _) = page.read_editable_text(&node.id).ok()?;
@@ -59,7 +62,7 @@ impl PlaygroundView {
             );
         }
         let mut blocks: Vec<_> = selected.remove(&root.id).into_iter().collect();
-        for child in page_content_roots(root) {
+        for child in scope_roots {
             crate::clipboard::SliceBlock::keep_selected(child, &mut selected, &mut blocks);
         }
         Some(crate::clipboard::Slice::new(
@@ -99,8 +102,12 @@ impl PlaygroundView {
             .iter()
             .map(String::as_str)
             .collect();
-        let doc_nodes: Vec<&BlockNode> =
-            page_content_roots(root).flat_map(BlockNode::walk).collect();
+        let scope = self.active_content_scope();
+        let doc_nodes: Vec<&BlockNode> = scope
+            .content_roots(root)
+            .into_iter()
+            .flat_map(BlockNode::walk)
+            .collect();
         let Some(&first_node) = doc_nodes.iter().find(|n| {
             !matches!(
                 n.content,
@@ -276,7 +283,8 @@ impl PlaygroundView {
         {
             return Err(DocError::InvalidState("no parent for pasted blocks".into()));
         }
-        let blocks = RangeBlocks::between(&snapshot, &id, &end.block_id)
+        let scope = self.active_content_scope();
+        let blocks = RangeBlocks::between_in_scope(&snapshot, &scope, &id, &end.block_id)
             .ok_or_else(|| DocError::InvalidState("selection outside page content".into()))?;
         let keep_suffix = !first_editable
             || (slice.content.len() == 1 && use_existing && slice.content[0].children.is_empty());

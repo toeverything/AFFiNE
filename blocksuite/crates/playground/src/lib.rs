@@ -16,6 +16,7 @@ pub mod overlays;
 pub mod room_client;
 
 mod showcase;
+mod touch_interaction;
 mod view_room;
 #[cfg(target_family = "wasm")]
 pub mod wasm_crdt;
@@ -160,6 +161,15 @@ impl PlaygroundOptions {
                 "--edgeless-readonly" => options.edgeless_readonly = true,
                 "--page-readonly" => options.page_readonly = true,
                 "--database-readonly" => options.database_readonly = true,
+                "--form-factor" => {
+                    let value = value()?;
+                    options.form_factor = match value.as_str() {
+                        "desktop" => FormFactor::Desktop,
+                        "tablet" => FormFactor::Tablet,
+                        "phone" => FormFactor::Phone,
+                        _ => anyhow::bail!("unknown form factor {value:?} (desktop|tablet|phone)"),
+                    };
+                }
                 "--room" => room = Some(value()?),
                 "--relay" => relay = Some(value()?),
                 other => anyhow::bail!("unknown flag: {other}"),
@@ -187,7 +197,18 @@ pub(crate) const THEME_TOGGLE_SIZE: f32 = 32.0;
 pub(crate) const TOPBAR_EDGE: f32 = 12.0;
 pub(crate) const SCROLL_LINE: f32 = 20.0;
 
-type LayoutKey = (u64, u32, PlaygroundTheme, u64, u64, u64, bool, i32, i64);
+type LayoutKey = (
+    u64,
+    u32,
+    PlaygroundTheme,
+    u64,
+    u64,
+    u64,
+    bool,
+    block_flow::FormFactor,
+    i32,
+    i64,
+);
 
 #[cfg(test)]
 pub(crate) static GLOBAL_PREVIEW_PROVIDER_TEST_LOCK: std::sync::Mutex<()> =
@@ -256,6 +277,13 @@ pub struct PlaygroundView {
     pub(crate) page_readonly: bool,
     pub(crate) edgeless_readonly: bool,
     pub(crate) database_readonly: bool,
+    pub(crate) page_scroll_fling: Option<ui::InertialDecay>,
+    pub(crate) code_scroll_fling: Option<(String, ui::InertialDecay)>,
+    pub(crate) edgeless_pan_fling: Option<(ui::InertialDecay, ui::InertialDecay)>,
+    pub(crate) touch_long_press_anchor:
+        Option<(editor_session::DocPoint, editor_session::DocPoint)>,
+    pub(crate) touch_selection_menu_open: bool,
+    pub(crate) edgeless_readonly_selection_target: Option<(String, bool)>,
     pub(crate) caret_active_since_ms: f64,
     pub(crate) caret_blink_task: Option<Task<()>>,
     pub(crate) scrollbar_drag: Option<overlays::ScrollbarDrag>,
@@ -385,6 +413,12 @@ impl PlaygroundView {
             page_readonly: options.page_readonly,
             edgeless_readonly: options.edgeless_readonly,
             database_readonly,
+            page_scroll_fling: None,
+            code_scroll_fling: None,
+            edgeless_pan_fling: None,
+            touch_long_press_anchor: None,
+            touch_selection_menu_open: false,
+            edgeless_readonly_selection_target: None,
             caret_active_since_ms: 0.0,
             caret_blink_task: None,
             scrollbar_drag: None,
@@ -477,6 +511,7 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) {
         self.edgeless_camera_transition = None;
+        self.edgeless_pan_fling = None;
         self.edgeless.set_camera(pan_x, pan_y, zoom);
         cx.notify();
     }
@@ -517,6 +552,7 @@ impl PlaygroundView {
         let now_ms = self.now_ms(cx);
         self.overlays.close_context_menu(now_ms);
         self.edgeless_camera_transition = None;
+        self.edgeless_pan_fling = None;
         let delta = event.delta.pixel_delta(px(SCROLL_LINE));
         let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
         if event.modifiers.control || event.modifiers.platform {
@@ -669,6 +705,12 @@ impl PlaygroundView {
         self.edgeless = edgeless::EdgelessCanvasState::new();
         self.edgeless_camera_transition = None;
         self.edgeless_shape_picker_presence = None;
+        self.page_scroll_fling = None;
+        self.code_scroll_fling = None;
+        self.edgeless_pan_fling = None;
+        self.touch_long_press_anchor = None;
+        self.touch_selection_menu_open = false;
+        self.edgeless_readonly_selection_target = None;
         self.caret_blink_task = None;
         self.scrollbar_drag = None;
         self.context_toast_timer = None;
@@ -722,10 +764,13 @@ impl PlaygroundView {
     /// World-space layout painted by the latest Page frame, or the active inline-edited
     /// Edgeless Note/EdgelessText layout when editing on the Edgeless canvas.
     pub fn flow_layout(&self) -> Option<Rc<FlowLayout>> {
-        if self.mode == PlaygroundMode::Edgeless
-            && let Some((block_id, is_note)) = self.edgeless.authoring.editing_spatial_block()
-        {
-            return self.edgeless.cached_block_layout(block_id, is_note);
+        if self.mode == PlaygroundMode::Edgeless {
+            if let Some((block_id, is_note)) = self.edgeless.authoring.editing_spatial_block() {
+                return self.edgeless.cached_block_layout(block_id, is_note);
+            }
+            if let Some((block_id, is_note)) = self.edgeless_readonly_selection_target.as_ref() {
+                return self.edgeless.cached_block_layout(block_id, *is_note);
+            }
         }
         self.layout.as_ref().map(|(_, layout)| layout.clone())
     }

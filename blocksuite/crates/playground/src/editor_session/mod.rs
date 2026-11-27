@@ -41,6 +41,17 @@ impl PlaygroundView {
     pub(crate) fn block_text(&self, id: &str) -> Option<&str> {
         text_content(self.page_snapshot()?.block(id)?)
     }
+    pub(crate) fn active_content_scope(&self) -> ContentScope<'_> {
+        if self.mode == PlaygroundMode::Edgeless {
+            if let Some((block_id, _)) = self.edgeless.authoring.editing_spatial_block() {
+                return ContentScope::SpatialBlock(block_id);
+            }
+            if let Some((block_id, _)) = self.edgeless_readonly_selection_target.as_ref() {
+                return ContentScope::SpatialBlock(block_id.as_str());
+            }
+        }
+        ContentScope::Page
+    }
     pub(super) fn input_point(&self, pos: Point<Pixels>, window: &Window) -> Option<DocPoint> {
         let geometry = page_geometry(f32::from(window.viewport_size().width));
         let layout = self.flow_layout()?;
@@ -170,16 +181,29 @@ impl PlaygroundView {
         self.change_selection(selection, w, cx);
     }
 
+    /// Commit any active body IME composition in place at its replacement range (`unmark`
+    /// semantics) so clicking away or moving focus never drops composed text.
+    pub(crate) fn commit_active_preedit(&mut self, w: &mut Window, cx: &mut Context<Self>) {
+        if let Some(pre) = self.editor.preedit.as_ref() {
+            let text = pre.text.clone();
+            if let Some(rep) = self.composition_selection() {
+                self.editor.preedit = None;
+                let _ = self.replace_selection(rep, &text, w, cx);
+            } else {
+                self.editor.preedit = None;
+                self.dirty_text = None;
+                self.doc_rev += 1;
+            }
+        }
+    }
+
     pub(crate) fn change_selection(
         &mut self,
         sel: DocumentSelection,
         w: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.editor.preedit.take().is_some() {
-            self.dirty_text = None;
-            self.doc_rev += 1;
-        }
+        self.commit_active_preedit(w, cx);
         self.suppress_unselected_root_input = false;
         self.editor.selection = Some(sel);
         self.editor.block_selection.clear();
@@ -197,13 +221,10 @@ impl PlaygroundView {
         cx.notify();
     }
 
-    /// Clear body document selection and any in-flight body IME composition when focus moves
-    /// to an inline cell/label editor, overlay text field, or non-editable block.
+    /// Clear body document selection (committing any in-flight body IME composition in place)
+    /// when focus moves to an inline cell/label editor, overlay text field, or non-editable block.
     pub(crate) fn clear_body_selection(&mut self, w: &mut Window, cx: &mut Context<Self>) {
-        if self.editor.preedit.take().is_some() {
-            self.dirty_text = None;
-            self.doc_rev += 1;
-        }
+        self.commit_active_preedit(w, cx);
         self.editor.selection = None;
         self.editor.block_selection.clear();
         self.editor.pending_marks.clear();

@@ -284,6 +284,7 @@ impl FlowPass<'_> {
                     equation_draft: None,
                     env_rev: self.input.env_rev,
                     direction: self.direction,
+                    form_factor: self.input.form_factor,
                     utc_offset_minutes: self.input.utc_offset_minutes,
                     utc_offset_at: self.input.utc_offset_at,
                 };

@@ -261,6 +261,7 @@ impl<'a> FlowPass<'a> {
         self.input.theme.hash(&mut hasher);
         self.input.env_rev.hash(&mut hasher);
         self.direction.is_rtl().hash(&mut hasher);
+        self.input.form_factor.hash(&mut hasher);
         let fingerprint = hasher.finish();
 
         let body = match self.previous.get(key) {
@@ -676,7 +677,19 @@ impl<'a> FlowPass<'a> {
                 wrap,
                 text,
                 caption,
-            } => self.code_body(&node.id, language, *wrap, text, caption, width),
+            } => {
+                let explicit_line_number =
+                    node.props.get("prop:lineNumber").and_then(|v| v.as_bool());
+                self.code_body(
+                    &node.id,
+                    language,
+                    *wrap,
+                    explicit_line_number,
+                    text,
+                    caption,
+                    width,
+                )
+            }
             BlockContent::Image {
                 source_id,
                 width: image_width,

@@ -44,6 +44,20 @@ impl PlaygroundView {
         selection: Option<&'a SelectionFormat>,
         screen_transform: Option<OverlayScreenTransform>,
     ) -> OverlayScene<'a> {
+        let focused_code_block = self
+            .editor
+            .selection
+            .as_ref()
+            .and_then(|sel| layout.block(&sel.focus.block_id))
+            .filter(|b| matches!(b.body.kind, FlowKind::Code))
+            .or_else(|| {
+                self.editor
+                    .block_selection
+                    .iter()
+                    .find_map(|id| layout.block(id))
+                    .filter(|b| matches!(b.body.kind, FlowKind::Code))
+            })
+            .map(|b| b.block_id.as_str());
         OverlayScene {
             snapshot,
             layout,
@@ -51,6 +65,8 @@ impl PlaygroundView {
             window: self.window_size,
             scroll_y: self.scroll_y,
             direction,
+            form_factor: self.form_factor,
+            focused_code_block,
             selection,
             screen_transform,
         }
@@ -332,10 +348,42 @@ impl PlaygroundView {
                 let consumed =
                     self.click_database_point(&block_id, local_x, local_y, Some(window), cx);
                 if consumed || self.database_readonly {
+                    self.clear_body_selection(window, cx);
+                    self.suppress_unselected_root_input = true;
+                    if !consumed && self.database_readonly {
+                        self.editor.block_selection = vec![block_id];
+                        self.announce_selection(cx);
+                        window.notify_text_selection_changed(&self.editor_focus);
+                    }
                     self.editor.dragging = false;
                     cx.notify();
                     return;
                 }
+            }
+            // Clicking a non-editable block (Bookmark, Image, Divider, Database body, Table frame)
+            // selects that whole block into `block_selection` instead of snapping caret to a
+            // neighbouring text block (`L3`).
+            if let Some(non_editable_id) = layout
+                .blocks
+                .iter()
+                .find(|block| !block.editable() && block.rect().contains(world_x, world_y))
+                .map(|block| block.block_id.clone())
+            {
+                self.commit_active_preedit(window, cx);
+                self.suppress_unselected_root_input = false;
+                self.editor.selection = None;
+                self.editor.block_selection = vec![non_editable_id];
+                self.editor.pending_marks.clear();
+                self.editor.last_typing = None;
+                self.editor.goal_x = None;
+                self.editor.dragging = false;
+                self.editor_focus.focus(window, cx);
+                self.announce_selection(cx);
+                self.sync_slash_trigger(cx);
+                self.reset_caret_blink(cx);
+                window.notify_text_selection_changed(&self.editor_focus);
+                cx.notify();
+                return;
             }
         }
         self.editor_mouse_down(event, window, cx);

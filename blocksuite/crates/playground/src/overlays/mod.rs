@@ -9,7 +9,7 @@ mod view_scrollbar;
 mod view_table_cell;
 
 pub use blocksuite_editor::overlays::*;
-pub(crate) use view_context_menu::ContextTargetSnapshot;
+pub(crate) use view_context_menu::{ContextTargetKind, ContextTargetSnapshot};
 pub(crate) use view_table_cell::InlineTargetEnd;
 
 impl OverlayHost for crate::PlaygroundView {

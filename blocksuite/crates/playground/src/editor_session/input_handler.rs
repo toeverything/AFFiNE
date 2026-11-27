@@ -446,6 +446,36 @@ impl EntityInputHandler for PlaygroundView {
         (self.editor.selection.as_ref()?.focus.block_id == p.block_id)
             .then_some(p.offset() as usize)
     }
+    fn text_input_configuration(
+        &mut self,
+        _: &mut Window,
+        _: &mut Context<Self>,
+    ) -> ui::TextInputConfiguration {
+        if self.overlays.active_text_field().is_some() {
+            return ui::TextInputConfiguration::default();
+        }
+        let prose = ui::TextInputConfiguration {
+            autocorrect: true,
+            autocapitalize: ui::Autocapitalize::Sentences,
+            suggestions: true,
+            input_action: ui::TextInputAction::Enter,
+        };
+        if self.table_cell.is_some() || self.edgeless.authoring.label_editor().is_some() {
+            return prose;
+        }
+        let Some(sel) = self.editor.selection.as_ref() else {
+            return ui::TextInputConfiguration::default();
+        };
+        let is_code = self
+            .page_snapshot()
+            .and_then(|s| s.block(&sel.focus.block_id))
+            .is_some_and(|b| matches!(b.content, BlockContent::Code { .. }));
+        if is_code {
+            ui::TextInputConfiguration::default()
+        } else {
+            prose
+        }
+    }
 }
 
 pub(super) fn paragraph() -> BlockSpec {

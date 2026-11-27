@@ -24,7 +24,7 @@ mod viewport;
 
 pub use body::{
     AttachmentPdfControls, BlockBody, BlockPaint, CodeScroll, EquationDraft, FlowBlock, FlowInput,
-    FlowKind, FlowLayout, FlowStats, FlowText, FlowTextLayout, PagePaint, ScrolledCode,
+    FlowKind, FlowLayout, FlowStats, FlowText, FlowTextLayout, FormFactor, PagePaint, ScrolledCode,
     TableCellHit, paint_chevron,
 };
 pub use embed_blocks::civil_from_days;
@@ -543,6 +543,7 @@ mod tests {
             equation_draft: None,
             env_rev: 0,
             direction: Direction::Ltr,
+            form_factor: FormFactor::Desktop,
             utc_offset_minutes: 0,
             utc_offset_at: None,
         };

@@ -86,6 +86,43 @@ pub struct RangeBlocks {
     pub survivors: Vec<String>,
 }
 
+/// Document subtree scope for cross-block range traversal, clipboard slices,
+/// and whole-block selection operations.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ContentScope<'a> {
+    /// Page mode: traverse all `is_page_visible_note()` notes under the page root.
+    Page,
+    /// Edgeless inline edit of a spatial container (`affine:note` or `affine:edgeless-text`):
+    /// traverse that spatial block's own children regardless of `displayMode`.
+    SpatialBlock(&'a str),
+}
+
+impl<'a> ContentScope<'a> {
+    /// Top-level content blocks inside this scope, in document order.
+    pub fn content_roots<'s>(&self, root: &'s BlockNode) -> Vec<&'s BlockNode> {
+        match self {
+            Self::Page => page_content_roots(root).collect(),
+            Self::SpatialBlock(id) => root
+                .walk()
+                .find(|node| node.id == *id)
+                .map(|node| node.children.iter().collect())
+                .unwrap_or_default(),
+        }
+    }
+
+    /// Default container block ID for inserting fallback/root blocks in this scope.
+    pub fn default_parent_id(&self, root: &BlockNode) -> Option<String> {
+        match self {
+            Self::Page => root
+                .children
+                .iter()
+                .find(|n| n.is_page_visible_note())
+                .map(|n| n.id.clone()),
+            Self::SpatialBlock(id) => root.walk().find(|n| n.id == *id).map(|n| n.id.clone()),
+        }
+    }
+}
+
 /// Root content blocks of Page-mode notes, in document order.
 pub fn page_content_roots(root: &BlockNode) -> impl DoubleEndedIterator<Item = &BlockNode> {
     root.children
@@ -96,16 +133,27 @@ pub fn page_content_roots(root: &BlockNode) -> impl DoubleEndedIterator<Item = &
 
 impl RangeBlocks {
     pub fn between(snapshot: &PageSnapshot, start: &str, end: &str) -> Option<Self> {
+        Self::between_in_scope(snapshot, &ContentScope::Page, start, end)
+    }
+
+    pub fn between_in_scope(
+        snapshot: &PageSnapshot,
+        scope: &ContentScope<'_>,
+        start: &str,
+        end: &str,
+    ) -> Option<Self> {
         if start == end {
             return Some(Self::default());
         }
         let root = snapshot.root.as_ref()?;
-        let mut pending: Vec<_> = page_content_roots(root)
+        let mut pending: Vec<_> = scope
+            .content_roots(root)
+            .into_iter()
             .rev()
             .map(|node| (node, false))
             .collect();
         let mut intermediate = Vec::new();
-        let mut after_start = root.id == start;
+        let mut after_start = matches!(scope, ContentScope::Page) && root.id == start;
         // Each pending subtree records whether its parent belongs to the deletion.
         // At the endpoint the stack holds its children, then later siblings up the ancestor chain.
         while let Some((node, _)) = pending.pop() {

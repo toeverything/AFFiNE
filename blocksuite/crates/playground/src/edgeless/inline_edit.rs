@@ -1,7 +1,7 @@
 //! Double-click inline rich-text & IME editing for Edgeless shapes, connectors, text, frames, and notes.
 
 use blocksuite_playground_doc::read::{
-    BlockContent, ConnectorMode, SurfaceConnector, SurfaceElementKind, TextAlign,
+    BlockContent, SurfaceConnector, SurfaceElementKind, TextAlign,
 };
 use ui::{Bounds, Context, FontWeight, Pixels, Window, point, px, size};
 use y_octo::{TextDeltaOp, TextInsert};
@@ -15,49 +15,9 @@ use crate::{
 
 use super::{
     EdgelessInlineEdit, EdgelessLabelEditor, LabelSplice, LabelTarget, NOTE_CARD_PADDING,
-    SpatialItemKind, WorldRect, find_block, find_surface_element, rotate_point_around,
+    SpatialItemKind, WorldRect, find_block, find_surface_element,
+    gestures::connector_label_anchor_point, rotate_point_around,
 };
-
-/// Sample the routed connector polyline at `distance` (`0.0..=1.0`), matching
-/// `surface::paint`'s `route.point_at_distance(mode, distance)`.
-fn connector_label_anchor_point(
-    polyline: &[(f32, f32)],
-    fallback_center: (f32, f32),
-    mode: ConnectorMode,
-    distance: f64,
-) -> (f64, f64) {
-    if polyline.len() < 2 {
-        return (fallback_center.0 as f64, fallback_center.1 as f64);
-    }
-    let d = distance.clamp(0.0, 1.0);
-    if mode == ConnectorMode::Curve {
-        let f = d * (polyline.len() - 1) as f64;
-        let i = (f.floor() as usize).min(polyline.len() - 2);
-        let t = f - i as f64;
-        let a = polyline[i];
-        let b = polyline[i + 1];
-        return (
-            a.0 as f64 + (b.0 as f64 - a.0 as f64) * t,
-            a.1 as f64 + (b.1 as f64 - a.1 as f64) * t,
-        );
-    }
-    let seg_len = |a: (f32, f32), b: (f32, f32)| ((b.0 - a.0) as f64).hypot((b.1 - a.1) as f64);
-    let total: f64 = polyline.windows(2).map(|w| seg_len(w[0], w[1])).sum();
-    let mut rem = total * d;
-    for w in polyline.windows(2) {
-        let l = seg_len(w[0], w[1]);
-        if rem <= l && l > 0.0 {
-            let t = rem / l;
-            return (
-                w[0].0 as f64 + (w[1].0 as f64 - w[0].0 as f64) * t,
-                w[0].1 as f64 + (w[1].1 as f64 - w[0].1 as f64) * t,
-            );
-        }
-        rem -= l;
-    }
-    let last = *polyline.last().unwrap();
-    (last.0 as f64, last.1 as f64)
-}
 
 fn measure_connector_label_xywh(
     c: &SurfaceConnector,
@@ -67,8 +27,12 @@ fn measure_connector_label_xywh(
     theme_mode: ThemeMode,
     window: &Window,
 ) -> [f64; 4] {
-    let p =
-        connector_label_anchor_point(polyline, fallback_center, c.mode, c.label_offset.distance);
+    let p = super::gestures::connector_label_anchor_point(
+        polyline,
+        fallback_center,
+        c.mode,
+        c.label_offset.distance,
+    );
     let l = &c.label_style;
     let max_w = if c.label_constraints.has_max_width {
         c.label_constraints.max_width as f32
@@ -343,7 +307,7 @@ impl PlaygroundView {
         else {
             return;
         };
-        self.clear_composition(window, cx);
+        self.commit_active_preedit(window, cx);
         if created_new
             && !is_note
             && let Some(snap) = self.snapshot.as_deref()
@@ -386,9 +350,21 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
+        self.edgeless_begin_inline_edit_at(item_id, None, window, cx)
+    }
+
+    /// Open inline editing on an Edgeless item, placing the caret at `world_pos` when given.
+    pub fn edgeless_begin_inline_edit_at(
+        &mut self,
+        item_id: &str,
+        world_pos: Option<(f32, f32)>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
         if self.edgeless_readonly {
             return false;
         }
+        self.edgeless_readonly_selection_target = None;
         self.edgeless_commit_inline_edit(window, cx);
         let Some(snapshot) = self.snapshot.clone() else {
             return false;
@@ -406,18 +382,29 @@ impl PlaygroundView {
         match info.kind {
             SpatialItemKind::Note | SpatialItemKind::EdgelessText => {
                 let is_note = info.kind == SpatialItemKind::Note;
-                let first_text_id = find_block(&snapshot, item_id).and_then(|node| {
-                    node.walk()
-                        .find(|n| {
-                            matches!(
-                                n.content,
-                                BlockContent::Paragraph { .. }
-                                    | BlockContent::List { .. }
-                                    | BlockContent::Code { .. }
-                            )
-                        })
-                        .map(|n| n.id.clone())
+                let clicked_pt = world_pos.and_then(|(wx, wy)| {
+                    let (cx_w, cy_w) = info.rect.center();
+                    let (lx, ly) = rotate_point_around(wx, wy, cx_w, cy_w, -info.rotate_deg);
+                    let pad = if is_note { NOTE_CARD_PADDING } else { 0.0 };
+                    let flow_x = (lx - info.rect.x) / info.scale - pad;
+                    let flow_y = (ly - info.rect.y) / info.scale - pad;
+                    let layout = self.edgeless.cached_block_layout(item_id, is_note)?;
+                    Self::hit_test_flow_layout(&layout, flow_x, flow_y)
                 });
+                let fallback_pt = || {
+                    find_block(&snapshot, item_id).and_then(|node| {
+                        node.walk()
+                            .find(|n| {
+                                matches!(
+                                    n.content,
+                                    BlockContent::Paragraph { .. }
+                                        | BlockContent::List { .. }
+                                        | BlockContent::Code { .. }
+                                )
+                            })
+                            .map(|n| DocPoint::new(&n.id, 0))
+                    })
+                };
                 self.edgeless.authoring.selection.clear();
                 self.edgeless
                     .authoring
@@ -428,8 +415,7 @@ impl PlaygroundView {
                     is_note,
                     created_new: false,
                 });
-                if let Some(tid) = first_text_id {
-                    let pt = DocPoint::new(&tid, 0);
+                if let Some(pt) = clicked_pt.or_else(fallback_pt) {
                     self.editor.selection = Some(DocumentSelection {
                         anchor: pt.clone(),
                         focus: pt,

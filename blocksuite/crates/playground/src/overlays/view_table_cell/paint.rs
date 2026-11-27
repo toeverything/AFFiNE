@@ -229,6 +229,33 @@ impl PlaygroundView {
                     );
                 }
             }
+            if !sel.is_empty() {
+                for (line, a, b) in hit.text.selection_spans(sel.start, sel.end) {
+                    let span = FlowRect::new(ox + a, oy + line as f32 * lh, (b - a).max(1.0), lh);
+                    if let Some(c) = clip_x(span) {
+                        out.push(
+                            div()
+                                .absolute()
+                                .left(px(v.column_x + c.x))
+                                .top(px(c.y - v.scroll_y))
+                                .w(px(c.w))
+                                .h(px(c.h))
+                                .bg(palette.brand.opacity(0.18))
+                                .into_any_element(),
+                        );
+                        out.push(
+                            div()
+                                .absolute()
+                                .left(px(v.column_x + c.x))
+                                .top(px(c.y + c.h - 2.0 - v.scroll_y))
+                                .w(px(c.w))
+                                .h(px(2.0))
+                                .bg(palette.brand)
+                                .into_any_element(),
+                        );
+                    }
+                }
+            }
         } else if !sel.is_empty() {
             let mut first = true;
             for (line, a, b) in hit.text.selection_spans(sel.start, sel.end) {
@@ -275,5 +302,103 @@ impl PlaygroundView {
             out.push(caret_el.into_any_element());
         }
         out
+    }
+
+    pub(super) fn focused_table_grid(
+        &self,
+    ) -> Option<(String, Vec<String>, Vec<String>, usize, usize)> {
+        let cell = self.table_cell.as_ref()?;
+        let snap = self.snapshot.as_ref()?;
+        let BlockContent::Table(table) = &snap.block(&cell.block_id)?.content else {
+            return None;
+        };
+        let rows: Vec<String> = table.rows.iter().map(|r| r.row_id.clone()).collect();
+        let cols: Vec<String> = table.columns.iter().map(|c| c.column_id.clone()).collect();
+        let r_idx = rows.iter().position(|r| r == &cell.row_id)?;
+        let c_idx = cols.iter().position(|c| c == &cell.column_id)?;
+        Some((cell.block_id.clone(), rows, cols, r_idx, c_idx))
+    }
+
+    pub(super) fn focus_table_cell_at_edge(
+        &mut self,
+        block_id: String,
+        row_id: String,
+        column_id: String,
+        at_end: bool,
+        window: &mut Window,
+        cx: &mut ui::Context<Self>,
+    ) {
+        self.focus_table_cell(block_id, row_id, column_id, None, window, cx);
+        if let Some(cell) = self.table_cell.as_mut() {
+            let pos = if at_end {
+                blocksuite_editor::inline_input::utf16_len(&cell.input.text)
+            } else {
+                0
+            };
+            cell.input.select(pos..pos);
+        }
+        self.table_cell_update_anchors();
+        window.notify_text_selection_changed(&self.editor_focus);
+        cx.notify();
+    }
+
+    pub(super) fn exit_table_to_adjacent_block(
+        &mut self,
+        table_block_id: &str,
+        forward: bool,
+        allow_non_editable: bool,
+        window: &mut Window,
+        cx: &mut ui::Context<Self>,
+    ) -> bool {
+        let Some(layout) = self.flow_layout() else {
+            return false;
+        };
+        let Some(idx) = layout
+            .blocks
+            .iter()
+            .position(|b| b.block_id == table_block_id)
+        else {
+            return false;
+        };
+        let target = if forward {
+            if allow_non_editable {
+                layout.blocks.get(idx + 1)
+            } else {
+                layout.blocks[idx + 1..].iter().find(|b| b.editable())
+            }
+        } else if allow_non_editable {
+            idx.checked_sub(1).and_then(|i| layout.blocks.get(i))
+        } else {
+            layout.blocks[..idx].iter().rev().find(|b| b.editable())
+        };
+        let Some(target) = target else {
+            return false;
+        };
+        let target_id = target.block_id.clone();
+        let target_editable = target.editable();
+        let target_len = target.body.plain.encode_utf16().count() as u64;
+        self.finish_inline_targets(
+            super::InlineTargetEnd::CommitPreedit,
+            Some(window),
+            Some(cx),
+        );
+        self.suppress_unselected_root_input = false;
+        if target_editable {
+            let offset = if forward { 0 } else { target_len };
+            self.change_selection(
+                crate::editor_session::DocumentSelection::caret(
+                    crate::editor_session::DocPoint::new(target_id, offset),
+                ),
+                window,
+                cx,
+            );
+        } else {
+            self.editor.selection = None;
+            self.editor.block_selection = vec![target_id];
+            self.announce_selection(cx);
+            window.notify_text_selection_changed(&self.editor_focus);
+            cx.notify();
+        }
+        true
     }
 }

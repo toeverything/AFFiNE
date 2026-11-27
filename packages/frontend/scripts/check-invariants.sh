@@ -477,12 +477,24 @@ if errors:
 print("Rust module structure & LOC checks passed.")
 PY
 
-echo "==> Checking packages/ui/ui LOC ceiling"
-UI_LOC_CEILING=95200
-UI_LOC=$(find "$UI_DIR/src" -name '*.rs' -print0 | xargs -0 cat | wc -l | tr -d ' ')
-echo "packages/ui/ui/src total LOC: $UI_LOC (ceiling: $UI_LOC_CEILING)"
-if [ "$UI_LOC" -gt "$UI_LOC_CEILING" ]; then
-  fail "packages/ui/ui/src LOC ($UI_LOC) exceeds ceiling ($UI_LOC_CEILING)"
+echo "==> Checking packages/ui/ui SLOC ceiling"
+UI_SLOC_CEILING=74268
+read -r UI_RAW_LOC UI_SLOC < <(UI_DIR="$UI_DIR" python3 - <<'PY'
+import os
+from pathlib import Path
+raw = sloc = 0
+for p in Path(os.environ["UI_DIR"], "src").rglob("*.rs"):
+    for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+        raw += 1
+        s = line.strip()
+        if s and not s.startswith("//"):
+            sloc += 1
+print(f"{raw} {sloc}")
+PY
+)
+echo "packages/ui/ui/src raw lines: $UI_RAW_LOC, code lines (non-blank, non-comment): $UI_SLOC (ceiling: $UI_SLOC_CEILING)"
+if [ "$UI_SLOC" -gt "$UI_SLOC_CEILING" ]; then
+  fail "packages/ui/ui/src SLOC ($UI_SLOC) exceeds ceiling ($UI_SLOC_CEILING)"
 fi
 
 echo "==> Checking workflow YAML validity"

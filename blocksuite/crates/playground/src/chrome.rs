@@ -344,13 +344,22 @@ impl PlaygroundView {
                 .child(self.render_status(palette, &geometry))
                 .into_any_element();
         };
-        self.max_scroll = (layout.height - viewport_height).max(0.0).ceil();
+        let bottom_occlusion = f32::from(window.insets().effective().bottom)
+            + self
+                .overlays
+                .keyboard_toolbar_reserved_height(self.window_size.1);
+        let effective_viewport_height = (viewport_height - bottom_occlusion).max(40.0);
+        self.max_scroll = (layout.height + bottom_occlusion - viewport_height)
+            .max(0.0)
+            .ceil();
+        let now_ms = self.now_ms(cx);
+        self.step_page_flings(now_ms, window);
         if let Some((id, screen_y)) = self.reading_anchor.take()
             && let Some(block) = layout.block(&id)
         {
             self.scroll_y = (block.y - screen_y).round();
         }
-        self.reveal_caret(viewport_height);
+        self.reveal_caret(effective_viewport_height);
         self.scroll_y = self.scroll_y.clamp(0.0, self.max_scroll);
         let viewport = PageViewport {
             column_x: geometry.column_x,
@@ -496,6 +505,8 @@ impl PlaygroundView {
         if viewport_width > 0.0 && viewport_height > 0.0 {
             self.edgeless.ensure_camera_initialized(&snapshot, vp_size);
         }
+        let now_ms = self.now_ms(cx);
+        self.step_edgeless_fling(now_ms, window);
         let (zoom_controls, toolbar) = self.step_edgeless_controls_and_toolbar(
             vp_origin,
             vp_size,
@@ -510,15 +521,17 @@ impl PlaygroundView {
             .map(Rc::new)
             .unwrap_or_else(|| Rc::clone(&snapshot));
         let preedit_nonce = self.editor.preedit_nonce();
-        let editing_selection =
-            self.edgeless
-                .authoring
-                .editing_spatial_block()
-                .and_then(|(editing_id, is_note)| {
-                    let sel = self.editor.selection.clone()?;
-                    let focus = self.visual_focus()?;
-                    Some((editing_id.to_string(), is_note, sel, focus))
-                });
+        let editing_selection = self
+            .edgeless
+            .authoring
+            .editing_spatial_block()
+            .map(|(id, is_note)| (id.to_string(), is_note))
+            .or_else(|| self.edgeless_readonly_selection_target.clone())
+            .and_then(|(editing_id, is_note)| {
+                let sel = self.editor.selection.clone()?;
+                let focus = self.visual_focus()?;
+                Some((editing_id, is_note, sel, focus))
+            });
 
         let (_, utc_offset_minutes) = self.local_calendar_now(cx);
         let offset_at = self.utc_offset_resolver();
@@ -541,6 +554,7 @@ impl PlaygroundView {
             viewport_width,
             viewport_height,
             direction: window.layout_direction(),
+            form_factor: self.form_factor,
             utc_offset_minutes,
             utc_offset_at: Some(&offset_at),
             editing_selection,
@@ -605,43 +619,16 @@ impl ui::Render for PlaygroundView {
         );
         self.sync_keyboard_toolbar_state();
         window.set_touch_gestures_enabled(true);
-        for gesture in window.take_touch_gestures() {
-            match (self.mode, gesture) {
-                (PlaygroundMode::Page, ui::TouchGesture::LongPress { position }) => {
-                    self.long_press_word(f32::from(position.x), f32::from(position.y), window, cx);
-                }
-                (
-                    PlaygroundMode::Edgeless,
-                    ui::TouchGesture::PinchUpdate {
-                        centroid,
-                        translation,
-                        scale_delta,
-                        ..
-                    },
-                ) => {
-                    let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
-                    self.edgeless_camera_transition = None;
-                    self.edgeless
-                        .camera
-                        .pan_by_screen_delta(f32::from(translation.x), f32::from(translation.y));
-                    if (scale_delta - 1.0).abs() > 1e-5 {
-                        let target_zoom = self.edgeless.camera.zoom * scale_delta.max(0.05);
-                        self.edgeless
-                            .camera
-                            .zoom_at(target_zoom, centroid, vp_origin);
-                    }
-                    self.edgeless.camera_initialized = true;
-                    cx.notify();
-                }
-                _ => {}
-            }
-        }
+        self.handle_touch_gestures(window, cx);
         let kb_inset = f32::from(window.insets().ime.bottom);
         if self.last_keyboard_inset > 0.0 && kb_inset == 0.0 {
             self.keyboard_toolbar_dismissed = true;
             self.overlays.set_keyboard_toolbar_visible(false);
         } else if kb_inset > 0.0 && self.last_keyboard_inset == 0.0 {
             self.keyboard_toolbar_dismissed = false;
+            self.editor.reveal = true;
+        } else if kb_inset > self.last_keyboard_inset {
+            self.editor.reveal = true;
         }
         self.last_keyboard_inset = kb_inset;
 
@@ -683,7 +670,10 @@ impl ui::Render for PlaygroundView {
                 self.render_edgeless(&palette, viewport_width, viewport_height, window, cx)
             }
         };
-        let popovers = self.overlay_popovers(&palette, window, cx);
+        let mut popovers = self.overlay_popovers(&palette, window, cx);
+        if let Some(touch_menu) = self.render_touch_selection_menu(&palette, window, cx) {
+            popovers.push(touch_menu);
+        }
 
         div()
             .relative()

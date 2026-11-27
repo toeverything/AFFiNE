@@ -5751,6 +5751,11 @@ impl Window {
         std::mem::take(&mut self.last_touch_gestures)
     }
 
+    /// Number of active touch points currently tracked by the gesture recognizer.
+    pub fn active_touch_count(&self) -> usize {
+        self.touch_gestures.active_touch_count()
+    }
+
     /// Evaluates time-based touch gestures (such as `LongPress`) against the scheduler clock.
     pub fn tick_touch_gestures(&mut self, cx: &App) -> SmallVec<[crate::TouchGesture; 2]> {
         let now = cx.background_executor().now();

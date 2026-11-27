@@ -57,8 +57,10 @@ impl PlaygroundView {
             .iter()
             .map(String::as_str)
             .collect();
+        let scope = self.active_content_scope();
+        let scope_roots = scope.content_roots(root);
         let mut selected = BTreeMap::new();
-        for node in page_content_roots(root).flat_map(BlockNode::walk) {
+        for node in scope_roots.iter().copied().flat_map(BlockNode::walk) {
             if !ids.contains(node.id.as_str()) {
                 continue;
             }
@@ -77,7 +79,7 @@ impl PlaygroundView {
             );
         }
         let mut blocks = Vec::new();
-        for child in page_content_roots(root) {
+        for child in scope_roots {
             crate::clipboard::SliceBlock::keep_selected(child, &mut selected, &mut blocks);
         }
         (!blocks.is_empty()).then(|| {
@@ -94,6 +96,9 @@ impl PlaygroundView {
         w: &mut Window,
         cx: &mut Context<Self>,
     ) -> DocResult {
+        if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
+            return Ok(());
+        }
         if self.editor.block_selection.is_empty() {
             return Ok(());
         }
@@ -123,12 +128,7 @@ impl PlaygroundView {
         let first_parent_id = top_selected
             .first()
             .map(|(parent_id, _)| parent_id.clone())
-            .or_else(|| {
-                root.children
-                    .iter()
-                    .find(|n| n.is_page_visible_note())
-                    .map(|n| n.id.clone())
-            });
+            .or_else(|| self.active_content_scope().default_parent_id(root));
         let mut deleted_subtree_ids: BTreeSet<String> = BTreeSet::new();
         for (_, id) in &top_selected {
             if let Some(node) = snapshot.block(id) {
@@ -265,7 +265,108 @@ impl PlaygroundView {
         }
     }
 
-    pub(super) fn select_all_blocks(&mut self, w: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn run_selection_copy(
+        &mut self,
+        target: Option<crate::overlays::ContextTargetSnapshot>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(target) = target.or_else(|| self.capture_context_target()) {
+            self.execute_copy_or_cut_on_target(&target, false, window, cx);
+        }
+    }
+
+    pub(crate) fn run_selection_cut(
+        &mut self,
+        target: Option<crate::overlays::ContextTargetSnapshot>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(target) = target.or_else(|| self.capture_context_target()) {
+            self.execute_copy_or_cut_on_target(&target, true, window, cx);
+        }
+    }
+
+    pub(crate) fn run_selection_paste(
+        &mut self,
+        target: Option<crate::overlays::ContextTargetSnapshot>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(target) = target.or_else(|| self.capture_context_target()) else {
+            return;
+        };
+        if !self.can_execute_paste_on_target(&target) {
+            return;
+        }
+        if let Some(item) = cx.read_from_clipboard()
+            && Self::clipboard_item_has_pasteable_content(&item)
+        {
+            self.execute_paste_on_target(&target, item, window, cx);
+            return;
+        }
+        let read_task = cx.read_from_clipboard_async();
+        self.spawn_context_paste_task(read_task, target, window, cx);
+    }
+
+    pub(crate) fn run_selection_select_all(
+        &mut self,
+        target: Option<crate::overlays::ContextTargetSnapshot>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(target) = target.or_else(|| self.capture_context_target()) else {
+            return;
+        };
+        match target.kind {
+            crate::overlays::ContextTargetKind::TableCell { .. } => {
+                let _ = self.table_cell_input(window, cx, |c| {
+                    let end = blocksuite_editor::inline_input::utf16_len(&c.input.text);
+                    c.input.select(0..end);
+                });
+            }
+            crate::overlays::ContextTargetKind::EdgelessLabel { .. } => {
+                let _ = self.edgeless_label_input(window, cx, |ed| {
+                    let end = blocksuite_editor::inline_input::utf16_len(&ed.input.text);
+                    ed.select(0..end);
+                });
+            }
+            crate::overlays::ContextTargetKind::BlockSelection { .. } => {
+                self.select_all_blocks(window, cx);
+            }
+            crate::overlays::ContextTargetKind::BodySelection { .. } => {
+                self.select_all_progressive(window, cx);
+            }
+            crate::overlays::ContextTargetKind::NonEditableSurface => {}
+        }
+    }
+
+    pub(crate) fn select_all_progressive(&mut self, w: &mut Window, cx: &mut Context<Self>) {
+        let layout = if self.mode == PlaygroundMode::Page {
+            let width = page_geometry(f32::from(w.viewport_size().width)).column_width;
+            self.ensure_layout(width, w)
+        } else {
+            self.flow_layout()
+        };
+        if let Some(sel) = self.editor.selection.clone()
+            && let Some(layout) = layout
+            && let Some(block) = layout.block(&sel.focus.block_id)
+        {
+            let full_len = block.body.plain.encode_utf16().count() as u64;
+            let anchor = DocPoint::new(&block.block_id, 0);
+            let focus = DocPoint::new(&block.block_id, full_len);
+            let already_full_block = full_len == 0
+                || (sel.anchor == anchor && sel.focus == focus)
+                || (sel.focus == anchor && sel.anchor == focus);
+            if already_full_block {
+                self.select_all_blocks(w, cx);
+            } else {
+                self.change_selection(DocumentSelection { anchor, focus }, w, cx);
+            }
+        }
+    }
+
+    pub(crate) fn select_all_blocks(&mut self, w: &mut Window, cx: &mut Context<Self>) {
         if let Some(layout) = self.flow_layout() {
             let ids: Vec<String> = layout
                 .blocks

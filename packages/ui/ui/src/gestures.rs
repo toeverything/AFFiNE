@@ -48,6 +48,12 @@ pub enum TouchGesture {
     LongPress {
         position: Point<Pixels>,
     },
+    LongPressDrag {
+        position: Point<Pixels>,
+    },
+    LongPressEnd {
+        position: Point<Pixels>,
+    },
     PanStart {
         origin: Point<Pixels>,
         axis: Option<ScrollAxis>,
@@ -183,6 +189,12 @@ impl TouchGestureRecognizer {
         self.config
     }
 
+    /// Number of currently active touch points.
+    #[inline]
+    pub fn active_touch_count(&self) -> usize {
+        self.touches.len()
+    }
+
     /// Clears all active touch tracking and resets to idle.
     pub fn reset(&mut self) {
         self.touches.clear();
@@ -292,59 +304,65 @@ impl TouchGestureRecognizer {
                         edge_candidate,
                         long_press_fired,
                     } => {
-                        let total_dx = f32::from(event.position.x - prev.start_pos.x);
-                        let total_dy = f32::from(event.position.y - prev.start_pos.y);
-                        let dist = total_dx.hypot(total_dy);
-                        if dist > self.config.tap_slop_px {
-                            let inward_dx = match direction {
-                                Direction::Ltr => total_dx,
-                                Direction::Rtl => -total_dx,
-                            };
-                            if edge_candidate
-                                && inward_dx > 0.0
-                                && inward_dx.abs() >= total_dy.abs() * self.config.axis_lock_ratio
-                            {
-                                let progress = (inward_dx
-                                    / self.config.edge_back_commit_distance_px)
-                                    .clamp(0.0, 1.0);
-                                self.mode = RecognizerMode::EdgeBack {
-                                    direction,
-                                    progress,
-                                };
-                                out.push(TouchGesture::EdgeBack(BackPhase::Start));
-                                out.push(TouchGesture::EdgeBack(BackPhase::Progress(progress)));
-                            } else {
-                                let axis =
-                                    lock_axis(total_dx, total_dy, self.config.axis_lock_ratio);
-                                let handoff = resolve_handoff(
-                                    axis,
-                                    can_scroll_horizontal,
-                                    can_scroll_vertical,
-                                );
-                                self.mode = RecognizerMode::Panning { axis };
-                                out.push(TouchGesture::PanStart {
-                                    origin: prev.start_pos,
-                                    axis,
-                                });
-                                out.push(TouchGesture::PanUpdate {
-                                    position: event.position,
-                                    delta,
-                                    velocity,
-                                    axis,
-                                    handoff,
-                                });
-                            }
-                        } else if !long_press_fired
-                            && now_ms.saturating_sub(prev.start_ms)
-                                >= self.config.long_press_duration_ms
-                        {
-                            self.mode = RecognizerMode::PossibleTap {
-                                edge_candidate,
-                                long_press_fired: true,
-                            };
-                            out.push(TouchGesture::LongPress {
+                        if long_press_fired {
+                            out.push(TouchGesture::LongPressDrag {
                                 position: event.position,
                             });
+                        } else {
+                            let total_dx = f32::from(event.position.x - prev.start_pos.x);
+                            let total_dy = f32::from(event.position.y - prev.start_pos.y);
+                            let dist = total_dx.hypot(total_dy);
+                            if dist > self.config.tap_slop_px {
+                                let inward_dx = match direction {
+                                    Direction::Ltr => total_dx,
+                                    Direction::Rtl => -total_dx,
+                                };
+                                if edge_candidate
+                                    && inward_dx > 0.0
+                                    && inward_dx.abs()
+                                        >= total_dy.abs() * self.config.axis_lock_ratio
+                                {
+                                    let progress = (inward_dx
+                                        / self.config.edge_back_commit_distance_px)
+                                        .clamp(0.0, 1.0);
+                                    self.mode = RecognizerMode::EdgeBack {
+                                        direction,
+                                        progress,
+                                    };
+                                    out.push(TouchGesture::EdgeBack(BackPhase::Start));
+                                    out.push(TouchGesture::EdgeBack(BackPhase::Progress(progress)));
+                                } else {
+                                    let axis =
+                                        lock_axis(total_dx, total_dy, self.config.axis_lock_ratio);
+                                    let handoff = resolve_handoff(
+                                        axis,
+                                        can_scroll_horizontal,
+                                        can_scroll_vertical,
+                                    );
+                                    self.mode = RecognizerMode::Panning { axis };
+                                    out.push(TouchGesture::PanStart {
+                                        origin: prev.start_pos,
+                                        axis,
+                                    });
+                                    out.push(TouchGesture::PanUpdate {
+                                        position: event.position,
+                                        delta,
+                                        velocity,
+                                        axis,
+                                        handoff,
+                                    });
+                                }
+                            } else if now_ms.saturating_sub(prev.start_ms)
+                                >= self.config.long_press_duration_ms
+                            {
+                                self.mode = RecognizerMode::PossibleTap {
+                                    edge_candidate,
+                                    long_press_fired: true,
+                                };
+                                out.push(TouchGesture::LongPress {
+                                    position: event.position,
+                                });
+                            }
                         }
                     }
                     RecognizerMode::Panning { axis } => {
@@ -423,47 +441,51 @@ impl TouchGestureRecognizer {
                     RecognizerMode::PossibleTap {
                         long_press_fired, ..
                     } => {
-                        let dist = distance_px(touch.start_pos, event.position);
-                        let elapsed_long_press = now_ms.saturating_sub(touch.start_ms)
-                            >= self.config.long_press_duration_ms;
-                        if !long_press_fired
-                            && elapsed_long_press
-                            && dist <= self.config.tap_slop_px
-                        {
-                            out.push(TouchGesture::LongPress {
-                                position: touch.start_pos,
+                        if long_press_fired {
+                            out.push(TouchGesture::LongPressEnd {
+                                position: event.position,
                             });
-                        } else if !long_press_fired
-                            && !elapsed_long_press
-                            && dist <= self.config.tap_slop_px
-                        {
-                            let is_double = self.last_tap.is_some_and(|prev_tap| {
-                                now_ms.saturating_sub(prev_tap.end_ms)
-                                    <= self.config.double_tap_window_ms
-                                    && distance_px(prev_tap.position, event.position)
-                                        <= self.config.double_tap_slop_px
-                            });
-                            if is_double {
-                                self.last_tap = None;
-                                out.push(TouchGesture::Tap {
-                                    position: event.position,
-                                    count: 2,
+                            self.mode = RecognizerMode::Idle;
+                        } else {
+                            let dist = distance_px(touch.start_pos, event.position);
+                            let elapsed_long_press = now_ms.saturating_sub(touch.start_ms)
+                                >= self.config.long_press_duration_ms;
+                            if elapsed_long_press && dist <= self.config.tap_slop_px {
+                                out.push(TouchGesture::LongPress {
+                                    position: touch.start_pos,
                                 });
-                                out.push(TouchGesture::DoubleTap {
+                                out.push(TouchGesture::LongPressEnd {
                                     position: event.position,
                                 });
-                            } else {
-                                self.last_tap = Some(LastTap {
-                                    position: event.position,
-                                    end_ms: now_ms,
+                            } else if !elapsed_long_press && dist <= self.config.tap_slop_px {
+                                let is_double = self.last_tap.is_some_and(|prev_tap| {
+                                    now_ms.saturating_sub(prev_tap.end_ms)
+                                        <= self.config.double_tap_window_ms
+                                        && distance_px(prev_tap.position, event.position)
+                                            <= self.config.double_tap_slop_px
                                 });
-                                out.push(TouchGesture::Tap {
-                                    position: event.position,
-                                    count: 1,
-                                });
+                                if is_double {
+                                    self.last_tap = None;
+                                    out.push(TouchGesture::Tap {
+                                        position: event.position,
+                                        count: 2,
+                                    });
+                                    out.push(TouchGesture::DoubleTap {
+                                        position: event.position,
+                                    });
+                                } else {
+                                    self.last_tap = Some(LastTap {
+                                        position: event.position,
+                                        end_ms: now_ms,
+                                    });
+                                    out.push(TouchGesture::Tap {
+                                        position: event.position,
+                                        count: 1,
+                                    });
+                                }
                             }
+                            self.mode = RecognizerMode::Idle;
                         }
-                        self.mode = RecognizerMode::Idle;
                     }
                     RecognizerMode::Panning { axis } => {
                         out.push(TouchGesture::PanEnd {
@@ -503,7 +525,19 @@ impl TouchGestureRecognizer {
                                 centroid: last_centroid,
                                 total_scale,
                             });
-                            self.mode = RecognizerMode::Idle;
+                            if let Some(rem) = self.touches.first_mut() {
+                                rem.start_pos = rem.last_pos;
+                                rem.start_ms = now_ms;
+                                rem.last_ms = now_ms;
+                                rem.velocity = Point::default();
+                                self.mode = RecognizerMode::Panning { axis: None };
+                                out.push(TouchGesture::PanStart {
+                                    origin: rem.last_pos,
+                                    axis: None,
+                                });
+                            } else {
+                                self.mode = RecognizerMode::Idle;
+                            }
                         } else {
                             // Re-anchor remaining two fingers so scale does not jump.
                             let (centroid, distance) =
@@ -657,49 +691,22 @@ mod tests {
     #[test]
     fn touch_gesture_recognizer_table_driven_scenarios() {
         let vw = px(390.0);
-
-        // 1. Tap (including 350ms release below 500ms long-press threshold, no dead zone) & DoubleTap.
+        let f = |r: &mut TouchGestureRecognizer, id, ph, x, y, t| {
+            r.feed(&touch(id, ph, x, y), t, Direction::Ltr, vw)
+        };
         let mut rec = TouchGestureRecognizer::default();
-        assert!(
-            rec.feed(
-                &touch(1, TouchPhase::Started, 100.0, 200.0),
-                0,
-                Direction::Ltr,
-                vw
-            )
-            .is_empty()
-        );
-        let g1 = rec.feed(
-            &touch(1, TouchPhase::Ended, 102.0, 201.0),
-            350,
-            Direction::Ltr,
-            vw,
-        );
+        // 1. Tap (including 350ms release below 500ms long-press threshold, no dead zone) & DoubleTap.
+        assert!(f(&mut rec, 1, TouchPhase::Started, 100.0, 200.0, 0).is_empty());
         assert_eq!(
-            g1.as_slice(),
+            f(&mut rec, 1, TouchPhase::Ended, 102.0, 201.0, 350).as_slice(),
             &[TouchGesture::Tap {
                 position: point(px(102.0), px(201.0)),
                 count: 1
             }]
         );
-
-        assert!(
-            rec.feed(
-                &touch(2, TouchPhase::Started, 104.0, 202.0),
-                450,
-                Direction::Ltr,
-                vw
-            )
-            .is_empty()
-        );
-        let g2 = rec.feed(
-            &touch(2, TouchPhase::Ended, 105.0, 202.0),
-            500,
-            Direction::Ltr,
-            vw,
-        );
+        assert!(f(&mut rec, 2, TouchPhase::Started, 104.0, 202.0, 450).is_empty());
         assert_eq!(
-            g2.as_slice(),
+            f(&mut rec, 2, TouchPhase::Ended, 105.0, 202.0, 500).as_slice(),
             &[
                 TouchGesture::Tap {
                     position: point(px(105.0), px(202.0)),
@@ -713,12 +720,7 @@ mod tests {
 
         // 2. LongPress via scheduler tick (zero wall clock).
         let mut lp = TouchGestureRecognizer::default();
-        lp.feed(
-            &touch(3, TouchPhase::Started, 120.0, 120.0),
-            1000,
-            Direction::Ltr,
-            vw,
-        );
+        f(&mut lp, 3, TouchPhase::Started, 120.0, 120.0, 1000);
         assert!(lp.tick(1499).is_empty());
         assert_eq!(
             lp.tick(1500).as_slice(),
@@ -726,36 +728,22 @@ mod tests {
                 position: point(px(120.0), px(120.0))
             }]
         );
-        assert!(
-            lp.feed(
-                &touch(3, TouchPhase::Ended, 120.0, 120.0),
-                1600,
-                Direction::Ltr,
-                vw
-            )
-            .is_empty()
+        let lp_end = f(&mut lp, 3, TouchPhase::Ended, 120.0, 120.0, 1600);
+        assert_eq!(
+            lp_end.as_slice(),
+            &[TouchGesture::LongPressEnd {
+                position: point(px(120.0), px(120.0))
+            }]
         );
 
         // 3. Nested pan handoff + Panning -> Pinching emits PanEnd(cancelled: true) first.
         let mut pan = TouchGestureRecognizer::default();
-        pan.feed_with_scroll_bounds(
-            &touch(4, TouchPhase::Started, 100.0, 100.0),
-            0,
-            Direction::Ltr,
-            vw,
-            false,
-            true,
-        );
-        let events = pan.feed_with_scroll_bounds(
-            &touch(4, TouchPhase::Moved, 130.0, 102.0),
-            16,
-            Direction::Ltr,
-            vw,
-            false,
-            true,
-        );
+        let fb = |r: &mut TouchGestureRecognizer, ph, x, y, t| {
+            r.feed_with_scroll_bounds(&touch(4, ph, x, y), t, Direction::Ltr, vw, false, true)
+        };
+        fb(&mut pan, TouchPhase::Started, 100.0, 100.0, 0);
         assert!(matches!(
-            events.as_slice(),
+            fb(&mut pan, TouchPhase::Moved, 130.0, 102.0, 16).as_slice(),
             [
                 TouchGesture::PanStart {
                     axis: Some(ScrollAxis::Horizontal),
@@ -768,14 +756,8 @@ mod tests {
                 }
             ]
         ));
-        let promoted = pan.feed(
-            &touch(5, TouchPhase::Started, 230.0, 102.0),
-            24,
-            Direction::Ltr,
-            vw,
-        );
         assert!(matches!(
-            promoted.as_slice(),
+            f(&mut pan, 5, TouchPhase::Started, 230.0, 102.0, 24).as_slice(),
             [
                 TouchGesture::PanEnd {
                     cancelled: true,
@@ -784,95 +766,31 @@ mod tests {
                 TouchGesture::PinchStart { .. }
             ]
         ));
-
         // 4. Double-finger cancel deduplication: emits PinchEnd exactly once.
-        let c1 = pan.feed(
-            &touch(4, TouchPhase::Cancelled, 130.0, 102.0),
-            32,
-            Direction::Ltr,
-            vw,
-        );
-        assert!(matches!(c1.as_slice(), [TouchGesture::PinchEnd { .. }]));
-        let c2 = pan.feed(
-            &touch(5, TouchPhase::Cancelled, 230.0, 102.0),
-            32,
-            Direction::Ltr,
-            vw,
-        );
-        assert!(
-            c2.is_empty(),
-            "second finger cancel must not duplicate PinchEnd"
-        );
+        assert!(matches!(
+            f(&mut pan, 4, TouchPhase::Cancelled, 130.0, 102.0, 32).as_slice(),
+            [TouchGesture::PinchEnd { .. }]
+        ));
+        assert!(f(&mut pan, 5, TouchPhase::Cancelled, 230.0, 102.0, 32).is_empty());
 
         // 5. Stale velocity zeroed when finger pauses > 80ms before lifting.
         let mut pause_pan = TouchGestureRecognizer::default();
-        pause_pan.feed(
-            &touch(6, TouchPhase::Started, 50.0, 50.0),
-            0,
-            Direction::Ltr,
-            vw,
-        );
-        pause_pan.feed(
-            &touch(6, TouchPhase::Moved, 120.0, 50.0),
-            16,
-            Direction::Ltr,
-            vw,
-        );
-        let ended = pause_pan.feed(
-            &touch(6, TouchPhase::Ended, 120.0, 50.0),
-            150,
-            Direction::Ltr,
-            vw,
-        );
+        f(&mut pause_pan, 6, TouchPhase::Started, 50.0, 50.0, 0);
+        f(&mut pause_pan, 6, TouchPhase::Moved, 120.0, 50.0, 16);
         assert!(matches!(
-            ended.as_slice(),
+            f(&mut pause_pan, 6, TouchPhase::Ended, 120.0, 50.0, 150).as_slice(),
             [TouchGesture::PanEnd { velocity, cancelled: false, .. }] if *velocity == Point::default()
         ));
 
         // 6. Three-finger pinch lifting one finger re-anchors without scale jump.
         let mut pinch = TouchGestureRecognizer::default();
-        pinch.feed(
-            &touch(10, TouchPhase::Started, 100.0, 200.0),
-            0,
-            Direction::Ltr,
-            vw,
-        );
-        pinch.feed(
-            &touch(11, TouchPhase::Started, 200.0, 200.0),
-            10,
-            Direction::Ltr,
-            vw,
-        );
-        pinch.feed(
-            &touch(11, TouchPhase::Moved, 300.0, 200.0),
-            26,
-            Direction::Ltr,
-            vw,
-        );
-        pinch.feed(
-            &touch(12, TouchPhase::Started, 150.0, 300.0),
-            30,
-            Direction::Ltr,
-            vw,
-        );
+        f(&mut pinch, 10, TouchPhase::Started, 100.0, 200.0, 0);
+        f(&mut pinch, 11, TouchPhase::Started, 200.0, 200.0, 10);
+        f(&mut pinch, 11, TouchPhase::Moved, 300.0, 200.0, 26);
+        f(&mut pinch, 12, TouchPhase::Started, 150.0, 300.0, 30);
         // Lift finger 11; remaining fingers 10 & 12 re-anchor at total_scale == 2.0.
-        assert!(
-            pinch
-                .feed(
-                    &touch(11, TouchPhase::Ended, 300.0, 200.0),
-                    40,
-                    Direction::Ltr,
-                    vw
-                )
-                .is_empty()
-        );
-        let cont = pinch.feed(
-            &touch(12, TouchPhase::Moved, 150.0, 300.0),
-            50,
-            Direction::Ltr,
-            vw,
-        );
-        match cont[0] {
+        assert!(f(&mut pinch, 11, TouchPhase::Ended, 300.0, 200.0, 40).is_empty());
+        match f(&mut pinch, 12, TouchPhase::Moved, 150.0, 300.0, 50)[0] {
             TouchGesture::PinchUpdate {
                 scale_delta,
                 total_scale,

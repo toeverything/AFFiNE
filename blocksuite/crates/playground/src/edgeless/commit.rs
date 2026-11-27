@@ -23,7 +23,7 @@ use super::{
 impl PlaygroundView {
     pub(crate) fn on_edgeless_left_up(
         &mut self,
-        _event: &MouseUpEvent,
+        event: &MouseUpEvent,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -32,7 +32,22 @@ impl PlaygroundView {
         };
         let now_ms = self.now_ms(cx) as u64;
         match gesture {
-            EdgelessGesture::Pan { .. } | EdgelessGesture::Marquee { .. } => {
+            EdgelessGesture::Pan { moved, .. } => {
+                if self.edgeless_readonly && !moved {
+                    let vp_origin = ui::point(ui::px(0.0), ui::px(crate::TOPBAR_HEIGHT));
+                    let wp = self
+                        .edgeless
+                        .camera
+                        .screen_to_world(event.position, vp_origin);
+                    self.try_open_edgeless_readonly_link_or_ref(
+                        f32::from(wp.x),
+                        f32::from(wp.y),
+                        cx,
+                    );
+                }
+                cx.notify();
+            }
+            EdgelessGesture::Marquee { .. } => {
                 cx.notify();
             }
             EdgelessGesture::DragSelection {

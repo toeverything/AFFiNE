@@ -566,50 +566,42 @@ impl Overlays {
             if line_y + EQUATION_LINE_HEIGHT <= 0.0 || line_y >= inner_h {
                 continue;
             }
-            if marked.is_none() && !selection.is_empty() {
-                let s0 = selection.start.max(line.start_u16);
-                let s1 = selection.end.min(line.end_u16);
-                if s1 > s0 {
-                    let x0 = f32::from(
-                        line.shaped
-                            .x_for_index(utf16_to_byte(&line.text, s0 - line.start_u16)),
-                    );
-                    let x1 = f32::from(
-                        line.shaped
-                            .x_for_index(utf16_to_byte(&line.text, s1 - line.start_u16)),
-                    );
-                    inner = inner.child(
-                        div()
-                            .absolute()
-                            .left(px(x0.round()))
-                            .top(px(line_y + 2.0))
-                            .w(px((x1 - x0).round().max(1.0)))
-                            .h(px(16.0))
-                            .bg(palette.brand.opacity(0.22)),
-                    );
-                }
+            let span_bar = |r: &std::ops::Range<usize>, top: f32, h: f32, color: ui::Hsla| {
+                let (a, b) = (r.start.max(line.start_u16), r.end.min(line.end_u16));
+                (b > a).then(|| {
+                    let x = |u: usize| {
+                        f32::from(
+                            line.shaped
+                                .x_for_index(utf16_to_byte(&line.text, u - line.start_u16)),
+                        )
+                    };
+                    let (x0, x1) = (x(a), x(b));
+                    div()
+                        .absolute()
+                        .left(px(x0.round()))
+                        .top(px(line_y + top))
+                        .w(px((x1 - x0).round().max(1.0)))
+                        .h(px(h))
+                        .bg(color)
+                })
+            };
+            if marked.is_none()
+                && !selection.is_empty()
+                && let Some(b) = span_bar(&selection, 2.0, 16.0, palette.brand.opacity(0.22))
+            {
+                inner = inner.child(b);
             }
             if let Some(m) = &marked {
-                let m0 = m.start.max(line.start_u16);
-                let m1 = m.end.min(line.end_u16);
-                if m1 > m0 {
-                    let x0 = f32::from(
-                        line.shaped
-                            .x_for_index(utf16_to_byte(&line.text, m0 - line.start_u16)),
-                    );
-                    let x1 = f32::from(
-                        line.shaped
-                            .x_for_index(utf16_to_byte(&line.text, m1 - line.start_u16)),
-                    );
-                    inner = inner.child(
-                        div()
-                            .absolute()
-                            .left(px(x0.round()))
-                            .top(px(line_y + 17.0))
-                            .w(px((x1 - x0).round().max(1.0)))
-                            .h(px(1.0))
-                            .bg(palette.text_secondary),
-                    );
+                if let Some(b) = span_bar(m, 17.0, 1.0, palette.text_secondary) {
+                    inner = inner.child(b);
+                }
+                if !selection.is_empty() {
+                    if let Some(b) = span_bar(&selection, 2.0, 16.0, palette.brand.opacity(0.18)) {
+                        inner = inner.child(b);
+                    }
+                    if let Some(b) = span_bar(&selection, 16.0, 2.0, palette.brand) {
+                        inner = inner.child(b);
+                    }
                 }
             }
             if !line.text.is_empty() {

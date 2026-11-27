@@ -525,6 +525,24 @@ impl Overlays {
         self.scroll_keyboard_toolbar_strip(scene, step)
     }
 
+    /// Total vertical height occluded at the bottom of the window by the docked keyboard toolbar
+    /// (plus its expanded tool panel when open), or `0.0` when hidden.
+    pub fn keyboard_toolbar_reserved_height(&self, win_h: f32) -> f32 {
+        if !self.keyboard_toolbar.visible {
+            return 0.0;
+        }
+        let panel_height = if !self.keyboard_toolbar.marks_disabled
+            && self.keyboard_toolbar.active_panel.is_some()
+        {
+            let max_panel =
+                (win_h - crate::TOPBAR_HEIGHT - KEYBOARD_TOOLBAR_HEIGHT - 16.0).max(120.0);
+            KEYBOARD_TOOL_PANEL_HEIGHT.min(max_panel).floor()
+        } else {
+            0.0
+        };
+        KEYBOARD_TOOLBAR_HEIGHT + panel_height
+    }
+
     /// Toggle one docked bottom tool panel (`More`, `TurnInto`, or `Highlight`).
     pub fn toggle_keyboard_toolbar_panel(&mut self, panel: KeyboardToolbarPanel) {
         if self.keyboard_toolbar.marks_disabled {

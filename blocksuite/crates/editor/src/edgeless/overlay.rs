@@ -670,17 +670,38 @@ pub fn layout_label_editor_paragraph(
     let marked = editor.marked_range();
     let mut delta = Vec::new();
     if let Some(m) = &marked {
+        let (sel, _) = editor.shown_selection();
         let b0 = utf16_to_byte(&display, m.start);
         let b1 = utf16_to_byte(&display, m.end);
+        let s0 = utf16_to_byte(&display, sel.start).clamp(b0, b1);
+        let s1 = utf16_to_byte(&display, sel.end).clamp(s0, b1);
         if b0 > 0 {
             delta.push(TextDeltaOp::Insert {
                 insert: TextInsert::Text(display[..b0].to_string()),
                 format: None,
             });
         }
-        if b1 > b0 {
+        if s0 > b0 {
             delta.push(TextDeltaOp::Insert {
-                insert: TextInsert::Text(display[b0..b1].to_string()),
+                insert: TextInsert::Text(display[b0..s0].to_string()),
+                format: Some(BTreeMap::from([("underline".to_string(), Any::True)])),
+            });
+        }
+        if s1 > s0 {
+            delta.push(TextDeltaOp::Insert {
+                insert: TextInsert::Text(display[s0..s1].to_string()),
+                format: Some(BTreeMap::from([
+                    ("underline".to_string(), Any::True),
+                    (
+                        "background".to_string(),
+                        Any::String("var(--affine-text-highlight-blue)".into()),
+                    ),
+                ])),
+            });
+        }
+        if b1 > s1 {
+            delta.push(TextDeltaOp::Insert {
+                insert: TextInsert::Text(display[s1..b1].to_string()),
                 format: Some(BTreeMap::from([("underline".to_string(), Any::True)])),
             });
         }

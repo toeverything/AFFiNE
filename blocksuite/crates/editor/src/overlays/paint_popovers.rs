@@ -682,15 +682,21 @@ impl Overlays {
             } else {
                 caption(-scroll, palette.text_primary, shown)
             });
-            if let Some(marked) = &marked {
-                // A composition is underlined, like in the document.
-                inner = inner.child(strip(
-                    marked.start,
-                    marked.end,
-                    caret_top + caret_height - 1.0,
-                    1.0,
-                    palette.text_secondary,
-                ));
+            if let Some(m) = &marked {
+                let (s, e) = (selection.start, selection.end);
+                let ul = caret_top + caret_height;
+                inner = inner.child(strip(m.start, m.end, ul - 1.0, 1.0, palette.text_secondary));
+                if s < e {
+                    inner = inner
+                        .child(strip(
+                            s,
+                            e,
+                            caret_top,
+                            caret_height,
+                            palette.brand.opacity(0.18),
+                        ))
+                        .child(strip(s, e, ul - 2.0, 2.0, palette.brand));
+                }
             }
             inner = inner.child(
                 div()

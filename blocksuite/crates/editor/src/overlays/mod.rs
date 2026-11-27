@@ -488,6 +488,10 @@ pub struct OverlayScene<'a> {
     pub scroll_y: f32,
     /// Explicit layout direction supplied by the host shell.
     pub direction: ui::Direction,
+    /// Explicit device form factor supplied by the host shell.
+    pub form_factor: crate::block_flow::FormFactor,
+    /// Code block currently holding the caret or included in whole-block selection.
+    pub focused_code_block: Option<&'a str>,
     /// The editor's finished, formattable text selection, for frames.
     pub selection: Option<&'a SelectionFormat>,
     /// Optional camera-mapped transform when editing inside an Edgeless Note / EdgelessText.

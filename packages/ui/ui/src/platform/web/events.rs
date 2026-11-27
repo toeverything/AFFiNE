@@ -1126,7 +1126,9 @@ impl WebWindowInner {
 
     fn register_composition_start(self: &Rc<Self>) -> EventListenerHandle {
         let this = Rc::clone(self);
-        self.listen_input("compositionstart", move |_event: JsValue| {
+        self.listen_input("compositionstart", move |event: JsValue| {
+            let event: web_sys::CompositionEvent = event.unchecked_into();
+            *this.composition_start_data.borrow_mut() = event.data().unwrap_or_default();
             this.is_composing.set(true);
             crate::platform::web::fast::ime_position::follow_input(&this);
         })
@@ -1139,8 +1141,25 @@ impl WebWindowInner {
             let data = event.data().unwrap_or_default();
             this.is_composing.set(true);
             crate::platform::web::fast::ime_position::follow_input(&this);
+            let stored_sel = this.ime_mirror.stored_selection();
+            let ls = this.ime_mirror.selection_start().unwrap_or(stored_sel.0);
+            let live_sel = (ls, this.ime_mirror.element_selection_end().unwrap_or(ls));
+            let sd = this.composition_start_data.borrow().clone();
             this.with_input_handler(|handler| {
-                handler.replace_and_mark_text_in_range(None, &data, None);
+                let range = if handler.marked_text_range().is_none() {
+                    handler.selected_text_range(false).and_then(|sel| {
+                        crate::platform::web::fast::ime_edit::composition_replacement_range(
+                            (&this.ime_mirror.stored_text(), stored_sel),
+                            (&this.ime_mirror.value(), live_sel),
+                            &sd,
+                            &data,
+                            sel.range,
+                        )
+                    })
+                } else {
+                    None
+                };
+                handler.replace_and_mark_text_in_range(range, &data, None);
             });
         })
     }
@@ -1151,6 +1170,7 @@ impl WebWindowInner {
             let event: web_sys::CompositionEvent = event.unchecked_into();
             let data = event.data().unwrap_or_default();
             this.is_composing.set(false);
+            this.composition_start_data.borrow_mut().clear();
             this.with_input_handler(|handler| {
                 // Only commit the final text when a marked range still
                 // exists. When a caret move ended the composition, the

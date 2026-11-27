@@ -260,9 +260,12 @@ impl Overlays {
                 }
                 FlowKind::Code => {
                     let copied = self.copied_block() == Some(block.block_id.as_str());
-                    if !hovered && !copied {
+                    let focused = scene.focused_code_block == Some(block.block_id.as_str());
+                    let touch_browse = scene.form_factor != crate::block_flow::FormFactor::Desktop;
+                    if !hovered && !copied && !focused && !touch_browse {
                         continue;
                     }
+                    let subtle = touch_browse && !hovered && !focused && !copied;
                     let width = if copied {
                         COPIED_LABEL_WIDTH
                     } else {
@@ -278,9 +281,17 @@ impl Overlays {
                     let mut element = place(viewport.to_local(&target))
                         .id(SharedString::from(format!("copy-{}", block.block_id)))
                         .rounded(px(CODE_RADIUS - COPY_BUTTON_INSET))
-                        .bg(palette.background)
+                        .bg(if subtle {
+                            palette.background.opacity(0.6)
+                        } else {
+                            palette.background
+                        })
                         .border_1()
-                        .border_color(palette.border)
+                        .border_color(if subtle {
+                            palette.border.opacity(0.6)
+                        } else {
+                            palette.border
+                        })
                         .flex()
                         .items_center()
                         .justify_center()
@@ -294,7 +305,7 @@ impl Overlays {
                                 SharedString::from(format!("{}.copy", block.snapshot_id)),
                                 Some(PAGE_SURFACE_ID),
                             )
-                            .snapshot_focused(copied)
+                            .snapshot_focused(copied || focused)
                             .snapshot_text(if copied { "Copied" } else { "Copy" });
                     }
                     let element = if copied {
@@ -304,7 +315,15 @@ impl Overlays {
                             .text_color(palette.text_secondary)
                             .child("Copied")
                     } else {
-                        element.child(icon("CopyIcon", 16.0, palette.icon))
+                        element.child(icon(
+                            "CopyIcon",
+                            16.0,
+                            if subtle {
+                                palette.icon.opacity(0.55)
+                            } else {
+                                palette.icon
+                            },
+                        ))
                     };
                     elements.push(element.into_any_element());
                 }

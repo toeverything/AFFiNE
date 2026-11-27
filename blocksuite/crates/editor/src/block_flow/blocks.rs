@@ -258,6 +258,7 @@ impl FlowPass<'_> {
         block_id: &str,
         language: &str,
         wrap: bool,
+        explicit_line_number: Option<bool>,
         text: &str,
         caption: &str,
         width: f32,
@@ -276,7 +277,13 @@ impl FlowPass<'_> {
             400.0,
             self.palette.text_secondary,
         );
-        let code_x = pad_x + CODE_GUTTER;
+        let show_line_numbers =
+            explicit_line_number.unwrap_or(self.input.form_factor != super::FormFactor::Phone);
+        let code_x = if show_line_numbers {
+            pad_x + CODE_GUTTER
+        } else {
+            pad_x
+        };
         let code_width = (width - code_x - pad_x).max(1.0);
 
         let mut prims = Vec::new();
@@ -301,22 +308,24 @@ impl FlowPass<'_> {
                 line_height,
                 self.window,
             ));
-            // Line numbers sit on the baseline of the code they count.
-            let number = Rc::new(layout_inline(
-                &(index + 1).to_string(),
-                &number_style,
-                f32::MAX,
-                line_height,
-                InlineBaseline::Of(&code_style),
-                InlineAlign::Left,
-                self.window,
-            ));
-            prims.push(Prim::Text {
-                x: pad_x,
-                y,
-                layout: number,
-                clip: None,
-            });
+            if show_line_numbers {
+                // Line numbers sit on the baseline of the code they count.
+                let number = Rc::new(layout_inline(
+                    &(index + 1).to_string(),
+                    &number_style,
+                    f32::MAX,
+                    line_height,
+                    InlineBaseline::Of(&code_style),
+                    InlineAlign::Left,
+                    self.window,
+                ));
+                prims.push(Prim::Text {
+                    x: pad_x,
+                    y,
+                    layout: number,
+                    clip: None,
+                });
+            }
             let height = layout.height();
             // Empty lines have a caret stop at x=0 even when no glyph was shaped.
             if layout.pieces.is_empty() {
