@@ -241,17 +241,7 @@ pub(crate) async fn check_throttle_for_app(
       (key, limit.max(1), eff_ttl)
     }
   };
-  let redis_key_prefix = {
-    let cfg = app.config.load();
-    cfg
-      .app_config_baseline
-      .file_json
-      .pointer("/redis/ioredis/keyPrefix")
-      .or_else(|| cfg.app_config_baseline.file_json.pointer("/redis/keyPrefix"))
-      .and_then(serde_json::Value::as_str)
-      .unwrap_or("")
-      .to_owned()
-  };
+  let redis_key_prefix = app.app_config.get_internal_redis_key_prefix().await.unwrap_or_default();
   let prefixed_key = format!("{redis_key_prefix}{key}");
   let (hits, pttl_ms, block_ttl_ms) = app
     .strict_throttler

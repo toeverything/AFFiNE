@@ -93,8 +93,10 @@ pub const NATIVE_MANAGED_CONFIG_KEYS: &[&str] = &[
   "copilot.byok.allowPrivateEndpoint",
   "copilot.byok.enabled",
   "copilot.enabled",
+  "copilot.exa",
   "copilot.providers.profiles",
   "copilot.storage",
+  "copilot.unsplash",
   "oauth.providers.apple",
   "oauth.providers.github",
   "oauth.providers.google",
@@ -103,6 +105,7 @@ pub const NATIVE_MANAGED_CONFIG_KEYS: &[&str] = &[
   "payment.revenuecat",
   "payment.showLifetimePrice",
   "payment.stripe",
+  "storages.avatar.publicPath",
   "storages.avatar.storage",
   "storages.blob.storage",
 ];
@@ -533,6 +536,18 @@ impl AppConfigService {
     let mut root = json!({
       "mailer": baseline.get("mailer").cloned().unwrap_or_else(|| json!({})),
     });
+    for (config_key, env_var) in [
+      ("mailer.SMTP.password", "MAILER_PASSWORD"),
+      ("mailer.fallbackSMTP.password", "FALLBACK_MAILER_PASSWORD"),
+    ] {
+      if let Some(file_val) = self.baseline.lookup_file_config_value(config_key)
+        && file_val.as_str().is_some_and(|s| !s.is_empty())
+      {
+        set_nested_path(&mut root, config_key, file_val.clone());
+      } else if let Some(pw) = std::env::var(env_var).ok().filter(|v| !v.is_empty()) {
+        set_nested_path(&mut root, config_key, Value::String(pw));
+      }
+    }
     let mut conn = self
       .db
       .acquire_tiered(WorkloadTier::InteractiveRead)
@@ -551,12 +566,10 @@ impl AppConfigService {
     Ok(root.get("mailer").cloned().unwrap_or_else(|| json!({})))
   }
 
-  /// Internal-only reader for the startup file baseline `redis.ioredis.keyPrefix`
-  /// (falling back to `redis.keyPrefix`, then CLI `redis_key_prefix`), bypassing
-  /// `SECRET_CONFIG_KEYS` redaction on `redis.ioredis` and ignoring legacy
-  /// `app_configs` `redis.*` rows.
-  pub async fn get_internal_redis_key_prefix(&self) -> Result<String, DomainError> {
-    let resolved = self
+  /// Synchronous internal-only reader for the startup file baseline `redis.ioredis.keyPrefix`
+  /// (falling back to `redis.keyPrefix`, then CLI `redis_key_prefix`).
+  pub fn internal_redis_key_prefix(&self) -> String {
+    self
       .baseline
       .lookup_file_config_value("redis.ioredis")
       .and_then(|v| v.get("keyPrefix").and_then(Value::as_str))
@@ -570,8 +583,15 @@ impl AppConfigService {
       })
       .or_else(|| (!self.baseline.redis_key_prefix.is_empty()).then_some(self.baseline.redis_key_prefix.as_str()))
       .unwrap_or("")
-      .to_owned();
-    Ok(resolved)
+      .to_owned()
+  }
+
+  /// Internal-only reader for the startup file baseline `redis.ioredis.keyPrefix`
+  /// (falling back to `redis.keyPrefix`, then CLI `redis_key_prefix`), bypassing
+  /// `SECRET_CONFIG_KEYS` redaction on `redis.ioredis` and ignoring legacy
+  /// `app_configs` `redis.*` rows.
+  pub async fn get_internal_redis_key_prefix(&self) -> Result<String, DomainError> {
+    Ok(self.internal_redis_key_prefix())
   }
 
   /// Builds the exact `v0.27.5` `appConfig` JSON object by combining runtime

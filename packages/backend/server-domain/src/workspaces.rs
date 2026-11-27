@@ -912,9 +912,7 @@ impl WorkspaceService {
         .await
         .map_err(|e| DomainError::Internal(format!("check existing workspace member: {e}")))?;
         if already_member {
-          slots[idx] = Some(Err(DomainError::Conflict(
-            "user is already a workspace member".to_owned(),
-          )));
+          slots[idx] = Some(Err(DomainError::Conflict(format!("already_in_space:{workspace_id}"))));
           continue;
         }
       }
@@ -968,7 +966,8 @@ impl WorkspaceService {
           candidates.len() as i32,
           now,
         )
-        .await?;
+        .await
+        .map_err(|err| map_seat_limit_err(workspace_id, err))?;
 
       let mut notified_invitees: Vec<String> = Vec::new();
       for (idx, email, mut invitee_user_id) in candidates {
@@ -1158,7 +1157,7 @@ impl WorkspaceService {
     .fetch_optional(&mut **tx.tx_mut())
     .await
     .map_err(|e| DomainError::Internal(format!("lock invitation: {e}")))?
-    .ok_or_else(|| DomainError::NotFound("invitation not found".to_owned()))?;
+    .ok_or_else(|| DomainError::NotFound("invalid_invitation".to_owned()))?;
 
     let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
       .fetch_one(&mut **tx.tx_mut())
@@ -1200,7 +1199,7 @@ impl WorkspaceService {
         .is_some_and(|e| e.eq_ignore_ascii_case(&user_email))
     };
     if !matches_user {
-      return Err(DomainError::Forbidden("invitation does not belong to user".to_owned()));
+      return Err(DomainError::Forbidden("invitation_account_mismatch".to_owned()));
     }
 
     let already_member: bool = sqlx::query_scalar(
@@ -1212,14 +1211,15 @@ impl WorkspaceService {
     .await
     .map_err(|e| DomainError::Internal(format!("check existing member on accept: {e}")))?;
     if already_member {
-      return Err(DomainError::Conflict("user is already a workspace member".to_owned()));
+      return Err(DomainError::Conflict(format!("already_in_space:{inv_workspace_id}")));
     }
 
     let current_charged_excluding_this = (count_charged_seats_in_tx(tx.tx_mut(), &inv_workspace_id).await? - 1).max(0);
     self
       .quota_gate
       .check_seat_admission(tx.tx_mut(), &inv_workspace_id, current_charged_excluding_this, 1, now)
-      .await?;
+      .await
+      .map_err(|err| map_seat_limit_err(&inv_workspace_id, err))?;
 
     let source: String = inv_row.get("kind");
     let inserted = sqlx::query(
@@ -1354,9 +1354,7 @@ impl WorkspaceService {
     }
     let effective_actor_role = actor_role.effective(grant.rights.commercial);
     if !matches!(effective_actor_role, WorkspaceRole::Owner | WorkspaceRole::Admin) {
-      return Err(DomainError::Forbidden(
-        "insufficient permissions to change member role".to_owned(),
-      ));
+      return Err(DomainError::Forbidden(format!("space_access_denied:{workspace_id}")));
     }
     if new_role == WorkspaceRole::Owner {
       return Err(DomainError::Forbidden("workspace_owner_must_transfer".to_owned()));
@@ -1451,7 +1449,7 @@ impl WorkspaceService {
          FROM workspace_invitations
          WHERE workspace_id = $1
            AND (invitee_user_id = $2 OR id = $2)
-           AND status::text IN ('pending', 'waiting_review')
+           AND status::text IN ('pending', 'waiting_review', 'waiting_seat')
          FOR UPDATE"#,
     )
     .bind(workspace_id)
@@ -1514,10 +1512,6 @@ impl WorkspaceService {
     workspace_id: &str,
     target_user_id: &str,
   ) -> Result<(), DomainError> {
-    if actor_user_id == target_user_id {
-      return Err(DomainError::Forbidden("cannot_revoke_self".to_owned()));
-    }
-
     let private_key =
       crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
     let mut tx = self
@@ -1538,9 +1532,10 @@ impl WorkspaceService {
       .await?;
     let effective_actor_role = actor_role.effective(grant.rights.commercial);
     if !matches!(effective_actor_role, WorkspaceRole::Owner | WorkspaceRole::Admin) {
-      return Err(DomainError::Forbidden(
-        "insufficient permissions to revoke member".to_owned(),
-      ));
+      return Err(DomainError::Forbidden(format!("space_access_denied:{workspace_id}")));
+    }
+    if actor_user_id == target_user_id {
+      return Err(DomainError::Forbidden("cannot_revoke_self".to_owned()));
     }
 
     let target_member_role: Option<String> = sqlx::query_scalar(
@@ -1562,6 +1557,32 @@ impl WorkspaceService {
       }
     }
 
+    let target_email: Option<String> = sqlx::query_scalar("SELECT lower(email) FROM users WHERE id = $1")
+      .bind(target_user_id)
+      .fetch_optional(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load target email for revoke: {e}")))?;
+
+    let matching_invite_roles: Vec<String> = sqlx::query_scalar(
+      "SELECT requested_role::text
+       FROM workspace_invitations
+       WHERE workspace_id = $1
+         AND (
+           invitee_user_id = $2
+           OR (invitee_user_id IS NULL AND $3::text IS NOT NULL AND lower(normalized_email) = lower($3))
+         )
+       FOR UPDATE",
+    )
+    .bind(workspace_id)
+    .bind(target_user_id)
+    .bind(target_email.as_deref())
+    .fetch_all(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("lock matching workspace invitations: {e}")))?;
+    if effective_actor_role == WorkspaceRole::Admin && matching_invite_roles.iter().any(|r| r == "admin") {
+      return Err(DomainError::Forbidden("admin cannot revoke another admin".to_owned()));
+    }
+
     let deleted_members =
       sqlx::query("DELETE FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active'")
         .bind(workspace_id)
@@ -1570,12 +1591,6 @@ impl WorkspaceService {
         .await
         .map_err(|e| DomainError::Internal(format!("delete workspace member: {e}")))?
         .rows_affected();
-
-    let target_email: Option<String> = sqlx::query_scalar("SELECT lower(email) FROM users WHERE id = $1")
-      .bind(target_user_id)
-      .fetch_optional(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| DomainError::Internal(format!("load target email for revoke: {e}")))?;
 
     let deleted_invites_rows = sqlx::query(
       "DELETE FROM workspace_invitations
@@ -1961,10 +1976,14 @@ impl WorkspaceService {
       .await
       .map_err(|e| DomainError::Internal(format!("acquire list_workspace_members: {e}")))?;
 
-    let pattern = query
-      .map(str::trim)
-      .filter(|s| !s.is_empty())
-      .map(|s| format!("%{}%", s.to_ascii_lowercase()));
+    let pattern = query.map(str::trim).filter(|s| !s.is_empty()).map(|s| {
+      let escaped = s
+        .to_lowercase()
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_");
+      format!("%{escaped}%")
+    });
 
     let rows = sqlx::query(
       r#"SELECT * FROM (
@@ -1986,7 +2005,7 @@ impl WorkspaceService {
                   (u.email_verified IS NOT NULL) AS email_verified,
                   COALESCE(u.disabled, false) AS disabled,
                   i.requested_role::text AS role,
-                  i.id AS invite_id,
+                  COALESCE(u.id, i.id) AS invite_id,
                   CASE i.status::text
                     WHEN 'pending' THEN 'Pending'
                     WHEN 'waiting_review' THEN 'UnderReview'
@@ -1999,7 +2018,7 @@ impl WorkspaceService {
            WHERE i.workspace_id = $1
              AND i.status::text = ANY($5)
          ) combined
-         WHERE ($2::text IS NULL OR lower(combined.name) LIKE $2 OR lower(combined.email) LIKE $2)
+         WHERE ($2::text IS NULL OR lower(combined.name) LIKE $2 ESCAPE '\' OR lower(combined.email) LIKE $2 ESCAPE '\')
          ORDER BY combined.sort_at ASC, combined.user_id ASC
          OFFSET $3 LIMIT $4"#,
     )
@@ -2444,7 +2463,8 @@ impl WorkspaceService {
     self
       .quota_gate
       .check_seat_admission(tx.tx_mut(), workspace_id, current_charged_excluding_this, 1, now)
-      .await?;
+      .await
+      .map_err(|err| map_seat_limit_err(workspace_id, err))?;
 
     sqlx::query(
       r#"INSERT INTO workspace_members (id, workspace_id, user_id, role, state, source, created_at, updated_at)
@@ -2572,12 +2592,13 @@ impl WorkspaceService {
     let ttl_ms = expire_ms.max(1_000);
 
     if let Some(client) = &self.redis {
+      let prefix = self.redis_key_prefix();
       let mut conn = client
         .get_multiplexed_async_connection()
         .await
         .map_err(|e| DomainError::Unavailable(format!("redis invite link connect: {e}")))?;
-      let ws_key = format!("workspace:inviteLink:{workspace_id}");
-      let id_key = format!("workspace:inviteLinkId:{candidate_id}");
+      let ws_key = format!("{prefix}workspace:inviteLink:{workspace_id}");
+      let id_key = format!("{prefix}workspace:inviteLinkId:{candidate_id}");
       let ws_val = serde_json::json!({ "inviteId": candidate_id }).to_string();
       let id_val = serde_json::json!({
         "workspaceId": workspace_id,
@@ -2657,11 +2678,12 @@ impl WorkspaceService {
     }
 
     if let Some(client) = &self.redis {
+      let prefix = self.redis_key_prefix();
       let mut conn = client
         .get_multiplexed_async_connection()
         .await
         .map_err(|e| DomainError::Unavailable(format!("redis get invite link connect: {e}")))?;
-      let ws_key = format!("workspace:inviteLink:{workspace_id}");
+      let ws_key = format!("{prefix}workspace:inviteLink:{workspace_id}");
       let raw: Option<String> = redis::cmd("GET")
         .arg(&ws_key)
         .query_async(&mut conn)
@@ -2720,14 +2742,16 @@ impl WorkspaceService {
     }
 
     if let Some(client) = &self.redis {
+      let prefix = self.redis_key_prefix();
       let mut conn = client
         .get_multiplexed_async_connection()
         .await
         .map_err(|e| DomainError::Unavailable(format!("redis revoke invite link connect: {e}")))?;
-      let ws_key = format!("workspace:inviteLink:{workspace_id}");
+      let ws_key = format!("{prefix}workspace:inviteLink:{workspace_id}");
+      let id_prefix = format!("{prefix}workspace:inviteLinkId:");
       let deleted: i64 = redis::Script::new(REVOKE_INVITE_LINK_LUA)
         .key(&ws_key)
-        .arg("workspace:inviteLinkId:")
+        .arg(&id_prefix)
         .invoke_async(&mut conn)
         .await
         .map_err(|e| DomainError::Unavailable(format!("redis atomic revoke invite link: {e}")))?;
@@ -2801,7 +2825,7 @@ impl WorkspaceService {
     .await
     .map_err(|e| DomainError::Internal(format!("check existing member on link accept: {e}")))?;
     if already_member {
-      return Err(DomainError::Conflict("already_in_space".to_owned()));
+      return Err(DomainError::Conflict(format!("already_in_space:{ws_id}")));
     }
 
     let user_email: String = sqlx::query_scalar("SELECT lower(email) FROM users WHERE id = $1")
@@ -2812,7 +2836,7 @@ impl WorkspaceService {
       .ok_or_else(|| DomainError::NotFound("user not found".to_owned()))?;
 
     let existing_inv = sqlx::query(
-      r#"SELECT id, requested_role::text AS requested_role, kind::text AS kind, status::text AS status
+      r#"SELECT id, inviter_user_id, requested_role::text AS requested_role, kind::text AS kind, status::text AS status
          FROM workspace_invitations
          WHERE workspace_id = $1
            AND (invitee_user_id = $2 OR (invitee_user_id IS NULL AND lower(normalized_email) = lower($3)))
@@ -2829,13 +2853,15 @@ impl WorkspaceService {
       let status: String = inv.get("status");
       if status == "pending" {
         let inv_id: String = inv.get("id");
+        let inviter_user_id: Option<String> = inv.get("inviter_user_id");
         let role = WorkspaceRole::parse(&inv.get::<String, _>("requested_role"))?;
         let source: String = inv.get("kind");
         let current_charged_excl = (count_charged_seats_in_tx(tx.tx_mut(), &ws_id).await? - 1).max(0);
         self
           .quota_gate
           .check_seat_admission(tx.tx_mut(), &ws_id, current_charged_excl, 1, now)
-          .await?;
+          .await
+          .map_err(|err| map_seat_limit_err(&ws_id, err))?;
         sqlx::query(
           r#"INSERT INTO workspace_members (id, workspace_id, user_id, role, state, source, created_at, updated_at)
              VALUES ($1, $2, $3, $4, 'active', $5, $6, $6)
@@ -2855,9 +2881,36 @@ impl WorkspaceService {
           .execute(&mut **tx.tx_mut())
           .await
           .map_err(|e| DomainError::Internal(format!("consume pending invite via link: {e}")))?;
+        if let Some(ref inviter_id) = inviter_user_id
+          && inviter_id != invitee_user_id
+        {
+          crate::notifications::insert_invitation_notification_with_key_in_tx(
+            tx.tx_mut(),
+            inviter_id,
+            invitee_user_id,
+            &ws_id,
+            &inv_id,
+            "InvitationAccepted",
+            &self.base_url,
+            &private_key,
+          )
+          .await?;
+        }
         tx.commit()
           .await
           .map_err(|e| DomainError::Internal(format!("commit pending invite via link: {e}")))?;
+        if let Some(ref inviter_id) = inviter_user_id
+          && inviter_id != invitee_user_id
+        {
+          crate::notifications::publish_notification_count_changed(
+            &self.db,
+            self.event_bus.as_ref(),
+            inviter_id,
+            "created",
+          )
+          .await;
+        }
+        self.publish_workspace_members_changed(&ws_id, "member-accepted").await;
         let _ = self
           .invalidation
           .publish_invalidation(&InvalidationHintV1::QuotaSeatUsage {
@@ -2877,7 +2930,7 @@ impl WorkspaceService {
         });
       }
       if status == "waiting_review" || status == "waiting_seat" {
-        return Err(DomainError::Conflict("already_in_space".to_owned()));
+        return Err(DomainError::Conflict(format!("already_in_space:{ws_id}")));
       }
       // Clear stale non-chargeable invitation row before inserting waiting_review.
       let stale_id: String = inv.get("id");
@@ -2892,7 +2945,8 @@ impl WorkspaceService {
     self
       .quota_gate
       .check_seat_admission(tx.tx_mut(), &ws_id, current_charged, 1, now)
-      .await?;
+      .await
+      .map_err(|err| map_seat_limit_err(&ws_id, err))?;
 
     let review_id = format!("inv_{}", Uuid::new_v4().simple());
     let inviter_opt = (!inviter_id.is_empty()).then_some(inviter_id.as_str());
@@ -2966,14 +3020,23 @@ impl WorkspaceService {
     })
   }
 
+  fn redis_key_prefix(&self) -> String {
+    self
+      .app_config
+      .as_ref()
+      .map(|cfg| cfg.internal_redis_key_prefix())
+      .unwrap_or_default()
+  }
+
   async fn lookup_invite_link_by_id(&self, invite_id: &str) -> Result<Option<(String, String)>, DomainError> {
     if let Some(client) = &self.redis {
+      let prefix = self.redis_key_prefix();
       let mut conn = client
         .get_multiplexed_async_connection()
         .await
         .map_err(|e| DomainError::Unavailable(format!("redis lookup invite link: {e}")))?;
       let raw: Option<String> = redis::cmd("GET")
-        .arg(format!("workspace:inviteLinkId:{invite_id}"))
+        .arg(format!("{prefix}workspace:inviteLinkId:{invite_id}"))
         .query_async(&mut conn)
         .await
         .map_err(|e| DomainError::Unavailable(format!("redis get invite link id: {e}")))?;
@@ -3443,6 +3506,15 @@ async fn lock_workspace_row(tx: &mut Transaction<'_, Postgres>, workspace_id: &s
   Ok(())
 }
 
+fn map_seat_limit_err(workspace_id: &str, err: DomainError) -> DomainError {
+  match err {
+    DomainError::QuotaExceeded { kind: "seat_limit", .. } => {
+      DomainError::Forbidden(format!("no_more_seat:{workspace_id}"))
+    }
+    other => other,
+  }
+}
+
 async fn require_active_member_role(
   tx: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
@@ -3457,9 +3529,7 @@ async fn require_active_member_role(
   .await
   .map_err(|e| DomainError::Internal(format!("load active member role: {e}")))?;
   let Some(role) = role else {
-    return Err(DomainError::Forbidden(
-      "user is not an active workspace member".to_owned(),
-    ));
+    return Err(DomainError::Forbidden(format!("space_access_denied:{workspace_id}")));
   };
   WorkspaceRole::parse(&role)
 }

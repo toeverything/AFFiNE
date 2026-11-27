@@ -561,8 +561,8 @@ fn http_auth_graphql_and_rest_parity() {
         .unwrap(),
     )
     .await;
-    assert_eq!(st_csrf_trusted_origin, StatusCode::OK);
-    assert!(trusted_origin_json.get("errors").is_none());
+    assert_eq!(st_csrf_trusted_origin, StatusCode::BAD_REQUEST);
+    assert_eq!(trusted_origin_json["errors"][0]["extensions"]["type"], "BAD_REQUEST");
 
     let (st_csrf_preflight, _, preflight_json, _) = send(
       &router,

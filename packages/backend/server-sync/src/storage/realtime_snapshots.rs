@@ -225,7 +225,7 @@ impl SyncStorage {
     let Some(mut conn) = conn else {
       return Ok(serde_json::Value::Null);
     };
-    let ws_key = format!("workspace:inviteLink:{workspace_id}");
+    let ws_key = format!("{}workspace:inviteLink:{workspace_id}", self.redis_key_prefix);
     let raw_res = tokio::time::timeout(
       std::time::Duration::from_secs(2),
       redis::cmd("GET").arg(&ws_key).query_async::<Option<String>>(&mut conn),

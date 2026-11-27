@@ -836,13 +836,13 @@ impl AdminService {
       .map_err(|e| DomainError::Internal(format!("admin get_dashboard clock: {e}")))?;
     let sync_to = floor_minute(now);
     let sync_from = sync_to - Duration::hours(i64::from(sync_hours));
-    let current_day = jiff::tz::TimeZone::get(&timezone)
+    let (effective_timezone, resolved_tz) = match jiff::tz::TimeZone::get(&timezone) {
+      Ok(tz) => (timezone.clone(), tz),
+      Err(_) => ("UTC".to_owned(), jiff::tz::TimeZone::UTC),
+    };
+    let current_day = jiff::Timestamp::from_second(now.timestamp())
       .ok()
-      .and_then(|tz| {
-        jiff::Timestamp::from_second(now.timestamp())
-          .ok()
-          .map(|ts| ts.to_zoned(tz).date())
-      })
+      .map(|ts| ts.to_zoned(resolved_tz.clone()).date())
       .and_then(|d| {
         NaiveDate::from_ymd_opt(
           i32::from(d.year()),
@@ -854,7 +854,15 @@ impl AdminService {
     let storage_from_day = current_day - Duration::days(i64::from(storage_days - 1));
     let shared_from_day = current_day - Duration::days(i64::from(shared_days - 1));
     let copilot_from_day = current_day - Duration::days(i64::from(copilot_days - 1));
-    let copilot_from = naive_date_to_utc(copilot_from_day);
+    let copilot_from = jiff::civil::Date::new(
+      chrono::Datelike::year(&copilot_from_day) as i16,
+      chrono::Datelike::month(&copilot_from_day) as i8,
+      chrono::Datelike::day(&copilot_from_day) as i8,
+    )
+    .ok()
+    .and_then(|d| d.at(0, 0, 0, 0).to_zoned(resolved_tz).ok())
+    .and_then(|z| DateTime::<Utc>::from_timestamp(z.timestamp().as_second(), z.timestamp().subsec_nanosecond() as u32))
+    .unwrap_or_else(|| naive_date_to_utc(copilot_from_day));
 
     let sync_active_users: i32 = sqlx::query_scalar(
       r#"SELECT COALESCE(
@@ -1029,7 +1037,7 @@ impl AdminService {
       sync_window: AdminTimeWindow {
         from: sync_from,
         to: sync_to,
-        timezone: timezone.clone(),
+        timezone: effective_timezone.clone(),
         bucket: AdminTimeBucket::Minute,
         requested_size: query.sync_history_hours.unwrap_or(DEFAULT_SYNC_HISTORY_HOURS),
         effective_size: sync_hours,
@@ -1038,7 +1046,7 @@ impl AdminService {
       copilot_window: AdminTimeWindow {
         from: copilot_from,
         to: now,
-        timezone: timezone.clone(),
+        timezone: effective_timezone.clone(),
         bucket: AdminTimeBucket::Day,
         requested_size: query.copilot_window_days.unwrap_or(DEFAULT_COPILOT_WINDOW_DAYS),
         effective_size: copilot_days,
@@ -1050,7 +1058,7 @@ impl AdminService {
       storage_window: AdminTimeWindow {
         from: naive_date_to_utc(storage_from_day),
         to: naive_date_to_utc(current_day),
-        timezone: timezone.clone(),
+        timezone: effective_timezone.clone(),
         bucket: AdminTimeBucket::Day,
         requested_size: query.storage_history_days.unwrap_or(DEFAULT_STORAGE_HISTORY_DAYS),
         effective_size: storage_days,
@@ -1059,7 +1067,7 @@ impl AdminService {
       top_shared_links_window: AdminTimeWindow {
         from: naive_date_to_utc(shared_from_day),
         to: naive_date_to_utc(current_day),
-        timezone,
+        timezone: effective_timezone,
         bucket: AdminTimeBucket::Day,
         requested_size: query.shared_link_window_days.unwrap_or(DEFAULT_SHARED_LINK_WINDOW_DAYS),
         effective_size: shared_days,

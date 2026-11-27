@@ -990,42 +990,6 @@ async fn build_server_with_bound_port(
     _ => cli.deployment_mode.into(),
   };
 
-  let external_url = cli
-    .external_url
-    .as_deref()
-    .map(str::trim)
-    .filter(|s| !s.is_empty())
-    .map(|s| s.trim_end_matches('/').to_owned())
-    .unwrap_or_else(|| format!("http://localhost:{effective_port}"));
-
-  let (https, external_path, allowed_origins) = match url::Url::parse(&external_url) {
-    Ok(parsed) => {
-      let https = parsed.scheme().eq_ignore_ascii_case("https");
-      let path = match parsed.path() {
-        "/" | "" => String::new(),
-        other => other.trim_end_matches('/').to_owned(),
-      };
-      let mut origins = vec![parsed.origin().ascii_serialization()];
-      let scheme = if https { "https" } else { "http" };
-      for host in &server_hosts {
-        let host = host.trim().trim_end_matches('/');
-        if host.is_empty() {
-          continue;
-        }
-        if host.starts_with("http://") || host.starts_with("https://") {
-          origins.push(host.to_owned());
-        } else {
-          origins.push(format!("{scheme}://{host}"));
-        }
-      }
-      (https, path, origins)
-    }
-    Err(err) => {
-      return Err(ServerError::InvalidConfig(format!(
-        "invalid AFFINE_SERVER_EXTERNAL_URL `{external_url}`: {err}"
-      )));
-    }
-  };
   let normalize_sub_path = |raw: &str| -> Option<String> {
     let trimmed = raw.trim().trim_end_matches('/');
     if trimmed.is_empty() || trimmed == "/" {
@@ -1043,8 +1007,56 @@ async fn build_server_with_bound_port(
     .pointer("/server/path")
     .and_then(serde_json::Value::as_str)
     .and_then(normalize_sub_path);
-  let _ = external_path;
   let external_path = resolve_server_sub_path(file_sub_path, env_sub_path);
+
+  let external_url = cli
+    .external_url
+    .as_deref()
+    .map(str::trim)
+    .filter(|s| !s.is_empty())
+    .map(|s| s.trim_end_matches('/').to_owned())
+    .unwrap_or_else(|| format!("http://localhost:{effective_port}{external_path}"));
+
+  let (https, _parsed_path, allowed_origins) = match url::Url::parse(&external_url) {
+    Ok(parsed) => {
+      let https = parsed.scheme().eq_ignore_ascii_case("https");
+      let path = match parsed.path() {
+        "/" | "" => String::new(),
+        other => other.trim_end_matches('/').to_owned(),
+      };
+      let mut origins = vec![parsed.origin().ascii_serialization()];
+      let scheme = if https { "https" } else { "http" };
+      let default_port = parsed.port();
+      for host in &server_hosts {
+        let host = host.trim().trim_end_matches('/');
+        if host.is_empty() {
+          continue;
+        }
+        if host.starts_with("http://") || host.starts_with("https://") {
+          origins.push(host.to_owned());
+        } else {
+          let formatted = if host.matches(':').count() > 1 && !host.starts_with('[') {
+            format!("[{host}]")
+          } else {
+            host.to_owned()
+          };
+          let has_explicit_port = formatted.rsplit_once(':').is_some_and(|(base, port)| {
+            !base.ends_with(':') && !port.is_empty() && port.bytes().all(|b| b.is_ascii_digit())
+          });
+          origins.push(format!("{scheme}://{formatted}"));
+          if !has_explicit_port && let Some(port) = default_port {
+            origins.push(format!("{scheme}://{formatted}:{port}"));
+          }
+        }
+      }
+      (https, path, origins)
+    }
+    Err(err) => {
+      return Err(ServerError::InvalidConfig(format!(
+        "invalid AFFINE_SERVER_EXTERNAL_URL `{external_url}`: {err}"
+      )));
+    }
+  };
   let mut file_json = file_json;
   if !external_path.is_empty() {
     if !file_json.is_object() {
@@ -1431,22 +1443,20 @@ async fn build_server_with_bound_port(
           .map_err(|e| ServerError::InvalidConfig(format!("invalid copilot storage config: {e}")))?,
       )
     };
+  let file_indexer = app_config_baseline.file_json.get("indexer").cloned();
   let app_config = AppConfigService::new(db.clone(), app_config_baseline, Arc::clone(&event_bus));
-  let blobs = BlobService::new(db.clone(), storage, ext.quota_gate());
-  if cli.search_enabled && cli.search_provider == "embedded" && role != ServerRole::Allinone {
+  let blobs = BlobService::new(db.clone(), storage, ext.quota_gate()).with_invalidation(Arc::clone(&invalidation));
+  let env_enabled_set =
+    std::env::var("AFFINE_INDEXER_ENABLED").is_ok() || std::env::var("AFFINE_SEARCH_ENABLED").is_ok();
+  let env_provider_set =
+    std::env::var("AFFINE_INDEXER_PROVIDER").is_ok() || std::env::var("AFFINE_SEARCH_PROVIDER").is_ok();
+  let search_cfg =
+    resolve_search_config_from_cli_and_file(cli, file_indexer.as_ref(), env_enabled_set, env_provider_set);
+  if search_cfg.enabled && search_cfg.provider == "embedded" && role != ServerRole::Allinone {
     return Err(ServerError::InvalidConfig(
       "embedded search provider is in-process and only supported with --role allinone; use elasticsearch/manticoresearch or --search-enabled=false for split roles".to_owned(),
     ));
   }
-  let search_cfg = SearchConfig {
-    enabled: cli.search_enabled,
-    provider: cli.search_provider.clone(),
-    endpoint: cli.search_endpoint.clone(),
-    api_key: cli.search_api_key.clone(),
-    username: cli.search_username.clone(),
-    password: cli.search_password.clone(),
-    ..SearchConfig::default()
-  };
   let search = Arc::new(SearchRuntime::new(db.pool().clone(), ext.quota_gate(), search_cfg)?);
 
   let state = AppState::with_services(
@@ -1491,6 +1501,7 @@ async fn build_server_with_bound_port(
       .copilot_realtime_spi()
       .map(|spi| Arc::new(CopilotRealtimeSpiAdapter(spi)) as Arc<dyn server_sync::storage::CopilotRealtimeHandler>);
     sync_cfg.available_user_features = ext.available_user_features();
+    sync_cfg.redis_key_prefix = state.app_config.internal_redis_key_prefix();
     let authenticator = Arc::new(AuthServiceSyncAuthenticator {
       auth: state.auth.clone(),
       app_config: state.app_config.clone(),
@@ -1517,7 +1528,8 @@ async fn build_server_with_bound_port(
   })
 }
 
-/// Nests `router` under `server_path` when a non-root subpath prefix (e.g. `"/affine"`) is configured.
+/// Always mounts `router` at root `/socket.io`, and additionally nests it under `server_path`
+/// when a non-root subpath prefix (e.g. `"/affine"`) is configured.
 fn mount_router_with_server_path(router: Router, server_path: &str) -> Router {
   let trimmed = server_path.trim().trim_end_matches('/');
   if trimmed.is_empty() || trimmed == "/" {
@@ -1528,7 +1540,7 @@ fn mount_router_with_server_path(router: Router, server_path: &str) -> Router {
     } else {
       format!("/{trimmed}")
     };
-    Router::new().nest(&prefix, router)
+    Router::new().merge(router.clone()).nest(&prefix, router)
   }
 }
 
@@ -1562,7 +1574,7 @@ impl server_mail::WorkspaceMailMetaResolver for AffineWorkspaceMailResolver {
       let Some((raw_name, avatar_key)) = meta else {
         return Ok(None);
       };
-      let name = raw_name.unwrap_or_else(|| "Untitled".to_owned());
+      let name = raw_name.unwrap_or_else(|| "Untitled Workspace".to_owned());
       let name_contains_domain = server_domain::content_policy::contains_url_or_domain(&name);
       let avatar = match avatar_key
         .as_deref()
@@ -1588,11 +1600,31 @@ impl server_mail::WorkspaceMailMetaResolver for AffineWorkspaceMailResolver {
   }
 }
 
+struct DynamicMailWorkerConfig {
+  primary: SmtpMailer,
+  fallback: Option<SmtpMailer>,
+  fallback_domains: Vec<String>,
+  batch_size: i64,
+  lease_ms: i64,
+}
+
 async fn load_dynamic_mailers(
   app_config: &AppConfigService,
   startup_smtp: Option<&SmtpConfig>,
-) -> Result<Option<(SmtpMailer, Option<SmtpMailer>, Vec<String>)>, server_types::DomainError> {
+) -> Result<Option<DynamicMailWorkerConfig>, server_types::DomainError> {
   let mailer_cfg = app_config.get_internal_mailer_config().await?;
+  let batch_size = mailer_cfg
+    .pointer("/deliveryWorker/batchSize")
+    .and_then(|v| v.as_i64())
+    .filter(|&n| n > 0)
+    .unwrap_or(50)
+    .clamp(1, 500);
+  let lease_ms = mailer_cfg
+    .pointer("/deliveryWorker/leaseMs")
+    .and_then(|v| v.as_i64())
+    .filter(|&n| n >= 2_000)
+    .unwrap_or(120_000);
+  let smtp_timeout = Duration::from_millis((lease_ms.saturating_sub(1000)).clamp(1_000, 30_000) as u64);
   let raw_smtp = mailer_cfg.get("SMTP");
   let mut cfg = startup_smtp.cloned().unwrap_or_else(|| SmtpConfig {
     port: 465,
@@ -1634,7 +1666,7 @@ async fn load_dynamic_mailers(
   if cfg.host.trim().is_empty() {
     return Ok(None);
   }
-  let primary = match SmtpMailer::new(&cfg) {
+  let primary = match SmtpMailer::with_timeout(&cfg, smtp_timeout) {
     Ok(mailer) => mailer,
     Err(err) => {
       tracing::warn!(error = %err, "invalid dynamic primary SMTP configuration");
@@ -1652,7 +1684,7 @@ async fn load_dynamic_mailers(
       if c.sender.trim().is_empty() {
         c.sender = cfg.sender.clone();
       }
-      match SmtpMailer::new(&c) {
+      match SmtpMailer::with_timeout(&c, smtp_timeout) {
         Ok(mailer) => Some(mailer),
         Err(err) => {
           tracing::warn!(error = %err, "invalid dynamic fallback SMTP configuration");
@@ -1670,7 +1702,13 @@ async fn load_dynamic_mailers(
         .collect::<Vec<_>>()
     })
     .unwrap_or_default();
-  Ok(Some((primary, fallback, fallback_domains)))
+  Ok(Some(DynamicMailWorkerConfig {
+    primary,
+    fallback,
+    fallback_domains,
+    batch_size,
+    lease_ms,
+  }))
 }
 
 async fn spawn_dynamic_mail_delivery_worker(
@@ -1694,7 +1732,7 @@ async fn spawn_dynamic_mail_delivery_worker(
       );
       ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
       let mut last_gen: Option<u64> = None;
-      let mut cached_mailers: Option<(SmtpMailer, Option<SmtpMailer>, Vec<String>)> = None;
+      let mut cached_mailers: Option<DynamicMailWorkerConfig> = None;
       let ws_resolver = AffineWorkspaceMailResolver {
         state: Arc::clone(&state),
       };
@@ -1714,15 +1752,23 @@ async fn spawn_dynamic_mail_delivery_worker(
                 }
               }
             }
-            if let Some((mailer, fallback, fallback_domains)) = cached_mailers.as_ref() {
+            if let Some(cfg) = cached_mailers.as_ref() {
               let opts = MailDeliveryOptions {
                 base_url: &base_url,
-                fallback_mailer: fallback.as_ref(),
-                fallback_domains: fallback_domains.as_slice(),
+                fallback_mailer: cfg.fallback.as_ref(),
+                fallback_domains: cfg.fallback_domains.as_slice(),
                 workspace_resolver: Some(&ws_resolver),
               };
               if let Err(err) =
-                process_ready_mail_deliveries_with_options(state.db.pool(), mailer, &worker_id, 50, 120_000, &opts).await
+                process_ready_mail_deliveries_with_options(
+                  state.db.pool(),
+                  &cfg.primary,
+                  &worker_id,
+                  cfg.batch_size,
+                  cfg.lease_ms,
+                  &opts,
+                )
+                .await
               {
                 tracing::warn!(error = %err, "mail delivery worker tick failed");
               }
@@ -2195,6 +2241,56 @@ async fn wait_for_shutdown_signal() {
   }
 }
 
+fn resolve_search_config_from_cli_and_file(
+  cli: &ServerCli,
+  file_indexer: Option<&serde_json::Value>,
+  env_enabled_set: bool,
+  env_provider_set: bool,
+) -> SearchConfig {
+  let search_enabled = if env_enabled_set || cli.search_enabled {
+    cli.search_enabled
+  } else {
+    file_indexer
+      .and_then(|v| v.get("enabled").and_then(serde_json::Value::as_bool))
+      .unwrap_or(cli.search_enabled)
+  };
+  let file_provider_obj = file_indexer
+    .and_then(|v| v.get("provider"))
+    .and_then(serde_json::Value::as_object);
+  let search_provider = if env_provider_set || cli.search_provider != "embedded" {
+    cli.search_provider.clone()
+  } else {
+    file_provider_obj
+      .and_then(|obj| obj.get("type").and_then(serde_json::Value::as_str))
+      .or_else(|| file_indexer.and_then(|v| v.get("provider").and_then(serde_json::Value::as_str)))
+      .map(str::trim)
+      .filter(|s| !s.is_empty())
+      .map(str::to_ascii_lowercase)
+      .unwrap_or_else(|| cli.search_provider.clone())
+  };
+  let pick_search_str = |cli_val: &str, json_key: &str| -> String {
+    if !cli_val.trim().is_empty() {
+      cli_val.to_owned()
+    } else {
+      file_provider_obj
+        .and_then(|obj| obj.get(json_key).and_then(serde_json::Value::as_str))
+        .or_else(|| file_indexer.and_then(|v| v.get(json_key).and_then(serde_json::Value::as_str)))
+        .filter(|s| !s.trim().is_empty())
+        .map(str::to_owned)
+        .unwrap_or_default()
+    }
+  };
+  SearchConfig {
+    enabled: search_enabled,
+    provider: search_provider,
+    endpoint: pick_search_str(&cli.search_endpoint, "endpoint"),
+    api_key: pick_search_str(&cli.search_api_key, "apiKey"),
+    username: pick_search_str(&cli.search_username, "username"),
+    password: pick_search_str(&cli.search_password, "password"),
+    ..SearchConfig::default()
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use std::net::Ipv4Addr;
@@ -2350,7 +2446,33 @@ mod tests {
     assert!(prefixed_line.contains(" 200 "), "got: {prefixed_line}");
 
     let root_line = get_status("/socket.io/?EIO=4&transport=polling").await;
-    assert!(root_line.contains(" 404 "), "got: {root_line}");
+    assert!(root_line.contains(" 200 "), "got: {root_line}");
     server.abort();
+  }
+
+  #[test]
+  fn search_config_parses_v0275_nested_provider_object_and_respects_env_disable() {
+    let cli = ServerCli::default();
+    let v0275_indexer = serde_json::json!({
+      "enabled": true,
+      "provider": {
+        "type": "elasticsearch",
+        "endpoint": "http://es:9200",
+        "apiKey": "k",
+        "username": "u",
+        "password": "p"
+      }
+    });
+    let cfg = resolve_search_config_from_cli_and_file(&cli, Some(&v0275_indexer), false, false);
+    assert!(cfg.enabled);
+    assert_eq!(cfg.provider, "elasticsearch");
+    assert_eq!(cfg.endpoint, "http://es:9200");
+    assert_eq!(cfg.api_key, "k");
+    assert_eq!(cfg.username, "u");
+    assert_eq!(cfg.password, "p");
+
+    // Explicit AFFINE_INDEXER_ENABLED=false must not be overridden by file enabled=true.
+    let disabled_cfg = resolve_search_config_from_cli_and_file(&cli, Some(&v0275_indexer), true, false);
+    assert!(!disabled_cfg.enabled);
   }
 }

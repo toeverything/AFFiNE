@@ -603,6 +603,13 @@ fn expired_reservation_cleanup_and_orphan_reconciliation_are_idempotent() {
     // 2. Live comment-attachments/ws-live/doc-1/att.png (>24h old) -> NOT deleted
     // 3. Within-24h grace orphan ws-deleted/fresh-orphan.bin -> skipped, NOT deleted
     // 4. >24h real orphan ws-deleted/old-orphan.bin -> DELETED
+    sqlx::query(
+      "INSERT INTO comment_attachments (workspace_id, doc_id, key, name, size, mime, status) \
+       VALUES ('ws-live', 'doc-1', 'att.png', 'att.png', 3, 'image/png', 'completed')",
+    )
+    .execute(db.pool())
+    .await
+    .unwrap();
     fs.put("ws-live/keep.bin", b"keep".to_vec(), "application/octet-stream").await.unwrap();
     fs.put("tmp/unknown.bin", b"u".to_vec(), "application/octet-stream").await.unwrap();
     fs.put("comment-attachments/ws-live/doc-1/att.png", b"att".to_vec(), "image/png").await.unwrap();
@@ -651,7 +658,7 @@ fn expired_reservation_cleanup_and_orphan_reconciliation_are_idempotent() {
       "copilot-attachments/ws-deleted/u-1/k1",
       "copilot/artifacts/ws-deleted/a1",
       "copilot/transcript/ws-deleted/t1",
-      "artifacts/ws-deleted/a2",
+      "artifacts/ws-live/a2",
     ];
     for key in exempt_keys {
       fs.put(key, b"keep-exempt".to_vec(), "application/octet-stream").await.unwrap();

@@ -736,7 +736,7 @@ impl BlobStorageBackend for LocalFsBlobStorage {
     }
     normalize_storage_key(key)?;
     let (dir, key_owned) = (self.multipart_dir(uid)?, key.to_owned());
-    let etag = format!("\"{}\"", hex::encode(Sha256::digest(&body)));
+    let etag = hex::encode(Sha256::digest(&body));
     let etag_meta = etag.clone();
     blocking(move || {
       read_fs_manifest(&dir, &key_owned)?;
@@ -768,7 +768,7 @@ impl BlobStorageBackend for LocalFsBlobStorage {
         {
           parts.push(UploadedPart {
             part_number: pn,
-            etag: etag.trim().to_owned(),
+            etag: etag.trim().trim_matches('"').to_owned(),
           });
         }
       }

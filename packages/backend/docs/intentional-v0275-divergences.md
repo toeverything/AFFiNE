@@ -17,7 +17,7 @@ This document lists intentional improvements in the native Rust backend. Each en
 - Native behavior: JSON request bodies allow up to 16 MiB. Parsed `query` strings enforce a 100 KiB limit and a 64-level depth limit.
 
 - `POST /graphql` rejects missing, empty, or non-JSON `Content-Type` headers.
-- Cookie multipart requests without a preflight header require a trusted `Origin` or `Referer` header and reject `cross-site` and untrusted `same-site` requests.
+- Cookie multipart requests require a preflight header. Requests without that header return `400` (`BAD_REQUEST`).
 - `GET /graphql?query=...` requires a non-`Content-Type` preflight header and allows read-only queries only.
 
 - Test: `http_auth_graphql_and_rest_parity` in `packages/backend/server-http/tests/http_auth_sync_parity.rs`.
@@ -55,7 +55,7 @@ This document lists intentional improvements in the native Rust backend. Each en
 - Native behavior: Derives a deterministic HMAC-SHA256 token from the configured private key when `webhookVerificationToken` has no value.
 
 - Database updates to `crypto.privateKey` take effect live without restarting the server.
-- Rotating `crypto.privateKey` live invalidates existing calendar credentials and Google webhook tokens. Session signing keys switch on restart.
+- Rotating `crypto.privateKey` live invalidates existing calendar credentials and Google webhook tokens.
 
 - Test: `calendar_private_key_raw_bytes_and_db_override_interop` in `packages/backend/server-domain/src/calendar/mod.rs`.
 

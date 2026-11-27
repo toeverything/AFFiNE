@@ -4,12 +4,12 @@ use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::time::{Duration, Instant};
 
+use axum::Router;
 use axum::extract::{ConnectInfo, Path, State};
 use axum::http::header::{self, HeaderName, HeaderValue};
 use axum::http::{Extensions, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use axum::{Json, Router};
 use serde_json::{Map, Value, json};
 use server_domain::mcp::{McpAccessMode, clamp_throttle_tracker, is_reserved_doc_id};
 use server_search::{
@@ -256,7 +256,7 @@ fn rpc_err_resp(status: StatusCode, code: i64, msg: impl Into<String>) -> Respon
   json_utf8_response(status, rpc_error(Value::Null, code, msg), true)
 }
 async fn handle_method_not_allowed(State(state): State<RouterState>) -> Response {
-  if let Err(err) = assert_copilot_enabled(&state.app) {
+  if let Err(err) = assert_copilot_enabled(&state.app).await {
     return domain_error_to_http_response(&err);
   }
   rpc_err_resp(StatusCode::METHOD_NOT_ALLOWED, -32000, "Method not allowed.")
@@ -266,8 +266,12 @@ async fn handle_mcp_post(
   Path(workspace_id): Path<String>,
   extensions: Extensions,
   headers: HeaderMap,
-  Json(body): Json<Value>,
+  raw_body: axum::body::Bytes,
 ) -> Response {
+  let body: Value = match serde_json::from_slice(&raw_body) {
+    Ok(v) => v,
+    Err(_) => return rpc_err_resp(StatusCode::BAD_REQUEST, -32700, "Parse error"),
+  };
   let throttle_decision = if let Some((limit, ttl_ms)) = load_default_throttle_config(&state.app).await {
     let peer_addr = extensions.get::<ConnectInfo<SocketAddr>>().map(|c| c.0);
     let tracker = clamp_throttle_tracker(&extract_throttle_tracker(&headers, peer_addr));
@@ -281,7 +285,7 @@ async fn handle_mcp_post(
   } else {
     None
   };
-  let resp = match assert_copilot_enabled(&state.app) {
+  let resp = match assert_copilot_enabled(&state.app).await {
     Err(err) => domain_error_to_http_response(&err),
     Ok(()) => handle_mcp_post_inner(state, workspace_id, headers, body).await,
   };
@@ -511,7 +515,10 @@ async fn handle_rpc_message(
         return Some(rpc_error(response_id, -32602, format!("Tool not found: {tool_name}")));
       }
       let result = execute_tool(state, workspace_id, user_id, can_create_doc, tool_name, &args).await;
-      (!is_notification).then(|| rpc_success(response_id, result))
+      (!is_notification).then(|| match result {
+        Ok(val) => rpc_success(response_id, val),
+        Err((code, msg)) => rpc_error(response_id, code, msg),
+      })
     }
     _ => (!is_notification).then(|| rpc_error(response_id, -32601, "Method not found")),
   }
@@ -657,36 +664,38 @@ async fn execute_tool(
   can_create_doc: bool,
   tool_name: &str,
   args: &Map<String, Value>,
-) -> Value {
+) -> Result<Value, (i64, String)> {
   let mcp_svc = &state.app.mcp;
   match tool_name {
     "read_document" => {
       let Some(doc_id) = args.get("docId").and_then(Value::as_str) else {
-        return tool_error("Invalid arguments: docId: Required");
+        return Ok(tool_error("Invalid arguments: docId: Required"));
       };
       if let Err(e) = require_doc_perm(state, workspace_id, user_id, doc_id, false).await {
-        return e;
+        return Ok(e);
       }
-      match mcp_svc.read_document_markdown(workspace_id, doc_id).await {
+      Ok(match mcp_svc.read_document_markdown(workspace_id, doc_id).await {
         Ok(Some(md)) => tool_text(md),
         Ok(None) => tool_error(format!("Doc with id {doc_id} not found.")),
         Err(_) => tool_error("Failed to read document."),
-      }
+      })
     }
     "doc_search" => {
       let Some(raw_query) = args.get("query").and_then(Value::as_str) else {
-        return tool_error("Invalid arguments: query: Required");
+        return Ok(tool_error("Invalid arguments: query: Required"));
       };
       let query_str = raw_query.trim();
       let query_u16 = query_str.encode_utf16().count();
       if query_u16 == 0 || query_u16 > 2000 {
-        return tool_error("Invalid arguments: query must be 1..=2000 characters");
+        return Ok(tool_error("Invalid arguments: query must be 1..=2000 characters"));
       }
       let mut explicit_empty_doc_ids = false;
       let mut doc_ids: Vec<String> = Vec::new();
       if let Some(raw_doc_ids) = args.get("doc_ids") {
         let Some(arr) = raw_doc_ids.as_array().filter(|a| a.len() <= 50) else {
-          return tool_error("Invalid arguments: doc_ids must be an array of at most 50 strings");
+          return Ok(tool_error(
+            "Invalid arguments: doc_ids must be an array of at most 50 strings",
+          ));
         };
         explicit_empty_doc_ids = arr.is_empty();
         for item in arr {
@@ -695,7 +704,9 @@ async fn execute_tool(
             .map(str::trim)
             .filter(|s| matches!(s.encode_utf16().count(), 1..=128))
           else {
-            return tool_error("Invalid arguments: each doc_ids entry must be 1..=128 characters");
+            return Ok(tool_error(
+              "Invalid arguments: each doc_ids entry must be 1..=128 characters",
+            ));
           };
           doc_ids.push(s.to_owned());
         }
@@ -704,13 +715,17 @@ async fn execute_tool(
         None => 10,
         Some(v) => match v.as_u64() {
           Some(n) if (1..=20).contains(&n) => n as u32,
-          _ => return tool_error("Invalid arguments: limit must be an integer between 1 and 20"),
+          _ => {
+            return Ok(tool_error(
+              "Invalid arguments: limit must be an integer between 1 and 20",
+            ));
+          }
         },
       };
       if explicit_empty_doc_ids {
-        return tool_text(
+        return Ok(tool_text(
           json!({ "retrieval_mode": "lexical", "degraded_reason": "VECTOR_UNAVAILABLE", "hits": [] }).to_string(),
-        );
+        ));
       }
       let candidate_limit = (limit * 3).max(20);
       let fields: Vec<String> = BLOCK_SEARCH_FIELDS.split_whitespace().map(str::to_owned).collect();
@@ -763,7 +778,7 @@ async fn execute_tool(
           .map(|v| select_fallback_search_nodes(&v, candidate_limit as usize)),
         Err(err) => Err(err),
       };
-      let lexical_hits: Result<Vec<Value>, ()> = async {
+      let lexical_hits: Result<Vec<(String, String, Value)>, ()> = async {
         let raw_nodes = block_nodes.map_err(|_| ())?;
         let mut missing_ids = Vec::new();
         let mut missing_set = HashSet::new();
@@ -775,75 +790,65 @@ async fn execute_tool(
             missing_ids.push(d.to_owned());
           }
         }
-        let mut page_titles = mcp_svc
+        let page_titles = mcp_svc
           .load_page_titles(workspace_id, &missing_ids)
           .await
           .map_err(|_| ())?;
-        let mut ranked = Vec::new();
-        let mut seen_docs = HashSet::new();
-        for node in raw_nodes {
+        let mut out = Vec::new();
+        let mut seen_keys = HashSet::new();
+        for (idx, node) in raw_nodes.into_iter().enumerate() {
           if !has_projection_metadata(&node) {
             continue;
           }
           let Some(doc_id) = search_node_non_empty(&node, "doc_id").map(str::to_owned) else {
             continue;
           };
-          if !seen_docs.insert(doc_id.clone()) {
+          let unit_id = search_node_non_empty(&node, "unit_id")
+            .map(str::to_owned)
+            .unwrap_or_else(|| format!("lex-{idx}"));
+          let dedupe_key = format!("{doc_id}:{unit_id}");
+          if !seen_keys.insert(dedupe_key) {
             continue;
           }
-          let title = inline_page_title(&node).map(str::to_owned);
-          ranked.push((
-            1.0 / (60.0 + (ranked.len() + 1) as f64),
-            search_node_non_empty(&node, "unit_id").unwrap_or_default().to_owned(),
-            doc_id,
-            title,
-            node
-              .pointer("/highlights/content/0")
-              .and_then(Value::as_str)
-              .unwrap_or_default()
-              .to_owned(),
-            search_node_non_empty(&node, "visibility").unwrap_or("page").to_owned(),
-            search_node_non_empty(&node, "source_block_id")
-              .or_else(|| search_node_non_empty(&node, "block_id"))
-              .map(str::to_owned),
-            search_node_non_empty(&node, "element_id").map(str::to_owned),
-            search_node_non_empty(&node, "frame_id").map(str::to_owned),
-          ));
+          let title = inline_page_title(&node)
+            .map(str::to_owned)
+            .or_else(|| page_titles.get(&doc_id).cloned())
+            .unwrap_or_default();
+          let excerpt = node
+            .pointer("/highlights/content/0")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned();
+          let visibility = search_node_non_empty(&node, "visibility").unwrap_or("page").to_owned();
+          let block_id = search_node_non_empty(&node, "source_block_id")
+            .or_else(|| search_node_non_empty(&node, "block_id"))
+            .map(str::to_owned);
+          let element_id = search_node_non_empty(&node, "element_id").map(str::to_owned);
+          let frame_id = search_node_non_empty(&node, "frame_id").map(str::to_owned);
+          let mut obj = Map::from_iter([
+            ("doc_id".to_owned(), json!(doc_id)),
+            ("title".to_owned(), json!(title)),
+            ("excerpt".to_owned(), json!(excerpt)),
+            ("visibility".to_owned(), json!(visibility)),
+          ]);
+          for (k, v) in [
+            ("block_id", block_id),
+            ("element_id", element_id),
+            ("frame_id", frame_id),
+          ] {
+            if let Some(val) = v {
+              obj.insert(k.to_owned(), json!(val));
+            }
+          }
+          out.push((doc_id, unit_id, Value::Object(obj)));
         }
-        ranked.sort_by(|a, b| b.0.total_cmp(&a.0).then_with(|| a.1.cmp(&b.1)));
-        ranked.truncate(limit as usize);
-        Ok(
-          ranked
-            .into_iter()
-            .map(
-              |(_, _, doc_id, title, excerpt, visibility, block_id, element_id, frame_id)| {
-                let title = title.or_else(|| page_titles.remove(&doc_id)).unwrap_or_default();
-                let mut obj = Map::from_iter([
-                  ("doc_id".to_owned(), json!(doc_id)),
-                  ("title".to_owned(), json!(title)),
-                  ("excerpt".to_owned(), json!(excerpt)),
-                  ("visibility".to_owned(), json!(visibility)),
-                ]);
-                for (k, v) in [
-                  ("block_id", block_id),
-                  ("element_id", element_id),
-                  ("frame_id", frame_id),
-                ] {
-                  if let Some(val) = v {
-                    obj.insert(k.to_owned(), json!(val));
-                  }
-                }
-                Value::Object(obj)
-              },
-            )
-            .collect(),
-        )
+        Ok(out)
       }
       .await;
       let embedding_spi = state.app.extension.copilot_embedding_spi();
       let vector_hits: Option<Vec<server_spi::VectorDocSearchHit>> = if embedding_spi.is_enabled() {
         embedding_spi
-          .search_workspace_docs_vector(workspace_id, query_str, &doc_ids, limit)
+          .search_workspace_docs_vector(workspace_id, query_str, &doc_ids, candidate_limit)
           .await
           .ok()
           .flatten()
@@ -851,75 +856,143 @@ async fn execute_tool(
         None
       };
 
+      let doc_id_filter: Option<HashSet<&str>> =
+        (!doc_ids.is_empty()).then(|| doc_ids.iter().map(String::as_str).collect());
+      let filter_vector_hits = |raw: Vec<server_spi::VectorDocSearchHit>| async move {
+        let mut authorized = Vec::new();
+        for hit in raw {
+          if is_reserved_doc_id(workspace_id, &hit.doc_id) {
+            continue;
+          }
+          if let Some(ref allowed) = doc_id_filter
+            && !allowed.contains(hit.doc_id.as_str())
+          {
+            continue;
+          }
+          if matches!(
+            check_doc_perm(state, workspace_id, user_id, &hit.doc_id, false).await,
+            Ok(true)
+          ) {
+            authorized.push(hit);
+          }
+        }
+        let missing_ids: Vec<String> = authorized
+          .iter()
+          .filter(|h| h.title.as_deref().is_none_or(|t| t.trim().is_empty()))
+          .map(|h| h.doc_id.clone())
+          .collect::<HashSet<_>>()
+          .into_iter()
+          .collect();
+        let mut titles = if missing_ids.is_empty() {
+          HashMap::new()
+        } else {
+          mcp_svc
+            .load_page_titles(workspace_id, &missing_ids)
+            .await
+            .unwrap_or_default()
+        };
+        let mut out = Vec::with_capacity(authorized.len());
+        for (idx, vh) in authorized.into_iter().enumerate() {
+          let title = vh
+            .title
+            .filter(|t| !t.trim().is_empty())
+            .or_else(|| titles.get(&vh.doc_id).cloned())
+            .unwrap_or_default();
+          let visibility = if vh.visibility.trim().is_empty() {
+            "page".to_owned()
+          } else {
+            vh.visibility
+          };
+          let unit_id = if vh.unit_id.trim().is_empty() {
+            format!("vec-{idx}")
+          } else {
+            vh.unit_id
+          };
+          let mut obj = Map::from_iter([
+            ("doc_id".to_owned(), json!(vh.doc_id)),
+            ("title".to_owned(), json!(title)),
+            ("excerpt".to_owned(), json!(vh.excerpt)),
+            ("visibility".to_owned(), json!(visibility)),
+          ]);
+          for (k, v) in [
+            ("block_id", vh.block_id),
+            ("element_id", vh.element_id),
+            ("frame_id", vh.frame_id),
+          ] {
+            if let Some(val) = v {
+              obj.insert(k.to_owned(), json!(val));
+            }
+          }
+          out.push((vh.doc_id, unit_id, Value::Object(obj)));
+        }
+        let _ = titles.drain();
+        out
+      };
+      let cap_per_doc = |items: Vec<(String, Value)>, max_total: usize| -> Vec<Value> {
+        let mut counts: HashMap<String, usize> = HashMap::new();
+        let mut out = Vec::new();
+        for (doc_id, val) in items {
+          let entry = counts.entry(doc_id).or_insert(0);
+          if *entry >= 3 {
+            continue;
+          }
+          *entry += 1;
+          out.push(val);
+          if out.len() >= max_total {
+            break;
+          }
+        }
+        out
+      };
+
       match (lexical_hits, vector_hits) {
         (Ok(lex_hits), Some(vec_hits)) => {
-          let mut authorized_vec = Vec::new();
-          for hit in vec_hits {
-            if matches!(
-              check_doc_perm(state, workspace_id, user_id, &hit.doc_id, false).await,
-              Ok(true)
-            ) {
-              authorized_vec.push(hit);
-            }
-          }
-          let mut fused: HashMap<String, (f64, Value)> = HashMap::new();
-          for (idx, h) in lex_hits.into_iter().enumerate() {
-            let did = h.get("doc_id").and_then(Value::as_str).unwrap_or_default().to_owned();
-            if did.is_empty() {
-              continue;
-            }
+          let authorized_vec = filter_vector_hits(vec_hits).await;
+          let mut fused: HashMap<String, (f64, String, String, Value)> = HashMap::new();
+          for (idx, (doc_id, unit_id, h)) in lex_hits.into_iter().enumerate() {
+            let key = format!("{doc_id}:{unit_id}");
             let rrf = 1.0 / (60.0 + (idx + 1) as f64);
-            fused.insert(did, (rrf, h));
+            fused.insert(key, (rrf, unit_id, doc_id, h));
           }
-          for (idx, vh) in authorized_vec.into_iter().enumerate() {
+          for (idx, (doc_id, unit_id, vh)) in authorized_vec.into_iter().enumerate() {
+            let key = format!("{doc_id}:{unit_id}");
             let rrf = 1.0 / (60.0 + (idx + 1) as f64);
             fused
-              .entry(vh.doc_id.clone())
-              .and_modify(|(score, _)| *score += rrf)
-              .or_insert_with(|| {
-                (
-                  rrf,
-                  json!({
-                    "doc_id": vh.doc_id,
-                    "title": vh.title.unwrap_or_default(),
-                    "excerpt": vh.excerpt,
-                    "visibility": "page",
-                  }),
-                )
-              });
+              .entry(key)
+              .and_modify(|(score, _, _, _)| *score += rrf)
+              .or_insert((rrf, unit_id, doc_id, vh));
           }
-          let mut items: Vec<(String, f64, Value)> = fused.into_iter().map(|(k, (s, v))| (k, s, v)).collect();
-          items.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
-          items.truncate(limit as usize);
-          let hits: Vec<Value> = items.into_iter().map(|(_, _, v)| v).collect();
-          tool_text(json!({ "retrieval_mode": "hybrid", "hits": hits }).to_string())
+          let mut items: Vec<(f64, String, String, Value)> = fused.into_values().collect();
+          items.sort_by(|a, b| b.0.total_cmp(&a.0).then_with(|| a.1.cmp(&b.1)));
+          let hits = cap_per_doc(items.into_iter().map(|(_, _, d, v)| (d, v)).collect(), limit as usize);
+          Ok(tool_text(
+            json!({ "retrieval_mode": "hybrid", "hits": hits }).to_string(),
+          ))
         }
         (Err(()), Some(vec_hits)) => {
-          let mut hits = Vec::new();
-          for vh in vec_hits {
-            if matches!(
-              check_doc_perm(state, workspace_id, user_id, &vh.doc_id, false).await,
-              Ok(true)
-            ) {
-              hits.push(json!({
-                "doc_id": vh.doc_id,
-                "title": vh.title.unwrap_or_default(),
-                "excerpt": vh.excerpt,
-                "visibility": "page",
-              }));
-              if hits.len() >= limit as usize {
-                break;
-              }
-            }
-          }
-          tool_text(json!({ "retrieval_mode": "vector", "hits": hits }).to_string())
+          let authorized_vec = filter_vector_hits(vec_hits).await;
+          let hits = cap_per_doc(
+            authorized_vec.into_iter().map(|(d, _, v)| (d, v)).collect(),
+            limit as usize,
+          );
+          Ok(tool_text(
+            json!({
+              "retrieval_mode": "vector",
+              "degraded_reason": "LEXICAL_UNAVAILABLE",
+              "hits": hits
+            })
+            .to_string(),
+          ))
         }
-        (Ok(hits), None) => tool_text(
-          json!({ "retrieval_mode": "lexical", "degraded_reason": "VECTOR_UNAVAILABLE", "hits": hits }).to_string(),
-        ),
+        (Ok(lex_hits), None) => {
+          let hits = cap_per_doc(lex_hits.into_iter().map(|(d, _, v)| (d, v)).collect(), limit as usize);
+          Ok(tool_text(
+            json!({ "retrieval_mode": "lexical", "degraded_reason": "VECTOR_UNAVAILABLE", "hits": hits }).to_string(),
+          ))
+        }
         (Err(()), None) => {
           if doc_ids.is_empty() {
-            return tool_error("SEARCH_UNAVAILABLE");
+            return Ok(tool_error("SEARCH_UNAVAILABLE"));
           }
           let mut seen_ids = HashSet::new();
           let mut readable = Vec::new();
@@ -938,7 +1011,7 @@ async fn execute_tool(
           let mut scoped_hits = Vec::with_capacity(readable.len());
           for did in readable {
             let Ok(Some((title, md))) = mcp_svc.read_document_title_and_markdown(workspace_id, &did).await else {
-              return tool_error("SEARCH_UNAVAILABLE");
+              return Ok(tool_error("SEARCH_UNAVAILABLE"));
             };
             scoped_hits.push(json!({
               "doc_id": did,
@@ -947,53 +1020,55 @@ async fn execute_tool(
               "visibility": "page",
             }));
           }
-          tool_text(
+          Ok(tool_text(
             json!({ "retrieval_mode": "scoped", "degraded_reason": "SEARCH_UNAVAILABLE", "hits": scoped_hits })
               .to_string(),
-          )
+          ))
         }
       }
     }
     "create_document" => {
       if !can_create_doc {
-        return tool_error("Failed to create document: Workspace.CreateDoc permission required");
+        return Ok(tool_error(
+          "Failed to create document: Workspace.CreateDoc permission required",
+        ));
       }
       let Some(raw_title) = args.get("title").and_then(Value::as_str) else {
-        return tool_error("Invalid arguments: title: Required");
+        return Ok(tool_error("Invalid arguments: title: Required"));
       };
       let Some(content) = args.get("content").and_then(Value::as_str) else {
-        return tool_error("Invalid arguments: content: Required");
+        return Ok(tool_error("Invalid arguments: content: Required"));
       };
       let sanitized_title: String = raw_title.replace(['\r', '\n'], " ").trim().to_owned();
       if sanitized_title.is_empty() {
-        return tool_error("Failed to create document: Title cannot be empty");
+        return Ok(tool_error("Failed to create document: Title cannot be empty"));
       }
       let explicit_doc_id = match args.get("docId") {
-        None | Some(Value::Null) => None,
+        None => None,
         Some(Value::String(raw)) => {
           let trimmed = raw.trim();
           if trimmed.is_empty() {
-            return tool_error("Invalid arguments: docId cannot be empty");
+            return Ok(tool_error("Invalid arguments: docId cannot be empty"));
           }
           Some(trimmed)
         }
-        Some(_) => return tool_error("Invalid arguments: docId must be a string"),
+        Some(_) => return Ok(tool_error("Invalid arguments: docId must be a string")),
       };
       if let Some(doc_id) = explicit_doc_id {
         if is_reserved_doc_id(workspace_id, doc_id) {
-          return tool_error("Failed to create document: Invalid document ID.");
+          return Ok(tool_error("Failed to create document: Invalid document ID."));
         }
         match check_doc_perm(state, workspace_id, user_id, doc_id, true).await {
           Ok(true) => {}
           Ok(false) => {
-            return tool_error(format!(
+            return Ok(tool_error(format!(
               "Failed to create document: Doc.Update permission required for {doc_id}"
-            ));
+            )));
           }
-          Err(e) => return e,
+          Err(e) => return Ok(e),
         }
       }
-      match mcp_svc
+      Ok(match mcp_svc
         .create_document(workspace_id, &sanitized_title, content, user_id, explicit_doc_id)
         .await
       {
@@ -1002,51 +1077,55 @@ async fn execute_tool(
             .to_string(),
         ),
         Err(e) => map_doc_write_err("create document", e),
-      }
+      })
     }
     "update_document" => {
       let (Some(doc_id), Some(content)) = (
         args.get("docId").and_then(Value::as_str),
         args.get("content").and_then(Value::as_str),
       ) else {
-        return tool_error("Invalid arguments: docId and content required");
+        return Ok(tool_error("Invalid arguments: docId and content required"));
       };
       if let Err(e) = require_doc_perm(state, workspace_id, user_id, doc_id, true).await {
-        return e;
+        return Ok(e);
       }
-      match mcp_svc.update_document(workspace_id, doc_id, content, user_id).await {
-        Ok(true) => {
-          tool_text(json!({ "success": true, "docId": doc_id, "message": "Document updated successfully" }).to_string())
-        }
-        Ok(false) => tool_error(format!("Doc with id {doc_id} not found.")),
-        Err(e) => map_doc_write_err("update document", e),
-      }
+      Ok(
+        match mcp_svc.update_document(workspace_id, doc_id, content, user_id).await {
+          Ok(true) => tool_text(
+            json!({ "success": true, "docId": doc_id, "message": "Document updated successfully" }).to_string(),
+          ),
+          Ok(false) => tool_error(format!("Doc with id {doc_id} not found.")),
+          Err(e) => map_doc_write_err("update document", e),
+        },
+      )
     }
     "update_document_meta" => {
       let (Some(doc_id), Some(raw_title)) = (
         args.get("docId").and_then(Value::as_str),
         args.get("title").and_then(Value::as_str),
       ) else {
-        return tool_error("Invalid arguments: docId and title required");
+        return Ok(tool_error("Invalid arguments: docId and title required"));
       };
       if let Err(e) = require_doc_perm(state, workspace_id, user_id, doc_id, true).await {
-        return e;
+        return Ok(e);
       }
       let sanitized_title: String = raw_title.replace(['\r', '\n'], " ").trim().to_owned();
       if sanitized_title.is_empty() {
-        return tool_error(format!("Doc with id {doc_id} not found."));
+        return Ok(tool_error(format!("Doc with id {doc_id} not found.")));
       }
-      match mcp_svc
-        .update_document_title(workspace_id, doc_id, &sanitized_title, user_id)
-        .await
-      {
-        Ok(true) => tool_text(
-          json!({ "success": true, "docId": doc_id, "message": "Document title updated successfully" }).to_string(),
-        ),
-        Ok(false) => tool_error(format!("Doc with id {doc_id} not found.")),
-        Err(e) => map_doc_write_err("update document metadata", e),
-      }
+      Ok(
+        match mcp_svc
+          .update_document_title(workspace_id, doc_id, &sanitized_title, user_id)
+          .await
+        {
+          Ok(true) => tool_text(
+            json!({ "success": true, "docId": doc_id, "message": "Document title updated successfully" }).to_string(),
+          ),
+          Ok(false) => tool_error(format!("Doc with id {doc_id} not found.")),
+          Err(e) => map_doc_write_err("update document metadata", e),
+        },
+      )
     }
-    _ => tool_error(format!("Tool not found: {tool_name}")),
+    _ => Ok(tool_error(format!("Tool not found: {tool_name}"))),
   }
 }

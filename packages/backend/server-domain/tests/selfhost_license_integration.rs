@@ -1663,3 +1663,224 @@ fn offline_repair_conflict_skip_and_strict_remote_denial_whitelist() {
   });
   drop(lease);
 }
+
+#[test]
+fn repeated_expired_license_denial_does_not_wipe_new_pending_invites_or_admins() {
+  let cluster = test_db_harness::pg::PgCluster::from_env_or_docker().expect("test postgres cluster");
+  let migrations_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+  let migrations = test_db_harness::migrations::MigrationSet::load(&migrations_dir).expect("load migrations");
+  let template = cluster.ensure_template(&migrations).expect("ensure template");
+  let lease = cluster
+    .lease(&template, test_db_harness::pg::DEFAULT_LEASE_TTL)
+    .expect("lease test db");
+  let db_url = lease.url().to_owned();
+
+  let rt = tokio::runtime::Builder::new_current_thread()
+    .enable_all()
+    .build()
+    .unwrap();
+  rt.block_on(async move {
+    let db = ServerDb::connect(DbConfig {
+      database_url: db_url,
+      channel: "canary".into(),
+      role: server_types::ServerRole::Allinone,
+      selfhosted: true,
+      max_connections: 4,
+      statement_timeout_ms: 5_000,
+      tier_permits: [8, 4, 2, 2],
+    })
+    .await
+    .unwrap();
+    let (signing_key, pro_pem) = test_keypair(77);
+    let keyring = Keyring::with_pro_public_key(pro_pem);
+    let gate = Arc::new(CommunityQuotaGate::with_keyring(keyring.clone()));
+    let inv = Arc::new(NoopEventPublisher::default());
+
+    let owner_id = format!("u-owner-{}", Uuid::new_v4().simple());
+    let admin_id = format!("u-admin-{}", Uuid::new_v4().simple());
+    let ws_id = format!("ws-exp-repeat-{}", Uuid::new_v4().simple());
+    for (uid, email) in [(&owner_id, "owner-rep@example.test"), (&admin_id, "admin-rep@example.test")] {
+      sqlx::query("INSERT INTO users (id, name, email) VALUES ($1, $2, $3)")
+        .bind(uid)
+        .bind("User")
+        .bind(email)
+        .execute(db.pool())
+        .await
+        .unwrap();
+    }
+    sqlx::query("INSERT INTO workspaces (id) VALUES ($1)")
+      .bind(&ws_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO workspace_members (id, workspace_id, user_id, role, state, source) VALUES ($1, $2, $3, 'owner', 'active', 'legacy')",
+    )
+    .bind(Uuid::new_v4().to_string())
+    .bind(&ws_id)
+    .bind(&owner_id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO workspace_members (id, workspace_id, user_id, role, state, source) VALUES ($1, $2, $3, 'admin', 'active', 'legacy')",
+    )
+    .bind(Uuid::new_v4().to_string())
+    .bind(&ws_id)
+    .bind(&admin_id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+
+    let vk = Uuid::new_v4().to_string();
+    let stale_at = Utc::now() - Duration::hours(2);
+    let claims = LicenseClaimsV2 {
+      format_version: 2,
+      kid: PRO_KID.to_owned(),
+      license_id: "lic-exp-repeat".to_owned(),
+      audience: LICENSE_AUDIENCE_SELFHOST.to_owned(),
+      scope: LicenseScopeV2 {
+        kind: "workspace".to_owned(),
+        workspace_id: Some(ws_id.clone()),
+      },
+      tier: "selfhost_team".to_owned(),
+      limits: LicenseLimitsV2 {
+        blob_limit_bytes: 524_288_000,
+        storage_quota_bytes: 1_099_511_627_776,
+        seat_limit: 30,
+        seat_quota_bytes: None,
+        history_period_seconds: 31_536_000,
+        copilot_action_limit: None,
+      },
+      rights: LicenseRightsV2 {
+        commercial: true,
+        copilot_byok: true,
+        unlimited_copilot: false,
+      },
+      recurring: Some("monthly".to_owned()),
+      issued_at: (Utc::now() - Duration::days(30)).to_rfc3339(),
+      not_before: (Utc::now() - Duration::days(30)).to_rfc3339(),
+      expires_at: Some((Utc::now() + Duration::days(10)).to_rfc3339()),
+    };
+    let sig: DerSignature = signing_key.sign(&serde_json::to_vec(&claims).unwrap());
+    let env_bytes = serde_json::to_vec(&LicenseEnvelopeV2 {
+      claims,
+      signature: base64::Engine::encode(&base64::engine::general_purpose::STANDARD, sig.as_bytes()),
+    })
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO installed_licenses (key, workspace_id, quantity, recurring, variant, installed_at, validate_key, validated_at, expired_at, license)
+       VALUES ('lic-exp-repeat', $1, 30, 'monthly', 'recurring', $2, $3, $2, $4, $5)",
+    )
+    .bind(&ws_id)
+    .bind(stale_at)
+    .bind(&vk)
+    .bind(Utc::now() + Duration::days(10))
+    .bind(&env_bytes)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO entitlements (id, target_type, target_id, source, subject_id, plan, status, quantity, signed_payload, expires_at, validated_at, updated_at)
+       VALUES ($1, 'workspace', $2, 'selfhost_license', 'lic-exp-repeat', 'selfhost_team', 'active', 30, $3, $4, $5, $5)",
+    )
+    .bind(Uuid::new_v4().to_string())
+    .bind(&ws_id)
+    .bind(&env_bytes)
+    .bind(Utc::now() + Duration::days(10))
+    .bind(stale_at)
+    .execute(db.pool())
+    .await
+    .unwrap();
+
+    struct ExpiredHealthClient;
+    #[async_trait::async_trait]
+    impl SelfhostLicenseClient for ExpiredHealthClient {
+      async fn activate(&self, _key: &str, _ws: &str, _op: &str) -> Result<RemoteLicensePayload, DomainError> {
+        Err(DomainError::Unavailable("unused".into()))
+      }
+      async fn health(&self, _key: &str, _vk: &str, _ws: &str) -> Result<RemoteHealthOutcome, DomainError> {
+        Ok(RemoteHealthOutcome::Denied {
+          status: "expired",
+          reason: "license_expired".to_owned(),
+          error: DomainError::Forbidden("license_expired".to_owned()),
+        })
+      }
+      async fn update_seats(&self, _key: &str, _vk: &str, _qty: u32) -> Result<(), DomainError> {
+        Ok(())
+      }
+      async fn create_customer_portal(&self, _key: &str, _vk: &str) -> Result<String, DomainError> {
+        Ok(String::new())
+      }
+      async fn deactivate(&self, _key: &str, _vk: &str) -> Result<(), DomainError> {
+        Ok(())
+      }
+    }
+
+    let svc = SelfhostLicenseService::new(db.clone(), gate.clone(), inv.clone())
+      .with_keyring(keyring)
+      .with_client(Arc::new(ExpiredHealthClient));
+
+    // First denial transitions active -> expired and downgrades the admin to member.
+    svc.check_licenses().await.unwrap();
+    let role_after_first: String = sqlx::query_scalar(
+      "SELECT role::text FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
+    )
+    .bind(&ws_id)
+    .bind(&admin_id)
+    .fetch_one(db.pool())
+    .await
+    .unwrap();
+    assert_eq!(role_after_first, "member");
+
+    // On the fallback community grant, the owner promotes an admin and creates a new pending invitation.
+    sqlx::query("UPDATE workspace_members SET role = 'admin' WHERE workspace_id = $1 AND user_id = $2")
+      .bind(&ws_id)
+      .bind(&admin_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+    let inv_id = Uuid::new_v4().to_string();
+    sqlx::query(
+      "INSERT INTO workspace_invitations (id, workspace_id, normalized_email, requested_role, status, kind, created_at, updated_at)
+       VALUES ($1, $2, 'pending-after-exp@example.test', 'member', 'pending', 'email', now(), now())",
+    )
+    .bind(&inv_id)
+    .bind(&ws_id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+
+    // Make the license due for the next hourly health scan.
+    sqlx::query("UPDATE installed_licenses SET validated_at = $1 WHERE workspace_id = $2")
+      .bind(stale_at)
+      .bind(&ws_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+
+    // Second denial on already-expired entitlement must NOT wipe pending invite or demote admin.
+    svc.check_licenses().await.unwrap();
+    let role_after_second: String = sqlx::query_scalar(
+      "SELECT role::text FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
+    )
+    .bind(&ws_id)
+    .bind(&admin_id)
+    .fetch_one(db.pool())
+    .await
+    .unwrap();
+    assert_eq!(role_after_second, "admin");
+    let inv_still_exists: bool = sqlx::query_scalar(
+      "SELECT EXISTS(SELECT 1 FROM workspace_invitations WHERE id = $1 AND status = 'pending')",
+    )
+    .bind(&inv_id)
+    .fetch_one(db.pool())
+    .await
+    .unwrap();
+    assert!(
+      inv_still_exists,
+      "pending invitation must survive repeated expired-license health scans"
+    );
+  });
+  drop(lease);
+}

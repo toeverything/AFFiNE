@@ -1515,7 +1515,7 @@ fn schema_upgrade_reprojects_unchanged_docs_and_retires_previous_generation() {
     // No doc changes after this point.
     sqlx::query("UPDATE search_projection.generations SET schema_version = $2 WHERE id = $1")
       .bind(previous)
-      .bind(SCHEMA_FINGERPRINT - 1)
+      .bind(SCHEMA_FINGERPRINT + 1)
       .execute(&pool)
       .await
       .unwrap();

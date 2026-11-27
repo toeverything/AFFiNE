@@ -10,6 +10,9 @@ pub enum SyncError {
   #[error("bad request: {0}")]
   BadRequest(String),
 
+  #[error("validation error: {0}")]
+  ValidationError(String),
+
   #[error("query is too long (max {max})")]
   QueryTooLong { max: usize },
 

@@ -319,14 +319,7 @@ impl AppState {
       .with_app_config(services.app_config.clone())
       .with_file_json(Some(config.app_config_baseline.file_json.clone()))
       .with_shared_webhook_token(Arc::clone(&calendar_webhook_token));
-    let redis_key_prefix = config
-      .app_config_baseline
-      .file_json
-      .pointer("/redis/ioredis/keyPrefix")
-      .or_else(|| config.app_config_baseline.file_json.pointer("/redis/keyPrefix"))
-      .and_then(serde_json::Value::as_str)
-      .unwrap_or("")
-      .to_owned();
+    let redis_key_prefix = services.app_config.internal_redis_key_prefix();
     let calendar_oauth =
       CalendarOAuthStore::with_key_prefix(redis.clone(), config.session_redis_db_index, redis_key_prefix).ok();
     let mcp = McpCredentialService::new(db.clone(), Arc::clone(&services.event_bus))
@@ -1106,50 +1099,11 @@ async fn handle_graphql_post(
       rest::extract_cookie(&rest::parse_cookies(&headers), rest::SESSION_COOKIE_NAME).is_some_and(|s| !s.is_empty());
     let has_preflight = has_apollo_csrf_header(&headers);
     if has_session_cookie && !has_preflight {
-      let csrf_blocked = || {
-        graphql_bad_request_response(
-          StatusCode::BAD_REQUEST,
-          "BAD_REQUEST",
-          "This operation has been blocked as a potential Cross-Site Request Forgery (CSRF).",
-        )
-      };
-      let sec_fetch_site = headers
-        .get("sec-fetch-site")
-        .and_then(|v| v.to_str().ok())
-        .map(str::trim)
-        .filter(|s| !s.is_empty());
-      let origin = headers
-        .get(header::ORIGIN)
-        .and_then(|v| v.to_str().ok())
-        .map(str::trim)
-        .filter(|s| !s.is_empty());
-      let referer_origin = headers
-        .get(header::REFERER)
-        .and_then(|v| v.to_str().ok())
-        .and_then(rest::worker_proxy::extract_origin_from_url);
-      let allowed =
-        rest::worker_proxy::allowed_origins_for_state_async(&state, rest::worker_proxy::CorsOriginScope::Global).await;
-      let cfg_snap = state.app.config.load();
-      let allow_loopback = cfg_snap.dev_mode;
-      let origin_ok = origin.is_some_and(|o| rest::worker_proxy::is_cors_origin_allowed(o, &allowed, allow_loopback));
-      let referer_ok = referer_origin
-        .as_deref()
-        .is_some_and(|r| rest::worker_proxy::is_cors_origin_allowed(r, &allowed, allow_loopback));
-      if let Some(sfs) = sec_fetch_site
-        && (sfs.eq_ignore_ascii_case("cross-site")
-          || (sfs.eq_ignore_ascii_case("same-site") && !(origin_ok || referer_ok)))
-      {
-        return csrf_blocked();
-      }
-      if origin.is_some() && !origin_ok {
-        return csrf_blocked();
-      }
-      if referer_origin.is_some() && !referer_ok {
-        return csrf_blocked();
-      }
-      if !(origin_ok || referer_ok) {
-        return csrf_blocked();
-      }
+      return graphql_bad_request_response(
+        StatusCode::BAD_REQUEST,
+        "BAD_REQUEST",
+        "This operation has been blocked as a potential Cross-Site Request Forgery (CSRF).",
+      );
     }
   }
   let inner = match read_graphql_post(&headers, body).await {

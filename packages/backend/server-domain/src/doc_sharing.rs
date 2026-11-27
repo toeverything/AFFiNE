@@ -820,12 +820,14 @@ impl DocSharingService {
       return Err(DomainError::Conflict("doc_role_targets_changed".to_owned()));
     }
 
-    for target_user_id in &target_user_ids {
+    let base_now = Utc::now();
+    for (idx, target_user_id) in target_user_ids.iter().enumerate() {
+      let row_ts = base_now + chrono::Duration::milliseconds(idx as i64);
       let affected = sqlx::query(
-        r#"INSERT INTO doc_grants (workspace_id, doc_id, principal_type, principal_id, role, granted_by)
-           VALUES ($1, $2, 'user', $3, $4, $5)
+        r#"INSERT INTO doc_grants (workspace_id, doc_id, principal_type, principal_id, role, granted_by, created_at, updated_at)
+           VALUES ($1, $2, 'user', $3, $4, $5, $6, $6)
            ON CONFLICT (workspace_id, doc_id, principal_type, principal_id)
-           DO UPDATE SET role = EXCLUDED.role, granted_by = EXCLUDED.granted_by, updated_at = now()
+           DO UPDATE SET role = EXCLUDED.role, granted_by = EXCLUDED.granted_by, updated_at = EXCLUDED.updated_at
            WHERE doc_grants.role <> 'owner'"#,
       )
       .bind(workspace_id)
@@ -833,6 +835,7 @@ impl DocSharingService {
       .bind(target_user_id)
       .bind(new_role.as_str())
       .bind(actor_user_id)
+      .bind(row_ts)
       .execute(&mut **tx.tx_mut())
       .await
       .map_err(|e| DomainError::Internal(format!("grant doc role: {e}")))?

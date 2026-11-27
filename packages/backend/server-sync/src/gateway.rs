@@ -366,19 +366,34 @@ impl SpaceSyncGateway {
               "sentAt": chrono::Utc::now().timestamp_millis(),
               "event": event_val,
             });
+            let mut auth_cache: HashMap<String, RealtimeAuthDecision> = HashMap::new();
             for (sid, user_id_opt) in recipients_with_users {
               if needs_auth_check {
-                let allowed = match user_id_opt.as_deref() {
-                  Some(uid) => gateway.is_realtime_room_authorized(&room, uid).await,
-                  None => false,
+                let decision = match user_id_opt.as_deref() {
+                  Some(uid) => {
+                    if let Some(&cached) = auth_cache.get(uid) {
+                      cached
+                    } else {
+                      let d = gateway.is_realtime_room_authorized(&room, uid).await;
+                      auth_cache.insert(uid.to_owned(), d);
+                      d
+                    }
+                  }
+                  None => RealtimeAuthDecision::Denied,
                 };
-                if !allowed {
-                  let mut rooms = gateway.rooms.write().await;
-                  rooms
-                    .realtime_subscriptions
-                    .retain(|_, (other_sid, other_room)| !(other_sid == &sid && other_room == &room));
-                  rooms.leave_room(&sid, &room);
-                  continue;
+                match decision {
+                  RealtimeAuthDecision::Allowed => {}
+                  RealtimeAuthDecision::Denied => {
+                    let mut rooms = gateway.rooms.write().await;
+                    rooms
+                      .realtime_subscriptions
+                      .retain(|_, (other_sid, other_room)| !(other_sid == &sid && other_room == &room));
+                    rooms.leave_room(&sid, &room);
+                    continue;
+                  }
+                  RealtimeAuthDecision::TransientError => {
+                    continue;
+                  }
                 }
               }
               engine.emit_to_socket(&sid, "realtime:event", &body).await;
@@ -647,9 +662,17 @@ impl SpaceSyncGateway {
         .collect()
     };
 
+    let mut rt_auth_cache: HashMap<(String, String), RealtimeAuthDecision> = HashMap::new();
     for (sub_id, sid, user_id, room) in rt_candidates {
-      let still_allowed = self.is_realtime_room_authorized(&room, &user_id).await;
-      if !still_allowed {
+      let cache_key = (user_id.clone(), room.clone());
+      let decision = if let Some(&cached) = rt_auth_cache.get(&cache_key) {
+        cached
+      } else {
+        let res = self.is_realtime_room_authorized(&room, &user_id).await;
+        rt_auth_cache.insert(cache_key, res);
+        res
+      };
+      if decision == RealtimeAuthDecision::Denied {
         let mut rooms = self.rooms.write().await;
         if rooms.realtime_subscriptions.remove(&sub_id).is_some() {
           let still_in_room = rooms
@@ -775,47 +798,40 @@ impl SpaceSyncGateway {
     }
   }
 
-  async fn is_realtime_room_authorized(&self, room: &str, user_id: &str) -> bool {
-    if let Some((ws_id, doc_id, topic)) = parse_doc_realtime_room(room) {
+  async fn is_realtime_room_authorized(&self, room: &str, user_id: &str) -> RealtimeAuthDecision {
+    let res = if let Some((ws_id, doc_id, topic)) = parse_doc_realtime_room(room) {
       self
         .storage
         .assert_doc_realtime_topic_access(ws_id, doc_id, user_id, topic)
         .await
-        .is_ok()
     } else if let Some((ws_id, task_id)) = room.strip_prefix("copilot:transcript:").and_then(|r| r.split_once(':')) {
       self
         .storage
         .copilot_realtime_authorize_transcript_task(user_id, ws_id, task_id)
         .await
-        .is_ok()
     } else if let Some((ws_id, kind)) = room.strip_prefix("workspace:").and_then(|r| r.rsplit_once(':')) {
       match kind {
-        "config" => self
-          .storage
-          .assert_space_accessible(SpaceType::Workspace, ws_id, user_id)
-          .await
-          .is_ok(),
-        "access" | "quota-state" => self.storage.assert_workspace_readable(ws_id, user_id).await.is_ok(),
-        "members" => self
-          .storage
-          .assert_workspace_members_readable(ws_id, user_id)
-          .await
-          .is_ok(),
-        "invite-link" => self
-          .storage
-          .assert_workspace_invite_manage(ws_id, user_id)
-          .await
-          .is_ok(),
-        "embedding-progress" => self
-          .storage
-          .copilot_realtime_authorize_embedding_progress(user_id, ws_id)
-          .await
-          .is_ok(),
-        _ => true,
+        "config" => {
+          self
+            .storage
+            .assert_space_accessible(SpaceType::Workspace, ws_id, user_id)
+            .await
+        }
+        "access" | "quota-state" => self.storage.assert_workspace_readable(ws_id, user_id).await,
+        "members" => self.storage.assert_workspace_members_readable(ws_id, user_id).await,
+        "invite-link" => self.storage.assert_workspace_invite_manage(ws_id, user_id).await,
+        "embedding-progress" => {
+          self
+            .storage
+            .copilot_realtime_authorize_embedding_progress(user_id, ws_id)
+            .await
+        }
+        _ => Ok(()),
       }
     } else {
-      true
-    }
+      Ok(())
+    };
+    classify_realtime_auth_result(res)
   }
 
   async fn on_join_batch(&self, socket_id: &str, user: &SyncUser, payload: &Value) -> Result<EventResponse, SyncError> {
@@ -1210,13 +1226,24 @@ impl SpaceSyncGateway {
     }
 
     if msg.space_type == SpaceType::Workspace {
+      let aliases = self.storage.get_doc_id_aliases(&msg.space_id).await?;
+      let (storage_doc_id, logical_doc_id, require_deleted, has_storage_identity_conflict) =
+        resolve_delete_doc_target(&doc_id, None, &aliases);
       self
         .storage
-        .apply_doc_lifecycle(&msg.space_id, &doc_id, None, &user.id, DocLifecycleAction::Delete)
+        .apply_doc_lifecycle_with_options(
+          &msg.space_id,
+          &storage_doc_id,
+          logical_doc_id.as_deref(),
+          &user.id,
+          DocLifecycleAction::Delete,
+          require_deleted,
+          has_storage_identity_conflict,
+        )
         .await?;
       self
         .eventbus
-        .publish_workspace_inventory_changed(&msg.space_id, Some(&doc_id))
+        .publish_workspace_inventory_changed(&msg.space_id, Some(&storage_doc_id))
         .await;
     } else {
       if msg.space_id != user.id {
@@ -1261,22 +1288,17 @@ impl SpaceSyncGateway {
     }
 
     let aliases = self.storage.get_doc_id_aliases(&msg.space_id).await?;
-    let resolved_doc_id = aliases.get(&doc_id).cloned().unwrap_or_else(|| doc_id.clone());
     let phys_canonical = match msg.physical_doc_id.as_deref() {
       Some(phys) => Some(canonical_doc_id(phys, &msg.space_id)?),
       None => None,
     };
-    let storage_doc_id = if action == DocLifecycleAction::Delete {
-      phys_canonical.unwrap_or_else(|| resolved_doc_id.clone())
-    } else {
-      resolved_doc_id.clone()
-    };
-    let logical_doc_id = (action == DocLifecycleAction::Delete && storage_doc_id != doc_id).then_some(doc_id.clone());
-    let has_storage_identity_conflict = action == DocLifecycleAction::Delete
-      && storage_doc_id != doc_id
-      && aliases.iter().any(|(l, s)| l != &doc_id && s == &doc_id);
-    let require_deleted = action == DocLifecycleAction::Delete
-      && (has_storage_identity_conflict || (msg.physical_doc_id.is_some() && storage_doc_id != resolved_doc_id));
+    let (storage_doc_id, logical_doc_id, require_deleted, has_storage_identity_conflict) =
+      if action == DocLifecycleAction::Delete {
+        resolve_delete_doc_target(&doc_id, phys_canonical.as_deref(), &aliases)
+      } else {
+        let resolved_doc_id = aliases.get(&doc_id).cloned().unwrap_or_else(|| doc_id.clone());
+        (resolved_doc_id, None, false, false)
+      };
 
     let result = self
       .storage
@@ -1438,7 +1460,7 @@ impl SpaceSyncGateway {
         let raw_skip = input.get("skip").and_then(Value::as_i64).unwrap_or(0);
         let raw_take = input.get("take").and_then(Value::as_i64).unwrap_or(8);
         if raw_skip < 0 || raw_take < 0 {
-          return Err(SyncError::BadRequest("skip and take must be non-negative".into()));
+          return Err(SyncError::ValidationError("skip and take must be non-negative".into()));
         }
         let skip = raw_skip;
         let take = raw_take.clamp(1, 100);
@@ -2055,6 +2077,30 @@ fn realtime_input_key(input: &Value) -> String {
   }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum RealtimeAuthDecision {
+  Allowed,
+  Denied,
+  TransientError,
+}
+
+fn classify_realtime_auth_result(res: Result<(), SyncError>) -> RealtimeAuthDecision {
+  match res {
+    Ok(()) => RealtimeAuthDecision::Allowed,
+    Err(
+      SyncError::SpaceAccessDenied { .. }
+      | SyncError::NotInSpace { .. }
+      | SyncError::AccessDenied(_)
+      | SyncError::DocActionDenied { .. }
+      | SyncError::DocNotFound { .. }
+      | SyncError::UserNotFound
+      | SyncError::SpaceOwnerNotFound { .. }
+      | SyncError::CopilotDisabled,
+    ) => RealtimeAuthDecision::Denied,
+    Err(_) => RealtimeAuthDecision::TransientError,
+  }
+}
+
 /// Validates realtime `clientVersion` (`>= 0.26.0-0` or valid canary date version
 /// when `allow_canary` is enabled).
 fn is_supported_realtime_client_version(ver: &str, allow_canary: bool) -> bool {
@@ -2074,4 +2120,83 @@ fn is_supported_realtime_client_version(ver: &str, allow_canary: bool) -> bool {
     return false;
   };
   (maj == 0 && min >= 26) || (maj > 0 && maj < 2000)
+}
+
+fn resolve_delete_doc_target(
+  doc_id: &str,
+  physical_doc_id: Option<&str>,
+  aliases: &HashMap<String, String>,
+) -> (String, Option<String>, bool, bool) {
+  let resolved_doc_id = aliases.get(doc_id).cloned().unwrap_or_else(|| doc_id.to_owned());
+  let storage_doc_id = physical_doc_id
+    .map(str::to_owned)
+    .unwrap_or_else(|| resolved_doc_id.clone());
+  let logical_doc_id = (storage_doc_id != doc_id).then(|| doc_id.to_owned());
+  let has_storage_identity_conflict =
+    storage_doc_id != doc_id && aliases.iter().any(|(l, s)| l != doc_id && s == doc_id);
+  let require_deleted =
+    has_storage_identity_conflict || (physical_doc_id.is_some() && storage_doc_id != resolved_doc_id);
+  (
+    storage_doc_id,
+    logical_doc_id,
+    require_deleted,
+    has_storage_identity_conflict,
+  )
+}
+
+#[cfg(test)]
+mod realtime_auth_tests {
+  use super::*;
+
+  #[test]
+  fn delete_doc_target_flags_storage_identity_conflict_when_another_alias_owns_logical_id() {
+    let mut aliases = HashMap::new();
+    aliases.insert("doc-a".to_owned(), "doc-b".to_owned());
+    aliases.insert("doc-other".to_owned(), "doc-a".to_owned());
+
+    let (storage_id, logical_id, require_deleted, has_conflict) = resolve_delete_doc_target("doc-a", None, &aliases);
+    assert_eq!(storage_id, "doc-b");
+    assert_eq!(logical_id.as_deref(), Some("doc-a"));
+    assert!(has_conflict);
+    assert!(require_deleted);
+
+    let mut clean_aliases = HashMap::new();
+    clean_aliases.insert("doc-a".to_owned(), "doc-b".to_owned());
+    let (storage_id, logical_id, require_deleted, has_conflict) =
+      resolve_delete_doc_target("doc-a", None, &clean_aliases);
+    assert_eq!(storage_id, "doc-b");
+    assert_eq!(logical_id.as_deref(), Some("doc-a"));
+    assert!(!has_conflict);
+    assert!(!require_deleted);
+  }
+
+  #[test]
+  fn realtime_auth_classification_distinguishes_denied_from_transient_errors() {
+    assert_eq!(classify_realtime_auth_result(Ok(())), RealtimeAuthDecision::Allowed);
+    for denied in [
+      SyncError::SpaceAccessDenied {
+        space_id: "ws-1".to_owned(),
+      },
+      SyncError::NotInSpace {
+        space_id: "ws-1".to_owned(),
+      },
+      SyncError::AccessDenied("forbidden".to_owned()),
+      SyncError::DocActionDenied {
+        space_id: "ws-1".to_owned(),
+        doc_id: "doc-1".to_owned(),
+        action: "Doc.Read".to_owned(),
+      },
+      SyncError::DocNotFound {
+        space_id: "ws-1".to_owned(),
+        doc_id: "doc-1".to_owned(),
+      },
+      SyncError::UserNotFound,
+    ] {
+      assert_eq!(classify_realtime_auth_result(Err(denied)), RealtimeAuthDecision::Denied);
+    }
+    assert_eq!(
+      classify_realtime_auth_result(Err(SyncError::Database("connection reset".to_owned()))),
+      RealtimeAuthDecision::TransientError
+    );
+  }
 }

@@ -347,14 +347,14 @@ async fn enforce_copilot_enabled(state: &AppState) -> std::result::Result<(), Do
     .and_then(serde_json::Value::as_bool)
     .unwrap_or(true);
   if !cfg_enabled {
-    return Err(DomainError::Forbidden("copilot_disabled".to_owned()));
+    return Err(DomainError::Forbidden("Copilot is disabled.".to_owned()));
   }
   state
     .extension
     .copilot_runtime()
     .assert_enabled(cfg_enabled)
     .await
-    .map_err(|_| DomainError::Forbidden("copilot_disabled".to_owned()))
+    .map_err(|_| DomainError::Forbidden("Copilot is disabled.".to_owned()))
 }
 
 /// Keeps the upload in its multipart temporary file. The transcript runtime

@@ -302,7 +302,7 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
           data: Some(serde_json::json!({ "name": prompt_name })),
         };
       }
-      if msg == "invalid_invitation" || msg == "Invitation not found" {
+      if msg == "invalid_invitation" || msg.eq_ignore_ascii_case("invitation not found") {
         return LegacyErrorEnvelope {
           status: StatusCode::BAD_REQUEST.as_u16(),
           code: "Bad Request".into(),

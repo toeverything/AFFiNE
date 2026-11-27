@@ -116,13 +116,22 @@ pub(crate) fn mcp_read_write_available(state: &AppState) -> bool {
   let cfg = state.config.load();
   cfg.dev_mode || cfg.channel == "canary"
 }
-/// Checks `@CopilotEnabled()` strictly through [`server_spi::CopilotRuntimeSpi`].
-pub(crate) fn assert_copilot_enabled(state: &AppState) -> std::result::Result<(), DomainError> {
-  if state.extension.copilot_runtime().is_enabled() {
-    Ok(())
-  } else {
-    Err(DomainError::Forbidden("Copilot is disabled.".to_owned()))
+/// Checks `@CopilotEnabled()` dynamically via `app_configs` and [`server_spi::CopilotRuntimeSpi`].
+pub(crate) async fn assert_copilot_enabled(state: &AppState) -> std::result::Result<(), DomainError> {
+  let cfg = state.app_config.get_effective_app_config_arc().await?;
+  let cfg_enabled = cfg
+    .pointer("/copilot/enabled")
+    .and_then(serde_json::Value::as_bool)
+    .unwrap_or(true);
+  if !cfg_enabled {
+    return Err(DomainError::Forbidden("Copilot is disabled.".to_owned()));
   }
+  state
+    .extension
+    .copilot_runtime()
+    .assert_enabled(cfg_enabled)
+    .await
+    .map_err(|_| DomainError::Forbidden("Copilot is disabled.".to_owned()))
 }
 fn gql_err(e: DomainError) -> async_graphql::Error {
   domain_error_to_graphql(&e)
@@ -130,7 +139,7 @@ fn gql_err(e: DomainError) -> async_graphql::Error {
 async fn auth_copilot_workspace(ctx: &Context<'_>, workspace_id: &str) -> Result<(String, Arc<AppState>)> {
   let user = require_authenticated_user(ctx).await?;
   let state = Arc::clone(ctx.data_unchecked::<Arc<AppState>>());
-  assert_copilot_enabled(&state).map_err(gql_err)?;
+  assert_copilot_enabled(&state).await.map_err(gql_err)?;
   let perms = state
     .workspaces
     .resolve_workspace_permissions(&user.id, workspace_id)
@@ -163,7 +172,7 @@ impl McpQuery {
   async fn mcp_credential_read_write_available(&self, ctx: &Context<'_>) -> Result<bool> {
     let _user = require_authenticated_user(ctx).await?;
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    assert_copilot_enabled(state).map_err(gql_err)?;
+    assert_copilot_enabled(state).await.map_err(gql_err)?;
     Ok(mcp_read_write_available(state))
   }
 }

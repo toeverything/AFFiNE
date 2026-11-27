@@ -1370,16 +1370,38 @@ impl SelfhostLicenseService {
     .await
     .map_err(|e| DomainError::Internal(format!("touch denied license validated_at: {e}")))?;
 
+    let had_active_or_grace: bool = sqlx::query_scalar(
+      r#"SELECT EXISTS(
+           SELECT 1 FROM entitlements
+           WHERE source = 'selfhost_license'
+             AND target_type = 'workspace'
+             AND target_id = $1
+             AND subject_id = $2
+             AND status IN ('active', 'grace')
+         )"#,
+    )
+    .bind(&row.workspace_id)
+    .bind(&row.key)
+    .fetch_one(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("check pre-denial license status: {e}")))?;
+
+    let before_grant = self
+      .quota_gate
+      .resolve_workspace_grant(tx.tx_mut(), &row.workspace_id, now)
+      .await?;
+
     let updated = sqlx::query(
       r#"UPDATE entitlements
          SET status = $3,
              metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('errorCode', $4::text, 'errorMessage', $4::text),
+             validated_at = $5,
              updated_at = $5
          WHERE source = 'selfhost_license'
            AND target_type = 'workspace'
            AND target_id = $1
            AND subject_id = $2
-           AND status IN ('active', 'grace')"#,
+           AND status <> 'revoked'"#,
     )
     .bind(&row.workspace_id)
     .bind(&row.key)
@@ -1391,14 +1413,24 @@ impl SelfhostLicenseService {
     .map_err(|e| DomainError::Internal(format!("update denied license entitlement: {e}")))?
     .rows_affected();
 
-    if updated > 0 {
+    let after_grant = self
+      .quota_gate
+      .resolve_workspace_grant(tx.tx_mut(), &row.workspace_id, now)
+      .await?;
+
+    let downgraded = updated > 0
+      && ((had_active_or_grace && !matches!(status, "active" | "grace"))
+        || before_grant.tier != after_grant.tier
+        || before_grant.limits.seat_limit > after_grant.limits.seat_limit);
+
+    if downgraded {
       downgrade_workspace_after_license_loss_in_tx(tx.tx_mut(), &row.workspace_id, now).await?;
     }
 
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit license denial: {e}")))?;
-    if updated > 0 {
+    if downgraded {
       self.publish_license_invalidation(&row.workspace_id).await;
       Ok(true)
     } else {

@@ -576,7 +576,7 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
       .invite_member(&admin.user.id, &ws.id, "member2@affine.test", WorkspaceRole::Member)
       .await
       .expect_err("3rd seat must be rejected by TwoSeatQuotaGate");
-    assert!(matches!(over, DomainError::QuotaExceeded { kind: "seat_limit", .. }));
+    assert!(matches!(&over, DomainError::Forbidden(msg) if msg == &format!("no_more_seat:{}", ws.id)));
 
     let accepted = ws_service.accept_invitation(&member1.user.id, &inv1.id).await.unwrap();
     assert_eq!(accepted.role, WorkspaceRole::Member);

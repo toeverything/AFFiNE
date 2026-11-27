@@ -452,6 +452,9 @@ impl SearchRuntime {
     workspace_id: &str,
     request: SearchRequest,
   ) -> SearchResult<Value> {
+    if !self.config.enabled {
+      return Err(SearchError::ProviderUnavailable);
+    }
     for attempt in 0..=1 {
       let (scope, legacy, generation, required_permission_version) = self
         .prepare_authorized_query_snapshot(actor_user_id, workspace_id)
@@ -483,6 +486,9 @@ impl SearchRuntime {
     workspace_id: &str,
     request: AggregateRequest,
   ) -> SearchResult<Value> {
+    if !self.config.enabled {
+      return Err(SearchError::ProviderUnavailable);
+    }
     for attempt in 0..=1 {
       let (scope, legacy, generation, required_permission_version) = self
         .prepare_authorized_query_snapshot(actor_user_id, workspace_id)

@@ -516,14 +516,14 @@ impl AuthService {
         .and_then(Value::as_i64)
         .filter(|&v| v > 0)
       {
-        rt.session_ttl_seconds = ttl;
+        rt.session_ttl_seconds = ttl.clamp(60, 86_400 * 365 * 5);
       }
       if let Some(ttr) = eff
         .pointer("/auth/session/ttr")
         .and_then(Value::as_i64)
         .filter(|&v| v >= 0)
       {
-        rt.session_ttr_seconds = ttr;
+        rt.session_ttr_seconds = ttr.clamp(0, 86_400 * 365 * 5);
       }
       return rt;
     }
@@ -586,20 +586,20 @@ impl AuthService {
           }
           "auth.session.ttl" => {
             if let Some(ttl) = val.as_i64().filter(|&v| v > 0) {
-              rt.session_ttl_seconds = ttl;
+              rt.session_ttl_seconds = ttl.clamp(60, 86_400 * 365 * 5);
             }
           }
           "auth.session.ttr" => {
             if let Some(ttr) = val.as_i64().filter(|&v| v >= 0) {
-              rt.session_ttr_seconds = ttr;
+              rt.session_ttr_seconds = ttr.clamp(0, 86_400 * 365 * 5);
             }
           }
           "auth.session" => {
             if let Some(ttl) = val.get("ttl").and_then(Value::as_i64).filter(|&v| v > 0) {
-              rt.session_ttl_seconds = ttl;
+              rt.session_ttl_seconds = ttl.clamp(60, 86_400 * 365 * 5);
             }
             if let Some(ttr) = val.get("ttr").and_then(Value::as_i64).filter(|&v| v >= 0) {
-              rt.session_ttr_seconds = ttr;
+              rt.session_ttr_seconds = ttr.clamp(0, 86_400 * 365 * 5);
             }
           }
           _ => {}

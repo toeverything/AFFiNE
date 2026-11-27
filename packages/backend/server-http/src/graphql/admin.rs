@@ -968,22 +968,46 @@ pub(crate) async fn mutate_update_app_config(
       .await
       .map_err(|e| domain_error_to_graphql(&e))?;
   }
-  let touched_modules: std::collections::BTreeSet<String> = domain_updates
-    .iter()
-    .filter_map(|u| u.key.split('.').next())
-    .map(str::trim)
-    .filter(|m| !m.is_empty())
-    .map(str::to_owned)
-    .collect();
-  let mut filtered = serde_json::Map::new();
-  if let Some(obj) = effective.as_object() {
-    for module in touched_modules {
-      if let Some(val) = obj.get(&module) {
-        filtered.insert(module, val.clone());
+  let mut filtered = serde_json::Value::Object(serde_json::Map::new());
+  for update in &domain_updates {
+    if server_domain::app_config::is_secret_config_key(&update.key) {
+      continue;
+    }
+    let segments: Vec<&str> = update.key.split('.').map(str::trim).filter(|s| !s.is_empty()).collect();
+    if segments.is_empty() {
+      continue;
+    }
+    let mut cur = &effective;
+    let mut found = true;
+    for seg in &segments {
+      if let Some(next) = cur.get(*seg) {
+        cur = next;
+      } else {
+        found = false;
+        break;
+      }
+    }
+    if found {
+      let mut dst = &mut filtered;
+      for (i, seg) in segments.iter().enumerate() {
+        if i + 1 == segments.len() {
+          if let Some(map) = dst.as_object_mut() {
+            map.insert((*seg).to_owned(), cur.clone());
+          }
+        } else {
+          if !dst.is_object() {
+            *dst = serde_json::Value::Object(serde_json::Map::new());
+          }
+          dst = dst
+            .as_object_mut()
+            .unwrap()
+            .entry((*seg).to_owned())
+            .or_insert_with(|| serde_json::Value::Object(serde_json::Map::new()));
+        }
       }
     }
   }
-  Ok(JsonObjectScalar(serde_json::Value::Object(filtered)))
+  Ok(JsonObjectScalar(filtered))
 }
 
 pub(crate) async fn mutate_send_test_email(ctx: &Context<'_>, config: JsonObjectScalar) -> Result<bool> {

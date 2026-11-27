@@ -914,7 +914,7 @@ fn camel_case_object(map: Option<&Map<String, JsonValue>>) -> Map<String, JsonVa
           .map(|v| {
             v.as_i64()
               .and_then(DateTime::from_timestamp_millis)
-              .map(|dt| JsonValue::String(dt.to_rfc3339()))
+              .map(|dt| JsonValue::String(dt.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)))
               .unwrap_or_else(|| v.clone())
           })
           .collect(),

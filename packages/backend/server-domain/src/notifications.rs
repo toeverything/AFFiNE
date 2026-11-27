@@ -364,7 +364,23 @@ impl NotificationService {
     .map_err(|e| DomainError::Internal(format!("insert mention notification: {e}")))?;
 
     let base = self.base_url.trim_end_matches('/');
-    let doc_url = format!("{base}/workspace/{workspace_id}/{}", doc.id);
+    let query_str = {
+      let mut qs = url::form_urlencoded::Serializer::new(String::new());
+      if !doc.mode.is_empty() {
+        qs.append_pair("mode", &doc.mode);
+      }
+      if let Some(ref block_id) = doc.block_id
+        && !block_id.is_empty()
+      {
+        qs.append_pair("blockIds", block_id);
+      }
+      qs.finish()
+    };
+    let doc_url = if query_str.is_empty() {
+      format!("{base}/workspace/{workspace_id}/{}", doc.id)
+    } else {
+      format!("{base}/workspace/{workspace_id}/{}?{query_str}", doc.id)
+    };
     let actor_email: String = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
       .bind(actor_user_id)
       .fetch_optional(&mut **tx.tx_mut())
@@ -376,7 +392,7 @@ impl NotificationService {
       EnqueueNotificationMail {
         private_key: &private_key,
         mail_name: "Mention",
-        mail_class: "doc_mention",
+        mail_class: "collaboration_notice",
         recipient_user_id: target_user_id,
         actor_user_id: Some(actor_user_id),
         workspace_id: Some(workspace_id),
@@ -495,7 +511,7 @@ async fn load_workspace_display_name_in_tx(
       }
     }
   }
-  Ok("Untitled".to_owned())
+  Ok("Untitled Workspace".to_owned())
 }
 
 pub fn compute_recipient_hash(private_key: &str, email: &str) -> String {

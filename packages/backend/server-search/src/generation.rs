@@ -241,18 +241,12 @@ pub async fn cleanup_retired_generation(
   let retain_failure_marker: bool = row
     .try_get("retain_failure_marker")
     .map_err(|error| SearchError::database("decode retired search generation state", error))?;
-  let schema_version: i32 = row
-    .try_get("schema_version")
-    .map_err(|error| SearchError::database("decode retired search generation schema", error))?;
   let generation = decode(row)?;
   if let Some(provider) = remote {
-    // Preserve schema_version <= 1 remote physical tables for cross-generation v0.27.5 read coexistence.
-    if schema_version > 1 {
-      for table in [SearchTable::Doc, SearchTable::Block] {
-        provider
-          .drop_generation_asset(generation.physical_table(table)?)
-          .await?;
-      }
+    for table in [SearchTable::Doc, SearchTable::Block] {
+      provider
+        .drop_generation_asset(generation.physical_table(table)?)
+        .await?;
     }
   } else {
     embedded.remove_generation(generation.id).await;

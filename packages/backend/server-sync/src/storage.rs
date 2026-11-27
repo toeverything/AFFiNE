@@ -380,6 +380,7 @@ pub struct SyncStorage {
   session_redis: UserspaceRedisLockBackend,
   pub(super) cache_redis: Option<redis::Client>,
   pub(super) cache_redis_conn: Arc<tokio::sync::Mutex<Option<redis::aio::MultiplexedConnection>>>,
+  pub(super) redis_key_prefix: String,
   pub(super) external_url: String,
   pub(super) copilot_realtime: Option<Arc<dyn CopilotRealtimeHandler>>,
   pub(super) available_user_features: &'static [&'static str],
@@ -423,6 +424,7 @@ impl SyncStorage {
       session_redis: UserspaceRedisLockBackend::Disabled,
       cache_redis: None,
       cache_redis_conn: Arc::new(tokio::sync::Mutex::new(None)),
+      redis_key_prefix: String::new(),
       external_url: String::new(),
       copilot_realtime: None,
       available_user_features: &["administrator"],
@@ -442,6 +444,11 @@ impl SyncStorage {
 
   pub fn with_external_url(mut self, external_url: impl Into<String>) -> Self {
     self.external_url = external_url.into();
+    self
+  }
+
+  pub fn with_redis_key_prefix(mut self, prefix: impl Into<String>) -> Self {
+    self.redis_key_prefix = prefix.into();
     self
   }
 
@@ -1761,11 +1768,11 @@ impl SyncStorage {
       .map(|dt| dt.with_timezone(&Utc));
 
     let (take, explicit_limit) = match first {
-      Some(raw) => {
-        let limit = raw.clamp(0, 10_000);
+      Some(raw) if raw > 0 => {
+        let limit = raw.min(10_000);
         (limit.saturating_add(1), Some(limit))
       }
-      None => (10_000, None),
+      _ => (10_000, None),
     };
     let mut changes = svc
       .list_comment_changes(

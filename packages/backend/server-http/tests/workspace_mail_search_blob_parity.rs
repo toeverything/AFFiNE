@@ -521,8 +521,13 @@ async fn workspace_doc_notification_config_and_error_parity() {
   );
   assert_eq!(
     submit_transcript_res["errors"][0]["extensions"]["name"].as_str(),
-    Some("COPILOT_DISABLED"),
-    "community submitTranscriptTask must return COPILOT_DISABLED: {submit_transcript_res}"
+    Some("ACTION_FORBIDDEN"),
+    "community submitTranscriptTask must return ACTION_FORBIDDEN: {submit_transcript_res}"
+  );
+  assert_eq!(
+    submit_transcript_res["errors"][0]["extensions"]["message"].as_str(),
+    Some("Copilot is disabled."),
+    "community submitTranscriptTask must fail closed: {submit_transcript_res}"
   );
 
   // 13. invoices rejects negative take/skip with 400.

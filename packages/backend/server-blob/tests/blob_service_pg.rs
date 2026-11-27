@@ -411,14 +411,18 @@ fn quota_admission_rejects_blob_limit_storage_quota_readonly_and_missing_workspa
       }
     }
     assert!(matches!(
-      service.put_blob(&ws, "pending", "a/b", vec![0; 5]).await,
+      service.put_blob(&ws, "pending", "c/d", vec![0; 5]).await,
       Err(DomainError::Conflict(message)) if message == "blob upload is pending"
+    ));
+    assert!(matches!(
+      service.put_blob(&ws, "pending", "a/b", vec![0; 5]).await,
+      Ok(PutBlobOutcome::Created(_))
     ));
 
     let readonly = fx.service(1 << 20, 1 << 30, 0);
     assert_eq!(
       quota_kind(readonly.put_blob(&ws, "ro", "a/b", vec![1]).await),
-      "blob_limit"
+      "storage_quota"
     );
 
     let missing = uuid::Uuid::new_v4().to_string();
@@ -768,13 +772,26 @@ fn reconcile_storage_orphans_exempts_copilot_and_artifact_prefixes() {
       inner: LocalFsBlobStorage::new(dir.to_str().unwrap(), "blobs").unwrap(),
       age_backdate: chrono::Duration::hours(48),
     });
+    sqlx::query("INSERT INTO users (id, name, email) VALUES ('u-1', 'Copilot User', 'u1@example.com')")
+      .execute(db.pool())
+      .await
+      .unwrap();
+    sqlx::query("INSERT INTO workspaces (id) VALUES ('ws-1')")
+      .execute(db.pool())
+      .await
+      .unwrap();
     let exempted = [
       "copilot/transcript/ws-1/u-1/t-1/0",
       "copilot/artifacts/ws-1/doc-1/art-1",
       "copilot-attachments/ws-1/att-1",
-      "artifacts/ws-1/art-2",
     ];
-    for key in exempted {
+    let live_copilot = [
+      "artifacts/ws-1/art-2",
+      "workspace-files/ws-1/file-1",
+      "context-files/ws-1/ctx-1",
+      "u-1/ws-1/chat-att-1",
+    ];
+    for key in exempted.into_iter().chain(live_copilot) {
       storage
         .put(key, b"keep-me".to_vec(), "application/octet-stream")
         .await
@@ -802,10 +819,10 @@ fn reconcile_storage_orphans_exempts_copilot_and_artifact_prefixes() {
     assert!(report.leased);
     assert_eq!(report.deleted_objects, 1);
     assert_eq!(report.skipped_unknown_prefix, exempted.len());
-    for key in exempted {
+    for key in exempted.into_iter().chain(live_copilot) {
       assert!(
         storage.get(key).await.unwrap().is_some(),
-        "exempted key must survive orphan reconciliation: {key}"
+        "live/exempted key must survive orphan reconciliation: {key}"
       );
     }
     assert!(storage.get("deleted-ws-999/stale-orphan").await.unwrap().is_none());
@@ -895,5 +912,128 @@ fn owner_storage_quota_aggregates_past_64_personal_workspaces() {
       .put_blob(&ws_ids[65], "blob-66", "application/octet-stream", vec![b'b'; 20])
       .await;
     assert_eq!(quota_kind(err), "storage_quota");
+  });
+}
+
+#[test]
+fn reconcile_cleans_only_ownerless_workspaces_older_than_24h_and_their_orphan_rows() {
+  let lease = leased_0275_database();
+  runtime().block_on(async {
+    let db = ServerDb::connect(DbConfig::new(lease.url())).await.expect("connect db");
+    sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+      .execute(db.pool())
+      .await
+      .expect("reset schema");
+    db.ensure_schema_ready().await.expect("ensure schema ready");
+
+    let dir = std::env::temp_dir().join(format!("server-blob-ownerless-{}", uuid::Uuid::new_v4().simple()));
+    let _guard = TempDir(dir.clone());
+    let storage = Arc::new(LocalFsBlobStorage::new(dir.to_str().unwrap(), "blobs").unwrap());
+
+    let owner_id = "u-owner-live";
+    sqlx::query("INSERT INTO users (id, name, email) VALUES ($1, 'Owner', 'owner-live@example.test')")
+      .bind(owner_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+
+    let ws_owned_old = "ws-owned-old";
+    let ws_ownerless_new = "ws-ownerless-new";
+    let ws_ownerless_old = "ws-ownerless-old";
+
+    // (a) Active owner + older than 24h -> must be retained.
+    sqlx::query("INSERT INTO workspaces (id, created_at) VALUES ($1, clock_timestamp() - interval '48 hours')")
+      .bind(ws_owned_old)
+      .execute(db.pool())
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO workspace_members (id, workspace_id, user_id, role, source, state, created_at, updated_at)
+       VALUES ($1, $2, $3, 'owner', 'legacy', 'active', now(), now())",
+    )
+    .bind(uuid::Uuid::new_v4().to_string())
+    .bind(ws_owned_old)
+    .bind(owner_id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+
+    // (b) Ownerless + younger than 24h -> must be retained.
+    sqlx::query("INSERT INTO workspaces (id, created_at) VALUES ($1, clock_timestamp() - interval '2 hours')")
+      .bind(ws_ownerless_new)
+      .execute(db.pool())
+      .await
+      .unwrap();
+
+    // (c) Ownerless + older than 24h + dependent rows -> must be deleted with its rows.
+    sqlx::query("INSERT INTO workspaces (id, created_at) VALUES ($1, clock_timestamp() - interval '48 hours')")
+      .bind(ws_ownerless_old)
+      .execute(db.pool())
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO blobs (workspace_id, key, mime, size, status, created_at)
+       VALUES ($1, 'orphan-blob-1', 'application/octet-stream', 10, 'completed', now())",
+    )
+    .bind(ws_ownerless_old)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints (kind, scope, status, metadata, updated_at)
+       VALUES ('doc_blob_refs', $1, 'running', '{}'::jsonb, now())",
+    )
+    .bind(ws_ownerless_old)
+    .execute(db.pool())
+    .await
+    .unwrap();
+
+    let service = BlobService::new(
+      db.clone(),
+      storage,
+      Arc::new(FixedQuotaGate {
+        blob_limit: 1 << 20,
+        storage_quota: 1 << 30,
+        seat_limit: 10,
+      }),
+    );
+
+    let report = service
+      .reconcile_storage_orphans(100, &|| false)
+      .await
+      .expect("reconcile ownerless workspaces");
+    assert_eq!(report.deleted_ownerless_workspaces, 1);
+    assert!(report.deleted_orphan_rows >= 1);
+
+    let exists = |ws: &str| {
+      let pool = db.pool().clone();
+      let ws = ws.to_owned();
+      async move {
+        sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1)")
+          .bind(ws)
+          .fetch_one(&pool)
+          .await
+          .unwrap()
+      }
+    };
+    assert!(exists(ws_owned_old).await, "owned >24h workspace must be retained");
+    assert!(
+      exists(ws_ownerless_new).await,
+      "ownerless <24h workspace must be retained"
+    );
+    assert!(
+      !exists(ws_ownerless_old).await,
+      "ownerless >24h workspace must be deleted"
+    );
+
+    let remaining_blobs: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM blobs WHERE workspace_id = $1")
+      .bind(ws_ownerless_old)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+    assert_eq!(
+      remaining_blobs, 0,
+      "orphan blob rows of deleted ownerless workspace must be cleaned"
+    );
   });
 }

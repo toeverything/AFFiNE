@@ -29,13 +29,17 @@ use crate::storage::{
 const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 fn is_s3_missing_object_404(body: &str) -> bool {
   let trimmed = body.trim();
-  if trimmed.is_empty() {
+  let Some(err_open) = trimmed.find("<Error") else {
     return false;
-  }
-  if let Some(start) = trimmed.find("<Code>")
-    && let Some(end) = trimmed[start + 6..].find("</Code>")
+  };
+  let Some(err_close) = trimmed[err_open..].find("</Error>") else {
+    return false;
+  };
+  let err_block = &trimmed[err_open..err_open + err_close];
+  if let Some(start) = err_block.find("<Code>")
+    && let Some(end) = err_block[start + 6..].find("</Code>")
   {
-    let code = trimmed[start + 6..start + 6 + end].trim();
+    let code = err_block[start + 6..start + 6 + end].trim();
     return matches!(code, "NoSuchKey" | "NotFound");
   }
   false
@@ -577,8 +581,8 @@ impl BlobStorageBackend for S3BlobStorage {
     let mut action = PutObject::new(&self.bucket, Some(&self.credentials), k);
     let len_str = len.to_string();
     let headers = BTreeMap::from([
-      ("content-type".into(), ct.into()),
-      ("content-length".into(), len_str.clone()),
+      ("Content-Type".into(), ct.into()),
+      ("Content-Length".into(), len_str.clone()),
     ]);
     if self.upload_options.sign_content_type_for_put {
       action.headers_mut().insert("content-type", ct);
@@ -604,7 +608,7 @@ impl BlobStorageBackend for S3BlobStorage {
       .ok_or_else(|| StorageError::Metadata("missing UploadId in S3 response".into()))?;
     Ok(Some(MultipartUploadInit {
       upload_id,
-      expires_at: Utc::now() + chrono::Duration::hours(24),
+      expires_at: Utc::now() + chrono::Duration::seconds(self.presign_expires.as_secs() as i64),
     }))
   }
   async fn presign_upload_part(&self, k: &str, uid: &str, pn: i32) -> Result<Option<PresignedUpload>, StorageError> {
@@ -836,6 +840,9 @@ mod tests {
       "<Error><Code>NoSuchBucket</Code><Message>The specified bucket does not exist</Message></Error>"
     ));
     assert!(!is_s3_missing_object_404("<Error><Code>AccessDenied</Code></Error>"));
+    assert!(!is_s3_missing_object_404(
+      "<Error><Code>NoSuchKey</Code><Message>truncated"
+    ));
     assert!(!is_s3_missing_object_404("<Error><Code>NoSuch"));
     assert!(!is_s3_missing_object_404(""));
     assert!(!is_s3_missing_object_404("<html><body>404 Not Found</body></html>"));
@@ -892,10 +899,10 @@ mod tests {
       .unwrap()
       .unwrap();
     assert_eq!(
-      presigned.headers.get("content-type").map(String::as_str),
+      presigned.headers.get("Content-Type").map(String::as_str),
       Some("image/png")
     );
-    assert_eq!(presigned.headers.get("content-length").map(String::as_str), Some("42"));
+    assert_eq!(presigned.headers.get("Content-Length").map(String::as_str), Some("42"));
     assert!(!presigned.url.contains("content-type"), "{}", presigned.url);
   }
 }

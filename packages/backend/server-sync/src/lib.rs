@@ -52,6 +52,8 @@ pub struct SyncConfig {
   pub copilot_realtime: Option<Arc<dyn crate::storage::CopilotRealtimeHandler>>,
   /// Allowlisted user feature names exposed by `user.profile.get`.
   pub available_user_features: &'static [&'static str],
+  /// Redis key prefix (`redis.ioredis.keyPrefix` / `redis.keyPrefix`).
+  pub redis_key_prefix: String,
 }
 
 impl std::fmt::Debug for SyncConfig {
@@ -93,6 +95,7 @@ impl SyncConfig {
       allow_canary,
       copilot_realtime: None,
       available_user_features: &["administrator"],
+      redis_key_prefix: String::new(),
     }
   }
 }
@@ -161,6 +164,9 @@ impl SyncServer {
     }
     if let Some(handler) = config.copilot_realtime {
       storage = storage.with_copilot_realtime(handler);
+    }
+    if !config.redis_key_prefix.is_empty() {
+      storage = storage.with_redis_key_prefix(config.redis_key_prefix);
     }
     storage = storage.with_available_user_features(config.available_user_features);
     let eventbus = match config.origin_id {

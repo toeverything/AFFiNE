@@ -69,12 +69,17 @@ pub struct AddWorkspaceArtifactInput {
 }
 
 /// Vector search hit returned by [`CopilotEmbeddingSpi::search_workspace_docs_vector`].
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct VectorDocSearchHit {
   pub doc_id: String,
+  pub unit_id: String,
+  pub visibility: String,
   pub title: Option<String>,
   pub excerpt: String,
   pub score: f64,
+  pub block_id: Option<String>,
+  pub element_id: Option<String>,
+  pub frame_id: Option<String>,
 }
 
 /// Commercial SPI for workspace embedding config, artifacts, and ignored documents.

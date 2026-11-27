@@ -295,14 +295,7 @@ impl StorageObjectLock {
         self.object_key.clone(),
       ),
     ] {
-      while !sqlx::query_scalar::<_, bool>(statement)
-        .bind(&name)
-        .fetch_one(&mut self.connection)
-        .await
-        .map_err(db_error("take storage lifecycle lock"))?
-      {
-        tokio::time::sleep(STORAGE_LOCK_POLL).await;
-      }
+      poll_advisory_lock(&mut self.connection, statement, &name).await?;
     }
     Ok(())
   }
@@ -331,12 +324,96 @@ impl StorageObjectLock {
   }
 }
 
+async fn poll_advisory_lock(conn: &mut PgConnection, statement: &str, name: &str) -> Result<(), DomainError> {
+  while !sqlx::query_scalar::<_, bool>(statement)
+    .bind(name)
+    .fetch_one(&mut *conn)
+    .await
+    .map_err(db_error("take storage lifecycle lock"))?
+  {
+    tokio::time::sleep(STORAGE_LOCK_POLL).await;
+  }
+  Ok(())
+}
+
+/// Exclusive workspace-wide session lock (`storage-workspace:<workspace_id>`)
+/// that serializes whole-workspace cleanup against shared object operations
+/// (`StorageObjectLock`).
+pub(crate) struct StorageWorkspaceLock {
+  connection: PgConnection,
+  workspace_key: String,
+  _permit: OwnedSemaphorePermit,
+}
+
+impl StorageWorkspaceLock {
+  pub(crate) async fn acquire(
+    db: &ServerDb,
+    permits: &Arc<Semaphore>,
+    workspace_id: &str,
+  ) -> Result<Self, DomainError> {
+    let deadline = tokio::time::Instant::now() + STORAGE_LOCK_TIMEOUT;
+    let timed_out = || DomainError::Unavailable("storage_lifecycle_lock_timeout".into());
+    let (permit, connection) = tokio::time::timeout_at(deadline, async {
+      let permit = Arc::clone(permits)
+        .acquire_owned()
+        .await
+        .map_err(|_| DomainError::Unavailable("storage lock permits closed".into()))?;
+      let connection = db
+        .dedicated_session_conn()
+        .await
+        .map_err(|err| DomainError::Unavailable(format!("storage lock session: {err}")))?;
+      Ok::<_, DomainError>((permit, connection))
+    })
+    .await
+    .map_err(|_| timed_out())??;
+    let mut lock = Self {
+      connection,
+      workspace_key: format!("storage-workspace:{workspace_id}"),
+      _permit: permit,
+    };
+    let locked = tokio::time::timeout_at(
+      deadline,
+      poll_advisory_lock(
+        &mut lock.connection,
+        "SELECT pg_try_advisory_lock(hashtextextended($1,0))",
+        &lock.workspace_key,
+      ),
+    )
+    .await;
+    match locked {
+      Ok(Ok(())) => Ok(lock),
+      Ok(Err(err)) => {
+        let _ = lock.connection.close().await;
+        Err(err)
+      }
+      Err(_) => {
+        let _ = lock.connection.close().await;
+        Err(timed_out())
+      }
+    }
+  }
+
+  pub(crate) async fn release(mut self) {
+    if let Err(error) = sqlx::query("SELECT pg_advisory_unlock(hashtextextended($1,0))")
+      .bind(&self.workspace_key)
+      .execute(&mut self.connection)
+      .await
+    {
+      tracing::warn!(error = %error, workspace_key = %self.workspace_key, "failed to release storage workspace lock");
+    }
+    if let Err(error) = self.connection.close().await {
+      tracing::debug!(error = %error, "storage workspace lock session did not close cleanly");
+    }
+  }
+}
+
 pub struct BlobService {
   pub(crate) db: ServerDb,
   pub(crate) boot_storage: Arc<dyn BlobStorageBackend>,
   pub(crate) dynamic_storage: Arc<DynamicBlobStorage>,
   storage: Arc<dyn BlobStorageBackend>,
   quota: Arc<dyn QuotaGate>,
+  pub(crate) invalidation: Option<Arc<dyn server_domain::events::InvalidationPublisher>>,
   pub(crate) lock_permits: Arc<Semaphore>,
   ref_cache: Arc<std::sync::Mutex<refs::BlobRefCache>>,
 }
@@ -352,9 +429,15 @@ impl BlobService {
       dynamic_storage,
       storage,
       quota,
+      invalidation: None,
       lock_permits: Arc::new(Semaphore::new(DEFAULT_STORAGE_LOCK_CONCURRENCY)),
       ref_cache: Arc::new(std::sync::Mutex::new(refs::BlobRefCache::new())),
     }
+  }
+
+  pub fn with_invalidation(mut self, invalidation: Arc<dyn server_domain::events::InvalidationPublisher>) -> Self {
+    self.invalidation = Some(invalidation);
+    self
   }
 
   pub fn dynamic_storage(&self) -> &Arc<DynamicBlobStorage> {
@@ -849,8 +932,10 @@ impl BlobService {
     }
   }
 
-  /// Locks the workspace row and the key's ledger row, classifies the ledger
-  /// row, checks the grant, and records a pending reservation.
+  /// Locks the workspace owner (`users`), then the workspace row (`workspaces`),
+  /// re-verifies the active owner (matching `strict_quota/authorization.rs`),
+  /// classifies the ledger row, checks the grant and seat/storage quotas using
+  /// PostgreSQL `clock_timestamp()`, and records or resumes a pending reservation.
   pub(crate) async fn reserve(
     &self,
     tx: &mut Transaction<'_, Postgres>,
@@ -859,6 +944,20 @@ impl BlobService {
     mime: &str,
     size: i64,
   ) -> Result<Admission, DomainError> {
+    let owner_id: Option<String> = sqlx::query_scalar(
+      "SELECT user_id FROM workspace_members WHERE workspace_id=$1 AND role='owner' AND state='active' LIMIT 1",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(db_error("load workspace quota owner"))?;
+    if let Some(ref oid) = owner_id {
+      sqlx::query("SELECT id FROM users WHERE id = $1 FOR UPDATE")
+        .bind(oid)
+        .fetch_optional(&mut **tx)
+        .await
+        .map_err(db_error("lock quota owner"))?;
+    }
     let locked: Option<String> = sqlx::query_scalar("SELECT id FROM workspaces WHERE id = $1 FOR UPDATE")
       .bind(workspace_id)
       .fetch_optional(&mut **tx)
@@ -867,18 +966,35 @@ impl BlobService {
     if locked.is_none() {
       return Err(DomainError::NotFound(format!("workspace {workspace_id}")));
     }
+    let locked_owner_id: Option<String> = sqlx::query_scalar(
+      "SELECT user_id FROM workspace_members WHERE workspace_id=$1 AND role='owner' AND state='active' LIMIT 1",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(db_error("verify storage quota owner"))?;
+    if locked_owner_id != owner_id {
+      return Err(DomainError::Conflict("storage_quota_subject_changed".into()));
+    }
+
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx)
+      .await
+      .map_err(db_error("load db clock for quota"))?;
 
     let existing = sqlx::query(
       "SELECT size::bigint AS size, mime, status::text AS status, created_at, deleted_at IS NOT NULL AS deleted, \
        reservation_id::text AS reservation_id, upload_id, \
-       COALESCE(reservation_expires_at > clock_timestamp(), false) AS live_reservation FROM blobs WHERE \
+       COALESCE(reservation_expires_at > $3, false) AS live_reservation FROM blobs WHERE \
        workspace_id=$1 AND key=$2 FOR UPDATE",
     )
     .bind(workspace_id)
     .bind(key)
+    .bind(now)
     .fetch_optional(&mut **tx)
     .await
     .map_err(db_error("load blob ledger row"))?;
+    let mut resumable_reservation_id: Option<String> = None;
     if let Some(row) = existing {
       let status: String = row.get("status");
       let deleted: bool = row.get("deleted");
@@ -902,18 +1018,43 @@ impl BlobService {
           }));
         }
         "pending" if !deleted && row.get::<bool, _>("live_reservation") => {
-          return Err(DomainError::Conflict("blob upload is pending".into()));
+          let existing_size: i64 = row.get("size");
+          let existing_mime: String = row.get("mime");
+          let upload_id: Option<String> = row.get("upload_id");
+          let reservation_id: Option<String> = row.get("reservation_id");
+          if upload_id.is_none()
+            && existing_size == size
+            && existing_mime == mime
+            && let Some(rid) = reservation_id
+          {
+            resumable_reservation_id = Some(rid);
+          } else {
+            return Err(DomainError::Conflict("blob upload is pending".into()));
+          }
         }
         "pending" => {}
         other => return Err(DomainError::Conflict(format!("storage key is not reusable ({other})"))),
       }
     }
 
-    let now = Utc::now();
     let grant = self.quota.resolve_workspace_grant(tx, workspace_id, now).await?;
-    if grant.limits.seat_limit <= 0 || grant.expires_at.is_some_and(|expires_at| now >= expires_at) {
+    let charged_seats: i64 = sqlx::query_scalar(
+      r#"SELECT
+        (SELECT count(*) FROM workspace_members WHERE workspace_id=$1 AND state='active')
+        + (SELECT count(*) FROM workspace_invitations WHERE workspace_id=$1
+          AND status::text = ANY($2))"#,
+    )
+    .bind(workspace_id)
+    .bind(server_domain::workspaces::CHARGEABLE_INVITATION_STATUSES.as_slice())
+    .fetch_one(&mut **tx)
+    .await
+    .map_err(db_error("load strict storage seat usage"))?;
+    if grant.limits.seat_limit <= 0
+      || charged_seats > i64::from(grant.limits.seat_limit)
+      || grant.expires_at.is_some_and(|expires_at| now >= expires_at)
+    {
       return Err(DomainError::QuotaExceeded {
-        kind: "blob_limit",
+        kind: "storage_quota",
         message: "workspace is in fail-closed readonly state".into(),
       });
     }
@@ -926,24 +1067,14 @@ impl BlobService {
         ),
       });
     }
+    if let Some(rid) = resumable_reservation_id {
+      return Ok(Admission::Reserved(rid));
+    }
     let charged_workspaces: Vec<String> = if grant.billing_subject == server_types::BillingSubject::Workspace {
       vec![workspace_id.to_owned()]
     } else {
-      let owner_id: Option<String> = sqlx::query_scalar(
-        "SELECT user_id FROM workspace_members WHERE workspace_id=$1 AND role='owner' AND state='active' LIMIT 1",
-      )
-      .bind(workspace_id)
-      .fetch_optional(&mut **tx)
-      .await
-      .map_err(db_error("load workspace owner for quota"))?;
       let mut list = vec![workspace_id.to_owned()];
-      if let Some(owner_id) = owner_id {
-        let lock_key = format!("owner-storage-quota:{owner_id}");
-        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
-          .bind(&lock_key)
-          .execute(&mut **tx)
-          .await
-          .map_err(db_error("lock workspace owner for quota"))?;
+      if let Some(owner_id) = locked_owner_id {
         let owned: Vec<(String, bool)> = sqlx::query_as(
           r#"SELECT
                wm.workspace_id,
@@ -993,11 +1124,12 @@ impl BlobService {
     let used: i64 = sqlx::query_scalar(
       r#"SELECT
         COALESCE((SELECT SUM(size)::bigint FROM blobs WHERE workspace_id=ANY($1) AND deleted_at IS NULL
-          AND (status='completed' OR (status='pending' AND reservation_expires_at > clock_timestamp()))),0)
+          AND (status='completed' OR (status='pending' AND reservation_expires_at > $2))),0)
         + COALESCE((SELECT SUM(size)::bigint FROM comment_attachments WHERE workspace_id=ANY($1) AND deleted_at IS NULL
-          AND (status='completed' OR (status='pending' AND reservation_expires_at > clock_timestamp()))),0)"#,
+          AND (status='completed' OR (status='pending' AND reservation_expires_at > $2))),0)"#,
     )
     .bind(&charged_workspaces)
+    .bind(now)
     .fetch_one(&mut **tx)
     .await
     .map_err(db_error("load workspace storage usage"))?;
@@ -1020,7 +1152,7 @@ impl BlobService {
       r#"INSERT INTO blobs
            (workspace_id, key, size, mime, status, reservation_id, reservation_expires_at, upload_id, deleted_at,
             created_at)
-         VALUES ($1, $2, $3, $4, 'pending', gen_random_uuid(), clock_timestamp() + make_interval(mins => $5), NULL,
+         VALUES ($1, $2, $3, $4, 'pending', gen_random_uuid(), $6 + make_interval(mins => $5), NULL,
            NULL, CURRENT_TIMESTAMP)
          ON CONFLICT (workspace_id, key) DO UPDATE SET
            size = EXCLUDED.size, mime = EXCLUDED.mime, status = 'pending', reservation_id = EXCLUDED.reservation_id,
@@ -1034,6 +1166,7 @@ impl BlobService {
     .bind(size_i32)
     .bind(mime)
     .bind(STORAGE_RESERVATION_MINUTES)
+    .bind(now)
     .fetch_optional(&mut **tx)
     .await
     .map_err(db_error("reserve blob"))?

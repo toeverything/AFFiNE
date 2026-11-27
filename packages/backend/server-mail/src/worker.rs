@@ -265,6 +265,20 @@ pub struct MailDeliveryOptions<'a> {
   pub workspace_resolver: Option<&'a dyn WorkspaceMailMetaResolver>,
 }
 
+pub fn workspace_name_contains_domain(name: &str) -> bool {
+  let normalized: String = name
+    .chars()
+    .map(|c| match c {
+      '。' | '．' | '｡' => '.',
+      other => other,
+    })
+    .collect();
+  normalized.contains("://")
+    || normalized
+      .split_whitespace()
+      .any(|tok| tok.contains('.') && tok.len() >= 4 && !tok.starts_with('.') && !tok.ends_with('.'))
+}
+
 async fn resolve_dynamic_payload_props(
   pool: &PgPool,
   payload: &mut Value,
@@ -310,11 +324,8 @@ async fn resolve_dynamic_payload_props(
           .await?
         };
         exists.then(|| {
-          let name = ws_name.unwrap_or_else(|| "Untitled".to_owned());
-          let name_contains_domain = name.contains("://")
-            || name
-              .split_whitespace()
-              .any(|tok| tok.contains('.') && tok.len() >= 4 && !tok.starts_with('.') && !tok.ends_with('.'));
+          let name = ws_name.unwrap_or_else(|| "Untitled Workspace".to_owned());
+          let name_contains_domain = workspace_name_contains_domain(&name);
           ResolvedWorkspaceMailMeta {
             name,
             avatar: None,
@@ -323,7 +334,7 @@ async fn resolve_dynamic_payload_props(
         })
       };
       let Some(meta) = resolved else {
-        return Ok((Some("workspace_not_found"), inline_attachments));
+        return Ok((Some("dynamic_props_missing"), inline_attachments));
       };
       if mail_name == "MemberInvitation" && meta.name_contains_domain {
         return Ok((Some("workspace_name_contains_domain"), inline_attachments));
@@ -338,13 +349,20 @@ async fn resolve_dynamic_payload_props(
       props.insert(key, Value::Object(merged));
       continue;
     }
+    if mail_name == "MemberInvitation"
+      && key == "workspace"
+      && let Some(ws_name) = obj.get("name").and_then(Value::as_str)
+      && workspace_name_contains_domain(ws_name)
+    {
+      return Ok((Some("workspace_name_contains_domain"), inline_attachments));
+    }
     if let Some(uid) = obj.get("$$userId").and_then(Value::as_str) {
       let email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
         .bind(uid)
         .fetch_optional(pool)
         .await?;
       let Some(email) = email else {
-        return Ok((Some("user_not_found"), inline_attachments));
+        return Ok((Some("dynamic_props_missing"), inline_attachments));
       };
       let mut merged = obj;
       merged.remove("$$userId");
@@ -561,6 +579,7 @@ pub async fn process_ready_mail_deliveries_with_options(
     .await?;
 
     let Some(next_attempt) = attempt_started else {
+      mark_terminal(pool, &item.id, worker_id, "failed", None, None, Some("expired"), None).await?;
       continue;
     };
     processed += 1;

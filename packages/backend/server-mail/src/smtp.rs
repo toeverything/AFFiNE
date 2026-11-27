@@ -215,7 +215,7 @@ impl SmtpMailer {
         related = related.singlepart(
           SinglePart::builder()
             .header(ct)
-            .header(ContentDisposition::inline())
+            .header(ContentDisposition::inline_with_name("workspaceAvatar"))
             .header(ContentId::from(cid))
             .header(ContentTransferEncoding::Base64)
             .body(att.data.clone()),
@@ -271,10 +271,25 @@ impl SmtpMailer {
           response.message().collect::<Vec<_>>().join(" ")
         ),
       },
-      Err(err) if err.is_permanent() => MailSendResult::Rejected {
-        provider_response: Some(err.to_string()),
-        error_code: "provider_rejected",
-      },
+      Err(err)
+        if err.is_permanent()
+          && err.status().is_some_and(|s| {
+            matches!(
+              (s.category, s.detail),
+              (
+                lettre::transport::smtp::response::Category::MailSystem,
+                lettre::transport::smtp::response::Detail::Zero
+                  | lettre::transport::smtp::response::Detail::One
+                  | lettre::transport::smtp::response::Detail::Three
+              )
+            )
+          }) =>
+      {
+        MailSendResult::Rejected {
+          provider_response: Some(err.to_string()),
+          error_code: "provider_rejected",
+        }
+      }
       Err(err) => MailSendResult::Failed {
         retryable: true,
         error_code: "transport_failed",

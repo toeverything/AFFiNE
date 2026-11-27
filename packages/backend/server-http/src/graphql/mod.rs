@@ -1276,7 +1276,9 @@ mod tests {
       assert_eq!(items[2]["error"]["status"], 403);
       assert_eq!(items[2]["error"]["type"], "ACTION_FORBIDDEN");
       assert!(items[3]["inviteId"].is_null());
-      assert_eq!(items[3]["error"]["type"], "RESOURCE_ALREADY_EXISTS");
+      assert_eq!(items[3]["error"]["status"], 403);
+      assert_eq!(items[3]["error"]["type"], "ACTION_FORBIDDEN");
+      assert_eq!(items[3]["error"]["name"], "ALREADY_IN_SPACE");
       assert_eq!(rl_calls.load(Ordering::SeqCst), 1);
 
       db.pool().close().await;

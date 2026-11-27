@@ -76,6 +76,14 @@ async fn setup_http_state(
     ..RuntimeConfig::default()
   };
   let ext: Arc<dyn ServerExtension> = if copilot_enabled {
+    sqlx::query(
+      r#"INSERT INTO app_configs (id, value, created_at, updated_at)
+         VALUES ('copilot.enabled', 'true'::jsonb, clock_timestamp(), clock_timestamp())
+         ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = clock_timestamp()"#,
+    )
+    .execute(db.pool())
+    .await
+    .expect("enable copilot in app_configs");
     Arc::new(TestCopilotExtension {
       inner: CommunityExtension::new(),
     })
@@ -737,6 +745,15 @@ fn mcp_doc_search_lexical_hits_real_search_runtime() {
       .await
       .expect("reset schema for fresh ensure_schema_ready");
     state.db.ensure_schema_ready().await.expect("ensure v2 search schema");
+    sqlx::query(
+      r#"INSERT INTO app_configs (id, value, created_at, updated_at)
+         VALUES ('copilot.enabled', 'true'::jsonb, clock_timestamp(), clock_timestamp())
+         ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value, updated_at = clock_timestamp()"#,
+    )
+    .execute(state.db.pool())
+    .await
+    .expect("re-enable copilot in app_configs after schema reset");
+    state.app_config.invalidate_cache();
     let (uid, ws_id) = insert_user_and_workspace(&state, "lex-search@example.com").await;
     let created = state
       .mcp

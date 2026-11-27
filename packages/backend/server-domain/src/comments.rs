@@ -880,6 +880,21 @@ impl CommentService {
       .await
       .map_err(|e| DomainError::Unavailable(format!("begin reserve_comment_attachment: {e}")))?;
 
+    let owner_id: Option<String> = sqlx::query_scalar(
+      "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("load owner for comment attachment quota lock: {e}")))?;
+    if let Some(ref oid) = owner_id {
+      let _ = sqlx::query_scalar::<_, String>("SELECT id FROM users WHERE id = $1 FOR UPDATE")
+        .bind(oid)
+        .fetch_optional(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("lock owner user for comment attachment quota: {e}")))?;
+    }
+
     let ws_exists: Option<String> = sqlx::query_scalar("SELECT id FROM workspaces WHERE id = $1 FOR UPDATE")
       .bind(workspace_id)
       .fetch_optional(&mut **tx.tx_mut())
@@ -887,6 +902,17 @@ impl CommentService {
       .map_err(|e| DomainError::Internal(format!("lock workspace for comment attachment: {e}")))?;
     if ws_exists.is_none() {
       return Err(DomainError::NotFound("workspace_not_found".to_owned()));
+    }
+
+    let locked_owner_id: Option<String> = sqlx::query_scalar(
+      "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("recheck owner for comment attachment quota lock: {e}")))?;
+    if locked_owner_id != owner_id {
+      return Err(DomainError::Conflict("storage_quota_subject_changed".to_owned()));
     }
 
     let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
@@ -919,23 +945,6 @@ impl CommentService {
       .quota_gate
       .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
       .await?;
-    if grant.billing_subject == server_types::BillingSubject::Owner {
-      let owner_id: Option<String> = sqlx::query_scalar(
-        "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
-      )
-      .bind(workspace_id)
-      .fetch_optional(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| DomainError::Internal(format!("load owner for comment attachment quota lock: {e}")))?;
-      if let Some(ref oid) = owner_id {
-        let lock_key = format!("owner-storage-quota:{oid}");
-        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
-          .bind(&lock_key)
-          .execute(&mut **tx.tx_mut())
-          .await
-          .map_err(|e| DomainError::Internal(format!("lock owner user for comment attachment quota: {e}")))?;
-      }
-    }
     let used = crate::workspaces::load_effective_storage_usage_in_tx(
       tx.tx_mut(),
       self.quota_gate.as_ref(),
@@ -1293,9 +1302,22 @@ async fn create_comment_notifications_in(
       .unwrap_or_default()
   };
   let base = base_url.trim_end_matches('/');
+  let query_str = {
+    let mut qs = url::form_urlencoded::Serializer::new(String::new());
+    if !notification.doc_mode.is_empty() {
+      qs.append_pair("mode", &notification.doc_mode);
+    }
+    qs.append_pair("commentId", &comment.id);
+    if let Some(rid) = reply_id
+      && !rid.is_empty()
+    {
+      qs.append_pair("replyId", rid);
+    }
+    qs.finish()
+  };
   let doc_url = format!(
-    "{base}/workspace/{}/{}?commentId={}",
-    comment.workspace_id, comment.doc_id, comment.id
+    "{base}/workspace/{}/{}?{query_str}",
+    comment.workspace_id, comment.doc_id
   );
 
   let mut notified = Vec::new();
@@ -1341,11 +1363,7 @@ async fn create_comment_notifications_in(
     .await
     .map_err(|e| DomainError::Internal(format!("insert comment notification: {e}")))?;
 
-    let (mail_class, pref_field) = if is_mention {
-      ("comment_mention", "receiveMentionEmail")
-    } else {
-      ("comment", "receiveCommentEmail")
-    };
+    let (mail_class, pref_field) = ("collaboration_notice", "receiveCommentEmail");
     crate::notifications::enqueue_notification_mail_in_tx(
       tx,
       crate::notifications::EnqueueNotificationMail {
