@@ -653,10 +653,20 @@ export class TableCell extends SignalWatcher(
   }
 
   private readonly _handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key !== 'Escape' && e.key === 'Tab') {
-      e.preventDefault();
+    // All cells share one event source, so the newly focused cell sees this
+    // event too.
+    if (e.key !== 'Tab' || e.defaultPrevented) {
       return;
     }
+    e.preventDefault();
+    e.stopPropagation();
+    const cells = Array.from(
+      this.closest('affine-table')?.querySelectorAll<TableCell>(
+        TableCellComponentName
+      ) ?? []
+    );
+    const target = cells[cells.indexOf(this) + (e.shiftKey ? -1 : 1)];
+    target?.inlineEditor?.focusEnd();
   };
 
   override connectedCallback() {
