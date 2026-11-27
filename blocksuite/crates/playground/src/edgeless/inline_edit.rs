@@ -354,6 +354,9 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
+        if self.edgeless_readonly {
+            return false;
+        }
         self.edgeless_commit_inline_edit(window, cx);
         let Some(snapshot) = self.snapshot.clone() else {
             return false;

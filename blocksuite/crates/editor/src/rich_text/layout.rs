@@ -116,6 +116,7 @@ struct StyledFragment<'a> {
     inset_start: Pixels,
     inset_end: Pixels,
     math: Option<(std::sync::Arc<ui::RenderImage>, Size<Pixels>, Pixels)>,
+    base_rtl: Option<bool>,
 }
 
 impl StyledFragment<'_> {
@@ -173,8 +174,15 @@ impl StyledFragment<'_> {
             .collect();
         edges.sort_by_key(|&(byte, _, _)| byte);
         edges[0].0 = self.bytes.start;
-        let levels =
-            (!self.shaped.text.is_ascii()).then(|| BidiInfo::new(self.shaped.text.as_ref(), None));
+        let para_level = self.base_rtl.map(|rtl| {
+            if rtl {
+                unicode_bidi::Level::rtl()
+            } else {
+                unicode_bidi::Level::ltr()
+            }
+        });
+        let levels = (!self.shaped.text.is_ascii())
+            .then(|| BidiInfo::new(self.shaped.text.as_ref(), para_level));
         let mut cells = Vec::new();
         for (i, &(byte, mut start_x, mut end_x)) in edges.iter().enumerate() {
             let end = edges.get(i + 1).map_or(self.bytes.end, |c| c.0);
@@ -240,7 +248,7 @@ impl ParagraphLayout<'_> {
             if start == end {
                 return None;
             }
-            let count = if first.chip || first.marks.code {
+            let count = if first.chip || first.marks.code || self.style.gfx_per_delta_rtl {
                 1
             } else {
                 spans
@@ -270,10 +278,11 @@ impl ParagraphLayout<'_> {
                     if tex.trim().is_empty() {
                         crate::block_flow::MathRenderResult::Pending
                     } else {
+                        // Match BlockSuite `0.27.5` KaTeX `.katex { font-size: 1.21em }` (~18.15px on 15px body).
                         crate::block_flow::render_math_cached(
                             tex,
                             false,
-                            style.font_size * 0.92,
+                            style.font_size * 1.21,
                             style.text_color,
                             style.dpr,
                         )
@@ -355,12 +364,24 @@ impl ParagraphLayout<'_> {
                     }
                 })
                 .collect::<Vec<_>>();
-            let shaped = self.ts.shape_line_with_spacing(
-                display_text.into_owned().into(),
-                px(font_size),
-                &text_runs,
-                style.letter_spacing,
-            );
+            let base_rtl = (style.gfx_per_delta_rtl && !first.chip)
+                .then(|| crate::surface::is_gfx_text_rtl(&display_text));
+            let shaped = if base_rtl == Some(true) {
+                self.ts.shape_line_with_direction(
+                    display_text.into_owned().into(),
+                    px(font_size),
+                    &text_runs,
+                    None,
+                    ui::BaseDirection::Rtl,
+                )
+            } else {
+                self.ts.shape_line_with_spacing(
+                    display_text.into_owned().into(),
+                    px(font_size),
+                    &text_runs,
+                    style.letter_spacing,
+                )
+            };
             let (inset_start, inset_end) = if first.chip && first.marks.reference.is_some() {
                 (px(font_size + 4.), px(2.))
             } else if is_code {
@@ -384,6 +405,7 @@ impl ParagraphLayout<'_> {
                 inset_start,
                 inset_end,
                 math,
+                base_rtl,
             })
         })
     }

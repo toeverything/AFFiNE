@@ -29,8 +29,12 @@ impl PlaygroundView {
         let wx = f32::from(world_pt.x);
         let wy = f32::from(world_pt.y);
 
-        // Hand tool or Space-hold pans with left drag.
-        if self.edgeless.authoring.tool == EdgelessTool::Hand || self.edgeless.authoring.space_pan {
+        // Mobile read-only Edgeless mode (`enable_mobile_edgeless_editing == false`), Hand tool,
+        // or Space-hold pans smoothly with left/single-finger drag and makes zero CRDT edits.
+        if self.edgeless_readonly
+            || self.edgeless.authoring.tool == EdgelessTool::Hand
+            || self.edgeless.authoring.space_pan
+        {
             self.edgeless_commit_inline_edit(window, cx);
             self.edgeless.authoring.gesture = Some(EdgelessGesture::Pan {
                 last_screen: event.position,

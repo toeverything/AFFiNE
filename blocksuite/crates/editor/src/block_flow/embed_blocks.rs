@@ -19,7 +19,6 @@ use super::{
 };
 
 const MAX_SYNCED_RECURSION_DEPTH: usize = 2;
-const MAX_SYNCED_PREVIEW_BLOCKS: usize = 6;
 
 /// Howard Hinnant's `civil_from_days` algorithm: converts days since `1970-01-01` to `(year, month, day)`.
 pub fn civil_from_days(days: i64) -> (i64, u32, u32) {
@@ -36,14 +35,20 @@ pub fn civil_from_days(days: i64) -> (i64, u32, u32) {
     (year, m as u32, d as u32)
 }
 
-/// Formats a Unix millisecond timestamp into `YYYY-MM-DD` using pure calendar arithmetic
-/// (zero host wall-clock calls).
-fn format_utc_date(ms: i64) -> Option<String> {
+/// Formats a Unix millisecond timestamp into `"Updated YYYY-MM-DD HH:MM"` in the host's local
+/// timezone offset (`utc_offset_minutes` east of UTC), matching `0.27.5` `embed-linked-doc-block.ts`
+/// with zero host wall-clock calls.
+fn format_updated_local_datetime(ms: i64, utc_offset_minutes: i32) -> Option<String> {
     if ms <= 0 {
         return None;
     }
-    let (year, m, d) = civil_from_days(ms.div_euclid(86_400_000));
-    Some(format!("{year:04}-{m:02}-{d:02}"))
+    let local_ms = ms.saturating_add(i64::from(utc_offset_minutes) * 60_000);
+    let days = local_ms.div_euclid(86_400_000);
+    let rem_ms = local_ms.rem_euclid(86_400_000);
+    let (year, m, d) = civil_from_days(days);
+    let hh = rem_ms / 3_600_000;
+    let mm = (rem_ms % 3_600_000) / 60_000;
+    Some(format!("Updated {year:04}-{m:02}-{d:02} {hh:02}:{mm:02}"))
 }
 
 fn extract_snapshot_snippet(snapshot: &PageSnapshot) -> String {
@@ -105,9 +110,12 @@ impl FlowPass<'_> {
                     .map(|snap| extract_snapshot_snippet(&snap))
                     .filter(|s| !s.is_empty())
             });
-        let date_label = preview
-            .as_ref()
-            .and_then(|p| format_utc_date(p.updated_at_ms));
+        let date_label = preview.as_ref().and_then(|p| {
+            format_updated_local_datetime(
+                p.updated_at_ms,
+                self.input.utc_offset_for(p.updated_at_ms),
+            )
+        });
 
         let pad = 12.0;
         let inner_w = (width - pad * 2.0 - 28.0).max(40.0);
@@ -225,56 +233,15 @@ impl FlowPass<'_> {
             })
             .unwrap_or("Untitled");
 
-        let pad = 14.0;
-        let inner_w = (width - pad * 2.0 - 26.0).max(40.0);
-        let title_style = InlineStyle::new(
-            FONT_SANS,
-            TYPOGRAPHY.font_sm_px,
-            600.0,
-            self.palette.text_primary,
-        );
-        let title_str = truncate_to_width(self.window, resolved_title, &title_style, inner_w)
-            .text
-            .to_string();
-
-        let mut prims = vec![
-            Prim::Quad {
-                rect: FlowRect::new(0.0, 0.0, width, 88.0),
-                fill: Some(self.palette.background_secondary),
-                border: Some(self.palette.card_border),
-                radius: 8.0,
-                dashed: false,
-            },
-            Prim::Quad {
-                rect: FlowRect::new(0.0, 0.0, 3.0, 88.0),
-                fill: Some(self.palette.brand),
-                border: None,
-                radius: 1.5,
-                dashed: false,
-            },
-            Prim::Icon {
-                rect: FlowRect::new(pad, 14.0, 18.0, 18.0),
-                icon: IconPaint::named("LinkedPageIcon"),
-                color: self.palette.brand,
-            },
-            Prim::Text {
-                x: pad + 26.0,
-                y: 12.0,
-                layout: self.plain_inline(
-                    &title_str,
-                    title_style,
-                    inner_w,
-                    22.0,
-                    InlineAlign::Left,
-                ),
-                clip: None,
-            },
-        ];
-
-        // Render target document's read-only body blocks with cycle & depth protection.
+        // Match `0.27.5` `embed-synced-doc-block/styles.ts` Page mode:
+        // transparent background, no permanent border or 3px blue bar, header hidden at rest
+        // (hover border is painted by `Overlays::page_layer` when hovered), and full read-only
+        // body blocks without any 6-block truncation (`MAX_SYNCED_RECURSION_DEPTH = 2` guards cycles).
+        let mut prims = Vec::new();
         let mut visited: BTreeSet<String> = self.visited_embeds.clone();
         visited.insert(self.input.snapshot.doc_id.clone());
-        let mut content_y = 40.0;
+        let pad_y = 6.0;
+        let mut content_y = pad_y;
         let mut rendered_any = false;
         let mut loaded_empty_doc = false;
         if self.embed_depth < MAX_SYNCED_RECURSION_DEPTH
@@ -294,24 +261,17 @@ impl FlowPass<'_> {
                 match &child.content {
                     BlockContent::Note { hidden: true, .. } => continue,
                     BlockContent::Note { .. } => {
-                        for item in &child.children {
-                            if preview_nodes.len() >= MAX_SYNCED_PREVIEW_BLOCKS {
-                                break;
-                            }
-                            preview_nodes.push(item.clone());
-                        }
+                        preview_nodes.extend(child.children.iter().cloned());
                     }
                     _ => {
-                        if preview_nodes.len() < MAX_SYNCED_PREVIEW_BLOCKS {
-                            preview_nodes.push(child.clone());
-                        }
+                        preview_nodes.push(child.clone());
                     }
                 }
             }
             if preview_nodes.is_empty() {
                 loaded_empty_doc = true;
             } else {
-                let nested_w = (width - 2.0 * pad).max(60.0);
+                let nested_w = width.max(60.0);
                 let mut nested_flow = super::BlockFlow::new();
                 let nested_input = super::FlowInput {
                     snapshot: &target_snap,
@@ -324,6 +284,8 @@ impl FlowPass<'_> {
                     equation_draft: None,
                     env_rev: self.input.env_rev,
                     direction: self.direction,
+                    utc_offset_minutes: self.input.utc_offset_minutes,
+                    utc_offset_at: self.input.utc_offset_at,
                 };
                 let nested = nested_flow.layout_nodes_nested(
                     &preview_nodes,
@@ -333,7 +295,7 @@ impl FlowPass<'_> {
                     visited,
                 );
                 for block in &nested.blocks {
-                    let dx = pad + block.x;
+                    let dx = block.x;
                     let dy = content_y + block.y;
                     for prim in &block.body.prims {
                         prims.push(translate_prim(prim, dx, dy));
@@ -349,42 +311,30 @@ impl FlowPass<'_> {
                 .as_ref()
                 .map(|p| p.snippet.trim())
                 .filter(|s| !s.is_empty())
-                .or(loaded_empty_doc.then_some("Empty document"));
-            if let Some(fallback_text) = fallback {
-                let empty_style = InlineStyle::new(
-                    FONT_SANS,
-                    TYPOGRAPHY.font_xs_px,
-                    400.0,
-                    self.palette.text_secondary,
-                );
-                prims.push(Prim::Text {
-                    x: pad,
-                    y: content_y,
-                    layout: self.plain_inline(
-                        fallback_text,
-                        empty_style,
-                        (width - 2.0 * pad).max(40.0),
-                        20.0,
-                        InlineAlign::Left,
-                    ),
-                    clip: None,
-                });
-                content_y += 22.0;
-            }
+                .or(loaded_empty_doc.then_some("Empty document"))
+                .unwrap_or(resolved_title);
+            let empty_style = InlineStyle::new(
+                FONT_SANS,
+                TYPOGRAPHY.font_sm_px,
+                400.0,
+                self.palette.text_secondary,
+            );
+            prims.push(Prim::Text {
+                x: 0.0,
+                y: content_y + 10.0,
+                layout: self.plain_inline(
+                    fallback,
+                    empty_style,
+                    width.max(40.0),
+                    22.0,
+                    InlineAlign::Left,
+                ),
+                clip: None,
+            });
+            content_y += 38.0;
         }
 
-        let min_card_h = if rendered_any || loaded_empty_doc {
-            76.0
-        } else {
-            48.0
-        };
-        let card_h = (content_y + pad).max(min_card_h);
-        if let Some(Prim::Quad { rect, .. }) = prims.get_mut(0) {
-            rect.h = card_h;
-        }
-        if let Some(Prim::Quad { rect, .. }) = prims.get_mut(1) {
-            rect.h = card_h;
-        }
+        let card_h = (content_y + pad_y).max(44.0);
 
         let mut body = BlockBody {
             kind: FlowKind::EmbedSyncedDoc,
@@ -466,5 +416,33 @@ fn translate_prim(prim: &Prim, dx: f32, dy: f32) -> Prim {
             world_origin: *world_origin,
             scale: *scale,
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_updated_local_datetime_handles_positive_negative_and_epoch_boundaries() {
+        assert_eq!(format_updated_local_datetime(0, 0), None);
+        assert_eq!(format_updated_local_datetime(-100, 480), None);
+        // 2026-11-26 14:30:00 UTC == 1_795_703_400_000 ms
+        assert_eq!(
+            format_updated_local_datetime(1_795_703_400_000, 0).as_deref(),
+            Some("Updated 2026-11-26 14:30")
+        );
+        assert_eq!(
+            format_updated_local_datetime(1_795_703_400_000, 480).as_deref(),
+            Some("Updated 2026-11-26 22:30")
+        );
+        assert_eq!(
+            format_updated_local_datetime(1_795_703_400_000, 600).as_deref(),
+            Some("Updated 2026-11-27 00:30")
+        );
+        assert_eq!(
+            format_updated_local_datetime(1_795_703_400_000, -300).as_deref(),
+            Some("Updated 2026-11-26 09:30")
+        );
     }
 }

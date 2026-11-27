@@ -161,6 +161,58 @@ pub enum ColorValue {
     Themed { light: String, dark: String },
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum MindmapLayoutType {
+    #[default]
+    Right = 0,
+    Left = 1,
+    Balance = 2,
+}
+
+impl MindmapLayoutType {
+    pub fn from_wire(v: Option<i64>) -> Self {
+        match v {
+            Some(1) => Self::Left,
+            Some(2) => Self::Balance,
+            _ => Self::Right,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum MindmapStyle {
+    #[default]
+    One = 1,
+    Two = 2,
+    Three = 3,
+    Four = 4,
+}
+
+impl MindmapStyle {
+    pub fn from_wire(v: Option<i64>) -> Self {
+        match v {
+            Some(2) => Self::Two,
+            Some(3) => Self::Three,
+            Some(4) => Self::Four,
+            _ => Self::One,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MindmapNodeDetail {
+    pub index: String,
+    pub parent: Option<String>,
+    pub collapsed: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SurfaceMindmap {
+    pub layout_type: MindmapLayoutType,
+    pub style: MindmapStyle,
+    pub nodes: BTreeMap<String, MindmapNodeDetail>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum SurfaceElementKind {
     Shape(SurfaceShape),
@@ -172,6 +224,7 @@ pub enum SurfaceElementKind {
         title: RichText,
         children: Vec<String>,
     },
+    Mindmap(SurfaceMindmap),
     Unknown {
         element_type: String,
     },
@@ -411,6 +464,32 @@ impl SurfaceElement {
                     title: text,
                     children,
                 }
+            }
+            "mindmap" => {
+                let mut nodes = BTreeMap::new();
+                if let Some(map) = v["children"].as_object() {
+                    for (node_id, detail) in map {
+                        let index = detail["index"].as_str().unwrap_or("a0").to_string();
+                        let parent = detail["parent"]
+                            .as_str()
+                            .filter(|s| !s.is_empty())
+                            .map(String::from);
+                        let collapsed = detail["collapsed"].as_bool().unwrap_or(false);
+                        nodes.insert(
+                            node_id.clone(),
+                            MindmapNodeDetail {
+                                index,
+                                parent,
+                                collapsed,
+                            },
+                        );
+                    }
+                }
+                SurfaceElementKind::Mindmap(SurfaceMindmap {
+                    layout_type: MindmapLayoutType::from_wire(v["layoutType"].as_i64()),
+                    style: MindmapStyle::from_wire(v["style"].as_i64()),
+                    nodes,
+                })
             }
             ty => SurfaceElementKind::Unknown {
                 element_type: ty.into(),

@@ -38,6 +38,7 @@ struct Label {
 struct Item {
     id: String,
     group: bool,
+    local_xywh: [f64; 4],
     bounds: Bounds<Pixels>,
     transform: TransformationMatrix,
     paths: Vec<(Path<Pixels>, Hsla)>,
@@ -109,6 +110,9 @@ impl SurfaceLayout {
     }
     pub(crate) fn item_ids(&self) -> impl Iterator<Item = &str> {
         self.items.iter().map(|e| e.id.as_str())
+    }
+    pub(crate) fn item_local_xywh(&self, index: usize) -> [f64; 4] {
+        self.items[index].local_xywh
     }
     pub(crate) fn item_polyline(&self, index: usize) -> &[(f32, f32)] {
         &self.items[index].polyline
@@ -185,6 +189,7 @@ impl TextStyle<'_> {
                 TextAlign::Right => ui::TextAlign::Right,
             },
             text_color: resolve(theme, self.color),
+            gfx_per_delta_rtl: true,
             ..RichParagraphStyle::from_theme(theme.mode())
         };
         let mut face = ui::font(style.font_family.clone());
@@ -205,33 +210,36 @@ impl TextStyle<'_> {
     }
 }
 
-fn geometry(e: &SurfaceElement) -> Option<WorldBounds> {
-    let xywh = match &e.kind {
-        SurfaceElementKind::Shape(s) => s.xywh,
-        SurfaceElementKind::Brush(s) | SurfaceElementKind::Highlighter(s) => s.xywh,
-        SurfaceElementKind::Text(s) => s.xywh,
-        _ => return None,
-    };
-    Some(WorldBounds {
-        xywh,
-        rotate: e.rotate,
-    })
-}
 pub fn layout_surface(
     elements: &[SurfaceElement],
     external_bounds: &BTreeMap<String, WorldBounds>,
     theme: PlaygroundTheme,
     window: &Window,
 ) -> SurfaceLayout {
-    let mut bounds = external_bounds.clone();
-    let mut ordered: Vec<_> = elements.iter().filter(|e| !e.hidden).collect();
-    ordered.sort_by(|a, b| a.index.cmp(&b.index));
-    bounds.extend(
-        ordered
-            .iter()
-            .filter_map(|e| Some((e.id.clone(), geometry(e)?))),
-    );
-    let lookup = elements.iter().map(|e| (e.id.as_str(), e)).collect();
+    layout_surface_in_doc(None, elements, external_bounds, theme, window)
+}
+
+pub(crate) fn layout_surface_in_doc(
+    doc_root: Option<&blocksuite_playground_doc::read::BlockNode>,
+    elements: &[SurfaceElement],
+    external_bounds: &BTreeMap<String, WorldBounds>,
+    theme: PlaygroundTheme,
+    window: &Window,
+) -> SurfaceLayout {
+    let (mut bounds, collapsed_hidden) =
+        super::mindmap::resolve_surface_element_bounds(elements, external_bounds);
+    let mut ordered: Vec<_> = elements
+        .iter()
+        .filter(|e| !e.hidden && !collapsed_hidden.contains(&e.id))
+        .collect();
+    if let Some(root) = doc_root {
+        let layers = crate::edgeless::Layers::from_root(root);
+        ordered.sort_by(|a, b| layers.cmp_ids(&a.id, &b.id));
+    } else {
+        super::sort_surface_elements_hierarchically(elements, &mut ordered);
+    }
+    let lookup: BTreeMap<&str, &SurfaceElement> =
+        elements.iter().map(|e| (e.id.as_str(), e)).collect();
     let shapes = elements
         .iter()
         .filter_map(|e| match &e.kind {
@@ -248,17 +256,29 @@ pub fn layout_surface(
             _ => None,
         })
         .collect();
-    bounds.extend(
-        routes
-            .iter()
-            .map(|(id, r)| (id.to_string(), super::extent(&r.samples))),
-    );
+    bounds.extend(routes.iter().map(|(id, r)| {
+        let half = lookup
+            .get(id)
+            .and_then(|e| match &e.kind {
+                SurfaceElementKind::Connector(c) => Some((c.stroke_width * 0.5).max(0.5)),
+                _ => None,
+            })
+            .unwrap_or(0.5);
+        (id.to_string(), super::extent(&r.samples).expand(half))
+    }));
     let mut items = vec![];
     for e in ordered {
         let region = match &e.kind {
             SurfaceElementKind::Group { children, .. } => {
                 strokes::group_bounds(children, &lookup, &bounds).map(|b| b.expand(12.))
             }
+            SurfaceElementKind::Mindmap(mm) => mm
+                .nodes
+                .keys()
+                .filter(|id| !collapsed_hidden.contains(*id))
+                .filter_map(|id| bounds.get(id).copied())
+                .reduce(WorldBounds::union)
+                .map(|b| b.expand(12.)),
             _ => bounds.get(&e.id).copied(),
         };
         let Some(b) = region else { continue };
@@ -282,6 +302,7 @@ pub fn layout_surface(
             transform,
             id: e.id.clone(),
             group: matches!(e.kind, SurfaceElementKind::Group { .. }),
+            local_xywh: b.xywh,
             bounds: if rotate_locally {
                 b.ui()
             } else {
@@ -296,7 +317,17 @@ pub fn layout_surface(
         };
         match &e.kind {
             SurfaceElementKind::Shape(s) => {
-                layout_shape(&mut item, s, e.seed, theme, window.text_system())
+                let mut resolved_shape;
+                let shape_ref = if let Some(override_b) = bounds.get(&e.id)
+                    && override_b.xywh != s.xywh
+                {
+                    resolved_shape = s.clone();
+                    resolved_shape.xywh = override_b.xywh;
+                    &resolved_shape
+                } else {
+                    s
+                };
+                layout_shape(&mut item, shape_ref, e.seed, theme, window.text_system())
             }
             SurfaceElementKind::Connector(c) => {
                 let Some(route) = routes.get(e.id.as_str()) else {
@@ -310,7 +341,16 @@ pub fn layout_surface(
                 item.stroke_width = c.stroke_width as f32;
                 layout_connector(&mut item, c, route, e.seed, theme, window);
             }
+            SurfaceElementKind::Mindmap(mm) => {
+                for conn in super::mindmap::mindmap_connectors(mm, &bounds) {
+                    if let Some(route) = connector::route(&conn, &bounds, &shapes) {
+                        layout_connector(&mut item, &conn, &route, e.seed, theme, window);
+                    }
+                }
+            }
             SurfaceElementKind::Brush(s) | SurfaceElementKind::Highlighter(s) => {
+                let half = (s.line_width * 0.5).max(0.5);
+                item.bounds = b.aabb().expand(half).ui();
                 let [x, y, w, h] = s.xywh;
                 let cx = x + w * 0.5;
                 let cy = y + h * 0.5;
@@ -351,7 +391,7 @@ pub fn layout_surface(
                 }
             }
             SurfaceElementKind::Text(s) => {
-                let [x, y, w, _] = s.xywh;
+                let [x, y, w, _] = b.xywh;
                 let style = TextStyle {
                     color: &s.color,
                     font: &s.font_family,
@@ -767,15 +807,19 @@ mod tests {
                 json!({"type":"shape","xywh":[0,0,240,c["height"]],"fontFamily":c["font"],"fontSize":c["fontSize"],"fontWeight":"400"}),
                 text,
             );
-            let b = geometry(&e).unwrap();
             let SurfaceElementKind::Shape(s) = e.kind else {
                 unreachable!()
+            };
+            let b = WorldBounds {
+                xywh: s.xywh,
+                rotate: e.rotate,
             };
             app.update(|cx| {
                 let ts = WindowTextSystem::new(cx.text_system().clone());
                 let mut item = Item {
                     id: e.id,
                     group: false,
+                    local_xywh: s.xywh,
                     bounds: b.ui(),
                     transform: TransformationMatrix::unit(),
                     paths: vec![],
@@ -844,6 +888,7 @@ mod tests {
             let mut item = Item {
                 id: hidden.id,
                 group: false,
+                local_xywh: s.xywh,
                 bounds: Bounds::default(),
                 transform: TransformationMatrix::unit(),
                 paths: vec![],
@@ -924,6 +969,111 @@ mod tests {
             b > 200 && r < 40 && g < 40,
             "expected 'a' (blue) on top of 'z' (red), got rgb=({r},{g},{b})"
         );
+    }
+
+    #[test]
+    fn gfx_shape_per_delta_rtl_shapes_arabic_indic_prefix_rtl_while_keeping_ltr_deltas() {
+        let platform = HeadlessPlatform::new(64, 64, 1.);
+        let app = Application::with_platform(platform).run_embedded(|cx| {
+            crate::register_bundled_fonts(cx).unwrap();
+        });
+        let make_shape = |delta: Vec<TextDeltaOp>| {
+            let plain: String = delta
+                .iter()
+                .map(|op| match op {
+                    TextDeltaOp::Insert {
+                        insert: y_octo::TextInsert::Text(s),
+                        ..
+                    } => s.as_str(),
+                    _ => "",
+                })
+                .collect();
+            SurfaceElement::from_properties(
+                "s-rtl".into(),
+                json!({"type":"shape","xywh":[0,0,220,80],"fontSize":16,"textAlign":"left"}),
+                RichText { plain, delta },
+            )
+        };
+        // "\u{0661}!" (Arabic-Indic digit 1 + neutral '!') triggers `RE_RTL_CHECK == true`
+        // (`\u{0661}` is in `\u0591-\u07FF`), setting paragraph embedding level 1 (RTL) so
+        // trailing neutral `'!'` resolves to level 1 on the LEFT of `\u{0661}` (`!١`). Under
+        // UAX #9 `AutoFirstStrong` (`gfx_per_delta_rtl = false`), neither char is strong so P3
+        // defaults to level 0 (LTR) with `'!'` on the RIGHT (`١!`).
+        let rtl_elem = make_shape(vec![TextDeltaOp::Insert {
+            insert: y_octo::TextInsert::Text("\u{0661}!".into()),
+            format: None,
+        }]);
+        let multi_elem = make_shape(vec![
+            TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text("Hi ".into()),
+                format: None,
+            },
+            TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text("\u{0661}!".into()),
+                format: Some(y_octo::TextAttributes::from([(
+                    "bold".into(),
+                    y_octo::Any::True,
+                )])),
+            },
+        ]);
+        app.update(|cx| {
+            let ts = WindowTextSystem::new(cx.text_system().clone());
+            let SurfaceElementKind::Shape(s) = rtl_elem.kind else {
+                unreachable!()
+            };
+            let style = TextStyle {
+                color: &s.color,
+                font: &s.font_family,
+                size: s.font_size,
+                weight: &s.font_weight,
+                slant: &s.font_style,
+                align: s.text_align,
+            };
+            let (gfx_layout, _) = style
+                .layout(&s.text, 200.0, PlaygroundTheme::Light, &ts)
+                .unwrap();
+            let mut uax9_style =
+                crate::rich_text::RichParagraphStyle::from_theme(PlaygroundTheme::Light.mode());
+            uax9_style.font_size = 16.0;
+            uax9_style.gfx_per_delta_rtl = false;
+            let uax9_layout = crate::rich_text::RichParagraph::from_delta(s.text.delta.clone())
+                .unwrap()
+                .layout(&ts, &uax9_style, 200.0);
+            let caret_x = |p: &crate::rich_text::LaidOutRichParagraph, off: u64| {
+                f32::from(
+                    p.caret_line_and_x(crate::rich_text::CaretPosition {
+                        utf16_offset: off,
+                        affinity: crate::rich_text::WrapAffinity::Downstream,
+                    })
+                    .1,
+                )
+            };
+            let bang_x_in_gfx = caret_x(&gfx_layout, 1);
+            let start_x_in_gfx = caret_x(&gfx_layout, 0);
+            let bang_x_in_uax9 = caret_x(&uax9_layout, 1);
+            let start_x_in_uax9 = caret_x(&uax9_layout, 0);
+            assert!(
+                start_x_in_gfx > 0.0 && start_x_in_uax9 == 0.0 && bang_x_in_uax9 > 0.0,
+                "gfx RE_RTL_CHECK must shape '\\u{{0661}}!' with RTL paragraph level (start_x={start_x_in_gfx}, bang_x={bang_x_in_gfx}) vs UAX#9 LTR (start_x={start_x_in_uax9}, bang_x={bang_x_in_uax9})"
+            );
+
+            // Multi-delta: first delta "Hi " stays LTR on the left (`x == 0`),
+            // while second delta "\u{0661}!" shapes independently with RTL paragraph level.
+            let SurfaceElementKind::Shape(ms) = multi_elem.kind else {
+                unreachable!()
+            };
+            let (multi_layout, _) = style
+                .layout(&ms.text, 200.0, PlaygroundTheme::Light, &ts)
+                .unwrap();
+            let multi_uax9 = crate::rich_text::RichParagraph::from_delta(ms.text.delta.clone())
+                .unwrap()
+                .layout(&ts, &uax9_style, 200.0);
+            assert_eq!(caret_x(&multi_layout, 0), 0.0);
+            assert!(
+                caret_x(&multi_layout, 3) > caret_x(&multi_uax9, 3),
+                "second delta '\\u{{0661}}!' inside LTR line must shape with RTL base direction independently"
+            );
+        });
     }
 
     struct SurfaceOrderView {

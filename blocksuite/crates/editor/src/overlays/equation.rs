@@ -257,7 +257,7 @@ fn shape_latex_segment(
     };
     window
         .text_system()
-        .shape_line(shown, px(TYPOGRAPHY.font_xs_px), &runs, None)
+        .shape_line(shown, px(TYPOGRAPHY.font_sm_px), &runs, None)
 }
 
 fn wrap_latex_lines(
@@ -685,7 +685,7 @@ impl Overlays {
             .border_1()
             .border_color(focus_border)
             .overflow_hidden()
-            .text_size(px(TYPOGRAPHY.font_xs_px))
+            .text_size(px(TYPOGRAPHY.font_sm_px))
             .snapshot(
                 "overlay.equation_editor.input",
                 Some("overlay.equation_editor"),

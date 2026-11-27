@@ -664,7 +664,7 @@ fn surface_ref_relayouts_single_block_on_whiteboard_edit_and_clips_under_edgeles
             .expect("render image")
     };
 
-    // E3: Mutate the referenced whiteboard shape color + frame title while staying in Page mode:
+    // Mutate the referenced whiteboard shape color + frame title while staying in Page mode:
     // ONLY `sref-1` (`laid_out == 1`) must relayout, sibling paragraphs must hit cache (`reused >= 2`),
     // and the card title + rendered pixels must update immediately!
     let page_img_before = render_window_image();
@@ -709,7 +709,7 @@ fn surface_ref_relayouts_single_block_on_whiteboard_edit_and_clips_under_edgeles
         "SurfaceRef thumbnail pixels must update when referenced shape fillColor changes"
     );
 
-    // E2: Switch to Edgeless mode with camera pan & zoom != 1.0 (`0.55x`) so `note` sits shifted
+    // Switch to Edgeless mode with camera pan & zoom != 1.0 (`0.55x`) so `note` sits shifted
     // away from its world `[600, 320]` coords: `Prim::Surface` inside `note` MUST clip via
     // `with_local_paint_mask` so the blue `#1e88e5` shape inside `sref-1` renders visibly!
     s.app.update(|cx| {

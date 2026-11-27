@@ -104,11 +104,16 @@ pub struct PlaygroundOptions {
     pub mode: PlaygroundMode,
     /// Live room to join. Without one the view shows the built-in showcase document.
     pub room: Option<RoomConfig>,
+    /// Defaults to `false`. When set to `true` (e.g. via `?mobile=1`, `?edgeless_readonly=1`,
+    /// or `--edgeless-readonly` where `enable_mobile_edgeless_editing == false`),
+    /// Edgeless mode hides the creation toolbar, disables element authoring/mutation,
+    /// and pans smoothly on single-finger / left-pointer drags.
+    pub edgeless_readonly: bool,
 }
 
 impl PlaygroundOptions {
     /// Parse command-line flags: `--theme light|dark`, `--mode page|edgeless`,
-    /// `--room <room>` and `--relay <ws_url>` (a relay without a room is an error).
+    /// `--edgeless-readonly`, `--room <room>` and `--relay <ws_url>` (a relay without a room is an error).
     pub fn from_args(args: impl IntoIterator<Item = String>) -> anyhow::Result<Self> {
         let mut options = Self::default();
         let mut room = None;
@@ -130,6 +135,7 @@ impl PlaygroundOptions {
                     options.mode = PlaygroundMode::parse(&value)
                         .ok_or_else(|| anyhow::anyhow!("unknown mode {value:?} (page|edgeless)"))?;
                 }
+                "--edgeless-readonly" => options.edgeless_readonly = true,
                 "--room" => room = Some(value()?),
                 "--relay" => relay = Some(value()?),
                 other => anyhow::bail!("unknown flag: {other}"),
@@ -157,13 +163,14 @@ pub(crate) const THEME_TOGGLE_SIZE: f32 = 32.0;
 pub(crate) const TOPBAR_EDGE: f32 = 12.0;
 pub(crate) const SCROLL_LINE: f32 = 20.0;
 
-type LayoutKey = (u64, u32, PlaygroundTheme, u64, u64, u64, bool);
+type LayoutKey = (u64, u32, PlaygroundTheme, u64, u64, u64, bool, i32);
 
 #[cfg(test)]
 pub(crate) static GLOBAL_PREVIEW_PROVIDER_TEST_LOCK: std::sync::Mutex<()> =
     std::sync::Mutex::new(());
 
 pub(crate) type CalendarClockFn = Rc<dyn Fn() -> (i64, i32)>;
+pub(crate) type CalendarOffsetAtFn = Rc<dyn Fn(i64) -> i32>;
 pub(crate) type ImagePickerFn = Rc<dyn Fn()>;
 
 /// Interactive GPUI root view for desktop, Web canvas, and headless verification sessions.
@@ -217,9 +224,11 @@ pub struct PlaygroundView {
     /// Window size of the latest frame, in logical pixels.
     pub(crate) window_size: (f32, f32),
     pub(crate) edgeless: edgeless::EdgelessCanvasState,
+    pub(crate) edgeless_readonly: bool,
     pub(crate) overlays: Overlays,
     pub(crate) equation_snapshot: Option<blocksuite_playground_doc::session::SelectionSnapshot>,
     pub(crate) calendar_clock: Option<CalendarClockFn>,
+    pub(crate) calendar_offset_at: Option<CalendarOffsetAtFn>,
     pub(crate) image_picker: Option<ImagePickerFn>,
     /// Timer that ends a code block's `Copied` label; a newer copy replaces it.
     pub(crate) copied_timer: Option<Task<()>>,
@@ -326,9 +335,11 @@ impl PlaygroundView {
             max_scroll: 0.0,
             window_size: (0.0, 0.0),
             edgeless: edgeless::EdgelessCanvasState::new(),
+            edgeless_readonly: options.edgeless_readonly,
             overlays: Overlays::new(),
             equation_snapshot: None,
             calendar_clock: None,
+            calendar_offset_at: None,
             image_picker: None,
             copied_timer: None,
             _tasks: tasks,
@@ -459,6 +470,51 @@ impl PlaygroundView {
         cx.notify();
     }
 
+    pub(crate) fn on_edgeless_pinch(
+        &mut self,
+        event: &ui::PinchEvent,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if event.delta.abs() < 1e-6 {
+            return;
+        }
+        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let target_zoom = self.edgeless.camera.zoom * (1.0 + event.delta).max(0.05);
+        self.edgeless
+            .camera
+            .zoom_at(target_zoom, event.position, vp_origin);
+        self.edgeless.camera_initialized = true;
+        cx.notify();
+    }
+
+    /// Whether Edgeless authoring is gated read-only (`enable_mobile_edgeless_editing == false`).
+    pub fn edgeless_readonly(&self) -> bool {
+        self.edgeless_readonly
+    }
+
+    /// Enable or disable the mobile Edgeless read-only authoring gate.
+    pub fn set_edgeless_readonly(
+        &mut self,
+        readonly: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.edgeless_readonly == readonly {
+            return;
+        }
+        if readonly {
+            self.edgeless_commit_inline_edit(window, cx);
+            self.edgeless.authoring.selection.clear();
+            self.edgeless.authoring.gesture = None;
+            self.edgeless.authoring.tool = edgeless::EdgelessTool::Hand;
+        } else if self.edgeless.authoring.tool == edgeless::EdgelessTool::Hand {
+            self.edgeless.authoring.tool = edgeless::EdgelessTool::Select;
+        }
+        self.edgeless_readonly = readonly;
+        cx.notify();
+    }
+
     pub(crate) fn on_edgeless_pan_start(
         &mut self,
         event: &ui::MouseDownEvent,
@@ -514,6 +570,7 @@ impl PlaygroundView {
         self.reading_anchor = None;
         self.flow = BlockFlow::new();
         self.layout = None;
+        self.edgeless = edgeless::EdgelessCanvasState::new();
         self.state = state;
         self.default_doc_directory = directory::InMemoryDocDirectory::with_namespace(format!(
             "doc:{:x}",

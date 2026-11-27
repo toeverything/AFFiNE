@@ -86,6 +86,9 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.edgeless_readonly {
+            return;
+        }
         if let EdgelessTool::Shape(s) = tool {
             self.edgeless.authoring.last_shape_type = Some(s);
         }
@@ -237,6 +240,21 @@ impl PlaygroundView {
         if self.edgeless.authoring.editing_spatial_block().is_some() {
             if key == "escape" && !self.editor.composing() {
                 self.edgeless_commit_inline_edit(window, cx);
+                return true;
+            }
+            return false;
+        }
+
+        // In mobile read-only Edgeless mode (`enable_mobile_edgeless_editing == false`),
+        // only Space-pan and Escape are accepted; all authoring/mutating shortcuts are suppressed.
+        if self.edgeless_readonly {
+            if key == "space" && !cmd {
+                self.edgeless.authoring.space_pan = true;
+                return true;
+            }
+            if key == "escape" {
+                self.edgeless.authoring.gesture = None;
+                cx.notify();
                 return true;
             }
             return false;

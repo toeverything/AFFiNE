@@ -287,6 +287,9 @@ pub struct RichParagraphStyle {
     pub chip_fg: Hsla,
     /// Display scale factor used for rasterizing inline math formulas.
     pub dpr: f32,
+    /// When `true` (Edgeless `gfx/text`, `gfx/shape`, and `gfx/connector` labels), evaluates
+    /// BlockSuite `0.27.5` `RE_RTL_CHECK` per delta/line instead of paragraph-level LTR.
+    pub gfx_per_delta_rtl: bool,
 }
 
 impl Default for RichParagraphStyle {
@@ -369,6 +372,7 @@ impl RichParagraphStyle {
             chip_bg: color(raw_tokens::Rgba::TRANSPARENT),
             chip_fg: color(theme.text_primary),
             dpr: 2.0,
+            gfx_per_delta_rtl: false,
         }
     }
 }

@@ -9,7 +9,7 @@ use crate::{
     block_flow::{
         BlockFlow, FlowInput, FlowLayout, InlineAlign, InlineBaseline, InlineStyle, layout_inline,
     },
-    surface::{SurfaceLayout, layout_surface},
+    surface::{SurfaceLayout, layout_surface_in_doc},
     theme::FONT_SANS,
 };
 
@@ -140,6 +140,7 @@ pub fn prepare_edgeless_scene(
                         input.preview_rev,
                         input.preedit_nonce,
                         is_rtl,
+                        input.utc_offset_minutes,
                     );
                     let layout = match state.note_flows.get_mut(&child.id) {
                         Some(cached) if cached.key == key => cached.layout.clone(),
@@ -155,12 +156,14 @@ pub fn prepare_edgeless_scene(
                                 equation_draft: None,
                                 env_rev: input.env_rev,
                                 direction: input.direction,
+                                utc_offset_minutes: input.utc_offset_minutes,
+                                utc_offset_at: input.utc_offset_at,
                             };
                             let entry =
                                 state.note_flows.entry(child.id.clone()).or_insert_with(|| {
                                     CachedNoteFlow {
                                         flow: BlockFlow::new(),
-                                        key: (u64::MAX, 0, 0, input.theme, 0, 0, 0, !is_rtl),
+                                        key: (u64::MAX, 0, 0, input.theme, 0, 0, 0, !is_rtl, 0),
                                         layout: Rc::new(FlowLayout {
                                             blocks: Vec::new(),
                                             width: inner_width,
@@ -236,6 +239,7 @@ pub fn prepare_edgeless_scene(
                             input.preview_rev,
                             input.preedit_nonce,
                             is_rtl,
+                            input.utc_offset_minutes,
                         );
                         let layout = match state.text_flows.get_mut(&child.id) {
                             Some(cached) if cached.key == key => cached.layout.clone(),
@@ -251,13 +255,15 @@ pub fn prepare_edgeless_scene(
                                     equation_draft: None,
                                     env_rev: input.env_rev,
                                     direction: input.direction,
+                                    utc_offset_minutes: input.utc_offset_minutes,
+                                    utc_offset_at: input.utc_offset_at,
                                 };
                                 let entry = state
                                     .text_flows
                                     .entry(child.id.clone())
                                     .or_insert_with(|| CachedNoteFlow {
                                         flow: BlockFlow::new(),
-                                        key: (u64::MAX, 0, 0, input.theme, 0, 0, 0, !is_rtl),
+                                        key: (u64::MAX, 0, 0, input.theme, 0, 0, 0, !is_rtl, 0),
                                         layout: Rc::new(FlowLayout {
                                             blocks: Vec::new(),
                                             width: text_width,
@@ -378,9 +384,21 @@ pub fn prepare_edgeless_scene(
                                     }
                                 }
                             }
-                            Some(layout_surface(&patched, &external, input.theme, window))
+                            Some(layout_surface_in_doc(
+                                input.snapshot.root.as_ref(),
+                                &patched,
+                                &external,
+                                input.theme,
+                                window,
+                            ))
                         } else {
-                            Some(layout_surface(elements, &external, input.theme, window))
+                            Some(layout_surface_in_doc(
+                                input.snapshot.root.as_ref(),
+                                elements,
+                                &external,
+                                input.theme,
+                                window,
+                            ))
                         }
                     }
                     _ => None,
@@ -485,16 +503,12 @@ pub fn prepare_edgeless_scene(
                             .find(|(bid, _)| *bid == id)
                             .map(|(_, b)| world_rect(b))
                             .unwrap_or_default();
+                        let [lx, ly, lw, lh] = layouts[l].item_local_xywh(i);
+                        let local_rect = WorldRect::new(lx as f32, ly as f32, lw as f32, lh as f32);
                         let (kind, rect) = match &el.kind {
-                            blocksuite_playground_doc::read::SurfaceElementKind::Shape(s) => (
-                                SpatialItemKind::Shape,
-                                WorldRect::new(
-                                    s.xywh[0] as f32,
-                                    s.xywh[1] as f32,
-                                    s.xywh[2] as f32,
-                                    s.xywh[3] as f32,
-                                ),
-                            ),
+                            blocksuite_playground_doc::read::SurfaceElementKind::Shape(_) => {
+                                (SpatialItemKind::Shape, local_rect)
+                            }
                             blocksuite_playground_doc::read::SurfaceElementKind::Connector(_) => {
                                 (SpatialItemKind::Connector, bounds_rect)
                             }
@@ -518,18 +532,15 @@ pub fn prepare_edgeless_scene(
                                     ),
                                 )
                             }
-                            blocksuite_playground_doc::read::SurfaceElementKind::Text(s) => (
-                                SpatialItemKind::SurfaceText,
-                                WorldRect::new(
-                                    s.xywh[0] as f32,
-                                    s.xywh[1] as f32,
-                                    s.xywh[2] as f32,
-                                    s.xywh[3] as f32,
-                                ),
-                            ),
+                            blocksuite_playground_doc::read::SurfaceElementKind::Text(_) => {
+                                (SpatialItemKind::SurfaceText, local_rect)
+                            }
                             blocksuite_playground_doc::read::SurfaceElementKind::Group {
                                 ..
-                            } => (SpatialItemKind::Group, bounds_rect),
+                            }
+                            | blocksuite_playground_doc::read::SurfaceElementKind::Mindmap(_) => {
+                                (SpatialItemKind::Group, bounds_rect)
+                            }
                             blocksuite_playground_doc::read::SurfaceElementKind::Unknown {
                                 ..
                             } => {

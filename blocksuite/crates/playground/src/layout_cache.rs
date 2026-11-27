@@ -77,7 +77,10 @@ impl PlaygroundView {
                 id: directory::EditorDocId::new(&page.id),
                 title: page.title.clone(),
                 mode,
-                updated_at_ms: 0,
+                updated_at_ms: page
+                    .updated_date
+                    .filter(|&d| d > 0)
+                    .unwrap_or(page.create_date),
             });
             self.default_doc_directory.retain_and_upsert_docs(docs);
             self.cached_page_revisions
@@ -85,6 +88,10 @@ impl PlaygroundView {
 
             for page in &pages {
                 let doc_id = directory::EditorDocId::new(&page.id);
+                let page_updated_ms = page
+                    .updated_date
+                    .filter(|&d| d > 0)
+                    .unwrap_or(page.create_date);
                 let is_active = self.page_id.as_deref() == Some(page.id.as_str());
                 let cached_preview = self.default_doc_directory.doc_preview(&doc_id);
                 let has_snapshot = self.default_doc_directory.doc_snapshot(&doc_id).is_some();
@@ -94,12 +101,12 @@ impl PlaygroundView {
                 // Avoid re-decoding non-active workspace pages on every local keystroke while
                 // immediately invalidating whenever any local or remote update (including pure
                 // Yjs deletes that leave the state vector unchanged) bumps `page.revision()`
-                // or changes the workspace title.
+                // or changes the workspace title or updated timestamp.
                 if !is_active
                     && has_snapshot
-                    && cached_preview
-                        .as_ref()
-                        .is_some_and(|p| p.title == page.title)
+                    && cached_preview.as_ref().is_some_and(|p| {
+                        p.title == page.title && p.updated_at_ms == page_updated_ms
+                    })
                     && current_rev.is_some()
                     && self.cached_page_revisions.get(&page.id).copied() == current_rev
                 {
@@ -143,11 +150,19 @@ impl PlaygroundView {
                         Some(prev)
                             if !is_active
                                 && prev.title == page.title
-                                && prev.snippet == snippet =>
+                                && prev.snippet == snippet
+                                && prev.updated_at_ms == page_updated_ms
+                                && self.default_doc_directory.doc_snapshot(&doc_id).as_deref()
+                                    == Some(&snap) =>
                         {
                             prev.revision
                         }
-                        Some(prev) => prev.revision.wrapping_add(1),
+                        Some(prev) => {
+                            if !is_active {
+                                self.env_rev += 1;
+                            }
+                            prev.revision.wrapping_add(1)
+                        }
                         None => 1,
                     };
                     self.default_doc_directory.upsert_preview(
@@ -155,7 +170,7 @@ impl PlaygroundView {
                         directory::EditorDocPreview {
                             title: page.title.clone(),
                             snippet,
-                            updated_at_ms: 0,
+                            updated_at_ms: page_updated_ms,
                             revision: next_rev,
                         },
                     );
@@ -314,6 +329,7 @@ impl PlaygroundView {
 
         let snapshot = self.snapshot.clone()?;
         let is_rtl = window.layout_direction().is_rtl();
+        let utc_offset_minutes = self.current_utc_offset_minutes();
         let preview_rev = crate::block_flow::preview_revision();
         let equation_draft = self
             .overlays
@@ -347,6 +363,7 @@ impl PlaygroundView {
             preview_rev,
             draft_hash,
             is_rtl,
+            utc_offset_minutes,
         );
         if let Some((cached, layout)) = &self.layout
             && *cached == key
@@ -361,6 +378,7 @@ impl PlaygroundView {
                     && old.3 == key.3
                     && old.4 == key.4
                     && old.6 == key.6
+                    && old.7 == key.7
             })
         });
         // If only the live equation draft changed, mark just the target block dirty so sibling
@@ -383,6 +401,7 @@ impl PlaygroundView {
                 }
             }
         }
+        let offset_at = self.utc_offset_resolver();
         let doc_dir = self
             .custom_doc_directory
             .as_deref()
@@ -399,6 +418,8 @@ impl PlaygroundView {
                 equation_draft: equation_draft.as_ref(),
                 env_rev: self.env_rev,
                 direction: window.layout_direction(),
+                utc_offset_minutes,
+                utc_offset_at: Some(&offset_at),
             },
             window,
             dirty.as_ref(),

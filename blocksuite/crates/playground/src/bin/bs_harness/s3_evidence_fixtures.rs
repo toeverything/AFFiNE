@@ -97,7 +97,7 @@ pub(super) fn new_doc_state(title: &str) -> Result<DocState> {
     state.workspace.create_page(HOME_PAGE_ID, title, 1)?;
     state
         .workspace
-        .create_page("doc:roadmap", "Mobile Rust Roadmap 2026", 2)?;
+        .create_page("doc:roadmap", "Mobile Rust Roadmap 2026", 1_795_703_400_000)?;
     {
         let roadmap = state.workspace.ensure_page("doc:roadmap")?;
         roadmap.add_block(

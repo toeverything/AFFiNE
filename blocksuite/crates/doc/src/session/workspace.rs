@@ -267,6 +267,7 @@ impl WorkspaceSession {
                 let mut id = String::new();
                 let mut title = String::new();
                 let mut create_date = 0i64;
+                let mut updated_date = None;
                 let mut tags = Vec::new();
                 for (k, v) in entries {
                     match k.as_str() {
@@ -283,6 +284,15 @@ impl WorkspaceSession {
                         "createDate" => match v {
                             SessionReadValue::Any(Any::Integer(n)) => create_date = i64::from(n),
                             SessionReadValue::Any(Any::Float64(f)) => create_date = f.0 as i64,
+                            _ => {}
+                        },
+                        "updatedDate" => match v {
+                            SessionReadValue::Any(Any::Integer(n)) if n > 0 => {
+                                updated_date = Some(i64::from(n));
+                            }
+                            SessionReadValue::Any(Any::Float64(f)) if f.0 > 0.0 => {
+                                updated_date = Some(f.0 as i64);
+                            }
                             _ => {}
                         },
                         "tags" => {
@@ -302,6 +312,7 @@ impl WorkspaceSession {
                         id,
                         title,
                         create_date,
+                        updated_date,
                         tags,
                     });
                 }

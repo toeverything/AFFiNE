@@ -128,6 +128,79 @@ impl PlaygroundView {
 
     /// Returns `(utc_epoch_ms, utc_offset_minutes)` from the configured override or host clock.
     pub(crate) fn local_calendar_now(&self, _cx: &Context<Self>) -> (i64, i32) {
+        self.local_calendar_clock()
+    }
+
+    /// Returns the active local timezone offset in minutes east of UTC from the configured
+    /// `calendar_clock` override or the host system clock.
+    pub(crate) fn current_utc_offset_minutes(&self) -> i32 {
+        self.local_calendar_clock().1
+    }
+
+    /// Returns a self-contained `utc_ms -> utc_offset_minutes` resolver that evaluates DST rules
+    /// at the given timestamp (via override, `js_sys::Date` on Wasm, or IANA tzdb on native).
+    pub(crate) fn utc_offset_resolver(&self) -> impl Fn(i64) -> i32 + 'static {
+        let custom_at = self.calendar_offset_at.clone();
+        let custom_clock = self.calendar_clock.clone();
+        move |utc_ms: i64| {
+            if let Some(at) = &custom_at {
+                return at(utc_ms);
+            }
+            if let Some(clock) = &custom_clock {
+                return clock().1;
+            }
+            #[cfg(target_family = "wasm")]
+            {
+                let d = js_sys::Date::new(&wasm_bindgen::JsValue::from_f64(utc_ms as f64));
+                let off = d.get_timezone_offset();
+                if off.is_finite() {
+                    -(off.round() as i32)
+                } else {
+                    0
+                }
+            }
+            #[cfg(not(target_family = "wasm"))]
+            {
+                jiff::Timestamp::from_millisecond(utc_ms)
+                    .ok()
+                    .map(|ts| jiff::tz::TimeZone::system().to_offset(ts).seconds() / 60)
+                    .unwrap_or(0)
+            }
+        }
+    }
+
+    /// Override per-timestamp UTC offset resolution (e.g. for deterministic cross-DST tests).
+    pub fn set_calendar_offset_at(
+        &mut self,
+        resolver: impl Fn(i64) -> i32 + 'static,
+        cx: &mut Context<Self>,
+    ) {
+        self.calendar_offset_at = Some(std::rc::Rc::new(resolver));
+        self.env_rev += 1;
+        cx.notify();
+    }
+
+    /// Override per-timestamp UTC offset resolution using a named IANA timezone (e.g. `"America/New_York"`).
+    #[cfg(not(target_family = "wasm"))]
+    pub fn set_calendar_timezone_iana(
+        &mut self,
+        iana: &str,
+        cx: &mut Context<Self>,
+    ) -> anyhow::Result<()> {
+        let tz = jiff::tz::TimeZone::get(iana)?;
+        self.set_calendar_offset_at(
+            move |utc_ms| {
+                jiff::Timestamp::from_millisecond(utc_ms)
+                    .ok()
+                    .map(|ts| tz.to_offset(ts).seconds() / 60)
+                    .unwrap_or(0)
+            },
+            cx,
+        );
+        Ok(())
+    }
+
+    fn local_calendar_clock(&self) -> (i64, i32) {
         if let Some(clock) = &self.calendar_clock {
             return clock();
         }
@@ -375,6 +448,13 @@ fn web_options() -> PlaygroundOptions {
     }
     if let Some(mode) = params.get("mode").and_then(|v| PlaygroundMode::parse(&v)) {
         options.mode = mode;
+    }
+    if params
+        .get("edgeless_readonly")
+        .or_else(|| params.get("mobile"))
+        .is_some_and(|v| matches!(v.as_str(), "1" | "true"))
+    {
+        options.edgeless_readonly = true;
     }
     if let Some(room) = params.get("room").filter(|room| !room.is_empty()) {
         // `?ws=` names the relay; without it the page's own origin serves the room.

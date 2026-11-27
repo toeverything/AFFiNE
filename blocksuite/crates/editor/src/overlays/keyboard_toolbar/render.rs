@@ -1,7 +1,10 @@
 //! Painting for `KeyboardToolbar` strip and its docked bottom tool panels
 //! (`+` 8-group insert panel, `Turn into` panel, and 9-color `Highlight` panel).
 
-use ui::{AnyElement, ClickEvent, Context, FontWeight, Hsla, SharedString, div, prelude::*, px};
+use ui::{
+    AnyElement, ClickEvent, Context, FontWeight, Hsla, ScrollEvent, SharedString, div, prelude::*,
+    px,
+};
 
 use crate::{
     TOPBAR_HEIGHT,
@@ -95,9 +98,10 @@ impl Overlays {
         let total_height = KEYBOARD_TOOLBAR_HEIGHT + panel_height;
         let top = (win_h - total_height).max(TOPBAR_HEIGHT).floor();
 
-        let marks = self
-            .open_toolbar()
-            .map(|t| t.selection.marks.clone())
+        let marks = scene
+            .selection
+            .map(|s| s.marks.clone())
+            .or_else(|| self.open_toolbar().map(|t| t.selection.marks.clone()))
             .unwrap_or_default();
 
         let bar_rect = FlowRect::new(0.0, top, width, KEYBOARD_TOOLBAR_HEIGHT);
@@ -180,68 +184,52 @@ impl Overlays {
                 .collect()
         };
 
-        // Reserve fixed slots: Back (when in Aa sub-toolbar) + right divider (9px) + Dismiss (44px)
-        // plus optional More (44px) when remaining items overflow.
+        // Reserve fixed slots: Back (when in Aa sub-toolbar) + right divider (9px) + Dismiss (44px).
+        // Remaining items sit in a horizontally scrollable `.item-container` (`0.27.5` `keyboard-toolbar.ts`).
         let fixed_right = btn + gap + 9.0;
         let fixed_left = if in_sub { btn + gap } else { 0.0 };
-        let avail_no_more = (rect.w - pad_x * 2.0 - fixed_right - fixed_left).max(btn);
-        let slots_no_more = ((avail_no_more + gap) / (btn + gap)).floor().max(1.0) as usize;
-        let needs_paging = slots_no_more < visible_items.len();
-        let left_slots = if needs_paging {
-            let avail_with_more = (avail_no_more - btn - gap).max(btn);
-            ((avail_with_more + gap) / (btn + gap)).floor().max(1.0) as usize
+        let avail_w = (rect.w - pad_x * 2.0 - fixed_right - fixed_left).max(btn);
+        let content_w = if visible_items.is_empty() {
+            0.0
         } else {
-            visible_items.len().max(1)
+            visible_items.len() as f32 * btn + (visible_items.len() - 1) as f32 * gap
         };
-        let page_count = visible_items.len().div_ceil(left_slots).max(1);
-        let page = self.keyboard_toolbar.page % page_count;
-        let start = page * left_slots;
-        let end = (start + left_slots).min(visible_items.len());
-        let slice = &visible_items[start..end];
+        let max_scroll = (content_w - avail_w).max(0.0).ceil();
+        let scroll_x = self.keyboard_toolbar.strip_scroll.clamp(0.0, max_scroll);
 
         let hover = palette.hover;
         let active_bg = palette.brand.opacity(0.14);
 
-        let mut left_strip = div()
-            .flex_1()
-            .min_w(px(0.0))
+        let mut scroll_strip = div()
+            .relative()
+            .flex_none()
+            .w(px(avail_w))
             .h(px(btn))
-            .flex()
-            .items_center()
-            .gap(px(gap))
             .overflow_hidden();
 
-        if in_sub {
-            left_strip = left_strip.child(self.render_strip_button(
-                "back",
-                "Back",
-                "",
-                KeyboardToolbarAction::BackToMainToolbar,
-                false,
-                false,
-                palette,
-                hover,
-                active_bg,
-                cx,
-            ));
-        }
-
-        for item in slice {
+        for (idx, item) in visible_items.iter().enumerate() {
+            let item_x = (idx as f32 * (btn + gap) - scroll_x).round();
+            if item_x + btn <= 0.0 || item_x >= avail_w {
+                continue;
+            }
+            let fully_visible = item_x >= -0.5 && item_x + btn <= avail_w + 0.5;
             let action = item.action();
             let disabled = self.is_action_disabled(action);
             let active = self.is_item_active(item, marks);
-            left_strip = left_strip.child(self.render_strip_button(
+            let btn_el = self.render_strip_button(
                 item.id(),
                 item.name(),
                 item.icon(),
                 action,
                 disabled,
                 active,
+                fully_visible,
                 palette,
                 hover,
                 active_bg,
                 cx,
-            ));
+            );
+            scroll_strip = scroll_strip.child(btn_el.absolute().left(px(item_x)).top(px(0.0)));
         }
 
         let divider = div()
@@ -258,6 +246,7 @@ impl Overlays {
             KeyboardToolbarAction::Dismiss,
             false,
             false,
+            true,
             palette,
             hover,
             active_bg,
@@ -278,34 +267,31 @@ impl Overlays {
             .border_color(palette.border)
             .shadow(palette.theme.shadows("--affine-toolbar-shadow").into())
             .occlude()
-            .snapshot("overlay.keyboard_toolbar", Some("root.canvas"))
-            .child(left_strip);
+            .on_scroll(emit(cx, |event: &ScrollEvent| {
+                let d = event.delta.pixel_delta(px(20.0));
+                let dx = f32::from(d.x);
+                let step = if dx != 0.0 { dx } else { f32::from(d.y) };
+                OverlayEvent::KeyboardToolbarScroll(step)
+            }))
+            .snapshot("overlay.keyboard_toolbar", Some("root.canvas"));
 
-        if needs_paging {
-            let more = div()
-                .id("kb-tool-more")
-                .flex_none()
-                .w(px(btn))
-                .h(px(btn))
-                .rounded(px(8.0))
-                .flex()
-                .items_center()
-                .justify_center()
-                .cursor_pointer()
-                .hover(move |style| style.bg(hover))
-                .on_click(emit(cx, |_: &ClickEvent| {
-                    OverlayEvent::KeyboardToolbarNextPage
-                }))
-                .snapshot(
-                    "overlay.keyboard_toolbar.more",
-                    Some("overlay.keyboard_toolbar"),
-                )
-                .snapshot_text("More")
-                .child(icon("MoreHorizontalIcon", 20.0, palette.icon));
-            bar = bar.child(more);
+        if in_sub {
+            bar = bar.child(self.render_strip_button(
+                "back",
+                "Back",
+                "",
+                KeyboardToolbarAction::BackToMainToolbar,
+                false,
+                false,
+                true,
+                palette,
+                hover,
+                active_bg,
+                cx,
+            ));
         }
 
-        bar.child(divider).child(dismiss)
+        bar.child(scroll_strip).child(divider).child(dismiss)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -317,6 +303,7 @@ impl Overlays {
         action: KeyboardToolbarAction,
         disabled: bool,
         active: bool,
+        record_snapshot: bool,
         palette: &Palette,
         hover: Hsla,
         active_bg: Hsla,
@@ -336,13 +323,16 @@ impl Overlays {
             .text_size(px(TYPOGRAPHY.font_sm_px))
             .font_weight(FontWeight::SEMIBOLD)
             .text_color(ink)
-            .when(active, |el| el.bg(active_bg))
-            .snapshot(
-                SharedString::from(format!("overlay.keyboard_toolbar.{id}")),
-                Some("overlay.keyboard_toolbar"),
-            )
-            .snapshot_focused(active)
-            .snapshot_text(label);
+            .when(active, |el| el.bg(active_bg));
+        if record_snapshot {
+            button = button
+                .snapshot(
+                    SharedString::from(format!("overlay.keyboard_toolbar.{id}")),
+                    Some("overlay.keyboard_toolbar"),
+                )
+                .snapshot_focused(active)
+                .snapshot_text(label);
+        }
 
         if disabled {
             button = button.opacity(0.35);

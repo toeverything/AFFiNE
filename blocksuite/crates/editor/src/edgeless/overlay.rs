@@ -551,6 +551,7 @@ pub fn layout_label_editor_paragraph(
         font_size: 14.0,
         line_height: 20.0,
         text_color: theme.palette().text_primary,
+        gfx_per_delta_rtl: !matches!(editor.target, super::LabelTarget::FrameTitle { .. }),
         ..RichParagraphStyle::from_theme(theme.mode())
     };
     let para = RichParagraph::from_delta(delta).ok()?;

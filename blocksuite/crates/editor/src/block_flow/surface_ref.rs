@@ -39,31 +39,116 @@ fn xywh_intersects([x, y, w, h]: [f64; 4], (fx, fy, fw, fh): (f32, f32, f32, f32
     !(x + w < fx || x > fx + fw || y + h < fy || y > fy + fh)
 }
 
+fn subtree_contains_block(node: &BlockNode, target_id: &str) -> bool {
+    !target_id.is_empty() && node.walk().any(|n| n.id == target_id)
+}
+
+fn collect_spatial_bounds(
+    root: &BlockNode,
+    frect: (f32, f32, f32, f32),
+    exclude_ancestor_of: &str,
+) -> (
+    std::collections::BTreeMap<String, crate::surface::WorldBounds>,
+    BTreeSet<String>,
+) {
+    let mut external_bounds = std::collections::BTreeMap::new();
+    let mut spatial_in_frame = BTreeSet::new();
+    for sp in crate::edgeless::spatial_blocks(root) {
+        if subtree_contains_block(sp, exclude_ancestor_of) {
+            continue;
+        }
+        match &sp.content {
+            BlockContent::Note {
+                xywh,
+                hidden: false,
+                ..
+            } => {
+                if let Some((nx, ny, nw, nh)) = parse_xywh_rect(xywh)
+                    && nw > 1.0
+                    && nh > 1.0
+                {
+                    let xywh64 = [nx.into(), ny.into(), nw.into(), nh.into()];
+                    external_bounds.insert(
+                        sp.id.clone(),
+                        crate::surface::WorldBounds {
+                            xywh: xywh64,
+                            rotate: 0.0,
+                        },
+                    );
+                    if xywh_intersects(xywh64, frect) {
+                        spatial_in_frame.insert(sp.id.clone());
+                    }
+                }
+            }
+            BlockContent::Frame { xywh, .. } | BlockContent::EdgelessText { xywh } => {
+                if let Some((bx, by, bw, bh)) = parse_xywh_rect(xywh) {
+                    let rot = crate::edgeless::prop_f32(sp, "prop:rotate", 0.0);
+                    let wb = crate::surface::WorldBounds {
+                        xywh: [bx.into(), by.into(), bw.into(), bh.into()],
+                        rotate: rot.into(),
+                    };
+                    external_bounds.insert(sp.id.clone(), wb);
+                    if matches!(sp.content, BlockContent::EdgelessText { .. })
+                        && xywh_intersects(wb.aabb().xywh, frect)
+                    {
+                        spatial_in_frame.insert(sp.id.clone());
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    (external_bounds, spatial_in_frame)
+}
+
 fn frame_relevant_surface_elements(
     frame_node: &BlockNode,
     frect: (f32, f32, f32, f32),
+    external_bounds: &std::collections::BTreeMap<String, crate::surface::WorldBounds>,
     spatial_in_frame_ids: &BTreeSet<String>,
     elements: &[blocksuite_playground_doc::read::SurfaceElement],
-) -> Vec<blocksuite_playground_doc::read::SurfaceElement> {
+) -> (
+    Vec<blocksuite_playground_doc::read::SurfaceElement>,
+    BTreeSet<String>,
+) {
     use blocksuite_playground_doc::read::SurfaceElementKind;
-    let pt_in = |pt: Option<[f64; 2]>| {
-        pt.is_some_and(|[px, py]| {
-            let (x, y) = (px as f32, py as f32);
-            x >= frect.0 && x <= frect.0 + frect.2 && y >= frect.1 && y <= frect.1 + frect.3
-        })
-    };
+    let (all_bounds, collapsed_hidden) =
+        crate::surface::resolve_surface_element_bounds(elements, external_bounds);
+    let mut all_shapes = std::collections::BTreeMap::new();
+    for el in elements
+        .iter()
+        .filter(|el| !el.hidden && !collapsed_hidden.contains(&el.id))
+    {
+        if let SurfaceElementKind::Shape(s) = &el.kind {
+            all_shapes.insert(el.id.as_str(), s.shape_type);
+        }
+    }
+
     let members = frame_member_ids(frame_node);
     let mut inc = spatial_in_frame_ids.clone();
-    for el in elements.iter().filter(|el| !el.hidden) {
+    for el in elements
+        .iter()
+        .filter(|el| !el.hidden && !collapsed_hidden.contains(&el.id))
+    {
         let hit = members.contains(&el.id)
             || match &el.kind {
-                SurfaceElementKind::Shape(s) => xywh_intersects(s.xywh, frect),
-                SurfaceElementKind::Text(t) => xywh_intersects(t.xywh, frect),
-                SurfaceElementKind::Brush(st) | SurfaceElementKind::Highlighter(st) => {
-                    xywh_intersects(st.xywh, frect)
+                SurfaceElementKind::Shape(s) => all_bounds.get(&el.id).is_some_and(|b| {
+                    xywh_intersects(b.aabb().expand((s.stroke_width * 0.5).max(0.0)).xywh, frect)
+                }),
+                SurfaceElementKind::Text(_) => all_bounds
+                    .get(&el.id)
+                    .is_some_and(|b| xywh_intersects(b.aabb().xywh, frect)),
+                SurfaceElementKind::Brush(s) | SurfaceElementKind::Highlighter(s) => {
+                    all_bounds.get(&el.id).is_some_and(|b| {
+                        let half = (s.line_width * 0.5).max(0.5);
+                        xywh_intersects(b.aabb().expand(half).xywh, frect)
+                    })
                 }
                 SurfaceElementKind::Connector(c) => {
-                    pt_in(c.source.position) || pt_in(c.target.position)
+                    crate::surface::connector_intersects_rect(c, &all_bounds, &all_shapes, frect)
+                }
+                SurfaceElementKind::Mindmap(mm) => {
+                    crate::surface::mindmap_intersects_rect(mm, &all_bounds, &all_shapes, frect)
                 }
                 _ => false,
             };
@@ -71,29 +156,73 @@ fn frame_relevant_surface_elements(
             inc.insert(el.id.clone());
         }
     }
-    elements
+
+    // Retain any connector or mindmap attached to an included node, and pull in bound endpoint
+    // or mindmap node IDs so `layout_surface` resolves ports on shapes outside the frame (clipped
+    // by paint mask) and `surface_ref_fingerprint` invalidates when an outside endpoint moves.
+    let mut endpoint_deps = BTreeSet::new();
+    for el in elements.iter().filter(|el| !el.hidden) {
+        match &el.kind {
+            SurfaceElementKind::Connector(c) => {
+                let touches_inc = inc.contains(&el.id)
+                    || c.source.id.as_deref().is_some_and(|id| inc.contains(id))
+                    || c.target.id.as_deref().is_some_and(|id| inc.contains(id));
+                if touches_inc {
+                    endpoint_deps.insert(el.id.clone());
+                    if let Some(id) = &c.source.id {
+                        endpoint_deps.insert(id.clone());
+                    }
+                    if let Some(id) = &c.target.id {
+                        endpoint_deps.insert(id.clone());
+                    }
+                }
+            }
+            SurfaceElementKind::Mindmap(mm) => {
+                if inc.contains(&el.id) || mm.nodes.keys().any(|nid| inc.contains(nid)) {
+                    endpoint_deps.insert(el.id.clone());
+                    endpoint_deps.extend(mm.nodes.keys().cloned());
+                }
+            }
+            _ => {}
+        }
+    }
+    inc.extend(endpoint_deps);
+
+    loop {
+        let before = inc.len();
+        for el in elements {
+            if !el.hidden
+                && match &el.kind {
+                    SurfaceElementKind::Group { children, .. } => {
+                        children.iter().any(|id| inc.contains(id))
+                    }
+                    SurfaceElementKind::Mindmap(mm) => mm.nodes.keys().any(|id| inc.contains(id)),
+                    _ => false,
+                }
+            {
+                inc.insert(el.id.clone());
+            }
+        }
+        if inc.len() == before {
+            break;
+        }
+    }
+
+    let filtered = elements
         .iter()
-        .filter(|el| {
-            !el.hidden
-                && (inc.contains(&el.id)
-                    || match &el.kind {
-                        SurfaceElementKind::Connector(c) => {
-                            c.source.id.as_deref().is_some_and(|id| inc.contains(id))
-                                || c.target.id.as_deref().is_some_and(|id| inc.contains(id))
-                        }
-                        SurfaceElementKind::Group { children, .. } => {
-                            children.iter().any(|id| inc.contains(id))
-                        }
-                        _ => false,
-                    })
-        })
+        .filter(|el| !el.hidden && inc.contains(&el.id))
         .cloned()
-        .collect()
+        .collect();
+    (filtered, inc)
 }
 
 /// Deterministic cache fingerprint of the referenced `Frame`, intersecting spatial blocks,
 /// and frame-relevant whiteboard elements so `BlockFlow` invalidates a `SurfaceRef` card on edit.
-pub(super) fn surface_ref_fingerprint(snapshot: &PageSnapshot, reference: &str) -> u64 {
+pub(super) fn surface_ref_fingerprint(
+    snapshot: &PageSnapshot,
+    reference: &str,
+    surface_ref_block_id: &str,
+) -> u64 {
     use std::hash::{Hash, Hasher};
     let Some((root, frame_node)) = snapshot
         .root
@@ -109,27 +238,38 @@ pub(super) fn surface_ref_fingerprint(snapshot: &PageSnapshot, reference: &str) 
         && frect.2 > 1.0
         && frect.3 > 1.0
     {
-        let mut spatial_in_frame = BTreeSet::new();
-        for sp in crate::edgeless::spatial_blocks(root) {
-            if let BlockContent::Note {
-                xywh,
-                hidden: false,
-                ..
-            }
-            | BlockContent::EdgelessText { xywh } = &sp.content
-                && let Some((nx, ny, nw, nh)) = parse_xywh_rect(xywh)
-                && xywh_intersects([nx.into(), ny.into(), nw.into(), nh.into()], frect)
-            {
-                spatial_in_frame.insert(sp.id.clone());
-                let rot = crate::edgeless::prop_f32(sp, "prop:rotate", 0.0);
-                format!("{:?}", (&sp.id, &sp.content, rot.to_bits())).hash(&mut hasher);
-            }
-        }
+        let (external_bounds, mut tracked_spatial) =
+            collect_spatial_bounds(root, frect, surface_ref_block_id);
         for node in root.walk() {
             if let BlockContent::Surface { elements, .. } = &node.content {
-                let rel =
-                    frame_relevant_surface_elements(frame_node, frect, &spatial_in_frame, elements);
+                let (rel, inc_ids) = frame_relevant_surface_elements(
+                    frame_node,
+                    frect,
+                    &external_bounds,
+                    &tracked_spatial,
+                    elements,
+                );
+                let (resolved_bounds, _) =
+                    crate::surface::resolve_surface_element_bounds(elements, &external_bounds);
+                for id in &inc_ids {
+                    if let Some(b) = resolved_bounds.get(id) {
+                        format!("{b:?}").hash(&mut hasher);
+                    }
+                }
+                tracked_spatial.extend(inc_ids);
                 format!("{rel:?}").hash(&mut hasher);
+            }
+        }
+        for sp in crate::edgeless::spatial_blocks(root) {
+            if !subtree_contains_block(sp, surface_ref_block_id) {
+                if matches!(sp.content, BlockContent::Frame { .. }) {
+                    let idx = sp.props.get("prop:index").and_then(|v| v.as_str());
+                    format!("{:?}", (&sp.id, idx, frame_member_ids(sp))).hash(&mut hasher);
+                }
+                if tracked_spatial.contains(&sp.id) {
+                    let rot = crate::edgeless::prop_f32(sp, "prop:rotate", 0.0);
+                    format!("{:?}", (&sp.id, &sp.content, rot.to_bits())).hash(&mut hasher);
+                }
             }
         }
     }
@@ -139,6 +279,7 @@ pub(super) fn surface_ref_fingerprint(snapshot: &PageSnapshot, reference: &str) 
 impl FlowPass<'_> {
     pub(super) fn surface_ref_body(
         &mut self,
+        surface_ref_block_id: &str,
         reference: &str,
         _ref_flavour: &str,
         caption: &str,
@@ -204,10 +345,11 @@ impl FlowPass<'_> {
             let ox = thumb_rect.x + (thumb_rect.w - draw_w) * 0.5;
             let oy = thumb_rect.y + (thumb_rect.h - draw_h) * 0.5;
 
+            let frame_draw_rect = FlowRect::new(ox, oy, draw_w, draw_h);
             prims.push(Prim::Quad {
-                rect: FlowRect::new(ox, oy, draw_w, draw_h),
+                rect: frame_draw_rect,
                 fill: Some(self.palette.background),
-                border: Some(self.palette.brand.opacity(0.45)),
+                border: None,
                 radius: 4.0,
                 dashed: false,
             });
@@ -216,6 +358,9 @@ impl FlowPass<'_> {
             let mut external_bounds = std::collections::BTreeMap::new();
             let mut spatial_in_frame = BTreeSet::new();
             for spatial in crate::edgeless::spatial_blocks(root) {
+                if subtree_contains_block(spatial, surface_ref_block_id) {
+                    continue;
+                }
                 match &spatial.content {
                     BlockContent::Note {
                         xywh,
@@ -259,15 +404,13 @@ impl FlowPass<'_> {
                     BlockContent::Frame { xywh, .. } | BlockContent::EdgelessText { xywh } => {
                         if let Some((bx, by, bw, bh)) = parse_xywh_rect(xywh) {
                             let rot = crate::edgeless::prop_f32(spatial, "prop:rotate", 0.0);
-                            external_bounds.insert(
-                                spatial.id.clone(),
-                                crate::surface::WorldBounds {
-                                    xywh: [bx.into(), by.into(), bw.into(), bh.into()],
-                                    rotate: rot.into(),
-                                },
-                            );
+                            let wb = crate::surface::WorldBounds {
+                                xywh: [bx.into(), by.into(), bw.into(), bh.into()],
+                                rotate: rot.into(),
+                            };
+                            external_bounds.insert(spatial.id.clone(), wb);
                             if matches!(spatial.content, BlockContent::EdgelessText { .. })
-                                && !(bx + bw < fx || bx > fx + fw || by + bh < fy || by > fy + fh)
+                                && xywh_intersects(wb.aabb().xywh, (fx, fy, fw, fh))
                             {
                                 spatial_in_frame.insert(spatial.id.clone());
                             }
@@ -279,21 +422,23 @@ impl FlowPass<'_> {
             if let Some(fnode) = frame_node {
                 for node in root.walk() {
                     if let BlockContent::Surface { elements, .. } = &node.content {
-                        let rel = frame_relevant_surface_elements(
+                        let (rel, _) = frame_relevant_surface_elements(
                             fnode,
                             (fx, fy, fw, fh),
+                            &external_bounds,
                             &spatial_in_frame,
                             elements,
                         );
                         if !rel.is_empty() {
-                            let surface_layout = crate::surface::layout_surface(
+                            let surface_layout = crate::surface::layout_surface_in_doc(
+                                Some(root),
                                 &rel,
                                 &external_bounds,
                                 self.input.theme,
                                 self.window,
                             );
                             prims.push(Prim::Surface {
-                                rect: FlowRect::new(ox, oy, draw_w, draw_h),
+                                rect: frame_draw_rect,
                                 layout: Rc::new(surface_layout),
                                 world_origin: (fx, fy),
                                 scale,
@@ -302,6 +447,15 @@ impl FlowPass<'_> {
                     }
                 }
             }
+            // Paint the frame border stroke on top of projected items so clipped shapes/notes
+            // never occlude the frame outline.
+            prims.push(Prim::Quad {
+                rect: frame_draw_rect,
+                fill: None,
+                border: Some(self.palette.brand.opacity(0.45)),
+                radius: 4.0,
+                dashed: false,
+            });
         }
         if !drew_canvas_items {
             let icon_size = 24.0;

@@ -119,6 +119,19 @@ fn group_membership_matches_map_keys() {
 }
 
 #[test]
+fn gfx_text_rtl_checks_match_javascript_regexp() {
+    for case in oracle()["rtlChecks"].as_array().unwrap() {
+        let text = case["text"].as_str().unwrap();
+        let expected = case["rtl"].as_bool().unwrap();
+        assert_eq!(
+            super::rtl::is_gfx_text_rtl(text),
+            expected,
+            "RE_RTL_CHECK mismatch on {text:?}"
+        );
+    }
+}
+
+#[test]
 fn connector_absolute_paths_match_javascript() {
     use std::collections::BTreeMap;
     for (i, c) in oracle()["connectors"]

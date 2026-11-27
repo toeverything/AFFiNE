@@ -543,6 +543,8 @@ mod tests {
             equation_draft: None,
             env_rev: 0,
             direction: Direction::Ltr,
+            utc_offset_minutes: 0,
+            utc_offset_at: None,
         };
         let rtl_input = FlowInput {
             direction: Direction::Rtl,

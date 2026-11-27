@@ -58,6 +58,8 @@ pub struct PageMeta {
     pub id: String,
     pub title: String,
     pub create_date: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub updated_date: Option<i64>,
     pub tags: Vec<String>,
 }
 

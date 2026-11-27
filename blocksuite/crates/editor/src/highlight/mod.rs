@@ -314,7 +314,7 @@ mod tests {
     #[test]
     fn latex_and_typescript_tokens_classify_distinct_semantic_slots() {
         let tex = highlight_document("latex", r"\frac{-b \pm \sqrt{b^2 - 4ac}}{2a}");
-        assert!(tex[0].spans.iter().any(|s| s.kind == TokenKind::Keyword));
+        assert!(tex[0].spans.iter().any(|s| s.kind == TokenKind::Macro));
         assert!(tex[0].spans.iter().any(|s| s.kind == TokenKind::Number));
         assert!(
             tex[0]

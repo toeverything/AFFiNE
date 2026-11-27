@@ -1,16 +1,205 @@
 //! World-space geometry and paint layout for BlockSuite surface elements.
 mod connector;
+pub mod mindmap;
 #[cfg(test)]
 mod oracle;
 mod orthogonal;
 mod paint;
 mod rough;
+pub mod rtl;
 mod shapes;
 mod strokes;
 
-pub(crate) use paint::paint_surface_transformed;
+pub use mindmap::{
+    MindmapTree, MindmapTreeNode, build_mindmap_tree, collapsed_descendant_ids,
+    compute_mindmap_layout, mindmap_connectors, resolve_surface_element_bounds,
+};
 pub use paint::{SurfaceLayout, layout_surface, paint_surface, surface_element};
+pub(crate) use paint::{layout_surface_in_doc, paint_surface_transformed};
+pub use rtl::is_gfx_text_rtl;
 use ui::{Bounds, Pixels, Point, point, px, size};
+
+/// Resolves layout bounds for all visible surface elements, including mindmap-positioned
+/// child nodes and routed connector polylines (so bound endpoint `[u, v]` port ratios are
+/// never mistaken for world-space coordinates near the origin).
+pub(crate) fn resolve_surface_scene_bounds(
+    elements: &[blocksuite_playground_doc::read::SurfaceElement],
+    external_bounds: &std::collections::BTreeMap<String, WorldBounds>,
+) -> (
+    std::collections::BTreeMap<String, WorldBounds>,
+    std::collections::BTreeSet<String>,
+) {
+    let (mut bounds, collapsed_hidden) = resolve_surface_element_bounds(elements, external_bounds);
+    let shapes: std::collections::BTreeMap<&str, blocksuite_playground_doc::read::ShapeType> =
+        elements
+            .iter()
+            .filter_map(|e| match &e.kind {
+                blocksuite_playground_doc::read::SurfaceElementKind::Shape(s) => {
+                    Some((e.id.as_str(), s.shape_type))
+                }
+                _ => None,
+            })
+            .collect();
+    for e in elements
+        .iter()
+        .filter(|e| !e.hidden && !collapsed_hidden.contains(&e.id))
+    {
+        match &e.kind {
+            blocksuite_playground_doc::read::SurfaceElementKind::Connector(c) => {
+                if let Some(route) = connector::route(c, &bounds, &shapes) {
+                    let half = (c.stroke_width * 0.5).max(0.5);
+                    bounds.insert(e.id.clone(), extent(&route.samples).expand(half));
+                }
+            }
+            blocksuite_playground_doc::read::SurfaceElementKind::Brush(s)
+            | blocksuite_playground_doc::read::SurfaceElementKind::Highlighter(s) => {
+                let half = (s.line_width * 0.5).max(0.5);
+                bounds.insert(
+                    e.id.clone(),
+                    WorldBounds {
+                        xywh: s.xywh,
+                        rotate: e.rotate,
+                    }
+                    .aabb()
+                    .expand(half),
+                );
+            }
+            _ => {}
+        }
+    }
+    (bounds, collapsed_hidden)
+}
+
+/// Sorts surface elements in hierarchical z-order matching `edgeless::order::Layers`:
+/// every `Group` / `Mindmap` container sits at its own `index` relative to sibling
+/// elements, while its member nodes immediately follow it (painting above mindmap branch
+/// connectors without lifting earlier unrelated shapes above later mindmap branches).
+pub(super) fn sort_surface_elements_hierarchically<'a>(
+    all_elements: &'a [blocksuite_playground_doc::read::SurfaceElement],
+    ordered: &mut [&'a blocksuite_playground_doc::read::SurfaceElement],
+) {
+    use blocksuite_playground_doc::read::SurfaceElementKind;
+    let mut indices = std::collections::BTreeMap::new();
+    let mut parents: std::collections::BTreeMap<&'a str, &'a str> =
+        std::collections::BTreeMap::new();
+    let set_parent = |parents: &mut std::collections::BTreeMap<&'a str, &'a str>,
+                      id: &'a str,
+                      parent: &'a str| {
+        let mut anc = parent;
+        loop {
+            if anc == id {
+                return;
+            }
+            match parents.get(anc) {
+                Some(next) => anc = next,
+                None => break,
+            }
+        }
+        parents.entry(id).or_insert(parent);
+    };
+    for e in all_elements {
+        indices.insert(e.id.as_str(), e.index.as_str());
+        match &e.kind {
+            SurfaceElementKind::Group { children, .. } => {
+                for child in children {
+                    set_parent(&mut parents, child.as_str(), e.id.as_str());
+                }
+            }
+            SurfaceElementKind::Mindmap(mm) => {
+                for child in mm.nodes.keys() {
+                    set_parent(&mut parents, child.as_str(), e.id.as_str());
+                }
+            }
+            _ => {}
+        }
+    }
+    let path_of = |mut id: &'a str| {
+        let mut path = vec![id];
+        while let Some(&p) = parents.get(id) {
+            path.push(p);
+            id = p;
+        }
+        path.reverse();
+        path
+    };
+    ordered.sort_by(|a, b| {
+        let pa = path_of(a.id.as_str());
+        let pb = path_of(b.id.as_str());
+        for (&l, &r) in pa.iter().zip(&pb) {
+            if l != r {
+                return indices
+                    .get(l)
+                    .copied()
+                    .unwrap_or("a0")
+                    .cmp(indices.get(r).copied().unwrap_or("a0"));
+            }
+        }
+        pa.len().cmp(&pb.len())
+    });
+}
+
+/// Returns `true` when any routed branch connector of `mindmap` intersects `(fx, fy, fw, fh)`.
+pub(crate) fn mindmap_intersects_rect(
+    mindmap: &blocksuite_playground_doc::read::SurfaceMindmap,
+    bounds: &std::collections::BTreeMap<String, WorldBounds>,
+    shapes: &std::collections::BTreeMap<&str, blocksuite_playground_doc::read::ShapeType>,
+    frect: (f32, f32, f32, f32),
+) -> bool {
+    mindmap_connectors(mindmap, bounds)
+        .iter()
+        .any(|conn| connector_intersects_rect(conn, bounds, shapes, frect))
+}
+
+/// Returns `true` when the routed polyline of `connector` (resolved against `bounds` and `shapes`)
+/// has at least one segment intersecting the world-space axis-aligned rectangle `(fx, fy, fw, fh)`.
+pub(crate) fn connector_intersects_rect(
+    connector: &blocksuite_playground_doc::read::SurfaceConnector,
+    bounds: &std::collections::BTreeMap<String, WorldBounds>,
+    shapes: &std::collections::BTreeMap<&str, blocksuite_playground_doc::read::ShapeType>,
+    (fx, fy, fw, fh): (f32, f32, f32, f32),
+) -> bool {
+    let Some(route) = connector::route(connector, bounds, shapes) else {
+        return false;
+    };
+    let (x0, y0, x1, y1) = (
+        f64::from(fx),
+        f64::from(fy),
+        f64::from(fx + fw),
+        f64::from(fy + fh),
+    );
+    route
+        .samples
+        .windows(2)
+        .any(|seg| segment_intersects_aabb(seg[0], seg[1], x0, y0, x1, y1))
+}
+
+fn segment_intersects_aabb(a: P, b: P, x0: f64, y0: f64, x1: f64, y1: f64) -> bool {
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let (mut t0, mut t1) = (0.0_f64, 1.0_f64);
+    for (p, q) in [
+        (-dx, a.0 - x0),
+        (dx, x1 - a.0),
+        (-dy, a.1 - y0),
+        (dy, y1 - a.1),
+    ] {
+        if p.abs() < 1e-12 {
+            if q < 0.0 {
+                return false;
+            }
+        } else {
+            let r = q / p;
+            if p < 0.0 {
+                t0 = t0.max(r);
+            } else {
+                t1 = t1.min(r);
+            }
+            if t0 > t1 {
+                return false;
+            }
+        }
+    }
+    true
+}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct WorldBounds {
@@ -67,7 +256,7 @@ impl WorldBounds {
             && p.1 > y + tolerance
             && p.1 < y + h - tolerance
     }
-    fn expand(self, m: f64) -> Self {
+    pub(crate) fn expand(self, m: f64) -> Self {
         let [x, y, w, h] = self.xywh;
         Self {
             xywh: [x - m, y - m, w + 2. * m, h + 2. * m],

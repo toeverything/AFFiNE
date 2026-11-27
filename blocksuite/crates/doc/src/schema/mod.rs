@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use y_octo::{SessionValue, TextDeltaOp, TextInsert};
 
 pub use blocks::{BlockSpec, ListType, ParagraphType, UnknownBlock, is_leaf_flavour};
-pub use surface::{ConnectorEndpointSpec, SurfaceElementSpec, map_array_any};
+pub use surface::{ConnectorEndpointSpec, MindmapNodeSpec, SurfaceElementSpec, map_array_any};
 
 /// BlockSuite internal marker for `Boxed` values inside a `Y.Map`.
 pub const NATIVE_UNIQ_IDENTIFIER: &str = "$blocksuite:internal:native$";

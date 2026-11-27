@@ -366,7 +366,7 @@ fn lex_latex_line(line: &str) -> HighlightedLine {
                 } else if i < bytes.len() {
                     i += next_char_len(line, i);
                 }
-                push_span(&mut spans, start, i, TokenKind::Keyword);
+                push_span(&mut spans, start, i, TokenKind::Macro);
             }
             b'{' | b'}' | b'[' | b']' | b'(' | b')' => {
                 i += 1;

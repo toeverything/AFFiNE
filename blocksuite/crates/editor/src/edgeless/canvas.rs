@@ -37,7 +37,7 @@ pub(super) const ZOOM_BAR_RADIUS: f32 = 8.0;
 pub(super) const ZOOM_BTN_RADIUS: f32 = 4.0;
 pub(super) const ZOOM_BTN_HEIGHT: f32 = 28.0;
 
-type NoteLayoutKey = (u64, u32, u32, PlaygroundTheme, u64, u64, u64, bool);
+type NoteLayoutKey = (u64, u32, u32, PlaygroundTheme, u64, u64, u64, bool, i32);
 
 pub(super) struct CachedNoteFlow {
     pub(super) flow: BlockFlow,
@@ -262,16 +262,19 @@ impl EdgelessCanvasState {
         self.text_flows.get(id).map(|entry| entry.layout.clone())
     }
 
-    /// Compute the bounding box of all Edgeless-visible Frames, Notes, and EdgelessTexts.
+    /// Compute the bounding box of all Edgeless-visible Frames, Notes, EdgelessTexts, and
+    /// Surface elements (including auto-laid-out Mindmaps, even before the first paint pass).
     pub fn scene_world_bounds(&self, snapshot: &PageSnapshot) -> WorldRect {
         let mut union = WorldRect::default();
         let Some(root) = &snapshot.root else {
             return union;
         };
+        let mut external = BTreeMap::new();
         for child in spatial_blocks(root) {
             match &child.content {
                 BlockContent::Frame { xywh, .. } => {
                     if let Some(rect) = parse_xywh(xywh) {
+                        external.insert(child.id.clone(), world_bounds(rect, 0.0));
                         let with_title = WorldRect::new(
                             rect.x,
                             rect.y - FRAME_TITLE_HEIGHT - FRAME_TITLE_GAP,
@@ -297,16 +300,18 @@ impl EdgelessCanvasState {
                             .h
                             .max((cached.layout.height + 2.0 * NOTE_CARD_PADDING) * scale);
                     }
+                    external.insert(child.id.clone(), world_bounds(rect, 0.0));
                     union = union.union(rect);
                 }
                 BlockContent::EdgelessText { xywh } => {
                     if let Some(mut rect) = parse_xywh(xywh) {
                         let scale = prop_f32(child, "prop:scale", 1.0).clamp(0.1, 10.0);
+                        let rot = prop_f32(child, "prop:rotate", 0.0);
                         if let Some(cached) = self.text_flows.get(&child.id) {
                             rect.h = (cached.layout.height * scale).max(rect.h);
                         }
-                        union =
-                            union.union(rotated_bounds(rect, prop_f32(child, "prop:rotate", 0.)));
+                        external.insert(child.id.clone(), world_bounds(rect, rot));
+                        union = union.union(rotated_bounds(rect, rot));
                     }
                 }
                 _ => {}
@@ -316,6 +321,21 @@ impl EdgelessCanvasState {
             for layout in surfaces.layouts.iter() {
                 for (_, bounds) in layout.bounds() {
                     union = union.union(world_rect(bounds));
+                }
+            }
+        } else {
+            for node in &root.children {
+                if let BlockContent::Surface { elements, .. } = &node.content {
+                    let (bounds, collapsed_hidden) =
+                        crate::surface::resolve_surface_scene_bounds(elements, &external);
+                    for el in elements
+                        .iter()
+                        .filter(|el| !el.hidden && !collapsed_hidden.contains(&el.id))
+                    {
+                        if let Some(b) = bounds.get(&el.id) {
+                            union = union.union(world_rect(b.aabb().ui()));
+                        }
+                    }
                 }
             }
         }
@@ -412,5 +432,7 @@ pub struct EdgelessRenderInput<'a> {
     pub viewport_width: f32,
     pub viewport_height: f32,
     pub direction: ui::Direction,
+    pub utc_offset_minutes: i32,
+    pub utc_offset_at: Option<&'a dyn Fn(i64) -> i32>,
     pub editing_selection: Option<(String, bool, DocumentSelection, DocPoint)>,
 }

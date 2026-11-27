@@ -291,11 +291,24 @@ impl<'a> FlowPass<'a> {
                 _ => None,
             };
             let surface_ref_sig = match &node.content {
-                BlockContent::SurfaceRef { reference, .. } => {
-                    super::surface_ref::surface_ref_fingerprint(self.input.snapshot, reference)
+                BlockContent::SurfaceRef { reference, .. }
+                    if !(self.dirty.is_some_and(|ids| !ids.contains(&node.id))
+                        && self.previous.contains_key(&node.id)) =>
+                {
+                    super::surface_ref::surface_ref_fingerprint(
+                        self.input.snapshot,
+                        reference,
+                        &node.id,
+                    )
                 }
                 _ => 0,
             };
+            let block_utc_offset = embed_preview
+                .as_ref()
+                .filter(|p| p.updated_at_ms > 0)
+                .map_or(self.input.utc_offset_minutes, |p| {
+                    self.input.utc_offset_for(p.updated_at_ms)
+                });
             let fingerprint = (
                 &node.content,
                 node.children.is_empty(),
@@ -305,6 +318,7 @@ impl<'a> FlowPass<'a> {
                 preview_rev,
                 draft_for_node,
                 embed_preview,
+                block_utc_offset,
                 surface_ref_sig,
             );
             let body = self.body(&node.id, &fingerprint, |pass| {
@@ -671,7 +685,7 @@ impl<'a> FlowPass<'a> {
                 reference,
                 ref_flavour,
                 caption,
-            } => self.surface_ref_body(reference, ref_flavour, caption, width),
+            } => self.surface_ref_body(&node.id, reference, ref_flavour, caption, width),
             _ => self.unknown_body(&node.flavour, &node.id, width),
         }
     }

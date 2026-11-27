@@ -326,3 +326,161 @@ pub(super) struct FormatToolbar {
     /// Screen-space box of the toolbar as last laid out.
     pub(super) rect: Option<FlowRect>,
 }
+
+/// Normalize a typed URL (prepending `https://` when it names no scheme) and
+/// validate it against the shared clipboard URL scheme allowlist. Returns an
+/// empty string when the input is empty or uses a disallowed scheme.
+pub fn normalize_url(input: &str) -> String {
+    let url = input.trim();
+    if url.is_empty() {
+        return String::new();
+    }
+    if url.starts_with('/') {
+        return url.to_string();
+    }
+    let decoded = crate::clipboard::sanitize::decode_html_entities(url);
+    let compact: String = decoded.chars().filter(|c| !c.is_whitespace()).collect();
+    let has_scheme = compact.contains("://")
+        || compact.starts_with('#')
+        || compact.split_once(':').is_some_and(|(scheme, rest)| {
+            !scheme.is_empty()
+                && !scheme.contains('.')
+                && scheme
+                    .chars()
+                    .next()
+                    .is_some_and(|c| c.is_ascii_alphabetic())
+                && scheme
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'-'))
+                && !rest.chars().next().is_some_and(|c| c.is_ascii_digit())
+        });
+    let candidate = if has_scheme {
+        url.to_string()
+    } else {
+        format!("https://{url}")
+    };
+    crate::clipboard::sanitize::sanitize_url(&candidate).unwrap_or_default()
+}
+
+impl Overlays {
+    pub(super) fn open_toolbar(&self) -> Option<&FormatToolbar> {
+        self.toolbar
+            .as_ref()
+            .filter(|toolbar| !toolbar.presence.closing)
+    }
+
+    pub(super) fn open_toolbar_mut(&mut self) -> Option<&mut FormatToolbar> {
+        self.toolbar
+            .as_mut()
+            .filter(|toolbar| !toolbar.presence.closing)
+    }
+
+    /// Close the toolbar's link field without applying it.
+    pub fn close_link_field(&mut self) {
+        if let Some(toolbar) = self.toolbar.as_mut() {
+            toolbar.link = None;
+        }
+    }
+
+    /// Open the formatting toolbar (if needed) and focus its inline link field.
+    pub fn open_link_field(&mut self, selection: &SelectionFormat, now_ms: f64) {
+        self.close_slash(now_ms);
+        match self.toolbar.as_mut() {
+            Some(toolbar) => {
+                toolbar.selection = selection.clone();
+                toolbar.presence = toolbar.presence.reopened(now_ms);
+                if toolbar.link.is_none() {
+                    toolbar.link = Some(LinkBar::new(
+                        toolbar.selection.marks.link.clone().unwrap_or_default(),
+                    ));
+                }
+            }
+            None => {
+                self.toolbar = Some(FormatToolbar {
+                    selection: selection.clone(),
+                    link: Some(LinkBar::new(
+                        selection.marks.link.clone().unwrap_or_default(),
+                    )),
+                    presence: Presence::opening(now_ms),
+                    rect: None,
+                });
+            }
+        }
+    }
+
+    /// Put pasted text into the link field, over its selection. Returns whether the
+    /// field is open.
+    pub fn link_insert(&mut self, text: &str) -> bool {
+        match self.active_text_field_mut() {
+            Some(field) => {
+                field.replace(None, text);
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// Bring the toolbar in line with the editor's selection: open over a finished,
+    /// formattable selection while no slash menu or mobile `KeyboardToolbar` is up
+    /// (unless the inline link input field is actively open), closed otherwise.
+    pub(super) fn sync_toolbar(&mut self, selection: Option<&SelectionFormat>, now_ms: f64) {
+        let suppress_for_mobile = self.keyboard_toolbar.visible && self.link_field().is_none();
+        let wanted = selection.filter(|_| self.slash_menu().is_none() && !suppress_for_mobile);
+        match (wanted, self.toolbar.as_mut()) {
+            (Some(selection), Some(toolbar)) => {
+                toolbar.selection = selection.clone();
+                toolbar.presence = toolbar.presence.reopened(now_ms);
+            }
+            (Some(selection), None) => {
+                self.toolbar = Some(FormatToolbar {
+                    selection: selection.clone(),
+                    link: None,
+                    presence: Presence::opening(now_ms),
+                    rect: None,
+                });
+            }
+            (None, Some(toolbar)) => {
+                toolbar.link = None;
+                toolbar.presence.close(now_ms);
+            }
+            (None, None) => {}
+        }
+    }
+
+    pub(super) fn format(&mut self, action: FormatAction, effects: &mut OverlayEffects) {
+        let Some(toolbar) = self.open_toolbar_mut() else {
+            return;
+        };
+        effects.redraw = true;
+        if action == FormatAction::Link {
+            toolbar.link = match toolbar.link {
+                Some(_) => None,
+                None => Some(LinkBar::new(
+                    toolbar.selection.marks.link.clone().unwrap_or_default(),
+                )),
+            };
+        } else if let Some(align) = action.align() {
+            effects.edits.push(DocEdit::Align(align));
+        } else if let Some(key) = action.mark_key() {
+            effects.edits.push(DocEdit::Mark(key));
+        }
+    }
+
+    /// Write the link field to the selection (or clear the selection's link) and close the
+    /// field.
+    pub(super) fn apply_link(&mut self, remove: bool, effects: &mut OverlayEffects) {
+        let Some(toolbar) = self.open_toolbar_mut() else {
+            return;
+        };
+        let Some(link) = toolbar.link.take() else {
+            return;
+        };
+        effects.redraw = true;
+        let url = normalize_url(&link.into_committed_text());
+        if remove {
+            effects.edits.push(DocEdit::Link(None));
+        } else if !url.is_empty() {
+            effects.edits.push(DocEdit::Link(Some(url)));
+        }
+    }
+}

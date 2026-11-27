@@ -21,7 +21,7 @@ pub fn build_edgeless_layer(
     input: &EdgelessRenderInput<'_>,
     window: &Window,
     zoom_controls: AnyElement,
-    toolbar: AnyElement,
+    toolbar: Option<AnyElement>,
 ) -> AnyElement {
     let PreparedEdgelessScene {
         frames,
@@ -411,7 +411,7 @@ pub fn build_edgeless_layer(
         .child(paint_canvas)
         .children(snapshot_markers)
         .children(authoring_overlays)
-        .child(toolbar)
+        .children(toolbar)
         .child(zoom_controls)
         .into_any_element()
 }

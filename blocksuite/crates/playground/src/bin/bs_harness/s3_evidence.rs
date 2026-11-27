@@ -150,7 +150,10 @@ pub(super) fn render_s3_evidence(out_dir: &Path) -> Result<()> {
                 ..Default::default()
             },
         )?;
-        session.view(|v, cx| v.set_document(state, cx))?;
+        session.view(|v, cx| {
+            v.set_calendar_clock(Some(std::rc::Rc::new(|| (1_795_710_600_000, 480))));
+            v.set_document(state, cx);
+        })?;
         session.settle(200);
         save_session_png(
             &session,
@@ -612,6 +615,8 @@ pub(super) fn render_s3_evidence(out_dir: &Path) -> Result<()> {
             "09-mobile-table-cell-keyboard-toolbar",
         )?;
     }
+
+    super::edgeless_evidence::render_edgeless_evidence(out_dir)?;
 
     Ok(())
 }

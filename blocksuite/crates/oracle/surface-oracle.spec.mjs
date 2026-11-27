@@ -16,6 +16,35 @@ import { getSvgPathFromStroke } from '../../framework/global/src/gfx/math';
 const fixture = fileURLToPath(
   new URL('./surface-oracle.json', import.meta.url)
 );
+const gfxTextUtilsPath = fileURLToPath(
+  new URL('../../affine/gfx/text/src/element-renderer/utils.ts', import.meta.url)
+);
+
+function rtlChecks() {
+  const src = readFileSync(gfxTextUtilsPath, 'utf8');
+  const rsLtr =
+    'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF' +
+    '\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF';
+  const rsRtl = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC';
+  expect(src).toContain(
+    "'A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02B8\\u0300-\\u0590\\u0800-\\u1FFF'"
+  );
+  expect(src).toContain("'\\u0591-\\u07FF\\uFB1D-\\uFDFD\\uFE70-\\uFEFC'");
+  // oxlint-disable-next-line no-misleading-character-class
+  const reRtlCheck = new RegExp(`^[^${rsLtr}]*[${rsRtl}]`);
+  return [
+    '',
+    'Hello',
+    '\u0661A',
+    'A\u0661',
+    '123 \u0645\u0631\u062D\u0628\u0627',
+    '(\u05E9\u05DC\u05D5\u05DD)',
+    '\uD83D\uDE00\u0645\u0631\u062D\u0628\u0627',
+    '\uFB1D test',
+    '\uFE70',
+    '\uFB1C\u0591',
+  ].map(text => ({ text, rtl: reRtlCheck.test(text) }));
+}
 
 function model(shape, bounds, rotate = 0) {
   const [x, y, w, h] = bounds;
@@ -272,6 +301,7 @@ test('surface geometry agrees with the BlockSuite renderers', () => {
     scribbles: scribbles(),
     strokes,
     children: Array.from(group.keys()).sort(),
+    rtlChecks: rtlChecks(),
   };
   if (process.env.SURFACE_ORACLE_OUT)
     writeFileSync(

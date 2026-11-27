@@ -562,6 +562,18 @@ pub struct FlowInput<'a> {
     pub env_rev: u64,
     /// Explicit layout direction supplied by the host shell.
     pub direction: ui::Direction,
+    /// Fallback local timezone offset in minutes east of UTC (e.g. `+480` for UTC+8, `-300` for EST).
+    pub utc_offset_minutes: i32,
+    /// Optional per-timestamp timezone offset resolver (`utc_ms -> offset_minutes_east`) so historical
+    /// document timestamps honor DST rules at the instant of update without wall-clock I/O.
+    pub utc_offset_at: Option<&'a dyn Fn(i64) -> i32>,
+}
+
+impl FlowInput<'_> {
+    pub fn utc_offset_for(&self, utc_ms: i64) -> i32 {
+        self.utc_offset_at
+            .map_or(self.utc_offset_minutes, |f| f(utc_ms))
+    }
 }
 
 /// Counters of the latest [`BlockFlow::layout`] pass.

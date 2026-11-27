@@ -1,5 +1,6 @@
 mod bench;
 mod demo;
+mod edgeless_evidence;
 mod fps;
 mod probes;
 mod render;

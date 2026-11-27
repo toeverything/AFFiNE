@@ -1968,18 +1968,33 @@ mod tests {
                 0.0
             );
 
-            // Popovers fit between the margins.
+            // On narrow 320px viewports, non-collapsed selection shows the docked bottom
+            // `KeyboardToolbar` and suppresses the duplicate floating `FormatToolbar`, while
+            // triggering `Link` from the bottom bar opens a clamped link-only input bar.
             session.select("showcase-intro", "y-octo document");
             let frame = session.settle();
-            assert_no_violations(&frame, "narrow toolbar");
+            assert_no_violations(&frame, "narrow mobile keyboard toolbar");
+            assert!(frame.elements.contains_key("overlay.keyboard_toolbar"));
+            assert!(!frame.elements.contains_key("overlay.format_toolbar"));
+
+            session.overlay(OverlayEvent::KeyboardToolbar(KeyboardToolbarAction::Link));
+            let frame = session.frame();
+            assert_no_violations(&frame, "narrow mobile link field");
+            let link_bar = element(&frame, "overlay.format_toolbar").bounds;
+            assert!(link_bar.x >= POPOVER_EDGE_MARGIN);
+            assert!(link_bar.right() <= 320.0 - POPOVER_EDGE_MARGIN);
+            let field = element(&frame, "overlay.format_toolbar.link_input").bounds;
+            assert!(field.width >= 100.0);
+
+            // When the software keyboard is dismissed on a narrow desktop window, the full
+            // floating `FormatToolbar` also stays clamped between the margins.
+            session.overlay(OverlayEvent::Format(FormatAction::Link));
+            session.view(|view, cx| view.set_software_keyboard_visible(false, cx));
+            let frame = session.settle();
+            assert_no_violations(&frame, "narrow desktop toolbar");
             let toolbar = element(&frame, "overlay.format_toolbar").bounds;
             assert!(toolbar.x >= POPOVER_EDGE_MARGIN);
             assert!(toolbar.right() <= 320.0 - POPOVER_EDGE_MARGIN);
-            session.overlay(OverlayEvent::Format(FormatAction::Link));
-            let frame = session.frame();
-            assert_no_violations(&frame, "narrow link field");
-            let field = element(&frame, "overlay.format_toolbar.link_input").bounds;
-            assert!(field.width >= 100.0);
 
             let frame = session.open_slash("showcase-h1");
             assert_no_violations(&frame, "narrow slash menu");
@@ -2842,7 +2857,7 @@ mod tests {
     }
 
     #[test]
-    fn mobile_keyboard_toolbar_pagination_reaches_all_18_actions_on_390px() {
+    fn mobile_keyboard_toolbar_horizontal_scroll_reaches_all_actions_on_390px() {
         let session = open(390, 844, PlaygroundTheme::Light);
         session.view(|v, cx| {
             v.set_image_picker(Some(std::rc::Rc::new(|| {})));
@@ -2873,12 +2888,14 @@ mod tests {
             .map(ToolbarItemSpec::id)
             .collect();
         let mut seen = std::collections::HashSet::new();
-        for _ in 0..6 {
+        for _ in 0..8 {
             let frame = session.frame();
-            assert_no_violations(&frame, "mobile toolbar top page");
-            let more = element(&frame, "overlay.keyboard_toolbar.more");
+            assert_no_violations(&frame, "mobile toolbar top horizontal scroll");
+            assert!(
+                !frame.elements.contains_key("overlay.keyboard_toolbar.more"),
+                "mobile toolbar must scroll horizontally without a More pagination button"
+            );
             let dismiss = element(&frame, "overlay.keyboard_toolbar.dismiss");
-            assert!(more.bounds.width >= 44.0 && more.bounds.height >= 44.0);
             assert!(dismiss.bounds.width >= 44.0 && dismiss.bounds.height >= 44.0);
             for &id in &visible_top {
                 let full_id = format!("overlay.keyboard_toolbar.{id}");
@@ -2890,12 +2907,12 @@ mod tests {
                     seen.insert(id);
                 }
             }
-            session.click(&frame, "overlay.keyboard_toolbar.more");
+            session.overlay(OverlayEvent::KeyboardToolbarScroll(-138.0));
         }
         for &id in &visible_top {
             assert!(
                 seen.contains(id),
-                "top-level item {id} unreachable via More pagination on 390px viewport"
+                "top-level item {id} unreachable via horizontal scroll on 390px viewport"
             );
         }
 
@@ -2931,10 +2948,15 @@ mod tests {
         );
         session.overlay(OverlayEvent::KeyboardToolbar(KeyboardToolbarAction::Undo));
 
-        // Non-collapsed selection autoShows `Aa` sub-toolbar with Strike, Link, Highlight.
+        // Non-collapsed selection autoShows `Aa` sub-toolbar with Strike, Link, Highlight
+        // while suppressing the floating desktop FormatToolbar (`0.27.5` `widgets/toolbar/src/view.ts`).
         session.select("mob-p", "Tap");
         let aa_frame = session.frame();
         assert_no_violations(&aa_frame, "mobile toolbar autoShow Aa");
+        assert!(
+            !aa_frame.elements.contains_key("overlay.format_toolbar"),
+            "floating desktop FormatToolbar must stay suppressed while mobile KeyboardToolbar is visible"
+        );
         assert!(
             aa_frame
                 .elements

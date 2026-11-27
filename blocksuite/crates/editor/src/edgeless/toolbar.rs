@@ -295,11 +295,13 @@ pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
 }
 
 /// Build the bottom-right screen-space zoom control bar (`chrome.edgeless_zoom`).
-/// On narrow viewports (`viewport_width < 660.0`), stacks cleanly above `chrome.edgeless_toolbar`
-/// so the two screen-space bars never overlap or clip.
+/// On narrow viewports (`viewport_width < 660.0`) when `toolbar_visible` is `true`, stacks cleanly
+/// above `chrome.edgeless_toolbar` so the two screen-space bars never overlap or clip.
+#[allow(clippy::too_many_arguments)]
 pub fn build_zoom_controls<V: 'static>(
     zoom: f32,
     viewport_width: f32,
+    toolbar_visible: bool,
     palette: &Palette,
     theme: PlaygroundTheme,
     on_out: impl Fn(&mut V, &ui::MouseDownEvent, &mut Window, &mut ui::Context<V>) + 'static,
@@ -330,7 +332,7 @@ pub fn build_zoom_controls<V: 'static>(
             .child(label)
     };
 
-    let zoom_bottom = if viewport_width < 660.0 {
+    let zoom_bottom = if toolbar_visible && viewport_width < 660.0 {
         ZOOM_BAR_MARGIN + ZOOM_BTN_HEIGHT + 2.0 * ZOOM_BAR_PAD + 8.0
     } else {
         ZOOM_BAR_MARGIN

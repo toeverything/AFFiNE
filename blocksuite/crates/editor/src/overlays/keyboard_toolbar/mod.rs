@@ -341,7 +341,7 @@ pub struct KeyboardToolbarState {
     pub level: KeyboardToolbarLevel,
     pub manual_text_subtoolbar: bool,
     pub active_panel: Option<KeyboardToolbarPanel>,
-    pub page: usize,
+    pub strip_scroll: f32,
     pub panel_scroll: f32,
     pub marks_disabled: bool,
     pub capabilities: KeyboardToolbarCapabilities,
@@ -351,7 +351,7 @@ impl KeyboardToolbarState {
     pub fn close_transient(&mut self) {
         self.active_panel = None;
         self.panel_scroll = 0.0;
-        self.page = 0;
+        self.strip_scroll = 0.0;
         if !self.capabilities.has_non_collapsed_selection {
             self.level = KeyboardToolbarLevel::Main;
             self.manual_text_subtoolbar = false;
@@ -368,8 +368,12 @@ impl Overlays {
     /// Show or hide the mobile bottom `KeyboardToolbar`.
     pub fn set_keyboard_toolbar_visible(&mut self, visible: bool) {
         self.keyboard_toolbar.visible = visible;
-        if !visible {
-            self.keyboard_toolbar.page = 0;
+        if visible {
+            if self.link_field().is_none() {
+                self.toolbar = None;
+            }
+        } else {
+            self.keyboard_toolbar.strip_scroll = 0.0;
             self.keyboard_toolbar.active_panel = None;
             self.keyboard_toolbar.panel_scroll = 0.0;
             self.keyboard_toolbar.level = KeyboardToolbarLevel::Main;
@@ -406,7 +410,7 @@ impl Overlays {
         // opens, and return to top-level bar when collapsed unless opened manually.
         if caps.has_non_collapsed_selection && !prev_non_collapsed {
             self.keyboard_toolbar.level = KeyboardToolbarLevel::TextStyle;
-            self.keyboard_toolbar.page = 0;
+            self.keyboard_toolbar.strip_scroll = 0.0;
         } else if !caps.has_non_collapsed_selection
             && prev_non_collapsed
             && !self.keyboard_toolbar.manual_text_subtoolbar
@@ -419,7 +423,7 @@ impl Overlays {
                 self.keyboard_toolbar.active_panel = None;
                 self.keyboard_toolbar.panel_scroll = 0.0;
             }
-            self.keyboard_toolbar.page = 0;
+            self.keyboard_toolbar.strip_scroll = 0.0;
         }
     }
 
@@ -433,14 +437,92 @@ impl Overlays {
         self.keyboard_toolbar.active_panel
     }
 
-    /// Current page index of the paginated mobile `KeyboardToolbar`.
-    pub fn keyboard_toolbar_page(&self) -> usize {
-        self.keyboard_toolbar.page
+    /// Current horizontal scroll offset (logical px) of the `KeyboardToolbar` item strip.
+    pub fn keyboard_toolbar_strip_scroll(&self) -> f32 {
+        self.keyboard_toolbar.strip_scroll
     }
 
-    /// Advance the mobile `KeyboardToolbar` to the next action page.
-    pub fn next_keyboard_toolbar_page(&mut self) {
-        self.keyboard_toolbar.page = self.keyboard_toolbar.page.wrapping_add(1);
+    pub(super) fn keyboard_toolbar_max_strip_scroll(&self, bar_width: f32) -> f32 {
+        let pad_x = 4.0;
+        let gap = 2.0;
+        let btn = KEYBOARD_TOOLBAR_BUTTON;
+        let in_sub = !self.keyboard_toolbar.marks_disabled
+            && self.keyboard_toolbar.level == KeyboardToolbarLevel::TextStyle;
+        let can_pick_images = self.keyboard_toolbar.capabilities.can_pick_images;
+        let item_count = if in_sub {
+            TEXT_SUB_TOOLBAR_ITEMS
+                .iter()
+                .filter(|item| item.is_visible_for(can_pick_images))
+                .count()
+        } else {
+            DEFAULT_KEYBOARD_TOOLBAR_ITEMS
+                .iter()
+                .filter(|item| item.is_visible_for(can_pick_images))
+                .count()
+        };
+        let fixed_right = btn + gap + 9.0;
+        let fixed_left = if in_sub { btn + gap } else { 0.0 };
+        let avail_w = (bar_width - pad_x * 2.0 - fixed_right - fixed_left).max(btn);
+        let content_w = if item_count == 0 {
+            0.0
+        } else {
+            item_count as f32 * btn + (item_count - 1) as f32 * gap
+        };
+        (content_w - avail_w).max(0.0).ceil()
+    }
+
+    /// Scroll the horizontal `KeyboardToolbar` item strip by `delta_x` px (`delta_x < 0` scrolls right).
+    pub(super) fn scroll_keyboard_toolbar_strip(
+        &mut self,
+        scene: &crate::overlays::OverlayScene<'_>,
+        delta_x: f32,
+    ) -> bool {
+        if !self.keyboard_toolbar.visible {
+            return false;
+        }
+        let max_scroll = self.keyboard_toolbar_max_strip_scroll(scene.window.0.max(0.0).floor());
+        if max_scroll <= 0.0 {
+            self.keyboard_toolbar.strip_scroll = 0.0;
+            return true;
+        }
+        self.keyboard_toolbar.strip_scroll = (self.keyboard_toolbar.strip_scroll - delta_x)
+            .clamp(0.0, max_scroll)
+            .round();
+        true
+    }
+
+    /// Scroll the horizontal `KeyboardToolbar` strip when `(x, y)` lies inside the toolbar bar rect.
+    pub(super) fn scroll_keyboard_toolbar_at(
+        &mut self,
+        scene: &crate::overlays::OverlayScene<'_>,
+        x: f32,
+        y: f32,
+        delta_x: f32,
+        delta_y: f32,
+    ) -> bool {
+        if !self.keyboard_toolbar.visible {
+            return false;
+        }
+        let width = scene.window.0.max(0.0).floor();
+        let win_h = scene.window.1.max(0.0).floor();
+        let panel_height = if !self.keyboard_toolbar.marks_disabled
+            && self.keyboard_toolbar.active_panel.is_some()
+        {
+            let max_panel =
+                (win_h - crate::TOPBAR_HEIGHT - KEYBOARD_TOOLBAR_HEIGHT - 16.0).max(120.0);
+            KEYBOARD_TOOL_PANEL_HEIGHT.min(max_panel).floor()
+        } else {
+            0.0
+        };
+        let top = (win_h - (KEYBOARD_TOOLBAR_HEIGHT + panel_height))
+            .max(crate::TOPBAR_HEIGHT)
+            .floor();
+        let bar_rect = crate::block_flow::FlowRect::new(0.0, top, width, KEYBOARD_TOOLBAR_HEIGHT);
+        if !bar_rect.contains(x, y) {
+            return false;
+        }
+        let step = if delta_x != 0.0 { delta_x } else { delta_y };
+        self.scroll_keyboard_toolbar_strip(scene, step)
     }
 
     /// Toggle one docked bottom tool panel (`More`, `TurnInto`, or `Highlight`).
@@ -471,7 +553,7 @@ impl Overlays {
         self.keyboard_toolbar.panel_scroll = 0.0;
         self.keyboard_toolbar.level = KeyboardToolbarLevel::TextStyle;
         self.keyboard_toolbar.manual_text_subtoolbar = true;
-        self.keyboard_toolbar.page = 0;
+        self.keyboard_toolbar.strip_scroll = 0.0;
     }
 
     /// Return from the `Aa` text-style sub-toolbar to the top-level toolbar.
@@ -480,7 +562,7 @@ impl Overlays {
         self.keyboard_toolbar.panel_scroll = 0.0;
         self.keyboard_toolbar.level = KeyboardToolbarLevel::Main;
         self.keyboard_toolbar.manual_text_subtoolbar = false;
-        self.keyboard_toolbar.page = 0;
+        self.keyboard_toolbar.strip_scroll = 0.0;
     }
 
     /// Scroll an open keyboard tool panel (`+`, `Turn into`, or `Highlight`) by `delta_y` px.

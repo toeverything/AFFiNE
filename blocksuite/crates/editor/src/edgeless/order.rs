@@ -17,7 +17,7 @@ pub struct Layers<'a> {
 }
 
 impl<'a> Layers<'a> {
-    pub(super) fn from_root(root: &'a BlockNode) -> Self {
+    pub(crate) fn from_root(root: &'a BlockNode) -> Self {
         let mut layers = Self::default();
         for node in root.walk() {
             let index = node
@@ -41,10 +41,18 @@ impl<'a> Layers<'a> {
                 BlockContent::Surface { elements, .. } => {
                     for e in elements {
                         layers.indices.insert(&e.id, &e.index);
-                        if let SurfaceElementKind::Group { children, .. } = &e.kind {
-                            for child in children {
-                                layers.set_parent(child, &e.id);
+                        match &e.kind {
+                            SurfaceElementKind::Group { children, .. } => {
+                                for child in children {
+                                    layers.set_parent(child, &e.id);
+                                }
                             }
+                            SurfaceElementKind::Mindmap(mm) => {
+                                for child in mm.nodes.keys() {
+                                    layers.set_parent(child, &e.id);
+                                }
+                            }
+                            _ => {}
                         }
                     }
                 }
@@ -66,6 +74,31 @@ impl<'a> Layers<'a> {
             }
         }
         self.parents.entry(id).or_insert(parent);
+    }
+
+    pub(crate) fn cmp_ids(&self, a: &'a str, b: &'a str) -> Ordering {
+        let path_of = |mut node: &'a str| {
+            let mut path = vec![node];
+            while let Some(&parent) = self.parents.get(node) {
+                path.push(parent);
+                node = parent;
+            }
+            path.reverse();
+            path
+        };
+        let pa = path_of(a);
+        let pb = path_of(b);
+        for (&left, &right) in pa.iter().zip(&pb) {
+            if left != right {
+                return self
+                    .indices
+                    .get(left)
+                    .copied()
+                    .unwrap_or("a0")
+                    .cmp(self.indices.get(right).copied().unwrap_or("a0"));
+            }
+        }
+        pa.len().cmp(&pb.len())
     }
 
     pub(super) fn merge<'b>(

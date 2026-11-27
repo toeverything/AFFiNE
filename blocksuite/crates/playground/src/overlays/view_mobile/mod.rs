@@ -5,6 +5,14 @@ mod actions;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
+mod tests_edgeless_geometry;
+#[cfg(test)]
+mod tests_edgeless_layers;
+#[cfg(test)]
+mod tests_edgeless_parity;
+#[cfg(test)]
+mod tests_mindmap_and_embed;
+#[cfg(test)]
 mod tests_parity;
 #[cfg(test)]
 mod tests_sync;

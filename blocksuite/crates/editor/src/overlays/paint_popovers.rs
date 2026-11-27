@@ -325,8 +325,13 @@ impl Overlays {
         window: &mut Window,
         cx: &mut Context<V>,
     ) -> Option<AnyElement> {
+        let mobile_kb_visible = self.keyboard_toolbar.visible;
         let toolbar = self.toolbar.as_mut()?;
         toolbar.rect = None;
+        if mobile_kb_visible && toolbar.link.is_none() {
+            return None;
+        }
+        let link_only = mobile_kb_visible && toolbar.link.is_some();
         let progress = toolbar.presence.progress(now_ms);
         if toolbar.presence.closing && progress <= 0.0 {
             return None;
@@ -352,7 +357,11 @@ impl Overlays {
             buttons * TOOLBAR_BUTTON + buttons * TOOLBAR_GAP + 1.0 + 2.0 * TOOLBAR_SEPARATOR_MARGIN;
         let chrome = 2.0 * (TOOLBAR_PADDING + POPOVER_BORDER);
         let width = inner_width + chrome;
-        let rows = if toolbar.link.is_some() { 2.0 } else { 1.0 };
+        let rows = if toolbar.link.is_some() && !link_only {
+            2.0
+        } else {
+            1.0
+        };
         let height = rows * TOOLBAR_BUTTON + (rows - 1.0) * TOOLBAR_ROW_GAP + chrome;
         let placed = place_popover(
             anchor,
@@ -363,14 +372,19 @@ impl Overlays {
             POPOVER_EDGE_MARGIN,
         );
         toolbar.rect = Some(placed.rect);
-        // The link field sits in the second row, inset like the pills above it.
+        // The link field sits in the second row (or first row when `link_only`), inset like the pills.
         let field_width =
             inner_width - TOOLBAR_GAP - LINK_APPLY_WIDTH - LINK_REMOVE_WIDTH - 2.0 * LINK_GAP;
         if let Some(link) = toolbar.link.as_mut() {
             let inset = POPOVER_BORDER + TOOLBAR_PADDING;
+            let row_offset = if link_only {
+                0.0
+            } else {
+                TOOLBAR_BUTTON + TOOLBAR_ROW_GAP
+            };
             link.bounds = Some(FlowRect::new(
                 placed.rect.x + inset + TOOLBAR_GAP / 2.0,
-                placed.rect.y + inset + TOOLBAR_BUTTON + TOOLBAR_ROW_GAP,
+                placed.rect.y + inset + row_offset,
                 field_width,
                 TOOLBAR_BUTTON,
             ));
@@ -459,7 +473,7 @@ impl Overlays {
             .opacity(progress)
             .snapshot("overlay.format_toolbar", Some("root.canvas"))
             .snapshot_focused(interactive)
-            .child(row);
+            .when(!link_only, |el| el.child(row));
         if interactive {
             root = root.occlude();
         }

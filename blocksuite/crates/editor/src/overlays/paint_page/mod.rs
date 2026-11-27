@@ -377,11 +377,21 @@ impl Overlays {
                             })
                     {
                         let event = OverlayEvent::OpenEmbedDoc { page_id };
-                        let element = place(viewport.to_local(&rect))
+                        let hovered_synced = matches!(block.body.kind, FlowKind::EmbedSyncedDoc)
+                            && self.hovered.as_deref() == Some(block.block_id.as_str());
+                        let mut element = place(viewport.to_local(&rect))
                             .id(SharedString::from(format!("embed-doc-{}", block.block_id)))
                             .cursor_pointer()
+                            .when(hovered_synced, |el| {
+                                el.rounded(px(8.0)).border_1().border_color(palette.border)
+                            })
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                             .on_click(emit(cx, move |_: &ClickEvent| event.clone()));
+                        if matches!(block.body.kind, FlowKind::EmbedSyncedDoc) {
+                            let border = palette.border;
+                            element = element
+                                .hover(move |s| s.rounded(px(8.0)).border_1().border_color(border));
+                        }
                         elements.push(element.into_any_element());
                     }
                 }

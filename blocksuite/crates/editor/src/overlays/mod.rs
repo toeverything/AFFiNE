@@ -30,10 +30,11 @@ pub use slash::{
     SLASH_ITEMS, SlashCommand, SlashItem, SlashMenu, SlashRow, filter_slash_items,
     slash_item_by_id, slash_rows, slash_rows_for_query,
 };
-pub use state::normalize_url;
 pub use table_cell::InlineTableCell;
 pub use toolbar::LinkBar;
-pub use toolbar::{ActiveSelection, FormatAction, MarkState, SelectionFormat, marks_in_range};
+pub use toolbar::{
+    ActiveSelection, FormatAction, MarkState, SelectionFormat, marks_in_range, normalize_url,
+};
 
 use paint_page::{
     align_glyph, caret_world_rect, drag_handle_rect, drop_slot, emit, hover_block, icon, place,
@@ -472,8 +473,8 @@ pub enum OverlayEvent {
     },
     /// Show or hide the mobile bottom keyboard toolbar.
     SetKeyboardToolbarVisible(bool),
-    /// Cycle to the next action page on narrow mobile viewports.
-    KeyboardToolbarNextPage,
+    /// Scroll the horizontal mobile keyboard toolbar strip by `delta_x` px.
+    KeyboardToolbarScroll(f32),
     /// Scroll the active mobile keyboard tool panel (`+`, `Turn into`, or `Highlight`) by `delta_y` px.
     KeyboardToolbarPanelScroll(f32),
     /// Trigger one action button on the mobile bottom keyboard toolbar.

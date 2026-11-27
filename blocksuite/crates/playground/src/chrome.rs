@@ -466,9 +466,11 @@ impl PlaygroundView {
             self.edgeless.ensure_camera_initialized(&snapshot, vp_size);
         }
 
+        let toolbar_visible = !self.edgeless_readonly;
         let zoom_controls = edgeless::build_zoom_controls(
             self.edgeless.camera.zoom,
             viewport_width,
+            toolbar_visible,
             palette,
             self.theme,
             move |this: &mut Self, _, _, cx| {
@@ -500,13 +502,15 @@ impl PlaygroundView {
             },
             cx,
         );
-        let toolbar = edgeless::build_edgeless_toolbar(
-            self.edgeless.authoring.tool,
-            viewport_width,
-            palette,
-            self.theme,
-            cx,
-        );
+        let toolbar = toolbar_visible.then(|| {
+            edgeless::build_edgeless_toolbar(
+                self.edgeless.authoring.tool,
+                viewport_width,
+                palette,
+                self.theme,
+                cx,
+            )
+        });
 
         let render_snapshot = self
             .preedit_snapshot()
@@ -523,6 +527,8 @@ impl PlaygroundView {
                     Some((editing_id.to_string(), is_note, sel, focus))
                 });
 
+        let (_, utc_offset_minutes) = self.local_calendar_now(cx);
+        let offset_at = self.utc_offset_resolver();
         let doc_dir: &dyn crate::directory::WorkspaceDocDirectory = self
             .custom_doc_directory
             .as_deref()
@@ -542,6 +548,8 @@ impl PlaygroundView {
             viewport_width,
             viewport_height,
             direction: window.layout_direction(),
+            utc_offset_minutes,
+            utc_offset_at: Some(&offset_at),
             editing_selection,
         };
         let layer = edgeless::build_edgeless_layer(
@@ -581,6 +589,7 @@ impl PlaygroundView {
                 }
             }))
             .on_scroll(cx.listener(Self::on_edgeless_scroll))
+            .on_pinch(cx.listener(Self::on_edgeless_pinch))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_edgeless_left_down))
             .on_mouse_down(
                 MouseButton::Middle,
@@ -600,10 +609,33 @@ impl ui::Render for PlaygroundView {
         self.sync_keyboard_toolbar_state();
         window.set_touch_gestures_enabled(true);
         for gesture in window.take_touch_gestures() {
-            if self.mode == PlaygroundMode::Page
-                && let ui::TouchGesture::LongPress { position } = gesture
-            {
-                self.long_press_word(f32::from(position.x), f32::from(position.y), window, cx);
+            match (self.mode, gesture) {
+                (PlaygroundMode::Page, ui::TouchGesture::LongPress { position }) => {
+                    self.long_press_word(f32::from(position.x), f32::from(position.y), window, cx);
+                }
+                (
+                    PlaygroundMode::Edgeless,
+                    ui::TouchGesture::PinchUpdate {
+                        centroid,
+                        translation,
+                        scale_delta,
+                        ..
+                    },
+                ) => {
+                    let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+                    self.edgeless
+                        .camera
+                        .pan_by_screen_delta(f32::from(translation.x), f32::from(translation.y));
+                    if (scale_delta - 1.0).abs() > 1e-5 {
+                        let target_zoom = self.edgeless.camera.zoom * scale_delta.max(0.05);
+                        self.edgeless
+                            .camera
+                            .zoom_at(target_zoom, centroid, vp_origin);
+                    }
+                    self.edgeless.camera_initialized = true;
+                    cx.notify();
+                }
+                _ => {}
             }
         }
         let kb_inset = f32::from(window.insets().ime.bottom);

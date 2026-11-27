@@ -19,6 +19,7 @@ pub(super) enum OverlayState {
     FormatToolbarOpen,
     FormatToolbarFlippedTop,
     FormatToolbarLink,
+    MobileKeyboardSelection,
     DragHandleHover,
     DragDropIndicator,
     CodeHover,
@@ -30,7 +31,7 @@ pub(super) enum OverlayState {
 }
 
 impl OverlayState {
-    pub(super) const ALL: [Self; 12] = [
+    pub(super) const ALL: [Self; 13] = [
         Self::Default,
         Self::SlashMenuOpen,
         Self::SlashMenuFiltered,
@@ -39,6 +40,7 @@ impl OverlayState {
         Self::FormatToolbarOpen,
         Self::FormatToolbarFlippedTop,
         Self::FormatToolbarLink,
+        Self::MobileKeyboardSelection,
         Self::DragHandleHover,
         Self::DragDropIndicator,
         Self::CodeHover,
@@ -62,6 +64,7 @@ impl OverlayState {
             Self::FormatToolbarOpen => "format_toolbar_open",
             Self::FormatToolbarFlippedTop => "format_toolbar_flipped_top",
             Self::FormatToolbarLink => "format_toolbar_link",
+            Self::MobileKeyboardSelection => "mobile_keyboard_selection",
             Self::DragHandleHover => "drag_handle_hover",
             Self::DragDropIndicator => "drag_drop_indicator",
             Self::CodeHover => "code_hover",
@@ -109,6 +112,7 @@ impl OverlayState {
                 "overlay.format_toolbar.link_apply",
                 "overlay.format_toolbar.link_remove",
             ],
+            Self::MobileKeyboardSelection => &["overlay.keyboard_toolbar"],
             Self::DragHandleHover => &["overlay.drag_handle"],
             Self::DragDropIndicator => &["overlay.drag_handle", "overlay.drop_indicator"],
             Self::CodeHover | Self::CodeHoverCopied => &["page.block.showcase-code.copy"],
@@ -195,16 +199,25 @@ pub(super) fn apply_overlay_state(session: &HeadlessSession, state: OverlayState
                 anchor: None,
             })?;
         }
-        OverlayState::FormatToolbarOpen => session.select_text(INTRO, "bold")?,
+        OverlayState::FormatToolbarOpen => {
+            session.select_text(INTRO, "bold")?;
+            session.view(|v, cx| v.set_software_keyboard_visible(false, cx))?;
+        }
         OverlayState::FormatToolbarFlippedTop => {
             // The selected line sits right under the top bar.
             session.scroll_block_to(QUOTE, 0.0)?;
             session.select_text(QUOTE, "Every block")?;
+            session.view(|v, cx| v.set_software_keyboard_visible(false, cx))?;
         }
         OverlayState::FormatToolbarLink => {
             session.select_text(INTRO, "links")?;
+            session.view(|v, cx| v.set_software_keyboard_visible(false, cx))?;
             session.frame()?;
             session.overlay(OverlayEvent::Format(FormatAction::Link))?;
+        }
+        OverlayState::MobileKeyboardSelection => {
+            session.select_text(INTRO, "bold")?;
+            session.overlay(OverlayEvent::SetKeyboardToolbarVisible(true))?;
         }
         OverlayState::DragHandleHover | OverlayState::DragDropIndicator => {
             let snapshot = session.scroll_block_to(QUOTE, 40.0)?;
@@ -361,6 +374,12 @@ pub(super) fn apply_overlay_state(session: &HeadlessSession, state: OverlayState
             anyhow::ensure!(
                 toolbar.y >= selection.bottom(),
                 "toolbar {toolbar:?} did not flip below the selection {selection:?}"
+            );
+        }
+        OverlayState::MobileKeyboardSelection => {
+            anyhow::ensure!(
+                !snapshot.elements.contains_key("overlay.format_toolbar"),
+                "mobile_keyboard_selection must suppress duplicate floating overlay.format_toolbar"
             );
         }
         _ => {}

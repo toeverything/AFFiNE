@@ -43,6 +43,19 @@ pub enum SurfaceElementSpec {
         title: String,
         children: Vec<String>,
     },
+    Mindmap {
+        seed: i32,
+        style: i32,
+        layout_type: i32,
+        children: Vec<(String, MindmapNodeSpec)>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MindmapNodeSpec {
+    pub index: String,
+    pub parent: Option<String>,
+    pub collapsed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -110,6 +123,7 @@ impl SurfaceElementSpec {
             Self::Highlighter { .. } => "highlighter",
             Self::Text { .. } => "text",
             Self::Group { .. } => "group",
+            Self::Mindmap { .. } => "mindmap",
         }
     }
 
@@ -419,6 +433,39 @@ impl SurfaceElementSpec {
                     ),
                     ("children".to_string(), SessionValue::Map(child_entries)),
                     ("title".to_string(), text_value(&title)),
+                ]);
+            }
+            Self::Mindmap {
+                seed,
+                style,
+                layout_type,
+                children,
+            } => {
+                let child_entries = children
+                    .into_iter()
+                    .map(|(cid, detail)| {
+                        let mut dmap = AHashMap::default();
+                        dmap.insert("index".to_string(), Any::String(detail.index));
+                        if let Some(parent) = detail.parent {
+                            dmap.insert("parent".to_string(), Any::String(parent));
+                        }
+                        if detail.collapsed {
+                            dmap.insert("collapsed".to_string(), Any::True);
+                        }
+                        (cid, SessionValue::Any(Any::Object(Box::new(dmap))))
+                    })
+                    .collect();
+                entries.extend([
+                    (
+                        "seed".to_string(),
+                        SessionValue::Any(Any::Integer(nonzero_seed(seed))),
+                    ),
+                    ("style".to_string(), SessionValue::Any(Any::Integer(style))),
+                    (
+                        "layoutType".to_string(),
+                        SessionValue::Any(Any::Integer(layout_type)),
+                    ),
+                    ("children".to_string(), SessionValue::Map(child_entries)),
                 ]);
             }
         }
