@@ -112,6 +112,9 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
+            return;
+        }
         if action.requires_body_selection() && self.editor.selection.is_none() {
             return;
         }
@@ -250,10 +253,31 @@ impl PlaygroundView {
             KeyboardToolbarAction::Dismiss => {
                 self.keyboard_toolbar_dismissed = true;
                 self.overlays.set_keyboard_toolbar_visible(false);
+                window.notify_text_selection_changed(&self.editor_focus);
                 cx.notify();
             }
         }
         self.sync_keyboard_toolbar_state();
+    }
+
+    /// Whether the native mobile host should present the system software keyboard.
+    pub fn wants_software_keyboard(&self) -> bool {
+        if self.keyboard_toolbar_dismissed {
+            return false;
+        }
+        match self.mode {
+            crate::PlaygroundMode::Page => {
+                !self.page_readonly
+                    && (self.editor.selection.is_some()
+                        || self.table_cell.is_some()
+                        || self.overlays.active_text_field().is_some())
+            }
+            crate::PlaygroundMode::Edgeless => {
+                !self.edgeless_readonly
+                    && (self.edgeless.authoring.editing_spatial_block().is_some()
+                        || self.overlays.active_text_field().is_some())
+            }
+        }
     }
 
     fn step_attachment_pdf_page(&mut self, block_id: &str, delta: i32, cx: &mut Context<Self>) {
@@ -407,5 +431,149 @@ impl PlaygroundView {
             window,
             cx,
         );
+    }
+
+    /// Focus the editor and place a collapsed caret at offset 0 of the first editable
+    /// paragraph or list block (falling back to the page root title block).
+    pub fn focus_first_text_block(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.refresh_document();
+        let target_id = self.snapshot.as_ref().and_then(|snap| {
+            fn find_first_text(
+                nodes: &[blocksuite_playground_doc::read::BlockNode],
+            ) -> Option<String> {
+                for node in nodes {
+                    match &node.content {
+                        blocksuite_playground_doc::read::BlockContent::Paragraph { .. }
+                        | blocksuite_playground_doc::read::BlockContent::List { .. } => {
+                            return Some(node.id.clone());
+                        }
+                        _ => {}
+                    }
+                    if let Some(found) = find_first_text(&node.children) {
+                        return Some(found);
+                    }
+                }
+                None
+            }
+            snap.root
+                .as_ref()
+                .and_then(|root| find_first_text(&root.children).or_else(|| Some(root.id.clone())))
+        });
+        self.editor_focus.focus(window, cx);
+        if let Some(block_id) = target_id {
+            let caret = DocPoint::new(&block_id, 0);
+            self.change_selection(
+                DocumentSelection {
+                    anchor: caret.clone(),
+                    focus: caret,
+                },
+                window,
+                cx,
+            );
+        }
+    }
+
+    pub(crate) fn copy_toolbar_selection_or_block(&mut self, cx: &mut Context<Self>) {
+        if let Some(slice) = self.clipboard_slice() {
+            crate::clipboard::write_slice(&slice, cx);
+            return;
+        }
+        if let Some(id) = self.editor.selection.as_ref().map(|s| &s.focus.block_id)
+            && let Some(text) = self.block_text(id)
+        {
+            cx.write_to_clipboard(ui::ClipboardItem::new_string(text.to_string()));
+        }
+    }
+
+    pub(crate) fn insert_toolbar_plain_text(
+        &mut self,
+        text: &str,
+        w: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> blocksuite_playground_doc::DocResult {
+        if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
+            return Ok(());
+        }
+        let Some(sel) = self.editor.selection.clone() else {
+            return Ok(());
+        };
+        self.page_mut()?.stop_capturing()?;
+        self.editor.last_typing = None;
+        self.replace_selection(sel, text, w, cx)?;
+        self.page_mut()?.stop_capturing()?;
+        Ok(())
+    }
+
+    /// Update the host form factor and apply Stage-1 capability defaults.
+    pub fn set_form_factor(
+        &mut self,
+        form_factor: crate::FormFactor,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let caps = crate::EditorCapabilities::for_form_factor(form_factor);
+        self.form_factor = caps.form_factor;
+        self.pointer_kind = caps.pointer_kind;
+        self.page_readonly = self.page_readonly || caps.page_readonly;
+        self.set_edgeless_readonly(caps.edgeless_readonly, window, cx);
+        self.set_database_mobile_readonly(caps.database_readonly, cx);
+    }
+
+    /// Whether Database-block mutations are gated read-only.
+    pub fn database_readonly(&self) -> bool {
+        self.database_readonly
+    }
+
+    /// Replace the active document with a fresh single-paragraph empty page and focus it.
+    pub fn load_empty_page_document(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        use blocksuite_playground_doc::schema::{BlockSpec, ParagraphType};
+
+        let Ok(mut state) = crate::room_client::DocState::new("local", 1) else {
+            return;
+        };
+        let _ = state.workspace.initialize_meta();
+        let _ = state
+            .workspace
+            .create_page(crate::HOME_PAGE_ID, "Untitled", 1_700_000_000_000);
+        if let Ok(page) = state.workspace.ensure_page(crate::HOME_PAGE_ID) {
+            let _ = page.add_block(
+                "local-page",
+                BlockSpec::Page {
+                    title: "Untitled".to_string(),
+                },
+                None,
+                None,
+                1_000,
+            );
+            let _ = page.add_block(
+                "local-note",
+                BlockSpec::Note {
+                    xywh: Some("[0,0,760,1180]".to_string()),
+                },
+                Some("local-page"),
+                None,
+                1_000,
+            );
+            let _ = page.add_block(
+                "local-p1",
+                BlockSpec::Paragraph {
+                    paragraph_type: ParagraphType::Text,
+                    text: String::new(),
+                },
+                Some("local-note"),
+                None,
+                1_000,
+            );
+        }
+        self.set_document(state, cx);
+        self.focus_first_text_block(window, cx);
+    }
+
+    /// Reload the built-in showcase document and focus its first text block.
+    pub fn load_showcase_document(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Ok(state) = crate::seed_showcase_doc() {
+            self.set_document(state, cx);
+            self.focus_first_text_block(window, cx);
+        }
     }
 }

@@ -821,62 +821,6 @@ final class TextRenderingBridge {
   }
 }
 
-/// Lightweight transparent S3 transition preview view mounted above `MetalHostView`
-/// and below `SelectionOverlayView`. Removed in S4 when GPU `blocksuite-editor` attaches.
-final class HostTextPreviewView: UIView {
-  weak var renderer: TextRenderingBridge?
-  var utf16Units: [UInt16] = [] {
-    didSet {
-      if oldValue != utf16Units { setNeedsDisplay() }
-    }
-  }
-  var selectedRange = NSRange(location: 0, length: 0) {
-    didSet {
-      if oldValue != selectedRange { setNeedsDisplay() }
-    }
-  }
-  var hostInsets = AffineWindowInsets(
-    safe_top: 0,
-    safe_right: 0,
-    safe_bottom: 0,
-    safe_left: 0,
-    ime_bottom: 0
-  ) {
-    didSet { setNeedsDisplay() }
-  }
-
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    backgroundColor = .clear
-    isOpaque = false
-    isUserInteractionEnabled = false
-  }
-
-  required init?(coder: NSCoder) {
-    super.init(coder: coder)
-    backgroundColor = .clear
-    isOpaque = false
-    isUserInteractionEnabled = false
-  }
-
-  override func draw(_ rect: CGRect) {
-    guard
-      let renderer,
-      !utf16Units.isEmpty,
-      let ctx = UIGraphicsGetCurrentContext()
-    else {
-      return
-    }
-    renderer.drawShapedText(
-      in: ctx,
-      utf16Units: utf16Units,
-      selectedRange: selectedRange,
-      viewportWidth: Float(bounds.width),
-      insets: hostInsets
-    )
-  }
-}
-
 private func affineTextCaretRectTrampoline(
   utf16Ptr: UnsafePointer<UInt16>?,
   utf16Len: Int,

@@ -113,7 +113,8 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.edgeless_readonly
+        if self.is_touch_host()
+            || self.edgeless_readonly
             || f32::from(window.viewport_size().width) < super::SCROLLBAR_DESKTOP_MIN_WIDTH
         {
             return;

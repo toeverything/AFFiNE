@@ -479,6 +479,7 @@ impl Overlays {
         let marked = editor.input.marked_range();
         let mut font = ui::font(FONT_CODE);
         font.weight = FontWeight::NORMAL;
+        font.fallbacks = Some(crate::default_font_fallbacks());
         let theme_mode = palette.theme.mode();
         let wrapped = wrap_latex_lines(
             &text,

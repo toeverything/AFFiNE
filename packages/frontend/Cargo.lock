@@ -28,15 +28,23 @@ name = "affine-android-host"
 version = "0.1.0"
 dependencies = [
  "affine-legacy-import",
+ "affine-mobile",
  "affine-store",
+ "anyhow",
  "base64 0.22.1",
  "chrono",
+ "futures",
+ "playground",
+ "raw-window-handle",
  "serde",
  "serde_json",
  "sha2 0.10.9",
+ "smallvec",
  "sqlx",
  "tokio",
+ "ui",
  "url",
+ "uuid",
  "y-octo",
 ]
 
@@ -60,14 +68,22 @@ name = "affine-ios-host"
 version = "0.1.0"
 dependencies = [
  "affine-legacy-import",
+ "affine-mobile",
  "affine-store",
+ "anyhow",
  "blocksuite-playground-doc",
  "chrono",
+ "futures",
+ "parking_lot",
+ "playground",
+ "raw-window-handle",
  "serde",
  "serde_json",
+ "smallvec",
  "sqlx",
  "thiserror 2.0.21",
  "tokio",
+ "ui",
  "uuid",
 ]
 

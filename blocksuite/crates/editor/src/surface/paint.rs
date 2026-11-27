@@ -194,6 +194,7 @@ impl TextStyle<'_> {
         };
         let mut face = ui::font(style.font_family.clone());
         face.weight = style.base_weight;
+        face.fallbacks = Some(crate::default_font_fallbacks());
         let id = ts.resolve_font(&face);
         let size = px(style.font_size);
         let ascent = f32::from(ts.ascent(id, size));

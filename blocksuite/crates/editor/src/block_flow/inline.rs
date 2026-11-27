@@ -31,6 +31,7 @@ impl InlineStyle {
     fn font(&self) -> Font {
         let mut font = ui::font(self.family);
         font.weight = FontWeight(self.weight);
+        font.fallbacks = Some(crate::default_font_fallbacks());
         font
     }
 }

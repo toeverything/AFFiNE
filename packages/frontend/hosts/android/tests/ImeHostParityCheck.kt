@@ -1677,51 +1677,40 @@ fun main() {
     )
     checkEq(nav.openDocument("roadmap"), true, "seq22 open doc/roadmap")
     checkEq(docIme.replaceText(0, docIme.currentText().length, "Project roadmap", 1), true, "seq22 write roadmap text")
-    checkEq(bufCtrl.lastPreviewText, "Project roadmap", "seq22 preview shows Project roadmap")
+    val seqBeforePollutionChecks = docIme.textInputChangeSeq()
 
     checkEq(afCtrl.registerField(202, 2, 20, 200, 800, 280, true, 0), true, "seq22 register password field")
     bufCtrl.onAutofillFocusChanged(202)
     checkEq(afCtrl.onAutofillValues(mapOf(202 to "s3cr3t!")), 1, "seq22 autofill password s3cr3t!")
-    checkEq(bufCtrl.lastPreviewText.contains("s3cr3t!"), false, "seq22 password NEVER leaks into HostTextPreviewView")
-    checkEq(bufCtrl.lastPreviewText, "Project roadmap", "seq22 preview stays Project roadmap while editing password")
-    checkEq(docStore.readDocument("doc/roadmap"), "Project roadmap", "seq22 documentStore stays Project roadmap")
+    checkEq(docIme.currentText(), "Project roadmap", "seq22 H-S1: autofill MUST NOT overwrite editor block")
+    checkEq(docIme.textInputChangeSeq(), seqBeforePollutionChecks, "seq22 H-S1: autofill MUST NOT touch editor undo/seq")
+    checkEq(docStore.readDocument("doc/roadmap"), "", "seq22 H-S1: host documentStore keeps zero shadow copy")
 
-    // Switch route to doc B while password was focused, then back to doc A -> roadmap intact, password intact.
+    // Switch route while password was focused -> editor block remains 100% unpolluted, password preserved.
     checkEq(nav.openDocument("notes"), true, "seq22 navigate to doc/notes while password focused")
-    checkEq(docIme.commitText("Meeting notes", 1), true, "seq22 write notes doc")
+    checkEq(docIme.currentText(), "Project roadmap", "seq22 H-S1: route switch MUST NOT overwrite editor block")
     checkEq(nav.onBackInvoked(), true, "seq22 back to doc/roadmap")
-    checkEq(docIme.currentText(), "Project roadmap", "seq22 doc/roadmap restored intact")
-    checkEq(bufCtrl.lastPreviewText, "Project roadmap", "seq22 preview restored to Project roadmap")
+    checkEq(docIme.currentText(), "Project roadmap", "seq22 doc/roadmap untouched across route switch")
+    checkEq(docIme.textInputChangeSeq(), seqBeforePollutionChecks, "seq22 route switch MUST NOT pollute undo/seq")
     checkEq(afCtrl.readFormValues()["password"], "s3cr3t!", "seq22 autofill password preserved")
 
-    // Part D: Autofill session exit via commitAutofillSession / cancelAutofillSession / clearAutofillFields
-    // must restore the document buffer immediately so subsequent typing and route switches never leak form text.
+    // Part D: Autofill session exit via commit / cancel / clear leaves editor block untouched.
     val exitModes = listOf("commit", "cancel", "clear")
     for (mode in exitModes) {
       checkEq(afCtrl.registerField(202, 2, 20, 200, 800, 280, true, 0), true, "seq22 ($mode) register password field")
       checkEq(docIme.replaceText(0, docIme.currentText().length, "Doc-$mode", 1), true, "seq22 ($mode) seed doc text")
-      bufCtrl.recordDocumentSelection(0, 3)
+      val seqSeeded = docIme.textInputChangeSeq()
       bufCtrl.onAutofillFocusChanged(202)
-      checkEq(docIme.replaceText(0, docIme.currentText().length, "f0rm-secret-99", 1), true, "seq22 ($mode) type secret in form")
-      checkEq(docIme.setSelection(0, 6), true, "seq22 ($mode) select secret in form")
-      // Simulated surfaceChanged while Autofill focused must keep currentDocumentText() untouched.
-      checkEq(bufCtrl.isAutofillFocused(), true, "seq22 ($mode) autofill focused before resize")
-      checkEq(bufCtrl.currentDocumentText(), "Doc-$mode", "seq22 ($mode) currentDocumentText hides form secret")
-      checkEq(bufCtrl.lastPreviewText, "Doc-$mode", "seq22 ($mode) preview hides form secret")
+      checkEq(afCtrl.onAutofillValues(mapOf(202 to "f0rm-secret-99")), 1, "seq22 ($mode) autofill secret")
+      checkEq(docIme.currentText(), "Doc-$mode", "seq22 ($mode) editor block isolated from form secret")
       when (mode) {
         "commit" -> checkEq(bufCtrl.commitAutofillSession(), true, "seq22 commitAutofillSession")
         "cancel" -> checkEq(bufCtrl.cancelAutofillSession(), true, "seq22 cancelAutofillSession")
         "clear" -> bufCtrl.clearAutofillFields()
       }
       checkEq(bufCtrl.isAutofillFocused(), false, "seq22 ($mode) autofill unfocused after exit")
-      checkEq(docIme.currentText(), "Doc-$mode", "seq22 ($mode) IME immediately restored to doc text")
-      checkEq(docIme.setSelection(docIme.currentText().length, docIme.currentText().length), true, "seq22 ($mode) move caret to end")
-      checkEq(docIme.commitText("!", 1), true, "seq22 ($mode) first edit after exit appends to doc")
-      checkEq(docIme.currentText(), "Doc-$mode!", "seq22 ($mode) post-exit edit preserved doc without form text")
-      checkEq(docStore.readDocument("doc/roadmap"), "Doc-$mode!", "seq22 ($mode) store saved clean doc")
-      checkEq(nav.openDocument("scratch-$mode"), true, "seq22 ($mode) navigate away after exit")
-      checkEq(nav.onBackInvoked(), true, "seq22 ($mode) navigate back after exit")
-      checkEq(docIme.currentText(), "Doc-$mode!", "seq22 ($mode) roundtrip route switch kept clean doc")
+      checkEq(docIme.currentText(), "Doc-$mode", "seq22 ($mode) editor block unchanged after autofill exit")
+      checkEq(docIme.textInputChangeSeq(), seqSeeded, "seq22 ($mode) zero editor mutations during autofill lifecycle")
       checkEq(docIme.currentText().contains("f0rm-secret-99"), false, "seq22 ($mode) no form secret leaked")
     }
 
@@ -1741,7 +1730,7 @@ fun main() {
     checkEq(docIme.replaceText(0, docIme.currentText().length, "Hello document", 1), true, "seq22 masked seed doc")
     bufCtrl.onAutofillFocusChanged(202)
     checkEq(bufCtrl.isFocusedAutofillFieldMasked(), true, "seq22 focused password field is masked")
-    checkEq(docIme.replaceText(0, docIme.currentText().length, "s3cr3t-pass", 1), true, "seq22 type masked password")
+    bufCtrl.applyAutofillTextToIme("s3cr3t-pass")
     checkEq(docIme.setSelection(0, 6), true, "seq22 select [0, 6) inside masked password")
     // Mirror MainActivity.onImeMutated suppression when Autofill is focused.
     if (bufCtrl.isAutofillFocused()) {
@@ -1959,5 +1948,45 @@ fun main() {
     seq23Dir.deleteRecursively()
   }
 
-  println("Kotlin JNI Android host parity check passed (23/23 sequences)")
+  // 24. S6 native GPU editor mount: H-A1 Gboard composing region, H-S1 Markdown transform &
+  // getExtractedText, H-S2 change sequence & block hash, sendKeyEvent block split/merge, and T1 readonly.
+  withHost { ic, ime ->
+    // H-A1: Gboard backspace-into-word (" hello" -> setComposingRegion(1, 6) -> setComposingText("hellos"))
+    checkEq(ic.commitText(" hello", 1), true, "seq24 commit ' hello'")
+    checkEq(ic.setComposingRegion(1, 6), true, "seq24 setComposingRegion(1, 6)")
+    checkEq(ime.composingStart(), 1, "seq24 composingStart 1")
+    checkEq(ime.composingEnd(), 6, "seq24 composingEnd 6")
+    checkEq(ic.setComposingText("hellos", 1), true, "seq24 setComposingText('hellos')")
+    checkEq(ime.readText(), " hellos", "seq24 Gboard composing region must not duplicate 'hello'")
+    checkEq(ic.finishComposingText(), true, "seq24 finishComposingText")
+
+    // H-S1: authoritative editor text and collapsed selection after Gboard composing edit
+    checkEq(ime.readText(), " hellos", "seq24 authoritative text after composing")
+    checkEq(ime.selectionStart(), 7, "seq24 authoritative selectionStart == 7")
+    checkEq(ime.selectionEnd(), 7, "seq24 authoritative selectionEnd == 7")
+
+    // sendKeyEvent: KEYCODE_ENTER splits block, KEYCODE_DEL at block start merges back
+    val seqBefore = ime.textInputChangeSeq()
+    val blockBefore = ime.focusedBlockHash()
+    checkEq(ime.sendKeyEvent(66, false, false, false), true, "seq24 KEYCODE_ENTER splits block")
+    checkEq(ime.readText(), "", "seq24 new split block is empty")
+    checkEq(ime.textInputChangeSeq() > seqBefore, true, "seq24 H-S2 change seq increments on split")
+    checkEq(ime.focusedBlockHash() != blockBefore, true, "seq24 H-S2 focused block hash changes on split")
+    checkEq(ime.sendKeyEvent(67, false, false, false), true, "seq24 KEYCODE_DEL merges with previous block")
+    checkEq(ime.readText(), " hellos", "seq24 block-start DEL merges back to ' hellos'")
+  }
+
+  val seq24Handle = NativeBridge.nativeCreateHost()
+  try {
+    NativeBridge.nativeSetFormFactor(seq24Handle, 390)
+    checkEq(NativeBridge.nativeIsEdgelessReadonly(seq24Handle), true, "seq24 Phone edgeless_readonly")
+    checkEq(NativeBridge.nativeIsDatabaseReadonly(seq24Handle), true, "seq24 Phone database_readonly")
+    NativeBridge.nativeSetFormFactor(seq24Handle, 720)
+    checkEq(NativeBridge.nativeIsEdgelessReadonly(seq24Handle), true, "seq24 Tablet edgeless_readonly")
+    checkEq(NativeBridge.nativeIsDatabaseReadonly(seq24Handle), true, "seq24 Tablet database_readonly")
+  } finally {
+    NativeBridge.nativeDestroyHost(seq24Handle)
+  }
+
+  println("Kotlin JNI Android host parity check passed (24/24 sequences)")
 }

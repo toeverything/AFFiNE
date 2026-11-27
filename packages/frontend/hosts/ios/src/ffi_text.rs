@@ -106,10 +106,14 @@ pub unsafe extern "C" fn affine_ios_host_text_writing_direction(host: *const Aff
     let Some(host) = (unsafe { host.as_ref() }) else {
         return AffineWritingDirection::Ltr as u8;
     };
+    if let Some(editor) = host.editor.borrow_mut().as_mut() {
+        return editor.writing_direction() as u8;
+    }
     host.state.text_writing_direction() as u8
 }
 
-/// Compute visual caret rect for `utf16_offset` via CoreText `CTLine` (or headless fallback).
+/// Compute visual caret rect for `utf16_offset` via the live GPU editor `PlatformInputHandler`
+/// (or CoreText / headless fallback).
 ///
 /// # Safety
 /// `host` must be null or a live pointer returned by `affine_ios_host_create`.
@@ -121,9 +125,19 @@ pub unsafe extern "C" fn affine_ios_host_text_caret_rect(
     let Some(host) = (unsafe { host.as_ref() }) else {
         return AffineRect::default();
     };
+    if let Some(editor) = host.editor.borrow_mut().as_mut()
+        && let Some(rect) = editor.caret_rect(utf16_offset)
+    {
+        return rect;
+    }
     let (vw, _) = host.state.viewport_size_pt();
     let insets = host.state.insets();
-    let utf16 = host.state.utf16_text();
+    let utf16 = host
+        .editor
+        .borrow_mut()
+        .as_mut()
+        .map(|e| e.utf16_text())
+        .unwrap_or_else(|| host.state.utf16_text().to_vec());
     if let Some(p) = host.text_provider
         && let Some(f) = p.caret_rect
     {
@@ -136,7 +150,7 @@ pub unsafe extern "C" fn affine_ios_host_text_caret_rect(
             p.user_data,
         );
     }
-    caret_rect_for_offset(utf16, utf16_offset, vw, insets)
+    caret_rect_for_offset(&utf16, utf16_offset, vw, insets)
 }
 
 /// Compute BiDi-aware per-line selection rectangles across soft-wrapped visual lines.
@@ -154,9 +168,27 @@ pub unsafe extern "C" fn affine_ios_host_text_selection_rects(
     let Some(host) = (unsafe { host.as_ref() }) else {
         return 0;
     };
+    if let Some(editor) = host.editor.borrow_mut().as_mut() {
+        let rects = editor.selection_rects(range);
+        if !rects.is_empty() {
+            if !out_rects.is_null() && capacity > 0 {
+                let count = rects.len().min(capacity);
+                // SAFETY: Caller guarantees `out_rects` points to `capacity` writable elements.
+                unsafe {
+                    core::ptr::copy_nonoverlapping(rects.as_ptr(), out_rects, count);
+                }
+            }
+            return rects.len();
+        }
+    }
     let (vw, _) = host.state.viewport_size_pt();
     let insets = host.state.insets();
-    let utf16 = host.state.utf16_text();
+    let utf16 = host
+        .editor
+        .borrow_mut()
+        .as_mut()
+        .map(|e| e.utf16_text())
+        .unwrap_or_else(|| host.state.utf16_text().to_vec());
     if let Some(p) = host.text_provider
         && let Some(f) = p.selection_rects
     {
@@ -171,7 +203,7 @@ pub unsafe extern "C" fn affine_ios_host_text_selection_rects(
             p.user_data,
         );
     }
-    let rects = selection_rects_for_range(utf16, range, vw, insets);
+    let rects = selection_rects_for_range(&utf16, range, vw, insets);
     if !out_rects.is_null() && capacity > 0 {
         let count = rects.len().min(capacity);
         // SAFETY: Caller guarantees `out_rects` points to `capacity` writable elements.
@@ -201,9 +233,55 @@ pub unsafe extern "C" fn affine_ios_host_text_selection_endpoint_carets(
     ) else {
         return false;
     };
+    if let Some(editor) = host.editor.borrow_mut().as_mut() {
+        let start_caret = editor.caret_rect(range.location);
+        let end_caret = editor.caret_rect(range.location.saturating_add(range.length));
+        if let (Some(s), Some(e)) = (start_caret, end_caret)
+            && (range.length == 0 || (s.x - e.x).abs() >= 1.0 || (s.y - e.y).abs() >= 1.0)
+        {
+            *start_slot = s;
+            *end_slot = e;
+            return true;
+        }
+        // At BiDi run boundaries, logical start and end carets share one visual X;
+        // derive handle edges from `editor.selection_rects(range)` in editor space.
+        if range.length > 0 {
+            let rects = editor.selection_rects(range);
+            if let (Some(first), Some(last)) = (rects.first(), rects.last()) {
+                let units = editor.utf16_text();
+                let lo = (range.location as usize).min(units.len());
+                let hi = (range.location.saturating_add(range.length) as usize).min(units.len());
+                let slice_rtl = super::text_layout::detect_writing_direction(&units[lo..hi])
+                    == super::selection::AffineWritingDirection::Rtl;
+                let (sx, ex) = if slice_rtl {
+                    (first.rect.x + first.rect.width, last.rect.x)
+                } else {
+                    (first.rect.x, last.rect.x + last.rect.width)
+                };
+                *start_slot = AffineRect {
+                    x: sx,
+                    y: first.rect.y,
+                    width: 2.0,
+                    height: first.rect.height,
+                };
+                *end_slot = AffineRect {
+                    x: ex,
+                    y: last.rect.y,
+                    width: 2.0,
+                    height: last.rect.height,
+                };
+                return true;
+            }
+        }
+    }
     let (vw, _) = host.state.viewport_size_pt();
     let insets = host.state.insets();
-    let utf16 = host.state.utf16_text();
+    let utf16 = host
+        .editor
+        .borrow_mut()
+        .as_mut()
+        .map(|e| e.utf16_text())
+        .unwrap_or_else(|| host.state.utf16_text().to_vec());
     if let Some(p) = host.text_provider
         && let Some(f) = p.selection_endpoint_carets
         && f(
@@ -219,9 +297,9 @@ pub unsafe extern "C" fn affine_ios_host_text_selection_endpoint_carets(
     {
         return true;
     }
-    *start_slot = caret_rect_for_offset(utf16, range.location, vw, insets);
+    *start_slot = caret_rect_for_offset(&utf16, range.location, vw, insets);
     *end_slot = caret_rect_for_offset(
-        utf16,
+        &utf16,
         range.location.saturating_add(range.length),
         vw,
         insets,
@@ -255,9 +333,19 @@ pub unsafe extern "C" fn affine_ios_host_text_closest_offset_preferred(
     let Some(host) = (unsafe { host.as_ref() }) else {
         return 0;
     };
+    if let Some(editor) = host.editor.borrow_mut().as_mut()
+        && let Some(off) = editor.closest_offset(point)
+    {
+        return off;
+    }
     let (vw, _) = host.state.viewport_size_pt();
     let insets = host.state.insets();
-    let utf16 = host.state.utf16_text();
+    let utf16 = host
+        .editor
+        .borrow_mut()
+        .as_mut()
+        .map(|e| e.utf16_text())
+        .unwrap_or_else(|| host.state.utf16_text().to_vec());
     if let Some(p) = host.text_provider
         && let Some(f) = p.closest_offset
     {
@@ -271,7 +359,7 @@ pub unsafe extern "C" fn affine_ios_host_text_closest_offset_preferred(
             p.user_data,
         );
     }
-    closest_offset_for_point(utf16, point, vw, insets)
+    closest_offset_for_point(&utf16, point, vw, insets)
 }
 
 /// Rasterize the magnifier loupe around `(focus_x, focus_y)` as RGBA8 via whole-line `CTLineDraw`
@@ -298,12 +386,32 @@ pub unsafe extern "C" fn affine_ios_host_render_loupe_rgba8(
     };
     let (vw, _) = host.state.viewport_size_pt();
     let insets = host.state.insets();
-    let utf16 = host.state.utf16_text();
-    let selected = host.state.selected_range();
+    let (utf16, selected, editor_origin_caret) =
+        if let Some(editor) = host.editor.borrow_mut().as_mut() {
+            (
+                editor.utf16_text(),
+                editor.selected_range(),
+                editor.caret_rect(0),
+            )
+        } else {
+            (
+                host.state.utf16_text().to_vec(),
+                host.state.selected_range(),
+                None,
+            )
+        };
 
     if let Some(p) = host.text_provider
         && let Some(render_fn) = p.render_loupe_rgba8
     {
+        let (loupe_focus_x, loupe_focus_y) = if let Some(c0) = editor_origin_caret
+            && let Some(caret_fn) = p.caret_rect
+        {
+            let ct0 = caret_fn(utf16.as_ptr(), utf16.len(), 0, vw, insets, p.user_data);
+            (focus_x - c0.x + ct0.x, focus_y - c0.y + ct0.y)
+        } else {
+            (focus_x, focus_y)
+        };
         let mut rgba = vec![0u8; dim * dim * 4];
         let ok = render_fn(
             utf16.as_ptr(),
@@ -311,8 +419,8 @@ pub unsafe extern "C" fn affine_ios_host_render_loupe_rgba8(
             selected,
             vw,
             insets,
-            focus_x,
-            focus_y,
+            loupe_focus_x,
+            loupe_focus_y,
             dim as u32,
             zoom,
             rgba.as_mut_ptr(),
@@ -325,7 +433,7 @@ pub unsafe extern "C" fn affine_ios_host_render_loupe_rgba8(
     }
 
     let rgba = render_loupe_rgba8(
-        utf16, selected, vw, insets, focus_x, focus_y, dim as u32, zoom,
+        &utf16, selected, vw, insets, focus_x, focus_y, dim as u32, zoom,
     );
     AffineIosByteBuffer::from_vec(rgba)
 }

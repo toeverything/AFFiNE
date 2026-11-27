@@ -227,6 +227,12 @@ jobs:
           workspaces: packages/frontend -> target
           key: np-mobile-android-host
 
+      - name: Install Linux fontconfig and freetype headers for host tests
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pkg-config libfontconfig1-dev libfreetype-dev
+
       - name: Test host logic and link Android NDK .so binaries
         working-directory: packages/frontend
         run: |
@@ -308,6 +314,13 @@ jobs:
             -framework QuartzCore \
             -framework Metal \
             -framework WebKit \
+            -framework PDFKit \
+            -framework CoreText \
+            -framework CoreGraphics \
+            -framework CoreVideo \
+            -framework CoreFoundation \
+            -framework Foundation \
+            -framework UniformTypeIdentifiers \
             -o /tmp/AffineIosHost \
             packages/frontend/hosts/ios/Sources/*.swift
           test -s /tmp/AffineIosHost

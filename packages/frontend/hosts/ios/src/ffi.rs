@@ -6,7 +6,7 @@ use std::{
 };
 
 use super::{
-    AffineUtf16Range, AffineWindowInsets, IosHostState,
+    AffineWindowInsets, IosHostState,
     auth::{
         AuthTokenResponse, StoredAuthTokenPair, auth_error_permanently_invalidates_session,
         canonical_endpoint, resolve_installation_id,
@@ -21,6 +21,7 @@ use super::{
 /// Opaque C-ABI handle matching `typedef struct AffineIosHost AffineIosHost`.
 pub struct AffineIosHost {
     pub(crate) state: IosHostState,
+    pub(crate) editor: std::cell::RefCell<Option<super::editor_runtime::IosEditorRuntime>>,
     _metal_layer: *mut c_void,
     pub(crate) haptics_callback: Option<extern "C" fn(u8, *mut c_void)>,
     pub(crate) haptics_user_data: *mut c_void,
@@ -104,8 +105,16 @@ pub extern "C" fn affine_ios_host_create(
     height_pt: f32,
     scale_factor: f32,
 ) -> *mut AffineIosHost {
+    let editor = super::editor_runtime::IosEditorRuntime::new(
+        width_pt,
+        height_pt,
+        scale_factor,
+        playground::FormFactor::Phone,
+        true,
+    );
     let host = Box::new(AffineIosHost {
         state: IosHostState::new(width_pt, height_pt, scale_factor),
+        editor: std::cell::RefCell::new(editor),
         _metal_layer: metal_layer,
         haptics_callback: None,
         haptics_user_data: core::ptr::null_mut(),
@@ -139,6 +148,10 @@ pub unsafe extern "C" fn affine_ios_host_resize(
         return;
     };
     host.state.resize(width_pt, height_pt, scale_factor);
+    if let Some(editor) = host.editor.borrow_mut().as_mut() {
+        editor.resize(width_pt, height_pt, scale_factor);
+    }
+    super::ffi_editor::flush_text_input_changes(host);
 }
 
 /// # Safety
@@ -152,6 +165,9 @@ pub unsafe extern "C" fn affine_ios_host_set_insets(
         return;
     };
     host.state.set_insets(insets);
+    if let Some(editor) = host.editor.borrow_mut().as_mut() {
+        editor.set_insets(host.state.insets());
+    }
 }
 
 /// # Safety
@@ -164,6 +180,22 @@ pub unsafe extern "C" fn affine_ios_host_render_frame(
     let Some(host) = (unsafe { host.as_mut() }) else {
         return 0;
     };
+    let rendered = if let Some(editor) = host.editor.borrow_mut().as_mut() {
+        if host.state.is_dirty() {
+            editor.request_frame();
+        }
+        let color = editor.render_frame(frame_timestamp_sec);
+        if color != 0 {
+            let _ = host.state.render_frame(frame_timestamp_sec);
+        }
+        Some(color)
+    } else {
+        None
+    };
+    if let Some(color) = rendered {
+        super::ffi_editor::flush_text_input_changes(host);
+        return color;
+    }
     host.state.render_frame(frame_timestamp_sec)
 }
 
@@ -174,6 +206,9 @@ pub unsafe extern "C" fn affine_ios_host_is_dirty(host: *const AffineIosHost) ->
     let Some(host) = (unsafe { host.as_ref() }) else {
         return false;
     };
+    if let Some(editor) = host.editor.borrow().as_ref() {
+        return editor.is_dirty() || host.state.is_dirty();
+    }
     host.state.is_dirty()
 }
 
@@ -185,141 +220,9 @@ pub unsafe extern "C" fn affine_ios_host_request_frame(host: *mut AffineIosHost)
         return;
     };
     host.state.request_frame();
-}
-
-/// # Safety
-/// `host` must be null or a live pointer; `utf16_ptr` must be valid for `utf16_len` reads when non-zero.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn affine_ios_host_insert_text(
-    host: *mut AffineIosHost,
-    utf16_ptr: *const u16,
-    utf16_len: usize,
-) {
-    let Some(host) = (unsafe { host.as_mut() }) else {
-        return;
-    };
-    let slice = if utf16_len == 0 || utf16_ptr.is_null() {
-        &[]
-    } else {
-        // SAFETY: Caller guarantees `utf16_ptr` points to `utf16_len` initialized `u16`s.
-        unsafe { core::slice::from_raw_parts(utf16_ptr, utf16_len) }
-    };
-    host.state.insert_text(slice);
-}
-
-/// # Safety
-/// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn affine_ios_host_delete_backward(host: *mut AffineIosHost) {
-    let Some(host) = (unsafe { host.as_mut() }) else {
-        return;
-    };
-    host.state.delete_backward();
-}
-
-/// # Safety
-/// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn affine_ios_host_delete_range(
-    host: *mut AffineIosHost,
-    range: AffineUtf16Range,
-) {
-    let Some(host) = (unsafe { host.as_mut() }) else {
-        return;
-    };
-    host.state.delete_range(range);
-}
-
-/// # Safety
-/// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn affine_ios_host_set_selected_range(
-    host: *mut AffineIosHost,
-    range: AffineUtf16Range,
-) {
-    let Some(host) = (unsafe { host.as_mut() }) else {
-        return;
-    };
-    host.state.set_selected_range(range);
-}
-
-/// # Safety
-/// `host` must be null or a live pointer; `utf16_ptr` must be valid for `utf16_len` reads when non-zero.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn affine_ios_host_replace_range(
-    host: *mut AffineIosHost,
-    range: AffineUtf16Range,
-    utf16_ptr: *const u16,
-    utf16_len: usize,
-) {
-    let Some(host) = (unsafe { host.as_mut() }) else {
-        return;
-    };
-    let slice = if utf16_len == 0 || utf16_ptr.is_null() {
-        &[]
-    } else {
-        // SAFETY: Caller guarantees `utf16_ptr` points to `utf16_len` initialized `u16`s.
-        unsafe { core::slice::from_raw_parts(utf16_ptr, utf16_len) }
-    };
-    host.state.replace_range(range, slice);
-}
-
-/// # Safety
-/// `host` must be null or a live pointer; `utf16_ptr` must be valid for `utf16_len` reads when non-zero.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn affine_ios_host_set_marked_text(
-    host: *mut AffineIosHost,
-    utf16_ptr: *const u16,
-    utf16_len: usize,
-    selected_range: AffineUtf16Range,
-) {
-    let Some(host) = (unsafe { host.as_mut() }) else {
-        return;
-    };
-    let slice = if utf16_len == 0 || utf16_ptr.is_null() {
-        &[]
-    } else {
-        // SAFETY: Caller guarantees `utf16_ptr` points to `utf16_len` initialized `u16`s.
-        unsafe { core::slice::from_raw_parts(utf16_ptr, utf16_len) }
-    };
-    host.state.set_marked_text(slice, selected_range);
-}
-
-/// # Safety
-/// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn affine_ios_host_unmark_text(host: *mut AffineIosHost) {
-    let Some(host) = (unsafe { host.as_mut() }) else {
-        return;
-    };
-    host.state.unmark_text();
-}
-
-/// # Safety
-/// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn affine_ios_host_selected_range(
-    host: *const AffineIosHost,
-) -> AffineUtf16Range {
-    let Some(host) = (unsafe { host.as_ref() }) else {
-        return AffineUtf16Range::default();
-    };
-    host.state.selected_range()
-}
-
-/// # Safety
-/// `host` must be null or a live pointer returned by `affine_ios_host_create`.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn affine_ios_host_marked_range(
-    host: *const AffineIosHost,
-) -> AffineUtf16Range {
-    let Some(host) = (unsafe { host.as_ref() }) else {
-        return AffineUtf16Range {
-            location: u32::MAX,
-            length: 0,
-        };
-    };
-    host.state.marked_range()
+    if let Some(editor) = host.editor.borrow_mut().as_mut() {
+        editor.request_frame();
+    }
 }
 
 /// # Safety

@@ -271,6 +271,58 @@ AffineUtf16Range affine_ios_host_selected_range(const AffineIosHost *host);
 
 AffineUtf16Range affine_ios_host_marked_range(const AffineIosHost *host);
 
+typedef void (*AffineTextInputChangedCallback)(uint8_t change_kind, void *user_data);
+
+void *affine_ios_host_metal_layer(const AffineIosHost *host);
+
+size_t affine_ios_host_utf16_len(const AffineIosHost *host);
+
+size_t affine_ios_host_copy_utf16(
+    const AffineIosHost *host,
+    uint16_t *out_ptr,
+    size_t capacity);
+
+void affine_ios_host_touch_event(
+    AffineIosHost *host,
+    uint64_t touch_id,
+    uint8_t phase,
+    float x,
+    float y);
+
+void affine_ios_host_key_down(
+    AffineIosHost *host,
+    const char *key,
+    const char *key_char,
+    bool shift,
+    bool cmd,
+    bool ctrl,
+    bool alt);
+
+void affine_ios_host_set_form_factor(
+    AffineIosHost *host,
+    uint8_t form_factor);
+
+bool affine_ios_host_edgeless_readonly(const AffineIosHost *host);
+
+bool affine_ios_host_database_readonly(const AffineIosHost *host);
+
+bool affine_ios_host_wants_software_keyboard(const AffineIosHost *host);
+
+void affine_ios_host_set_mode(
+    AffineIosHost *host,
+    uint8_t mode);
+
+void affine_ios_host_set_text_input_callback(
+    AffineIosHost *host,
+    AffineTextInputChangedCallback cb,
+    void *user_data);
+
+uint64_t affine_ios_host_text_input_change_seq(const AffineIosHost *host);
+
+void affine_ios_host_reset_empty_doc(AffineIosHost *host);
+
+void affine_ios_host_load_showcase_doc(AffineIosHost *host);
+
 char *affine_ios_auth_canonical_endpoint(const char *endpoint);
 
 char *affine_ios_auth_legacy_storage_endpoint_key(const char *endpoint);

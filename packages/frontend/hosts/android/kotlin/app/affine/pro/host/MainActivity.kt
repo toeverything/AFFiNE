@@ -39,11 +39,13 @@ import android.view.autofill.AutofillManager
 import android.view.autofill.AutofillValue
 import android.view.inputmethod.CompletionInfo
 import android.view.inputmethod.CorrectionInfo
+import android.view.inputmethod.CursorAnchorInfo
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.ExtractedText
 import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputContentInfo
+import android.view.inputmethod.InputMethodManager
 import android.view.inputmethod.TextAttribute
 import android.widget.FrameLayout
 import android.window.BackEvent
@@ -103,6 +105,8 @@ object NativeBridge {
     newCursorPosition: Int,
   ): Boolean
   external fun nativeGetUtf16Length(handle: Long): Int
+  external fun nativeGetUtf16Text(handle: Long): String
+  external fun nativeHasPendingTimer(handle: Long): Boolean
   external fun nativeGetUtf16Unit(handle: Long, index: Int): Int
   external fun nativeGetSelectionStart(handle: Long): Int
   external fun nativeGetSelectionEnd(handle: Long): Int
@@ -276,6 +280,34 @@ object NativeBridge {
     widthPx: Int,
     heightPx: Int,
   ): ByteArray?
+
+  // Live pure-Rust GPU BlockSuite editor mount, touch/key dispatch, and H-S2 IME sync.
+  external fun nativeLoadShowcaseDocument(handle: Long)
+  external fun nativeResetEmptyDocument(handle: Long)
+  external fun nativeSetFormFactor(handle: Long, smallestWidthDp: Int)
+  external fun nativeIsEdgelessReadonly(handle: Long): Boolean
+  external fun nativeIsDatabaseReadonly(handle: Long): Boolean
+  external fun nativeSetEditorMode(handle: Long, modeCode: Int)
+  external fun nativeOnTouchEvent(
+    handle: Long,
+    pointerId: Long,
+    phase: Int,
+    xDp: Float,
+    yDp: Float,
+  )
+  external fun nativeOnKeyEvent(
+    handle: Long,
+    keyCode: Int,
+    shift: Boolean,
+    ctrl: Boolean,
+    alt: Boolean,
+  ): Boolean
+  external fun nativeGetTextInputChangeSeq(handle: Long): Long
+  external fun nativeGetFocusedBlockHash(handle: Long): Long
+  external fun nativeWantsSoftwareKeyboard(handle: Long): Boolean
+  external fun nativeGetCaretRectDpX(handle: Long): Float
+  external fun nativeGetCaretRectDpY(handle: Long): Float
+  external fun nativeGetCaretRectDpHeight(handle: Long): Float
 }
 
 /**
@@ -416,10 +448,7 @@ class AffineImeController(
   fun readText(): String {
     val handle = handleProvider()
     if (handle == 0L) return ""
-    val len = NativeBridge.nativeGetUtf16Length(handle)
-    if (len <= 0) return ""
-    val chars = CharArray(len) { idx -> NativeBridge.nativeGetUtf16Unit(handle, idx).toChar() }
-    return String(chars)
+    return NativeBridge.nativeGetUtf16Text(handle)
   }
 
   fun selectionStart(): Int {
@@ -464,6 +493,27 @@ class AffineImeController(
     val selEnd = selectionEnd().coerceIn(selStart, text.length)
     return if (selStart == selEnd) null else text.substring(selStart, selEnd)
   }
+
+  fun sendKeyEvent(keyCode: Int, shift: Boolean, ctrl: Boolean, alt: Boolean): Boolean {
+    val handle = handleProvider()
+    if (handle == 0L) return false
+    val handled = NativeBridge.nativeOnKeyEvent(handle, keyCode, shift, ctrl, alt)
+    if (handled) {
+      onMutated()
+      onTextEdited(currentText())
+    }
+    return handled
+  }
+
+  fun textInputChangeSeq(): Long {
+    val handle = handleProvider()
+    return if (handle == 0L) 0L else NativeBridge.nativeGetTextInputChangeSeq(handle)
+  }
+
+  fun focusedBlockHash(): Long {
+    val handle = handleProvider()
+    return if (handle == 0L) 0L else NativeBridge.nativeGetFocusedBlockHash(handle)
+  }
 }
 
 /**
@@ -473,8 +523,10 @@ class AffineImeController(
 class AffineInputConnection(
   private val ime: AffineImeController,
   private val onContextMenuAction: (Int) -> Boolean = { false },
+  private val onCursorUpdatesRequested: (Int) -> Unit = {},
 ) : InputConnection {
   private var batchEditDepth: Int = 0
+  private var cursorUpdateMonitor: Boolean = false
 
   override fun getTextBeforeCursor(n: Int, flags: Int): CharSequence = ime.getTextBeforeCursor(n)
 
@@ -484,7 +536,15 @@ class AffineInputConnection(
 
   override fun getCursorCapsMode(reqModes: Int): Int = 0
 
-  override fun getExtractedText(request: ExtractedTextRequest?, flags: Int): ExtractedText? = null
+  override fun getExtractedText(request: ExtractedTextRequest?, flags: Int): ExtractedText {
+    val text = ime.readText()
+    return ExtractedText().apply {
+      this.text = text
+      startOffset = 0
+      selectionStart = ime.selectionStart().coerceIn(0, text.length)
+      selectionEnd = ime.selectionEnd().coerceIn(selectionStart, text.length)
+    }
+  }
 
   override fun deleteSurroundingText(beforeLength: Int, afterLength: Int): Boolean =
     ime.deleteSurroundingText(beforeLength, afterLength)
@@ -569,13 +629,34 @@ class AffineInputConnection(
 
   override fun performPrivateCommand(action: String?, data: Bundle?): Boolean = false
 
-  override fun sendKeyEvent(event: KeyEvent?): Boolean = false
+  override fun sendKeyEvent(event: KeyEvent?): Boolean {
+    if (event == null || event.action != KeyEvent.ACTION_DOWN) return false
+    if (ime.composingStart() >= 0) return false
+    val handled = ime.sendKeyEvent(
+      keyCode = event.keyCode,
+      shift = event.isShiftPressed,
+      ctrl = event.isCtrlPressed,
+      alt = event.isAltPressed,
+    )
+    if (handled) return true
+    val ch = event.unicodeChar
+    if (ch > 0 && !event.isCtrlPressed && !event.isMetaPressed && !event.isAltPressed) {
+      return ime.commitText(String(Character.toChars(ch)), 1)
+    }
+    return false
+  }
 
   override fun clearMetaKeyStates(states: Int): Boolean = false
 
   override fun reportFullscreenMode(enabled: Boolean): Boolean = false
 
-  override fun requestCursorUpdates(cursorUpdateMode: Int): Boolean = false
+  override fun requestCursorUpdates(cursorUpdateMode: Int): Boolean {
+    cursorUpdateMonitor = (cursorUpdateMode and InputConnection.CURSOR_UPDATE_MONITOR) != 0
+    if ((cursorUpdateMode and InputConnection.CURSOR_UPDATE_IMMEDIATE) != 0 || cursorUpdateMonitor) {
+      onCursorUpdatesRequested(cursorUpdateMode)
+    }
+    return true
+  }
 }
 
 /**
@@ -938,8 +1019,9 @@ class SelectionGestureController(
 }
 
 /**
- * Coordinates strict isolation between Autofill form field editing and the
- * per-route document buffer (`HostDocumentStore` + `HostTextPreviewView`).
+ * Coordinates strict isolation between Autofill form fields and the authoritative
+ * GPU BlockSuite editor (`H-S1`: never writes route text or Autofill credentials
+ * into `AffineImeController` and never keeps a shadow copy of editor text).
  */
 class HostDocumentBufferController(
   val documentStore: HostDocumentStore,
@@ -947,12 +1029,7 @@ class HostDocumentBufferController(
   private val autofillProvider: () -> AndroidAutofillController?,
   private val onDocumentPreviewUpdated: (String) -> Unit = {},
 ) {
-  private var syncingAutofillFocus: Boolean = false
-  private var syncingDocumentSwitch: Boolean = false
-  private var autofillDirtiedIme: Boolean = false
-  private var docSelectionStart: Int = 0
-  private var docSelectionEnd: Int = 0
-  var lastPreviewText: String = documentStore.readDocument(documentStore.activeDocumentId)
+  var lastPreviewText: String = ""
     private set
 
   fun isAutofillFocused(): Boolean = autofillProvider()?.focusedFieldId() != null
@@ -960,128 +1037,49 @@ class HostDocumentBufferController(
   fun isFocusedAutofillFieldMasked(): Boolean =
     autofillProvider()?.isFocusedFieldMasked() == true
 
-  fun currentDocumentText(): String = documentStore.readDocument(documentStore.activeDocumentId)
+  fun currentDocumentText(): String = imeProvider().currentText()
 
   fun recordDocumentSelection(selStart: Int, selEnd: Int) {
-    if (syncingAutofillFocus || syncingDocumentSwitch || isAutofillFocused() || autofillDirtiedIme) {
-      return
-    }
-    docSelectionStart = selStart
-    docSelectionEnd = selEnd
+    val _unused = selStart + selEnd
   }
 
   fun onImeTextEdited(text: String) {
-    if (syncingAutofillFocus || syncingDocumentSwitch) return
     if (isAutofillFocused()) {
-      autofillDirtiedIme = true
-      // Strictly isolate form credentials from document storage and HostTextPreviewView.
       autofillProvider()?.onFocusedTextEdited(text)
-      return
     }
-    if (autofillDirtiedIme) {
-      restoreDocumentBufferToIme()
-      return
-    }
-    documentStore.saveCurrent(text)
-    lastPreviewText = text
   }
 
   fun applyAutofillTextToIme(text: String) {
-    val ime = imeProvider()
-    autofillDirtiedIme = true
-    syncingAutofillFocus = true
-    try {
-      ime.replaceText(0, ime.currentText().length, text, 1)
-    } finally {
-      syncingAutofillFocus = false
-    }
+    // H-S1: Autofill values stay strictly isolated in AndroidAutofillController
+    // and must NEVER be written into the authoritative BlockSuite editor IME.
+    val _isolated = text
   }
 
   fun restoreDocumentBufferToIme() {
-    val docText = currentDocumentText()
-    val lo = docSelectionStart.coerceIn(0, docText.length)
-    val hi = docSelectionEnd.coerceIn(lo, docText.length)
-    val ime = imeProvider()
-    syncingAutofillFocus = true
-    try {
-      ime.replaceText(0, ime.currentText().length, docText, 1)
-      ime.setSelection(lo, hi)
-    } finally {
-      syncingAutofillFocus = false
-    }
-    autofillDirtiedIme = false
-    lastPreviewText = docText
-    onDocumentPreviewUpdated(docText)
+    // H-S1: Editor CRDT text is never overwritten by Autofill or host buffers.
+    val liveText = imeProvider().currentText()
+    lastPreviewText = liveText
+    onDocumentPreviewUpdated(liveText)
   }
 
   fun onAutofillFocusChanged(nextFieldId: Int?) {
-    val af = autofillProvider()
-    val prev = af?.focusedFieldId()
-    val wasDirty = autofillDirtiedIme
-    if (prev == null && nextFieldId != null && !wasDirty) {
-      val ime = imeProvider()
-      docSelectionStart = ime.selectionStart()
-      docSelectionEnd = ime.selectionEnd()
-    }
-    af?.onFieldFocusChanged(nextFieldId)
-    val nowFocused = af?.focusedFieldId() != null
-    if (nowFocused) {
-      autofillDirtiedIme = true
-      onDocumentPreviewUpdated(currentDocumentText())
-    } else if (prev != null || wasDirty) {
-      restoreDocumentBufferToIme()
-    }
+    autofillProvider()?.onFieldFocusChanged(nextFieldId)
   }
 
-  fun commitAutofillSession(): Boolean {
-    val needRestore = isAutofillFocused() || autofillDirtiedIme
-    val ok = autofillProvider()?.commit() ?: false
-    if (needRestore) {
-      restoreDocumentBufferToIme()
-    }
-    return ok
-  }
+  fun commitAutofillSession(): Boolean = autofillProvider()?.commit() ?: false
 
-  fun cancelAutofillSession(): Boolean {
-    val needRestore = isAutofillFocused() || autofillDirtiedIme
-    val ok = autofillProvider()?.cancel() ?: false
-    if (needRestore) {
-      restoreDocumentBufferToIme()
-    }
-    return ok
-  }
+  fun cancelAutofillSession(): Boolean = autofillProvider()?.cancel() ?: false
 
   fun clearAutofillFields() {
-    val needRestore = isAutofillFocused() || autofillDirtiedIme
     autofillProvider()?.clearFields()
-    if (needRestore) {
-      restoreDocumentBufferToIme()
-    }
   }
 
   fun onRouteChanged(nextRoute: String) {
     if (documentStore.activeDocumentId == nextRoute) return
-    val wasAutofillFocused = isAutofillFocused()
-    val outgoingDocText = if (wasAutofillFocused || autofillDirtiedIme) {
-      // Preserve the document's own text and exit Autofill focus before loading the new route.
+    if (isAutofillFocused()) {
       autofillProvider()?.onFieldFocusChanged(null)
-      currentDocumentText()
-    } else {
-      imeProvider().currentText()
     }
-    autofillDirtiedIme = false
-    docSelectionStart = 0
-    docSelectionEnd = 0
-    val targetText = documentStore.switchTo(nextRoute, outgoingDocText)
-    syncingDocumentSwitch = true
-    try {
-      val ime = imeProvider()
-      ime.replaceText(0, ime.currentText().length, targetText, 1)
-    } finally {
-      syncingDocumentSwitch = false
-    }
-    lastPreviewText = targetText
-    onDocumentPreviewUpdated(targetText)
+    documentStore.switchTo(nextRoute, "")
   }
 }
 
@@ -1385,59 +1383,10 @@ internal fun isLightClearColor(argb: Int): Boolean {
 }
 
 /**
- * Lightweight transitional text preview layer (until S4 shared editor integration)
- * sharing the exact cached `ShapedTextLayout` with `AndroidSelectionOverlayView` so
- * document text and `getSelectionPath` selection highlights align 1:1 with teardrop
- * handles and the magnified loupe.
- */
-class HostTextPreviewView(
-  context: Context,
-  private val shapedLayout: ShapedTextLayout,
-  private val selectionStartProvider: () -> Int,
-  private val selectionEndProvider: () -> Int,
-) : View(context) {
-  private val selectionHighlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-    color = Color.argb(56, 30, 150, 235)
-    style = Paint.Style.FILL
-  }
-  private val reusableSelectionPath = Path()
-
-  init {
-    setWillNotDraw(false)
-    isClickable = false
-    isFocusable = false
-  }
-
-  fun applyClearColor(clearColorArgb: Int) {
-    shapedLayout.applyClearColor(clearColorArgb)
-    selectionHighlightPaint.color = if (isLightClearColor(clearColorArgb)) {
-      Color.argb(56, 30, 150, 235)
-    } else {
-      Color.argb(96, 56, 178, 255)
-    }
-    invalidate()
-  }
-
-  override fun onDraw(canvas: Canvas) {
-    super.onDraw(canvas)
-    val layout = shapedLayout.cachedLayout ?: return
-    val selStart = selectionStartProvider()
-    val selEnd = selectionEndProvider()
-    canvas.save()
-    canvas.translate(shapedLayout.paddingLeftPx, shapedLayout.paddingTopPx)
-    if (shapedLayout.fillSelectionPath(selStart, selEnd, reusableSelectionPath)) {
-      canvas.drawPath(reusableSelectionPath, selectionHighlightPaint)
-    }
-    layout.draw(canvas)
-    canvas.restore()
-  }
-}
-
-/**
- * Pure Android `View` overlay layered above `AffineSurfaceView` and `HostTextPreviewView`
- * in a `FrameLayout` to render teardrop handles, single-authority `ShapedTextLayout`
- * magnified loupe (with `getSelectionPath` highlight and vertically centered focus), and
- * clickable `Copy | Cut | Paste` action menu pills with zero per-frame allocations and
+ * Pure Android `View` overlay layered above `AffineSurfaceView` in a `FrameLayout`
+ * to render teardrop handles, single-authority `ShapedTextLayout` magnified loupe
+ * (with `getSelectionPath` highlight and vertically centered focus), and clickable
+ * `Copy | Cut | Paste` action menu pills with zero per-frame allocations and
  * without ever calling `SurfaceHolder.lockCanvas`.
  */
 class AndroidSelectionOverlayView(
@@ -2192,6 +2141,8 @@ internal class AffineSurfaceView(
   private val onTextEdited: (String) -> Unit = {},
   private val onContextMenuAction: (Int) -> Boolean = { false },
   private val autofillProvider: () -> AndroidAutofillController? = { null },
+  private val onTouchDispatched: () -> Unit = {},
+  private val onCursorUpdatesRequested: (Int) -> Unit = {},
 ) : SurfaceView(context) {
   init {
     isFocusable = true
@@ -2206,10 +2157,157 @@ internal class AffineSurfaceView(
     importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_YES
   }
 
+  private var touchDownX = 0f
+  private var touchDownY = 0f
+  private var touchMovedBeyondSlop = false
+
   override fun onCheckIsTextEditor(): Boolean = true
 
+  override fun onTouchEvent(event: MotionEvent): Boolean {
+    val handle = handleProvider()
+    if (handle == 0L) return super.onTouchEvent(event)
+    val density = resources.displayMetrics.density.coerceAtLeast(1f)
+    val slopPx = 10f * density
+    when (event.actionMasked) {
+      MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+        val idx = event.actionIndex
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+          touchDownX = event.getX(idx)
+          touchDownY = event.getY(idx)
+          touchMovedBeyondSlop = false
+        }
+        NativeBridge.nativeOnTouchEvent(
+          handle,
+          event.getPointerId(idx).toLong(),
+          0,
+          event.getX(idx) / density,
+          event.getY(idx) / density,
+        )
+      }
+      MotionEvent.ACTION_MOVE -> {
+        if (event.pointerCount > 0) {
+          val dx = event.getX(0) - touchDownX
+          val dy = event.getY(0) - touchDownY
+          if (dx * dx + dy * dy > slopPx * slopPx) {
+            touchMovedBeyondSlop = true
+          }
+        }
+        // Forward historical touch samples before the current sample so inertial
+        // fling velocity stays smooth on 60/120 Hz Android displays.
+        for (h in 0 until event.historySize) {
+          for (idx in 0 until event.pointerCount) {
+            NativeBridge.nativeOnTouchEvent(
+              handle,
+              event.getPointerId(idx).toLong(),
+              1,
+              event.getHistoricalX(idx, h) / density,
+              event.getHistoricalY(idx, h) / density,
+            )
+          }
+        }
+        for (idx in 0 until event.pointerCount) {
+          NativeBridge.nativeOnTouchEvent(
+            handle,
+            event.getPointerId(idx).toLong(),
+            1,
+            event.getX(idx) / density,
+            event.getY(idx) / density,
+          )
+        }
+      }
+      MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+        val idx = event.actionIndex
+        NativeBridge.nativeOnTouchEvent(
+          handle,
+          event.getPointerId(idx).toLong(),
+          2,
+          event.getX(idx) / density,
+          event.getY(idx) / density,
+        )
+        if (event.actionMasked == MotionEvent.ACTION_UP) {
+          val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+          if (NativeBridge.nativeWantsSoftwareKeyboard(handle)) {
+            if (!touchMovedBeyondSlop) {
+              requestFocus()
+              imm?.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT)
+            }
+          } else {
+            imm?.hideSoftInputFromWindow(windowToken, 0)
+          }
+        }
+      }
+      MotionEvent.ACTION_CANCEL -> {
+        for (idx in 0 until event.pointerCount) {
+          NativeBridge.nativeOnTouchEvent(
+            handle,
+            event.getPointerId(idx).toLong(),
+            3,
+            event.getX(idx) / density,
+            event.getY(idx) / density,
+          )
+        }
+      }
+    }
+    onTouchDispatched()
+    return true
+  }
+
+  override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+    val handle = handleProvider()
+    if (handle == 0L) return super.onKeyDown(keyCode, event)
+    val ime = AffineImeController(handleProvider, onMutated, onTextEdited)
+    // Yield hardware keyboard navigation/edit keys while IME composition is active.
+    if (ime.composingStart() >= 0) {
+      return super.onKeyDown(keyCode, event)
+    }
+    val handled = ime.sendKeyEvent(
+      keyCode = keyCode,
+      shift = event.isShiftPressed,
+      ctrl = event.isCtrlPressed,
+      alt = event.isAltPressed,
+    )
+    if (handled) {
+      onTouchDispatched()
+      return true
+    }
+    val ch = event.unicodeChar
+    if (ch > 0 && !event.isCtrlPressed && !event.isMetaPressed && !event.isAltPressed) {
+      if (ime.commitText(String(Character.toChars(ch)), 1)) {
+        onTouchDispatched()
+        return true
+      }
+    }
+    return super.onKeyDown(keyCode, event)
+  }
+
+  override fun onGenericMotionEvent(event: MotionEvent): Boolean {
+    val handle = handleProvider()
+    if (handle != 0L && event.actionMasked == MotionEvent.ACTION_SCROLL) {
+      val vScroll = event.getAxisValue(MotionEvent.AXIS_VSCROLL)
+      val density = resources.displayMetrics.density.coerceAtLeast(1f)
+      if (vScroll != 0f) {
+        val xDp = event.x / density
+        val yDp = event.y / density
+        val deltaDp = vScroll * 48f
+        NativeBridge.nativeOnTouchEvent(handle, 9999L, 0, xDp, yDp)
+        NativeBridge.nativeOnTouchEvent(handle, 9999L, 1, xDp, yDp + deltaDp)
+        NativeBridge.nativeOnTouchEvent(handle, 9999L, 2, xDp, yDp + deltaDp)
+        onTouchDispatched()
+        return true
+      }
+    }
+    return super.onGenericMotionEvent(event)
+  }
+
   override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection =
-    createInputConnection(handleProvider, outAttrs, onMutated, onTextEdited, onContextMenuAction)
+    createInputConnection(
+      handleProvider,
+      outAttrs,
+      onMutated,
+      onTextEdited,
+      onContextMenuAction,
+      onCursorUpdatesRequested,
+    )
 
   @TargetApi(Build.VERSION_CODES.O)
   override fun onProvideAutofillVirtualStructure(structure: ViewStructure, flags: Int) {
@@ -2234,6 +2332,7 @@ internal class AffineSurfaceView(
       onMutated: () -> Unit = {},
       onTextEdited: (String) -> Unit = {},
       onContextMenuAction: (Int) -> Boolean = { false },
+      onCursorUpdatesRequested: (Int) -> Unit = {},
     ): InputConnection {
       val ime = AffineImeController(handleProvider, onMutated, onTextEdited)
       if (outAttrs != null) {
@@ -2242,7 +2341,7 @@ internal class AffineSurfaceView(
         outAttrs.initialSelStart = ime.selectionStart()
         outAttrs.initialSelEnd = ime.selectionEnd()
       }
-      return AffineInputConnection(ime, onContextMenuAction)
+      return AffineInputConnection(ime, onContextMenuAction, onCursorUpdatesRequested)
     }
   }
 }
@@ -2250,7 +2349,6 @@ internal class AffineSurfaceView(
 class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCallback {
   private var nativeHandle: Long = 0L
   private lateinit var surfaceView: AffineSurfaceView
-  private lateinit var textPreviewView: HostTextPreviewView
   private lateinit var selectionOverlayView: AndroidSelectionOverlayView
   private lateinit var shapedLayout: ShapedTextLayout
   private lateinit var bootstrapCoordinator: AndroidBootstrapCoordinator
@@ -2263,6 +2361,8 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
   private var autofillController: AndroidAutofillController? = null
   private var syncingOverlay: Boolean = false
   private var lastViewportWidthPx: Int = 0
+  private var lastImeChangeSeq: Long = 0L
+  private var lastFocusedBlockHash: Long = 0L
   private var clearColorArgb: Int = DEFAULT_SURFACE_CLEAR_COLOR_ARGB
   @Volatile
   var lastBootstrapOutcome: BootstrapOutcome? = null
@@ -2276,12 +2376,21 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
   private var backCallback: OnBackInvokedCallback? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
     super.onCreate(savedInstanceState)
+    actionBar?.hide()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       window.setDecorFitsSystemWindows(false)
     }
 
     nativeHandle = NativeBridge.nativeCreateHost()
+    NativeBridge.nativeSetFormFactor(
+      nativeHandle,
+      resources.configuration.smallestScreenWidthDp,
+    )
+    NativeBridge.nativeLoadShowcaseDocument(nativeHandle)
+    lastImeChangeSeq = NativeBridge.nativeGetTextInputChangeSeq(nativeHandle)
+    lastFocusedBlockHash = NativeBridge.nativeGetFocusedBlockHash(nativeHandle)
     shapedLayout = ShapedTextLayout(resources.displayMetrics.density).apply {
       applyClearColor(clearColorArgb)
     }
@@ -2310,12 +2419,10 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
           syncShapedLayoutAndOverlay(imeController.currentText())
         }
       }
-      if (::textPreviewView.isInitialized) {
-        textPreviewView.invalidate()
-      }
       if (::selectionOverlayView.isInitialized) {
         selectionOverlayView.invalidate()
       }
+      syncSystemImeFromEditor()
       requestFrameAndSchedule()
     }
     val onImeTextEdited: (String) -> Unit = { text ->
@@ -2374,20 +2481,15 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
       onTextEdited = onImeTextEdited,
       onContextMenuAction = onContextMenuAction,
       autofillProvider = { autofillController },
+      onTouchDispatched = {
+        syncSystemImeFromEditor()
+        requestFrameAndSchedule()
+      },
+      onCursorUpdatesRequested = {
+        pushCursorAnchorInfo()
+      },
     ).apply {
       holder.addCallback(this@MainActivity)
-    }
-    textPreviewView = HostTextPreviewView(
-      context = this,
-      shapedLayout = shapedLayout,
-      selectionStartProvider = {
-        if (documentBufferController.isAutofillFocused()) 0 else imeController.selectionStart()
-      },
-      selectionEndProvider = {
-        if (documentBufferController.isAutofillFocused()) 0 else imeController.selectionEnd()
-      },
-    ).apply {
-      applyClearColor(clearColorArgb)
     }
     selectionOverlayView = AndroidSelectionOverlayView(
       context = this,
@@ -2402,9 +2504,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
         } finally {
           syncingOverlay = false
         }
-        if (::textPreviewView.isInitialized) {
-          textPreviewView.invalidate()
-        }
+        syncSystemImeFromEditor()
       },
       canPaste = { clipboardAdapter.hasPlainText() },
       onActionCopy = {
@@ -2428,13 +2528,6 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
       setBackgroundColor(clearColorArgb)
       addView(
         surfaceView,
-        FrameLayout.LayoutParams(
-          FrameLayout.LayoutParams.MATCH_PARENT,
-          FrameLayout.LayoutParams.MATCH_PARENT,
-        ),
-      )
-      addView(
-        textPreviewView,
         FrameLayout.LayoutParams(
           FrameLayout.LayoutParams.MATCH_PARENT,
           FrameLayout.LayoutParams.MATCH_PARENT,
@@ -2519,6 +2612,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     frameCallbackPosted = false
     if (!frameLoopActive || !surfaceReady || nativeHandle == 0L) return
     NativeBridge.nativeOnFrameTick(nativeHandle, frameTimeNanos)
+    syncSystemImeFromEditor()
     scheduleFrameIfNeeded()
   }
 
@@ -2577,12 +2671,62 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
           density = resources.displayMetrics.density,
         )
       }
-      if (::textPreviewView.isInitialized) {
-        textPreviewView.invalidate()
-      }
     } finally {
       syncingOverlay = false
     }
+  }
+
+  /**
+   * H-S2: Push editor-initiated selection, block-focus, and caret-anchor changes to Android
+   * `InputMethodManager` so Gboard/IME candidates stay aligned after Markdown transforms,
+   * touch caret placement, or block splits/merges.
+   */
+  private fun syncSystemImeFromEditor() {
+    if (nativeHandle == 0L || !::surfaceView.isInitialized) return
+    val nextSeq = NativeBridge.nativeGetTextInputChangeSeq(nativeHandle)
+    val nextBlockHash = NativeBridge.nativeGetFocusedBlockHash(nativeHandle)
+    if (nextSeq == lastImeChangeSeq && nextBlockHash == lastFocusedBlockHash) return
+    val blockChanged = nextBlockHash != lastFocusedBlockHash
+    lastImeChangeSeq = nextSeq
+    lastFocusedBlockHash = nextBlockHash
+    val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager ?: return
+    if (!NativeBridge.nativeWantsSoftwareKeyboard(nativeHandle)) {
+      imm.hideSoftInputFromWindow(surfaceView.windowToken, 0)
+    }
+    if (blockChanged) {
+      imm.restartInput(surfaceView)
+    } else {
+      imm.updateSelection(
+        surfaceView,
+        imeController.selectionStart(),
+        imeController.selectionEnd(),
+        imeController.composingStart(),
+        imeController.composingEnd(),
+      )
+    }
+    pushCursorAnchorInfo(imm)
+  }
+
+  private fun pushCursorAnchorInfo(existingImm: InputMethodManager? = null) {
+    if (nativeHandle == 0L || !::surfaceView.isInitialized) return
+    val imm = existingImm
+      ?: (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+      ?: return
+    val density = resources.displayMetrics.density.coerceAtLeast(1f)
+    val cx = NativeBridge.nativeGetCaretRectDpX(nativeHandle) * density
+    val cy = NativeBridge.nativeGetCaretRectDpY(nativeHandle) * density
+    val ch = NativeBridge.nativeGetCaretRectDpHeight(nativeHandle) * density
+    val loc = IntArray(2)
+    surfaceView.getLocationOnScreen(loc)
+    val matrix = android.graphics.Matrix(surfaceView.matrix).apply {
+      postTranslate(loc[0].toFloat(), loc[1].toFloat())
+    }
+    val anchor = CursorAnchorInfo.Builder()
+      .setMatrix(matrix)
+      .setSelectionRange(imeController.selectionStart(), imeController.selectionEnd())
+      .setInsertionMarkerLocation(cx, cy, cy + ch * 0.8f, cy + ch, CursorAnchorInfo.FLAG_HAS_VISIBLE_REGION)
+      .build()
+    imm.updateCursorAnchorInfo(surfaceView, anchor)
   }
 
   override fun surfaceDestroyed(holder: SurfaceHolder) {
@@ -2604,7 +2748,9 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
 
   private fun scheduleFrameIfNeeded() {
     if (!frameLoopActive || !surfaceReady || frameCallbackPosted || nativeHandle == 0L) return
-    if (NativeBridge.nativeHasPendingFrame(nativeHandle)) {
+    if (NativeBridge.nativeHasPendingFrame(nativeHandle) ||
+      NativeBridge.nativeHasPendingTimer(nativeHandle)
+    ) {
       frameCallbackPosted = true
       Choreographer.getInstance().postFrameCallback(this)
     }
@@ -2619,8 +2765,9 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
   }
 
   private fun installInsetsBridge(root: View) {
-    root.setOnApplyWindowInsetsListener { _, insets ->
-      forwardInsets(insets)
+    root.setBackgroundColor(0xFFFFFFFF.toInt())
+    root.setOnApplyWindowInsetsListener { v, insets ->
+      forwardInsets(v, insets)
       insets
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -2630,7 +2777,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
             insets: WindowInsets,
             runningAnimations: MutableList<WindowInsetsAnimation>,
           ): WindowInsets {
-            forwardInsets(insets)
+            forwardInsets(root, insets)
             return insets
           }
         },
@@ -2639,7 +2786,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
   }
 
   @Suppress("DEPRECATION")
-  private fun forwardInsets(insets: WindowInsets) {
+  private fun forwardInsets(root: View, insets: WindowInsets) {
     if (nativeHandle == 0L) return
     val density = resources.displayMetrics.density
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -2647,22 +2794,39 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
         WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout(),
       )
       val ime = insets.getInsets(WindowInsets.Type.ime())
+      // Inset the SurfaceView container to systemBars() so the editor top bar and
+      // bottom toolbar stay clear of the status bar and navigation gesture bar.
+      if (root.paddingLeft != bars.left || root.paddingTop != bars.top ||
+        root.paddingRight != bars.right || root.paddingBottom != bars.bottom
+      ) {
+        root.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+      }
+      val imeAboveBars = maxOf(0, ime.bottom - bars.bottom)
       NativeBridge.nativeOnSurfaceInsetsPx(
         nativeHandle,
-        bars.top,
-        bars.right,
-        bars.bottom,
-        bars.left,
-        ime.bottom,
+        0,
+        0,
+        0,
+        0,
+        imeAboveBars,
         density,
       )
     } else {
+      val left = insets.systemWindowInsetLeft
+      val top = insets.systemWindowInsetTop
+      val right = insets.systemWindowInsetRight
+      val bottom = insets.systemWindowInsetBottom
+      if (root.paddingLeft != left || root.paddingTop != top ||
+        root.paddingRight != right || root.paddingBottom != bottom
+      ) {
+        root.setPadding(left, top, right, bottom)
+      }
       NativeBridge.nativeOnSurfaceInsetsPx(
         nativeHandle,
-        insets.systemWindowInsetTop,
-        insets.systemWindowInsetRight,
-        insets.systemWindowInsetBottom,
-        insets.systemWindowInsetLeft,
+        0,
+        0,
+        0,
+        0,
         0,
         density,
       )

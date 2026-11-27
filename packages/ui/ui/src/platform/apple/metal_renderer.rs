@@ -293,7 +293,7 @@ impl MetalRenderer {
         // https://developer.apple.com/documentation/metal/setting-resource-storage-modes
         // iOS does not support managed resources. Its simulator may report a
         // non-unified host GPU even though resources must still use shared storage.
-        let is_unified_memory = false || device.hasUnifiedMemory();
+        let is_unified_memory = cfg!(target_os = "ios") || device.hasUnifiedMemory();
         // Apple GPU families support memoryless textures, which can significantly reduce
         // memory usage by keeping render targets in on-chip tile memory instead of
         // allocating backing store in system memory.

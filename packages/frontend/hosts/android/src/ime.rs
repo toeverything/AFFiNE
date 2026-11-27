@@ -9,17 +9,24 @@ impl AndroidHostState {
     ///
     /// Preserves active drag state when passing through zero-length coincidence points.
     pub fn sync_selection_overlay_from_ime(&mut self) {
+        let (start, end) = self.selection_range();
+        let utf16 = self.utf16_text.clone();
+        self.sync_selection_overlay_for_snapshot(&utf16, start, end);
+    }
+
+    /// Synchronizes native selection handles from an authoritative editor UTF-16 snapshot
+    /// without storing a duplicate host text copy (`H-S1`).
+    pub fn sync_selection_overlay_for_snapshot(&mut self, utf16: &[u16], start: usize, end: usize) {
         if self.selection.active_drag != SelectionHandleKind::None {
             return;
         }
-        let (start, end) = self.selection_range();
         if start == end {
             self.selection.clear();
             return;
         }
-        let (sx, sy) = caret_position_for_offset(&self.utf16_text, start, &self.text_layout);
-        let (ex, ey) = caret_position_for_offset(&self.utf16_text, end, &self.text_layout);
-        let dir = detect_direction_at_offset(&self.utf16_text, start, &self.text_layout);
+        let (sx, sy) = caret_position_for_offset(utf16, start, &self.text_layout);
+        let (ex, ey) = caret_position_for_offset(utf16, end, &self.text_layout);
+        let dir = detect_direction_at_offset(utf16, start, &self.text_layout);
         self.selection
             .update_selection(sx, sy, ex, ey, self.text_layout.line_height, dir, true);
     }

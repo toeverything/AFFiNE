@@ -1,14 +1,8 @@
 #![deny(unsafe_code)]
 
-//! Thin Android host bridge for AFFiNE (`affine-android-host`).
-//!
-//! Provides cross-platform testable host state machines (four-phase predictive
-//! and legacy single-commit back gesture handling, API 26+ Autofill gating,
-//! physical-px to logical-dp inset conversion, `SurfaceHolder.Callback`
-//! lifecycle, in-place SQLite WAL co-storage, Jetpack Preferences DataStore
-//! `v1:` AES-GCM credential contract, and legacy `https://localhost`
-//! `localStorage` whitelist import/rollback with zero IndexedDB access)
-//! alongside hand-written thin JNI exports.
+//! Thin Android host bridge for AFFiNE (`affine-android-host`): predictive back,
+//! API 26+ Autofill, inset conversion, `SurfaceHolder` lifecycle, SQLite WAL,
+//! DataStore `v1:` AES-GCM, legacy `localStorage` import/rollback, and JNI exports.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -18,6 +12,12 @@ use serde::{Deserialize, Serialize};
 mod android_window;
 pub mod autofill;
 pub mod datastore;
+#[cfg(any(target_os = "android", test, feature = "host-jni"))]
+mod editor_fallback;
+#[cfg(any(target_os = "android", test, feature = "host-jni"))]
+pub(crate) mod editor_platform;
+#[cfg(any(target_os = "android", test, feature = "host-jni"))]
+pub(crate) mod editor_runtime;
 mod ime;
 pub mod pdf;
 pub mod selection;
@@ -27,6 +27,8 @@ pub mod text_layout;
 
 #[cfg(any(target_os = "android", test, feature = "host-jni"))]
 pub mod jni_bridge;
+#[cfg(any(target_os = "android", test, feature = "host-jni"))]
+pub mod jni_editor;
 #[cfg(any(target_os = "android", test, feature = "host-jni"))]
 pub mod jni_interaction;
 #[cfg(any(target_os = "android", test, feature = "host-jni"))]

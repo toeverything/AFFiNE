@@ -9,7 +9,12 @@
 //! bridges behind `include/affine_mobile_host.h`.
 
 pub mod auth;
+#[cfg(not(target_os = "ios"))]
+pub(crate) mod editor_fallback;
+pub(crate) mod editor_platform;
+pub(crate) mod editor_runtime;
 pub mod ffi;
+pub mod ffi_editor;
 pub mod ffi_s3;
 pub mod ffi_text;
 pub mod haptics;

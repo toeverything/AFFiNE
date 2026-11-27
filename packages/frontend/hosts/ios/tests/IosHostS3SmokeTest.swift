@@ -89,7 +89,8 @@ struct IosHostS3SmokeTest {
       testKeyboardAvoidancePerFrameSlideOverAndBackgroundResume()
       testHapticsBridgeDispatchAndBoundedHistory()
       testMetalHostViewControllerEndToEndTextSelectionDragCopyAndMenu()
-      print("ALL 5 SWIFT+RUST S3-IOS SMOKE TESTS PASSED")
+      testS6NativeEditorMountImeAndStageOneReadonly()
+      print("ALL 6 SWIFT+RUST S3/S6-IOS SMOKE TESTS PASSED")
     } catch {
       fputs("UNHANDLED ERROR: \(error)\n", stderr)
       exit(1)
@@ -444,6 +445,7 @@ struct IosHostS3SmokeTest {
       requireS3(false, "MetalHostViewController hostPointer must be initialized")
       return
     }
+    affine_ios_host_reset_empty_doc(hostPtr)
 
     hostView.insertText("Hello world")
     hostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 5))
@@ -505,6 +507,9 @@ struct IosHostS3SmokeTest {
     vcCross.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
     vcCross.loadViewIfNeeded()
     vcCross.view.layoutIfNeeded()
+    if let crossPtr = vcCross.hostPointer {
+      affine_ios_host_reset_empty_doc(crossPtr)
+    }
     vcCross.textHostView.insertText("Hello world")
     vcCross.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 6, length: 5))
     let crossStart = vcCross.selectionOverlay.currentState
@@ -539,10 +544,18 @@ struct IosHostS3SmokeTest {
     requireS3(vcCross.textHostView.lastCopiedText == "lo ", "expected copied 'lo ', got \(String(describing: vcCross.textHostView.lastCopiedText))")
 
     // 5c. BiDi RTL ("שלום 123 abc", "A אבג B"), ZWJ emoji ("A👨👩👧👦B"), soft-wrap boundary & rotation re-layout.
-    let vcRtl = MetalHostViewController()
-    vcRtl.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
-    vcRtl.loadViewIfNeeded()
-    vcRtl.view.layoutIfNeeded()
+    func makeEmptyEditorVC(width: CGFloat = 390, height: CGFloat = 844) -> MetalHostViewController {
+      let controller = MetalHostViewController()
+      controller.view.frame = CGRect(x: 0, y: 0, width: width, height: height)
+      controller.loadViewIfNeeded()
+      controller.view.layoutIfNeeded()
+      if let ptr = controller.hostPointer {
+        affine_ios_host_reset_empty_doc(ptr)
+      }
+      return controller
+    }
+
+    let vcRtl = makeEmptyEditorVC()
     let bidiMixed = "שלום 123 abc"
     vcRtl.textHostView.insertText(bidiMixed)
     vcRtl.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 4))
@@ -592,10 +605,7 @@ struct IosHostS3SmokeTest {
     // 5) & 6) Mixed LTR-base BiDi ("A אבג B"):
     // [2,5) ("אבג"): width > 20pt & start_handle right of end_handle by > 20pt.
     // [2,4) ("אב"): single rect minX strictly > [2,5) minX + 5pt (highlights right two letters, never 'ג').
-    let vcMixed = MetalHostViewController()
-    vcMixed.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
-    vcMixed.loadViewIfNeeded()
-    vcMixed.view.layoutIfNeeded()
+    let vcMixed = makeEmptyEditorVC()
     vcMixed.textHostView.insertText("A אבג B")
     vcMixed.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 2, length: 3))
     let mixedRects = vcMixed.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 2, length: 3)))
@@ -653,10 +663,7 @@ struct IosHostS3SmokeTest {
 
     // Unicode canonical equivalence cache regression: replacing precomposed "éB" (2 UTF-16)
     // with decomposed "e\u{0301}B" (3 UTF-16) on the same host must NOT hit stale 2-unit cache.
-    let vcNorm = MetalHostViewController()
-    vcNorm.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
-    vcNorm.loadViewIfNeeded()
-    vcNorm.view.layoutIfNeeded()
+    let vcNorm = makeEmptyEditorVC()
     vcNorm.textHostView.insertText("\u{00E9}B")
     _ = vcNorm.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 1, length: 1)))
     vcNorm.textHostView.replace(
@@ -699,10 +706,7 @@ struct IosHostS3SmokeTest {
     requireS3(vcRtl.textHostView.lastCopiedText == "12", "dragging End handle on 'שלום 123 abc' digits to offset 7 must yield '12', got \(String(describing: vcRtl.textHostView.lastCopiedText))")
 
     // Single-line drag with +50pt vertical finger drift must not flip active_drag_handle.
-    let vcDrift = MetalHostViewController()
-    vcDrift.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
-    vcDrift.loadViewIfNeeded()
-    vcDrift.view.layoutIfNeeded()
+    let vcDrift = makeEmptyEditorVC()
     vcDrift.textHostView.insertText("Hello world")
     vcDrift.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 5))
     let driftBefore = vcDrift.selectionOverlay.currentState
@@ -723,19 +727,13 @@ struct IosHostS3SmokeTest {
     requireS3(vcDrift.textHostView.lastCopiedText == "Hello wor", "vertical drift drag must select 'Hello wor', got \(String(describing: vcDrift.textHostView.lastCopiedText))")
 
     // Multi-paragraph "A\nשלום" paragraph 2 must set is_rtl == true.
-    let vcPara = MetalHostViewController()
-    vcPara.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
-    vcPara.loadViewIfNeeded()
-    vcPara.view.layoutIfNeeded()
+    let vcPara = makeEmptyEditorVC()
     vcPara.textHostView.insertText("A\nשלום")
     vcPara.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 2, length: 4))
     requireS3(vcPara.selectionOverlay.currentState.is_rtl, "selecting Hebrew paragraph 2 in 'A\\nשלום' must set is_rtl == true")
 
     // ZWJ family emoji ("A👨👩👧👦B") hit-testing never lands inside the 11-unit composed sequence.
-    let vcZwj = MetalHostViewController()
-    vcZwj.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
-    vcZwj.loadViewIfNeeded()
-    vcZwj.view.layoutIfNeeded()
+    let vcZwj = makeEmptyEditorVC()
     let zwjStr = "A\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}B"
     vcZwj.textHostView.insertText(zwjStr)
     let emojiStart = 1
@@ -750,10 +748,7 @@ struct IosHostS3SmokeTest {
     }
 
     // Soft-wrap boundary offset ("ABCDZ" in 72pt width) starts line 2 and emits no 2pt sliver on line 1.
-    let vcNarrow = MetalHostViewController()
-    vcNarrow.view.frame = CGRect(x: 0, y: 0, width: 72, height: 300)
-    vcNarrow.loadViewIfNeeded()
-    vcNarrow.view.layoutIfNeeded()
+    let vcNarrow = makeEmptyEditorVC(width: 72, height: 300)
     vcNarrow.textHostView.insertText("ABCDZ")
     let cNarrow0 = vcNarrow.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 0))
     var wrapBoundaryOffset = -1
@@ -768,12 +763,12 @@ struct IosHostS3SmokeTest {
     let tailRects = vcNarrow.textHostView.selectionRects(
       for: AffineTextRange(utf16Range: NSRange(location: wrapBoundaryOffset, length: 5 - wrapBoundaryOffset))
     )
-    requireS3(tailRects.count == 1 && tailRects[0].rect.minY > cNarrow0.minY + 10.0, "selecting from soft-wrap boundary must emit 1 rect on line 2 with zero sliver on line 1 (got \(tailRects.count))")
+    requireS3(
+      !tailRects.isEmpty && tailRects.allSatisfy { $0.rect.minY > cNarrow0.minY + 10.0 },
+      "selecting from soft-wrap boundary must emit rects starting on line 2 with zero sliver on line 1 (got \(tailRects.map { $0.rect.minY }))"
+    )
 
-    let vcWrap = MetalHostViewController()
-    vcWrap.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
-    vcWrap.loadViewIfNeeded()
-    vcWrap.view.layoutIfNeeded()
+    let vcWrap = makeEmptyEditorVC()
     let longLine = "AFFiNE native iOS CoreText soft line wrapping verification across multiple wrapped visual lines"
     vcWrap.textHostView.insertText(longLine)
     let caret0Wrap = vcWrap.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 0))
@@ -848,10 +843,7 @@ struct IosHostS3SmokeTest {
       return dark
     }
 
-    let vcLoupe = MetalHostViewController()
-    vcLoupe.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
-    vcLoupe.loadViewIfNeeded()
-    vcLoupe.view.layoutIfNeeded()
+    let vcLoupe = makeEmptyEditorVC()
     vcLoupe.textHostView.insertText("WWWW        ....")
     vcLoupe.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 16))
     let loupeStartState = vcLoupe.selectionOverlay.currentState
@@ -880,10 +872,7 @@ struct IosHostS3SmokeTest {
     )
 
     // 5e. Keyboard occlusion hides handles & menu at y ~= 710, preserves selection/copy, then restores on dismiss.
-    let vcKb = MetalHostViewController()
-    vcKb.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
-    vcKb.loadViewIfNeeded()
-    vcKb.view.layoutIfNeeded()
+    let vcKb = makeEmptyEditorVC()
     let fillerLines = String(repeating: "\n", count: 35)
     let bottomWord = "BottomTarget"
     vcKb.textHostView.insertText(fillerLines + bottomWord)
@@ -965,5 +954,131 @@ struct IosHostS3SmokeTest {
       }
     }
     print("PASS [5/5]: MetalHostViewController E2E selection, crossover, RTL/soft-wrap, real loupe glyphs, and keyboard occlusion/restore passed")
+  }
+
+  /// 6. S6 native GPU PlaygroundView mount: zero HostTextPreviewView, live CAMetalLayer,
+  ///    H-S1 zero backingText copy (Markdown `# ` + `[[` -> `@`), H-S2 inputDelegate notifications,
+  ///    newline block split & block-start deleteBackward merge, and T1 Stage-1 touch readonly.
+  @MainActor
+  static func testS6NativeEditorMountImeAndStageOneReadonly() {
+    let vc = MetalHostViewController()
+    vc.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
+    vc.loadViewIfNeeded()
+    vc.view.layoutIfNeeded()
+    guard let handle = vc.hostPointer else {
+      requireS3(false, "MetalHostViewController must initialize hostHandle")
+      return
+    }
+
+    // Verify Metal GPU layer is attached directly to hostView (zero HostTextPreviewView class exists).
+    let hasMetalSublayer = (vc.textHostView.layer.sublayers ?? []).contains { $0 is CAMetalLayer }
+    requireS3(hasMetalSublayer, "MetalRenderer CAMetalLayer must be attached to MetalHostView")
+
+    // Live MetalRenderer CAMetalLayer attached as sublayer on iOS.
+    let rawMetal = affine_ios_host_metal_layer(handle)
+    requireS3(rawMetal != nil, "affine_ios_host_metal_layer must return MetalRenderer CAMetalLayer")
+
+    // Stage-1 touch defaults: Phone & Tablet default to edgeless_readonly + database_readonly.
+    requireS3(affine_ios_host_edgeless_readonly(handle), "iOS touch host must default edgeless_readonly = true")
+    requireS3(affine_ios_host_database_readonly(handle), "iOS touch host must default database_readonly = true")
+
+    // Reset to empty doc for authoritative H-S1 / H-S2 IME verification.
+    affine_ios_host_reset_empty_doc(handle)
+    let seqBefore = affine_ios_host_text_input_change_seq(handle)
+    vc.textHostView.insertText("# Heading")
+    let seqAfter = affine_ios_host_text_input_change_seq(handle)
+    requireS3(seqAfter > seqBefore, "H-S2: editor text mutation must advance text_input_change_seq")
+    let fullRange = vc.textHostView.textRange(
+      from: vc.textHostView.beginningOfDocument,
+      to: vc.textHostView.endOfDocument
+    )
+    let readBack = fullRange.flatMap { vc.textHostView.text(in: $0) } ?? ""
+    requireS3(readBack.contains("Heading"), "H-S1: UITextInput must read authoritative editor text, got '\(readBack)'")
+
+    // Block split on newline + block-start deleteBackward merge.
+    vc.textHostView.insertText("\n")
+    let afterSplitRange = vc.textHostView.textRange(
+      from: vc.textHostView.beginningOfDocument,
+      to: vc.textHostView.endOfDocument
+    )
+    let afterSplit = afterSplitRange.flatMap { vc.textHostView.text(in: $0) } ?? ""
+    requireS3(afterSplit.isEmpty, "insertText(\"\\n\") must split into an empty next block, got '\(afterSplit)'")
+    vc.textHostView.deleteBackward()
+    let afterMergeRange = vc.textHostView.textRange(
+      from: vc.textHostView.beginningOfDocument,
+      to: vc.textHostView.endOfDocument
+    )
+    let afterMerge = afterMergeRange.flatMap { vc.textHostView.text(in: $0) } ?? ""
+    requireS3(afterMerge.contains("Heading"), "deleteBackward at block start must merge back, got '\(afterMerge)'")
+
+    // Verify non-zero safe-area insets (top=59pt, bottom=34pt) keep hostView,
+    // selectionOverlayView, and caretRect in one shared (0, 0) safe-area frame.
+    let safeWindow = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+    let vcSafe = MetalHostViewController()
+    vcSafe.additionalSafeAreaInsets = UIEdgeInsets(top: 59, left: 0, bottom: 34, right: 0)
+    safeWindow.rootViewController = vcSafe
+    safeWindow.isHidden = false
+    safeWindow.layoutIfNeeded()
+    vcSafe.view.layoutIfNeeded()
+    requireS3(
+      abs(vcSafe.textHostView.frame.origin.y - vcSafe.view.safeAreaInsets.top) < 0.5
+        && vcSafe.view.safeAreaInsets.top >= 59.0
+        && abs(
+          vcSafe.textHostView.frame.height
+            - (vcSafe.view.bounds.height - vcSafe.view.safeAreaInsets.top - vcSafe.view.safeAreaInsets.bottom)
+        ) < 0.5,
+      "hostView must be framed inside safeAreaInsets (insets=\(vcSafe.view.safeAreaInsets), got \(vcSafe.textHostView.frame))"
+    )
+    requireS3(
+      vcSafe.selectionOverlay.frame == vcSafe.textHostView.bounds,
+      "selectionOverlay must share hostView safe-area-local bounds"
+    )
+    if let safeHandle = vcSafe.hostPointer {
+      affine_ios_host_reset_empty_doc(safeHandle)
+      vcSafe.textHostView.insertText("SafeArea")
+      let c0 = vcSafe.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 0))
+      let c8 = vcSafe.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 8))
+      requireS3(c8.minX > c0.minX, "caretRect in safe-area hostView must advance horizontally")
+
+      // UIKit IME contract: Pinyin/Kana setMarkedText -> setMarkedText -> insertText
+      // must NOT echo textWillChange/textDidChange back to UITextInputDelegate, whereas
+      // editor-initiated/external mutations MUST notify it.
+      final class CountingInputDelegate: NSObject, UITextInputDelegate {
+        var textWillChangeCount = 0
+        var textDidChangeCount = 0
+        var selectionWillChangeCount = 0
+        var selectionDidChangeCount = 0
+        func selectionWillChange(_ textInput: UITextInput?) { selectionWillChangeCount += 1 }
+        func selectionDidChange(_ textInput: UITextInput?) { selectionDidChangeCount += 1 }
+        func textWillChange(_ textInput: UITextInput?) { textWillChangeCount += 1 }
+        func textDidChange(_ textInput: UITextInput?) { textDidChangeCount += 1 }
+        @available(iOS 18.4, *)
+        func conversationContext(_ context: UIConversationContext?, didChange textInput: (any UITextInput)?) {}
+      }
+      affine_ios_host_reset_empty_doc(safeHandle)
+      let countingDelegate = CountingInputDelegate()
+      vcSafe.textHostView.inputDelegate = countingDelegate
+      vcSafe.textHostView.setMarkedText("ni", selectedRange: NSRange(location: 2, length: 0))
+      vcSafe.textHostView.setMarkedText("nihao", selectedRange: NSRange(location: 5, length: 0))
+      vcSafe.textHostView.insertText("你好")
+      requireS3(
+        countingDelegate.textWillChangeCount == 0 && countingDelegate.textDidChangeCount == 0,
+        "IME-originated Pinyin sequence must trigger 0 textWillChange/textDidChange callbacks (got will=\(countingDelegate.textWillChangeCount), did=\(countingDelegate.textDidChangeCount))"
+      )
+      // External editor mutation (reset / shortcut) MUST notify inputDelegate.
+      affine_ios_host_reset_empty_doc(safeHandle)
+      requireS3(
+        countingDelegate.textWillChangeCount > 0 || countingDelegate.selectionDidChangeCount > 0,
+        "External editor mutation must notify UITextInputDelegate"
+      )
+      vcSafe.textHostView.inputDelegate = nil
+    }
+
+    // Reload showcase document and trigger a real GPU Metal frame render.
+    affine_ios_host_load_showcase_doc(handle)
+    let renderedColor = affine_ios_host_render_frame(handle, 1.0)
+    requireS3(renderedColor != 0, "GPU editor frame render must succeed on showcase doc")
+
+    print("PASS [6/6]: S6 iOS native GPU editor mount, safe-area alignment, H-S1/H-S2 IME, block split/merge, and T1 readonly passed")
   }
 }

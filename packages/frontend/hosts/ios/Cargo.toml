@@ -11,14 +11,22 @@ crate-type = ["staticlib", "rlib"]
 
 [dependencies]
 affine-legacy-import = { path = "../../legacy-import" }
+affine-mobile = { path = "../../mobile" }
 affine-store = { path = "../../../common/store" }
+anyhow.workspace = true
 blocksuite-playground-doc = { path = "../../../../blocksuite/crates/doc", default-features = false }
 chrono.workspace = true
+futures.workspace = true
+parking_lot.workspace = true
+playground = { path = "../../../../blocksuite/crates/playground" }
+raw-window-handle.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+smallvec.workspace = true
 sqlx.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+ui = { path = "../../../ui/ui" }
 uuid.workspace = true
 
 [lints]

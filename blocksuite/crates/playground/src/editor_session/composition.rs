@@ -433,7 +433,7 @@ impl PlaygroundView {
             sel.clone()
         })
     }
-    pub(super) fn replace_selection(
+    pub(crate) fn replace_selection(
         &mut self,
         sel: DocumentSelection,
         text: &str,

@@ -13,7 +13,7 @@ use std::{
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 const EMOJI_FONT_FAMILIES: &[&str] = &["Apple Color Emoji", ".AppleColorEmojiUI"];
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "android"))]
 const EMOJI_FONT_FAMILIES: &[&str] = &[
     "Noto Color Emoji",
     "Emoji One",

@@ -131,14 +131,16 @@ web-sys = { workspace = true, features = [
 ] }
 wgpu = { workspace = true, features = ["webgl", "webgpu", "wgsl"] }
 
-[target.'cfg(target_os = "linux")'.dependencies]
+[target.'cfg(any(target_os = "linux", target_os = "android"))'.dependencies]
 bytemuck.workspace = true
 cosmic-text.workspace = true
-font-kit = { workspace = true, optional = true }
 libc.workspace = true
 swash.workspace = true
 unicode-bidi.workspace = true
 wgpu = { workspace = true, features = ["std", "vulkan", "gles", "wgsl"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+font-kit = { workspace = true, optional = true }
 
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 block2.workspace = true

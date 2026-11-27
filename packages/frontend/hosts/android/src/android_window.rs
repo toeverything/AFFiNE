@@ -4,8 +4,15 @@
 //! and CPU fallback with producer handoff safety.
 
 use core::ffi::{c_char, c_int, c_void};
+use core::ptr::NonNull;
 use std::collections::BTreeMap;
 use std::sync::{Mutex, OnceLock};
+
+use raw_window_handle::{
+    AndroidDisplayHandle, AndroidNdkWindowHandle, DisplayHandle, HandleError, HasDisplayHandle,
+    HasWindowHandle, RawDisplayHandle, RawWindowHandle, WindowHandle,
+};
+use ui::{DevicePixels, GpuContext, WgpuRenderer, WgpuSurfaceConfig, size};
 
 use crate::jni_bridge::{JLong, JObject, JniEnvPtr};
 use crate::{AndroidRenderBackend, SurfacePresentError};
@@ -416,6 +423,63 @@ pub(crate) fn present_frame(
             }
         }
     }
+}
+
+pub(crate) fn native_window_ptr(handle: JLong) -> Option<*mut c_void> {
+    let map = windows().lock().unwrap_or_else(|p| p.into_inner());
+    let entry = map.get(&handle)?;
+    if entry.addr == 0 {
+        None
+    } else {
+        Some(entry.addr as *mut c_void)
+    }
+}
+
+#[derive(Clone, Debug)]
+struct AndroidRawWindow(NonNull<c_void>);
+
+// SAFETY: `ANativeWindow` pointers are ref-counted NDK handles whose lifetime is
+// strictly bounded by `surfaceDestroyed`, where `WgpuRenderer` is dropped before
+// `ANativeWindow_release`.
+unsafe impl Send for AndroidRawWindow {}
+unsafe impl Sync for AndroidRawWindow {}
+
+impl HasWindowHandle for AndroidRawWindow {
+    fn window_handle(&self) -> Result<WindowHandle<'_>, HandleError> {
+        let handle = AndroidNdkWindowHandle::new(self.0);
+        // SAFETY: `self.0` is a live `ANativeWindow*` owned by `WINDOWS` for the
+        // duration of the returned `WgpuRenderer`.
+        Ok(unsafe { WindowHandle::borrow_raw(RawWindowHandle::AndroidNdk(handle)) })
+    }
+}
+
+impl HasDisplayHandle for AndroidRawWindow {
+    fn display_handle(&self) -> Result<DisplayHandle<'_>, HandleError> {
+        let handle = AndroidDisplayHandle::new();
+        // SAFETY: Android's display handle is a zero-sized marker with no borrowed pointers.
+        Ok(unsafe { DisplayHandle::borrow_raw(RawDisplayHandle::Android(handle)) })
+    }
+}
+
+/// Creates a live `ui::WgpuRenderer` bound to the `ANativeWindow*` for `handle`.
+pub(crate) fn create_wgpu_renderer(
+    gpu_context: GpuContext,
+    native_window: *mut c_void,
+    width_px: u32,
+    height_px: u32,
+) -> anyhow::Result<WgpuRenderer> {
+    let ptr =
+        NonNull::new(native_window).ok_or_else(|| anyhow::anyhow!("null ANativeWindow pointer"))?;
+    let raw_win = AndroidRawWindow(ptr);
+    let config = WgpuSurfaceConfig {
+        size: size(
+            DevicePixels(width_px.max(1) as i32),
+            DevicePixels(height_px.max(1) as i32),
+        ),
+        transparent: false,
+        preferred_present_mode: None,
+    };
+    WgpuRenderer::new(gpu_context, &raw_win, config, None)
 }
 
 pub(crate) fn release(handle: JLong) {

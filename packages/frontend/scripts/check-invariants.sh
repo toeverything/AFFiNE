@@ -156,6 +156,7 @@ ALLOWED_DEPS = {
 }
 
 HOST_ALLOWED = UI_ALL | BS_LOWER | {
+    "blocksuite/crates/playground",
     "packages/common/store",
     "packages/frontend/legacy-import",
     "packages/frontend/client",

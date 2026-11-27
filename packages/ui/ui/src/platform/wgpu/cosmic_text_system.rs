@@ -1160,7 +1160,7 @@ fn clip_font_runs(font_runs: &[FontRun], range: Range<usize>) -> SmallVec<[FontR
     clipped
 }
 
-#[cfg(all(feature = "font-kit", not(target_family = "wasm")))]
+#[cfg(all(feature = "font-kit", target_os = "linux"))]
 fn find_best_match(
     font: &Font,
     candidates: &[FontId],
@@ -1186,7 +1186,7 @@ fn find_best_match(
     Ok(ix)
 }
 
-#[cfg(any(not(feature = "font-kit"), target_family = "wasm"))]
+#[cfg(not(all(feature = "font-kit", target_os = "linux")))]
 fn find_best_match(
     font: &Font,
     candidates: &[FontId],
@@ -1358,7 +1358,7 @@ fn cosmic_font_features(features: &FontFeatures) -> Result<CosmicFontFeatures> {
     Ok(result)
 }
 
-#[cfg(all(feature = "font-kit", not(target_family = "wasm")))]
+#[cfg(all(feature = "font-kit", target_os = "linux"))]
 fn font_into_properties(font: &crate::Font) -> font_kit::properties::Properties {
     font_kit::properties::Properties {
         style: match font.style {
@@ -1371,7 +1371,7 @@ fn font_into_properties(font: &crate::Font) -> font_kit::properties::Properties 
     }
 }
 
-#[cfg(all(feature = "font-kit", not(target_family = "wasm")))]
+#[cfg(all(feature = "font-kit", target_os = "linux"))]
 fn face_info_into_properties(
     face_info: &cosmic_text::fontdb::FaceInfo,
 ) -> font_kit::properties::Properties {

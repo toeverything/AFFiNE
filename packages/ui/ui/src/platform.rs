@@ -19,7 +19,7 @@ pub mod web;
 #[cfg(all(test, not(target_family = "wasm")))]
 #[path = "platform/web/viewport.rs"]
 mod web_viewport_unit_tests;
-#[cfg(any(target_os = "linux", target_family = "wasm"))]
+#[cfg(any(target_os = "linux", target_os = "android", target_family = "wasm"))]
 pub mod wgpu;
 
 /// Types for configuring parent-anchored popup windows such as menus, dropdowns and tooltips.

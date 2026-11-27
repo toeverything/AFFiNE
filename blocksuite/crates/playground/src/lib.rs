@@ -5,7 +5,8 @@
 //! rendered by [`block_flow`], with the popovers and block controls of [`overlays`] on top.
 
 pub use blocksuite_editor::{
-    TOPBAR_HEIGHT, block_flow, clipboard, database, directory, rich_text, surface, theme,
+    EditorCapabilities, FormFactor, PointerKind, TOPBAR_HEIGHT, block_flow, clipboard, database,
+    directory, rich_text, surface, theme,
 };
 mod chrome;
 pub mod edgeless;
@@ -104,14 +105,35 @@ pub struct PlaygroundOptions {
     pub mode: PlaygroundMode,
     /// Live room to join. Without one the view shows the built-in showcase document.
     pub room: Option<RoomConfig>,
-    /// Defaults to `false`. When set to `true` (e.g. via `?mobile=1`, `?edgeless_readonly=1`,
-    /// or `--edgeless-readonly` where `enable_mobile_edgeless_editing == false`),
-    /// Edgeless mode hides the creation toolbar, disables element authoring/mutation,
-    /// and pans smoothly on single-finger / left-pointer drags.
+    /// Primary pointer modality reported by the host platform.
+    pub pointer_kind: PointerKind,
+    /// Physical device form factor reported by the host platform.
+    pub form_factor: FormFactor,
+    /// When `true`, Page-mode text/block mutations are suppressed.
+    pub page_readonly: bool,
+    /// Defaults to `false`. When set to `true` (e.g. on touch hosts or via `?mobile=1`,
+    /// `?edgeless_readonly=1`, or `--edgeless-readonly`), Edgeless mode hides the creation
+    /// toolbar, disables element authoring/mutation, and pans smoothly on single-finger drags.
     pub edgeless_readonly: bool,
+    /// When `true`, Database-block mutations are suppressed.
+    pub database_readonly: bool,
 }
 
 impl PlaygroundOptions {
+    /// Builds Stage-1 options for a native touch host (`Phone` or `Tablet`):
+    /// Page editing enabled, Edgeless and Database read-only.
+    pub fn for_form_factor(form_factor: FormFactor) -> Self {
+        let caps = EditorCapabilities::for_form_factor(form_factor);
+        Self {
+            pointer_kind: caps.pointer_kind,
+            form_factor: caps.form_factor,
+            page_readonly: caps.page_readonly,
+            edgeless_readonly: caps.edgeless_readonly,
+            database_readonly: caps.database_readonly,
+            ..Self::default()
+        }
+    }
+
     /// Parse command-line flags: `--theme light|dark`, `--mode page|edgeless`,
     /// `--edgeless-readonly`, `--room <room>` and `--relay <ws_url>` (a relay without a room is an error).
     pub fn from_args(args: impl IntoIterator<Item = String>) -> anyhow::Result<Self> {
@@ -136,6 +158,8 @@ impl PlaygroundOptions {
                         .ok_or_else(|| anyhow::anyhow!("unknown mode {value:?} (page|edgeless)"))?;
                 }
                 "--edgeless-readonly" => options.edgeless_readonly = true,
+                "--page-readonly" => options.page_readonly = true,
+                "--database-readonly" => options.database_readonly = true,
                 "--room" => room = Some(value()?),
                 "--relay" => relay = Some(value()?),
                 other => anyhow::bail!("unknown flag: {other}"),
@@ -227,6 +251,9 @@ pub struct PlaygroundView {
     pub(crate) edgeless: edgeless::EdgelessCanvasState,
     pub(crate) edgeless_camera_transition: Option<edgeless::CameraTransition>,
     pub(crate) edgeless_shape_picker_presence: Option<edgeless::ShapePickerPresence>,
+    pub(crate) pointer_kind: PointerKind,
+    pub(crate) form_factor: FormFactor,
+    pub(crate) page_readonly: bool,
     pub(crate) edgeless_readonly: bool,
     pub(crate) database_readonly: bool,
     pub(crate) caret_active_since_ms: f64,
@@ -308,7 +335,9 @@ impl PlaygroundView {
             state.awareness.local_client_id()
         ));
         let mut flow = BlockFlow::new();
-        flow.database_state.mobile_readonly = options.edgeless_readonly;
+        let database_readonly =
+            options.database_readonly || matches!(options.form_factor, FormFactor::Phone);
+        flow.database_state.mobile_readonly = database_readonly;
         let mut view = Self {
             mode: options.mode,
             theme: options.theme,
@@ -351,8 +380,11 @@ impl PlaygroundView {
             edgeless: edgeless::EdgelessCanvasState::new(),
             edgeless_camera_transition: None,
             edgeless_shape_picker_presence: None,
+            pointer_kind: options.pointer_kind,
+            form_factor: options.form_factor,
+            page_readonly: options.page_readonly,
             edgeless_readonly: options.edgeless_readonly,
-            database_readonly: options.edgeless_readonly,
+            database_readonly,
             caret_active_since_ms: 0.0,
             caret_blink_task: None,
             scrollbar_drag: None,
@@ -519,6 +551,34 @@ impl PlaygroundView {
             .zoom_at(target_zoom, event.position, vp_origin);
         self.edgeless.camera_initialized = true;
         cx.notify();
+    }
+
+    /// Primary pointer modality reported by the host platform.
+    pub fn pointer_kind(&self) -> PointerKind {
+        self.pointer_kind
+    }
+
+    /// Physical device form factor reported by the host platform.
+    pub fn form_factor(&self) -> FormFactor {
+        self.form_factor
+    }
+
+    /// Whether this view is running on a touch-first mobile/tablet host.
+    pub fn is_touch_host(&self) -> bool {
+        self.form_factor.is_touch_form_factor() || self.pointer_kind == PointerKind::Touch
+    }
+
+    /// Whether Page-mode mutations are gated read-only.
+    pub fn page_readonly(&self) -> bool {
+        self.page_readonly
+    }
+
+    /// Enable or disable the Page-mode read-only gate.
+    pub fn set_page_readonly(&mut self, readonly: bool, cx: &mut Context<Self>) {
+        if self.page_readonly != readonly {
+            self.page_readonly = readonly;
+            cx.notify();
+        }
     }
 
     /// Whether Edgeless authoring is gated read-only (`enable_mobile_edgeless_editing == false`).

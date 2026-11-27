@@ -165,6 +165,8 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeCreateHost(
         let candidate = NEXT_HOST_HANDLE.fetch_add(1, Ordering::Relaxed);
         if candidate != 0 && !map.contains_key(&candidate) {
             map.insert(candidate, AndroidHostState::new());
+            drop(map);
+            crate::jni_editor::attach_for_host(candidate);
             return candidate;
         }
     }
@@ -179,6 +181,7 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeDestroyHost(
     if handle == 0 {
         return;
     }
+    crate::jni_editor::detach_for_host(handle);
     #[cfg(target_os = "android")]
     android_window::release(handle);
     let mut map = registry()
@@ -238,13 +241,25 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceChanged(
 ) {
     #[cfg(target_os = "android")]
     android_window::set_geometry(handle, width_px, height_px);
+    let mut density = 1.0f32;
+    let w = u32::try_from(width_px).unwrap_or(0);
+    let h = u32::try_from(height_px).unwrap_or(0);
     let _ = with_host_mut(handle, |host| {
-        host.surface.on_changed(
-            format,
-            u32::try_from(width_px).unwrap_or(0),
-            u32::try_from(height_px).unwrap_or(0),
-        );
+        host.surface.on_changed(format, w, h);
+        density = host.surface.density;
     });
+    if w > 0 && h > 0 {
+        #[cfg(target_os = "android")]
+        let native_win = android_window::native_window_ptr(handle);
+        let _ = crate::editor_runtime::with_editor_mut(handle, |ed| {
+            #[cfg(target_os = "android")]
+            if let Some(ptr) = native_win {
+                let _ = ed.attach_surface(ptr, w, h, density);
+                return;
+            }
+            ed.resize_px(w, h, density);
+        });
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -253,8 +268,14 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceDestroyed
     _class: JClass,
     handle: JLong,
 ) {
+    // Drop `WgpuRenderer` and its `wgpu::Surface` strictly BEFORE `ANativeWindow_release`.
     #[cfg(target_os = "android")]
-    android_window::release(handle);
+    {
+        let _ = crate::editor_runtime::with_editor_mut(handle, |ed| {
+            ed.detach_surface();
+        });
+        android_window::release(handle);
+    }
     let _ = with_host_mut(handle, |host| {
         host.surface.on_destroyed();
     });
@@ -328,6 +349,7 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceInsetsPx(
     ime_bottom_px: JInt,
     density: JFloat,
 ) {
+    let mut logical_insets = crate::LogicalWindowInsets::default();
     let _ = with_host_mut(handle, |host| {
         host.surface.set_density(density);
         host.insets = physical_insets_to_logical_dp(
@@ -338,6 +360,7 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceInsetsPx(
             ime_bottom_px,
             density,
         );
+        logical_insets = host.insets;
         if host.surface.width_px > 0 && host.surface.height_px > 0 {
             host.selection.set_viewport(
                 host.surface.width_px as f32,
@@ -345,6 +368,9 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSurfaceInsetsPx(
                 host.surface.density,
             );
         }
+    });
+    let _ = crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.set_insets(logical_insets);
     });
 }
 
@@ -363,17 +389,38 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnFrameTick(
     .flatten() else {
         return 0;
     };
+    let (has_gpu_renderer, has_pending_timer) =
+        crate::editor_runtime::with_editor_mut(handle, |ed| {
+            let has_gpu = ed.has_gpu_renderer();
+            ed.render_frame();
+            let next_due = ed.drain_tasks();
+            (has_gpu, next_due.is_some())
+        })
+        .unwrap_or((false, false));
+
     #[cfg(target_os = "android")]
-    let present_result = android_window::present_frame(handle, backend, argb);
+    let present_result = if has_gpu_renderer {
+        // `WgpuRenderer::draw(scene)` already presented to `ANativeWindow`; never
+        // invoke legacy EGL/CPU clear on the same Surface producer.
+        let _ = backend;
+        Ok(())
+    } else {
+        android_window::present_frame(handle, backend, argb)
+    };
     #[cfg(not(target_os = "android"))]
     let present_result: Result<(), crate::SurfacePresentError> = {
-        let _ = backend;
+        let _ = (backend, has_gpu_renderer);
         Ok(())
     };
 
     let presented = with_host_mut(handle, |host| {
-        host.surface
-            .complete_frame(frame_time_nanos, present_result)
+        let ok = host
+            .surface
+            .complete_frame(frame_time_nanos, present_result);
+        if has_pending_timer {
+            host.surface.request_frame();
+        }
+        ok
     })
     .unwrap_or(false);
     if presented { argb as JInt } else { 0 }
@@ -396,6 +443,22 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnBackGesturePhase
     .unwrap_or(0)
 }
 
+pub(crate) fn sync_selection_overlay_from_editor(handle: JLong) {
+    if let Some((utf16, (start, end))) = crate::editor_runtime::with_editor_mut(handle, |ed| {
+        let range = ed.selection_range();
+        let utf16 = if range.0 == range.1 {
+            Vec::new()
+        } else {
+            ed.utf16_text()
+        };
+        (utf16, range)
+    }) {
+        let _ = with_host_mut(handle, |host| {
+            host.sync_selection_overlay_for_snapshot(&utf16, start, end);
+        });
+    }
+}
+
 /// # Safety
 /// `env` must be null or a valid `JNIEnv*`; `text` must be null or a valid `jstring`.
 #[unsafe(no_mangle)]
@@ -409,6 +472,14 @@ pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnCommitTex
     let Some(utf16) = (unsafe { read_jstring_utf16(env, text) }) else {
         return;
     };
+    if crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.commit_text_utf16(&utf16, new_cursor_position);
+    })
+    .is_some()
+    {
+        sync_selection_overlay_from_editor(handle);
+        return;
+    }
     let _ = with_host_mut(handle, |host| {
         host.commit_text_utf16(&utf16, new_cursor_position);
     });
@@ -427,6 +498,14 @@ pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSetCompos
     let Some(utf16) = (unsafe { read_jstring_utf16(env, text) }) else {
         return;
     };
+    if crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.set_composing_text_utf16(&utf16, new_cursor_position);
+    })
+    .is_some()
+    {
+        sync_selection_overlay_from_editor(handle);
+        return;
+    }
     let _ = with_host_mut(handle, |host| {
         host.set_composing_text_utf16(&utf16, new_cursor_position);
     });
@@ -441,6 +520,13 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSetComposingRegi
     end: JInt,
 ) {
     let (a, b) = normalize_jint_range(start, end);
+    if crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.set_composing_region(a, b);
+    })
+    .is_some()
+    {
+        return;
+    }
     let _ = with_host_mut(handle, |host| {
         host.set_composing_region(a, b);
     });
@@ -452,6 +538,13 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnFinishComposingT
     _class: JClass,
     handle: JLong,
 ) {
+    if crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.finish_composing_text();
+    })
+    .is_some()
+    {
+        return;
+    }
     let _ = with_host_mut(handle, |host| {
         host.finish_composing_text();
     });
@@ -466,6 +559,14 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnSetSelection(
     end: JInt,
 ) {
     let (a, b) = normalize_jint_range(start, end);
+    if crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.set_selection(a, b);
+    })
+    .is_some()
+    {
+        sync_selection_overlay_from_editor(handle);
+        return;
+    }
     let _ = with_host_mut(handle, |host| {
         host.set_selection(a, b);
     });
@@ -484,6 +585,14 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnDeleteSurroundin
     }
     let before = before_len as usize;
     let after = after_len as usize;
+    if crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.delete_surrounding_text(before, after);
+    })
+    .is_some()
+    {
+        sync_selection_overlay_from_editor(handle);
+        return;
+    }
     let _ = with_host_mut(handle, |host| {
         host.delete_surrounding_text(before, after);
     });
@@ -502,6 +611,12 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnDeleteSurroundin
     }
     let before = before_len as usize;
     let after = after_len as usize;
+    if let Some(ok) = crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.delete_surrounding_text_in_code_points(before, after)
+    }) {
+        sync_selection_overlay_from_editor(handle);
+        return u8::from(ok);
+    }
     with_host_mut(handle, |host| {
         u8::from(host.delete_surrounding_text_in_code_points(before, after))
     })
@@ -526,6 +641,14 @@ pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnReplaceTe
     let Some(utf16) = (unsafe { read_jstring_utf16(env, text) }) else {
         return 0;
     };
+    if crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.replace_text_utf16(start as usize, end as usize, &utf16, new_cursor_position);
+    })
+    .is_some()
+    {
+        sync_selection_overlay_from_editor(handle);
+        return 1;
+    }
     with_host_mut(handle, |host| {
         host.replace_text_utf16(start as usize, end as usize, &utf16, new_cursor_position);
         1
@@ -539,6 +662,11 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeGetUtf16Length(
     _class: JClass,
     handle: JLong,
 ) -> JInt {
+    if let Some(len) = crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.utf16_len().min(i32::MAX as usize) as JInt
+    }) {
+        return len;
+    }
     with_host_ref(handle, |host| {
         host.utf16_len().min(i32::MAX as usize) as JInt
     })
@@ -555,6 +683,11 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeGetUtf16Unit(
     let Ok(idx) = usize::try_from(index) else {
         return 0;
     };
+    if let Some(unit) = crate::editor_runtime::with_editor_mut(handle, |ed| {
+        i32::from(ed.utf16_unit(idx).unwrap_or(0))
+    }) {
+        return unit;
+    }
     with_host_ref(handle, |host| i32::from(host.utf16_unit(idx).unwrap_or(0))).unwrap_or(0)
 }
 
@@ -564,6 +697,11 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeGetSelectionStart(
     _class: JClass,
     handle: JLong,
 ) -> JInt {
+    if let Some(start) =
+        crate::editor_runtime::with_editor_mut(handle, |ed| ed.selection_range().0 as JInt)
+    {
+        return start;
+    }
     with_host_ref(handle, |host| host.selection_range().0 as JInt).unwrap_or(0)
 }
 
@@ -573,6 +711,11 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeGetSelectionEnd(
     _class: JClass,
     handle: JLong,
 ) -> JInt {
+    if let Some(end) =
+        crate::editor_runtime::with_editor_mut(handle, |ed| ed.selection_range().1 as JInt)
+    {
+        return end;
+    }
     with_host_ref(handle, |host| host.selection_range().1 as JInt).unwrap_or(0)
 }
 
@@ -582,6 +725,11 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeGetComposingStart(
     _class: JClass,
     handle: JLong,
 ) -> JInt {
+    if let Some(start) = crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.composing_range().map_or(-1, |(s, _)| s as JInt)
+    }) {
+        return start;
+    }
     with_host_ref(handle, |host| {
         host.composing_range()
             .map_or(-1, |(start, _)| start as JInt)
@@ -595,6 +743,11 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeGetComposingEnd(
     _class: JClass,
     handle: JLong,
 ) -> JInt {
+    if let Some(end) = crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.composing_range().map_or(-1, |(_, e)| e as JInt)
+    }) {
+        return end;
+    }
     with_host_ref(handle, |host| {
         host.composing_range().map_or(-1, |(_, end)| end as JInt)
     })
@@ -611,6 +764,9 @@ pub(crate) fn insert_test_host(handle: JLong, state: AndroidHostState) {
 
 #[cfg(test)]
 pub(crate) fn snapshot_text(handle: JLong) -> Option<String> {
+    if let Some(units) = crate::editor_runtime::with_editor_mut(handle, |ed| ed.utf16_text()) {
+        return Some(String::from_utf16_lossy(&units));
+    }
     let map = registry()
         .lock()
         .unwrap_or_else(|poison| poison.into_inner());

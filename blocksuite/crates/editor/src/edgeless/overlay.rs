@@ -721,6 +721,7 @@ pub fn layout_label_editor_paragraph(
         let ts = window.text_system();
         let mut face = ui::font(font_family.clone());
         face.weight = base_weight;
+        face.fallbacks = Some(crate::default_font_fallbacks());
         let font_id = ts.resolve_font(&face);
         let font_px = px(font_size);
         let ascent = f32::from(ts.ascent(font_id, font_px));

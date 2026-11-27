@@ -14,15 +14,23 @@ host-jni = []
 
 [dependencies]
 affine-legacy-import = { path = "../../legacy-import" }
+affine-mobile = { path = "../../mobile" }
 affine-store = { path = "../../../common/store" }
+anyhow.workspace = true
 base64.workspace = true
 chrono.workspace = true
+futures.workspace = true
+playground = { path = "../../../../blocksuite/crates/playground" }
+raw-window-handle.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
+smallvec.workspace = true
 sqlx.workspace = true
 tokio.workspace = true
+ui = { path = "../../../ui/ui" }
 url.workspace = true
+uuid.workspace = true
 y-octo.workspace = true
 
 [lints]

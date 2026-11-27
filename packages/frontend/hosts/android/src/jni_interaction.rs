@@ -133,6 +133,7 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSetSelectionViewpo
             host.sync_selection_overlay_from_ime();
         }
     });
+    crate::jni_bridge::sync_selection_overlay_from_editor(handle);
 }
 
 #[unsafe(no_mangle)]
@@ -212,7 +213,10 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSelectionEndDrag(
     _class: JClass,
     handle: JLong,
 ) -> JBoolean {
-    with_host_mut(handle, |host| u8::from(host.end_selection_handle_drag())).unwrap_or(0)
+    let has_menu =
+        with_host_mut(handle, |host| u8::from(host.end_selection_handle_drag())).unwrap_or(0);
+    crate::jni_bridge::sync_selection_overlay_from_editor(handle);
+    has_menu
 }
 
 #[unsafe(no_mangle)]
@@ -224,6 +228,7 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSelectionCancelDra
     let _ = with_host_mut(handle, |host| {
         host.cancel_selection_handle_drag();
     });
+    crate::jni_bridge::sync_selection_overlay_from_editor(handle);
 }
 
 #[unsafe(no_mangle)]

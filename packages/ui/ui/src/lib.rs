@@ -138,8 +138,10 @@ pub use platform::macos::MacPlatform;
 
 #[cfg(all(target_os = "linux", any(test, feature = "harness")))]
 pub use platform::wgpu::WgpuHeadlessRenderer;
-#[cfg(any(target_os = "linux", target_family = "wasm"))]
-pub use platform::wgpu::{CosmicTextSystem, WgpuContext, WgpuRenderer, WgpuSurfaceConfig};
+#[cfg(any(target_os = "linux", target_os = "android", target_family = "wasm"))]
+pub use platform::wgpu::{
+    CosmicTextSystem, GpuContext, WgpuContext, WgpuRenderer, WgpuSurfaceConfig,
+};
 
 #[cfg(target_family = "wasm")]
 pub use platform::web::{

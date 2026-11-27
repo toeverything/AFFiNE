@@ -28,6 +28,9 @@ impl EntityInputHandler for PlaygroundView {
             }
             return;
         }
+        if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
+            return;
+        }
         if self.mode == crate::PlaygroundMode::Edgeless
             && self.edgeless.authoring.editing_spatial_block().is_none()
         {
@@ -186,6 +189,9 @@ impl EntityInputHandler for PlaygroundView {
         {
             return;
         }
+        if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
+            return;
+        }
         if self.mode == crate::PlaygroundMode::Edgeless
             && self.edgeless.authoring.editing_spatial_block().is_none()
         {
@@ -219,6 +225,9 @@ impl EntityInputHandler for PlaygroundView {
             .edgeless_label_edit(w, cx, |ed| ed.replace(r.clone(), text))
             .is_some()
         {
+            return;
+        }
+        if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
             return;
         }
         if self.mode == crate::PlaygroundMode::Edgeless
@@ -269,6 +278,9 @@ impl EntityInputHandler for PlaygroundView {
             .edgeless_label_input(w, cx, |ed| ed.mark(r.clone(), text, selected.clone()))
             .is_some()
         {
+            return;
+        }
+        if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
             return;
         }
         if self.mode == crate::PlaygroundMode::Edgeless

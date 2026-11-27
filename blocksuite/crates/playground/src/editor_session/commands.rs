@@ -57,6 +57,9 @@ impl PlaygroundView {
         w: &mut Window,
         cx: &mut Context<Self>,
     ) -> DocResult {
+        if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
+            return Ok(());
+        }
         let sel = self.editor.selection.clone();
         let root_id = self
             .snapshot
@@ -325,6 +328,9 @@ impl PlaygroundView {
         w: &mut Window,
         cx: &mut Context<Self>,
     ) -> DocResult {
+        if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
+            return Ok(());
+        }
         let Some(sel) = self.editor.selection.clone() else {
             return Ok(());
         };
@@ -652,7 +658,9 @@ impl PlaygroundView {
         let m = e.keystroke.modifiers;
         let cmd = m.secondary(cx);
         let key = e.keystroke.key.as_str();
+        let page_ro = self.mode == crate::PlaygroundMode::Page && self.page_readonly;
         if cmd
+            && !page_ro
             && let Some(command) = block_selection::conversion_shortcut(key, m.alt, m.shift)
             && let Some(block_id) = self
                 .editor
@@ -717,7 +725,7 @@ impl PlaygroundView {
                 }
                 Ok(())
             }
-            "k" if cmd && !m.alt && !m.shift => {
+            "k" if cmd && !m.alt && !m.shift && !page_ro => {
                 self.open_link_bar_shortcut(w, cx);
                 Ok(())
             }
@@ -743,17 +751,18 @@ impl PlaygroundView {
             }
             "z" if cmd => self.history(m.shift, w, cx),
             "y" if cmd => self.history(true, w, cx),
-            "b" | "i" | "u" | "e" | "s" if cmd && (key != "s" || m.shift) => self.format_mark(
-                match key {
-                    "b" => "bold",
-                    "i" => "italic",
-                    "u" => "underline",
-                    "e" => "code",
-                    _ => "strike",
-                },
-                w,
-                cx,
-            ),
+            "b" | "i" | "u" | "e" | "s" if cmd && !page_ro && (key != "s" || m.shift) => self
+                .format_mark(
+                    match key {
+                        "b" => "bold",
+                        "i" => "italic",
+                        "u" => "underline",
+                        "e" => "code",
+                        _ => "strike",
+                    },
+                    w,
+                    cx,
+                ),
             _ => return,
         };
         if let Err(e) = result {
@@ -764,34 +773,9 @@ impl PlaygroundView {
     }
 
     pub(crate) fn open_link_bar_from_toolbar(&mut self, w: &mut Window, cx: &mut Context<Self>) {
-        self.open_link_bar_shortcut(w, cx);
-    }
-
-    pub(crate) fn copy_toolbar_selection_or_block(&mut self, cx: &mut Context<Self>) {
-        if let Some(slice) = self.clipboard_slice() {
-            crate::clipboard::write_slice(&slice, cx);
+        if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
             return;
         }
-        if let Some(id) = self.editor.selection.as_ref().map(|s| &s.focus.block_id)
-            && let Some(text) = self.block_text(id)
-        {
-            cx.write_to_clipboard(ui::ClipboardItem::new_string(text.to_string()));
-        }
-    }
-
-    pub(crate) fn insert_toolbar_plain_text(
-        &mut self,
-        text: &str,
-        w: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> DocResult {
-        let Some(sel) = self.editor.selection.clone() else {
-            return Ok(());
-        };
-        self.page_mut()?.stop_capturing()?;
-        self.editor.last_typing = None;
-        self.replace_selection(sel, text, w, cx)?;
-        self.page_mut()?.stop_capturing()?;
-        Ok(())
+        self.open_link_bar_shortcut(w, cx);
     }
 }

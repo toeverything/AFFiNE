@@ -324,6 +324,7 @@ impl ParagraphLayout<'_> {
                     } else {
                         &style.font_family
                     });
+                    font.fallbacks = Some(crate::default_font_fallbacks());
                     // CSS `bolder`: regular and medium text step to 700, heavier text to 900.
                     font.weight = if is_latex {
                         FontWeight::MEDIUM

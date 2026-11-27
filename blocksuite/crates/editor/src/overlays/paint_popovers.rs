@@ -615,6 +615,7 @@ impl Overlays {
             let marked = link.marked_range();
             let mut font = ui::font(FONT_SANS);
             font.weight = FontWeight::NORMAL;
+            font.fallbacks = Some(crate::default_font_fallbacks());
             let shown = SharedString::from(text.clone());
             let line = window.text_system().shape_line(
                 shown.clone(),

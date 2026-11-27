@@ -448,8 +448,18 @@ fn web_options() -> PlaygroundOptions {
         options.mode = mode;
     }
     if params
+        .get("mobile")
+        .is_some_and(|v| matches!(v.as_str(), "1" | "true"))
+    {
+        let caps = EditorCapabilities::for_form_factor(FormFactor::Phone);
+        options.pointer_kind = caps.pointer_kind;
+        options.form_factor = caps.form_factor;
+        options.page_readonly = caps.page_readonly;
+        options.edgeless_readonly = caps.edgeless_readonly;
+        options.database_readonly = caps.database_readonly;
+    }
+    if params
         .get("edgeless_readonly")
-        .or_else(|| params.get("mobile"))
         .is_some_and(|v| matches!(v.as_str(), "1" | "true"))
     {
         options.edgeless_readonly = true;

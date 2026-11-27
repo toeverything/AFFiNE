@@ -262,7 +262,7 @@ impl PlaygroundView {
         }
     }
 
-    pub(crate) fn set_mode(
+    pub fn set_mode(
         &mut self,
         target: PlaygroundMode,
         window: &mut Window,
