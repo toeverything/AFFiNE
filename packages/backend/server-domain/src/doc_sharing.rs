@@ -1643,11 +1643,16 @@ impl DocSharingService {
     .await
     .map_err(|e| DomainError::Internal(format!("count doc_grants: {e}")))?;
 
-    let after_key: Option<(DateTime<Utc>, String)> = if let Some(raw_cursor) = after.filter(|s| !s.trim().is_empty()) {
+    enum DocGrantCursor {
+      Composite(DateTime<Utc>, String),
+      TimestampOnly(DateTime<Utc>),
+    }
+
+    let after_key: Option<DocGrantCursor> = if let Some(raw_cursor) = after.filter(|s| !s.trim().is_empty()) {
       if let Some((ts_str, uid)) = raw_cursor.split_once('|') {
         DateTime::parse_from_rfc3339(ts_str)
           .ok()
-          .map(|dt| (dt.with_timezone(&Utc), uid.to_owned()))
+          .map(|dt| DocGrantCursor::Composite(dt.with_timezone(&Utc), uid.to_owned()))
       } else {
         // Legacy cursor encoding plain `user_id` or RFC3339 timestamp.
         let by_user: Option<(DateTime<Utc>, String)> = sqlx::query_as(
@@ -1659,12 +1664,12 @@ impl DocSharingService {
         .fetch_optional(&mut **tx.tx_mut())
         .await
         .map_err(|e| DomainError::Internal(format!("resolve doc_grants cursor: {e}")))?;
-        if by_user.is_some() {
-          by_user
+        if let Some((ts, uid)) = by_user {
+          Some(DocGrantCursor::Composite(ts, uid))
         } else {
           DateTime::parse_from_rfc3339(raw_cursor)
             .ok()
-            .map(|dt| (dt.with_timezone(&Utc), String::new()))
+            .map(|dt| DocGrantCursor::TimestampOnly(dt.with_timezone(&Utc)))
         }
       }
     } else {
@@ -1673,41 +1678,64 @@ impl DocSharingService {
 
     let limit = first.clamp(1, 100);
     let fetch_limit = limit + 1;
-    let rows = if let Some((after_ts, after_uid)) = after_key {
-      sqlx::query(
-        r#"SELECT g.role, g.created_at, u.id, u.name, u.email, u.avatar_url
-           FROM doc_grants g
-           JOIN users u ON u.id = g.principal_id
-           WHERE g.workspace_id = $1
-             AND g.doc_id = $2
-             AND g.principal_type = 'user'
-             AND (g.created_at > $3 OR (g.created_at = $3 AND g.principal_id > $4))
-           ORDER BY g.created_at ASC, g.principal_id ASC
-           OFFSET $5 LIMIT $6"#,
-      )
-      .bind(workspace_id)
-      .bind(&doc_id)
-      .bind(after_ts)
-      .bind(after_uid)
-      .bind(offset.max(0))
-      .bind(fetch_limit)
-      .fetch_all(&mut **tx.tx_mut())
-      .await
-    } else {
-      sqlx::query(
-        r#"SELECT g.role, g.created_at, u.id, u.name, u.email, u.avatar_url
-           FROM doc_grants g
-           JOIN users u ON u.id = g.principal_id
-           WHERE g.workspace_id = $1 AND g.doc_id = $2 AND g.principal_type = 'user'
-           ORDER BY g.created_at ASC, g.principal_id ASC
-           OFFSET $3 LIMIT $4"#,
-      )
-      .bind(workspace_id)
-      .bind(&doc_id)
-      .bind(offset.max(0))
-      .bind(fetch_limit)
-      .fetch_all(&mut **tx.tx_mut())
-      .await
+    let rows = match after_key {
+      Some(DocGrantCursor::Composite(after_ts, after_uid)) => {
+        sqlx::query(
+          r#"SELECT g.role, g.created_at, u.id, u.name, u.email, u.avatar_url
+             FROM doc_grants g
+             JOIN users u ON u.id = g.principal_id
+             WHERE g.workspace_id = $1
+               AND g.doc_id = $2
+               AND g.principal_type = 'user'
+               AND (g.created_at > $3 OR (g.created_at = $3 AND g.principal_id > $4))
+             ORDER BY g.created_at ASC, g.principal_id ASC
+             OFFSET $5 LIMIT $6"#,
+        )
+        .bind(workspace_id)
+        .bind(&doc_id)
+        .bind(after_ts)
+        .bind(after_uid)
+        .bind(offset.max(0))
+        .bind(fetch_limit)
+        .fetch_all(&mut **tx.tx_mut())
+        .await
+      }
+      Some(DocGrantCursor::TimestampOnly(after_ts)) => {
+        sqlx::query(
+          r#"SELECT g.role, g.created_at, u.id, u.name, u.email, u.avatar_url
+             FROM doc_grants g
+             JOIN users u ON u.id = g.principal_id
+             WHERE g.workspace_id = $1
+               AND g.doc_id = $2
+               AND g.principal_type = 'user'
+               AND g.created_at >= $3
+             ORDER BY g.created_at ASC, g.principal_id ASC
+             OFFSET $4 LIMIT $5"#,
+        )
+        .bind(workspace_id)
+        .bind(&doc_id)
+        .bind(after_ts)
+        .bind(offset.max(0).saturating_add(1))
+        .bind(fetch_limit)
+        .fetch_all(&mut **tx.tx_mut())
+        .await
+      }
+      None => {
+        sqlx::query(
+          r#"SELECT g.role, g.created_at, u.id, u.name, u.email, u.avatar_url
+             FROM doc_grants g
+             JOIN users u ON u.id = g.principal_id
+             WHERE g.workspace_id = $1 AND g.doc_id = $2 AND g.principal_type = 'user'
+             ORDER BY g.created_at ASC, g.principal_id ASC
+             OFFSET $3 LIMIT $4"#,
+        )
+        .bind(workspace_id)
+        .bind(&doc_id)
+        .bind(offset.max(0))
+        .bind(fetch_limit)
+        .fetch_all(&mut **tx.tx_mut())
+        .await
+      }
     }
     .map_err(|e| DomainError::Internal(format!("list doc_grants: {e}")))?;
     let _ = tx.rollback().await;

@@ -319,7 +319,16 @@ impl AppState {
       .with_app_config(services.app_config.clone())
       .with_file_json(Some(config.app_config_baseline.file_json.clone()))
       .with_shared_webhook_token(Arc::clone(&calendar_webhook_token));
-    let calendar_oauth = CalendarOAuthStore::new(redis.clone(), config.session_redis_db_index).ok();
+    let redis_key_prefix = config
+      .app_config_baseline
+      .file_json
+      .pointer("/redis/ioredis/keyPrefix")
+      .or_else(|| config.app_config_baseline.file_json.pointer("/redis/keyPrefix"))
+      .and_then(serde_json::Value::as_str)
+      .unwrap_or("")
+      .to_owned();
+    let calendar_oauth =
+      CalendarOAuthStore::with_key_prefix(redis.clone(), config.session_redis_db_index, redis_key_prefix).ok();
     let mcp = McpCredentialService::new(db.clone(), Arc::clone(&services.event_bus))
       .with_quota_gate(extension.quota_gate())
       .with_invalidation(Arc::clone(&services.invalidation));
@@ -763,6 +772,43 @@ const MAX_GRAPHQL_BRACKET_DEPTH: usize = 64;
 
 /// Linear `O(n)` lexical pre-scan rejecting deeply nested unquoted `{`/`[`/`(`
 /// before handing a query to `async-graphql`'s recursive-descent parser.
+fn graphql_selection_set_uses_introspection(set: &async_graphql::parser::types::SelectionSet) -> bool {
+  for item in &set.items {
+    match &item.node {
+      async_graphql::parser::types::Selection::Field(field) => {
+        let name = field.node.name.node.as_str();
+        if name == "__schema" || name == "__type" {
+          return true;
+        }
+        if graphql_selection_set_uses_introspection(&field.node.selection_set.node) {
+          return true;
+        }
+      }
+      async_graphql::parser::types::Selection::InlineFragment(frag) => {
+        if graphql_selection_set_uses_introspection(&frag.node.selection_set.node) {
+          return true;
+        }
+      }
+      async_graphql::parser::types::Selection::FragmentSpread(_) => {}
+    }
+  }
+  false
+}
+
+fn graphql_doc_uses_introspection(doc: &async_graphql::parser::types::ExecutableDocument) -> bool {
+  for (_, op) in doc.operations.iter() {
+    if graphql_selection_set_uses_introspection(&op.node.selection_set.node) {
+      return true;
+    }
+  }
+  for frag in doc.fragments.values() {
+    if graphql_selection_set_uses_introspection(&frag.node.selection_set.node) {
+      return true;
+    }
+  }
+  false
+}
+
 pub fn graphql_query_exceeds_depth(query: &str, max_depth: usize) -> bool {
   let (b, mut i, mut depth) = (query.as_bytes(), 0usize, 0usize);
   while i < b.len() {
@@ -821,12 +867,17 @@ const MAX_GRAPHQL_JSON_BODY_BYTES: usize = 16 * 1024 * 1024;
 
 fn graphql_bad_request_response(status: StatusCode, apollo_code: &str, message: &str) -> Response {
   let formatted = format!("GraphQL bad request, code: {apollo_code}, {message}");
+  let code_str = if status == StatusCode::METHOD_NOT_ALLOWED {
+    "Method Not Allowed"
+  } else {
+    "Bad Request"
+  };
   let body = serde_json::json!({
     "errors": [{
       "message": message,
       "extensions": {
         "status": status.as_u16(),
-        "code": "Bad Request",
+        "code": code_str,
         "type": "BAD_REQUEST",
         "name": "GRAPHQL_BAD_REQUEST",
         "message": formatted,
@@ -838,12 +889,18 @@ fn graphql_bad_request_response(status: StatusCode, apollo_code: &str, message: 
     }]
   })
   .to_string();
-  (
+  let mut resp = (
     status,
     [(header::CONTENT_TYPE, "application/json; charset=utf-8")],
     body,
   )
-    .into_response()
+    .into_response();
+  if status == StatusCode::METHOD_NOT_ALLOWED {
+    resp
+      .headers_mut()
+      .insert(header::ALLOW, HeaderValue::from_static("POST"));
+  }
+  resp
 }
 
 /// Reads a `/graphql` POST body. A multipart body goes through
@@ -918,9 +975,24 @@ async fn execute_graphql_request(
     .get_effective_app_config_arc()
     .await
     .ok()
-    .and_then(|c| c.pointer("/graphql/introspection")?.as_bool())
+    .and_then(|c| {
+      c.pointer("/graphql/apolloDriverConfig/introspection")
+        .or_else(|| c.pointer("/graphql/introspection"))
+        .and_then(serde_json::Value::as_bool)
+    })
     .unwrap_or(true);
-  let is_parse_error = async_graphql::parser::parse_query(&inner.query).is_err();
+  let parsed_query = async_graphql::parser::parse_query(&inner.query);
+  let is_parse_error = parsed_query.is_err();
+  if !introspection_enabled
+    && let Ok(ref doc) = parsed_query
+    && graphql_doc_uses_introspection(doc)
+  {
+    return graphql_bad_request_response(
+      StatusCode::BAD_REQUEST,
+      "GRAPHQL_VALIDATION_FAILED",
+      "GraphQL introspection is not allowed by Apollo Server, but the query contained __schema or __type.",
+    );
+  }
   let lazy = LazyGraphqlPrincipal::new(state.clone(), headers.clone(), peer);
   let mut gql_req = inner.data(lazy.clone()).data(headers);
   if !introspection_enabled {
@@ -960,12 +1032,39 @@ async fn execute_graphql_request(
       ext.set("data", data);
     }
   }
+  let mut gql_server_err_req_id: Option<String> = None;
+  for err in &mut raw_resp.errors {
+    let is_5xx = err
+      .extensions
+      .as_ref()
+      .and_then(|ext| ext.get("status"))
+      .and_then(|v| match v {
+        async_graphql::Value::Number(n) => n.as_u64(),
+        _ => None,
+      })
+      .is_some_and(|s| s >= 500);
+    if is_5xx {
+      let rid = gql_server_err_req_id
+        .get_or_insert_with(|| uuid::Uuid::new_v4().to_string())
+        .clone();
+      let ext = err.extensions.get_or_insert_with(Default::default);
+      if ext.get("requestId").is_none() {
+        ext.set("requestId", async_graphql::Value::from(rid));
+      }
+    }
+  }
   let gql_resp: GraphQLResponse = raw_resp.into();
   let mut resp = gql_resp.into_response();
   if is_bad_request {
     *resp.status_mut() = StatusCode::BAD_REQUEST;
   }
   let h = resp.headers_mut();
+  if let Some(ref rid) = gql_server_err_req_id
+    && !h.contains_key("x-request-id")
+    && let Ok(v) = HeaderValue::from_str(rid)
+  {
+    h.insert(header::HeaderName::from_static("x-request-id"), v);
+  }
   h.insert(
     header::CONTENT_TYPE,
     HeaderValue::from_static("application/json; charset=utf-8"),
@@ -1005,18 +1104,7 @@ async fn handle_graphql_post(
   if is_multipart {
     let has_session_cookie =
       rest::extract_cookie(&rest::parse_cookies(&headers), rest::SESSION_COOKIE_NAME).is_some_and(|s| !s.is_empty());
-    let has_preflight = [
-      "x-operation-name",
-      "x-apollo-operation-name",
-      "apollo-require-preflight",
-    ]
-    .iter()
-    .any(|name| {
-      headers
-        .get(*name)
-        .and_then(|v| v.to_str().ok())
-        .is_some_and(|s| !s.trim().is_empty())
-    });
+    let has_preflight = has_apollo_csrf_header(&headers);
     if has_session_cookie && !has_preflight {
       let csrf_blocked = || {
         graphql_bad_request_response(
@@ -1038,8 +1126,7 @@ async fn handle_graphql_post(
       let referer_origin = headers
         .get(header::REFERER)
         .and_then(|v| v.to_str().ok())
-        .and_then(|r| url::Url::parse(r.trim()).ok())
-        .map(|u| u.origin().ascii_serialization());
+        .and_then(rest::worker_proxy::extract_origin_from_url);
       let allowed =
         rest::worker_proxy::allowed_origins_for_state_async(&state, rest::worker_proxy::CorsOriginScope::Global).await;
       let cfg_snap = state.app.config.load();
@@ -1125,7 +1212,7 @@ async fn handle_graphql_get(
         .filter(|s| !s.is_empty());
       let is_non_query = match &doc.operations {
         async_graphql::parser::types::DocumentOperations::Single(op) => {
-          target_op_name.is_none() && !matches!(op.node.ty, async_graphql::parser::types::OperationType::Query)
+          !matches!(op.node.ty, async_graphql::parser::types::OperationType::Query)
         }
         async_graphql::parser::types::DocumentOperations::Multiple(ops) => {
           if let Some(name) = target_op_name {
@@ -1157,8 +1244,11 @@ async fn handle_graphql_get(
     }
     if let Some(vars_str) = params.variables {
       match serde_json::from_str::<serde_json::Value>(&vars_str) {
-        Ok(val) => {
+        Ok(val @ (serde_json::Value::Object(_) | serde_json::Value::Null)) => {
           req = req.variables(async_graphql::Variables::from_json(val));
+        }
+        Ok(_) => {
+          return graphql_bad_request_response(StatusCode::BAD_REQUEST, "BAD_REQUEST", "Variables must be an object.");
         }
         Err(_) => {
           return graphql_bad_request_response(StatusCode::BAD_REQUEST, "BAD_REQUEST", "Variables are invalid JSON.");
@@ -1179,7 +1269,15 @@ async fn handle_graphql_get(
     )
       .into_response();
   }
-  Html(GraphiQLSource::build().endpoint("/graphql").finish()).into_response()
+  let base_path = cfg.app_config_baseline.server.path.trim().trim_end_matches('/');
+  let endpoint = if base_path.is_empty() || base_path == "/" {
+    "/graphql".to_owned()
+  } else if base_path.starts_with('/') {
+    format!("{base_path}/graphql")
+  } else {
+    format!("/{base_path}/graphql")
+  };
+  Html(GraphiQLSource::build().endpoint(&endpoint).finish()).into_response()
 }
 
 /// Explicit `(DeploymentMode, ServerRole)` HTTP route mount matrix aligned
@@ -1285,10 +1383,17 @@ pub fn build_router(app: Arc<AppState>) -> Router {
         post(rest::auth::handle_open_app_sign_in_code),
       )
       .route("/api/auth/open-app/sign-in", post(rest::auth::handle_open_app_sign_in))
-      .route("/api/avatars/{id}", get(rest::blobs::handle_get_avatar));
+      .merge(
+        Router::new()
+          .route("/api/avatars/{id}", get(rest::blobs::handle_get_avatar))
+          .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            rest::blobs::blobs_default_throttle_middleware,
+          )),
+      );
   }
   if matrix.graphql_flavor_api {
-    router = router
+    let blobs_router = Router::new()
       .route(
         "/api/workspaces/{workspace_id}/blobs/v1/{name}",
         get(rest::blobs::handle_get_blob_v1),
@@ -1325,6 +1430,12 @@ pub fn build_router(app: Arc<AppState>) -> Router {
         "/api/workspaces/{workspace_id}/docs/{doc_id}/comment-attachments/{key}",
         get(rest::blobs::handle_get_comment_attachment),
       )
+      .layer(axum::middleware::from_fn_with_state(
+        state.clone(),
+        rest::blobs::blobs_default_throttle_middleware,
+      ));
+    router = router
+      .merge(blobs_router)
       .merge(rest::oauth::router())
       .merge(rest::captcha::router())
       .merge(rest::r2_proxy::router())

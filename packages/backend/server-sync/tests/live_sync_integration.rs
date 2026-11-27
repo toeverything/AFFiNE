@@ -952,6 +952,27 @@ function emitAck(socket, eventName, payload) {
     lifecycle: 'trash',
   });
 
+  const deleteUnaliasedActive = await emitAck(s, 'space:doc-lifecycle', {
+    spaceType: 'workspace',
+    spaceId: workspaceId,
+    docId: 'logical-doc-b',
+    physicalDocId: 'physical-doc-a',
+    lifecycle: 'delete',
+  });
+
+  await emitAck(s, 'space:doc-lifecycle', {
+    spaceType: 'workspace',
+    spaceId: workspaceId,
+    docId: 'logical-doc-b',
+    lifecycle: 'delete',
+  });
+  await emitAck(s, 'space:doc-lifecycle', {
+    spaceType: 'workspace',
+    spaceId: workspaceId,
+    docId: 'physical-doc-a',
+    lifecycle: 'delete',
+  });
+
   const deleteBoth = await emitAck(s, 'space:doc-lifecycle', {
     spaceType: 'workspace',
     spaceId: workspaceId,
@@ -972,6 +993,7 @@ function emitAck(socket, eventName, payload) {
     joinRoot,
     pushRoot,
     trashWithPhysical,
+    deleteUnaliasedActive,
     deleteBoth,
     zombieSid: openJson.sid,
   }));
@@ -1004,12 +1026,14 @@ function emitAck(socket, eventName, payload) {
         .unwrap();
     assert_eq!(root_updates, 1);
 
-    // 2. Non-delete lifecycle with physicalDocId rejected; delete deletes both & tombstones both.
+    // 2. Non-delete lifecycle with physicalDocId rejected; unaliased active delete requires tombstones;
+    // once tombstoned, delete with physicalDocId returns both deletedDocIds.
     assert_eq!(out["trashWithPhysical"]["error"]["code"], json!("BAD_REQUEST"));
     assert_eq!(
       out["trashWithPhysical"]["error"]["message"],
       json!("logical document identity is only valid for deletion")
     );
+    assert_eq!(out["deleteUnaliasedActive"]["error"]["code"], json!("DOC_NOT_FOUND"));
     assert_eq!(
       out["deleteBoth"]["data"]["deletedDocIds"],
       json!(["logical-doc-b", "physical-doc-a"])
@@ -3463,7 +3487,7 @@ async fn userspace_mutex_invalid_session_redis_url_fails_closed() {
   );
   assert_eq!(ws_err.error.status, 500);
   assert_eq!(ws_err.error.code, "INTERNAL_SERVER_ERROR");
-  assert_eq!(ws_err.error.error_type, "INTERNAL_ERROR");
+  assert_eq!(ws_err.error.error_type, "INTERNAL_SERVER_ERROR");
   assert_eq!(ws_err.error.name, "INTERNAL_SERVER_ERROR");
   assert_eq!(ws_err.error.message, "Internal Server Error");
 

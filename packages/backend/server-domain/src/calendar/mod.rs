@@ -417,37 +417,44 @@ impl CalendarService {
   pub fn callback_url_for(&self, external_url: &str) -> String {
     format!("{}/api/calendar/oauth/callback", external_url.trim_end_matches('/'))
   }
-  pub async fn webhook_token_from_config(&self, google: &CalendarGoogleConfig) -> String {
+  pub async fn try_webhook_token_from_config(&self, google: &CalendarGoogleConfig) -> Result<String, CalendarError> {
     if let Some(ref configured) = google.webhook_verification_token
       && !configured.is_empty()
     {
-      return configured.clone();
+      return Ok(configured.clone());
     }
-    let key = self.effective_private_key().await;
+    let key = self.try_effective_private_key().await?;
     if !key.is_empty() {
       use hmac::{Hmac, Mac as _};
       if let Ok(mut mac) = Hmac::<sha2::Sha256>::new_from_slice(key.as_bytes()) {
         mac.update(b"affine:calendar:google-webhook-token");
-        return hex::encode(mac.finalize().into_bytes());
+        return Ok(hex::encode(mac.finalize().into_bytes()));
       }
     }
     if let Ok(guard) = self.generated_webhook_token.lock()
       && let Some(ref cached) = *guard
       && !cached.is_empty()
     {
-      return cached.clone();
+      return Ok(cached.clone());
     }
     let derived = Uuid::new_v4().to_string();
     if let Ok(mut guard) = self.generated_webhook_token.lock() {
       *guard = Some(derived.clone());
     }
-    derived
+    Ok(derived)
   }
-  /// Verifies an incoming `x-goog-channel-token` header in constant time.
-  pub async fn verify_webhook_token(&self, google: &CalendarGoogleConfig, provided: &str) -> bool {
-    let expected = self.webhook_token_from_config(google).await;
-    expected.is_empty()
-      || (expected.len() == provided.len() && bool::from(expected.as_bytes().ct_eq(provided.as_bytes())))
+  /// Verifies an incoming `x-goog-channel-token` header in constant time,
+  /// propagating transient private-key lookup errors.
+  pub async fn try_verify_webhook_token(
+    &self,
+    google: &CalendarGoogleConfig,
+    provided: &str,
+  ) -> Result<bool, CalendarError> {
+    let expected = self.try_webhook_token_from_config(google).await?;
+    Ok(
+      expected.is_empty()
+        || (expected.len() == provided.len() && bool::from(expected.as_bytes().ct_eq(provided.as_bytes()))),
+    )
   }
   pub fn webhook_address_from_config(&self, google: &CalendarGoogleConfig, provider: &str) -> Option<String> {
     let base = google.external_webhook_url.as_deref()?.trim();
@@ -1452,8 +1459,16 @@ mod tests {
 
       // 1. Initial key comes from file baseline with exact raw bytes; webhook token derives from it.
       assert_eq!(calendar.effective_private_key().await, raw_key_with_newline);
-      let k1_webhook = calendar.webhook_token_from_config(&google_cfg).await;
-      assert!(calendar.verify_webhook_token(&google_cfg, &k1_webhook).await);
+      let k1_webhook = calendar
+        .try_webhook_token_from_config(&google_cfg)
+        .await
+        .expect("k1 webhook");
+      assert!(
+        calendar
+          .try_verify_webhook_token(&google_cfg, &k1_webhook)
+          .await
+          .expect("verify k1")
+      );
 
       // 2. DB override with leading/trailing whitespace takes effect live without leaking via public config.
       let db_override_key = "  K2-db-override  ";
@@ -1479,10 +1494,23 @@ mod tests {
       assert_eq!(decrypt_token(db_override_key, &ct2).expect("decrypt k2"), "cal-token");
       assert!(decrypt_token(db_override_key.trim(), &ct2).is_err());
 
-      let k2_webhook = calendar.webhook_token_from_config(&google_cfg).await;
+      let k2_webhook = calendar
+        .try_webhook_token_from_config(&google_cfg)
+        .await
+        .expect("k2 webhook");
       assert_ne!(k1_webhook, k2_webhook);
-      assert!(calendar.verify_webhook_token(&google_cfg, &k2_webhook).await);
-      assert!(!calendar.verify_webhook_token(&google_cfg, &k1_webhook).await);
+      assert!(
+        calendar
+          .try_verify_webhook_token(&google_cfg, &k2_webhook)
+          .await
+          .expect("verify k2")
+      );
+      assert!(
+        !calendar
+          .try_verify_webhook_token(&google_cfg, &k1_webhook)
+          .await
+          .expect("reject k1")
+      );
 
       // 3. Deleting DB override falls back to K1 file key live.
       sqlx::query("DELETE FROM app_configs WHERE id = 'crypto.privateKey'")
@@ -1491,8 +1519,19 @@ mod tests {
         .expect("delete db privateKey");
       app_config.invalidate_cache();
       assert_eq!(calendar.effective_private_key().await, raw_key_with_newline);
-      assert_eq!(calendar.webhook_token_from_config(&google_cfg).await, k1_webhook);
-      assert!(calendar.verify_webhook_token(&google_cfg, &k1_webhook).await);
+      assert_eq!(
+        calendar
+          .try_webhook_token_from_config(&google_cfg)
+          .await
+          .expect("k1 webhook after delete"),
+        k1_webhook
+      );
+      assert!(
+        calendar
+          .try_verify_webhook_token(&google_cfg, &k1_webhook)
+          .await
+          .expect("verify k1 after delete")
+      );
 
       // 4. Env key E with empty file config and pre-existing DB key D at startup:
       //    deleting DB D immediately falls back to E on the hot instance, matching a cold-started instance with E.
@@ -1526,8 +1565,14 @@ mod tests {
         .with_app_config(empty_file_app_config);
       assert_eq!(hot_calendar.effective_private_key().await, env_key_e);
       assert_eq!(
-        hot_calendar.webhook_token_from_config(&google_cfg).await,
-        cold_calendar.webhook_token_from_config(&google_cfg).await
+        hot_calendar
+          .try_webhook_token_from_config(&google_cfg)
+          .await
+          .expect("hot webhook"),
+        cold_calendar
+          .try_webhook_token_from_config(&google_cfg)
+          .await
+          .expect("cold webhook")
       );
       let ct_e = encrypt_token(&hot_calendar.effective_private_key().await, "env-cal-secret").expect("encrypt E");
       assert_eq!(

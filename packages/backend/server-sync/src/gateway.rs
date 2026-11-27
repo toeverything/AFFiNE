@@ -34,8 +34,8 @@ use crate::{
     BroadcastDocInvalidationMessage, BroadcastDocUpdatesMessage, DeleteDocMessage, DocLifecycleAction,
     DocLifecycleMessage, LeaveSpaceMessage, LoadDocMessage, LoadDocTimestampsMessage, LoadSpaceAwarenessesMessage,
     LoadWorkspaceStateMessage, PushDocIntent, PushDocUpdateMessage, SpaceType, UpdateAwarenessMessage, active_doc_key,
-    canonical_doc_id, is_batch_ws_client_version, parse_join_space_batch_message, parse_leave_space_batch_message,
-    space_room,
+    canonical_doc_id, is_batch_ws_client_version_with_canary, parse_join_space_batch_message,
+    parse_leave_space_batch_message, space_room,
   },
   storage::{DocAction, SyncStorage},
 };
@@ -248,10 +248,20 @@ pub struct SpaceSyncGateway {
   presence_flush_lock: tokio::sync::Mutex<()>,
   presence_notify: Notify,
   deployment_prefix: String,
+  allow_canary: bool,
 }
 
 impl SpaceSyncGateway {
   pub fn new(storage: SyncStorage, eventbus: Arc<RedisSyncBridge>, deployment_prefix: impl Into<String>) -> Arc<Self> {
+    Self::with_canary(storage, eventbus, deployment_prefix, false)
+  }
+
+  pub fn with_canary(
+    storage: SyncStorage,
+    eventbus: Arc<RedisSyncBridge>,
+    deployment_prefix: impl Into<String>,
+    allow_canary: bool,
+  ) -> Arc<Self> {
     Arc::new(Self {
       storage,
       eventbus,
@@ -259,6 +269,7 @@ impl SpaceSyncGateway {
       presence_flush_lock: tokio::sync::Mutex::new(()),
       presence_notify: Notify::new(),
       deployment_prefix: deployment_prefix.into(),
+      allow_canary,
     })
   }
 
@@ -340,7 +351,9 @@ impl SpaceSyncGateway {
                 })
                 .unwrap_or_default()
             };
-            let doc_room_check = parse_doc_realtime_room(&room);
+            let needs_auth_check = parse_doc_realtime_room(&room).is_some()
+              || room.starts_with("workspace:")
+              || room.starts_with("copilot:transcript:");
             let event_val = if payload.event.is_null() {
               payload.payload
             } else {
@@ -354,13 +367,9 @@ impl SpaceSyncGateway {
               "event": event_val,
             });
             for (sid, user_id_opt) in recipients_with_users {
-              if let Some((ws_id, doc_id, topic)) = doc_room_check {
+              if needs_auth_check {
                 let allowed = match user_id_opt.as_deref() {
-                  Some(uid) => gateway
-                    .storage
-                    .assert_doc_realtime_topic_access(ws_id, doc_id, uid, topic)
-                    .await
-                    .is_ok(),
+                  Some(uid) => gateway.is_realtime_room_authorized(&room, uid).await,
                   None => false,
                 };
                 if !allowed {
@@ -602,8 +611,8 @@ impl SpaceSyncGateway {
         .await;
     }
 
-    // Revalidate realtime room subscriptions (`workspace:<ws>:config`,
-    // `workspace:<ws>:access`, and doc-scoped `workspace:<ws>:doc:<doc>:<scope>`)
+    // Revalidate realtime room subscriptions (`workspace:<ws>:*`,
+    // `copilot:transcript:<ws>:<task>`, and doc-scoped `workspace:<ws>:doc:<doc>:<scope>`)
     // and evict sockets that lost workspace or document-level permissions.
     let rt_candidates: Vec<(String, String, String, String)> = {
       let rooms = self.rooms.read().await;
@@ -613,10 +622,16 @@ impl SpaceSyncGateway {
         .filter_map(|(sub_id, (sid, room))| {
           let ws_id = if let Some((ws, _doc, _topic)) = parse_doc_realtime_room(room) {
             ws
+          } else if let Some(rest) = room.strip_prefix("copilot:transcript:") {
+            let (ws, _task) = rest.split_once(':')?;
+            ws
           } else {
             let rest = room.strip_prefix("workspace:")?;
             let (ws, kind) = rest.rsplit_once(':')?;
-            if !matches!(kind, "config" | "access" | "members") {
+            if !matches!(
+              kind,
+              "config" | "access" | "members" | "invite-link" | "quota-state" | "embedding-progress"
+            ) {
               return None;
             }
             ws
@@ -633,30 +648,7 @@ impl SpaceSyncGateway {
     };
 
     for (sub_id, sid, user_id, room) in rt_candidates {
-      let still_allowed = if let Some((ws_id, doc_id, topic)) = parse_doc_realtime_room(&room) {
-        self
-          .storage
-          .assert_doc_realtime_topic_access(ws_id, doc_id, &user_id, topic)
-          .await
-          .is_ok()
-      } else if let Some((ws_id, kind)) = room.strip_prefix("workspace:").and_then(|r| r.rsplit_once(':')) {
-        match kind {
-          "config" => self
-            .storage
-            .assert_space_accessible(SpaceType::Workspace, ws_id, &user_id)
-            .await
-            .is_ok(),
-          "access" => self.storage.assert_workspace_readable(ws_id, &user_id).await.is_ok(),
-          "members" => self
-            .storage
-            .assert_workspace_members_readable(ws_id, &user_id)
-            .await
-            .is_ok(),
-          _ => true,
-        }
-      } else {
-        true
-      };
+      let still_allowed = self.is_realtime_room_authorized(&room, &user_id).await;
       if !still_allowed {
         let mut rooms = self.rooms.write().await;
         if rooms.realtime_subscriptions.remove(&sub_id).is_some() {
@@ -718,8 +710,24 @@ impl SpaceSyncGateway {
     payload: Value,
   ) -> EventResponse {
     let request_id = format!("{}:ws:{}", self.deployment_prefix, Uuid::new_v4());
-    if event == "space:join-batch" {
-      return match self.on_join_batch(socket_id, user, &payload).await {
+    if event == "space:join-batch" || event == "space:join" {
+      let join_payload = if event == "space:join" && payload.get("spaces").is_none() {
+        let mut obj = payload.as_object().cloned().unwrap_or_default();
+        let space_type = obj.get("spaceType").cloned().unwrap_or(Value::Null);
+        let space_id = obj.get("spaceId").cloned().unwrap_or(Value::Null);
+        let mut entry = serde_json::Map::new();
+        entry.insert("spaceType".into(), space_type);
+        entry.insert("spaceId".into(), space_id);
+        if let Some(doc_id) = obj.get("docId").cloned() {
+          entry.insert("docId".into(), doc_id);
+        }
+        obj.insert("spaces".into(), Value::Array(vec![Value::Object(entry)]));
+        obj.entry("protocolVersion".to_owned()).or_insert_with(|| json!(1));
+        Value::Object(obj)
+      } else {
+        payload
+      };
+      return match self.on_join_batch(socket_id, user, &join_payload).await {
         Ok(resp) => resp,
         Err(err) => {
           let env = sync_error_to_ws_envelope(&err, Some(request_id));
@@ -747,7 +755,7 @@ impl SpaceSyncGateway {
       "space:doc-lifecycle" => self.on_doc_lifecycle(socket_id, user, payload).await,
       "space:load-awarenesses" => self.on_load_awarenesses(engine, socket_id, payload).await,
       "space:update-awareness" => self.on_update_awareness(engine, socket_id, payload).await,
-      "realtime:request" => self.on_realtime_request(user, payload).await,
+      "realtime:request" => self.on_realtime_request(socket_id, user, payload).await,
       "realtime:subscribe" => self.on_realtime_subscribe(socket_id, user, payload).await,
       "realtime:unsubscribe" => self.on_realtime_unsubscribe(socket_id, payload).await,
       other => Err(SyncError::BadRequest(format!("Unsupported event: {other}"))),
@@ -767,9 +775,52 @@ impl SpaceSyncGateway {
     }
   }
 
+  async fn is_realtime_room_authorized(&self, room: &str, user_id: &str) -> bool {
+    if let Some((ws_id, doc_id, topic)) = parse_doc_realtime_room(room) {
+      self
+        .storage
+        .assert_doc_realtime_topic_access(ws_id, doc_id, user_id, topic)
+        .await
+        .is_ok()
+    } else if let Some((ws_id, task_id)) = room.strip_prefix("copilot:transcript:").and_then(|r| r.split_once(':')) {
+      self
+        .storage
+        .copilot_realtime_authorize_transcript_task(user_id, ws_id, task_id)
+        .await
+        .is_ok()
+    } else if let Some((ws_id, kind)) = room.strip_prefix("workspace:").and_then(|r| r.rsplit_once(':')) {
+      match kind {
+        "config" => self
+          .storage
+          .assert_space_accessible(SpaceType::Workspace, ws_id, user_id)
+          .await
+          .is_ok(),
+        "access" | "quota-state" => self.storage.assert_workspace_readable(ws_id, user_id).await.is_ok(),
+        "members" => self
+          .storage
+          .assert_workspace_members_readable(ws_id, user_id)
+          .await
+          .is_ok(),
+        "invite-link" => self
+          .storage
+          .assert_workspace_invite_manage(ws_id, user_id)
+          .await
+          .is_ok(),
+        "embedding-progress" => self
+          .storage
+          .copilot_realtime_authorize_embedding_progress(user_id, ws_id)
+          .await
+          .is_ok(),
+        _ => true,
+      }
+    } else {
+      true
+    }
+  }
+
   async fn on_join_batch(&self, socket_id: &str, user: &SyncUser, payload: &Value) -> Result<EventResponse, SyncError> {
     let msg = parse_join_space_batch_message(payload)?;
-    if !is_batch_ws_client_version(&msg.client_version) {
+    if !is_batch_ws_client_version_with_canary(&msg.client_version, self.allow_canary) {
       // Return `close_after_flush: true` so `EngineIoState` atomically enqueues
       // the reject ACK and arms `close_after_flush` under one lock.
       return Ok(EventResponse {
@@ -1209,23 +1260,34 @@ impl SpaceSyncGateway {
       ));
     }
 
-    let (storage_doc_id, logical_doc_id) = match msg.physical_doc_id {
-      Some(phys) => {
-        let phys_canonical = canonical_doc_id(&phys, &msg.space_id)?;
-        let logical = (phys_canonical != doc_id).then_some(doc_id);
-        (phys_canonical, logical)
-      }
-      None => (doc_id, None),
+    let aliases = self.storage.get_doc_id_aliases(&msg.space_id).await?;
+    let resolved_doc_id = aliases.get(&doc_id).cloned().unwrap_or_else(|| doc_id.clone());
+    let phys_canonical = match msg.physical_doc_id.as_deref() {
+      Some(phys) => Some(canonical_doc_id(phys, &msg.space_id)?),
+      None => None,
     };
+    let storage_doc_id = if action == DocLifecycleAction::Delete {
+      phys_canonical.unwrap_or_else(|| resolved_doc_id.clone())
+    } else {
+      resolved_doc_id.clone()
+    };
+    let logical_doc_id = (action == DocLifecycleAction::Delete && storage_doc_id != doc_id).then_some(doc_id.clone());
+    let has_storage_identity_conflict = action == DocLifecycleAction::Delete
+      && storage_doc_id != doc_id
+      && aliases.iter().any(|(l, s)| l != &doc_id && s == &doc_id);
+    let require_deleted = action == DocLifecycleAction::Delete
+      && (has_storage_identity_conflict || (msg.physical_doc_id.is_some() && storage_doc_id != resolved_doc_id));
 
     let result = self
       .storage
-      .apply_doc_lifecycle(
+      .apply_doc_lifecycle_with_options(
         &msg.space_id,
         &storage_doc_id,
         logical_doc_id.as_deref(),
         &user.id,
         action,
+        require_deleted,
+        has_storage_identity_conflict,
       )
       .await?;
 
@@ -1241,7 +1303,7 @@ impl SpaceSyncGateway {
     Ok(json!({ "data": data }))
   }
 
-  fn validate_realtime_client_version(payload: &Value) -> Result<(), SyncError> {
+  fn validate_realtime_client_version(&self, payload: &Value) -> Result<(), SyncError> {
     const REQUIRED: &str = ">=0.26.0";
     let raw = payload
       .get("clientVersion")
@@ -1254,7 +1316,7 @@ impl SpaceSyncGateway {
         required_version: REQUIRED.to_owned(),
       });
     };
-    if is_supported_realtime_client_version(ver) {
+    if is_supported_realtime_client_version(ver, self.allow_canary) {
       Ok(())
     } else {
       Err(SyncError::UnsupportedClientVersion {
@@ -1264,8 +1326,8 @@ impl SpaceSyncGateway {
     }
   }
 
-  async fn on_realtime_request(&self, user: &SyncUser, payload: Value) -> Result<Value, SyncError> {
-    Self::validate_realtime_client_version(&payload)?;
+  async fn on_realtime_request(&self, socket_id: &str, user: &SyncUser, payload: Value) -> Result<Value, SyncError> {
+    self.validate_realtime_client_version(&payload)?;
     let op = payload
       .get("op")
       .and_then(Value::as_str)
@@ -1373,8 +1435,13 @@ impl SpaceSyncGateway {
           .and_then(Value::as_str)
           .filter(|s| !s.is_empty())
           .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
-        let skip = input.get("skip").and_then(Value::as_i64).unwrap_or(0).max(0);
-        let take = input.get("take").and_then(Value::as_i64).unwrap_or(8).clamp(1, 100);
+        let raw_skip = input.get("skip").and_then(Value::as_i64).unwrap_or(0);
+        let raw_take = input.get("take").and_then(Value::as_i64).unwrap_or(8);
+        if raw_skip < 0 || raw_take < 0 {
+          return Err(SyncError::BadRequest("skip and take must be non-negative".into()));
+        }
+        let skip = raw_skip;
+        let take = raw_take.clamp(1, 100);
         let query = input.get("query").and_then(Value::as_str);
         let members = self
           .storage
@@ -1460,12 +1527,33 @@ impl SpaceSyncGateway {
           .await?;
         Ok(json!({ "data": { "task": task } }))
       }
+      "copilot.delegated.editor.upsert" => {
+        let out = self
+          .storage
+          .copilot_realtime_delegated_editor_upsert(&user.id, socket_id, input)
+          .await?;
+        Ok(json!({ "data": out }))
+      }
+      "copilot.delegated.editor.release" => {
+        let out = self
+          .storage
+          .copilot_realtime_delegated_editor_release(&user.id, input)
+          .await?;
+        Ok(json!({ "data": out }))
+      }
+      "copilot.delegated.tool.respond" => {
+        let out = self
+          .storage
+          .copilot_realtime_delegated_tool_respond(&user.id, input)
+          .await?;
+        Ok(json!({ "data": out }))
+      }
       other => Err(SyncError::BadRequest(format!("Unsupported realtime op: {other}"))),
     }
   }
 
   async fn on_realtime_subscribe(&self, socket_id: &str, user: &SyncUser, payload: Value) -> Result<Value, SyncError> {
-    Self::validate_realtime_client_version(&payload)?;
+    self.validate_realtime_client_version(&payload)?;
     let topic = payload
       .get("topic")
       .and_then(Value::as_str)
@@ -1578,6 +1666,18 @@ impl SpaceSyncGateway {
           .await?;
         format!("copilot:transcript:{workspace_id}:{task_id}")
       }
+      "copilot.delegated.tool.requested" => {
+        if !self.storage.has_copilot_realtime() {
+          return Err(SyncError::CopilotDisabled);
+        }
+        let client_id = input
+          .get("clientId")
+          .and_then(Value::as_str)
+          .map(str::trim)
+          .filter(|s| !s.is_empty() && s.len() <= 128)
+          .ok_or_else(|| SyncError::BadRequest("Invalid clientId".into()))?;
+        format!("user:{}:copilot:{client_id}", user.id)
+      }
       "notification.count.changed" => format!("user:{}:notification", user.id),
       "user.settings.changed" => format!("user:{}:settings", user.id),
       "user.profile.changed" => format!("user:{}:profile", user.id),
@@ -1609,7 +1709,7 @@ impl SpaceSyncGateway {
   }
 
   async fn on_realtime_unsubscribe(&self, socket_id: &str, payload: Value) -> Result<Value, SyncError> {
-    Self::validate_realtime_client_version(&payload)?;
+    self.validate_realtime_client_version(&payload)?;
     let Some(subscription_id) = payload
       .get("subscriptionId")
       .and_then(Value::as_str)
@@ -1955,17 +2055,17 @@ fn realtime_input_key(input: &Value) -> String {
   }
 }
 
-/// Validates realtime `clientVersion` (`>= 0.26.0-0` or valid canary date version).
-fn is_supported_realtime_client_version(ver: &str) -> bool {
-  let trimmed = ver.trim().trim_start_matches('v');
+/// Validates realtime `clientVersion` (`>= 0.26.0-0` or valid canary date version
+/// when `allow_canary` is enabled).
+fn is_supported_realtime_client_version(ver: &str, allow_canary: bool) -> bool {
+  if let Some(canary_ok) = crate::protocol::check_canary_date_version(ver, allow_canary) {
+    return canary_ok;
+  }
+  let trimmed = ver.trim().trim_start_matches(['v', 'V']);
   if trimmed.is_empty() {
     return false;
   }
-  let (core, pre) = match trimmed.split_once('-') {
-    Some((c, p)) => (c, Some(p)),
-    None => (trimmed, None),
-  };
-  let core = core.split('+').next().unwrap_or(core);
+  let core = trimmed.split(['-', '+']).next().unwrap_or(trimmed);
   let mut parts = core.split('.');
   let (Some(maj_s), Some(min_s), Some(pat_s), None) = (parts.next(), parts.next(), parts.next(), parts.next()) else {
     return false;
@@ -1973,21 +2073,5 @@ fn is_supported_realtime_client_version(ver: &str) -> bool {
   let (Ok(maj), Ok(min), Ok(_pat)) = (maj_s.parse::<u64>(), min_s.parse::<u64>(), pat_s.parse::<u64>()) else {
     return false;
   };
-  if maj > 0 || min >= 26 {
-    return true;
-  }
-  // Allow non-expired canary date versions (within 30 days of current UTC date).
-  if let Some(pre) = pre {
-    let digits: String = pre.chars().filter(|c| c.is_ascii_digit()).collect();
-    if digits.len() >= 8
-      && pre.to_ascii_lowercase().contains("canary")
-      && let Ok(date) = chrono::NaiveDate::parse_from_str(&digits[..8], "%Y%m%d")
-    {
-      let today = chrono::Utc::now().date_naive();
-      if (today - date).num_days() <= 30 {
-        return true;
-      }
-    }
-  }
-  false
+  (maj == 0 && min >= 26) || (maj > 0 && maj < 2000)
 }

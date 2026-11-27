@@ -615,6 +615,7 @@ async fn ensure_google_webhook_channel(
   if !is_claim_still_valid(service, &subscription.id, claimed_until).await? {
     return Ok(());
   }
+  let token = service.try_webhook_token_from_config(google_cfg).await?;
   let provider = GoogleCalendarProvider::new(google_cfg.clone());
   if let (Some(ch_id), Some(res_id)) = (
     subscription.custom_channel_id.as_deref(),
@@ -630,7 +631,6 @@ async fn ensure_google_webhook_channel(
     }
   }
   let channel_id = Uuid::new_v4().to_string();
-  let token = service.webhook_token_from_config(google_cfg).await;
   match provider
     .watch_calendar(
       access_token,

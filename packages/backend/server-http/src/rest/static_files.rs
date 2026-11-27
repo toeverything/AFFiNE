@@ -28,8 +28,10 @@ fn found_redirect(state: &RouterState, target: &str) -> Response {
   let base = cfg.app_config_baseline.server.path.trim().trim_end_matches('/');
   let loc = if base.is_empty() || base == "/" {
     target.to_owned()
-  } else {
+  } else if base.starts_with('/') {
     format!("{base}{target}")
+  } else {
+    format!("/{base}{target}")
   };
   (StatusCode::FOUND, [(header::LOCATION, loc)]).into_response()
 }
@@ -156,13 +158,16 @@ async fn serve_file(
     .format("%a, %d %b %Y %H:%M:%S GMT")
     .to_string();
   let hs = |n| h.get(n).and_then(|v| v.to_str().ok());
-  let not_mod = if let Some(inm) = hs(header::IF_NONE_MATCH) {
+  let mut inm_headers = h.get_all(header::IF_NONE_MATCH).iter().peekable();
+  let not_mod = if inm_headers.peek().is_some() {
     fn strip_weak(t: &str) -> &str {
       let t = t.trim();
       t.strip_prefix("W/").unwrap_or(t)
     }
     let strong_etag = strip_weak(&etag);
-    inm.split(',').any(|t| t.trim() == "*" || strip_weak(t) == strong_etag)
+    inm_headers
+      .filter_map(|v| v.to_str().ok())
+      .any(|inm| inm.split(',').any(|t| t.trim() == "*" || strip_weak(t) == strong_etag))
   } else if let Some(ims) = hs(header::IF_MODIFIED_SINCE) {
     let parsed = DateTime::parse_from_rfc2822(ims.trim())
       .map(|dt| dt.with_timezone(&Utc))
@@ -224,7 +229,8 @@ async fn handle_static(state: RouterState, method: Method, uri: Uri, headers: He
   } else {
     "index.html"
   };
-  let is_selfhost_get = !is_front && cfg.deployment_mode == DeploymentMode::Selfhosted && method == Method::GET;
+  let is_selfhost_get =
+    cfg.deployment_mode == DeploymentMode::Selfhosted && matches!(method, Method::GET | Method::HEAD);
   let is_setup_path = path == "/admin/setup";
   let (m, h, https) = (&method, &headers, cfg.https);
   if path == "/admin" || path.starts_with("/admin/") {
@@ -312,6 +318,12 @@ async fn handle_static(state: RouterState, method: Method, uri: Uri, headers: He
   }
   if let Some(resp) = serve_file(&shell_root, path, m, h, true, explicit, https).await {
     return resp;
+  }
+  if is_selfhost_get
+    && let Ok(initialized) = state.app.auth.is_server_initialized().await
+    && !initialized
+  {
+    return found_redirect(&state, "/admin/setup");
   }
   let is_auth = MOBILE_AUTH_PATHS
     .iter()

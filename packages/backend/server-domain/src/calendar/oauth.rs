@@ -32,10 +32,19 @@ pub fn is_valid_oauth_state(state: &str) -> bool {
 pub struct CalendarOAuthStore {
   client: Option<redis::Client>,
   conn: Arc<Mutex<Option<redis::aio::MultiplexedConnection>>>,
+  key_prefix: String,
 }
 impl CalendarOAuthStore {
   /// Creates a store targeting `session_redis_db_index` on the given Redis client.
   pub fn new(base_client: Option<redis::Client>, session_redis_db_index: u8) -> Result<Self, DomainError> {
+    Self::with_key_prefix(base_client, session_redis_db_index, String::new())
+  }
+  /// Creates a store targeting `session_redis_db_index` with an optional Redis key prefix.
+  pub fn with_key_prefix(
+    base_client: Option<redis::Client>,
+    session_redis_db_index: u8,
+    key_prefix: impl Into<String>,
+  ) -> Result<Self, DomainError> {
     let client = match base_client {
       Some(base) => {
         let mut info = base.get_connection_info().clone();
@@ -50,10 +59,11 @@ impl CalendarOAuthStore {
     Ok(Self {
       client,
       conn: Arc::new(Mutex::new(None)),
+      key_prefix: key_prefix.into(),
     })
   }
-  fn redis_key(token: &str) -> String {
-    format!("{CALENDAR_OAUTH_STATE_PREFIX}:{token}")
+  fn redis_key(&self, token: &str) -> String {
+    format!("{}{CALENDAR_OAUTH_STATE_PREFIX}:{token}", self.key_prefix)
   }
   async fn connection(&self) -> Result<redis::aio::MultiplexedConnection, DomainError> {
     if let Some(existing) = self.conn.lock().await.clone() {
@@ -80,7 +90,7 @@ impl CalendarOAuthStore {
     let serialized = serde_json::to_string(&state)
       .map_err(|err| DomainError::Internal(format!("serialize calendar oauth state: {err}")))?;
     let mut conn = self.connection().await?;
-    let key = Self::redis_key(&token);
+    let key = self.redis_key(&token);
     if let Err(err) = redis::cmd("SET")
       .arg(&key)
       .arg(&serialized)
@@ -97,7 +107,7 @@ impl CalendarOAuthStore {
   /// Reads an OAuth state entry without deleting it.
   pub async fn get_oauth_state(&self, token: &str) -> Result<Option<CalendarOAuthState>, DomainError> {
     let mut conn = self.connection().await?;
-    let key = Self::redis_key(token);
+    let key = self.redis_key(token);
     let raw: Option<String> = match redis::cmd("GET").arg(&key).query_async(&mut conn).await {
       Ok(v) => v,
       Err(err) => {
@@ -115,7 +125,7 @@ impl CalendarOAuthStore {
   /// Deletes an OAuth state entry after successful callback redemption.
   pub async fn delete_oauth_state(&self, token: &str) -> Result<(), DomainError> {
     let mut conn = self.connection().await?;
-    let key = Self::redis_key(token);
+    let key = self.redis_key(token);
     if let Err(err) = redis::cmd("DEL").arg(&key).query_async::<i64>(&mut conn).await {
       self.reset_connection().await;
       return Err(DomainError::Unavailable(format!("delete calendar oauth state: {err}")));
@@ -133,7 +143,7 @@ end
 return value
 "#;
     let mut conn = self.connection().await?;
-    let key = Self::redis_key(token);
+    let key = self.redis_key(token);
     let raw: Option<String> = match redis::Script::new(GET_AND_DEL_LUA)
       .key(&key)
       .invoke_async(&mut conn)

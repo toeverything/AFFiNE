@@ -50,7 +50,7 @@ This document lists intentional improvements in the native Rust backend. Each en
 
 ## Calendar Webhook Verification Token Derivation
 
-- Area: `packages/backend/server-domain/src/calendar/mod.rs` (`webhook_token_from_config`).
+- Area: `packages/backend/server-domain/src/calendar/mod.rs` (`try_webhook_token_from_config`).
 - Node `v0.27.5` behavior: Generated a random UUID per process without `webhookVerificationToken`. Multi-process webhook verification failed.
 - Native behavior: Derives a deterministic HMAC-SHA256 token from the configured private key when `webhookVerificationToken` has no value.
 

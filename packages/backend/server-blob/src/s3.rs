@@ -30,7 +30,7 @@ const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 fn is_s3_missing_object_404(body: &str) -> bool {
   let trimmed = body.trim();
   if trimmed.is_empty() {
-    return true;
+    return false;
   }
   if let Some(start) = trimmed.find("<Code>")
     && let Some(end) = trimmed[start + 6..].find("</Code>")
@@ -38,7 +38,17 @@ fn is_s3_missing_object_404(body: &str) -> bool {
     let code = trimmed[start + 6..start + 6 + end].trim();
     return matches!(code, "NoSuchKey" | "NotFound");
   }
-  true
+  false
+}
+
+fn is_s3_no_such_bucket_404(body: &str) -> bool {
+  let trimmed = body.trim();
+  if let Some(start) = trimmed.find("<Code>")
+    && let Some(end) = trimmed[start + 6..].find("</Code>")
+  {
+    return trimmed[start + 6..start + 6 + end].trim() == "NoSuchBucket";
+  }
+  false
 }
 
 async fn read_bounded_error_body(context: &str, mut response: reqwest::Response) -> Result<String, StorageError> {
@@ -265,10 +275,8 @@ fn parse_list_parts_xml(xml: &str) -> Vec<UploadedPart> {
     .into_iter()
     .filter_map(|b| {
       let part_number = extract_xml_tag(&b, "PartNumber")?.parse::<i32>().ok()?;
-      Some(UploadedPart {
-        part_number,
-        etag: extract_xml_tag(&b, "ETag")?,
-      })
+      let etag = extract_xml_tag(&b, "ETag")?.trim().trim_matches('"').to_owned();
+      Some(UploadedPart { part_number, etag })
     })
     .collect()
 }
@@ -526,6 +534,10 @@ impl BlobStorageBackend for S3BlobStorage {
     let context = format!("delete {key}");
     let response = self.send(&context, Method::DELETE, url, &[], None).await?;
     if response.status() == StatusCode::NOT_FOUND {
+      let body = read_bounded_error_body(&context, response).await?;
+      if is_s3_no_such_bucket_404(&body) {
+        return Err(request_error(&context, format!("HTTP 404 Not Found: {body}")));
+      }
       return Ok(());
     }
     Self::ensure_success(&context, response).await?;
@@ -621,7 +633,7 @@ impl BlobStorageBackend for S3BlobStorage {
       .headers()
       .get(ETAG)
       .and_then(|v| v.to_str().ok())
-      .map(str::to_owned)
+      .map(|s| s.trim().trim_matches('"').to_owned())
       .ok_or_else(|| StorageError::Metadata("missing ETag in S3 upload part response".into()))
   }
   async fn list_multipart_parts(&self, key: &str, upload_id: &str) -> Result<Option<Vec<UploadedPart>>, StorageError> {
@@ -636,6 +648,10 @@ impl BlobStorageBackend for S3BlobStorage {
         .send(&ctx, Method::GET, action.sign(DEFAULT_PRESIGN_EXPIRES), &[], None)
         .await?;
       if resp.status() == StatusCode::NOT_FOUND {
+        let body = read_bounded_error_body(&ctx, resp).await?;
+        if is_s3_no_such_bucket_404(&body) {
+          return Err(request_error(&ctx, format!("HTTP 404 Not Found: {body}")));
+        }
         return Ok(None);
       }
       let xml = Self::ensure_success(&ctx, resp)
@@ -697,6 +713,10 @@ impl BlobStorageBackend for S3BlobStorage {
     let ctx = format!("abort_multipart {key}");
     let resp = self.send(&ctx, Method::DELETE, url, &[], None).await?;
     if resp.status() == StatusCode::NOT_FOUND {
+      let body = read_bounded_error_body(&ctx, resp).await?;
+      if is_s3_no_such_bucket_404(&body) {
+        return Err(request_error(&ctx, format!("HTTP 404 Not Found: {body}")));
+      }
       return Ok(false);
     }
     Self::ensure_success(&ctx, resp).await?;
@@ -816,9 +836,11 @@ mod tests {
       "<Error><Code>NoSuchBucket</Code><Message>The specified bucket does not exist</Message></Error>"
     ));
     assert!(!is_s3_missing_object_404("<Error><Code>AccessDenied</Code></Error>"));
-    // Truncated body without closing </Code> tag must not be misclassified as NoSuchBucket.
-    assert!(is_s3_missing_object_404("<Error><Code>NoSuch"));
-    assert!(is_s3_missing_object_404(""));
+    assert!(!is_s3_missing_object_404("<Error><Code>NoSuch"));
+    assert!(!is_s3_missing_object_404(""));
+    assert!(!is_s3_missing_object_404("<html><body>404 Not Found</body></html>"));
+    assert!(is_s3_no_such_bucket_404("<Error><Code>NoSuchBucket</Code></Error>"));
+    assert!(!is_s3_no_such_bucket_404("<Error><Code>NoSuchKey</Code></Error>"));
   }
 
   #[test]

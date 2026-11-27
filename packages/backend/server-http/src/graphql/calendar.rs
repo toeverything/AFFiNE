@@ -400,12 +400,13 @@ impl CalendarMutation {
       .and_then(|h| h.get(axum::http::header::HOST))
       .and_then(|v| v.to_str().ok());
     let cfg = state.config.load();
+    let server_hosts = crate::rest::effective_server_hosts(state).await;
     let redirect_uri = match input.redirect_uri {
       Some(raw) if !raw.is_empty() => Some(
         crate::rest::validate_and_build_calendar_redirect_uri(
           &raw,
           &cfg.external_url,
-          &cfg.app_config_baseline.server.hosts,
+          &server_hosts,
           cfg.app_config_baseline.server.port,
           req_host,
           &[],
@@ -426,7 +427,7 @@ impl CalendarMutation {
       .map_err(|e| domain_error_to_graphql(&e))?;
     let cb_origin = crate::rest::calendar_callback_origin(
       &cfg.external_url,
-      &cfg.app_config_baseline.server.hosts,
+      &server_hosts,
       cfg.app_config_baseline.server.port,
       req_host,
     );

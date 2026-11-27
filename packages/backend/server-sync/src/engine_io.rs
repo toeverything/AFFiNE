@@ -581,28 +581,6 @@ impl EngineIoState {
       return;
     };
 
-    let mut arg = arg;
-    if matches!(
-      event_name,
-      "realtime:request" | "realtime:subscribe" | "realtime:unsubscribe" | "space:join-batch"
-    ) && let Some(obj) = arg.as_object_mut()
-    {
-      let has_ver = obj
-        .get("clientVersion")
-        .and_then(Value::as_str)
-        .is_some_and(|s| !s.trim().is_empty());
-      if !has_ver
-        && let Some(hdr_ver) = session
-          .headers
-          .get("x-affine-version")
-          .and_then(|v| v.to_str().ok())
-          .map(str::trim)
-          .filter(|s| !s.is_empty())
-      {
-        obj.insert("clientVersion".to_owned(), Value::String(hdr_ver.to_owned()));
-      }
-    }
-
     let response = self
       .gateway
       .handle_event(self, &session.socket_id, &user, event_name, arg)

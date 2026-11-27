@@ -54,8 +54,8 @@ fn append_user_id_cookie(headers: &mut HeaderMap, user_id: &str) {
 #[derive(Debug, Deserialize)]
 pub struct CreateAdminUserBody {
   pub name: Option<String>,
-  pub email: String,
-  pub password: String,
+  pub email: Option<String>,
+  pub password: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -69,25 +69,80 @@ pub(crate) async fn handle_create_admin_user(
   State(state): State<RouterState>,
   PeerAddr(peer): PeerAddr,
   headers: HeaderMap,
-  axum::Json(body): axum::Json<CreateAdminUserBody>,
+  body_bytes: axum::body::Bytes,
 ) -> Response {
   let throttle = match enforce_throttle_http(&state, &headers, peer, None, ThrottleSpec::Default).await {
     Ok(h) => h,
     Err(resp) => return *resp,
   };
+  let body: CreateAdminUserBody = match serde_json::from_slice(&body_bytes) {
+    Ok(b) => b,
+    Err(_) => {
+      let mut resp = envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::BAD_REQUEST.as_u16(),
+        code: "Bad Request".into(),
+        error_type: "INVALID_INPUT".into(),
+        name: "VALIDATION_ERROR".into(),
+        message: "Invalid create-admin-user payload.".into(),
+        data: None,
+      });
+      apply_throttle(resp.headers_mut(), throttle);
+      return resp;
+    }
+  };
+  let email = match body.email.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+    Some(e) => e.to_owned(),
+    None => {
+      let mut resp = invalid_email_response();
+      apply_throttle(resp.headers_mut(), throttle);
+      return resp;
+    }
+  };
+  let password = match body.password.filter(|s| !s.is_empty()) {
+    Some(p) => p,
+    None => {
+      let mut resp = envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::BAD_REQUEST.as_u16(),
+        code: "Bad Request".into(),
+        error_type: "INVALID_INPUT".into(),
+        name: "PASSWORD_REQUIRED".into(),
+        message: "Password is required.".into(),
+        data: None,
+      });
+      apply_throttle(resp.headers_mut(), throttle);
+      return resp;
+    }
+  };
+  let client_version = extract_non_empty_client_version(&headers);
+  let is_native = is_native_client_request(&headers);
   let result = state
     .app
     .auth
-    .create_first_admin_user(CreateAdminUserInput {
-      name: body.name,
-      email: body.email,
-      password: body.password,
-      client_version: extract_non_empty_client_version(&headers),
-    })
+    .create_first_admin_user_for_client(
+      CreateAdminUserInput {
+        name: body.name,
+        email,
+        password,
+        client_version,
+      },
+      is_native,
+    )
     .await;
 
   let mut resp = match result {
-    Ok(sign_in) => {
+    Ok(server_domain::auth::OpenAppSignInResult::Native { user, exchange_code }) => {
+      let cfg = state.app.config.load();
+      let val = serde_json::json!({
+        "email": user.email,
+        "id": user.id,
+        "name": user.name,
+        "exchangeCode": exchange_code,
+      });
+      let mut resp = json_utf8_response(StatusCode::OK, val, false);
+      append_clear_auth_cookies(resp.headers_mut(), cfg.https);
+      resp
+    }
+    Ok(server_domain::auth::OpenAppSignInResult::Cookie(sign_in)) => {
       let cfg = state.app.config.load();
       let mut resp = json_utf8_response(
         StatusCode::OK,
@@ -302,9 +357,9 @@ pub struct SignInBody {
   pub challenge: Option<String>,
 }
 
-async fn check_sign_in_rate_bucket(state: &RouterState, key: &str, limit: u64, ttl_ms: u64) -> Result<(), u64> {
+async fn check_sign_in_rate_bucket(state: &RouterState, key: &str, limit: u64, ttl_ms: u64) -> (bool, Result<(), u64>) {
   if limit == 0 || ttl_ms == 0 {
-    return Ok(());
+    return (state.app.redis.is_some(), Ok(()));
   }
   if let Some(client) = state.app.redis.as_ref() {
     let mut conn = state.app.throttle_redis_conn.lock().await.clone();
@@ -336,9 +391,9 @@ async fn check_sign_in_rate_bucket(state: &RouterState, key: &str, limit: u64, t
         *state.app.throttle_redis_conn.lock().await = Some(c);
         if hits > limit {
           let retry_after_secs = (rem_ms.max(1) as u64).div_ceil(1000).max(1);
-          return Err(retry_after_secs);
+          return (true, Err(retry_after_secs));
         }
-        return Ok(());
+        return (true, Ok(()));
       }
     }
   }
@@ -360,18 +415,21 @@ async fn check_sign_in_rate_bucket(state: &RouterState, key: &str, limit: u64, t
     })
     .lock()
   else {
-    return Ok(());
+    return (false, Ok(()));
   };
   const MAX_MEM_RATE_KEYS: usize = 65_536;
   let table = &mut *table;
-  check_mem_rate_table(
-    &mut table.map,
-    &mut table.last_gc,
-    now,
-    key,
-    limit,
-    ttl_ms,
-    MAX_MEM_RATE_KEYS,
+  (
+    false,
+    check_mem_rate_table(
+      &mut table.map,
+      &mut table.last_gc,
+      now,
+      key,
+      limit,
+      ttl_ms,
+      MAX_MEM_RATE_KEYS,
+    ),
   )
 }
 
@@ -435,6 +493,17 @@ mod mem_rate_limit_tests {
   }
 }
 
+fn should_increment_email_bucket_after_ip_limit(has_shared_redis: bool, ip_exceeded: bool) -> bool {
+  !ip_exceeded || has_shared_redis
+}
+
+fn combine_sign_in_retry_after(ip_retry_after: Option<u64>, email_retry_after: Option<u64>) -> Option<u64> {
+  match (ip_retry_after, email_retry_after) {
+    (Some(a), Some(b)) => Some(a.max(b)),
+    (a, b) => a.or(b),
+  }
+}
+
 async fn enforce_sign_in_rate_limit(
   state: &RouterState,
   headers: &HeaderMap,
@@ -467,21 +536,28 @@ async fn enforce_sign_in_rate_limit(
       (!s.is_empty()).then(|| s.to_owned())
     })
     .or_else(|| peer.map(|a| a.ip().to_string()));
+  let mut ip_retry_after = None;
   if let Some(ip_str) = ip {
     let ip_hash = hex::encode(Sha256::digest(ip_str.as_bytes()));
     let ip_key = format!("{key_prefix}auth:sign-in-rate:ip:{ip_hash}");
-    if let Err(retry_after_secs) = check_sign_in_rate_bucket(state, &ip_key, ip_limit, ttl_ms).await {
-      let mut resp = envelope_to_http_response(super::throttle::too_many_requests_envelope());
-      if let Ok(v) = HeaderValue::from_str(&retry_after_secs.to_string()) {
-        resp.headers_mut().insert(header::RETRY_AFTER, v);
+    let (ip_used_shared_redis, ip_res) = check_sign_in_rate_bucket(state, &ip_key, ip_limit, ttl_ms).await;
+    if let Err(retry_after_secs) = ip_res {
+      if !should_increment_email_bucket_after_ip_limit(ip_used_shared_redis, true) {
+        let mut resp = envelope_to_http_response(super::throttle::too_many_requests_envelope());
+        if let Ok(v) = HeaderValue::from_str(&retry_after_secs.to_string()) {
+          resp.headers_mut().insert(header::RETRY_AFTER, v);
+        }
+        return Err(Box::new(resp));
       }
-      return Err(Box::new(resp));
+      ip_retry_after = Some(retry_after_secs);
     }
   }
 
   let email_hash = hex::encode(Sha256::digest(canonical_email_str.to_ascii_lowercase().as_bytes()));
   let email_key = format!("{key_prefix}auth:sign-in-rate:email:{email_hash}");
-  if let Err(retry_after_secs) = check_sign_in_rate_bucket(state, &email_key, email_limit, ttl_ms).await {
+  let (_, email_res) = check_sign_in_rate_bucket(state, &email_key, email_limit, ttl_ms).await;
+  let email_retry_after = email_res.err();
+  if let Some(retry_after_secs) = combine_sign_in_retry_after(ip_retry_after, email_retry_after) {
     let mut resp = envelope_to_http_response(super::throttle::too_many_requests_envelope());
     if let Ok(v) = HeaderValue::from_str(&retry_after_secs.to_string()) {
       resp.headers_mut().insert(header::RETRY_AFTER, v);
@@ -503,7 +579,8 @@ pub(crate) async fn handle_sign_in(
   };
   let role = state.app.config.load().role;
   if role != server_types::ServerRole::Front
-    && let Err(mut resp) = super::captcha::enforce_named_captcha_guard(&state, &headers, &resolved.cookie_action).await
+    && let Err(mut resp) =
+      super::captcha::enforce_named_captcha_guard(&state, &headers, peer, &resolved.cookie_action).await
   {
     apply_throttle(resp.headers_mut(), throttle);
     return *resp;
@@ -516,30 +593,47 @@ pub(crate) async fn handle_sign_in(
   let body: SignInBody = match serde_json::from_slice(&body_bytes) {
     Ok(b) => b,
     Err(err) => {
-      return apply_old_cookie(domain_error_to_http_response(&DomainError::Validation(format!(
-        "Invalid sign-in payload: {err}"
-      ))));
+      return apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::BAD_REQUEST.as_u16(),
+        code: "Bad Request".into(),
+        error_type: "INVALID_INPUT".into(),
+        name: "VALIDATION_ERROR".into(),
+        message: format!("Invalid sign-in payload: {err}"),
+        data: None,
+      }));
     }
   };
   let email = match canonical_email(&body.email) {
     Ok(e) => e,
     Err(_) => return apply_old_cookie(invalid_email_response()),
   };
+  if let Some(ref password) = body.password {
+    if password.is_empty() {
+      return apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::BAD_REQUEST.as_u16(),
+        code: "Bad Request".into(),
+        error_type: "INVALID_INPUT".into(),
+        name: "VALIDATION_ERROR".into(),
+        message: "Password must not be empty.".to_owned(),
+        data: None,
+      }));
+    }
+    if password.len() > server_domain::auth::password::MAX_PASSWORD_BYTES {
+      return apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::BAD_REQUEST.as_u16(),
+        code: "Bad Request".into(),
+        error_type: "INVALID_INPUT".into(),
+        name: "VALIDATION_ERROR".into(),
+        message: "Password exceeds maximum allowed length.".to_owned(),
+        data: None,
+      }));
+    }
+  }
   if let Err(resp) = enforce_sign_in_rate_limit(&state, &headers, peer, &email).await {
     return apply_old_cookie(*resp);
   }
 
   if let Some(password) = body.password {
-    if password.is_empty() {
-      return apply_old_cookie(domain_error_to_http_response(&DomainError::Validation(
-        "Password must not be empty.".to_owned(),
-      )));
-    }
-    if password.len() > server_domain::auth::password::MAX_PASSWORD_BYTES {
-      return apply_old_cookie(domain_error_to_http_response(&DomainError::Validation(
-        "Password exceeds maximum allowed length.".to_owned(),
-      )));
-    }
     let client_version = extract_non_empty_client_version(&headers);
     if is_native_client_request(&headers) {
       return match state
@@ -644,14 +738,16 @@ pub(crate) async fn handle_sign_in(
     }));
   }
 
-  let mut dynamic_hosts = cfg.app_config_baseline.server.hosts.clone();
-  if let Some(arr) = eff_cfg.as_ref().and_then(|c| c.pointer("/server/hosts")?.as_array()) {
-    for h in arr.iter().filter_map(serde_json::Value::as_str) {
-      if !h.is_empty() && !dynamic_hosts.iter().any(|x| x == h) {
-        dynamic_hosts.push(h.to_owned());
-      }
-    }
-  }
+  let dynamic_hosts = if let Some(arr) = eff_cfg.as_ref().and_then(|c| c.pointer("/server/hosts")?.as_array()) {
+    arr
+      .iter()
+      .filter_map(serde_json::Value::as_str)
+      .filter(|h| !h.is_empty())
+      .map(str::to_owned)
+      .collect::<Vec<_>>()
+  } else {
+    cfg.app_config_baseline.server.hosts.clone()
+  };
   let raw_callback = body.callback_url.as_deref().unwrap_or("/magic-link");
   let callback_url = match validate_and_build_magic_link_callback_url(raw_callback, &cfg.external_url, &dynamic_hosts) {
     Ok(url) => url,
@@ -681,6 +777,16 @@ pub(crate) async fn handle_sign_in(
         name: "WRONG_SIGN_IN_CREDENTIALS".into(),
         message: format!("Wrong user email or password: {email}"),
         data: Some(serde_json::json!({ "email": email })),
+      })
+    }
+    Err(DomainError::Unavailable(code)) if code == "email_domain_verification_unavailable" => {
+      envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::GATEWAY_TIMEOUT.as_u16(),
+        code: "Gateway Timeout".into(),
+        error_type: "NETWORK_ERROR".into(),
+        name: "NETWORK_ERROR".into(),
+        message: "Email domain verification unavailable.".into(),
+        data: None,
       })
     }
     Err(DomainError::Forbidden(code)) if code == "sign_up_forbidden" => {
@@ -853,21 +959,23 @@ pub(crate) async fn handle_complete_magic_link(
       Err(DomainError::Unauthorized(code)) if code == "invalid_auth_state" => {
         apply_old_cookie(invalid_auth_state_response())
       }
-      Err(DomainError::Unauthorized(_)) => apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
-        status: StatusCode::BAD_REQUEST.as_u16(),
-        code: "Bad Request".into(),
-        error_type: "INVALID_INPUT".into(),
-        name: "INVALID_EMAIL_TOKEN".into(),
-        message: "An invalid email token provided.".into(),
-        data: None,
-      })),
-      Err(DomainError::Forbidden(code)) if code == "sign_up_forbidden" => {
+      Err(DomainError::Unavailable(code)) if code == "email_domain_verification_unavailable" => {
         apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
-          status: StatusCode::FORBIDDEN.as_u16(),
-          code: "Forbidden".into(),
-          error_type: "ACTION_FORBIDDEN".into(),
-          name: "SIGN_UP_FORBIDDEN".into(),
-          message: "Sign up is forbidden.".into(),
+          status: StatusCode::GATEWAY_TIMEOUT.as_u16(),
+          code: "Gateway Timeout".into(),
+          error_type: "NETWORK_ERROR".into(),
+          name: "NETWORK_ERROR".into(),
+          message: "Email domain verification unavailable.".into(),
+          data: None,
+        }))
+      }
+      Err(DomainError::Unauthorized(_)) | Err(DomainError::Forbidden(_)) => {
+        apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
+          status: StatusCode::BAD_REQUEST.as_u16(),
+          code: "Bad Request".into(),
+          error_type: "INVALID_INPUT".into(),
+          name: "INVALID_EMAIL_TOKEN".into(),
+          message: "An invalid email token provided.".into(),
           data: None,
         }))
       }
@@ -898,30 +1006,25 @@ pub(crate) async fn handle_complete_magic_link(
       resp
     }
     Err(DomainError::Unauthorized(code)) if code == "invalid_auth_state" => {
+      apply_old_cookie(invalid_auth_state_response())
+    }
+    Err(DomainError::Unavailable(code)) if code == "email_domain_verification_unavailable" => {
       apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
-        status: StatusCode::BAD_REQUEST.as_u16(),
-        code: "Bad Request".into(),
-        error_type: "BAD_REQUEST".into(),
-        name: "INVALID_AUTH_STATE".into(),
-        message: "Invalid auth state.".into(),
+        status: StatusCode::GATEWAY_TIMEOUT.as_u16(),
+        code: "Gateway Timeout".into(),
+        error_type: "NETWORK_ERROR".into(),
+        name: "NETWORK_ERROR".into(),
+        message: "Email domain verification unavailable.".into(),
         data: None,
       }))
     }
-    Err(DomainError::Unauthorized(_)) => apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
-      status: StatusCode::BAD_REQUEST.as_u16(),
-      code: "Bad Request".into(),
-      error_type: "INVALID_INPUT".into(),
-      name: "INVALID_EMAIL_TOKEN".into(),
-      message: "An invalid email token provided.".into(),
-      data: None,
-    })),
-    Err(DomainError::Forbidden(code)) if code == "sign_up_forbidden" => {
+    Err(DomainError::Unauthorized(_)) | Err(DomainError::Forbidden(_)) => {
       apply_old_cookie(envelope_to_http_response(LegacyErrorEnvelope {
-        status: StatusCode::FORBIDDEN.as_u16(),
-        code: "Forbidden".into(),
-        error_type: "ACTION_FORBIDDEN".into(),
-        name: "SIGN_UP_FORBIDDEN".into(),
-        message: "Sign up is forbidden.".into(),
+        status: StatusCode::BAD_REQUEST.as_u16(),
+        code: "Bad Request".into(),
+        error_type: "INVALID_INPUT".into(),
+        name: "INVALID_EMAIL_TOKEN".into(),
+        message: "An invalid email token provided.".into(),
         data: None,
       }))
     }
@@ -1448,7 +1551,7 @@ pub(crate) async fn handle_revoke_auth_session_by_id(
   let mut resp = match state
     .app
     .auth
-    .revoke_auth_session(&auth_session_id, Some(&principal.user().id), "security_action")
+    .revoke_auth_session(&auth_session_id, Some(&principal.user().id), "user_action")
     .await
   {
     Ok(_) => auth_session_json_response(StatusCode::OK, serde_json::json!({})),
@@ -1457,4 +1560,27 @@ pub(crate) async fn handle_revoke_auth_session_by_id(
   cookie_action.apply_to(resp.headers_mut(), https);
   apply_throttle(resp.headers_mut(), throttle);
   resp
+}
+
+#[cfg(test)]
+mod tests {
+  use super::{combine_sign_in_retry_after, should_increment_email_bucket_after_ip_limit};
+
+  #[test]
+  fn sign_in_rate_limit_increments_email_bucket_only_when_shared_redis_succeeded() {
+    assert!(should_increment_email_bucket_after_ip_limit(true, false));
+    assert!(should_increment_email_bucket_after_ip_limit(true, true));
+    assert!(should_increment_email_bucket_after_ip_limit(false, false));
+    // Unreachable Redis falling back to memory table passes ip_used_shared_redis = false.
+    assert!(!should_increment_email_bucket_after_ip_limit(false, true));
+  }
+
+  #[test]
+  fn sign_in_rate_limit_retry_after_takes_max_across_both_buckets() {
+    assert_eq!(combine_sign_in_retry_after(None, None), None);
+    assert_eq!(combine_sign_in_retry_after(Some(12), None), Some(12));
+    assert_eq!(combine_sign_in_retry_after(None, Some(45)), Some(45));
+    assert_eq!(combine_sign_in_retry_after(Some(12), Some(45)), Some(45));
+    assert_eq!(combine_sign_in_retry_after(Some(55), Some(20)), Some(55));
+  }
 }

@@ -346,6 +346,31 @@ pub trait CopilotRealtimeHandler: Send + Sync {
   async fn get_embedding_progress(&self, user_id: &str, workspace_id: &str) -> Result<serde_json::Value, SyncError>;
 
   async fn authorize_embedding_progress(&self, user_id: &str, workspace_id: &str) -> Result<(), SyncError>;
+
+  async fn delegated_editor_upsert(
+    &self,
+    _user_id: &str,
+    _connection_id: &str,
+    _input: serde_json::Value,
+  ) -> Result<serde_json::Value, SyncError> {
+    Err(SyncError::CopilotDisabled)
+  }
+
+  async fn delegated_editor_release(
+    &self,
+    _user_id: &str,
+    _input: serde_json::Value,
+  ) -> Result<serde_json::Value, SyncError> {
+    Err(SyncError::CopilotDisabled)
+  }
+
+  async fn delegated_tool_respond(
+    &self,
+    _user_id: &str,
+    _input: serde_json::Value,
+  ) -> Result<serde_json::Value, SyncError> {
+    Err(SyncError::CopilotDisabled)
+  }
 }
 
 #[derive(Clone)]
@@ -357,6 +382,7 @@ pub struct SyncStorage {
   pub(super) cache_redis_conn: Arc<tokio::sync::Mutex<Option<redis::aio::MultiplexedConnection>>>,
   pub(super) external_url: String,
   pub(super) copilot_realtime: Option<Arc<dyn CopilotRealtimeHandler>>,
+  pub(super) available_user_features: &'static [&'static str],
   userspace_lock_ttl_ms: u64,
   doc_sharing: server_domain::doc_sharing::DocSharingService,
   users: server_domain::users::UserService,
@@ -399,6 +425,7 @@ impl SyncStorage {
       cache_redis_conn: Arc::new(tokio::sync::Mutex::new(None)),
       external_url: String::new(),
       copilot_realtime: None,
+      available_user_features: &["administrator"],
       userspace_lock_ttl_ms: DEFAULT_LOCK_TTL_SECS * 1_000,
       doc_sharing,
       users,
@@ -421,6 +448,23 @@ impl SyncStorage {
   pub fn with_copilot_realtime(mut self, handler: Arc<dyn CopilotRealtimeHandler>) -> Self {
     self.copilot_realtime = Some(handler);
     self
+  }
+
+  pub fn with_available_user_features(mut self, features: &'static [&'static str]) -> Self {
+    self.available_user_features = features;
+    self
+  }
+
+  pub fn has_copilot_realtime(&self) -> bool {
+    self.copilot_realtime.is_some()
+  }
+
+  pub async fn get_doc_id_aliases(&self, workspace_id: &str) -> Result<HashMap<String, String>, SyncError> {
+    self
+      .doc_sharing
+      .get_doc_id_aliases(workspace_id)
+      .await
+      .map_err(|e| map_domain_error(e, workspace_id, workspace_id))
   }
 
   /// Configures the `SessionRedis` mutex for userspace document writes using
@@ -1135,6 +1179,30 @@ impl SyncStorage {
     actor_user_id: &str,
     action: DocLifecycleAction,
   ) -> Result<DocLifecycleResult, SyncError> {
+    self
+      .apply_doc_lifecycle_with_options(
+        workspace_id,
+        doc_id,
+        logical_doc_id,
+        actor_user_id,
+        action,
+        false,
+        false,
+      )
+      .await
+  }
+
+  #[allow(clippy::too_many_arguments)]
+  pub async fn apply_doc_lifecycle_with_options(
+    &self,
+    workspace_id: &str,
+    doc_id: &str,
+    logical_doc_id: Option<&str>,
+    actor_user_id: &str,
+    action: DocLifecycleAction,
+    require_deleted: bool,
+    has_storage_identity_conflict: bool,
+  ) -> Result<DocLifecycleResult, SyncError> {
     let deleting = action == DocLifecycleAction::Delete;
     if logical_doc_id.is_some() && !deleting {
       return Err(SyncError::BadRequest(
@@ -1183,25 +1251,6 @@ impl SyncStorage {
       }
     }
 
-    // Alias / conflict check when deleting a physical doc alongside a logical doc ID.
-    if let Some(logical_id) = logical_doc_id {
-      let alias_exists: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM workspace_pages WHERE workspace_id = $1 AND page_id = $2 AND lifecycle_state IS DISTINCT FROM 'deleted') \
-         AND EXISTS(SELECT 1 FROM snapshots WHERE workspace_id = $1 AND guid = $2) \
-         AND EXISTS(SELECT 1 FROM snapshots WHERE workspace_id = $1 AND guid = $3)",
-      )
-      .bind(workspace_id)
-      .bind(logical_id)
-      .bind(doc_id)
-      .fetch_one(&mut **tx.tx_mut())
-      .await?;
-      if alias_exists {
-        return Err(SyncError::BadRequest(
-          "logical document ID conflicts with an existing active document".into(),
-        ));
-      }
-    }
-
     let grant = self
       .quota_gate
       .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
@@ -1223,6 +1272,18 @@ impl SyncStorage {
     .bind(&doc_ids)
     .fetch_all(&mut **tx.tx_mut())
     .await?;
+
+    if require_deleted && tombstones.len() != doc_ids.len() {
+      if has_storage_identity_conflict {
+        return Err(SyncError::BadRequest(
+          "Deleting this document would also delete another document.".into(),
+        ));
+      }
+      return Err(SyncError::DocNotFound {
+        space_id: workspace_id.to_owned(),
+        doc_id: doc_id.to_owned(),
+      });
+    }
 
     let tombstone_ids: HashSet<&str> = tombstones.iter().map(|(id, _)| id.as_str()).collect();
     if deleting && !tombstones.is_empty() {
@@ -1583,15 +1644,17 @@ impl SyncStorage {
     use base64::Engine as _;
     let decoded_after = after
       .and_then(|c| base64::engine::general_purpose::STANDARD.decode(c).ok())
-      .and_then(|b| String::from_utf8(b).ok());
+      .and_then(|b| String::from_utf8(b).ok())
+      .map(|raw| serde_json::from_str::<String>(&raw).unwrap_or(raw));
     let (total_count, items, has_next_page) = self
       .doc_sharing
       .paginate_granted_users(workspace_id, doc_id, user_id, first, offset, decoded_after.as_deref())
       .await
       .map_err(|e| map_domain_error(e, workspace_id, doc_id))?;
     let end_cursor = items.last().map(|g| {
-      let raw = format!("{}|{}", g.created_at.to_rfc3339(), g.user_id);
-      base64::engine::general_purpose::STANDARD.encode(raw.as_bytes())
+      let iso = g.created_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+      let json_iso = serde_json::to_string(&iso).unwrap_or_else(|_| format!("\"{iso}\""));
+      base64::engine::general_purpose::STANDARD.encode(json_iso.as_bytes())
     });
     let edges: Vec<serde_json::Value> = items
       .into_iter()
@@ -1697,7 +1760,13 @@ impl SyncStorage {
       .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
       .map(|dt| dt.with_timezone(&Utc));
 
-    let take = first.map(|n| n.saturating_add(1)).unwrap_or(1001);
+    let (take, explicit_limit) = match first {
+      Some(raw) => {
+        let limit = raw.clamp(0, 10_000);
+        (limit.saturating_add(1), Some(limit))
+      }
+      None => (10_000, None),
+    };
     let mut changes = svc
       .list_comment_changes(
         user_id,
@@ -1709,10 +1778,14 @@ impl SyncStorage {
       )
       .await
       .map_err(|e| map_domain_error(e, workspace_id, doc_id))?;
-    let has_next_page = first.is_some_and(|n| (changes.len() as i64) > n);
-    if let Some(n) = first {
-      changes.truncate(n.max(0) as usize);
-    }
+    let has_next_page = match explicit_limit {
+      Some(limit) => {
+        let more = (changes.len() as i64) > limit;
+        changes.truncate(limit as usize);
+        more
+      }
+      None => false,
+    };
     if let Some(obj) = cursor.as_object_mut() {
       for change in &changes {
         let ts = change.item.get("updatedAt").and_then(|v| v.as_str()).map(str::to_owned);

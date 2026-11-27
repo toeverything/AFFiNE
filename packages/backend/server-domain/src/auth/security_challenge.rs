@@ -71,6 +71,8 @@ impl AuthService {
     source: Option<&AuthRequestSource>,
   ) -> Result<bool, DomainError> {
     let mut url = parse_callback_url(callback_url)?;
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.config.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -127,6 +129,7 @@ impl AuthService {
         &format!("auth:{}:{}", kind.purpose(), token_hash(&token)),
         expires_at,
         source,
+        &private_key,
         now,
       )
       .await?;
@@ -149,6 +152,8 @@ impl AuthService {
   ) -> Result<bool, DomainError> {
     let email = canonical_email(new_email)?;
     let mut url = parse_callback_url(callback_url)?;
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.config.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -162,6 +167,10 @@ impl AuthService {
     }
     let now = decision_time(tx.tx_mut()).await?;
 
+    // Validate and consume the challenge inside `tx` before checking email
+    // uniqueness so forged tokens always return `INVALID_EMAIL_TOKEN` without
+    // leaking whether an email is taken; on validation error `tx` rolls back
+    // and preserves the valid token.
     consume_security_state(
       tx.tx_mut(),
       PURPOSE_CHANGE_EMAIL,
@@ -218,6 +227,7 @@ impl AuthService {
         &format!("auth:verify-change-email:{}", token_hash(&token)),
         expires_at,
         source,
+        &private_key,
         now,
       )
       .await?;
@@ -284,6 +294,8 @@ impl AuthService {
     new_email: &str,
   ) -> Result<bool, DomainError> {
     let email = canonical_email(new_email)?;
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.config.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -330,6 +342,7 @@ impl AuthService {
         &format!("auth:email-changed:{}:{}", user_id, user.auth_epoch + 1),
         now + Duration::days(1),
         None,
+        &private_key,
         now,
       )
       .await?;
@@ -430,6 +443,7 @@ impl AuthService {
     dedupe_key: &str,
     expires_at: DateTime<Utc>,
     source: Option<&AuthRequestSource>,
+    private_key: &str,
     now: DateTime<Utc>,
   ) -> Result<(), DomainError> {
     let recipient_email = recipient_email.trim();
@@ -458,7 +472,7 @@ impl AuthService {
       .check_auth_mail(tx, mail_name, &normalized_email, recipient_user_id, source, now)
       .await?;
 
-    let recipient_hash = hmac_sha256_hex(&self.config.private_key, &normalized_email)?;
+    let recipient_hash = hmac_sha256_hex(private_key, &normalized_email)?;
     let mail_payload = serde_json::json!({
       "name": mail_name,
       "to": recipient_email,

@@ -213,6 +213,10 @@ impl UserType {
   }
 
   async fn copilot(&self, ctx: &Context<'_>, workspace_id: Option<String>) -> Result<super::copilot::Copilot> {
+    let caller = require_authenticated_user(ctx).await?;
+    if self.view.id != caller.id {
+      return Err(domain_error_to_graphql(&DomainError::Forbidden("access_denied".into())));
+    }
     super::copilot::resolve_user_copilot(ctx, workspace_id).await
   }
 
@@ -239,6 +243,10 @@ impl UserType {
     ctx: &Context<'_>,
     pagination: super::doc::PaginationInput,
   ) -> Result<super::notification::PaginatedNotificationObjectType> {
+    let caller = require_authenticated_user(ctx).await?;
+    if self.view.id != caller.id {
+      return Err(domain_error_to_graphql(&DomainError::Forbidden("access_denied".into())));
+    }
     super::notification::resolve_user_notifications(ctx, pagination).await
   }
 
@@ -956,7 +964,7 @@ pub(crate) async fn resolve_admin_user_by_id(ctx: &Context<'_>, id: String) -> R
     .get_user_by_id_admin(&id)
     .await
     .map_err(|e| domain_error_to_graphql(&e))?
-    .ok_or_else(|| async_graphql::Error::new("Cannot return null for non-nullable field Query.userById."))?;
+    .ok_or_else(|| domain_error_to_graphql(&DomainError::NotFound("user_not_found".into())))?;
   Ok(UserType::session(view))
 }
 

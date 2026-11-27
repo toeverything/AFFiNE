@@ -136,6 +136,11 @@ impl RealtimeTopicChangedPayload {
       .get("taskId")
       .and_then(Value::as_str)
       .filter(|s| !s.is_empty());
+    let client_id = self
+      .input
+      .get("clientId")
+      .and_then(Value::as_str)
+      .filter(|s| !s.is_empty());
     match self.topic.as_str() {
       "workspace.access.changed" => ws.map(|w| format!("workspace:{w}:access")),
       "workspace.config.changed" => ws.map(|w| format!("workspace:{w}:config")),
@@ -147,6 +152,7 @@ impl RealtimeTopicChangedPayload {
       "doc.grants.changed" => ws.zip(doc).map(|(w, d)| format!("workspace:{w}:doc:{d}:grants")),
       "comment.changed" => ws.zip(doc).map(|(w, d)| format!("workspace:{w}:doc:{d}:comment")),
       "copilot.transcript.task.changed" => ws.zip(task_id).map(|(w, t)| format!("copilot:transcript:{w}:{t}")),
+      "copilot.delegated.tool.requested" => uid.zip(client_id).map(|(u, c)| format!("user:{u}:copilot:{c}")),
       "notification.count.changed" => uid.map(|u| format!("user:{u}:notification")),
       "user.settings.changed" => uid.map(|u| format!("user:{u}:settings")),
       "user.profile.changed" => uid.map(|u| format!("user:{u}:profile")),
@@ -551,14 +557,60 @@ async fn run_subscriber_loop(
         }
       } else if channel == INVALIDATION_CHANNEL_V1
         && let Ok(val) = serde_json::from_str::<Value>(&raw)
-        && val.get("kind").and_then(Value::as_str) == Some("workspaceInventoryChanged")
-        && let Some(workspace_id) = val.get("workspaceId").and_then(Value::as_str)
+        && let Some(kind) = val.get("kind").and_then(Value::as_str)
       {
-        let doc_id = val.get("docId").and_then(Value::as_str).map(ToOwned::to_owned);
-        let _ = incoming_tx.send(ClusterSyncEvent::WorkspaceInventoryChanged {
-          workspace_id: workspace_id.to_owned(),
-          doc_id,
-        });
+        let emit_workspace_quota_and_access = |workspace_id: &str| {
+          let _ = incoming_tx.send(ClusterSyncEvent::WorkspaceInventoryChanged {
+            workspace_id: workspace_id.to_owned(),
+            doc_id: None,
+          });
+          let _ = incoming_tx.send(ClusterSyncEvent::RealtimeTopicChanged(RealtimeTopicChangedPayload {
+            topic: "workspace.quota-state.changed".to_owned(),
+            room: Some(format!("workspace:{workspace_id}:quota-state")),
+            input: json!({ "workspaceId": workspace_id }),
+            event: json!({ "changed": true, "reason": "runtime-invalidation" }),
+            payload: Value::Null,
+          }));
+          let _ = incoming_tx.send(ClusterSyncEvent::RealtimeTopicChanged(RealtimeTopicChangedPayload {
+            topic: "workspace.access.changed".to_owned(),
+            room: Some(format!("workspace:{workspace_id}:access")),
+            input: json!({ "workspaceId": workspace_id }),
+            event: json!({ "changed": true, "reason": "quota-state-changed" }),
+            payload: Value::Null,
+          }));
+        };
+        match kind {
+          "workspaceInventoryChanged" => {
+            if let Some(workspace_id) = val.get("workspaceId").and_then(Value::as_str) {
+              let doc_id = val.get("docId").and_then(Value::as_str).map(ToOwned::to_owned);
+              let _ = incoming_tx.send(ClusterSyncEvent::WorkspaceInventoryChanged {
+                workspace_id: workspace_id.to_owned(),
+                doc_id,
+              });
+            }
+          }
+          "quotaEntitlement" | "quotaStorageUsage" => {
+            if let Some(subject) = val.get("subject").and_then(Value::as_str) {
+              if let Some(user_id) = subject.strip_prefix("user:").filter(|s| !s.is_empty()) {
+                let _ = incoming_tx.send(ClusterSyncEvent::RealtimeTopicChanged(RealtimeTopicChangedPayload {
+                  topic: "user.quota-state.changed".to_owned(),
+                  room: Some(format!("user:{user_id}:quota-state")),
+                  input: json!({}),
+                  event: json!({ "changed": true, "reason": "runtime-invalidation" }),
+                  payload: Value::Null,
+                }));
+              } else if let Some(workspace_id) = subject.strip_prefix("workspace:").filter(|s| !s.is_empty()) {
+                emit_workspace_quota_and_access(workspace_id);
+              }
+            }
+          }
+          "quotaOwnerMapping" | "quotaSeatUsage" => {
+            if let Some(workspace_id) = val.get("workspaceId").and_then(Value::as_str).filter(|s| !s.is_empty()) {
+              emit_workspace_quota_and_access(workspace_id);
+            }
+          }
+          _ => {}
+        }
       }
     }
   }

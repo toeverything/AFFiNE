@@ -166,10 +166,8 @@ async fn handle_oauth_preflight(
     Ok(v) => v,
     Err(resp) => return *resp,
   };
-  let (external_url, server_hosts) = {
-    let cfg = state.app.config.load();
-    (cfg.external_url.clone(), cfg.app_config_baseline.server.hosts.clone())
-  };
+  let external_url = state.app.config.load().external_url.clone();
+  let server_hosts = super::effective_server_hosts(&state.app).await;
   let apply_headers = |mut resp: Response| -> Response {
     resolved.cookie_action.apply_to(resp.headers_mut(), https);
     apply_throttle(resp.headers_mut(), throttle);

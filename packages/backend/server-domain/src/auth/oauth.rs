@@ -277,6 +277,7 @@ impl AuthService {
     target: OpenAppIssueTarget<'_>,
   ) -> Result<OpenAppSignInResult, DomainError> {
     let email = canonical_email(&account.email)?;
+    let session_ttl_seconds = self.load_dynamic_auth_runtime().await.session_ttl_seconds;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -382,7 +383,7 @@ impl AuthService {
             &user_id,
             existing_session_id,
             client_version,
-            self.config.session_ttl_seconds,
+            session_ttl_seconds,
             now,
           )
           .await

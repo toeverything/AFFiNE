@@ -16,8 +16,7 @@ fn external_plan_name(tier: LicenseTier) -> &'static str {
     LicenseTier::CloudAi => "ai",
     LicenseTier::CloudTeam => "team",
     LicenseTier::SelfhostDefault => "selfhost_free",
-    LicenseTier::SelfhostTeam => "selfhost_team",
-    LicenseTier::SelfhostEnterprise => "selfhost_enterprise",
+    LicenseTier::SelfhostTeam | LicenseTier::SelfhostEnterprise => "selfhost_team",
   }
 }
 
@@ -47,7 +46,7 @@ impl SyncStorage {
     .fetch_optional(&mut *conn)
     .await?;
     let Some(row) = row else {
-      return Err(SyncError::AuthenticationRequired("user not found".into()));
+      return Err(SyncError::UserNotFound);
     };
     let raw_features: Vec<String> = sqlx::query_scalar(
       "SELECT DISTINCT name FROM user_features \
@@ -59,6 +58,7 @@ impl SyncStorage {
     .await?;
     let features: Vec<String> = raw_features
       .into_iter()
+      .filter(|f| self.available_user_features.contains(&f.as_str()))
       .map(|f| match f.as_str() {
         "administrator" => "Admin".to_owned(),
         _ => f,
@@ -394,7 +394,7 @@ impl SyncStorage {
       .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
       .await
       .map_err(|e| SyncError::Internal(format!("resolve workspace quota grant: {e}")))?;
-    let owner_user_id: String = sqlx::query_scalar(
+    let Some(owner_user_id): Option<String> = sqlx::query_scalar(
       "SELECT user_id FROM workspace_members \
        WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' \
        ORDER BY created_at ASC LIMIT 1",
@@ -402,7 +402,12 @@ impl SyncStorage {
     .bind(workspace_id)
     .fetch_optional(&mut **tx.tx_mut())
     .await?
-    .unwrap_or_default();
+    else {
+      let _ = tx.rollback().await;
+      return Err(SyncError::SpaceOwnerNotFound {
+        space_id: workspace_id.to_owned(),
+      });
+    };
     let uses_owner_quota = grant.billing_subject == BillingSubject::Owner;
     let storage_ws_ids: Vec<String> = if uses_owner_quota && !owner_user_id.is_empty() {
       self
@@ -445,7 +450,11 @@ impl SyncStorage {
     .fetch_one(&mut **tx.tx_mut())
     .await?;
     let _ = tx.rollback().await;
-    let overcapacity_member_count = (member_count - i64::from(grant.limits.seat_limit)).max(0);
+    let overcapacity_member_count = if grant.limits.seat_limit >= 0 {
+      (member_count - i64::from(grant.limits.seat_limit)).max(0)
+    } else {
+      0
+    };
     let mut readonly_reasons: Vec<&'static str> = Vec::new();
     if overcapacity_member_count > 0 {
       readonly_reasons.push("member_overflow");
@@ -531,6 +540,40 @@ impl SyncStorage {
     };
     handler.authorize_embedding_progress(user_id, workspace_id).await
   }
+
+  pub async fn copilot_realtime_delegated_editor_upsert(
+    &self,
+    user_id: &str,
+    connection_id: &str,
+    input: serde_json::Value,
+  ) -> Result<serde_json::Value, SyncError> {
+    let Some(handler) = &self.copilot_realtime else {
+      return Err(SyncError::CopilotDisabled);
+    };
+    handler.delegated_editor_upsert(user_id, connection_id, input).await
+  }
+
+  pub async fn copilot_realtime_delegated_editor_release(
+    &self,
+    user_id: &str,
+    input: serde_json::Value,
+  ) -> Result<serde_json::Value, SyncError> {
+    let Some(handler) = &self.copilot_realtime else {
+      return Err(SyncError::CopilotDisabled);
+    };
+    handler.delegated_editor_release(user_id, input).await
+  }
+
+  pub async fn copilot_realtime_delegated_tool_respond(
+    &self,
+    user_id: &str,
+    input: serde_json::Value,
+  ) -> Result<serde_json::Value, SyncError> {
+    let Some(handler) = &self.copilot_realtime else {
+      return Err(SyncError::CopilotDisabled);
+    };
+    handler.delegated_tool_respond(user_id, input).await
+  }
 }
 
 #[cfg(test)]
@@ -546,10 +589,7 @@ mod tests {
     assert_eq!(external_plan_name(LicenseTier::CloudTeam), "team");
     assert_eq!(external_plan_name(LicenseTier::SelfhostDefault), "selfhost_free");
     assert_eq!(external_plan_name(LicenseTier::SelfhostTeam), "selfhost_team");
-    assert_eq!(
-      external_plan_name(LicenseTier::SelfhostEnterprise),
-      "selfhost_enterprise"
-    );
+    assert_eq!(external_plan_name(LicenseTier::SelfhostEnterprise), "selfhost_team");
     assert_eq!(escape_like_pattern(r"a%b_c\d"), r"a\%b\_c\\d");
   }
 

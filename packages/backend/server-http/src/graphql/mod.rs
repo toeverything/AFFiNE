@@ -221,7 +221,9 @@ impl LazyGraphqlPrincipal {
               rejected_cookie_version: resolved.rejected_cookie_version,
             })
           }
-          Err(crate::rest::PrincipalResolutionError::VersionGuard { error, clear_cookies }) => {
+          Err(crate::rest::PrincipalResolutionError::VersionGuard {
+            error, clear_cookies, ..
+          }) => {
             if clear_cookies && let Ok(mut guard) = self.cookie_action.lock() {
               *guard = crate::rest::PrincipalCookieAction::Clear;
             }

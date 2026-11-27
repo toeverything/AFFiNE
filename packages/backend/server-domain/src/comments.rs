@@ -116,6 +116,7 @@ pub struct CommentService {
   invalidation: Arc<dyn InvalidationPublisher>,
   base_url: String,
   private_key: String,
+  app_config: Option<crate::app_config::AppConfigService>,
 }
 
 impl CommentService {
@@ -133,6 +134,7 @@ impl CommentService {
       invalidation: Arc::new(NoopEventPublisher::default()),
       base_url: "http://localhost:3010".to_owned(),
       private_key: String::new(),
+      app_config: None,
     }
   }
 
@@ -151,6 +153,11 @@ impl CommentService {
     self
   }
 
+  pub fn with_app_config(mut self, app_config: crate::app_config::AppConfigService) -> Self {
+    self.app_config = Some(app_config);
+    self
+  }
+
   pub async fn create_comment(
     &self,
     actor_user_id: &str,
@@ -163,6 +170,8 @@ impl CommentService {
       .doc_sharing
       .resolve_storage_doc_id(workspace_id, raw_doc_id)
       .await?;
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -222,7 +231,7 @@ impl CommentService {
       None,
       notification,
       &self.base_url,
-      &self.private_key,
+      &private_key,
       now,
     )
     .await?;
@@ -326,6 +335,8 @@ impl CommentService {
     content: Value,
     notification: CommentNotificationContext,
   ) -> Result<ReplyRecord, DomainError> {
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -384,7 +395,7 @@ impl CommentService {
       Some(&reply_id),
       notification,
       &self.base_url,
-      &self.private_key,
+      &private_key,
       now,
     )
     .await?;
@@ -676,7 +687,7 @@ impl CommentService {
       )));
     }
 
-    let limit = take.clamp(1, 10_000);
+    let limit = take.clamp(1, 10_001);
     let comment_rows = if let Some(ts) = comment_updated_at {
       sqlx::query(
         r#"SELECT sid, id, workspace_id, doc_id, user_id, content, resolved, created_at, updated_at, deleted_at

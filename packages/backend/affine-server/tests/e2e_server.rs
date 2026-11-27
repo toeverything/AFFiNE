@@ -2967,7 +2967,45 @@ fn socketio_jwt_handshake_version_gate_and_realtime_contract_e2e() {
       );
     }
 
-    // 3. Valid Bearer JWT handshake succeeds.
+    // 3. Outdated handshake revoked the previous JWT session; mint a fresh JWT and verify valid handshake succeeds.
+    let (st_si2, _, si2_bytes) = raw_http_request(
+      addr,
+      "POST",
+      "/api/auth/sign-in",
+      &[
+        ("Content-Type", "application/json"),
+        ("x-affine-client-kind", "native"),
+        ("x-affine-version", "0.27.5"),
+      ],
+      br#"{"email":"sio-owner@example.com","password":"StrongPassword123!"}"#,
+    )
+    .await;
+    assert_eq!(st_si2, 200);
+    let si2_json: Value = serde_json::from_slice(&si2_bytes).unwrap();
+    let exchange_code2 = si2_json["exchangeCode"].as_str().expect("exchangeCode2");
+    let (st_ex2, _, ex2_bytes) = raw_http_request(
+      addr,
+      "POST",
+      "/api/auth/session/exchange",
+      &[
+        ("Content-Type", "application/json"),
+        ("x-affine-client-kind", "native"),
+        ("x-affine-version", "0.27.5"),
+      ],
+      serde_json::json!({
+        "code": exchange_code2,
+        "installationId": "550e8400-e29b-41d4-a716-446655440099",
+        "platform": "electron",
+        "deviceName": "SIO Test Client"
+      })
+      .to_string()
+      .as_bytes(),
+    )
+    .await;
+    assert_eq!(st_ex2, 201);
+    let ex2_json: Value = serde_json::from_slice(&ex2_bytes).unwrap();
+    let access_token = ex2_json["accessToken"].as_str().expect("accessToken2").to_owned();
+
     let (st_open, open_body) = sio_open(&[("x-affine-version", "0.27.5")]).await;
     assert_eq!(st_open, 200, "sio open failed: {open_body}");
     let open_json: Value = serde_json::from_str(&open_body[1..]).expect("parse open json");
@@ -3037,14 +3075,19 @@ fn socketio_jwt_handshake_version_gate_and_realtime_contract_e2e() {
       }
     };
 
-    // 4. realtime:request contract coverage.
-    let prof = emit_ack(1, "realtime:request", serde_json::json!({ "op": "user.profile.get" })).await;
+    // 4. realtime:request contract coverage (explicit clientVersion required).
+    let prof = emit_ack(
+      1,
+      "realtime:request",
+      serde_json::json!({ "op": "user.profile.get", "clientVersion": "0.27.5" }),
+    )
+    .await;
     assert_eq!(prof["data"]["user"]["email"], "sio-owner@example.com", "got {prof}");
 
     let uq = emit_ack(
       2,
       "realtime:request",
-      serde_json::json!({ "op": "user.quota-state.get" }),
+      serde_json::json!({ "op": "user.quota-state.get", "clientVersion": "0.27.5" }),
     )
     .await;
     let uq_state = &uq["data"]["state"];
@@ -3055,14 +3098,14 @@ fn socketio_jwt_handshake_version_gate_and_realtime_contract_e2e() {
       "expected lowercase plan, got {uq}"
     );
     assert!(
-      uq_state.as_object().unwrap().contains_key("copilotActionLimit"),
-      "copilotActionLimit must be present: {uq}"
+      uq_state["unlimitedCopilot"].is_boolean(),
+      "unlimitedCopilot must be boolean: {uq}"
     );
 
     let wq = emit_ack(
       3,
       "realtime:request",
-      serde_json::json!({ "op": "workspace.quota-state.get", "input": { "workspaceId": ws_id } }),
+      serde_json::json!({ "op": "workspace.quota-state.get", "input": { "workspaceId": ws_id }, "clientVersion": "0.27.5" }),
     )
     .await;
     assert!(wq["data"]["state"]["usesOwnerQuota"].is_boolean(), "got {wq}");
@@ -3071,7 +3114,7 @@ fn socketio_jwt_handshake_version_gate_and_realtime_contract_e2e() {
     let wm = emit_ack(
       4,
       "realtime:request",
-      serde_json::json!({ "op": "workspace.members.get", "input": { "workspaceId": ws_id, "skip": 0, "take": 20 } }),
+      serde_json::json!({ "op": "workspace.members.get", "input": { "workspaceId": ws_id, "skip": 0, "take": 20 }, "clientVersion": "0.27.5" }),
     )
     .await;
     assert_eq!(wm["data"]["memberCount"], 1, "got {wm}");
@@ -3080,7 +3123,7 @@ fn socketio_jwt_handshake_version_gate_and_realtime_contract_e2e() {
     let inv = emit_ack(
       5,
       "realtime:request",
-      serde_json::json!({ "op": "workspace.invite-link.get", "input": { "workspaceId": ws_id } }),
+      serde_json::json!({ "op": "workspace.invite-link.get", "input": { "workspaceId": ws_id }, "clientVersion": "0.27.5" }),
     )
     .await;
     assert!(inv.get("error").is_none(), "invite-link.get failed: {inv}");
@@ -3088,18 +3131,18 @@ fn socketio_jwt_handshake_version_gate_and_realtime_contract_e2e() {
     let tr = emit_ack(
       6,
       "realtime:request",
-      serde_json::json!({ "op": "copilot.transcript.task.get", "input": { "workspaceId": ws_id, "taskId": "t1" } }),
+      serde_json::json!({ "op": "copilot.transcript.task.get", "input": { "workspaceId": ws_id, "taskId": "t1" }, "clientVersion": "0.27.5" }),
     )
     .await;
-    assert_eq!(tr["error"]["name"], "COPILOT_DISABLED", "got {tr}");
+    assert_eq!(tr["error"]["name"], "ACTION_FORBIDDEN", "got {tr}");
 
     let emb = emit_ack(
       7,
       "realtime:request",
-      serde_json::json!({ "op": "workspace.embedding.progress.get", "input": { "workspaceId": ws_id } }),
+      serde_json::json!({ "op": "workspace.embedding.progress.get", "input": { "workspaceId": ws_id }, "clientVersion": "0.27.5" }),
     )
     .await;
-    assert_eq!(emb["error"]["name"], "COPILOT_DISABLED", "got {emb}");
+    assert_eq!(emb["error"]["name"], "ACTION_FORBIDDEN", "got {emb}");
 
     // 5. realtime:subscribe for 4 topics (authorized succeeds, unauthorized workspace rejected).
     for (idx, (topic, input)) in [
@@ -3117,7 +3160,7 @@ fn socketio_jwt_handshake_version_gate_and_realtime_contract_e2e() {
       let ack = emit_ack(
         10 + idx as u32,
         "realtime:subscribe",
-        serde_json::json!({ "topic": topic, "input": input }),
+        serde_json::json!({ "topic": topic, "input": input, "clientVersion": "0.27.5" }),
       )
       .await;
       assert!(ack.get("error").is_none(), "subscribe {topic} failed: {ack}");
@@ -3126,7 +3169,7 @@ fn socketio_jwt_handshake_version_gate_and_realtime_contract_e2e() {
     let unauth_sub = emit_ack(
       20,
       "realtime:subscribe",
-      serde_json::json!({ "topic": "workspace.members.changed", "input": { "workspaceId": "ws_nonexistent_unauth" } }),
+      serde_json::json!({ "topic": "workspace.members.changed", "input": { "workspaceId": "ws_nonexistent_unauth" }, "clientVersion": "0.27.5" }),
     )
     .await;
     assert!(

@@ -3,7 +3,7 @@
 use super::throttle::{ThrottleSpec, enforce_throttle_http};
 use super::{
   PrincipalCookieAction, domain_error_to_http_response, envelope_to_http_response, json_utf8_response,
-  resolve_auth_request_source, resolve_request_principal_with_policy,
+  resolve_captcha_remote_ip, resolve_request_principal_with_policy,
 };
 use crate::RouterState;
 use crate::legacy_compat::errors::LegacyErrorEnvelope;
@@ -14,7 +14,7 @@ use axum::response::Response;
 use axum::routing::get;
 use serde_json::json;
 use server_domain::auth::captcha::{
-  CaptchaVerificationRequest, create_hashcash_challenge, load_effective_captcha_config, verify_captcha,
+  CaptchaVerificationRequest, create_hashcash_challenge, load_effective_captcha_config_with_file, verify_captcha,
 };
 use server_types::DomainError;
 pub(crate) fn router() -> Router<RouterState> {
@@ -49,7 +49,8 @@ async fn handle_get_captcha(
       Err(err) => domain_error_to_http_response(&err),
     }
   } else {
-    match load_effective_captcha_config(&state.app.db).await {
+    let file_json = state.app.config.load().app_config_baseline.file_json.clone();
+    match load_effective_captcha_config_with_file(&state.app.db, Some(&file_json)).await {
       Ok(e) => json_utf8_response(
         StatusCode::OK,
         json!({ "provider": "turnstile", "siteKey": e.config.turnstile.site_key, "action": e.config.turnstile.action }),
@@ -75,27 +76,33 @@ fn captcha_failed_response(message: &str) -> Response {
 pub(crate) async fn enforce_named_captcha_guard(
   state: &RouterState,
   headers: &HeaderMap,
+  peer: Option<std::net::SocketAddr>,
   pending_cookie_action: &PrincipalCookieAction,
 ) -> Result<(), Box<Response>> {
-  let (https, dev_mode, mut allowed_hosts, file_json) = {
+  let (https, dev_mode, default_host, baseline_hosts, file_json) = {
     let cfg = state.app.config.load();
-    let mut hosts = cfg.app_config_baseline.server.hosts.clone();
-    hosts.push(cfg.app_config_baseline.server.host.clone());
     (
       cfg.https,
       cfg.dev_mode,
-      hosts,
+      cfg.app_config_baseline.server.host.clone(),
+      cfg.app_config_baseline.server.hosts.clone(),
       cfg.app_config_baseline.file_json.clone(),
     )
   };
-  if let Ok(eff) = state.app.app_config.get_effective_app_config().await
+  let mut allowed_hosts = if let Ok(eff) = state.app.app_config.get_effective_app_config().await
     && let Some(dyn_hosts) = eff.pointer("/server/hosts").and_then(serde_json::Value::as_array)
   {
-    for h in dyn_hosts.iter().filter_map(serde_json::Value::as_str) {
-      if !h.is_empty() && !allowed_hosts.iter().any(|x| x == h) {
-        allowed_hosts.push(h.to_owned());
-      }
-    }
+    dyn_hosts
+      .iter()
+      .filter_map(serde_json::Value::as_str)
+      .filter(|h| !h.is_empty())
+      .map(str::to_owned)
+      .collect::<Vec<_>>()
+  } else {
+    baseline_hosts
+  };
+  if !default_host.is_empty() && !allowed_hosts.iter().any(|x| x == &default_host) {
+    allowed_hosts.push(default_host);
   }
   let fail = |mut resp: Response| -> Result<(), Box<Response>> {
     pending_cookie_action.apply_to(resp.headers_mut(), https);
@@ -127,7 +134,7 @@ pub(crate) async fn enforce_named_captcha_guard(
     return fail(captcha_failed_response("Invalid Credential"));
   }
   allowed_hosts.retain(|h| !h.is_empty());
-  let ip = resolve_auth_request_source(state, headers).await.ip;
+  let ip = resolve_captcha_remote_ip(state, headers, peer).await;
   match verify_captcha(
     &state.app.db,
     &effective.config,

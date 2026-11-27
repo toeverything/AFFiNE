@@ -215,6 +215,7 @@ pub struct WorkspaceService {
   redis: Option<redis::Client>,
   base_url: String,
   private_key: String,
+  app_config: Option<crate::app_config::AppConfigService>,
   fallback_invite_links: Arc<tokio::sync::RwLock<std::collections::HashMap<String, WorkspaceInviteLink>>>,
 }
 
@@ -230,6 +231,7 @@ impl WorkspaceService {
       redis: None,
       base_url: "http://localhost:3010".to_owned(),
       private_key: String::new(),
+      app_config: None,
       fallback_invite_links: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
     }
   }
@@ -241,6 +243,11 @@ impl WorkspaceService {
 
   pub fn with_private_key(mut self, private_key: impl Into<String>) -> Self {
     self.private_key = private_key.into();
+    self
+  }
+
+  pub fn with_app_config(mut self, app_config: crate::app_config::AppConfigService) -> Self {
+    self.app_config = Some(app_config);
     self
   }
 
@@ -781,6 +788,8 @@ impl WorkspaceService {
       }
     }
 
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -1026,7 +1035,7 @@ impl WorkspaceService {
             &invitation_id,
             "Invitation",
             &self.base_url,
-            &self.private_key,
+            &private_key,
           )
           .await?;
           notified_invitees.push(uid.clone());
@@ -1083,6 +1092,8 @@ impl WorkspaceService {
     invitee_user_id: &str,
     invitation_id: &str,
   ) -> Result<WorkspaceMemberRecord, DomainError> {
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -1250,7 +1261,7 @@ impl WorkspaceService {
         invitation_id,
         "InvitationAccepted",
         &self.base_url,
-        &self.private_key,
+        &private_key,
       )
       .await?;
     }
@@ -1306,6 +1317,8 @@ impl WorkspaceService {
       ));
     }
 
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -1395,7 +1408,7 @@ impl WorkspaceService {
           crate::notifications::enqueue_notification_mail_in_tx(
             tx.tx_mut(),
             crate::notifications::EnqueueNotificationMail {
-              private_key: &self.private_key,
+              private_key: &private_key,
               mail_name,
               mail_class: "workspace_lifecycle",
               recipient_user_id: target_user_id,
@@ -1505,6 +1518,8 @@ impl WorkspaceService {
       return Err(DomainError::Forbidden("cannot_revoke_self".to_owned()));
     }
 
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -1589,7 +1604,7 @@ impl WorkspaceService {
       crate::notifications::enqueue_notification_mail_in_tx(
         tx.tx_mut(),
         crate::notifications::EnqueueNotificationMail {
-          private_key: &self.private_key,
+          private_key: &private_key,
           mail_name: "MemberRemoved",
           mail_class: "workspace_lifecycle",
           recipient_user_id: target_user_id,
@@ -1617,7 +1632,7 @@ impl WorkspaceService {
             &inv_id,
             "InvitationReviewDeclined",
             &self.base_url,
-            &self.private_key,
+            &private_key,
           )
           .await?;
           declined_notify_user = Some(uid);
@@ -2077,6 +2092,8 @@ impl WorkspaceService {
   /// Removes `actor_user_id` from `workspace_id`. Rejects Owners with
   /// `workspace_owner_cannot_leave`.
   pub async fn leave_workspace(&self, actor_user_id: &str, workspace_id: &str) -> Result<(), DomainError> {
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -2128,7 +2145,7 @@ impl WorkspaceService {
       crate::notifications::enqueue_notification_mail_in_tx(
         tx.tx_mut(),
         crate::notifications::EnqueueNotificationMail {
-          private_key: &self.private_key,
+          private_key: &private_key,
           mail_name: "MemberLeave",
           mail_class: "workspace_lifecycle",
           recipient_user_id: &owner_id,
@@ -2179,6 +2196,8 @@ impl WorkspaceService {
     workspace_id: &str,
     target_user_id: &str,
   ) -> Result<WorkspaceMemberRecord, DomainError> {
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -2278,7 +2297,7 @@ impl WorkspaceService {
       crate::notifications::enqueue_notification_mail_in_tx(
         tx.tx_mut(),
         crate::notifications::EnqueueNotificationMail {
-          private_key: &self.private_key,
+          private_key: &private_key,
           mail_name: "OwnershipTransferred",
           mail_class: "workspace_lifecycle",
           recipient_user_id: actor_user_id,
@@ -2294,7 +2313,7 @@ impl WorkspaceService {
       crate::notifications::enqueue_notification_mail_in_tx(
         tx.tx_mut(),
         crate::notifications::EnqueueNotificationMail {
-          private_key: &self.private_key,
+          private_key: &private_key,
           mail_name: "OwnershipReceived",
           mail_class: "workspace_lifecycle",
           recipient_user_id: target_user_id,
@@ -2359,6 +2378,8 @@ impl WorkspaceService {
     workspace_id: &str,
     target_user_id: &str,
   ) -> Result<(), DomainError> {
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -2454,7 +2475,7 @@ impl WorkspaceService {
       &inv_id,
       "InvitationReviewApproved",
       &self.base_url,
-      &self.private_key,
+      &private_key,
     )
     .await?;
 
@@ -2726,6 +2747,8 @@ impl WorkspaceService {
       return Err(DomainError::NotFound("invalid_invitation".to_owned()));
     };
 
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -2904,7 +2927,7 @@ impl WorkspaceService {
         &review_id,
         "InvitationReviewRequest",
         &self.base_url,
-        &self.private_key,
+        &private_key,
       )
       .await?;
     }

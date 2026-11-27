@@ -182,9 +182,20 @@ async fn handle_render_workspace_path(
   };
   let wants_md = headers.get_all(header::ACCEPT).iter().any(|val| {
     val.to_str().is_ok_and(|raw| {
-      raw
-        .split(',')
-        .any(|p| MARKDOWN_TYPES.contains(&p.split(';').next().unwrap_or("").trim().to_ascii_lowercase().as_str()))
+      raw.split(',').any(|p| {
+        let mut segs = p.split(';');
+        let media = segs.next().unwrap_or("").trim().to_ascii_lowercase();
+        if !MARKDOWN_TYPES.contains(&media.as_str()) {
+          return false;
+        }
+        let q_zero = segs.any(|param| {
+          param
+            .trim()
+            .split_once('=')
+            .is_some_and(|(k, v)| k.trim().eq_ignore_ascii_case("q") && v.trim().parse::<f32>().ok() == Some(0.0))
+        });
+        !q_zero
+      })
     })
   });
   if let Some(doc_id) = resolved_doc_id.as_deref()

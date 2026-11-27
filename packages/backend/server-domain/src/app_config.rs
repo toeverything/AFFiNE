@@ -266,6 +266,7 @@ pub struct RuntimeAppConfigBaseline {
   pub redis_configured: bool,
   pub redis_url_env_set: bool,
   pub redis_url_has_password: bool,
+  pub redis_key_prefix: String,
 }
 
 impl RuntimeAppConfigBaseline {
@@ -506,7 +507,24 @@ impl AppConfigService {
     }
     Ok(resolved)
   }
+}
 
+/// Resolves the effective private key from `AppConfigService` (`DB > File`),
+/// falling back to `fallback` (`Env > startup ephemeral`) only when no DB/file
+/// key is configured. Propagates transient DB errors to callers.
+pub async fn resolve_effective_private_key(
+  app_config: Option<&AppConfigService>,
+  fallback: &str,
+) -> Result<String, DomainError> {
+  if let Some(cfg) = app_config
+    && let Some(key) = cfg.get_internal_private_key().await?
+  {
+    return Ok(key);
+  }
+  Ok(fallback.to_owned())
+}
+
+impl AppConfigService {
   /// Internal-only reader for the effective `mailer` configuration, merging the
   /// startup baseline with all `app_configs` rows matching `mailer` or
   /// `mailer.%` without secret redaction. Never expose over HTTP or GraphQL.
@@ -534,8 +552,9 @@ impl AppConfigService {
   }
 
   /// Internal-only reader for the startup file baseline `redis.ioredis.keyPrefix`
-  /// (falling back to `redis.keyPrefix`), bypassing `SECRET_CONFIG_KEYS` redaction
-  /// on `redis.ioredis` and ignoring any legacy `app_configs` `redis.*` rows.
+  /// (falling back to `redis.keyPrefix`, then CLI `redis_key_prefix`), bypassing
+  /// `SECRET_CONFIG_KEYS` redaction on `redis.ioredis` and ignoring legacy
+  /// `app_configs` `redis.*` rows.
   pub async fn get_internal_redis_key_prefix(&self) -> Result<String, DomainError> {
     let resolved = self
       .baseline
@@ -549,6 +568,7 @@ impl AppConfigService {
           .and_then(Value::as_str)
           .filter(|s| !s.is_empty())
       })
+      .or_else(|| (!self.baseline.redis_key_prefix.is_empty()).then_some(self.baseline.redis_key_prefix.as_str()))
       .unwrap_or("")
       .to_owned();
     Ok(resolved)
@@ -2167,6 +2187,47 @@ mod tests {
       let (enabled, required) = svc.get_client_version_control().await.expect("read versionControl");
       assert!(enabled);
       assert_eq!(required, ">=0.27.0");
+
+      // 5. resolve_effective_private_key reads DB override and falls back cleanly to Env after hot delete.
+      sqlx::query(
+        "INSERT INTO app_configs (id, value, created_at, updated_at) VALUES ('crypto.privateKey', '\"db-key-A\"'::jsonb, now(), now()) ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value",
+      )
+      .execute(db.pool())
+      .await
+      .expect("insert db private key");
+      svc.invalidate_cache();
+      assert_eq!(
+        resolve_effective_private_key(Some(&svc), "env-key-E").await.expect("db key"),
+        "db-key-A"
+      );
+      sqlx::query("DELETE FROM app_configs WHERE id = 'crypto.privateKey'")
+        .execute(db.pool())
+        .await
+        .expect("delete db private key");
+      svc.invalidate_cache();
+      assert_eq!(
+        resolve_effective_private_key(Some(&svc), "env-key-E")
+          .await
+          .expect("fallback env key"),
+        "env-key-E"
+      );
+
+      // 6. get_internal_redis_key_prefix falls back to CLI baseline when config.json omits redis.keyPrefix.
+      let cli_prefix_svc = AppConfigService::new(
+        db.clone(),
+        RuntimeAppConfigBaseline {
+          redis_key_prefix: "cli_pfx:".to_owned(),
+          ..RuntimeAppConfigBaseline::default()
+        },
+        Arc::new(crate::events::NoopEventPublisher::default()),
+      );
+      assert_eq!(
+        cli_prefix_svc
+          .get_internal_redis_key_prefix()
+          .await
+          .expect("cli prefix"),
+        "cli_pfx:"
+      );
 
       db.pool().close().await;
     });

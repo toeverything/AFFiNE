@@ -43,9 +43,15 @@ pub struct SyncConfig {
   /// permitted in addition to `allowed_origins` and the 6 native client
   /// origins (enabled in dev/test channels, disabled in production/stable).
   pub allow_dev_loopback: bool,
-  /// Optional commercial Copilot realtime handler (`copilot.transcript.task.*`
-  /// and `workspace.embedding.progress.*`). When `None`, those ops return `COPILOT_DISABLED`.
+  /// Whether canary date-versioned clients (`YYYY.M.D-canary.N`) are accepted
+  /// (enabled only on the `canary` deployment channel).
+  pub allow_canary: bool,
+  /// Optional commercial Copilot realtime handler (`copilot.transcript.task.*`,
+  /// `workspace.embedding.progress.*`, and `copilot.delegated.*`).
+  /// When `None`, those ops return `ACTION_FORBIDDEN`.
   pub copilot_realtime: Option<Arc<dyn crate::storage::CopilotRealtimeHandler>>,
+  /// Allowlisted user feature names exposed by `user.profile.get`.
+  pub available_user_features: &'static [&'static str],
 }
 
 impl std::fmt::Debug for SyncConfig {
@@ -59,6 +65,7 @@ impl std::fmt::Debug for SyncConfig {
       .field("external_url", &self.external_url)
       .field("allowed_origins", &self.allowed_origins)
       .field("allow_dev_loopback", &self.allow_dev_loopback)
+      .field("allow_canary", &self.allow_canary)
       .field("copilot_realtime", &self.copilot_realtime.is_some())
       .finish()
   }
@@ -73,6 +80,7 @@ impl SyncConfig {
       channel.trim().to_ascii_lowercase().as_str(),
       "dev" | "development" | "test" | "testing"
     );
+    let allow_canary = channel.trim().eq_ignore_ascii_case("canary");
     Self {
       redis_url: None,
       session_redis_url: None,
@@ -82,7 +90,9 @@ impl SyncConfig {
       external_url: String::new(),
       allowed_origins: Vec::new(),
       allow_dev_loopback,
+      allow_canary,
       copilot_realtime: None,
+      available_user_features: &["administrator"],
     }
   }
 }
@@ -152,13 +162,19 @@ impl SyncServer {
     if let Some(handler) = config.copilot_realtime {
       storage = storage.with_copilot_realtime(handler);
     }
+    storage = storage.with_available_user_features(config.available_user_features);
     let eventbus = match config.origin_id {
       Some(origin_id) => {
         RedisSyncBridge::start_with_origin_id(config.redis_url.as_deref(), config.origin_channel, origin_id).await
       }
       None => RedisSyncBridge::start(config.redis_url.as_deref(), config.origin_channel).await,
     };
-    let gateway = SpaceSyncGateway::new(storage, Arc::clone(&eventbus), config.deployment_prefix);
+    let gateway = SpaceSyncGateway::with_canary(
+      storage,
+      Arc::clone(&eventbus),
+      config.deployment_prefix,
+      config.allow_canary,
+    );
     let engine = EngineIoState::with_origin_policy(
       authenticator,
       Arc::clone(&gateway),

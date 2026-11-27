@@ -156,8 +156,9 @@ fn protocol_parsing_and_validation_rules_match_v0275() {
     },
     Some("req-1".into()),
   );
-  assert_eq!(err_env.error.status, 400);
+  assert_eq!(err_env.error.status, 403);
   assert_eq!(err_env.error.code, "NOT_IN_SPACE");
+  assert_eq!(err_env.error.error_type, "ACTION_FORBIDDEN");
   assert_eq!(err_env.error.request_id.as_deref(), Some("req-1"));
 }
 

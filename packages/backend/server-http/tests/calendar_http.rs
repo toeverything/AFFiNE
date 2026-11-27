@@ -152,8 +152,9 @@ fn calendar_rest_webhook_and_oauth_callback_validation() {
     .expect("clear explicit webhook token");
     let generated_token = state
       .calendar
-      .webhook_token_from_config(&server_domain::calendar::google::CalendarGoogleConfig::default())
-      .await;
+      .try_webhook_token_from_config(&server_domain::calendar::google::CalendarGoogleConfig::default())
+      .await
+      .expect("generated webhook token");
     let resp = router
       .clone()
       .oneshot(
@@ -544,6 +545,17 @@ fn calendar_rest_webhook_and_oauth_callback_validation() {
     multi_host_cfg.app_config_baseline.server.hosts = vec!["app2.affine.local".to_owned()];
     multi_host_cfg.app_config_baseline.server.port = 3010;
     state.config.store(Arc::new(multi_host_cfg));
+    state
+      .app_config
+      .update_app_config(
+        None,
+        &[server_domain::app_config::AppConfigUpdate {
+          key: "server.hosts".to_owned(),
+          value: Some(serde_json::json!(["app2.affine.local"])),
+        }],
+      )
+      .await
+      .expect("update server.hosts for multi-host test");
     let resp = router
       .clone()
       .oneshot(
@@ -629,6 +641,17 @@ fn calendar_rest_webhook_and_oauth_callback_validation() {
     root_cfg.external_url = "http://localhost:3010".to_owned();
     root_cfg.app_config_baseline.server.hosts.clear();
     state.config.store(Arc::new(root_cfg));
+    state
+      .app_config
+      .update_app_config(
+        None,
+        &[server_domain::app_config::AppConfigUpdate {
+          key: "server.hosts".to_owned(),
+          value: Some(serde_json::json!([])),
+        }],
+      )
+      .await
+      .expect("clear server.hosts for root deployment test");
     for (body_json, expected_uri, expect_redirect) in [
       (r#"{"provider":"google"}"#, None, false),
       (r#"{"provider":"google","redirect_uri":""}"#, None, false),
@@ -839,6 +862,17 @@ fn calendar_oauth_success_callback_redirect_and_token_exchange() {
     root_cfg.external_url = "http://localhost:3010".to_owned();
     root_cfg.app_config_baseline.server.hosts.clear();
     state.config.store(Arc::new(root_cfg));
+    state
+      .app_config
+      .update_app_config(
+        None,
+        &[server_domain::app_config::AppConfigUpdate {
+          key: "server.hosts".to_owned(),
+          value: Some(serde_json::json!([])),
+        }],
+      )
+      .await
+      .expect("clear server.hosts for root deployment callback test");
     for (body_json, expected_uri, expect_302) in [
       (r#"{"provider":"google"}"#, None, false),
       (r#"{"provider":"google","redirect_uri":""}"#, None, false),

@@ -242,7 +242,7 @@ fn admin_user_lifecycle_ban_recreate_import_and_features() {
     assert_eq!(ban_resp["data"]["banUser"]["disabled"], true);
     assert!(ban_resp["data"]["banUser"]["avatarUrl"].is_null());
 
-    // Old user ID no longer exists (non-null GraphQL error, not a business 404).
+    // Old user ID no longer exists (standard 404 USER_NOT_FOUND envelope).
     let (_, old_lookup) = post_graphql(
       &app,
       Some(&admin_cookie),
@@ -251,7 +251,8 @@ fn admin_user_lifecycle_ban_recreate_import_and_features() {
     )
     .await;
     assert!(!old_lookup["errors"].as_array().unwrap().is_empty());
-    assert!(old_lookup["errors"][0]["extensions"]["status"].is_null());
+    assert_eq!(old_lookup["errors"][0]["extensions"]["status"], 404);
+    assert_eq!(old_lookup["errors"][0]["extensions"]["name"], "USER_NOT_FOUND");
 
     // Owned workspace and snapshot were deleted.
     let ws_exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1)")

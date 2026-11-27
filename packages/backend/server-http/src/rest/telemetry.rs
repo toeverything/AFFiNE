@@ -383,12 +383,20 @@ async fn forward_to_ga4_if_configured(state: &RouterState, events: &[CleanedTele
     .await
     .ok()
     .flatten();
+  let file_json = state.app.config.load().app_config_baseline.file_json.clone();
   let mid = dotted_mid
     .filter(|s| !s.trim().is_empty())
     .or_else(|| {
       raw_telemetry
         .as_ref()
         .and_then(|c| c.pointer("/ga4/measurementId")?.as_str())
+        .filter(|s| !s.trim().is_empty())
+        .map(str::to_owned)
+    })
+    .or_else(|| {
+      file_json
+        .pointer("/telemetry/ga4/measurementId")
+        .and_then(Value::as_str)
         .filter(|s| !s.trim().is_empty())
         .map(str::to_owned)
     })
@@ -404,6 +412,13 @@ async fn forward_to_ga4_if_configured(state: &RouterState, events: &[CleanedTele
       raw_telemetry
         .as_ref()
         .and_then(|c| c.pointer("/ga4/apiSecret")?.as_str())
+        .filter(|s| !s.trim().is_empty())
+        .map(str::to_owned)
+    })
+    .or_else(|| {
+      file_json
+        .pointer("/telemetry/ga4/apiSecret")
+        .and_then(Value::as_str)
         .filter(|s| !s.trim().is_empty())
         .map(str::to_owned)
     })

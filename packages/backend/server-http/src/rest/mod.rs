@@ -185,6 +185,7 @@ pub enum PrincipalResolutionError {
   VersionGuard {
     error: VersionGuardError,
     clear_cookies: bool,
+    https: bool,
   },
   Domain(DomainError),
 }
@@ -211,16 +212,22 @@ impl PrincipalResolutionError {
           false,
         )
       }
-      Self::VersionGuard { error, clear_cookies } => (error.into_envelope(), clear_cookies),
+      Self::VersionGuard {
+        error, clear_cookies, ..
+      } => (error.into_envelope(), clear_cookies),
       Self::Domain(err) => (domain_error_to_envelope(&err), false),
     }
   }
 
   pub fn into_http_response(self) -> Response {
+    let https = match &self {
+      Self::VersionGuard { https, .. } => *https,
+      _ => false,
+    };
     let (env, clear_cookies) = self.into_envelope();
     let mut resp = envelope_to_http_response(env);
     if clear_cookies {
-      append_clear_auth_cookies(resp.headers_mut(), false);
+      append_clear_auth_cookies(resp.headers_mut(), https);
     }
     resp
   }
@@ -300,6 +307,28 @@ pub fn extract_bearer_token(headers: &HeaderMap) -> Option<&str> {
   if token.is_empty() { None } else { Some(token) }
 }
 
+/// Side-effect-free read-only check for whether the request carries a valid
+/// Bearer JWT or active Cookie session (without running version-guard
+/// revocation or TTR refresh, which belong to the route handler).
+pub(crate) async fn has_valid_authenticated_principal(state: &RouterState, headers: &HeaderMap) -> bool {
+  if let Some(bearer) = extract_bearer_token(headers).filter(|token| is_likely_jwt(token)) {
+    return state.app.auth.resolve_bearer_principal(bearer).await.is_ok();
+  }
+  let cookies = parse_cookies(headers);
+  let Some(session_id) = extract_cookie(&cookies, SESSION_COOKIE_NAME) else {
+    return false;
+  };
+  let user_id = extract_cookie(&cookies, USER_ID_COOKIE_NAME);
+  matches!(
+    state
+      .app
+      .auth
+      .resolve_cookie_principal(session_id, user_id, None, false)
+      .await,
+    Ok(Some(_))
+  )
+}
+
 /// Resolves the authenticated principal from `Authorization: Bearer <jwt>` or
 /// `affine_session` cookie, enforcing `client.versionControl` and cookie TTR
 /// refresh matching `v0.27.5` `core/auth/guard.ts:85-220` 1:1.
@@ -369,6 +398,7 @@ pub(crate) async fn resolve_request_principal_with_policy(
       return Err(PrincipalResolutionError::VersionGuard {
         error: ver_err,
         clear_cookies: false,
+        https: state.app.config.load().https,
       });
     }
 
@@ -435,6 +465,7 @@ pub(crate) async fn resolve_request_principal_with_policy(
     return Err(PrincipalResolutionError::VersionGuard {
       error: ver_err,
       clear_cookies: true,
+      https: state.app.config.load().https,
     });
   }
 
@@ -798,6 +829,44 @@ pub(crate) async fn resolve_auth_request_source_for_app(
     .and_then(|v| v.pointer("/auth/trustedCloudflareHeaders").and_then(|b| b.as_bool()))
     .unwrap_or(false);
   extract_request_source(headers, trusted_cf)
+}
+
+/// Returns effective `server.hosts` (DB override replacing baseline).
+pub(crate) async fn effective_server_hosts(app: &crate::AppState) -> Vec<String> {
+  if let Ok(eff) = app.app_config.get_effective_app_config_arc().await
+    && let Some(arr) = eff.pointer("/server/hosts").and_then(serde_json::Value::as_array)
+  {
+    return arr.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect();
+  }
+  app.config.load().app_config_baseline.server.hosts.clone()
+}
+
+/// Resolves client IP for Turnstile `remoteip`, falling back to `x-real-ip`,
+/// `x-forwarded-for`, or socket `peer_addr` when Cloudflare headers are untrusted.
+pub(crate) async fn resolve_captcha_remote_ip(
+  state: &RouterState,
+  headers: &HeaderMap,
+  peer: Option<std::net::SocketAddr>,
+) -> Option<String> {
+  if let Some(ip) = resolve_auth_request_source(state, headers).await.ip {
+    return Some(ip);
+  }
+  headers
+    .get("x-real-ip")
+    .and_then(|v| v.to_str().ok())
+    .map(str::trim)
+    .filter(|s| !s.is_empty())
+    .map(str::to_owned)
+    .or_else(|| {
+      headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|raw| raw.split(',').next())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned)
+    })
+    .or_else(|| peer.map(|p| p.ip().to_string()))
 }
 
 /// Resolves [`AuthRequestSource`] using the effective `auth.trustedCloudflareHeaders` flag.

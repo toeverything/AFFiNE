@@ -57,7 +57,7 @@ pub(crate) async fn check_shared_throttle(
   session_id: Option<&str>,
   worker_handler: Option<&str>,
 ) -> Result<Option<ThrottleQuota>, Box<Response>> {
-  let cfg = state.app.app_config.get_effective_app_config().await.ok();
+  let cfg = state.app.app_config.get_effective_app_config_arc().await.ok();
   if cfg.as_ref().and_then(|c| c.pointer("/throttle/enabled")) == Some(&Value::Bool(false)) {
     return Ok(None);
   }
@@ -401,7 +401,18 @@ pub(crate) fn is_cors_origin_allowed(origin: &str, allowed: &[String], dev_mode:
   dev_mode && is_dev_loopback_origin(trimmed)
 }
 
-fn push_normalized_origin(out: &mut Vec<String>, raw: &str, default_scheme: &str) {
+pub(crate) fn extract_origin_from_url(raw: &str) -> Option<String> {
+  let u = Url::parse(raw.trim()).ok()?;
+  match u.scheme() {
+    "http" | "https" => Some(u.origin().ascii_serialization()),
+    "assets" => Some(format!("assets://{}", u.host_str().unwrap_or(""))),
+    "capacitor" | "ionic" => Some(format!("{}://{}", u.scheme(), u.host_str().unwrap_or("localhost"))),
+    "file" => Some("file://".to_owned()),
+    _ => None,
+  }
+}
+
+fn push_normalized_origin(out: &mut Vec<String>, raw: &str, default_scheme: &str, default_port: Option<u16>) {
   let t = raw.trim().trim_end_matches('/');
   if t.is_empty() {
     return;
@@ -412,63 +423,80 @@ fn push_normalized_origin(out: &mut Vec<String>, raw: &str, default_scheme: &str
     }
     return;
   }
-  let cand = if t.contains("://") {
+  let has_scheme = t.contains("://");
+  let cand = if has_scheme {
     t.to_owned()
+  } else if !t.starts_with('[') && t.matches(':').count() > 1 {
+    format!("{default_scheme}://[{t}]")
   } else {
     format!("{default_scheme}://{t}")
   };
-  if let Ok(u) = Url::parse(&cand)
-    && let Some(o) = match u.scheme() {
-      "http" | "https" => Some(u.origin().ascii_serialization()),
-      "assets" => Some(format!("assets://{}", u.host_str().unwrap_or(""))),
-      "file" => Some("file://".to_owned()),
-      _ => None,
+  if let Ok(mut u) = Url::parse(&cand) {
+    if let Some(o) = extract_origin_from_url(u.as_str())
+      && !out.contains(&o)
+    {
+      out.push(o);
     }
-    && !out.contains(&o)
-  {
-    out.push(o);
+    if !has_scheme
+      && u.port().is_none()
+      && matches!(u.scheme(), "http" | "https")
+      && let Some(port) = default_port
+      && u.set_port(Some(port)).is_ok()
+      && let Some(o) = extract_origin_from_url(u.as_str())
+      && !out.contains(&o)
+    {
+      out.push(o);
+    }
   }
 }
 
 pub(crate) async fn allowed_origins_for_state_async(state: &RouterState, scope: CorsOriginScope) -> Vec<String> {
   let cfg = state.app.config.load();
   let mut out = Vec::new();
-  let scheme = Url::parse(&cfg.external_url).map_or("http".to_owned(), |u| u.scheme().to_owned());
+  let parsed_ext = Url::parse(&cfg.external_url).ok();
+  let scheme = parsed_ext.as_ref().map_or("http".to_owned(), |u| u.scheme().to_owned());
+  let default_port = parsed_ext.as_ref().and_then(Url::port);
   for &o in MOBILE_CLIENT_ORIGINS.iter().chain(DESKTOP_CLIENT_ORIGINS.iter()) {
     out.push(o.to_owned());
   }
-  push_normalized_origin(&mut out, &cfg.external_url, &scheme);
-  for h in &cfg.app_config_baseline.server.hosts {
-    push_normalized_origin(&mut out, h, &scheme);
+  push_normalized_origin(&mut out, &cfg.external_url, &scheme, None);
+  let eff = state.app.app_config.get_effective_app_config_arc().await.ok();
+  if let Some(hosts) = eff
+    .as_ref()
+    .and_then(|v| v.pointer("/server/hosts"))
+    .and_then(Value::as_array)
+  {
+    for h in hosts.iter().filter_map(Value::as_str) {
+      push_normalized_origin(&mut out, h, &scheme, default_port);
+    }
+  } else {
+    for h in &cfg.app_config_baseline.server.hosts {
+      push_normalized_origin(&mut out, h, &scheme, default_port);
+    }
   }
   if scope == CorsOriginScope::Telemetry {
     for o in &cfg.telemetry_allowed_origins {
-      push_normalized_origin(&mut out, o, &scheme);
+      push_normalized_origin(&mut out, o, &scheme, None);
     }
   }
-  if let Ok(eff) = state.app.app_config.get_effective_app_config().await {
-    if let Some(hosts) = eff.pointer("/server/hosts").and_then(Value::as_array) {
-      for h in hosts.iter().filter_map(Value::as_str) {
-        push_normalized_origin(&mut out, h, &scheme);
-      }
-    }
+  if let Some(eff) = eff {
     if let Some(url_origins) = eff.pointer("/url/allowedOrigins").and_then(Value::as_array) {
       for o in url_origins.iter().filter_map(Value::as_str) {
-        push_normalized_origin(&mut out, o, &scheme);
+        push_normalized_origin(&mut out, o, &scheme, None);
       }
     }
     if scope == CorsOriginScope::Worker
       && let Some(worker_origins) = eff.pointer("/worker/allowedOrigin").and_then(Value::as_array)
     {
       for o in worker_origins.iter().filter_map(Value::as_str) {
-        push_normalized_origin(&mut out, o, &scheme);
+        push_normalized_origin(&mut out, o, &scheme, None);
       }
     }
     if scope == CorsOriginScope::Telemetry
       && let Some(tel_origins) = eff.pointer("/telemetry/allowedOrigin").and_then(Value::as_array)
     {
       for o in tel_origins.iter().filter_map(Value::as_str) {
-        push_normalized_origin(&mut out, o, &scheme);
+        push_normalized_origin(&mut out, o, &scheme, None);
       }
     }
   }
@@ -494,18 +522,9 @@ pub(crate) fn check_origin_or_referer(headers: &HeaderMap, allowed: &[String], d
   {
     return true;
   }
-  h_str(headers, header::REFERER).is_some_and(|r| {
-    let Ok(u) = Url::parse(r) else {
-      return false;
-    };
-    let candidate = match u.scheme() {
-      "http" | "https" => u.origin().ascii_serialization(),
-      "assets" => format!("assets://{}", u.host_str().unwrap_or("")),
-      "file" => "file://".to_owned(),
-      _ => return false,
-    };
-    is_cors_origin_allowed(&candidate, allowed, dev_mode)
-  })
+  h_str(headers, header::REFERER)
+    .and_then(extract_origin_from_url)
+    .is_some_and(|candidate| is_cors_origin_allowed(&candidate, allowed, dev_mode))
 }
 fn fix_url_with_policy(raw: &str, allow_private: &[Origin]) -> Option<Url> {
   let t = raw.trim();

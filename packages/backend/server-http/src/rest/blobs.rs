@@ -6,12 +6,42 @@ use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 use server_types::DomainError;
 
+use super::throttle::{ThrottleOutcome, ThrottleSpec, check_throttle_for_app, too_many_requests_envelope};
 use super::{
   apply_blob_security_headers, domain_error_to_http_response, envelope_to_http_response, json_utf8_response,
   resolve_request_principal_with_policy,
 };
 use crate::RouterState;
 use crate::legacy_compat::errors::LegacyErrorEnvelope;
+
+pub(crate) async fn blobs_default_throttle_middleware(
+  State(state): State<RouterState>,
+  req: axum::http::Request<axum::body::Body>,
+  next: axum::middleware::Next,
+) -> Response {
+  if super::has_valid_authenticated_principal(&state, req.headers()).await {
+    return next.run(req).await;
+  }
+  let peer = req
+    .extensions()
+    .get::<axum::extract::ConnectInfo<std::net::SocketAddr>>()
+    .map(|c| c.0);
+  match check_throttle_for_app(&state.app, Some(req.headers()), peer, None, ThrottleSpec::Default).await {
+    ThrottleOutcome::Disabled => next.run(req).await,
+    ThrottleOutcome::Allowed(th) => {
+      let mut resp = next.run(req).await;
+      th.apply_to(resp.headers_mut());
+      resp
+    }
+    ThrottleOutcome::Limited { retry_after_secs } => {
+      let mut resp = envelope_to_http_response(too_many_requests_envelope());
+      if let Ok(v) = HeaderValue::from_str(&retry_after_secs.to_string()) {
+        resp.headers_mut().insert(header::RETRY_AFTER, v);
+      }
+      resp
+    }
+  }
+}
 
 /// Serves locally stored user avatars (`GET /api/avatars/:id`) matching
 /// `v0.27.5` `core/user/controller.ts`.
@@ -135,7 +165,7 @@ fn validate_blob_source_query(query: &BlobSourceQuery) -> Result<(&str, &str, Op
       error_type: "INVALID_INPUT".into(),
       name: "INVALID_HISTORY_TIMESTAMP".into(),
       message: "Invalid history timestamp.".into(),
-      data: None,
+      data: Some(serde_json::json!({ "timestamp": query.timestamp_ms })),
     })));
   }
   Err(Box::new(envelope_to_http_response(LegacyErrorEnvelope {
@@ -210,9 +240,9 @@ pub(crate) async fn handle_get_blob_v1(
     Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
       status: StatusCode::FORBIDDEN.as_u16(),
       code: "Forbidden".into(),
-      error_type: "ACTION_FORBIDDEN".into(),
+      error_type: "NO_PERMISSION".into(),
       name: "ACCESS_DENIED".into(),
-      message: "Access denied.".into(),
+      message: "You do not have permission to access this resource.".into(),
       data: None,
     }),
     Err(err) => domain_error_to_http_response(&err),
@@ -293,9 +323,9 @@ pub(crate) async fn handle_get_blob_manifest_v1(
     Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
       status: StatusCode::FORBIDDEN.as_u16(),
       code: "Forbidden".into(),
-      error_type: "ACTION_FORBIDDEN".into(),
+      error_type: "NO_PERMISSION".into(),
       name: "ACCESS_DENIED".into(),
-      message: "Access denied.".into(),
+      message: "You do not have permission to access this resource.".into(),
       data: None,
     }),
     Err(err) => domain_error_to_http_response(&err),
@@ -323,14 +353,7 @@ pub(crate) async fn handle_get_readable_blob_manifest_v1(
   };
   let https = state.app.config.load().https;
   let Some(principal) = resolved.principal else {
-    let mut resp = envelope_to_http_response(LegacyErrorEnvelope {
-      status: StatusCode::FORBIDDEN.as_u16(),
-      code: "Forbidden".into(),
-      error_type: "ACTION_FORBIDDEN".into(),
-      name: "ACCESS_DENIED".into(),
-      message: "Access denied.".into(),
-      data: None,
-    });
+    let mut resp = domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into()));
     resolved.cookie_action.apply_to(resp.headers_mut(), https);
     return resp;
   };
@@ -383,9 +406,9 @@ pub(crate) async fn handle_get_readable_blob_manifest_v1(
     Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
       status: StatusCode::FORBIDDEN.as_u16(),
       code: "Forbidden".into(),
-      error_type: "ACTION_FORBIDDEN".into(),
+      error_type: "NO_PERMISSION".into(),
       name: "ACCESS_DENIED".into(),
-      message: "Access denied.".into(),
+      message: "You do not have permission to access this resource.".into(),
       data: None,
     }),
     Err(err) => domain_error_to_http_response(&err),
@@ -487,9 +510,9 @@ pub(crate) async fn handle_get_doc_snapshot(
     Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
       status: StatusCode::FORBIDDEN.as_u16(),
       code: "Forbidden".into(),
-      error_type: "ACTION_FORBIDDEN".into(),
+      error_type: "NO_PERMISSION".into(),
       name: "ACCESS_DENIED".into(),
-      message: "Access denied.".into(),
+      message: "You do not have permission to access this resource.".into(),
       data: None,
     }),
     Err(err) => domain_error_to_http_response(&err),
@@ -546,9 +569,9 @@ pub(crate) async fn handle_head_public_doc(
     Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
       status: StatusCode::FORBIDDEN.as_u16(),
       code: "Forbidden".into(),
-      error_type: "ACTION_FORBIDDEN".into(),
+      error_type: "NO_PERMISSION".into(),
       name: "ACCESS_DENIED".into(),
-      message: "Access denied.".into(),
+      message: "You do not have permission to access this resource.".into(),
       data: None,
     }),
     Err(err) => domain_error_to_http_response(&err),
@@ -600,9 +623,9 @@ pub(crate) async fn handle_get_public_doc(
     Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
       status: StatusCode::FORBIDDEN.as_u16(),
       code: "Forbidden".into(),
-      error_type: "ACTION_FORBIDDEN".into(),
+      error_type: "NO_PERMISSION".into(),
       name: "ACCESS_DENIED".into(),
-      message: "Access denied.".into(),
+      message: "You do not have permission to access this resource.".into(),
       data: None,
     }),
     Err(err) => domain_error_to_http_response(&err),
@@ -642,9 +665,9 @@ pub(crate) async fn handle_get_public_root_doc(
     Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
       status: StatusCode::FORBIDDEN.as_u16(),
       code: "Forbidden".into(),
-      error_type: "ACTION_FORBIDDEN".into(),
+      error_type: "NO_PERMISSION".into(),
       name: "ACCESS_DENIED".into(),
-      message: "Access denied.".into(),
+      message: "You do not have permission to access this resource.".into(),
       data: None,
     }),
     Err(err) => domain_error_to_http_response(&err),
@@ -731,9 +754,9 @@ pub(crate) async fn handle_get_doc_history(
       Err(DomainError::Unauthorized(_)) => envelope_to_http_response(LegacyErrorEnvelope {
         status: StatusCode::FORBIDDEN.as_u16(),
         code: "Forbidden".into(),
-        error_type: "ACTION_FORBIDDEN".into(),
+        error_type: "NO_PERMISSION".into(),
         name: "ACCESS_DENIED".into(),
-        message: "Access denied.".into(),
+        message: "You do not have permission to access this resource.".into(),
         data: None,
       }),
       Err(err) => domain_error_to_http_response(&err),

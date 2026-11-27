@@ -7,7 +7,7 @@ use async_graphql::{Context, Enum, InputObject, Result, SimpleObject, Upload};
 use chrono::{DateTime, Utc};
 use server_blob::{PutBlobOutcome, UploadInitMethod, UploadedPart};
 use server_domain::events::InvalidationHintV1;
-use server_types::{DeploymentMode, DomainError};
+use server_types::DomainError;
 
 use super::{JsonObjectScalar, require_authenticated_user};
 use crate::AppState;
@@ -83,43 +83,6 @@ async fn publish_quota_storage_invalidation(state: &AppState, workspace_id: &str
     let _ = state
       .invalidation
       .publish_invalidation(&InvalidationHintV1::QuotaStorageUsage { subject })
-      .await;
-  }
-
-  let prefix = match state.config.load().deployment_mode {
-    DeploymentMode::Selfhosted => "selfhosted",
-    DeploymentMode::Cloud => "cloud",
-  };
-  let mut topics = vec![
-    (
-      "runtime-invalidation",
-      serde_json::json!({ "workspaceId": workspace_id }),
-      format!("workspace:{workspace_id}:quota-state"),
-      "workspace.quota-state.changed",
-    ),
-    (
-      "quota-state-changed",
-      serde_json::json!({ "workspaceId": workspace_id }),
-      format!("workspace:{workspace_id}:access"),
-      "workspace.access.changed",
-    ),
-  ];
-  if let Some(ref owner) = owner_id {
-    topics.push((
-      "runtime-invalidation",
-      serde_json::json!({}),
-      format!("user:{owner}:quota-state"),
-      "user.quota-state.changed",
-    ));
-  }
-  for (reason, input, room, topic) in topics {
-    let req = format!("{prefix}:event:{}", uuid::Uuid::new_v4());
-    let payload = serde_json::json!({
-      "event": { "changed": true, "reason": reason }, "input": input, "room": room, "topic": topic,
-    });
-    let _ = state
-      .event_bus
-      .publish_event("realtime.topic.changed", payload, Some(&req))
       .await;
   }
 }

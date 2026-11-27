@@ -40,7 +40,7 @@ async fn read_body_bounded(body: Body, expected_len: usize) -> Result<Vec<u8>, D
   let mut stream = body.into_data_stream();
   let mut out = Vec::with_capacity(max_allowed.min(64 * 1024));
   while let Some(chunk) = stream.next().await {
-    let chunk = chunk.map_err(|e| DomainError::Validation(format!("Failed to read upload body: {e}")))?;
+    let chunk = chunk.map_err(|e| bad(&format!("Failed to read upload body: {e}")))?;
     if out.len().saturating_add(chunk.len()) > max_allowed {
       return Err(bad("Content length mismatch"));
     }

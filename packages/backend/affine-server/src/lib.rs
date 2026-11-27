@@ -708,6 +708,14 @@ impl SyncSessionAuthenticator for AuthServiceSyncAuthenticator {
           allow_canary,
         )
       {
+        let _ = self
+          .auth
+          .revoke_auth_session(
+            &principal.auth_session_id,
+            Some(&principal.user.id),
+            "unsupported_client_version",
+          )
+          .await;
         let (client_version, required_version) = ver_err.into_parts();
         return Err(server_sync::error::SyncError::UnsupportedClientVersion {
           client_version,
@@ -754,6 +762,7 @@ impl SyncSessionAuthenticator for AuthServiceSyncAuthenticator {
         allow_canary,
       )
     {
+      let _ = self.auth.sign_out_cookie(&principal.session_id, None).await;
       let (client_version, required_version) = ver_err.into_parts();
       return Err(server_sync::error::SyncError::UnsupportedClientVersion {
         client_version,
@@ -767,6 +776,131 @@ impl SyncSessionAuthenticator for AuthServiceSyncAuthenticator {
       name: principal.user.name,
       session_id: principal.session_id,
     })
+  }
+}
+
+struct CopilotRealtimeSpiAdapter(Arc<dyn server_spi::CopilotRealtimeSpi>);
+
+fn map_copilot_realtime_err(err: server_types::DomainError) -> server_sync::error::SyncError {
+  match err {
+    server_types::DomainError::Forbidden(msg) if msg == "Copilot is disabled." => {
+      server_sync::error::SyncError::CopilotDisabled
+    }
+    server_types::DomainError::Forbidden(msg) => server_sync::error::SyncError::AccessDenied(msg),
+    server_types::DomainError::Unauthorized(msg) => server_sync::error::SyncError::AuthenticationRequired(msg),
+    server_types::DomainError::Validation(msg)
+    | server_types::DomainError::Conflict(msg)
+    | server_types::DomainError::PreconditionFailed(msg) => server_sync::error::SyncError::BadRequest(msg),
+    server_types::DomainError::NotFound(msg) => server_sync::error::SyncError::BadRequest(msg),
+    server_types::DomainError::QuotaExceeded { message, .. } => server_sync::error::SyncError::QuotaExceeded(message),
+    server_types::DomainError::RateLimited(msg) => server_sync::error::SyncError::BadRequest(msg),
+    server_types::DomainError::Unavailable(msg) | server_types::DomainError::Internal(msg) => {
+      server_sync::error::SyncError::Internal(msg)
+    }
+  }
+}
+
+#[async_trait::async_trait]
+impl server_sync::storage::CopilotRealtimeHandler for CopilotRealtimeSpiAdapter {
+  async fn get_transcript_task(
+    &self,
+    user_id: &str,
+    workspace_id: &str,
+    blob_id: Option<&str>,
+    task_id: Option<&str>,
+  ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self
+      .0
+      .get_transcript_task(user_id, workspace_id, blob_id, task_id)
+      .await
+      .map_err(map_copilot_realtime_err)
+  }
+
+  async fn retry_transcript_task(
+    &self,
+    user_id: &str,
+    workspace_id: &str,
+    task_id: &str,
+  ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self
+      .0
+      .retry_transcript_task(user_id, workspace_id, task_id)
+      .await
+      .map_err(map_copilot_realtime_err)
+  }
+
+  async fn authorize_transcript_task(
+    &self,
+    user_id: &str,
+    workspace_id: &str,
+    task_id: &str,
+  ) -> Result<(), server_sync::error::SyncError> {
+    self
+      .0
+      .authorize_transcript_task(user_id, workspace_id, task_id)
+      .await
+      .map_err(map_copilot_realtime_err)
+  }
+
+  async fn get_embedding_progress(
+    &self,
+    user_id: &str,
+    workspace_id: &str,
+  ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self
+      .0
+      .get_embedding_progress(user_id, workspace_id)
+      .await
+      .map_err(map_copilot_realtime_err)
+  }
+
+  async fn authorize_embedding_progress(
+    &self,
+    user_id: &str,
+    workspace_id: &str,
+  ) -> Result<(), server_sync::error::SyncError> {
+    self
+      .0
+      .authorize_embedding_progress(user_id, workspace_id)
+      .await
+      .map_err(map_copilot_realtime_err)
+  }
+
+  async fn delegated_editor_upsert(
+    &self,
+    user_id: &str,
+    connection_id: &str,
+    input: serde_json::Value,
+  ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self
+      .0
+      .delegated_editor_upsert(user_id, connection_id, input)
+      .await
+      .map_err(map_copilot_realtime_err)
+  }
+
+  async fn delegated_editor_release(
+    &self,
+    user_id: &str,
+    input: serde_json::Value,
+  ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self
+      .0
+      .delegated_editor_release(user_id, input)
+      .await
+      .map_err(map_copilot_realtime_err)
+  }
+
+  async fn delegated_tool_respond(
+    &self,
+    user_id: &str,
+    input: serde_json::Value,
+  ) -> Result<serde_json::Value, server_sync::error::SyncError> {
+    self
+      .0
+      .delegated_tool_respond(user_id, input)
+      .await
+      .map_err(map_copilot_realtime_err)
   }
 }
 
@@ -814,8 +948,9 @@ async fn build_server_with_bound_port(
   let effective_port = bound_port.unwrap_or(cli.port);
 
   let (file_cfg, file_json, file_copilot_storage) = load_home_config_file(cli.config_path.as_deref())?;
-  // Fail-fast on explicitly blank AFFINE_PRIVATE_KEY for HTTP-serving roles.
-  let private_key_from_env_or_file = match cli.private_key.as_deref() {
+  // Fail-fast on explicitly blank AFFINE_PRIVATE_KEY for HTTP-serving roles;
+  // otherwise resolve private key with File > Env priority (below DB override).
+  let env_private_key = match cli.private_key.as_deref() {
     Some(raw) if raw.trim().is_empty() => {
       if matches!(role, ServerRole::Allinone | ServerRole::Front | ServerRole::Graphql) {
         return Err(ServerError::InvalidConfig(
@@ -825,12 +960,14 @@ async fn build_server_with_bound_port(
       Some(String::new())
     }
     Some(raw) => Some(raw.to_owned()),
-    None => file_json
-      .pointer("/crypto/privateKey")
-      .and_then(|v| v.as_str())
-      .filter(|s| !s.trim().is_empty())
-      .map(str::to_owned),
+    None => None,
   };
+  let file_private_key = file_json
+    .pointer("/crypto/privateKey")
+    .and_then(|v| v.as_str())
+    .filter(|s| !s.trim().is_empty())
+    .map(str::to_owned);
+  let private_key_from_env_or_file = file_private_key.or(env_private_key);
   let server_name = file_cfg
     .server
     .as_ref()
@@ -936,6 +1073,13 @@ async fn build_server_with_bound_port(
   }
 
   let effective_redis_url = cli.effective_redis_url_with_file(&file_json)?;
+  let effective_redis_key_prefix = file_json
+    .pointer("/redis/ioredis/keyPrefix")
+    .or_else(|| file_json.pointer("/redis/keyPrefix"))
+    .and_then(serde_json::Value::as_str)
+    .filter(|s| !s.is_empty())
+    .map(str::to_owned)
+    .unwrap_or_else(|| cli.redis_key_prefix.clone());
   let (redis_client, redis_db_index, session_redis_url_str, session_redis_db_index, session_mutex, redis_runtime_cfg) =
     match effective_redis_url.as_deref() {
       Some(url) => {
@@ -943,7 +1087,7 @@ async fn build_server_with_bound_port(
         let base_db = parse_redis_db_index(url)?;
         let (session_url, session_db) = session_redis_url(url)?;
         let client = redis::Client::open(url)?;
-        let mutex = RedisMutex::new(&session_url, cli.redis_key_prefix.clone())?;
+        let mutex = RedisMutex::new(&session_url, effective_redis_key_prefix)?;
         (
           Some(client),
           base_db,
@@ -1059,6 +1203,7 @@ async fn build_server_with_bound_port(
     redis_configured: effective_redis_url.is_some(),
     redis_url_env_set: env_redis_url_raw.is_some(),
     redis_url_has_password,
+    redis_key_prefix: cli.redis_key_prefix.clone(),
   };
 
   let mut config = RuntimeConfig {
@@ -1106,30 +1251,12 @@ async fn build_server_with_bound_port(
     }
   };
 
-  let db_private_key: Option<String> =
-    match sqlx::query_scalar::<_, serde_json::Value>("SELECT value FROM app_configs WHERE id = 'crypto.privateKey'")
-      .fetch_optional(db.pool())
-      .await
-    {
-      Ok(val) => val.and_then(|v| v.as_str().filter(|s| !s.trim().is_empty()).map(str::to_owned)),
-      Err(sqlx::Error::Database(ref db_err)) if cli.skip_schema_check && db_err.code().as_deref() == Some("42P01") => {
-        None
-      }
-      Err(e) => {
-        return Err(ServerError::InvalidConfig(format!(
-          "failed to load crypto.privateKey from app_configs: {e}"
-        )));
-      }
-    };
-  let env_or_file_private_key = private_key_from_env_or_file.clone();
-  let private_key = db_private_key
-    .or(private_key_from_env_or_file)
-    .unwrap_or_else(generate_ephemeral_private_key);
-  config.calendar_fallback_private_key = Some(env_or_file_private_key.unwrap_or_else(generate_ephemeral_private_key));
+  let fallback_private_key = private_key_from_env_or_file.unwrap_or_else(generate_ephemeral_private_key);
+  config.calendar_fallback_private_key = Some(fallback_private_key.clone());
 
   let mut auth_cfg = AuthConfig {
     server_name,
-    private_key: private_key.clone(),
+    private_key: fallback_private_key.clone(),
     ..AuthConfig::default()
   };
   if let Some(a) = file_cfg.auth.as_ref() {
@@ -1157,6 +1284,42 @@ async fn build_server_with_bound_port(
     {
       auth_cfg.password_max_length = v as usize;
     }
+    auth_cfg.session_ttl_seconds = server_domain::auth::parse_duration_secs_clamped(
+      a.pointer("/session/ttl"),
+      auth_cfg.session_ttl_seconds,
+      60,
+      365 * 86_400,
+    );
+    auth_cfg.session_ttr_seconds = server_domain::auth::parse_duration_secs_clamped(
+      a.pointer("/session/ttr"),
+      auth_cfg.session_ttr_seconds,
+      0,
+      365 * 86_400,
+    );
+    auth_cfg.access_token_ttl_secs = server_domain::auth::parse_duration_secs_clamped(
+      a.pointer("/token/accessTokenTtl"),
+      auth_cfg.access_token_ttl_secs,
+      server_domain::auth::MIN_ACCESS_TOKEN_TTL_SECS,
+      server_domain::auth::MAX_ACCESS_TOKEN_TTL_SECS,
+    );
+    auth_cfg.refresh_idle_ttl_secs = server_domain::auth::parse_duration_secs_clamped(
+      a.pointer("/token/refreshIdleTtl"),
+      auth_cfg.refresh_idle_ttl_secs,
+      server_domain::auth::MIN_REFRESH_IDLE_TTL_SECS,
+      server_domain::auth::MAX_REFRESH_IDLE_TTL_SECS,
+    );
+    auth_cfg.refresh_absolute_ttl_secs = server_domain::auth::parse_duration_secs_clamped(
+      a.pointer("/token/refreshAbsoluteTtl"),
+      auth_cfg.refresh_absolute_ttl_secs,
+      server_domain::auth::MIN_REFRESH_ABSOLUTE_TTL_SECS,
+      server_domain::auth::MAX_REFRESH_ABSOLUTE_TTL_SECS,
+    );
+    auth_cfg.refresh_grace_secs = server_domain::auth::parse_duration_secs_clamped(
+      a.pointer("/token/refreshGracePeriod"),
+      auth_cfg.refresh_grace_secs,
+      server_domain::auth::MIN_REFRESH_GRACE_SECS,
+      server_domain::auth::MAX_REFRESH_GRACE_SECS,
+    );
   }
   if let Some(providers) = file_cfg
     .oauth
@@ -1193,7 +1356,7 @@ async fn build_server_with_bound_port(
   let workspaces = WorkspaceService::new(db.clone(), ext.quota_gate(), Arc::clone(&invalidation))
     .with_event_bus(Arc::clone(&event_bus))
     .with_base_url(external_url.clone())
-    .with_private_key(private_key.clone())
+    .with_private_key(fallback_private_key.clone())
     .with_rate_limit_policy(ext.rate_limit_policy())
     .with_billing_spi(effective_billing)
     .with_redis(redis_client.clone());
@@ -1225,7 +1388,7 @@ async fn build_server_with_bound_port(
   )
   .with_invalidation(Arc::clone(&invalidation))
   .with_base_url(external_url.clone())
-  .with_private_key(private_key.clone());
+  .with_private_key(fallback_private_key.clone());
   let notifications = NotificationService::new(
     db.clone(),
     ext.quota_gate(),
@@ -1233,7 +1396,7 @@ async fn build_server_with_bound_port(
     Arc::clone(&event_bus),
   )
   .with_base_url(external_url.clone())
-  .with_private_key(private_key.clone());
+  .with_private_key(fallback_private_key.clone());
   let blob_root = std::env::var_os("HOME")
     .map(PathBuf::from)
     .unwrap_or_else(std::env::temp_dir)
@@ -1294,11 +1457,11 @@ async fn build_server_with_bound_port(
     AppServices {
       auth: auth.clone().with_app_config(app_config.clone()),
       users,
-      workspaces,
+      workspaces: workspaces.with_app_config(app_config.clone()),
       doc_sharing,
       histories,
-      comments,
-      notifications,
+      comments: comments.with_app_config(app_config.clone()),
+      notifications: notifications.with_app_config(app_config.clone()),
       licenses,
       app_config,
       blobs,
@@ -1324,6 +1487,10 @@ async fn build_server_with_bound_port(
     sync_cfg.external_url = state.config.load().external_url.clone();
     sync_cfg.allowed_origins = allowed_origins;
     sync_cfg.allow_dev_loopback = state.config.load().dev_mode;
+    sync_cfg.copilot_realtime = ext
+      .copilot_realtime_spi()
+      .map(|spi| Arc::new(CopilotRealtimeSpiAdapter(spi)) as Arc<dyn server_sync::storage::CopilotRealtimeHandler>);
+    sync_cfg.available_user_features = ext.available_user_features();
     let authenticator = Arc::new(AuthServiceSyncAuthenticator {
       auth: state.auth.clone(),
       app_config: state.app_config.clone(),

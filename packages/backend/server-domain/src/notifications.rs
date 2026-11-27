@@ -42,6 +42,7 @@ pub struct NotificationService {
   event_bus: Arc<dyn EventBusPublisher>,
   base_url: String,
   private_key: String,
+  app_config: Option<crate::app_config::AppConfigService>,
 }
 
 impl NotificationService {
@@ -58,6 +59,7 @@ impl NotificationService {
       event_bus,
       base_url: "http://localhost:3010".to_owned(),
       private_key: String::new(),
+      app_config: None,
     }
   }
 
@@ -68,6 +70,11 @@ impl NotificationService {
 
   pub fn with_private_key(mut self, private_key: impl Into<String>) -> Self {
     self.private_key = private_key.into();
+    self
+  }
+
+  pub fn with_app_config(mut self, app_config: crate::app_config::AppConfigService) -> Self {
+    self.app_config = Some(app_config);
     self
   }
 
@@ -281,6 +288,8 @@ impl NotificationService {
       return Err(DomainError::Validation("mention_user_oneself_denied".to_owned()));
     }
     let storage_doc_id = self.doc_sharing.resolve_storage_doc_id(workspace_id, &doc.id).await?;
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.private_key).await?;
 
     let mut tx = self
       .db
@@ -365,7 +374,7 @@ impl NotificationService {
     enqueue_notification_mail_in_tx(
       tx.tx_mut(),
       EnqueueNotificationMail {
-        private_key: &self.private_key,
+        private_key: &private_key,
         mail_name: "Mention",
         mail_class: "doc_mention",
         recipient_user_id: target_user_id,

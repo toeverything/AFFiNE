@@ -762,8 +762,8 @@ fn http_auth_graphql_and_rest_parity() {
         .unwrap(),
     )
     .await;
-    assert_eq!(st, StatusCode::FORBIDDEN);
-    assert_eq!(anon_manifest["name"], "ACCESS_DENIED");
+    assert_eq!(st, StatusCode::UNAUTHORIZED);
+    assert_eq!(anon_manifest["name"], "AUTHENTICATION_REQUIRED");
 
     // PUT /api/storage/upload missing params returns 400 BLOB_INVALID with type=INVALID_INPUT.
     let (st, _, r2_err, _) = send(
@@ -1016,5 +1016,168 @@ fn sign_in_rate_limit_honors_ioredis_key_prefix_and_ms_pttl() {
       pttl > 0 && pttl <= 60_000,
       "expected millisecond PTTL in (0, 60000], got {pttl}"
     );
+  });
+}
+
+#[test]
+fn blobs_default_throttle_allows_authed_and_limits_forged_cookies_by_ip() {
+  let _lease = lease_db();
+  let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
+  rt.block_on(async {
+    let db = ServerDb::connect(DbConfig {
+      database_url: _lease.url().to_owned(),
+      channel: "production".into(),
+      role: ServerRole::Allinone,
+      selfhosted: true,
+      max_connections: 4,
+      statement_timeout_ms: 5_000,
+      tier_permits: [8, 4, 4, 2],
+    })
+    .await
+    .expect("connect db");
+    sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+      .execute(db.pool())
+      .await
+      .expect("reset schema");
+    db.ensure_schema_ready().await.expect("ensure schema ready");
+
+    let cfg = RuntimeConfig {
+      deployment_mode: DeploymentMode::Selfhosted,
+      role: ServerRole::Allinone,
+      external_url: "http://127.0.0.1:3010".to_owned(),
+      ..RuntimeConfig::default()
+    };
+    let app = AppState::new(db.clone(), None, cfg, Arc::new(CommunityExtension::new()));
+    let admin = app
+      .auth
+      .create_first_admin_user(server_domain::auth::CreateAdminUserInput {
+        name: Some("Admin".to_owned()),
+        email: "throttle-admin@example.com".to_owned(),
+        password: "Password123!".to_owned(),
+        client_version: None,
+      })
+      .await
+      .expect("create admin");
+    let valid_cookie = format!("affine_session={}; affine_user_id={}", admin.session_id, admin.user.id);
+    let router = build_router(Arc::clone(&app));
+
+    // (a) Authenticated session gets 0 429 responses across 130 requests.
+    for _ in 0..130 {
+      let (st, _, _, _) = send(
+        &router,
+        Request::builder()
+          .method(Method::GET)
+          .uri("/api/avatars/nonexistent-avatar-id")
+          .header(header::COOKIE, &valid_cookie)
+          .header("x-forwarded-for", "203.0.113.10")
+          .body(Body::empty())
+          .unwrap(),
+      )
+      .await;
+      assert_ne!(st, StatusCode::TOO_MANY_REQUESTS);
+    }
+
+    // (b) Unauthenticated client with 130 distinct forged affine_session cookies is bucketed by IP and gets 429 on 121..=130.
+    for i in 1..=130 {
+      let (st, _, _, _) = send(
+        &router,
+        Request::builder()
+          .method(Method::GET)
+          .uri("/api/avatars/nonexistent-avatar-id")
+          .header(header::COOKIE, format!("affine_session=rand-{i}"))
+          .header("x-forwarded-for", "203.0.113.11")
+          .body(Body::empty())
+          .unwrap(),
+      )
+      .await;
+      if i <= 120 {
+        assert_ne!(st, StatusCode::TOO_MANY_REQUESTS, "req {i} should not be limited");
+      } else {
+        assert_eq!(st, StatusCode::TOO_MANY_REQUESTS, "req {i} must be 429");
+      }
+    }
+  });
+}
+
+#[test]
+fn magic_link_and_sign_in_map_sign_up_forbidden_distinctly() {
+  let _lease = lease_db();
+  let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
+  rt.block_on(async {
+    let db = ServerDb::connect(DbConfig {
+      database_url: _lease.url().to_owned(),
+      channel: "production".into(),
+      role: ServerRole::Allinone,
+      selfhosted: true,
+      max_connections: 4,
+      statement_timeout_ms: 5_000,
+      tier_permits: [8, 4, 4, 2],
+    })
+    .await
+    .expect("connect db");
+    sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+      .execute(db.pool())
+      .await
+      .expect("reset schema");
+    db.ensure_schema_ready().await.expect("ensure schema ready");
+
+    let mut cfg = RuntimeConfig {
+      deployment_mode: DeploymentMode::Selfhosted,
+      role: ServerRole::Allinone,
+      external_url: "http://127.0.0.1:3010".to_owned(),
+      ..RuntimeConfig::default()
+    };
+    cfg.app_config_baseline.smtp.host = "127.0.0.1".to_owned();
+    let app = AppState::new(db.clone(), None, cfg, Arc::new(CommunityExtension::new()));
+    let prepared = app
+      .auth
+      .prepare_magic_link(server_domain::auth::PrepareMagicLinkInput {
+        email: "new-user-forbidden@example.com".to_owned(),
+        callback_url: "http://127.0.0.1:3010/magic-link".to_owned(),
+        client_nonce: None,
+        source: None,
+      })
+      .await
+      .expect("prepare magic link while signup is enabled");
+    sqlx::query(
+      "INSERT INTO app_configs (id, value, created_at, updated_at) VALUES ('auth.allowSignup', 'false'::jsonb, now(), now())",
+    )
+    .execute(db.pool())
+    .await
+    .expect("disable allowSignup");
+    app.app_config.invalidate_cache();
+    let router = build_router(Arc::clone(&app));
+
+    let (st_send, _, _, body_send) = send(
+      &router,
+      Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/sign-in")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(
+          json!({ "email": "new-user-forbidden@example.com", "callbackUrl": "/magic-link" }).to_string(),
+        ))
+        .unwrap(),
+    )
+    .await;
+    assert_eq!(st_send, StatusCode::FORBIDDEN, "body={body_send}");
+    let json_send: Value = serde_json::from_str(&body_send).expect("json send");
+    assert_eq!(json_send["name"], "SIGN_UP_FORBIDDEN");
+
+    let (st_complete, _, _, body_complete) = send(
+      &router,
+      Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/magic-link")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(
+          json!({ "email": "new-user-forbidden@example.com", "token": prepared.otp }).to_string(),
+        ))
+        .unwrap(),
+    )
+    .await;
+    assert_eq!(st_complete, StatusCode::BAD_REQUEST, "body={body_complete}");
+    let json_complete: Value = serde_json::from_str(&body_complete).expect("json complete");
+    assert_eq!(json_complete["name"], "INVALID_EMAIL_TOKEN");
   });
 }

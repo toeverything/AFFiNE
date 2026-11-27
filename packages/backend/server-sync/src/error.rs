@@ -44,6 +44,12 @@ pub enum SyncError {
   #[error("document not found: {doc_id} in {space_id}")]
   DocNotFound { space_id: String, doc_id: String },
 
+  #[error("user not found")]
+  UserNotFound,
+
+  #[error("space owner not found: {space_id}")]
+  SpaceOwnerNotFound { space_id: String },
+
   #[error("document update blocked: {doc_id} in {space_id}")]
   DocUpdateBlocked { space_id: String, doc_id: String },
 

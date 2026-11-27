@@ -153,11 +153,12 @@ async fn handle_oauth_preflight(
   }
   let req_host = headers.get(header::HOST).and_then(|v| v.to_str().ok());
   let cfg = state.app.config.load();
+  let server_hosts = super::effective_server_hosts(&state.app).await;
   let canonical_redirect = match body.redirect_uri.as_deref().filter(|s| !s.is_empty()) {
     Some(raw) => match validate_and_build_calendar_redirect_uri(
       raw,
       &cfg.external_url,
-      &cfg.app_config_baseline.server.hosts,
+      &server_hosts,
       cfg.app_config_baseline.server.port,
       req_host,
       &[],
@@ -185,7 +186,7 @@ async fn handle_oauth_preflight(
   };
   let cb_origin = calendar_callback_origin(
     &cfg.external_url,
-    &cfg.app_config_baseline.server.hosts,
+    &server_hosts,
     cfg.app_config_baseline.server.port,
     req_host,
   );
@@ -248,10 +249,11 @@ async fn handle_oauth_callback(
   };
   let svc = calendar_service_from_state(&state.app);
   let cfg = state.app.config.load();
+  let server_hosts = super::effective_server_hosts(&state.app).await;
   let req_host = headers.get(header::HOST).and_then(|v| v.to_str().ok());
   let cb_origin = calendar_callback_origin(
     &cfg.external_url,
-    &cfg.app_config_baseline.server.hosts,
+    &server_hosts,
     cfg.app_config_baseline.server.port,
     req_host,
   );
@@ -265,7 +267,7 @@ async fn handle_oauth_callback(
       let canonical = match validate_and_build_calendar_redirect_uri(
         redirect_uri,
         &cfg.external_url,
-        &cfg.app_config_baseline.server.hosts,
+        &server_hosts,
         cfg.app_config_baseline.server.port,
         req_host,
         &[("error", msg.as_str())],
@@ -320,8 +322,10 @@ async fn handle_google_webhook(State(state): State<RouterState>, headers: Header
     .get("x-goog-channel-token")
     .and_then(|v| v.to_str().ok())
     .unwrap_or_default();
-  if !svc.verify_webhook_token(&configs.google, token).await {
-    return with_cookies(StatusCode::UNAUTHORIZED.into_response(), &cookie_action, https);
+  match svc.try_verify_webhook_token(&configs.google, token).await {
+    Ok(true) => {}
+    Ok(false) => return with_cookies(StatusCode::UNAUTHORIZED.into_response(), &cookie_action, https),
+    Err(err) => return with_cookies(cal_err_resp(&err), &cookie_action, https),
   }
   match svc.handle_webhook(CalendarProviderName::Google, channel_id).await {
     Ok(()) => with_cookies(StatusCode::OK.into_response(), &cookie_action, https),

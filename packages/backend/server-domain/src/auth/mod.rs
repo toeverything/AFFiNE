@@ -184,6 +184,10 @@ pub struct AuthConfig {
   pub password_max_length: usize,
   pub session_ttl_seconds: i64,
   pub session_ttr_seconds: i64,
+  pub access_token_ttl_secs: i64,
+  pub refresh_idle_ttl_secs: i64,
+  pub refresh_absolute_ttl_secs: i64,
+  pub refresh_grace_secs: i64,
   pub oauth_providers: std::collections::HashMap<String, oauth::OAuthProviderConfig>,
 }
 
@@ -219,6 +223,10 @@ impl Default for AuthConfig {
       password_max_length: 32,
       session_ttl_seconds: DEFAULT_COOKIE_SESSION_TTL_SECONDS,
       session_ttr_seconds: DEFAULT_COOKIE_SESSION_TTR_SECONDS,
+      access_token_ttl_secs: DEFAULT_ACCESS_TOKEN_TTL_SECS,
+      refresh_idle_ttl_secs: DEFAULT_REFRESH_IDLE_TTL_SECS,
+      refresh_absolute_ttl_secs: DEFAULT_REFRESH_ABSOLUTE_TTL_SECS,
+      refresh_grace_secs: DEFAULT_REFRESH_GRACE_SECS,
       oauth_providers: std::collections::HashMap::new(),
     }
   }
@@ -330,8 +338,18 @@ impl AuthService {
     self
   }
 
+  fn base_token_policy(&self) -> AuthTokenPolicy {
+    AuthTokenPolicy {
+      access_token_ttl_secs: self.config.access_token_ttl_secs,
+      refresh_idle_ttl_secs: self.config.refresh_idle_ttl_secs,
+      refresh_absolute_ttl_secs: self.config.refresh_absolute_ttl_secs,
+      refresh_grace_secs: self.config.refresh_grace_secs,
+    }
+  }
+
   async fn verify_signup_domain(&self, email: &str) -> Result<(), DomainError> {
-    if !self.config.require_email_domain_verification {
+    let require_verification = self.load_dynamic_auth_runtime().await.require_email_domain_verification;
+    if !require_verification {
       return Ok(());
     }
     let normalized = email.trim().to_ascii_lowercase();
@@ -389,7 +407,7 @@ impl AuthService {
     .await
     .map_err(|e| DomainError::Internal(format!("load auth token policy: {e}")))?;
     drop(conn);
-    let policy = parse_auth_token_policy(rows);
+    let policy = parse_auth_token_policy(self.base_token_policy(), rows);
     keyring::rotate_signing_key(&self.db, actor_id, expected_active_key_id, policy.access_token_ttl_secs).await
   }
 
@@ -404,6 +422,7 @@ impl AuthService {
 
   /// Issues a compatibility cookie session directly for `user_id` (`UserType.token`).
   pub async fn issue_cookie_session_for_user(&self, user_id: &str) -> Result<CookieSignInResult, DomainError> {
+    let rt = self.load_dynamic_auth_runtime().await;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -420,7 +439,7 @@ impl AuthService {
     let now = decision_time(tx.tx_mut()).await?;
     let issued = self
       .sessions
-      .issue_cookie_session(tx.tx_mut(), user_id, None, None, self.config.session_ttl_seconds, now)
+      .issue_cookie_session(tx.tx_mut(), user_id, None, None, rt.session_ttl_seconds, now)
       .await
       .map_err(|e| DomainError::Internal(format!("issue user cookie session: {e}")))?;
     self
@@ -595,9 +614,24 @@ impl AuthService {
   /// [`SessionRepository`], and invokes [`SessionPolicyHook::on_session_created`]
   /// inside the same transaction (rolling back everything if the hook fails).
   pub async fn create_first_admin_user(&self, input: CreateAdminUserInput) -> Result<CookieSignInResult, DomainError> {
+    match self.create_first_admin_user_for_client(input, false).await? {
+      OpenAppSignInResult::Cookie(res) => Ok(res),
+      OpenAppSignInResult::Native { .. } => Err(DomainError::Internal("unexpected native setup result".to_owned())),
+    }
+  }
+
+  pub async fn create_first_admin_user_for_client(
+    &self,
+    input: CreateAdminUserInput,
+    is_native_client: bool,
+  ) -> Result<OpenAppSignInResult, DomainError> {
     let email = canonical_email(&input.email)?;
     let rt = self.load_dynamic_auth_runtime().await;
     password::validate_password_requirements(&input.password, rt.password_min_length, rt.password_max_length)?;
+    // Fail fast before Argon2id hashing if an admin or registered user already exists.
+    if self.is_server_initialized().await? {
+      return Err(DomainError::Forbidden("First user already created".to_owned()));
+    }
     let password_hash = password::hash_password(&input.password)?;
 
     let mut tx = self
@@ -659,6 +693,38 @@ impl AuthService {
     .await
     .map_err(|e| DomainError::Internal(format!("insert admin user feature: {e}")))?;
 
+    if is_native_client {
+      let exchange_code = format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple());
+      let challenge_key = token_hash(&exchange_code);
+      let expires_at = now + Duration::seconds(AUTH_SESSION_EXCHANGE_TTL_SECONDS);
+      let payload = serde_json::json!({
+        "userId": user_id,
+        "authEpoch": 0,
+        "clientVersion": input.client_version,
+      });
+      sqlx::query(
+        r#"INSERT INTO runtime_states (purpose, token_hash, payload, created_at, updated_at, expires_at)
+           VALUES ($1, $2, $3, $4, $4, $5)"#,
+      )
+      .bind(AUTH_SESSION_EXCHANGE_PURPOSE)
+      .bind(&challenge_key)
+      .bind(&payload)
+      .bind(now)
+      .bind(expires_at)
+      .execute(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("insert native admin exchange code: {e}")))?;
+
+      let user = load_current_user_in_tx(tx.tx_mut(), &user_id)
+        .await?
+        .ok_or_else(|| DomainError::Internal("newly created admin user missing".to_owned()))?;
+
+      tx.commit()
+        .await
+        .map_err(|e| DomainError::Internal(format!("commit create_first_admin_user native: {e}")))?;
+      return Ok(OpenAppSignInResult::Native { user, exchange_code });
+    }
+
     let issued = self
       .sessions
       .issue_cookie_session(
@@ -666,7 +732,7 @@ impl AuthService {
         &user_id,
         None,
         input.client_version.as_deref(),
-        self.config.session_ttl_seconds,
+        rt.session_ttl_seconds,
         now,
       )
       .await
@@ -686,13 +752,13 @@ impl AuthService {
       .await
       .map_err(|e| DomainError::Internal(format!("commit create_first_admin_user: {e}")))?;
 
-    Ok(CookieSignInResult {
+    Ok(OpenAppSignInResult::Cookie(CookieSignInResult {
       user,
       session_id: issued.session_id,
       user_session_id: issued.user_session_id,
       expires_at: issued.expires_at,
       created_user: true,
-    })
+    }))
   }
 
   /// Authenticates an existing user by email + Argon2id password for a native
@@ -985,6 +1051,8 @@ impl AuthService {
       false
     };
 
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.config.private_key).await?;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -1073,7 +1141,7 @@ impl AuthService {
         .await?;
 
       let recipient_domain = email_lower.split_once('@').map(|(_, d)| d).unwrap_or_default();
-      let recipient_hash = hmac_sha256_hex(&self.config.private_key, &email_lower)?;
+      let recipient_hash = hmac_sha256_hex(&private_key, &email_lower)?;
       let mail_payload = serde_json::json!({
         "name": mail_name,
         "to": email,
@@ -1451,6 +1519,7 @@ impl AuthService {
       .ok_or_else(|| DomainError::Unauthorized("invalid_auth_state".to_owned()))?
       .to_owned();
 
+    let rt = self.load_dynamic_auth_runtime().await;
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -1528,7 +1597,7 @@ impl AuthService {
             &user_id,
             existing_session_id,
             client_version,
-            self.config.session_ttl_seconds,
+            rt.session_ttl_seconds,
             now,
           )
           .await
@@ -1832,7 +1901,7 @@ impl AuthService {
       return Err(DomainError::Unauthorized("invalid_auth_state".to_owned()));
     }
 
-    let token_policy = load_auth_token_policy_in_tx(tx.tx_mut()).await?;
+    let token_policy = load_auth_token_policy_in_tx(tx.tx_mut(), self.base_token_policy()).await?;
     let now = decision_time(tx.tx_mut()).await?;
     let absolute_expires_at = now + Duration::seconds(token_policy.refresh_absolute_ttl_secs);
     let idle_expires_at = (now + Duration::seconds(token_policy.refresh_idle_ttl_secs)).min(absolute_expires_at);
@@ -2039,7 +2108,9 @@ impl AuthService {
     // Independent per-token rolling refresh rate limit before locking session rows.
     self.consume_refresh_rate_limit(&token_id).await?;
 
-    let encryption_key = SuccessorKey::derive(self.config.private_key.as_bytes())?;
+    let private_key =
+      crate::app_config::resolve_effective_private_key(self.app_config.as_ref(), &self.config.private_key).await?;
+    let encryption_key = SuccessorKey::derive(private_key.as_bytes())?;
     let attempt_hash = attempt_id.map(token_hash);
 
     let keys = self.ensure_signing_keys().await?;
@@ -2057,7 +2128,7 @@ impl AuthService {
       .await
       .map_err(|e| DomainError::Internal(format!("begin refresh_auth_session: {e}")))?;
 
-    let token_policy = load_auth_token_policy_in_tx(tx.tx_mut()).await?;
+    let token_policy = load_auth_token_policy_in_tx(tx.tx_mut(), self.base_token_policy()).await?;
 
     // Deadlock-free lock order: users -> user_sessions -> auth_sessions -> auth_refresh_tokens (ORDER BY id).
     let disabled: bool = sqlx::query_scalar("SELECT disabled FROM users WHERE id = $1 FOR UPDATE")
@@ -2886,8 +2957,7 @@ pub enum BearerResolutionError {
   Domain(DomainError),
 }
 
-fn parse_auth_token_policy(rows: Vec<sqlx::postgres::PgRow>) -> AuthTokenPolicy {
-  let mut policy = AuthTokenPolicy::default();
+fn parse_auth_token_policy(mut policy: AuthTokenPolicy, rows: Vec<sqlx::postgres::PgRow>) -> AuthTokenPolicy {
   let apply_token_obj = |policy: &mut AuthTokenPolicy, obj: &serde_json::Map<String, Value>| {
     if let Some(v) = obj.get("accessTokenTtl") {
       policy.access_token_ttl_secs = parse_duration_secs_clamped(
@@ -2977,6 +3047,7 @@ fn parse_auth_token_policy(rows: Vec<sqlx::postgres::PgRow>) -> AuthTokenPolicy 
 
 async fn load_auth_token_policy_in_tx(
   tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+  baseline: AuthTokenPolicy,
 ) -> Result<AuthTokenPolicy, DomainError> {
   let rows = sqlx::query(
     "SELECT id, value FROM app_configs
@@ -2986,7 +3057,7 @@ async fn load_auth_token_policy_in_tx(
   .fetch_all(&mut **tx)
   .await
   .map_err(|e| DomainError::Internal(format!("load auth token policy: {e}")))?;
-  Ok(parse_auth_token_policy(rows))
+  Ok(parse_auth_token_policy(baseline, rows))
 }
 
 fn serialize_rfc3339_millis<S: serde::Serializer>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error> {

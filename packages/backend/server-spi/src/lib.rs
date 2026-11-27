@@ -191,6 +191,54 @@ pub trait RateLimitPolicy: Send + Sync + 'static {
   }
 }
 
+#[async_trait::async_trait]
+pub trait CopilotRealtimeSpi: Send + Sync + 'static {
+  async fn get_transcript_task(
+    &self,
+    user_id: &str,
+    workspace_id: &str,
+    blob_id: Option<&str>,
+    task_id: Option<&str>,
+  ) -> Result<serde_json::Value, DomainError>;
+
+  async fn retry_transcript_task(
+    &self,
+    user_id: &str,
+    workspace_id: &str,
+    task_id: &str,
+  ) -> Result<serde_json::Value, DomainError>;
+
+  async fn authorize_transcript_task(
+    &self,
+    user_id: &str,
+    workspace_id: &str,
+    task_id: &str,
+  ) -> Result<(), DomainError>;
+
+  async fn get_embedding_progress(&self, user_id: &str, workspace_id: &str) -> Result<serde_json::Value, DomainError>;
+
+  async fn authorize_embedding_progress(&self, user_id: &str, workspace_id: &str) -> Result<(), DomainError>;
+
+  async fn delegated_editor_upsert(
+    &self,
+    user_id: &str,
+    connection_id: &str,
+    input: serde_json::Value,
+  ) -> Result<serde_json::Value, DomainError>;
+
+  async fn delegated_editor_release(
+    &self,
+    user_id: &str,
+    input: serde_json::Value,
+  ) -> Result<serde_json::Value, DomainError>;
+
+  async fn delegated_tool_respond(
+    &self,
+    user_id: &str,
+    input: serde_json::Value,
+  ) -> Result<serde_json::Value, DomainError>;
+}
+
 pub trait ServerExtension: Send + Sync + 'static {
   fn edition_name(&self) -> &'static str;
   fn quota_gate(&self) -> Arc<dyn QuotaGate>;
@@ -207,6 +255,12 @@ pub trait ServerExtension: Send + Sync + 'static {
   }
   fn copilot_transcript_spi(&self) -> Arc<dyn CopilotTranscriptSpi> {
     Arc::new(CommunityCopilotTranscriptSpi)
+  }
+  fn copilot_realtime_spi(&self) -> Option<Arc<dyn CopilotRealtimeSpi>> {
+    None
+  }
+  fn available_user_features(&self) -> &'static [&'static str] {
+    &["administrator"]
   }
   fn rate_limit_policy(&self) -> Arc<dyn RateLimitPolicy> {
     Arc::new(CommunityRateLimitPolicy)
