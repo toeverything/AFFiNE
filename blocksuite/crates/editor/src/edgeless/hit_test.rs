@@ -224,9 +224,9 @@ impl EdgelessAuthoringState {
 
     pub fn editing_spatial_block(&self) -> Option<(&str, bool)> {
         match &self.inline_edit {
-            Some(EdgelessInlineEdit::SpatialBlock { block_id, is_note }) => {
-                Some((block_id.as_str(), *is_note))
-            }
+            Some(EdgelessInlineEdit::SpatialBlock {
+                block_id, is_note, ..
+            }) => Some((block_id.as_str(), *is_note)),
             _ => None,
         }
     }
@@ -270,7 +270,19 @@ impl EdgelessAuthoringState {
                 initial_box,
                 initial,
             }) => {
-                let new_box = resized_rect(*initial_box, *handle, *start_world, *current_world);
+                let min_w = if initial.len() == 1 && initial[0].kind == SpatialItemKind::Note {
+                    super::NOTE_MIN_WIDTH
+                } else {
+                    24.0
+                };
+                let new_box = resized_rect_with_min(
+                    *initial_box,
+                    *handle,
+                    *start_world,
+                    *current_world,
+                    min_w,
+                    24.0,
+                );
                 let sx = if initial_box.w > 1e-3 {
                     new_box.w / initial_box.w
                 } else {
@@ -284,7 +296,12 @@ impl EdgelessAuthoringState {
                 for item in initial {
                     let nx = new_box.x + (item.rect.x - initial_box.x) * sx;
                     let ny = new_box.y + (item.rect.y - initial_box.y) * sy;
-                    let nw = (item.rect.w * sx).max(16.0);
+                    let item_min_w = if item.kind == SpatialItemKind::Note {
+                        super::NOTE_MIN_WIDTH
+                    } else {
+                        16.0
+                    };
+                    let nw = (item.rect.w * sx).max(item_min_w);
                     let nh = (item.rect.h * sy).max(16.0);
                     out.insert(
                         item.id.clone(),
@@ -595,41 +612,51 @@ pub fn resized_rect(
     start: (f32, f32),
     current: (f32, f32),
 ) -> WorldRect {
+    resized_rect_with_min(initial, handle, start, current, 24.0, 24.0)
+}
+
+pub fn resized_rect_with_min(
+    initial: WorldRect,
+    handle: HandleKind,
+    start: (f32, f32),
+    current: (f32, f32),
+    min_w: f32,
+    min_h: f32,
+) -> WorldRect {
     let dx = current.0 - start.0;
     let dy = current.1 - start.1;
     let mut left = initial.x;
     let mut top = initial.y;
     let mut right = initial.right();
     let mut bottom = initial.bottom();
-    const MIN_DIM: f32 = 24.0;
     match handle {
         HandleKind::NW => {
-            left = (left + dx).min(right - MIN_DIM);
-            top = (top + dy).min(bottom - MIN_DIM);
+            left = (left + dx).min(right - min_w);
+            top = (top + dy).min(bottom - min_h);
         }
         HandleKind::N => {
-            top = (top + dy).min(bottom - MIN_DIM);
+            top = (top + dy).min(bottom - min_h);
         }
         HandleKind::NE => {
-            right = (right + dx).max(left + MIN_DIM);
-            top = (top + dy).min(bottom - MIN_DIM);
+            right = (right + dx).max(left + min_w);
+            top = (top + dy).min(bottom - min_h);
         }
         HandleKind::E => {
-            right = (right + dx).max(left + MIN_DIM);
+            right = (right + dx).max(left + min_w);
         }
         HandleKind::SE => {
-            right = (right + dx).max(left + MIN_DIM);
-            bottom = (bottom + dy).max(top + MIN_DIM);
+            right = (right + dx).max(left + min_w);
+            bottom = (bottom + dy).max(top + min_h);
         }
         HandleKind::S => {
-            bottom = (bottom + dy).max(top + MIN_DIM);
+            bottom = (bottom + dy).max(top + min_h);
         }
         HandleKind::SW => {
-            left = (left + dx).min(right - MIN_DIM);
-            bottom = (bottom + dy).max(top + MIN_DIM);
+            left = (left + dx).min(right - min_w);
+            bottom = (bottom + dy).max(top + min_h);
         }
         HandleKind::W => {
-            left = (left + dx).min(right - MIN_DIM);
+            left = (left + dx).min(right - min_w);
         }
         HandleKind::Rotate | HandleKind::DragHandle => {}
     }

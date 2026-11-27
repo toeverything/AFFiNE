@@ -578,3 +578,354 @@ fn cascade_delete_after_property_mutations_undoes_and_redoes_all_elements() -> D
     assert_eq!(page.export_doc_json()?, after_delete);
     Ok(())
 }
+
+#[test]
+fn frame_child_ids_crdt_convergence_and_deletion_edge_cases() -> DocResult {
+    use blocksuite_playground_doc::read::BlockContent;
+    use blocksuite_playground_doc::schema::SurfaceElementSpec;
+    use y_octo::SessionValue;
+
+    let mut peer_a = PageDocSession::new("doc", 101)?;
+    peer_a.add_block(
+        "root",
+        BlockSpec::Page {
+            title: "Frame CRDT".into(),
+        },
+        None,
+        None,
+        1,
+    )?;
+    peer_a.add_frame_with_children(None, "f1", "a0", "F1", [0.0, 0.0, 400.0, 400.0], &[], 2)?;
+    let snap0 = peer_a.read_page_snapshot()?;
+    let surf_id = snap0
+        .root
+        .as_ref()
+        .unwrap()
+        .walk()
+        .find(|n| matches!(n.content, BlockContent::Surface { .. }))
+        .unwrap()
+        .id
+        .clone();
+    for (sid, xy) in [("s1", [20.0, 20.0]), ("s2", [80.0, 80.0])] {
+        peer_a.add_surface_element(
+            &surf_id,
+            sid,
+            "a1",
+            SurfaceElementSpec::Shape {
+                shape_type: "rect".into(),
+                xywh: format!("[{},{},40,40]", xy[0], xy[1]),
+                seed: 1,
+                filled: false,
+                text: None,
+            },
+            3,
+        )?;
+    }
+
+    // Clone initial state into peer_b so both share the exact same prop:childElementIds Y.Map.
+    let mut peer_b = PageDocSession::new("doc", 202)?;
+    let init_update = peer_a.encode_update_v1()?;
+    peer_b.apply_remote_update_v1(&init_update)?;
+
+    // Concurrent drag-in on peer_a (adds s1) and peer_b (adds s2) must keep BOTH keys after sync.
+    let commit_a = peer_a
+        .update_frame_child_element_ids("f1", &["s1".into()], &[], 10)?
+        .unwrap();
+    let commit_b = peer_b
+        .update_frame_child_element_ids("f1", &["s2".into()], &[], 11)?
+        .unwrap();
+    peer_a.apply_remote_update_v1(&commit_b.update)?;
+    peer_b.apply_remote_update_v1(&commit_a.update)?;
+    for peer in [&peer_a, &peer_b] {
+        let snap = peer.read_page_snapshot()?;
+        let children = snap
+            .block("f1")
+            .unwrap()
+            .props
+            .get("prop:childElementIds")
+            .unwrap()
+            .as_object()
+            .unwrap();
+        assert_eq!(children.get("s1").and_then(|v| v.as_bool()), Some(true));
+        assert_eq!(children.get("s2").and_then(|v| v.as_bool()), Some(true));
+    }
+
+    // Deleting s1 while f1 survives must prune "s1" from f1.prop:childElementIds and restore both in 1 Undo.
+    peer_a.stop_capturing()?;
+    peer_a.delete_blocks_and_elements_with_connectors(&[], &[(&surf_id, "s1")], 20)?;
+    let snap_after_s1 = peer_a.read_page_snapshot()?;
+    let children_after_s1 = snap_after_s1
+        .block("f1")
+        .unwrap()
+        .props
+        .get("prop:childElementIds")
+        .unwrap()
+        .as_object()
+        .unwrap();
+    assert!(children_after_s1.get("s1").is_none());
+    assert_eq!(
+        children_after_s1.get("s2").and_then(|v| v.as_bool()),
+        Some(true)
+    );
+    peer_a.undo()?;
+    let snap_undo_s1 = peer_a.read_page_snapshot()?;
+    let children_undo_s1 = snap_undo_s1
+        .block("f1")
+        .unwrap()
+        .props
+        .get("prop:childElementIds")
+        .unwrap()
+        .as_object()
+        .unwrap();
+    assert_eq!(
+        children_undo_s1.get("s1").and_then(|v| v.as_bool()),
+        Some(true)
+    );
+
+    // Deleting only n1 while f1 survives must prune BOTH n1 and its descendant p_child from f1.
+    peer_a.add_block(
+        "n1",
+        BlockSpec::Note {
+            xywh: Some("[10,10,200,100]".into()),
+        },
+        Some("root"),
+        None,
+        30,
+    )?;
+    peer_a.add_block("p_child", paragraph("inside note"), Some("n1"), None, 31)?;
+    peer_a.update_frame_child_element_ids("f1", &["n1".into(), "p_child".into()], &[], 32)?;
+    peer_a.stop_capturing()?;
+    peer_a.delete_blocks_and_elements_with_connectors(&["n1"], &[], 33)?;
+    let snap_after_n1 = peer_a.read_page_snapshot()?;
+    let children_after_n1 = snap_after_n1
+        .block("f1")
+        .unwrap()
+        .props
+        .get("prop:childElementIds")
+        .unwrap()
+        .as_object()
+        .unwrap();
+    assert!(children_after_n1.get("n1").is_none());
+    assert!(
+        children_after_n1.get("p_child").is_none(),
+        "descendant p_child must also be pruned from surviving frame"
+    );
+    peer_a.undo()?;
+
+    // Frame containing a Group (with child shape g_sh): deleting Frame recursively deletes Group + g_sh
+    // and ignores `false` entries, while single-step Undo restores all.
+    peer_a.add_surface_element(
+        &surf_id,
+        "g_sh",
+        "a2",
+        SurfaceElementSpec::Shape {
+            shape_type: "rect".into(),
+            xywh: "[120,120,40,40]".into(),
+            seed: 2,
+            filled: false,
+            text: None,
+        },
+        34,
+    )?;
+    peer_a.add_surface_element(
+        &surf_id,
+        "g1",
+        "a3",
+        SurfaceElementSpec::Group {
+            title: "G1".into(),
+            seed: 3,
+            children: vec!["g_sh".into()],
+        },
+        35,
+    )?;
+    // Explicitly mark s2 as `false` in prop:childElementIds.
+    peer_a.set_block_prop(
+        "f1",
+        "prop:childElementIds",
+        SessionValue::Map(vec![
+            ("s1".into(), SessionValue::Any(Any::True)),
+            ("s2".into(), SessionValue::Any(Any::False)),
+            ("n1".into(), SessionValue::Any(Any::True)),
+            ("p_child".into(), SessionValue::Any(Any::True)),
+            ("g1".into(), SessionValue::Any(Any::True)),
+        ]),
+        36,
+    )?;
+    peer_a.stop_capturing()?;
+    peer_a.delete_blocks_and_elements_with_connectors(&["f1"], &[], 40)?;
+    let snap_del_f1 = peer_a.read_page_snapshot()?;
+    assert!(snap_del_f1.block("f1").is_none());
+    assert!(snap_del_f1.block("n1").is_none());
+    assert!(snap_del_f1.block("p_child").is_none());
+    let BlockContent::Surface { elements, .. } = &snap_del_f1.block(&surf_id).unwrap().content
+    else {
+        panic!("expected surface");
+    };
+    assert!(
+        elements.iter().all(|e| e.id != "s1"),
+        "s1 (true) must be deleted"
+    );
+    assert!(
+        elements.iter().all(|e| e.id != "g1" && e.id != "g_sh"),
+        "group g1 and its child g_sh must be deleted with frame"
+    );
+    assert!(
+        elements.iter().any(|e| e.id == "s2"),
+        "s2 (false) must be preserved"
+    );
+    peer_a.undo()?;
+    let snap_undo_f1 = peer_a.read_page_snapshot()?;
+    let BlockContent::Surface { elements, .. } = &snap_undo_f1.block(&surf_id).unwrap().content
+    else {
+        panic!("expected surface");
+    };
+    assert!(
+        elements.iter().any(|e| e.id == "g1") && elements.iter().any(|e| e.id == "g_sh"),
+        "single-step undo must restore frame, group, and group child"
+    );
+
+    // Multi-parent shared descendant: two Notes (note_a, note_b) both reference `shared_p`,
+    // and Frame `f1` contains both `note_a` and `shared_p`. Deleting only `note_a` must keep
+    // `shared_p` alive AND keep `shared_p: true` in `f1`'s `prop:childElementIds` on both peers.
+    peer_a.add_block(
+        "note_a",
+        BlockSpec::Note {
+            xywh: Some("[20,20,160,80]".into()),
+        },
+        Some("root"),
+        None,
+        50,
+    )?;
+    peer_a.add_block(
+        "note_b",
+        BlockSpec::Note {
+            xywh: Some("[220,20,160,80]".into()),
+        },
+        Some("root"),
+        None,
+        51,
+    )?;
+    peer_a.add_block(
+        "shared_p",
+        paragraph("shared child"),
+        Some("note_a"),
+        None,
+        52,
+    )?;
+    peer_a.structural_edit(53, |p| {
+        let edges = y_octo::TypeTarget::Path(
+            y_octo::TypePath::root("blocks")
+                .key("note_b")
+                .key("sys:children"),
+        );
+        p.inner_mut().array_push(
+            &edges,
+            vec![SessionValue::Any(Any::String("shared_p".into()))],
+        )?;
+        Ok(())
+    })?;
+    peer_a.update_frame_child_element_ids("f1", &["note_a".into(), "shared_p".into()], &[], 54)?;
+    let mut peer_c = PageDocSession::new("doc", 203)?;
+    peer_c.apply_remote_update_v1(&peer_a.encode_update_v1()?)?;
+    peer_a.stop_capturing()?;
+    let del_commit = peer_a.delete_blocks_and_elements_with_connectors(&["note_a"], &[], 55)?;
+    peer_c.apply_remote_update_v1(&del_commit.unwrap().update)?;
+    for peer in [&peer_a, &peer_c] {
+        let snap = peer.read_page_snapshot()?;
+        assert!(snap.block("note_a").is_none());
+        assert!(snap.block("note_b").is_some());
+        assert!(snap.block("shared_p").is_some());
+        let children = snap
+            .block("f1")
+            .unwrap()
+            .props
+            .get("prop:childElementIds")
+            .unwrap()
+            .as_object()
+            .unwrap();
+        assert!(children.get("note_a").is_none());
+        assert_eq!(
+            children.get("shared_p").and_then(|v| v.as_bool()),
+            Some(true),
+            "surviving shared descendant must retain Frame membership on both peers"
+        );
+    }
+
+    // Order-independence: deleting Frame `f1` (containing `note_a` and `shared_p`, but not
+    // `note_b`) must keep both `note_b` and `shared_p` alive regardless of whether `root`'s
+    // `sys:children` lists `[note_a, note_b]` or `[note_b, note_a]`.
+    for note_a_first in [true, false] {
+        let mut p = PageDocSession::new("doc-order", if note_a_first { 301 } else { 302 })?;
+        p.add_block(
+            "root",
+            BlockSpec::Page {
+                title: "Order".into(),
+            },
+            None,
+            None,
+            1,
+        )?;
+        let (first_note, second_note) = if note_a_first {
+            ("note_a", "note_b")
+        } else {
+            ("note_b", "note_a")
+        };
+        p.add_block(
+            first_note,
+            BlockSpec::Note {
+                xywh: Some("[20,20,160,80]".into()),
+            },
+            Some("root"),
+            None,
+            2,
+        )?;
+        p.add_block(
+            second_note,
+            BlockSpec::Note {
+                xywh: Some("[220,20,160,80]".into()),
+            },
+            Some("root"),
+            None,
+            3,
+        )?;
+        p.add_block("shared_p", paragraph("shared"), Some("note_a"), None, 4)?;
+        p.structural_edit(5, |page| {
+            let edges = y_octo::TypeTarget::Path(
+                y_octo::TypePath::root("blocks")
+                    .key("note_b")
+                    .key("sys:children"),
+            );
+            page.inner_mut().array_push(
+                &edges,
+                vec![SessionValue::Any(Any::String("shared_p".into()))],
+            )?;
+            Ok(())
+        })?;
+        p.add_block(
+            "f1",
+            BlockSpec::Frame {
+                title: "F1".into(),
+                xywh: Some("[0,0,400,200]".into()),
+                presentation_index: Some("a0".into()),
+            },
+            Some("root"),
+            None,
+            6,
+        )?;
+        p.update_frame_child_element_ids("f1", &["note_a".into(), "shared_p".into()], &[], 7)?;
+        p.stop_capturing()?;
+        p.delete_blocks_and_elements_with_connectors(&["f1"], &[], 8)?;
+        let snap = p.read_page_snapshot()?;
+        assert!(snap.block("f1").is_none());
+        assert!(snap.block("note_a").is_none());
+        assert!(
+            snap.block("note_b").is_some(),
+            "note_a_first={note_a_first}"
+        );
+        assert!(
+            snap.block("shared_p").is_some(),
+            "shared_p must survive Frame deletion regardless of parent order (note_a_first={note_a_first})"
+        );
+    }
+    Ok(())
+}

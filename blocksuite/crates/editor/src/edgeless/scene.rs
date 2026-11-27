@@ -21,12 +21,17 @@ use super::{
     resolve_edgeless_color, rotated_bounds, spatial_blocks, world_bounds, world_rect,
 };
 
-/// Collects child element ids listed in a frame block's `prop:childElementIds`.
+/// Collects child element ids listed as `true` in a frame block's `prop:childElementIds`.
 pub fn collect_frame_children(node: &BlockNode) -> Vec<String> {
     node.props
         .get("prop:childElementIds")
         .and_then(|v| v.as_object())
-        .map(|m| m.keys().cloned().collect())
+        .map(|m| {
+            m.iter()
+                .filter(|(_, v)| v.as_bool() == Some(true))
+                .map(|(k, _)| k.clone())
+                .collect()
+        })
         .unwrap_or_default()
 }
 
@@ -74,23 +79,35 @@ pub fn prepare_edgeless_scene(
                         } else {
                             title.plain.as_str()
                         };
-                        let title_style =
-                            InlineStyle::new(FONT_SANS, 12.0, 500.0, input.palette.text_secondary);
+                        let zoom = state.camera.zoom.max(0.1);
+                        let inv_zoom = 1.0 / zoom;
+                        let title_color = input
+                            .theme
+                            .css_var("--affine-v2-edgeless-frame-fontColor-font")
+                            .unwrap_or_else(ui::Hsla::black);
+                        let title_style = InlineStyle::new(FONT_SANS, 14.0, 500.0, title_color);
+                        let max_screen_w = (rect.w * zoom).max(80.0);
                         let title_inline = Rc::new(layout_inline(
                             title_text,
                             &title_style,
-                            rect.w.max(80.0),
+                            max_screen_w,
                             FRAME_TITLE_HEIGHT,
                             InlineBaseline::Of(&title_style),
                             InlineAlign::Left,
                             window,
                         ));
-                        let pill_w = (title_inline.content_width() + 16.0).min(rect.w.max(80.0));
+                        let pill_screen_w = (title_inline.content_width() + 8.0)
+                            .min(max_screen_w)
+                            .max(28.0);
+                        let pill_screen_h = FRAME_TITLE_HEIGHT;
+                        let pill_world_w = pill_screen_w * inv_zoom;
+                        let pill_world_h = pill_screen_h * inv_zoom;
+                        let pill_world_gap = FRAME_TITLE_GAP * inv_zoom;
                         let title_pill_rect = WorldRect::new(
                             rect.x,
-                            rect.y - FRAME_TITLE_HEIGHT - FRAME_TITLE_GAP,
-                            pill_w,
-                            FRAME_TITLE_HEIGHT,
+                            rect.y - pill_world_h - pill_world_gap,
+                            pill_world_w,
+                            pill_world_h,
                         );
                         let index = child
                             .props
@@ -108,6 +125,7 @@ pub fn prepare_edgeless_scene(
                             rect,
                             title_inline,
                             title_pill_rect,
+                            title_pill_screen_size: (pill_screen_w, pill_screen_h),
                             fill,
                         });
                         spatial_order.push((child.id.clone(), PaintItem::Frame(idx)));
@@ -129,7 +147,7 @@ pub fn prepare_edgeless_scene(
                     let border = note_border_style(child);
                     let border_radius = note_border_radius(child);
                     let shadows = input.theme.shadows(note_shadow_type(child));
-                    let inner_width = (rect.w / scale - 2.0 * NOTE_CARD_PADDING).max(120.0);
+                    let inner_width = (rect.w / scale - 2.0 * NOTE_CARD_PADDING).max(60.0);
                     let is_rtl = input.direction.is_rtl();
                     let key = (
                         input.doc_rev,
@@ -223,16 +241,18 @@ pub fn prepare_edgeless_scene(
                                 rotate_deg = r;
                             }
                         }
-                        let has_max_width = prop_bool(child, "prop:hasMaxWidth", true);
-                        let text_width = if has_max_width {
-                            (rect.w / scale).max(60.0)
+                        let has_max_width = prop_bool(child, "prop:hasMaxWidth", false);
+                        let min_unscaled_w = (rect.w / scale).max(60.0);
+                        let cache_width = if has_max_width {
+                            min_unscaled_w
                         } else {
-                            (rect.w / scale).max(320.0)
+                            // Encode min_unscaled_w negatively to distinguish auto-width cache keys.
+                            -min_unscaled_w
                         };
                         let is_rtl = input.direction.is_rtl();
                         let key = (
                             input.doc_rev,
-                            text_width.to_bits(),
+                            cache_width.to_bits(),
                             scale.to_bits(),
                             input.theme,
                             input.env_rev,
@@ -244,20 +264,21 @@ pub fn prepare_edgeless_scene(
                         let layout = match state.text_flows.get_mut(&child.id) {
                             Some(cached) if cached.key == key => cached.layout.clone(),
                             _ => {
-                                let flow_input = FlowInput {
-                                    snapshot: input.snapshot,
-                                    width: text_width,
-                                    theme: input.theme,
-                                    page_titles: input.page_titles,
-                                    images: input.images,
-                                    pdf_previews: input.pdf_previews,
-                                    doc_directory: input.doc_directory,
-                                    equation_draft: None,
-                                    env_rev: input.env_rev,
-                                    direction: input.direction,
-                                    utc_offset_minutes: input.utc_offset_minutes,
-                                    utc_offset_at: input.utc_offset_at,
-                                };
+                                let make_flow_input =
+                                    |width: f32, direction: ui::Direction| FlowInput {
+                                        snapshot: input.snapshot,
+                                        width,
+                                        theme: input.theme,
+                                        page_titles: input.page_titles,
+                                        images: input.images,
+                                        pdf_previews: input.pdf_previews,
+                                        doc_directory: input.doc_directory,
+                                        equation_draft: None,
+                                        env_rev: input.env_rev,
+                                        direction,
+                                        utc_offset_minutes: input.utc_offset_minutes,
+                                        utc_offset_at: input.utc_offset_at,
+                                    };
                                 let entry = state
                                     .text_flows
                                     .entry(child.id.clone())
@@ -266,16 +287,42 @@ pub fn prepare_edgeless_scene(
                                         key: (u64::MAX, 0, 0, input.theme, 0, 0, 0, !is_rtl, 0),
                                         layout: Rc::new(FlowLayout {
                                             blocks: Vec::new(),
-                                            width: text_width,
+                                            width: min_unscaled_w,
                                             height: 0.0,
                                             direction: input.direction,
                                             stats: Default::default(),
                                         }),
                                     });
+                                let final_width = if has_max_width {
+                                    min_unscaled_w
+                                } else {
+                                    // Pass 1: measure natural max-content width in LTR using a
+                                    // temporary BlockFlow so `entry.flow` keeps its cached width
+                                    // for incremental per-block relayouts on Pass 2.
+                                    let measure_in = make_flow_input(10_000.0, ui::Direction::Ltr);
+                                    let mut measure_flow = BlockFlow::new();
+                                    let measured = measure_flow.layout_nodes(
+                                        &child.children,
+                                        &measure_in,
+                                        window,
+                                    );
+                                    let natural_content_w = measured
+                                        .blocks
+                                        .iter()
+                                        .filter_map(|b| {
+                                            b.body
+                                                .text
+                                                .as_ref()
+                                                .map(|t| b.x + t.x + t.layout.natural_width())
+                                        })
+                                        .fold(0.0_f32, f32::max);
+                                    (natural_content_w + 16.0).max(min_unscaled_w)
+                                };
+                                // Pass 2: lay out at the resolved container width so textAlign
+                                // (left/center/right) and RTL align cleanly inside natural width.
+                                let final_in = make_flow_input(final_width, input.direction);
                                 let laid_out =
-                                    entry
-                                        .flow
-                                        .layout_nodes(&child.children, &flow_input, window);
+                                    entry.flow.layout_nodes(&child.children, &final_in, window);
                                 state.last_frame_relayouts += laid_out.stats.laid_out as u64;
                                 let rc = Rc::new(laid_out);
                                 entry.key = key;
@@ -283,7 +330,10 @@ pub fn prepare_edgeless_scene(
                                 rc
                             }
                         };
-                        rect.h = (layout.height * scale).max(rect.h);
+                        if !has_max_width {
+                            rect.w = rect.w.max((layout.width * scale).max(60.0));
+                        }
+                        rect.h = rect.h.max((layout.height * scale).max(26.0));
                         active_texts.push(child.id.clone());
                         let index = child
                             .props
@@ -592,6 +642,30 @@ pub fn prepare_edgeless_scene(
         }
     };
 
+    let painted_items = if !frames.is_empty()
+        && painted_items.iter().any(|item| {
+            item.kind == SpatialItemKind::Frame
+                && frames
+                    .iter()
+                    .find(|f| f.id == item.id)
+                    .is_some_and(|f| item.title_pill_rect != Some(f.title_pill_rect))
+        }) {
+        let updated: Vec<SpatialItemInfo> = painted_items
+            .iter()
+            .cloned()
+            .map(|mut item| {
+                if item.kind == SpatialItemKind::Frame
+                    && let Some(f) = frames.iter().find(|f| f.id == item.id)
+                {
+                    item.title_pill_rect = Some(f.title_pill_rect);
+                }
+                item
+            })
+            .collect();
+        Rc::from(updated)
+    } else {
+        painted_items
+    };
     state.authoring.painted_items = painted_items;
 
     PreparedEdgelessScene {

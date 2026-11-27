@@ -16,6 +16,22 @@ use crate::theme::Palette;
 /// Half-period of the editing text caret blink in milliseconds (`500ms` on / `500ms` off).
 pub const CARET_BLINK_HALF_PERIOD_MS: f64 = 500.0;
 
+fn empty_block_placeholder(
+    kind: blocksuite_playground_doc::schema::ParagraphType,
+) -> Option<&'static str> {
+    use blocksuite_playground_doc::schema::ParagraphType;
+    match kind {
+        ParagraphType::Text => Some("Type '/' for commands"),
+        ParagraphType::H1 => Some("Heading 1"),
+        ParagraphType::H2 => Some("Heading 2"),
+        ParagraphType::H3 => Some("Heading 3"),
+        ParagraphType::H4 => Some("Heading 4"),
+        ParagraphType::H5 => Some("Heading 5"),
+        ParagraphType::H6 => Some("Heading 6"),
+        ParagraphType::Quote => None,
+    }
+}
+
 impl PlaygroundView {
     /// Closed-form scheduler-clock caret opacity (`1.0` for `0..500ms`, `0.0` for `500..1000ms`),
     /// failing open to solid `1.0` whenever no periodic blink timer is active.
@@ -398,6 +414,48 @@ impl PlaygroundView {
                 .and_then(|b| b.caret_rect(p.caret))
         {
             draw(rect, palette.text_primary.opacity(caret_alpha), true, true);
+        }
+        // Focused empty paragraph or Heading 1-6 placeholder (suppressed while composing
+        // or unfocused so non-focused renders and style-oracle baselines stay unchanged).
+        if self.editor.preedit.is_none()
+            && self.overlays.active_text_field().is_none()
+            && self.table_cell.is_none()
+            && let Some(sel) = &self.editor.selection
+            && sel.empty()
+            && let Some(block) = layout.block(&sel.focus.block_id)
+            && block.body.plain.is_empty()
+            && let Some(text) = &block.body.text
+            && let block_flow::FlowKind::Paragraph(kind) = block.body.kind
+            && let Some(hint) = empty_block_placeholder(kind)
+        {
+            let rect = FlowRect::new(
+                block.x + text.x,
+                block.y + text.y,
+                (block.body.width - text.x).max(0.0),
+                text.layout.line_height(),
+            );
+            if rect.bottom() >= v.scroll_y && rect.y <= v.scroll_y + v.height {
+                let spec = block_flow::paragraph_spec(kind);
+                let mut hint_el = div()
+                    .absolute()
+                    .left(px(v.column_x + rect.x))
+                    .top(px(rect.y - v.scroll_y))
+                    .w(px(rect.w))
+                    .h(px(rect.h))
+                    .overflow_hidden()
+                    .whitespace_nowrap()
+                    .text_size(px(spec.font_size))
+                    .line_height(px(rect.h))
+                    .font_weight(ui::FontWeight(spec.font_weight))
+                    .text_color(palette.placeholder)
+                    .child(hint);
+                if rect.y >= v.scroll_y && rect.bottom() <= v.scroll_y + v.height {
+                    hint_el = hint_el
+                        .snapshot("page.block_placeholder", Some(PAGE_SURFACE_ID))
+                        .snapshot_text(hint);
+                }
+                el.push(hint_el.into_any_element());
+            }
         }
         el.extend(self.table_cell_selection_elements(layout, v, palette, caret_alpha));
         el

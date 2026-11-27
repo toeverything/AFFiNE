@@ -362,6 +362,54 @@ impl PageDocSession {
         })
     }
 
+    /// Create an `affine:edgeless-text` block under `surface_id` (creating `affine:surface`
+    /// inside the same transaction when `surface_id` is `None`) with an initial paragraph child
+    /// in one atomic undoable transaction.
+    #[allow(clippy::too_many_arguments)]
+    pub fn add_edgeless_text(
+        &mut self,
+        surface_id: Option<&str>,
+        text_block_id: &str,
+        para_id: &str,
+        index: &str,
+        xywh: [f64; 4],
+        text: &str,
+        now_ms: u64,
+    ) -> DocResult<PageCommit> {
+        let surface_id = surface_id.map(str::to_string);
+        let text_block_id = text_block_id.to_string();
+        let para_id = para_id.to_string();
+        let index = index.to_string();
+        let text = text.to_string();
+        self.structural_edit(now_ms, move |page| {
+            let sid = match &surface_id {
+                Some(id) => id.clone(),
+                None => page.ensure_surface_block(now_ms)?,
+            };
+            page.add_block(
+                &text_block_id,
+                BlockSpec::EdgelessText {
+                    xywh: Some(Self::format_xywh(xywh)),
+                },
+                Some(&sid),
+                None,
+                now_ms,
+            )?;
+            page.set_block_index(&text_block_id, &index, now_ms)?;
+            page.add_block(
+                &para_id,
+                BlockSpec::Paragraph {
+                    paragraph_type: crate::schema::ParagraphType::Text,
+                    text,
+                },
+                Some(&text_block_id),
+                None,
+                now_ms,
+            )?;
+            Ok(())
+        })
+    }
+
     /// Create an `affine:frame` under `surface_id` (creating `affine:surface` inside the same
     /// transaction when `surface_id` is `None`), set its `prop:index`, and populate
     /// `prop:childElementIds` with `enclosed_ids` in one atomic undoable transaction.
@@ -459,75 +507,6 @@ impl PageDocSession {
             ));
         }
         self.update_surface_element_fields(surface_block_id, element_id, fields, now_ms)
-    }
-
-    /// Delete the given blocks and surface elements, cascading to remove every `Connector`
-    /// in any `affine:surface` whose `source.id` or `target.id` references a deleted ID,
-    /// in one atomic undoable transaction.
-    pub fn delete_blocks_and_elements_with_connectors(
-        &mut self,
-        block_ids: &[&str],
-        surface_elements: &[(&str, &str)],
-        now_ms: u64,
-    ) -> DocResult<PageCommit> {
-        let snap = self.read_page_snapshot()?;
-        let mut deleted_ids: std::collections::HashSet<String> = block_ids
-            .iter()
-            .map(|s| (*s).to_string())
-            .chain(surface_elements.iter().map(|(_, eid)| (*eid).to_string()))
-            .collect();
-        let mut cascade_connectors: Vec<(String, String)> = Vec::new();
-        if let Some(root) = &snap.root {
-            for node in root.walk() {
-                if let crate::read::BlockContent::Surface { elements, .. } = &node.content {
-                    for el in elements {
-                        if let crate::read::SurfaceElementKind::Connector(c) = &el.kind {
-                            let src_hit = c
-                                .source
-                                .id
-                                .as_deref()
-                                .is_some_and(|id| deleted_ids.contains(id));
-                            let tgt_hit = c
-                                .target
-                                .id
-                                .as_deref()
-                                .is_some_and(|id| deleted_ids.contains(id));
-                            if (src_hit || tgt_hit) && deleted_ids.insert(el.id.clone()) {
-                                cascade_connectors.push((node.id.clone(), el.id.clone()));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        let block_parents: Vec<(String, Option<String>)> = block_ids
-            .iter()
-            .map(|&bid| {
-                let parent = snap.root.as_ref().and_then(|root| {
-                    root.walk()
-                        .find(|n| n.children.iter().any(|c| c.id == bid))
-                        .map(|n| n.id.clone())
-                });
-                (bid.to_string(), parent)
-            })
-            .collect();
-        let mut all_surf: Vec<(String, String)> = surface_elements
-            .iter()
-            .map(|(s, e)| ((*s).to_string(), (*e).to_string()))
-            .collect();
-        all_surf.extend(cascade_connectors);
-
-        self.structural_edit(now_ms, move |page| {
-            for (sid, eid) in &all_surf {
-                page.remove_surface_element(sid, eid, now_ms)?;
-            }
-            for (bid, parent) in &block_parents {
-                if let Some(parent_id) = parent {
-                    page.delete_block_subtree(parent_id, bid, now_ms)?;
-                }
-            }
-            Ok(())
-        })
     }
 
     /// Replace the `Y.Text` field (`"text"` or `"title"`) on a surface element.
@@ -645,25 +624,6 @@ impl PageDocSession {
             block_id,
             "prop:rotate",
             SessionValue::Any(Any::Float64(rotate.into())),
-            now_ms,
-        )
-    }
-
-    /// Replace `prop:childElementIds` on an `affine:frame` block.
-    pub fn set_frame_child_element_ids(
-        &mut self,
-        frame_id: &str,
-        child_ids: &[String],
-        now_ms: u64,
-    ) -> DocResult<PageCommit> {
-        let entries = child_ids
-            .iter()
-            .map(|id| (id.clone(), SessionValue::Any(Any::True)))
-            .collect();
-        self.set_block_prop(
-            frame_id,
-            "prop:childElementIds",
-            SessionValue::Map(entries),
             now_ms,
         )
     }

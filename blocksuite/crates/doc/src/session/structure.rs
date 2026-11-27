@@ -10,7 +10,7 @@ use super::{
 };
 
 impl PageDocSession {
-    fn child_graph(&self) -> DocResult<ChildGraph> {
+    pub(super) fn child_graph(&self) -> DocResult<ChildGraph> {
         self.session
             .read_map(&self.blocks_target)?
             .into_iter()

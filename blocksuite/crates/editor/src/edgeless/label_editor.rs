@@ -265,7 +265,11 @@ impl EdgelessLabelEditor {
 #[derive(Clone, Debug)]
 pub enum EdgelessInlineEdit {
     /// Live rich-text `EditorSession` editing inside a Note or EdgelessText block.
-    SpatialBlock { block_id: String, is_note: bool },
+    SpatialBlock {
+        block_id: String,
+        is_note: bool,
+        created_new: bool,
+    },
     /// Inline UTF-16 + IME editing on a Shape, Connector, SurfaceText, or Frame title.
     Label(EdgelessLabelEditor),
 }

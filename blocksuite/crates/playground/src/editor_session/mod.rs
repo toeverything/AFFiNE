@@ -4,8 +4,10 @@ mod block_selection;
 mod clipboard_ops;
 mod commands;
 mod composition;
+mod edit_ops;
 mod input_handler;
 mod markdown;
+mod paste_markdown;
 
 pub use blocksuite_editor::editor_session::*;
 #[cfg(test)]
@@ -87,7 +89,17 @@ impl PlaygroundView {
         } else if e.modifiers.shift
             && let Some(old) = &self.editor.selection
         {
-            sel.anchor = old.anchor.clone();
+            let same_domain = self.flow_layout().is_none_or(|layout| {
+                let is_title = |id: &str| {
+                    layout
+                        .block(id)
+                        .is_some_and(|b| matches!(b.body.kind, block_flow::FlowKind::Title))
+                };
+                is_title(&old.anchor.block_id) == is_title(&p.block_id)
+            });
+            if same_domain {
+                sel.anchor = old.anchor.clone();
+            }
         }
         self.change_selection(sel, w, cx);
     }
@@ -102,9 +114,31 @@ impl PlaygroundView {
             return;
         }
         if self.editor.dragging
-            && let Some(focus) = self.input_point(e.position, w)
+            && let Some(mut focus) = self.input_point(e.position, w)
             && let Some(sel) = &self.editor.selection
         {
+            if let Some(layout) = self.flow_layout() {
+                let anchor_title = layout
+                    .block(&sel.anchor.block_id)
+                    .is_some_and(|b| matches!(b.body.kind, block_flow::FlowKind::Title));
+                let focus_title = layout
+                    .block(&focus.block_id)
+                    .is_some_and(|b| matches!(b.body.kind, block_flow::FlowKind::Title));
+                if anchor_title && !focus_title {
+                    let len = self
+                        .block_text(&sel.anchor.block_id)
+                        .map_or(0, |s| s.encode_utf16().count() as u64);
+                    focus = DocPoint::new(&sel.anchor.block_id, len);
+                } else if !anchor_title && focus_title {
+                    if let Some(first_body) = layout.blocks.iter().find(|b| {
+                        b.editable() && !matches!(b.body.kind, block_flow::FlowKind::Title)
+                    }) {
+                        focus = DocPoint::new(&first_body.block_id, 0);
+                    } else {
+                        return;
+                    }
+                }
+            }
             self.change_selection(
                 DocumentSelection {
                     anchor: sel.anchor.clone(),
@@ -501,6 +535,7 @@ impl PlaygroundView {
         shift: bool,
         word: bool,
         line_edge: bool,
+        doc_edge: bool,
         w: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<()> {
@@ -508,6 +543,7 @@ impl PlaygroundView {
         let layout = self.flow_layout()?;
         let mut p = sel.focus.clone();
         let block = layout.block(&p.block_id)?;
+        let is_title = matches!(block.body.kind, block_flow::FlowKind::Title);
         let text = self.block_text(&p.block_id)?;
         let index = TextBiIndex::new(text);
         let backward = matches!(key, "left" | "up" | "home");
@@ -516,14 +552,41 @@ impl PlaygroundView {
                 .blocks
                 .iter()
                 .position(|other| other.block_id == b.block_id)?;
+            let same_domain = |other: &FlowBlock| {
+                !shift || (matches!(other.body.kind, block_flow::FlowKind::Title) == is_title)
+            };
             if back {
-                layout.blocks[..i].iter().rev().find(|b| b.editable())
+                layout.blocks[..i]
+                    .iter()
+                    .rev()
+                    .find(|b| b.editable() && same_domain(b))
             } else {
-                layout.blocks[i + 1..].iter().find(|b| b.editable())
+                layout.blocks[i + 1..]
+                    .iter()
+                    .find(|b| b.editable() && same_domain(b))
             }
         };
         let mut goal = None;
-        if !shift && !sel.empty() && matches!(key, "left" | "right") {
+        if doc_edge {
+            let target =
+                if is_title {
+                    block
+                } else if backward {
+                    layout.blocks.iter().find(|b| {
+                        b.editable() && !matches!(b.body.kind, block_flow::FlowKind::Title)
+                    })?
+                } else {
+                    layout.blocks.iter().rev().find(|b| {
+                        b.editable() && !matches!(b.body.kind, block_flow::FlowKind::Title)
+                    })?
+                };
+            let target_offset = if backward {
+                0
+            } else {
+                self.block_text(&target.block_id)?.encode_utf16().count() as u64
+            };
+            p = DocPoint::new(&target.block_id, target_offset);
+        } else if !shift && !sel.empty() && matches!(key, "left" | "right") {
             let (start, end, ..) = sel.ordered(&layout)?;
             p = if backward { start } else { end }.clone();
         } else if matches!(key, "up" | "down") {
@@ -538,24 +601,33 @@ impl PlaygroundView {
                 };
             let field = block.body.text.as_ref()?;
             let top = block.y + field.y;
-            let dest = if y < top || y >= top + field.layout.height() {
-                let next = step(block, backward)?;
-                let nt = next.body.text.as_ref()?;
-                y = next.y
-                    + nt.y
-                    + if backward {
-                        nt.layout.height() - nt.layout.line_height() * 0.5
-                    } else {
-                        nt.layout.line_height() * 0.5
+            if y < top || y >= top + field.layout.height() {
+                if let Some(next) = step(block, backward) {
+                    let nt = next.body.text.as_ref()?;
+                    y = next.y
+                        + nt.y
+                        + if backward {
+                            nt.layout.height() - nt.layout.line_height() * 0.5
+                        } else {
+                            nt.layout.line_height() * 0.5
+                        };
+                    p = DocPoint {
+                        block_id: next.block_id.clone(),
+                        caret: next.hit_text(x, y)?,
                     };
-                next
+                } else if !backward {
+                    // Last line of the last editable block: move/extend to block end.
+                    p = DocPoint::new(&block.block_id, index.utf16_len());
+                } else {
+                    // First line of the first block in domain: move/extend to block start.
+                    p = DocPoint::new(&block.block_id, 0);
+                }
             } else {
-                block
-            };
-            p = DocPoint {
-                block_id: dest.block_id.clone(),
-                caret: dest.hit_text(x, y)?,
-            };
+                p = DocPoint {
+                    block_id: block.block_id.clone(),
+                    caret: block.hit_text(x, y)?,
+                };
+            }
         } else if line_edge || matches!(key, "home" | "end") {
             let rect = block.caret_rect(p.caret)?;
             p.caret = block.hit_text(
@@ -574,13 +646,11 @@ impl PlaygroundView {
             );
         } else {
             let offset = if word {
-                let at = if backward {
-                    index.prev_grapheme_utf16(p.offset())
+                if backward {
+                    edit_ops::prev_word_start_utf16(text, p.offset())
                 } else {
-                    p.offset()
-                };
-                let range = word_range(text, at);
-                if backward { range.start } else { range.end }
+                    edit_ops::next_word_end_utf16(text, p.offset())
+                }
             } else if backward {
                 index.prev_grapheme_utf16(p.offset())
             } else {

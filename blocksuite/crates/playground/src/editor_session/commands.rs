@@ -38,19 +38,6 @@ pub(crate) fn take_history_reject_fallback_hits() -> usize {
 }
 
 impl PlaygroundView {
-    pub(crate) fn fresh_block_id(&mut self) -> String {
-        loop {
-            self.editor.next_id += 1;
-            let id = format!(
-                "native-{:x}-{:x}",
-                self.state.awareness.local_client_id(),
-                self.editor.next_id
-            );
-            if self.page_snapshot().is_none_or(|s| s.block(&id).is_none()) {
-                return id;
-            }
-        }
-    }
     pub(crate) fn history(
         &mut self,
         redo: bool,
@@ -347,6 +334,9 @@ impl PlaygroundView {
         let code = matches!(node.content, BlockContent::Code { .. });
         let backwards = key == "backspace";
         let now = self.now_ms(cx) as u64;
+        if key == "enter" && !shift && self.handle_quote_enter(&sel, w, cx)? {
+            return Ok(());
+        }
         if key == "enter" && !sel.empty() && !shift && !code {
             return self.paste_slice(crate::clipboard::Slice::from_plain("\n"), false, w, cx);
         }
@@ -405,9 +395,12 @@ impl PlaygroundView {
                 || (backwards
                     && offset == 0
                     && matches!(node.content,BlockContent::Paragraph {kind,..} if kind!=ParagraphType::Text)));
+        let demote_list_in_place =
+            backwards && offset == 0 && matches!(node.content, BlockContent::List { .. });
         let last_nested = backwards
             && offset == 0
             && !code
+            && !demote_list_in_place
             && parent_of(&snapshot, &id).is_some_and(|(parent, pos)| {
                 matches!(
                     parent.content,
@@ -511,6 +504,13 @@ impl PlaygroundView {
             if backwards && !code && !mergeable && nesting.is_some() {
                 self.page_mut()?.dedent_block(&id, now)?
             } else if !mergeable {
+                let remove_empty = (backwards
+                    && text.is_empty()
+                    && parent_of(&snapshot, &id).is_some_and(|(p, _)| p.children.len() > 1))
+                .then_some(id.as_str());
+                if !code && self.try_select_adjacent_block(adjacent, remove_empty, w, cx) {
+                    return Ok(());
+                }
                 if !backwards
                     || !text.is_empty()
                     || code
@@ -693,18 +693,26 @@ impl PlaygroundView {
                 }
                 Ok(())
             }
+            "up" | "down"
+                if (cmd && m.alt && !m.shift)
+                    || (m.control && m.shift && !m.alt && !m.platform) =>
+            {
+                self.move_block_by_shortcut(key == "up", w, cx).map(|_| ())
+            }
             "left" | "right" | "up" | "down" | "home" | "end" => {
-                self.navigate(
-                    key,
-                    m.shift,
-                    m.alt,
-                    m.platform && matches!(key, "left" | "right"),
-                    w,
-                    cx,
-                );
+                let word = (m.alt || (m.control && !m.platform)) && matches!(key, "left" | "right");
+                let line_edge = m.platform && matches!(key, "left" | "right");
+                let doc_edge = (m.control && matches!(key, "home" | "end"))
+                    || (m.platform && matches!(key, "up" | "down"));
+                self.navigate(key, m.shift, word, line_edge, doc_edge, w, cx);
                 Ok(())
             }
-            "enter" | "backspace" | "delete" | "tab" => self.edit_key(key, m.shift, w, cx),
+            "backspace" | "delete" => match self.delete_with_modifiers(key, m, w, cx) {
+                Ok(true) => Ok(()),
+                Ok(false) => self.edit_key(key, m.shift, w, cx),
+                Err(err) => Err(err),
+            },
+            "enter" | "tab" => self.edit_key(key, m.shift, w, cx),
             "a" if cmd => {
                 let width = page_geometry(f32::from(w.viewport_size().width)).column_width;
                 if let Some(sel) = self.editor.selection.clone()
@@ -771,7 +779,6 @@ impl PlaygroundView {
         w.prevent_default();
         cx.stop_propagation();
     }
-
     pub(crate) fn open_link_bar_from_toolbar(&mut self, w: &mut Window, cx: &mut Context<Self>) {
         if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
             return;

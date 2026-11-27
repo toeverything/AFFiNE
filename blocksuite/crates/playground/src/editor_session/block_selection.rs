@@ -189,6 +189,13 @@ impl PlaygroundView {
         let cmd = m.secondary(cx);
         let key = e.keystroke.key.as_str();
         match key {
+            "up" | "down"
+                if (cmd && m.alt && !m.shift)
+                    || (m.control && m.shift && !m.alt && !m.platform) =>
+            {
+                self.move_block_by_shortcut(key == "up", w, cx)?;
+                Ok(true)
+            }
             "escape" => {
                 self.editor.block_selection.clear();
                 cx.notify();

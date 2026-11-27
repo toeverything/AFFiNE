@@ -33,6 +33,17 @@ impl PlaygroundView {
         direction: ui::Direction,
         selection: Option<&'a SelectionFormat>,
     ) -> OverlayScene<'a> {
+        self.overlay_scene_with_transform(snapshot, layout, direction, selection, None)
+    }
+
+    pub(crate) fn overlay_scene_with_transform<'a>(
+        &self,
+        snapshot: &'a PageSnapshot,
+        layout: &'a FlowLayout,
+        direction: ui::Direction,
+        selection: Option<&'a SelectionFormat>,
+        screen_transform: Option<OverlayScreenTransform>,
+    ) -> OverlayScene<'a> {
         OverlayScene {
             snapshot,
             layout,
@@ -41,6 +52,7 @@ impl PlaygroundView {
             scroll_y: self.scroll_y,
             direction,
             selection,
+            screen_transform,
         }
     }
 
@@ -145,10 +157,7 @@ impl PlaygroundView {
             _ => {}
         }
         let now_ms = self.now_ms(cx);
-        let page = match self.mode {
-            PlaygroundMode::Page => self.snapshot.clone().zip(self.flow_layout()),
-            PlaygroundMode::Edgeless => None,
-        };
+        let target = self.active_overlay_target();
         let direction = window.layout_direction();
         let capture_equation = matches!(
             event,
@@ -156,9 +165,10 @@ impl PlaygroundView {
                 | OverlayEvent::CloseEquationEditor
                 | OverlayEvent::EquationApply
         );
-        let effects = match &page {
-            Some((snapshot, layout)) => {
-                let scene = self.overlay_scene(snapshot, layout, direction, None);
+        let effects = match &target {
+            Some((snapshot, layout, transform)) => {
+                let scene = self
+                    .overlay_scene_with_transform(snapshot, layout, direction, None, *transform);
                 self.overlays.handle(event, Some(&scene), now_ms)
             }
             None => self.overlays.handle(event, None, now_ms),
@@ -693,11 +703,39 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) -> Vec<AnyElement> {
         let now_ms = self.now_ms(cx);
-        let mut elements = if self.mode == PlaygroundMode::Page
-            && let Some((snapshot, layout)) = self.snapshot.clone().zip(self.flow_layout())
+        let mut elements = if let Some((snapshot, layout, transform)) = self.active_overlay_target()
         {
-            let scene = self.overlay_scene(&snapshot, &layout, window.layout_direction(), None);
-            self.overlays.popovers(&scene, palette, now_ms, window, cx)
+            if self.mode == PlaygroundMode::Edgeless {
+                let selection = self
+                    .selection_format(&layout)
+                    .filter(|_| !self.editor.dragging);
+                let scene = self.overlay_scene_with_transform(
+                    &snapshot,
+                    &layout,
+                    window.layout_direction(),
+                    selection.as_ref(),
+                    transform,
+                );
+                let input = self.link_input_state();
+                self.overlays.reconcile_edgeless(&scene, now_ms, window);
+                if input != self.link_input_state() {
+                    window.notify_text_input_changed(&self.editor_focus);
+                    window.notify_text_selection_changed(&self.editor_focus);
+                }
+                if self.overlays.slash_menu().is_none() {
+                    self.editor.slash_trigger = None;
+                }
+                self.overlays.popovers(&scene, palette, now_ms, window, cx)
+            } else {
+                let scene = self.overlay_scene_with_transform(
+                    &snapshot,
+                    &layout,
+                    window.layout_direction(),
+                    None,
+                    transform,
+                );
+                self.overlays.popovers(&scene, palette, now_ms, window, cx)
+            }
         } else {
             Vec::new()
         };

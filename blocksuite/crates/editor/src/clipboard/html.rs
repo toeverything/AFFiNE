@@ -9,7 +9,7 @@ use super::{
     text_value,
 };
 
-pub(super) fn block_html(block: &SliceBlock) -> String {
+fn inline_delta_html(block: &SliceBlock) -> String {
     let mut inner = String::new();
     for op in block.delta() {
         let TextDeltaOp::Insert {
@@ -40,27 +40,66 @@ pub(super) fn block_html(block: &SliceBlock) -> String {
         }
         inner += &s;
     }
+    inner
+}
+
+fn list_container_tag(block: &SliceBlock) -> Option<&'static str> {
     match block.spec() {
-        BlockSpec::Code { .. } => format!("<pre><code>{inner}</code></pre>"),
-        BlockSpec::Divider => "<hr>".into(),
-        BlockSpec::List { list_type, .. } => {
-            let tag = if list_type == ListType::Numbered {
-                "ol"
-            } else {
-                "ul"
-            };
-            format!("<{tag}><li>{inner}</li></{tag}>")
-        }
-        BlockSpec::Paragraph { paragraph_type, .. } => {
-            let tag = match paragraph_type {
-                ParagraphType::Text => "p",
-                ParagraphType::Quote => "blockquote",
-                h => h.as_str(),
-            };
-            format!("<{tag}>{inner}</{tag}>")
-        }
-        _ => inner,
+        BlockSpec::List { list_type, .. } => Some(if list_type == ListType::Numbered {
+            "ol"
+        } else {
+            "ul"
+        }),
+        _ => None,
     }
+}
+
+/// Serialize a tree of `SliceBlock`s into HTML, grouping consecutive sibling list items
+/// of the same type into one `<ul>`/`<ol>` and nesting child lists inside their parent `<li>`.
+pub(super) fn blocks_html(blocks: &[SliceBlock]) -> String {
+    let mut out = String::new();
+    let mut i = 0;
+    while i < blocks.len() {
+        if let Some(tag) = list_container_tag(&blocks[i]) {
+            out.push('<');
+            out.push_str(tag);
+            out.push('>');
+            while i < blocks.len() && list_container_tag(&blocks[i]) == Some(tag) {
+                let inner = inline_delta_html(&blocks[i]);
+                let children = blocks_html(&blocks[i].children);
+                out.push_str("<li>");
+                out.push_str(&inner);
+                out.push_str(&children);
+                out.push_str("</li>");
+                i += 1;
+            }
+            out.push_str("</");
+            out.push_str(tag);
+            out.push('>');
+            continue;
+        }
+        let block = &blocks[i];
+        let inner = inline_delta_html(block);
+        let rendered = match block.spec() {
+            BlockSpec::Code { .. } => format!("<pre><code>{inner}</code></pre>"),
+            BlockSpec::Divider => "<hr>".into(),
+            BlockSpec::Paragraph { paragraph_type, .. } => {
+                let tag = match paragraph_type {
+                    ParagraphType::Text => "p",
+                    ParagraphType::Quote => "blockquote",
+                    h => h.as_str(),
+                };
+                format!("<{tag}>{inner}</{tag}>")
+            }
+            _ => inner,
+        };
+        out.push_str(&rendered);
+        if !block.children.is_empty() {
+            out.push_str(&blocks_html(&block.children));
+        }
+        i += 1;
+    }
+    out
 }
 
 fn escape(s: &str) -> String {
@@ -238,11 +277,24 @@ fn attr<'a>(mut attrs: &'a str, key: &str) -> Option<&'a str> {
     None
 }
 
+fn delta_is_whitespace_only(delta: &[TextDeltaOp]) -> bool {
+    delta.iter().all(|op| match op {
+        TextDeltaOp::Insert {
+            insert: TextInsert::Text(t),
+            ..
+        } => t.chars().all(char::is_whitespace),
+        _ => false,
+    })
+}
+
 pub(super) fn parse_html_blocks(raw_html: &str) -> Option<Slice> {
     let cleaned = strip_dangerous_html(raw_html);
     let mut html = cleaned.as_str();
     let mut blocks = Vec::new();
-    let mut current = None;
+    let mut li_stack: Vec<SliceBlock> = Vec::new();
+    let mut current: Option<SliceBlock> = None;
+    let mut li_has_p = false;
+    let mut in_li_p = false;
     let mut delta = Vec::new();
     let mut marks: Vec<(String, Any)> = Vec::new();
     let mut lists = Vec::new();
@@ -251,19 +303,34 @@ pub(super) fn parse_html_blocks(raw_html: &str) -> Option<Slice> {
     let mut table_rows: Vec<Vec<String>> = Vec::new();
     let mut current_row: Vec<String> = Vec::new();
     let mut current_cell: Option<String> = None;
-    let flush = |current: &mut Option<SliceBlock>,
-                 delta: &mut Vec<TextDeltaOp>,
-                 blocks: &mut Vec<SliceBlock>| {
-        if let Some(mut b) = current.take() {
+    let finalize_current = |current: &mut Option<SliceBlock>, delta: &mut Vec<TextDeltaOp>| {
+        let block = current.take().map(|mut b| {
             if !matches!(
                 b.flavour.as_str(),
                 "affine:divider" | "affine:latex" | "affine:table"
             ) {
                 b.props.insert("text".into(), text_value(delta));
             }
-            blocks.push(b);
-        }
+            b
+        });
         delta.clear();
+        block
+    };
+    let push_finished =
+        |b: SliceBlock, li_stack: &mut Vec<SliceBlock>, blocks: &mut Vec<SliceBlock>| {
+            if let Some(parent_li) = li_stack.last_mut() {
+                parent_li.children.push(b);
+            } else {
+                blocks.push(b);
+            }
+        };
+    let flush = |current: &mut Option<SliceBlock>,
+                 delta: &mut Vec<TextDeltaOp>,
+                 li_stack: &mut Vec<SliceBlock>,
+                 blocks: &mut Vec<SliceBlock>| {
+        if let Some(b) = finalize_current(current, delta) {
+            push_finished(b, li_stack, blocks);
+        }
     };
     while !html.is_empty() {
         if !html.starts_with('<') {
@@ -274,7 +341,12 @@ pub(super) fn parse_html_blocks(raw_html: &str) -> Option<Slice> {
                 cell.push_str(&decode_html_entities(raw));
                 continue;
             }
-            if current.is_none() && raw.trim().is_empty() {
+            if raw.trim().is_empty()
+                && (current.is_none()
+                    || (li_has_p
+                        && !in_li_p
+                        && current.as_ref().is_some_and(|b| b.flavour == "affine:list")))
+            {
                 continue;
             }
             current.get_or_insert_with(|| SliceBlock::plain_block("", blocks.len()));
@@ -306,7 +378,7 @@ pub(super) fn parse_html_blocks(raw_html: &str) -> Option<Slice> {
         let tag = tag.to_ascii_lowercase();
         match tag.as_str() {
             "table" => {
-                flush(&mut current, &mut delta, &mut blocks);
+                flush(&mut current, &mut delta, &mut li_stack, &mut blocks);
                 if close {
                     in_table = false;
                     if !table_rows.is_empty() {
@@ -323,7 +395,11 @@ pub(super) fn parse_html_blocks(raw_html: &str) -> Option<Slice> {
                                     .collect()
                             })
                             .collect();
-                        blocks.push(super::table_slice_block(rows, blocks.len()));
+                        push_finished(
+                            super::table_slice_block(rows, blocks.len()),
+                            &mut li_stack,
+                            &mut blocks,
+                        );
                     }
                 } else {
                     in_table = true;
@@ -367,13 +443,62 @@ pub(super) fn parse_html_blocks(raw_html: &str) -> Option<Slice> {
                     cur.props.insert("checked".into(), json!(checked));
                 }
             }
+            "li" => {
+                li_has_p = false;
+                in_li_p = false;
+                if close {
+                    if current.is_some() {
+                        flush(&mut current, &mut delta, &mut li_stack, &mut blocks);
+                    } else if let Some(done_li) = li_stack.pop() {
+                        push_finished(done_li, &mut li_stack, &mut blocks);
+                    }
+                    continue;
+                }
+                if current.is_some() {
+                    if lists.len() > li_stack.len() + 1 {
+                        if let Some(parent_li) = finalize_current(&mut current, &mut delta) {
+                            li_stack.push(parent_li);
+                        }
+                    } else {
+                        flush(&mut current, &mut delta, &mut li_stack, &mut blocks);
+                    }
+                }
+                let mut b = SliceBlock::plain_block("", blocks.len());
+                b.flavour = "affine:list".into();
+                b.props.insert(
+                    "type".into(),
+                    json!(if lists.last() == Some(&true) {
+                        "numbered"
+                    } else {
+                        "bulleted"
+                    }),
+                );
+                current = Some(b);
+            }
             "p" | "div" | "aside" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "pre"
-            | "blockquote" | "li" | "hr" => {
+            | "blockquote" | "hr" => {
+                if tag == "p" {
+                    if close && in_li_p {
+                        in_li_p = false;
+                        continue;
+                    }
+                    if !close && current.as_ref().is_some_and(|b| b.flavour == "affine:list") {
+                        if !li_has_p && delta_is_whitespace_only(&delta) {
+                            delta.clear();
+                            li_has_p = true;
+                            in_li_p = true;
+                            continue;
+                        }
+                        if let Some(parent_li) = finalize_current(&mut current, &mut delta) {
+                            li_stack.push(parent_li);
+                        }
+                    }
+                }
                 if tag == "div"
                     && !close
                     && let Some(latex) = attr(attrs, "data-latex")
                 {
-                    flush(&mut current, &mut delta, &mut blocks);
+                    flush(&mut current, &mut delta, &mut li_stack, &mut blocks);
                     let mut b = SliceBlock {
                         kind: "block".into(),
                         id: blocks.len().to_string(),
@@ -384,13 +509,13 @@ pub(super) fn parse_html_blocks(raw_html: &str) -> Option<Slice> {
                     };
                     b.props
                         .insert("latex".into(), json!(decode_html_entities(latex)));
-                    blocks.push(b);
+                    push_finished(b, &mut li_stack, &mut blocks);
                     continue;
                 }
                 if tag == "div" && current.is_none() {
                     continue;
                 }
-                flush(&mut current, &mut delta, &mut blocks);
+                flush(&mut current, &mut delta, &mut li_stack, &mut blocks);
                 if close {
                     if tag == "pre" {
                         pre = false;
@@ -399,17 +524,6 @@ pub(super) fn parse_html_blocks(raw_html: &str) -> Option<Slice> {
                 }
                 let mut b = SliceBlock::plain_block("", blocks.len());
                 match tag.as_str() {
-                    "li" => {
-                        b.flavour = "affine:list".into();
-                        b.props.insert(
-                            "type".into(),
-                            json!(if lists.last() == Some(&true) {
-                                "numbered"
-                            } else {
-                                "bulleted"
-                            }),
-                        );
-                    }
                     "pre" => {
                         b.flavour = "affine:code".into();
                         pre = true;
@@ -436,8 +550,21 @@ pub(super) fn parse_html_blocks(raw_html: &str) -> Option<Slice> {
             }
             "ol" | "ul" => {
                 if close {
+                    flush(&mut current, &mut delta, &mut li_stack, &mut blocks);
                     lists.pop();
+                    while li_stack.len() > lists.len() {
+                        if let Some(done_li) = li_stack.pop() {
+                            push_finished(done_li, &mut li_stack, &mut blocks);
+                        }
+                    }
                 } else {
+                    if current.as_ref().is_some_and(|b| b.flavour == "affine:list") {
+                        if let Some(parent_li) = finalize_current(&mut current, &mut delta) {
+                            li_stack.push(parent_li);
+                        }
+                    } else {
+                        flush(&mut current, &mut delta, &mut li_stack, &mut blocks);
+                    }
                     lists.push(tag == "ol");
                 }
             }
@@ -484,7 +611,10 @@ pub(super) fn parse_html_blocks(raw_html: &str) -> Option<Slice> {
             }
         }
     }
-    flush(&mut current, &mut delta, &mut blocks);
+    flush(&mut current, &mut delta, &mut li_stack, &mut blocks);
+    while let Some(done_li) = li_stack.pop() {
+        push_finished(done_li, &mut li_stack, &mut blocks);
+    }
     (!blocks.is_empty()).then(|| Slice::new("", "", blocks))
 }
 
@@ -498,5 +628,47 @@ mod tests {
         let golden = "DISwdg1gpgJgCgQwOZQASFo5Q4aasHwbg2vaA";
         assert_eq!(encode_html_snapshot(input), golden);
         assert_eq!(decode_html_snapshot(golden).as_deref(), Some(input));
+    }
+
+    #[test]
+    fn html_nested_lists_group_siblings_and_roundtrip_hierarchy() {
+        let html = concat!(
+            "<ol><li>First</li><li>Second",
+            "<ul><li>Nested A</li><li>Nested B</li></ul>",
+            "</li><li>Third</li></ol>"
+        );
+        let parsed = parse_html_blocks(html).expect("nested list slice");
+        assert_eq!(parsed.content.len(), 3);
+        let p_wrapped = "<ol><li><p>First</p><ul><li><p>Nested</p></li></ul></li></ol>";
+        let parsed_p = parse_html_blocks(p_wrapped).expect("p-wrapped nested list");
+        assert_eq!(parsed_p.content.len(), 1);
+        assert_eq!(parsed_p.content[0].flavour, "affine:list");
+        assert_eq!(parsed_p.content[0].plain(), "First");
+        assert_eq!(parsed_p.content[0].children.len(), 1);
+        assert_eq!(parsed_p.content[0].children[0].flavour, "affine:list");
+        assert_eq!(parsed_p.content[0].children[0].plain(), "Nested");
+
+        let compact = "<ol><li><p>Parent</p><ul><li><p>Child</p></li></ul></li></ol>";
+        let formatted = "<ol>\n  <li>\n    <p>Parent</p>\n    <ul>\n      <li>\n        <p>Child</p>\n      </li>\n    </ul>\n  </li>\n</ol>";
+        let parsed_compact = parse_html_blocks(compact).expect("compact nested list");
+        let parsed_fmt = parse_html_blocks(formatted).expect("formatted nested list");
+        assert_eq!(parsed_fmt.content.len(), parsed_compact.content.len());
+        assert_eq!(parsed_fmt.content[0].flavour, "affine:list");
+        assert_eq!(parsed_fmt.content[0].plain(), "Parent");
+        assert_eq!(parsed_fmt.content[0].children.len(), 1);
+        assert_eq!(parsed_fmt.content[0].children[0].flavour, "affine:list");
+        assert_eq!(parsed_fmt.content[0].children[0].plain(), "Child");
+        assert_eq!(parsed.content[0].plain(), "First");
+        assert_eq!(parsed.content[1].plain(), "Second");
+        assert_eq!(parsed.content[1].children.len(), 2);
+        assert_eq!(parsed.content[1].children[0].plain(), "Nested A");
+        assert_eq!(parsed.content[1].children[1].plain(), "Nested B");
+        assert_eq!(parsed.content[2].plain(), "Third");
+
+        let exported = blocks_html(&parsed.content);
+        assert_eq!(
+            exported,
+            "<ol><li>First</li><li>Second<ul><li>Nested A</li><li>Nested B</li></ul></li><li>Third</li></ol>"
+        );
     }
 }

@@ -2,6 +2,7 @@ mod database;
 mod export;
 mod structure;
 mod surface;
+mod surface_frame;
 mod table_cell;
 mod workspace;
 

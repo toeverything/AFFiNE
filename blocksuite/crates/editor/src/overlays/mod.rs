@@ -16,6 +16,7 @@ mod slash;
 mod state;
 mod table_cell;
 mod toolbar;
+mod transform;
 
 pub use bookmark_prompt::BookmarkPrompt;
 pub use context_menu::{
@@ -47,6 +48,7 @@ pub use toolbar::LinkBar;
 pub use toolbar::{
     ActiveSelection, FormatAction, MarkState, SelectionFormat, marks_in_range, normalize_url,
 };
+pub use transform::OverlayScreenTransform;
 
 use paint_page::{
     align_glyph, caret_world_rect, drag_handle_rect, drop_slot, emit, hover_block, icon, place,
@@ -488,6 +490,8 @@ pub struct OverlayScene<'a> {
     pub direction: ui::Direction,
     /// The editor's finished, formattable text selection, for frames.
     pub selection: Option<&'a SelectionFormat>,
+    /// Optional camera-mapped transform when editing inside an Edgeless Note / EdgelessText.
+    pub screen_transform: Option<OverlayScreenTransform>,
 }
 
 impl OverlayScene<'_> {
@@ -510,15 +514,33 @@ impl OverlayScene<'_> {
         )
     }
 
+    pub(super) fn anchor_visible(&self, world: &FlowRect) -> bool {
+        if self.screen_transform.is_some() {
+            let s = self.world_to_screen(world);
+            let v = self.popover_viewport();
+            s.bottom() > v.y && s.y < v.bottom() && s.right() > v.x && s.x < v.right()
+        } else {
+            self.page_viewport().intersects(world)
+        }
+    }
+
     pub(super) fn world_to_screen(&self, rect: &FlowRect) -> FlowRect {
-        rect.translated(self.geometry.column_x, TOPBAR_HEIGHT - self.scroll_y)
+        if let Some(t) = self.screen_transform {
+            t.rect_to_screen(rect)
+        } else {
+            rect.translated(self.geometry.column_x, TOPBAR_HEIGHT - self.scroll_y)
+        }
     }
 
     pub(super) fn screen_to_world(&self, x: f32, y: f32) -> (f32, f32) {
-        (
-            x - self.geometry.column_x,
-            y - TOPBAR_HEIGHT + self.scroll_y,
-        )
+        if let Some(t) = self.screen_transform {
+            t.screen_to_local(x, y)
+        } else {
+            (
+                x - self.geometry.column_x,
+                y - TOPBAR_HEIGHT + self.scroll_y,
+            )
+        }
     }
 }
 
@@ -560,6 +582,20 @@ pub struct Overlays {
 impl Overlays {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Reconcile popover state (formatting toolbar, slash/linked-doc fade-out) when editing
+    /// inside an Edgeless Note or EdgelessText where `page_layer` is not invoked.
+    pub fn reconcile_edgeless(
+        &mut self,
+        scene: &OverlayScene<'_>,
+        now_ms: f64,
+        window: &mut Window,
+    ) {
+        self.reconcile(scene, now_ms);
+        if self.in_flight(now_ms) {
+            window.request_animation_frame();
+        }
     }
 
     /// Active `@` linked-document menu state, if open (not closing).

@@ -43,12 +43,7 @@ impl EntityInputHandler for PlaygroundView {
         if self.suppress_unselected_root_input && self.editor.selection.is_none() {
             return;
         }
-        self.begin_input();
-        if let Some((slice, rich)) = crate::clipboard::read_slice(&item)
-            && let Err(e) = self.paste_slice(slice, rich, w, cx)
-        {
-            eprintln!("clipboard paste: {e}");
-        }
+        self.paste_body_clipboard_item(&item, w, cx);
     }
     fn text_for_range(
         &mut self,

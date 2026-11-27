@@ -23,13 +23,15 @@ use super::{
 pub const EDGELESS_VIEWPORT_ID: &str = "edgeless.viewport";
 /// Inner padding of an `affine:note` card on the Edgeless canvas (world px).
 pub const NOTE_CARD_PADDING: f32 = 24.0;
+/// Minimum world width of an `affine:note` card on the Edgeless canvas (matching BlockSuite `0.27.5`).
+pub const NOTE_MIN_WIDTH: f32 = 218.0;
 /// Default corner radius of an `affine:note` card (world px).
 pub(super) const CARD_RADIUS: f32 = 8.0;
 /// Corner radius of an `affine:frame` container (world px, matching BlockSuite).
 pub(super) const FRAME_RADIUS: f32 = 2.0;
-/// Frame title pill height and vertical gap above the frame top edge (world px).
+/// Screen-space Frame title pill height and vertical gap above the frame top edge (screen px).
 pub(super) const FRAME_TITLE_HEIGHT: f32 = 22.0;
-pub(super) const FRAME_TITLE_GAP: f32 = 6.0;
+pub(super) const FRAME_TITLE_GAP: f32 = 4.0;
 /// Screen-space zoom bar constants (concentric radii: outer 8 - pad 4 == inner 4).
 pub(super) const ZOOM_BAR_MARGIN: f32 = 12.0;
 pub(super) const ZOOM_BAR_PAD: f32 = 4.0;
@@ -352,6 +354,7 @@ pub(super) struct PaintFrame {
     pub(super) rect: WorldRect,
     pub(super) title_inline: Rc<InlineLayout>,
     pub(super) title_pill_rect: WorldRect,
+    pub(super) title_pill_screen_size: (f32, f32),
     pub(super) fill: Option<Hsla>,
 }
 

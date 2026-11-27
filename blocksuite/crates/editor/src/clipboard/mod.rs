@@ -14,7 +14,7 @@ use serde_json::{Value, json};
 use ui::ClipboardItem;
 use y_octo::{TextDeltaOp, TextInsert};
 
-use html::{block_html, decode_html_snapshot, encode_html_snapshot, parse_html_blocks};
+use html::{blocks_html, decode_html_snapshot, encode_html_snapshot, parse_html_blocks};
 
 pub const SNAPSHOT_MIME: &str = "application/x-blocksuite-snapshot";
 
@@ -445,11 +445,7 @@ impl Slice {
         let attr = encode_html_snapshot(&json!({"BLOCKSUITE/SNAPSHOT":snapshot}).to_string());
         format!(
             "<div data-blocksuite-snapshot=\"{attr}\">{}</div>",
-            self.content
-                .iter()
-                .flat_map(SliceBlock::walk)
-                .map(block_html)
-                .collect::<String>()
+            blocks_html(&self.content)
         )
     }
 

@@ -271,9 +271,16 @@ impl PlaygroundView {
             }
         }
 
-        // 2. Active inline spatial block edit (Note / EdgelessText): Escape exits, else EditorSession.
+        // 2. Active inline spatial block edit (Note / EdgelessText): Escape closes open overlays
+        // first; a second Escape exits spatial block editing.
         if self.edgeless.authoring.editing_spatial_block().is_some() {
             if key == "escape" && !self.editor.composing() {
+                if self.overlays.slash_menu().is_some()
+                    || self.overlays.linked_doc_menu().is_some()
+                    || self.overlays.active_text_field().is_some()
+                {
+                    return false;
+                }
                 self.edgeless_commit_inline_edit(window, cx);
                 return true;
             }
@@ -578,6 +585,305 @@ mod tests {
         assert_ne!(k1, k2);
     }
 
+    #[test]
+    fn edgeless_frame_delete_min_width_title_select_all_and_note_overlays() {
+        use ui::EntityInputHandler;
+
+        let platform = ui::HeadlessPlatform::new(1280, 800, 1.0);
+        let app = ui::Application::with_platform(platform.clone()).run_embedded(|cx| {
+            crate::register_bundled_fonts(cx).unwrap();
+        });
+        let win = open_edgeless_view(&app, &platform);
+        let hw = platform.windows().into_iter().next().unwrap();
+
+        // H9: Double-click Frame title selects all; H1: deleting Frame recursively deletes children + 1-step Undo restores all.
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                let frame_id = view
+                    .edgeless
+                    .authoring
+                    .painted_items
+                    .iter()
+                    .find(|i| i.kind == SpatialItemKind::Frame)
+                    .map(|i| i.id.clone())
+                    .expect("showcase frame");
+                assert!(view.edgeless_begin_inline_edit(&frame_id, window, cx));
+                let ed = view.edgeless.authoring.label_editor().unwrap();
+                let (sel, _) = ed.shown_selection();
+                assert_eq!(sel, 0..ed.input.text.encode_utf16().count());
+                view.edgeless_commit_inline_edit(window, cx);
+
+                // Attach a surface element child to the showcase frame so H1 tests recursive deletion + 1-step Undo.
+                let child_id = view
+                    .edgeless
+                    .authoring
+                    .painted_items
+                    .iter()
+                    .find(|i| i.kind == SpatialItemKind::Shape)
+                    .map(|i| i.id.clone())
+                    .expect("showcase shape");
+                let now = view.now_ms(cx) as u64;
+                view.page_mut()
+                    .unwrap()
+                    .set_frame_child_element_ids(&frame_id, std::slice::from_ref(&child_id), now)
+                    .unwrap();
+                view.refresh_document();
+                let frame_children = collect_frame_children(
+                    find_block(view.snapshot.as_ref().unwrap(), &frame_id).unwrap(),
+                );
+                assert!(
+                    frame_children.contains(&child_id),
+                    "frame should contain attached child"
+                );
+                view.edgeless_set_selection([frame_id.clone()], cx);
+                view.edgeless_delete_selection(cx);
+                let snap = view.snapshot.as_ref().unwrap();
+                assert!(find_block(snap, &frame_id).is_none());
+                for cid in &frame_children {
+                    assert!(
+                        find_block(snap, cid).is_none()
+                            && find_surface_element(snap, cid).is_none(),
+                        "frame child {cid} must be deleted with frame"
+                    );
+                }
+                // Single-step undo restores frame and all its children.
+                let commit = view.page_mut().unwrap().undo().unwrap().unwrap();
+                view.did_edgeless_doc_commit(commit, cx);
+                let snap = view.snapshot.as_ref().unwrap();
+                assert!(find_block(snap, &frame_id).is_some());
+                for cid in &frame_children {
+                    assert!(
+                        find_block(snap, cid).is_some()
+                            || find_surface_element(snap, cid).is_some(),
+                        "undo must restore frame child {cid}"
+                    );
+                }
+
+                // H6: Inline editing Note mounts slash menu on `/` and formatting toolbar on selection.
+                let note_id = view
+                    .edgeless
+                    .authoring
+                    .painted_items
+                    .iter()
+                    .find(|i| i.kind == SpatialItemKind::Note)
+                    .map(|i| i.id.clone())
+                    .expect("showcase note");
+                assert!(view.edgeless_begin_inline_edit(&note_id, window, cx));
+                let block_id = view.document_selection().unwrap().focus.block_id.clone();
+                view.change_selection(
+                    crate::editor_session::DocumentSelection::caret(
+                        crate::editor_session::DocPoint::new(&block_id, 0),
+                    ),
+                    window,
+                    cx,
+                );
+                view.replace_text_in_range(None, "/", window, cx);
+                assert!(
+                    view.overlays.slash_menu().is_some(),
+                    "slash menu must open in Edgeless Note"
+                );
+            })
+            .unwrap();
+        });
+        platform.advance_clock(std::time::Duration::from_millis(300));
+        hw.request_frame();
+        if let Ok(dir) = std::env::var("BS_RENDER_EVIDENCE_DIR") {
+            let _ = std::fs::create_dir_all(&dir);
+            let _ = app.update(|cx| {
+                let _ = win.update(cx, |_, window, _| {
+                    if let Ok(img) = window.render_to_image() {
+                        let _ = img.save(format!("{dir}/after_edgeless_note_slash.png"));
+                    }
+                });
+            });
+        }
+        // Select text inside the same Edgeless Note to verify formatting toolbar mounts.
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                let now_ms = view.now_ms(cx);
+                view.overlays.close_slash(now_ms);
+                let block_id = view.document_selection().unwrap().focus.block_id.clone();
+                view.change_selection(
+                    crate::editor_session::DocumentSelection {
+                        anchor: crate::editor_session::DocPoint::new(&block_id, 0),
+                        focus: crate::editor_session::DocPoint::new(&block_id, 4),
+                    },
+                    window,
+                    cx,
+                );
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+        platform.advance_clock(std::time::Duration::from_millis(300));
+        hw.request_frame();
+        if let Ok(dir) = std::env::var("BS_RENDER_EVIDENCE_DIR") {
+            let _ = app.update(|cx| {
+                let _ = win.update(cx, |_, window, _| {
+                    if let Ok(img) = window.render_to_image() {
+                        let _ = img.save(format!("{dir}/after_edgeless_note_toolbar.png"));
+                    }
+                });
+            });
+        }
+
+        // Escape in Edgeless Note closes open Slash menu first; 2nd Escape exits inline edit.
+        // Newly created EdgelessText containing a Divider is NOT auto-deleted on exit.
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                let esc = ui::KeyDownEvent {
+                    keystroke: ui::Keystroke {
+                        modifiers: ui::Modifiers::default(),
+                        key: "escape".into(),
+                        key_char: None,
+                    },
+                    is_held: false,
+                    prefer_character_input: false,
+                };
+                let block_id = view.document_selection().unwrap().focus.block_id.clone();
+                view.change_selection(
+                    crate::editor_session::DocumentSelection::caret(
+                        crate::editor_session::DocPoint::new(&block_id, 0),
+                    ),
+                    window,
+                    cx,
+                );
+                view.replace_text_in_range(None, "/", window, cx);
+                assert!(view.overlays.slash_menu().is_some());
+                view.editor_key_down(&esc, window, cx);
+                assert!(
+                    view.overlays.slash_menu().is_none(),
+                    "1st Escape must close slash menu"
+                );
+                assert!(
+                    view.edgeless.authoring.editing_spatial_block().is_some(),
+                    "1st Escape must stay inside spatial block inline edit"
+                );
+                view.editor_key_down(&esc, window, cx);
+                assert!(
+                    view.edgeless.authoring.editing_spatial_block().is_none(),
+                    "2nd Escape must exit spatial block inline edit"
+                );
+
+                view.create_edgeless_text_at(120.0, 120.0, window, cx);
+                let (et_id, is_note) = view
+                    .edgeless
+                    .authoring
+                    .editing_spatial_block()
+                    .expect("new edgeless-text inline edit");
+                assert!(!is_note);
+                let et_id = et_id.to_string();
+                let now = view.now_ms(cx) as u64;
+                view.page_mut()
+                    .unwrap()
+                    .add_block(
+                        "et-div",
+                        blocksuite_playground_doc::schema::BlockSpec::Divider,
+                        Some(&et_id),
+                        None,
+                        now,
+                    )
+                    .unwrap();
+                view.refresh_document();
+                view.edgeless_commit_inline_edit(window, cx);
+                assert!(
+                    find_block(view.snapshot.as_ref().unwrap(), &et_id).is_some(),
+                    "EdgelessText with a Divider child must not be treated as empty on exit"
+                );
+            })
+            .unwrap();
+        });
+
+        // Auto-width EdgelessText (hasMaxWidth=false) stays compact under left/center/right alignment and RTL.
+        let mut aligned_et_id = String::new();
+        let mut aligned_para_id = String::new();
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.create_edgeless_text_at(260.0, 220.0, window, cx);
+                let (et_id, _) = view
+                    .edgeless
+                    .authoring
+                    .editing_spatial_block()
+                    .expect("aligned edgeless-text");
+                aligned_et_id = et_id.to_string();
+                aligned_para_id = view.document_selection().unwrap().focus.block_id.clone();
+                cx.notify();
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.replace_text_in_range(None, "hello world", window, cx);
+                view.edgeless_commit_inline_edit(window, cx);
+            })
+            .unwrap();
+        });
+        for (align, rtl) in [
+            ("left", false),
+            ("center", false),
+            ("right", false),
+            ("right", true),
+        ] {
+            app.update(|cx| {
+                win.update(cx, |view, window, cx| {
+                    let now = view.now_ms(cx) as u64;
+                    view.page_mut()
+                        .unwrap()
+                        .set_block_prop(
+                            &aligned_para_id,
+                            "prop:textAlign",
+                            y_octo::SessionValue::Any(y_octo::Any::String(align.into())),
+                            now,
+                        )
+                        .unwrap();
+                    view.refresh_document();
+                    window.set_root_layout_direction(if rtl {
+                        ui::Direction::Rtl
+                    } else {
+                        ui::Direction::Ltr
+                    });
+                    cx.notify();
+                })
+                .unwrap();
+            });
+            hw.request_frame();
+            app.update(|cx| {
+                win.update(cx, |view, _, _| {
+                    let info = view
+                        .edgeless
+                        .authoring
+                        .painted_items
+                        .iter()
+                        .find(|i| i.id == aligned_et_id)
+                        .expect("painted edgeless-text");
+                    assert!(
+                        info.rect.w < 300.0,
+                        "EdgelessText width must stay compact for align={align}, rtl={rtl}, got {}",
+                        info.rect.w
+                    );
+                    assert!(
+                        (info.rect.x - 260.0).abs() < 1.0,
+                        "EdgelessText x must not drift for align={align}, rtl={rtl}, got {}",
+                        info.rect.x
+                    );
+                })
+                .unwrap();
+            });
+        }
+
+        // Note resize enforces NOTE_MIN_WIDTH (218.0).
+        let resized = crate::edgeless::resized_rect_with_min(
+            crate::edgeless::WorldRect::new(0.0, 0.0, 400.0, 200.0),
+            HandleKind::E,
+            (400.0, 100.0),
+            (50.0, 100.0),
+            crate::edgeless::NOTE_MIN_WIDTH,
+            24.0,
+        );
+        assert_eq!(resized.w, crate::edgeless::NOTE_MIN_WIDTH);
+    }
+
     fn open_edgeless_view(
         app: &ui::ApplicationHandle,
         platform: &ui::HeadlessPlatform,
@@ -820,7 +1126,7 @@ mod tests {
                     "brush xywh must be inflated by lineWidth"
                 );
 
-                // 4. Create Text + Escape removes empty element.
+                // 4. Create Text -> creates `affine:edgeless-text` block; Escape removes empty element.
                 view.edgeless_select_tool(EdgelessTool::Text, window, cx);
                 view.on_edgeless_left_down(&mouse_down(50.0, top + 420.0, 1), window, cx);
                 let text_id = view
@@ -831,11 +1137,14 @@ mod tests {
                     .next()
                     .unwrap()
                     .clone();
-                assert!(find_surface_element(view.snapshot.as_ref().unwrap(), &text_id).is_some());
+                assert!(matches!(
+                    find_block(view.snapshot.as_ref().unwrap(), &text_id).map(|b| &b.content),
+                    Some(BlockContent::EdgelessText { .. })
+                ));
                 view.edgeless_commit_inline_edit(window, cx);
                 assert!(
-                    find_surface_element(view.snapshot.as_ref().unwrap(), &text_id).is_none(),
-                    "empty newly-created SurfaceText must be removed on close"
+                    find_block(view.snapshot.as_ref().unwrap(), &text_id).is_none(),
+                    "empty newly-created EdgelessText must be removed on close"
                 );
             })
             .unwrap();

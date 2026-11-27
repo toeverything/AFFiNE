@@ -15,8 +15,9 @@ use crate::{
 };
 
 use super::{
-    EdgelessGesture, EdgelessInlineEdit, EdgelessLabelEditor, EdgelessTool, LabelTarget,
-    SpatialItemKind, WorldRect, max_spatial_index, normalized_rect, resized_rect, rotated_bounds,
+    EdgelessGesture, EdgelessInlineEdit, EdgelessTool, HandleKind, NOTE_MIN_WIDTH, SpatialItemKind,
+    WorldRect, compute_frame_membership_updates, max_spatial_index, normalized_rect,
+    resized_rect_with_min, rotated_bounds,
 };
 
 impl PlaygroundView {
@@ -45,6 +46,11 @@ impl PlaygroundView {
                     cx.notify();
                     return;
                 }
+                let frame_updates = compute_frame_membership_updates(
+                    &self.edgeless.authoring.painted_items,
+                    &initial,
+                    current_world,
+                );
                 let commit = self.page_mut().ok().and_then(|page| {
                     page.structural_edit(now_ms, move |page| {
                         for item in &initial {
@@ -111,6 +117,11 @@ impl PlaygroundView {
                                 )?;
                             }
                         }
+                        for (frame_id, add_ids, remove_ids) in &frame_updates {
+                            page.update_frame_child_element_ids(
+                                frame_id, add_ids, remove_ids, now_ms,
+                            )?;
+                        }
                         Ok(())
                     })
                     .ok()
@@ -127,7 +138,19 @@ impl PlaygroundView {
                 initial_box,
                 initial,
             } => {
-                let new_box = resized_rect(initial_box, handle, start_world, current_world);
+                let min_w = if initial.len() == 1 && initial[0].kind == SpatialItemKind::Note {
+                    NOTE_MIN_WIDTH
+                } else {
+                    24.0
+                };
+                let new_box = resized_rect_with_min(
+                    initial_box,
+                    handle,
+                    start_world,
+                    current_world,
+                    min_w,
+                    24.0,
+                );
                 if (new_box.x - initial_box.x).abs() < 0.5
                     && (new_box.y - initial_box.y).abs() < 0.5
                     && (new_box.w - initial_box.w).abs() < 0.5
@@ -138,15 +161,37 @@ impl PlaygroundView {
                 }
                 let sx = (new_box.w / initial_box.w.max(1.0)) as f64;
                 let sy = (new_box.h / initial_box.h.max(1.0)) as f64;
+                let horizontal_resize = matches!(
+                    handle,
+                    HandleKind::E
+                        | HandleKind::W
+                        | HandleKind::NE
+                        | HandleKind::NW
+                        | HandleKind::SE
+                        | HandleKind::SW
+                );
                 let commit = self.page_mut().ok().and_then(|page| {
                     page.structural_edit(now_ms, move |page| {
                         for item in &initial {
                             let nx = new_box.x as f64 + (item.rect.x - initial_box.x) as f64 * sx;
                             let ny = new_box.y as f64 + (item.rect.y - initial_box.y) as f64 * sy;
-                            let nw = (item.rect.w as f64 * sx).max(16.0);
+                            let item_min_w = if item.kind == SpatialItemKind::Note {
+                                NOTE_MIN_WIDTH as f64
+                            } else {
+                                16.0
+                            };
+                            let nw = (item.rect.w as f64 * sx).max(item_min_w);
                             let nh = (item.rect.h as f64 * sy).max(16.0);
                             if item.kind.is_block() {
                                 page.set_block_xywh(&item.id, [nx, ny, nw, nh], now_ms)?;
+                                if item.kind == SpatialItemKind::EdgelessText && horizontal_resize {
+                                    page.set_block_prop(
+                                        &item.id,
+                                        "prop:hasMaxWidth",
+                                        SessionValue::Any(Any::True),
+                                        now_ms,
+                                    )?;
+                                }
                             } else if item.kind == SpatialItemKind::Connector {
                                 if let Some(surface_id) = &item.surface_id {
                                     if let Some((None, Some([px_0, py_0]))) = &item.connector_source
@@ -449,6 +494,7 @@ impl PlaygroundView {
                             Some(EdgelessInlineEdit::SpatialBlock {
                                 block_id: note_id,
                                 is_note: true,
+                                created_new: false,
                             });
                         let pt = DocPoint::new(&para_id, 0);
                         self.editor.selection = Some(DocumentSelection {
@@ -606,7 +652,7 @@ impl PlaygroundView {
         }
     }
 
-    pub(super) fn create_surface_text_at(
+    pub(super) fn create_edgeless_text_at(
         &mut self,
         wx: f32,
         wy: f32,
@@ -620,36 +666,28 @@ impl PlaygroundView {
             .and_then(max_spatial_index)
             .and_then(|m| generate_key_between(Some(&m), None).ok())
             .unwrap_or_else(|| "a0".to_string());
-        let seed = (self.edgeless.authoring.next_id_seq as i32 + 71) * 43;
         let cid = self.page().map(|p| p.client_id());
-        let id_opt = cid.map(|c| self.edgeless.authoring.next_id("text", c));
-        let Some(text_id) = id_opt else { return };
+        let ids = cid.map(|c| {
+            (
+                self.edgeless.authoring.next_id("edgeless-text", c),
+                self.edgeless.authoring.next_id("para", c),
+            )
+        });
+        let Some((text_id, para_id)) = ids else {
+            return;
+        };
         let text_id_clone = text_id.clone();
-        let rect = WorldRect::new(wx, wy, 180.0, 36.0);
-        let surface_id_out = std::rc::Rc::new(std::cell::RefCell::new(String::new()));
-        let surface_id_ref = std::rc::Rc::clone(&surface_id_out);
+        let para_id_clone = para_id.clone();
         let commit = self.page_mut().ok().and_then(|page| {
-            page.structural_edit(now_ms, move |page| {
-                let sid = page.ensure_surface_block(now_ms)?;
-                *surface_id_ref.borrow_mut() = sid.clone();
-                page.add_surface_element(
-                    &sid,
-                    text_id_clone.clone(),
-                    &next_idx,
-                    SurfaceElementSpec::Text {
-                        seed,
-                        text: String::new(),
-                        xywh: PageDocSession::format_xywh([
-                            rect.x as f64,
-                            rect.y as f64,
-                            rect.w as f64,
-                            rect.h as f64,
-                        ]),
-                    },
-                    now_ms,
-                )?;
-                Ok(())
-            })
+            page.add_edgeless_text(
+                None,
+                &text_id_clone,
+                &para_id_clone,
+                &next_idx,
+                [wx as f64, wy as f64, 160.0, 26.0],
+                "",
+                now_ms,
+            )
             .ok()
             .flatten()
         });
@@ -658,48 +696,22 @@ impl PlaygroundView {
             self.edgeless.authoring.selection.clear();
             self.edgeless.authoring.selection.insert(text_id.clone());
             self.edgeless.authoring.tool = EdgelessTool::Select;
-            let style = self
-                .snapshot
-                .as_deref()
-                .and_then(|snap| super::find_surface_element(snap, &text_id))
-                .and_then(|(_, el)| match &el.kind {
-                    SurfaceElementKind::Text(t) => Some(super::ShapeTextStyle {
-                        font_family: t.font_family.clone(),
-                        font_size: t.font_size as f32,
-                        font_weight: t.font_weight.parse().unwrap_or(if t.font_weight == "bold" {
-                            700.0
-                        } else {
-                            400.0
-                        }),
-                        font_style: t.font_style.clone(),
-                        color: t.color.clone(),
-                        text_align: t.text_align,
-                        vertical_align: blocksuite_playground_doc::read::VerticalAlign::Top,
-                        padding: [0.0, 0.0],
-                    }),
-                    _ => None,
-                });
-            let mut ed = EdgelessLabelEditor::new(
-                LabelTarget::SurfaceText {
-                    surface_id: surface_id_out.borrow().clone(),
-                    id: text_id,
-                },
-                String::new(),
-                rect,
-                0.0,
-                true,
-            );
-            if let Some(style) = style {
-                ed = ed.with_shape_style(style);
-            }
-            ed.created_new_text = true;
             self.suppress_unselected_root_input = false;
-            self.edgeless.authoring.inline_edit = Some(EdgelessInlineEdit::Label(ed));
+            self.edgeless.authoring.inline_edit = Some(EdgelessInlineEdit::SpatialBlock {
+                block_id: text_id,
+                is_note: false,
+                created_new: true,
+            });
+            let pt = DocPoint::new(&para_id, 0);
+            self.editor.selection = Some(DocumentSelection {
+                anchor: pt.clone(),
+                focus: pt,
+            });
             if let Ok(page) = self.page_mut() {
                 let _ = page.stop_capturing();
             }
-            self.edgeless_update_label_anchors();
             window.notify_text_input_changed(&self.editor_focus);
+            cx.notify();
         }
     }
 }

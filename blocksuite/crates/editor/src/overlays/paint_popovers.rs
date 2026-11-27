@@ -179,7 +179,7 @@ impl Overlays {
         let anchor_world = menu
             .anchor_world
             .or_else(|| caret_world_rect(scene.layout, &menu.block_id, menu.utf16_offset))?;
-        if !scene.page_viewport().intersects(&anchor_world) {
+        if !scene.anchor_visible(&anchor_world) {
             return None;
         }
         let anchor = scene.world_to_screen(&anchor_world);
@@ -467,10 +467,7 @@ impl Overlays {
         } else {
             progress
         };
-        if !scene
-            .page_viewport()
-            .intersects(&toolbar.selection.anchor_world)
-        {
+        if !scene.anchor_visible(&toolbar.selection.anchor_world) {
             return None;
         }
         let anchor = scene.world_to_screen(&toolbar.selection.anchor_world);

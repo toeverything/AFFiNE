@@ -79,6 +79,18 @@ impl FlowTextLayout {
         }
     }
 
+    /// Natural unshifted max line width (excluding center/right/RTL alignment offsets).
+    pub fn natural_width(&self) -> f32 {
+        match self {
+            Self::Rich(layout) => layout
+                .lines()
+                .iter()
+                .map(|l| f32::from(l.width))
+                .fold(0.0_f32, f32::max),
+            Self::Plain(layout) => layout.content_width(),
+        }
+    }
+
     /// Position of a UTF-16 source offset as `(x, line)`.
     pub fn caret(&self, source_offset: usize) -> (f32, usize) {
         match self {

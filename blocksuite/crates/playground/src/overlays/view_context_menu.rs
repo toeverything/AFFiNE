@@ -714,10 +714,7 @@ impl PlaygroundView {
                 {
                     return;
                 }
-                self.begin_input();
-                if let Some((slice, rich)) = crate::clipboard::read_slice(&item) {
-                    let _ = self.paste_slice(slice, rich, window, cx);
-                }
+                self.paste_body_clipboard_item(&item, window, cx);
             }
         }
     }
@@ -1588,6 +1585,7 @@ mod tests {
                     Some(crate::edgeless::EdgelessInlineEdit::SpatialBlock {
                         block_id: note_id.clone(),
                         is_note: true,
+                        created_new: false,
                     });
                 let intro_text = v.block_text("showcase-intro").unwrap_or("").to_string();
                 let link_start = intro_text.find("links").expect("links in showcase-intro");
@@ -2100,6 +2098,7 @@ mod tests {
                         Some(crate::edgeless::EdgelessInlineEdit::SpatialBlock {
                             block_id: note_id.clone(),
                             is_note: true,
+                            created_new: false,
                         });
                     let info = v
                         .edgeless

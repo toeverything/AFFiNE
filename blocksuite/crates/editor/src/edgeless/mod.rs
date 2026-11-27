@@ -4,6 +4,7 @@
 mod camera;
 mod canvas;
 mod canvas_paint;
+mod frame_membership;
 mod hit_test;
 mod label_editor;
 mod order;
@@ -17,13 +18,18 @@ pub use camera::{
 };
 pub use canvas::{
     EDGELESS_VIEWPORT_ID, EdgelessCanvasState, EdgelessRenderInput, NOTE_CARD_PADDING,
-    note_border_radius, note_border_style, note_collapse, note_scale, note_shadow_type, prop_bool,
-    prop_f32, resolve_edgeless_color, rotated_bounds, spatial_blocks, world_bounds, world_rect,
+    NOTE_MIN_WIDTH, note_border_radius, note_border_style, note_collapse, note_scale,
+    note_shadow_type, prop_bool, prop_f32, resolve_edgeless_color, rotated_bounds, spatial_blocks,
+    world_bounds, world_rect,
 };
 pub use canvas_paint::build_edgeless_layer;
+pub use frame_membership::{
+    compute_frame_membership_updates, find_frame_containing_point, hovered_frame_for_drag,
+};
 pub use hit_test::{
     DragItemInitial, EdgelessAuthoringState, EdgelessGesture, HandleKind, SpatialItemInfo,
-    SpatialItemKind, normalized_rect, point_in_rotated_rect, resized_rect, rotate_point_around,
+    SpatialItemKind, normalized_rect, point_in_rotated_rect, resized_rect, resized_rect_with_min,
+    rotate_point_around,
 };
 pub use label_editor::{
     EdgelessInlineEdit, EdgelessLabelEditor, LabelSplice, LabelTarget, ShapeTextStyle, utf16_len,

@@ -580,12 +580,52 @@ pub fn parse_inline_markdown(input: &str) -> Vec<TextDeltaOp> {
             rest = tail;
             continue;
         }
+        // Bare http(s):// URL autolink
+        if (rest.starts_with("https://") || rest.starts_with("http://"))
+            && let Some((url, tail)) = split_bare_url(rest)
+        {
+            flush(&mut plain, &mut ops);
+            let format = sanitize_url(url)
+                .map(|clean| TextAttributes::from([("link".into(), Any::String(clean))]));
+            ops.push(TextDeltaOp::Insert {
+                insert: TextInsert::Text(url.to_string()),
+                format,
+            });
+            rest = tail;
+            continue;
+        }
         let ch = rest.chars().next().unwrap();
         plain.push(ch);
         rest = &rest[ch.len_utf8()..];
     }
     flush(&mut plain, &mut ops);
     ops
+}
+
+fn split_bare_url(s: &str) -> Option<(&str, &str)> {
+    let raw_end = s
+        .find(|c: char| c.is_whitespace() || matches!(c, '<' | '>' | '"' | '\''))
+        .unwrap_or(s.len());
+    let mut end = raw_end;
+    while end > 0 {
+        let ch = s[..end].chars().next_back()?;
+        if matches!(ch, '.' | ',' | ';' | ':' | '!' | '?') {
+            end -= ch.len_utf8();
+        } else if ch == ')' && s[..end].matches(')').count() > s[..end].matches('(').count() {
+            end -= 1;
+        } else {
+            break;
+        }
+    }
+    let url = &s[..end];
+    let after_scheme = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))?;
+    let host = after_scheme.split(['/', '?', '#']).next()?;
+    if host.is_empty() {
+        return None;
+    }
+    Some((url, &s[end..]))
 }
 
 fn parse_heading(trimmed: &str) -> Option<(usize, &str)> {

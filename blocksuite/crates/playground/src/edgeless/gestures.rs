@@ -66,10 +66,24 @@ impl PlaygroundView {
                 if let Some(layout) = self.edgeless.cached_block_layout(&editing_id, is_note)
                     && let Some(pt) = Self::hit_test_flow_layout(&layout, flow_x, flow_y)
                 {
-                    let sel = DocumentSelection {
-                        anchor: pt.clone(),
-                        focus: pt,
-                    };
+                    self.overlays.pointer_pressed(now_ms);
+                    self.editor.slash_trigger = None;
+                    let mut sel = DocumentSelection::caret(pt.clone());
+                    if event.click_count >= 2 {
+                        let s = self.block_text(&pt.block_id).unwrap_or("");
+                        let range = if event.click_count == 2 {
+                            crate::editor_session::word_range(s, pt.offset())
+                        } else {
+                            0..s.encode_utf16().count() as u64
+                        };
+                        sel.anchor =
+                            crate::editor_session::DocPoint::new(&pt.block_id, range.start);
+                        sel.focus = crate::editor_session::DocPoint::new(&pt.block_id, range.end);
+                    } else if event.modifiers.shift
+                        && let Some(old) = &self.editor.selection
+                    {
+                        sel.anchor = old.anchor.clone();
+                    }
                     self.change_selection(sel, window, cx);
                     return;
                 }
@@ -279,7 +293,7 @@ impl PlaygroundView {
                 cx.notify();
             }
             EdgelessTool::Text => {
-                self.create_surface_text_at(wx, wy, window, cx);
+                self.create_edgeless_text_at(wx, wy, window, cx);
             }
             EdgelessTool::Hand => {}
         }

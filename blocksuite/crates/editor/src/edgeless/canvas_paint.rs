@@ -115,9 +115,18 @@ pub fn build_edgeless_layer(
     }
 
     let frame_border = theme
-        .css_var("--affine-v2-edgeless-frame-border")
+        .css_var("--affine-v2-edgeless-frame-border-default")
         .unwrap_or(palette.border);
-    let frame_pill_bg = palette.panel;
+    let frame_border_active = theme
+        .css_var("--affine-v2-edgeless-frame-border-active")
+        .unwrap_or(palette.brand);
+    let frame_pill_bg = theme
+        .css_var("--affine-v2-edgeless-frame-background-white")
+        .unwrap_or_else(Hsla::white);
+    let hovered_frame_id = super::hovered_frame_for_drag(
+        &state.authoring.painted_items,
+        state.authoring.gesture.as_ref(),
+    );
 
     let authoring_overlays = build_edgeless_authoring_overlay(
         &state.authoring,
@@ -177,6 +186,15 @@ pub fn build_edgeless_layer(
                                 if !frame.rect.intersects(cull_world) {
                                     continue;
                                 }
+                                let is_drop_target =
+                                    hovered_frame_id.as_deref() == Some(frame.id.as_str());
+                                let inv_zoom = 1.0 / camera.zoom.max(0.1);
+                                let border_w = if is_drop_target { 2.0 } else { 1.0 } * inv_zoom;
+                                let border_color = if is_drop_target {
+                                    frame_border_active
+                                } else {
+                                    frame_border
+                                };
                                 let fb = Bounds::new(
                                     point(px(frame.rect.x), px(frame.rect.y)),
                                     size(px(frame.rect.w), px(frame.rect.h)),
@@ -185,31 +203,38 @@ pub fn build_edgeless_layer(
                                     fb,
                                     Corners::all(px(FRAME_RADIUS)),
                                     frame.fill.unwrap_or_else(Hsla::transparent_black),
-                                    Edges::all(px(1.0)),
-                                    frame_border,
+                                    Edges::all(px(border_w)),
+                                    border_color,
                                     BorderStyle::Solid,
                                 ));
 
-                                // Frame title pill above top-left corner (shared exact layout with hit-test).
+                                // Screen-constant Frame title pill above top-left corner (`1 / zoom`).
                                 let pill = frame.title_pill_rect;
-                                window.paint_quad(ui::quad(
-                                    Bounds::new(
-                                        point(px(pill.x), px(pill.y)),
-                                        size(px(pill.w), px(pill.h)),
-                                    ),
-                                    Corners::all(px(4.0)),
-                                    frame_pill_bg,
-                                    Edges::all(px(1.0)),
-                                    palette.border,
-                                    BorderStyle::Solid,
-                                ));
-                                if editing_label_id.as_deref() != Some(frame.id.as_str()) {
-                                    frame.title_inline.paint(
-                                        point(px(pill.x + 8.0), px(pill.y)),
-                                        window,
-                                        cx,
-                                    );
-                                }
+                                let (sw, sh) = frame.title_pill_screen_size;
+                                let pill_xform = TransformationMatrix::unit()
+                                    .translate(point(ScaledPixels(pill.x), ScaledPixels(pill.y)))
+                                    .scale(size(inv_zoom, inv_zoom))
+                                    .translate(point(ScaledPixels(-pill.x), ScaledPixels(-pill.y)));
+                                window.with_paint_transformation(pill_xform, |window| {
+                                    window.paint_quad(ui::quad(
+                                        Bounds::new(
+                                            point(px(pill.x), px(pill.y)),
+                                            size(px(sw), px(sh)),
+                                        ),
+                                        Corners::all(px(4.0)),
+                                        frame_pill_bg,
+                                        Edges::all(px(1.0)),
+                                        border_color,
+                                        BorderStyle::Solid,
+                                    ));
+                                    if editing_label_id.as_deref() != Some(frame.id.as_str()) {
+                                        frame.title_inline.paint(
+                                            point(px(pill.x + 4.0), px(pill.y)),
+                                            window,
+                                            cx,
+                                        );
+                                    }
+                                });
                             }
 
                             PaintItem::Surface(l, i) => surfaces[l].paint_item(

@@ -193,26 +193,101 @@ pub fn word_range(text: &str, offset: u64) -> Range<u64> {
     if text.is_empty() {
         return 0..0;
     }
-    #[cfg(target_family = "wasm")]
-    {
-        if let Some(range) = wasm_intl_word_range(text, offset) {
-            return range;
-        }
-        return uax29_word_range(text, offset);
+    let segments = word_segments(text);
+    let total = text.encode_utf16().count() as u64;
+    pick_word_segment(&segments, offset.min(total))
+}
+
+/// Step backward from `offset` (UTF-16) to the start of the previous word using the same
+/// locale-aware word segmentation as [`word_range`], skipping pure whitespace and punctuation
+/// runs so CJK, Latin, and mixed sentences step one word at a time.
+pub fn prev_word_start_utf16(text: &str, offset: u64) -> u64 {
+    let total = text.encode_utf16().count() as u64;
+    let clamped = offset.min(total);
+    if clamped == 0 {
+        return 0;
     }
-    #[cfg(not(target_family = "wasm"))]
-    {
-        icu_word_range(text, offset)
+    let segments = word_segments(text);
+    let Some(mut idx) = segments.iter().rposition(|s| s.0 < clamped) else {
+        return 0;
+    };
+    if segments[idx].4 && segments[idx].1 == clamped {
+        return segments[idx].0;
+    }
+    loop {
+        let (start, end, _, is_word, is_nl) = segments[idx];
+        if is_nl {
+            return if end == clamped { start } else { end };
+        }
+        if is_word {
+            return start;
+        }
+        if idx == 0 {
+            return 0;
+        }
+        idx -= 1;
     }
 }
 
-fn pick_word_segment(segments: &[(u64, u64, bool)], offset: u64) -> Range<u64> {
+/// Step forward from `offset` (UTF-16) to the end of the next word using the same
+/// locale-aware word segmentation as [`word_range`], skipping pure whitespace and punctuation.
+pub fn next_word_end_utf16(text: &str, offset: u64) -> u64 {
+    let total = text.encode_utf16().count() as u64;
+    let clamped = offset.min(total);
+    if clamped >= total {
+        return total;
+    }
+    let segments = word_segments(text);
+    let Some(mut idx) = segments.iter().position(|s| s.1 > clamped) else {
+        return total;
+    };
+    if segments[idx].4 && segments[idx].0 == clamped {
+        return segments[idx].1;
+    }
+    while idx < segments.len() {
+        let (start, end, _, is_word, is_nl) = segments[idx];
+        if is_nl {
+            return if start == clamped { end } else { start };
+        }
+        if is_word {
+            return end;
+        }
+        idx += 1;
+    }
+    total
+}
+
+/// Segment tuple: `(start_utf16, end_utf16, is_whitespace, is_word_like, is_newline)`.
+type WordSegment = (u64, u64, bool, bool, bool);
+
+fn classify_segment(start: u64, end: u64, seg: &str) -> WordSegment {
+    let is_nl = seg == "\n" || seg == "\r\n" || seg == "\r";
+    let is_ws = seg.chars().all(char::is_whitespace);
+    let is_word = seg.chars().any(|c| c.is_alphanumeric() || c == '_');
+    (start, end, is_ws, is_word, is_nl)
+}
+
+fn word_segments(text: &str) -> Vec<WordSegment> {
+    #[cfg(target_family = "wasm")]
+    {
+        if let Some(segs) = wasm_intl_word_segments(text) {
+            return segs;
+        }
+        return uax29_word_segments(text);
+    }
+    #[cfg(not(target_family = "wasm"))]
+    {
+        icu_word_segments(text)
+    }
+}
+
+fn pick_word_segment(segments: &[WordSegment], offset: u64) -> Range<u64> {
     if segments.is_empty() {
         return 0..0;
     }
     let hit_idx = segments
         .iter()
-        .position(|&(_, end, _)| end > offset)
+        .position(|&(_, end, _, _, _)| end > offset)
         .unwrap_or(segments.len() - 1);
     let chosen = if !segments[hit_idx].2 {
         segments[hit_idx]
@@ -234,32 +309,29 @@ fn pick_word_segment(segments: &[(u64, u64, bool)], offset: u64) -> Range<u64> {
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn icu_word_range(text: &str, offset: u64) -> Range<u64> {
+fn icu_word_segments(text: &str) -> Vec<WordSegment> {
     let index = TextBiIndex::new(text);
-    let clamped = offset.min(index.utf16_len());
     thread_local! {
         static SEGMENTER: icu_segmenter::WordSegmenter =
             icu_segmenter::WordSegmenter::try_new_dictionary(Default::default())
                 .expect("compiled word segmenter dictionary");
     }
     let bounds: Vec<usize> = SEGMENTER.with(|seg| seg.as_borrowed().segment_str(text).collect());
-    let segments: Vec<(u64, u64, bool)> = bounds
+    bounds
         .windows(2)
         .filter(|w| w[0] < w[1])
         .map(|w| {
-            let word = &text[w[0]..w[1]];
-            (
+            classify_segment(
                 index.utf8_to_utf16(w[0]),
                 index.utf8_to_utf16(w[1]),
-                word.chars().all(char::is_whitespace),
+                &text[w[0]..w[1]],
             )
         })
-        .collect();
-    pick_word_segment(&segments, clamped)
+        .collect()
 }
 
 #[cfg(target_family = "wasm")]
-fn wasm_intl_word_range(text: &str, offset: u64) -> Option<Range<u64>> {
+fn wasm_intl_word_segments(text: &str) -> Option<Vec<WordSegment>> {
     use wasm_bindgen::JsValue;
 
     thread_local! {
@@ -286,7 +358,7 @@ fn wasm_intl_word_range(text: &str, offset: u64) -> Option<Range<u64>> {
             .ok()?;
     let iterable = segment_fn.call1(&seg_obj, &JsValue::from_str(text)).ok()?;
     let iter = js_sys::try_iter(&iterable).ok()??;
-    let mut segments: Vec<(u64, u64, bool)> = Vec::new();
+    let mut segments: Vec<WordSegment> = Vec::new();
     for item in iter {
         let entry = item.ok()?;
         let start = js_sys::Reflect::get(&entry, &JsValue::from_str("index"))
@@ -297,31 +369,24 @@ fn wasm_intl_word_range(text: &str, offset: u64) -> Option<Range<u64>> {
             .as_string()?;
         let len = seg_str.encode_utf16().count() as u64;
         if len > 0 {
-            segments.push((start, start + len, seg_str.chars().all(char::is_whitespace)));
+            segments.push(classify_segment(start, start + len, &seg_str));
         }
     }
-    if segments.is_empty() {
-        return None;
-    }
-    let total = text.encode_utf16().count() as u64;
-    Some(pick_word_segment(&segments, offset.min(total)))
+    (!segments.is_empty()).then_some(segments)
 }
 
 #[cfg(target_family = "wasm")]
-fn uax29_word_range(text: &str, offset: u64) -> Range<u64> {
+fn uax29_word_segments(text: &str) -> Vec<WordSegment> {
     let index = TextBiIndex::new(text);
-    let clamped = offset.min(index.utf16_len());
-    let segments: Vec<(u64, u64, bool)> = text
-        .split_word_bound_indices()
+    text.split_word_bound_indices()
         .map(|(start, word)| {
-            (
+            classify_segment(
                 index.utf8_to_utf16(start),
                 index.utf8_to_utf16(start + word.len()),
-                word.chars().all(char::is_whitespace),
+                word,
             )
         })
-        .collect();
-    pick_word_segment(&segments, clamped)
+        .collect()
 }
 
 /// Plan line-level `Tab` / `Shift+Tab` indent or outdent splices for a code block.

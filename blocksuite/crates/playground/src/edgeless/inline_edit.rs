@@ -335,13 +335,45 @@ impl PlaygroundView {
             cx.notify();
             return;
         }
-        let Some(EdgelessInlineEdit::SpatialBlock { .. }) =
-            self.edgeless.authoring.inline_edit.take()
+        let Some(EdgelessInlineEdit::SpatialBlock {
+            block_id,
+            is_note,
+            created_new,
+        }) = self.edgeless.authoring.inline_edit.take()
         else {
             return;
         };
         self.clear_composition(window, cx);
+        if created_new
+            && !is_note
+            && let Some(snap) = self.snapshot.as_deref()
+            && let Some(node) = find_block(snap, &block_id)
+            && node.children.len() == 1
+            && node.children[0].children.is_empty()
+            && matches!(
+                &node.children[0].content,
+                blocksuite_playground_doc::read::BlockContent::Paragraph { text, .. }
+                    if text.plain.trim().is_empty()
+            )
+        {
+            self.edgeless.authoring.selection.remove(&block_id);
+            let now_ms = self.now_ms(cx) as u64;
+            let commit = self.page_mut().ok().and_then(|page| {
+                page.delete_blocks_and_elements_with_connectors(&[block_id.as_str()], &[], now_ms)
+                    .ok()
+                    .flatten()
+            });
+            if let Some(commit) = commit {
+                self.did_edgeless_doc_commit(commit, cx);
+            }
+        }
         self.editor.selection = None;
+        self.editor.slash_trigger = None;
+        self.editor.linked_doc_trigger = None;
+        let now_ms = self.now_ms(cx);
+        self.overlays.close_slash(now_ms);
+        self.overlays.close_linked_doc(now_ms);
+        self.overlays.close_link_field();
         self.announce_selection(cx);
         window.notify_text_input_changed(&self.editor_focus);
         cx.notify();
@@ -394,6 +426,7 @@ impl PlaygroundView {
                 self.edgeless.authoring.inline_edit = Some(EdgelessInlineEdit::SpatialBlock {
                     block_id: item_id.to_string(),
                     is_note,
+                    created_new: false,
                 });
                 if let Some(tid) = first_text_id {
                     let pt = DocPoint::new(&tid, 0);
@@ -438,12 +471,21 @@ impl PlaygroundView {
                         }),
                     ),
                     SurfaceElementKind::Connector(c) => {
-                        let p = connector_label_anchor_point(
-                            &info.polyline,
-                            info.rect.center(),
-                            c.mode,
-                            c.label_offset.distance,
-                        );
+                        let edit_rect = if let Some([lx, ly, lw, lh]) = c.label_xywh
+                            && lw > 0.0
+                            && lh > 0.0
+                        {
+                            WorldRect::new(lx as f32, ly as f32, lw as f32, lh as f32)
+                        } else {
+                            let p = connector_label_anchor_point(
+                                &info.polyline,
+                                info.rect.center(),
+                                c.mode,
+                                c.label_offset.distance,
+                            );
+                            WorldRect::new(p.0 as f32 - 60.0, p.1 as f32 - 14.0, 120.0, 28.0)
+                        };
+                        let ls = &c.label_style;
                         (
                             LabelTarget::Connector {
                                 surface_id: surface_id.to_string(),
@@ -451,8 +493,24 @@ impl PlaygroundView {
                             },
                             c.text.plain.clone(),
                             false,
-                            WorldRect::new(p.0 as f32 - 80.0, p.1 as f32 - 18.0, 160.0, 36.0),
-                            None,
+                            edit_rect,
+                            Some(super::ShapeTextStyle {
+                                font_family: ls.font_family.clone(),
+                                font_size: ls.font_size as f32,
+                                font_weight: ls.font_weight.parse().unwrap_or(
+                                    if ls.font_weight == "bold" {
+                                        700.0
+                                    } else {
+                                        400.0
+                                    },
+                                ),
+                                font_style: ls.font_style.clone(),
+                                color: ls.color.clone(),
+                                text_align: ls.text_align,
+                                vertical_align:
+                                    blocksuite_playground_doc::read::VerticalAlign::Center,
+                                padding: [4.0, 8.0],
+                            }),
                         )
                     }
                     SurfaceElementKind::Text(t) => (
@@ -524,16 +582,17 @@ impl PlaygroundView {
                     .authoring
                     .selection
                     .insert(item_id.to_string());
-                self.edgeless.authoring.inline_edit =
-                    Some(EdgelessInlineEdit::Label(EdgelessLabelEditor::new(
-                        LabelTarget::FrameTitle {
-                            id: item_id.to_string(),
-                        },
-                        initial,
-                        rect,
-                        0.0,
-                        false,
-                    )));
+                let mut frame_ed = EdgelessLabelEditor::new(
+                    LabelTarget::FrameTitle {
+                        id: item_id.to_string(),
+                    },
+                    initial,
+                    rect,
+                    0.0,
+                    false,
+                );
+                frame_ed.select_all();
+                self.edgeless.authoring.inline_edit = Some(EdgelessInlineEdit::Label(frame_ed));
                 if let Ok(page) = self.page_mut() {
                     let _ = page.stop_capturing();
                 }
@@ -620,6 +679,19 @@ impl PlaygroundView {
                 size(px(w), px(h)),
             ));
         }
+        if matches!(ed.target, LabelTarget::Connector { .. }) {
+            let raw_w = (f32::from(br.x) - f32::from(tl.x)).max(0.5);
+            let raw_h = (f32::from(br.y) - f32::from(tl.y)).max(0.5);
+            let min_w = (48.0 * cam.zoom).max(20.0);
+            let min_h = (24.0 * cam.zoom).max(14.0);
+            let w = raw_w.max(min_w).min((vp_w - 16.0).max(1.0));
+            let h = raw_h.max(min_h).min((vp_h - 16.0).max(1.0));
+            let cx = f32::from(tl.x) + raw_w * 0.5;
+            let cy = (f32::from(tl.y) - TOPBAR_HEIGHT) + raw_h * 0.5;
+            let x = (cx - w * 0.5).clamp(8.0, (vp_w - w - 8.0).max(8.0));
+            let y = (cy - h * 0.5).clamp(8.0, (vp_h - h - 8.0).max(8.0)) + TOPBAR_HEIGHT;
+            return Some(Bounds::new(point(px(x), px(y)), size(px(w), px(h))));
+        }
         let w = (f32::from(br.x) - f32::from(tl.x))
             .max(120.0)
             .min(vp_w - 16.0);
@@ -672,5 +744,52 @@ impl PlaygroundView {
                 px((caret.h * info.scale * z).max(16.0)),
             ),
         ))
+    }
+
+    pub(crate) fn active_overlay_target(
+        &self,
+    ) -> Option<(
+        std::rc::Rc<blocksuite_playground_doc::read::PageSnapshot>,
+        std::rc::Rc<crate::block_flow::FlowLayout>,
+        Option<crate::overlays::OverlayScreenTransform>,
+    )> {
+        let snapshot = self.snapshot.clone()?;
+        match self.mode {
+            crate::PlaygroundMode::Page => Some((snapshot, self.flow_layout()?, None)),
+            crate::PlaygroundMode::Edgeless => {
+                let (editing_id, is_note) = self.edgeless.authoring.editing_spatial_block()?;
+                let layout = self.edgeless.cached_block_layout(editing_id, is_note)?;
+                let info = self
+                    .edgeless
+                    .authoring
+                    .painted_items
+                    .iter()
+                    .find(|i| i.id == editing_id)?;
+                let pad = if is_note { NOTE_CARD_PADDING } else { 0.0 };
+                let topbar = point(px(0.0), px(TOPBAR_HEIGHT));
+                let origin_screen = self.edgeless.camera.world_to_screen(
+                    point(
+                        px(info.rect.x + pad * info.scale),
+                        px(info.rect.y + pad * info.scale),
+                    ),
+                    topbar,
+                );
+                let (cx, cy) = info.rect.center();
+                let pivot_screen = self
+                    .edgeless
+                    .camera
+                    .world_to_screen(point(px(cx), px(cy)), topbar);
+                Some((
+                    snapshot,
+                    layout,
+                    Some(crate::overlays::OverlayScreenTransform {
+                        origin: (f32::from(origin_screen.x), f32::from(origin_screen.y)),
+                        pivot: (f32::from(pivot_screen.x), f32::from(pivot_screen.y)),
+                        scale: info.scale * self.edgeless.camera.zoom,
+                        rotate_deg: info.rotate_deg,
+                    }),
+                ))
+            }
+        }
     }
 }

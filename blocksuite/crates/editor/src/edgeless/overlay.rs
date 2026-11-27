@@ -62,9 +62,14 @@ pub fn build_edgeless_authoring_overlay(
             .filter(|r| r.abs() > 1e-3)
             .unwrap_or(0.0);
 
+        let hide_selection_box = authoring
+            .label_editor()
+            .is_some_and(|ed| matches!(ed.target, super::LabelTarget::Connector { .. }));
         let visible_box =
             x0 >= 0.0 && y0 >= 0.0 && x0 + w <= viewport_width && y0 + h <= viewport_height;
-        if rot_deg.abs() > 1e-3 {
+        if hide_selection_box {
+            // Suppress connector selection box while editing its label inline.
+        } else if rot_deg.abs() > 1e-3 {
             let c0 = rotate_point_around(x0, y0, mx, my, rot_deg);
             let c1 = rotate_point_around(x1, y0, mx, my, rot_deg);
             let c2 = rotate_point_around(x1, y1, mx, my, rot_deg);
@@ -467,6 +472,16 @@ pub fn build_edgeless_authoring_overlay(
             let x1 = (f32::from(aabb_br.x) + bleed).clamp(0.0, viewport_width);
             let y1 = (f32::from(aabb_br.y) + bleed).clamp(0.0, viewport_height);
             (x0, y0, x1 - x0, y1 - y0, raw_x, raw_y, raw_w, raw_h)
+        } else if matches!(editor.target, super::LabelTarget::Connector { .. }) {
+            let min_w = (48.0 * camera.zoom).max(20.0);
+            let min_h = (24.0 * camera.zoom).max(14.0);
+            let w = raw_w.max(min_w).min((viewport_width - 16.0).max(1.0));
+            let h = raw_h.max(min_h).min((viewport_height - 16.0).max(1.0));
+            let cx = raw_x + raw_w * 0.5;
+            let cy = raw_y + raw_h * 0.5;
+            let x = (cx - w * 0.5).clamp(8.0, (viewport_width - w - 8.0).max(8.0));
+            let y = (cy - h * 0.5).clamp(8.0, (viewport_height - h - 8.0).max(8.0));
+            (x, y, w, h, x, y, w, h)
         } else {
             let w = raw_w.max(120.0).min(viewport_width - 16.0);
             let h = raw_h.max(32.0).min(viewport_height - 16.0);
