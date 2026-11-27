@@ -229,6 +229,7 @@ jobs:
 
       - name: Install Linux fontconfig headers
         run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
           sudo apt-get update
           sudo apt-get install -y libfontconfig1-dev libfreetype-dev
 
@@ -295,6 +296,7 @@ jobs:
 
       - name: Install Mesa Lavapipe Vulkan driver and headers
         run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
           sudo apt-get update
           sudo apt-get install -y mesa-vulkan-drivers libvulkan1 libfontconfig1-dev libfreetype-dev lld
 
@@ -303,7 +305,7 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Install wasm-bindgen CLI
+      - name: Install wasm-bindgen CLI and Binaryen wasm-opt
         run: |
           WBG_VERSION=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/"/, "", $3); print $3; exit}' Cargo.lock)
           URL="https://github.com/wasm-bindgen/wasm-bindgen/releases/download/${WBG_VERSION}/wasm-bindgen-${WBG_VERSION}-x86_64-unknown-linux-musl.tar.gz"
@@ -314,6 +316,15 @@ jobs:
             cargo install --locked wasm-bindgen-cli --version "$WBG_VERSION"
           fi
           wasm-bindgen --version
+          BINARYEN_VERSION="version_123"
+          BINARYEN_SHA256="e959f2170af4c20c552e9de3a0253704d6a9d2766e8fdb88e4d6ac4bae9388fe"
+          curl -fsSL "https://github.com/WebAssembly/binaryen/releases/download/${BINARYEN_VERSION}/binaryen-${BINARYEN_VERSION}-x86_64-linux.tar.gz" \
+            -o /tmp/binaryen.tar.gz
+          echo "${BINARYEN_SHA256}  /tmp/binaryen.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/binaryen.tar.gz -C /tmp
+          rm -f /tmp/binaryen.tar.gz
+          sudo install -m 0755 "/tmp/binaryen-${BINARYEN_VERSION}/bin/wasm-opt" /usr/local/bin/wasm-opt
+          wasm-opt --version
 
       - name: Cache Cargo artifacts
         uses: Swatinem/rust-cache@v2
@@ -329,8 +340,16 @@ jobs:
       - name: Build WebAssembly bundle and run headless Chromium smoke test
         run: |
           mkdir -p artifacts ../../blocksuite/crates/playground/web/pkg
-          cargo build --locked -p playground --target wasm32-unknown-unknown --release
-          wasm-bindgen --target web --out-dir ../../blocksuite/crates/playground/web/pkg target/wasm32-unknown-unknown/release/playground.wasm
+          cargo build --locked --profile wasm-release -p playground --target wasm32-unknown-unknown
+          wasm-bindgen --target web --out-dir ../../blocksuite/crates/playground/web/pkg target/wasm32-unknown-unknown/wasm-release/playground.wasm
+          wasm-opt -Oz --strip-debug --strip-producers \
+            --enable-bulk-memory \
+            --enable-nontrapping-float-to-int \
+            --enable-sign-ext \
+            --enable-mutable-globals \
+            ../../blocksuite/crates/playground/web/pkg/playground_bg.wasm \
+            -o ../../blocksuite/crates/playground/web/pkg/playground_bg.opt.wasm
+          mv ../../blocksuite/crates/playground/web/pkg/playground_bg.opt.wasm ../../blocksuite/crates/playground/web/pkg/playground_bg.wasm
           WASM_RAW=$(wc -c < ../../blocksuite/crates/playground/web/pkg/playground_bg.wasm | tr -d ' ')
           WASM_GZIP=$(gzip -9 -c ../../blocksuite/crates/playground/web/pkg/playground_bg.wasm | wc -c | tr -d ' ')
           echo "WASM_RAW=$WASM_RAW" >> "$GITHUB_ENV"

@@ -13,6 +13,7 @@ use crate::font_pool::FontPool;
 use crate::svg_raster::RasterOptions;
 #[cfg(any(feature = "mermaid", feature = "typst", feature = "pdf"))]
 use crate::svg_raster::RgbaImageBuffer;
+#[cfg(feature = "svg-raster")]
 use crate::svg_raster::SvgRasterizer;
 
 #[cfg(feature = "math")]
@@ -38,6 +39,7 @@ struct CachedTypstDocument {
 pub struct PreviewEngine {
     font_pool: FontPool,
     font_generation: u64,
+    #[cfg(feature = "svg-raster")]
     rasterizer: SvgRasterizer,
     cache: PinnedPixelCache<String>,
     #[cfg(feature = "typst")]
@@ -66,10 +68,12 @@ impl PreviewEngine {
     /// Creates an empty preview engine with the given pixel cache limits.
     pub fn new(limits: CacheLimits) -> Self {
         let font_pool = FontPool::new();
+        #[cfg(feature = "svg-raster")]
         let rasterizer = SvgRasterizer::new(&font_pool);
         Self {
             font_pool,
             font_generation: 0,
+            #[cfg(feature = "svg-raster")]
             rasterizer,
             cache: PinnedPixelCache::new(limits),
             #[cfg(feature = "typst")]
@@ -97,7 +101,10 @@ impl PreviewEngine {
         let added = self.font_pool.register_font_bytes(bytes)?;
         self.font_generation = self.font_generation.wrapping_add(1);
         self.cache.clear();
-        self.rasterizer = SvgRasterizer::new(&self.font_pool);
+        #[cfg(feature = "svg-raster")]
+        {
+            self.rasterizer = SvgRasterizer::new(&self.font_pool);
+        }
         #[cfg(feature = "typst")]
         {
             self.typst_world = None;
@@ -423,8 +430,11 @@ fn parse_package_spec(
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "mermaid")]
     use super::*;
+    #[cfg(all(feature = "mermaid", feature = "typst"))]
     use crate::PreviewDate;
+    #[cfg(feature = "mermaid")]
     use crate::test_support::build_test_cjk_ttf;
 
     #[cfg(all(feature = "mermaid", feature = "typst"))]

@@ -240,4 +240,8 @@ codegen-units = 1
 
 [profile.wasm-release]
 inherits = "release"
-strip = "debuginfo"
+debug = 0
+
+[profile.wasm-release-size]
+inherits = "wasm-release"
+opt-level = "s"

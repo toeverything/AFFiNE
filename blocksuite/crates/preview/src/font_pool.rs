@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+#[cfg(feature = "svg-text")]
 use usvg::fontdb::{Database, Source};
 
 use crate::error::PreviewError;
@@ -12,12 +13,14 @@ use crate::error::PreviewError;
 #[derive(Clone, Default)]
 pub struct FontPool {
     blobs: Vec<Arc<[u8]>>,
+    face_count: usize,
     families: Vec<String>,
     covered_ranges: Vec<(u32, u32)>,
     sans_serif: Option<String>,
     serif: Option<String>,
     monospace: Option<String>,
     math: Option<String>,
+    #[cfg(feature = "svg-text")]
     db: Arc<Database>,
 }
 
@@ -25,7 +28,7 @@ impl std::fmt::Debug for FontPool {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FontPool")
             .field("blob_count", &self.blobs.len())
-            .field("face_count", &self.db.len())
+            .field("face_count", &self.face_count)
             .field("sans_serif", &self.sans_serif)
             .field("serif", &self.serif)
             .field("monospace", &self.monospace)
@@ -47,13 +50,13 @@ impl FontPool {
     ) -> Result<usize, PreviewError> {
         let data: Vec<u8> = bytes.into();
         let face_count = ttf_parser::fonts_in_collection(&data).unwrap_or(1) as usize;
-        let mut parsed_any = false;
+        let mut parsed_faces = 0usize;
         let mut discovered_families = Vec::new();
         let mut new_codepoints = Vec::new();
 
         for index in 0..face_count {
             if let Ok(face) = ttf_parser::Face::parse(&data, index as u32) {
-                parsed_any = true;
+                parsed_faces += 1;
                 if let Some(family) = extract_family_name(&face)
                     && !discovered_families.contains(&family)
                 {
@@ -63,25 +66,32 @@ impl FontPool {
             }
         }
 
-        if !parsed_any {
+        if parsed_faces == 0 {
             return Err(PreviewError::InvalidFont(
                 "no valid TrueType or OpenType face found".to_string(),
             ));
         }
 
         let arc_bytes: Arc<[u8]> = Arc::from(data);
-        let db = Arc::make_mut(&mut self.db);
-        let before = db.len();
-        db.load_font_source(Source::Binary(Arc::new(SharedFontBytes(Arc::clone(
-            &arc_bytes,
-        )))));
-        let added = db.len().saturating_sub(before);
-        if added == 0 {
-            return Err(PreviewError::InvalidFont(
-                "fontdb rejected all faces in buffer".to_string(),
-            ));
-        }
+        #[cfg(feature = "svg-text")]
+        let added = {
+            let db = Arc::make_mut(&mut self.db);
+            let before = db.len();
+            db.load_font_source(Source::Binary(Arc::new(SharedFontBytes(Arc::clone(
+                &arc_bytes,
+            )))));
+            let added = db.len().saturating_sub(before);
+            if added == 0 {
+                return Err(PreviewError::InvalidFont(
+                    "fontdb rejected all faces in buffer".to_string(),
+                ));
+            }
+            added
+        };
+        #[cfg(not(feature = "svg-text"))]
+        let added = parsed_faces;
 
+        self.face_count += added;
         self.blobs.push(arc_bytes);
         merge_codepoint_ranges(&mut self.covered_ranges, new_codepoints);
         for family in discovered_families {
@@ -118,6 +128,7 @@ impl FontPool {
     }
 
     /// Returns the shared in-memory `fontdb::Database`.
+    #[cfg(feature = "svg-text")]
     pub fn database(&self) -> Arc<Database> {
         Arc::clone(&self.db)
     }
@@ -158,12 +169,12 @@ impl FontPool {
 
     /// Returns the number of loaded font faces.
     pub fn face_count(&self) -> usize {
-        self.db.len()
+        self.face_count
     }
 
     /// Returns true when no font faces are registered.
     pub fn is_empty(&self) -> bool {
-        self.db.is_empty()
+        self.face_count == 0
     }
 
     /// Returns true when at least one registered font face contains a glyph for `ch`.
@@ -184,6 +195,7 @@ impl FontPool {
             .is_ok()
     }
 
+    #[cfg(feature = "svg-text")]
     fn sync_generic_families(&mut self) {
         let Some(fallback) = self
             .sans_serif
@@ -202,10 +214,15 @@ impl FontPool {
         db.set_cursive_family(&fallback);
         db.set_fantasy_family(&fallback);
     }
+
+    #[cfg(not(feature = "svg-text"))]
+    fn sync_generic_families(&mut self) {}
 }
 
+#[cfg(feature = "svg-text")]
 pub(crate) struct SharedFontBytes(pub(crate) Arc<[u8]>);
 
+#[cfg(feature = "svg-text")]
 impl AsRef<[u8]> for SharedFontBytes {
     fn as_ref(&self) -> &[u8] {
         &self.0
@@ -319,11 +336,14 @@ mod tests {
         assert_eq!(pool.font_blobs().len(), 1);
         assert!(pool.sans_serif_family().is_some());
 
-        let db = pool.database();
-        let sans = db.query(&usvg::fontdb::Query {
-            families: &[usvg::fontdb::Family::SansSerif],
-            ..Default::default()
-        });
-        assert!(sans.is_some());
+        #[cfg(feature = "svg-text")]
+        {
+            let db = pool.database();
+            let sans = db.query(&usvg::fontdb::Query {
+                families: &[usvg::fontdb::Family::SansSerif],
+                ..Default::default()
+            });
+            assert!(sans.is_some());
+        }
     }
 }

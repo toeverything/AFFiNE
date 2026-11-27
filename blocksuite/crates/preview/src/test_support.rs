@@ -27,6 +27,7 @@ pub(crate) fn build_test_cjk_ttf() -> Vec<u8> {
 
 /// Synthesizes a Latin-only TrueType font whose `.notdef` (glyph 0) has a visible rectangular
 /// outline and `0.90 em` advance (`900 / 1000` units).
+#[cfg(all(feature = "svg-text", feature = "typst"))]
 pub(crate) fn build_test_latin_with_notdef_ttf() -> Vec<u8> {
     synthesize_distinct_bmp_ttf(
         "TestLatinWithNotdef",
@@ -37,6 +38,7 @@ pub(crate) fn build_test_latin_with_notdef_ttf() -> Vec<u8> {
 
 /// Synthesizes a Latin-only TrueType font whose `.notdef` (glyph 0) has zero outline bytes
 /// (`loca[0] == loca[1] == 0`), matching default `pyftsubset` subsets.
+#[cfg(all(feature = "svg-text", feature = "typst"))]
 pub(crate) fn build_test_latin_empty_notdef_ttf() -> Vec<u8> {
     synthesize_distinct_bmp_ttf(
         "EmptyNotdefLatin",

@@ -1,6 +1,13 @@
 //! S1 offline preview probe suite: Mermaid (9 families + wrapped + generic + front-matter),
 //! RaTeX 52-formula KaTeX corpus, and Hayro PDF page 0 rendering with p50/p95/p99 and peak RSS.
 
+#![cfg(all(
+    feature = "mermaid",
+    feature = "math",
+    feature = "typst",
+    feature = "pdf"
+))]
+
 use std::path::PathBuf;
 use std::time::Instant;
 

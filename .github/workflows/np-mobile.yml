@@ -44,6 +44,7 @@ jobs:
 
       - name: Install Linux fontconfig, Mesa Lavapipe Vulkan, and CJK fallback font
         run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers libvulkan1 libfontconfig1-dev libfreetype-dev fonts-wqy-zenhei
 
@@ -90,6 +91,7 @@ jobs:
 
       - name: Install Noto CJK font for 24-case Mermaid visual probes
         run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
           sudo apt-get update
           sudo apt-get install -y fonts-noto-cjk
 
@@ -148,7 +150,7 @@ jobs:
           workspaces: packages/frontend -> target
           key: np-mobile-preview-wasm
 
-      - name: Install wasm-bindgen CLI
+      - name: Install wasm-bindgen CLI and Binaryen wasm-opt
         run: |
           WBG_VERSION=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/"/, "", $3); print $3; exit}' Cargo.lock)
           URL="https://github.com/wasm-bindgen/wasm-bindgen/releases/download/${WBG_VERSION}/wasm-bindgen-${WBG_VERSION}-x86_64-unknown-linux-musl.tar.gz"
@@ -158,17 +160,44 @@ jobs:
             cargo install --locked wasm-bindgen-cli --version "$WBG_VERSION"
           fi
           wasm-bindgen --version
+          BINARYEN_VERSION="version_123"
+          BINARYEN_SHA256="e959f2170af4c20c552e9de3a0253704d6a9d2766e8fdb88e4d6ac4bae9388fe"
+          curl -fsSL "https://github.com/WebAssembly/binaryen/releases/download/${BINARYEN_VERSION}/binaryen-${BINARYEN_VERSION}-x86_64-linux.tar.gz" \
+            -o /tmp/binaryen.tar.gz
+          echo "${BINARYEN_SHA256}  /tmp/binaryen.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/binaryen.tar.gz -C /tmp
+          rm -f /tmp/binaryen.tar.gz
+          sudo install -m 0755 "/tmp/binaryen-${BINARYEN_VERSION}/bin/wasm-opt" /usr/local/bin/wasm-opt
+          wasm-opt --version
 
       - name: Build and verify main playground Wasm bundle and 4 preview Wasm workers
         run: |
           mkdir -p /tmp/preview-wasm/pkg
           for kind in mermaid math typst pdf; do
-            cargo build --locked --profile wasm-release -p blocksuite-preview --no-default-features --features "${kind},wasm-worker" --target wasm32-unknown-unknown
-            cp target/wasm32-unknown-unknown/wasm-release/blocksuite_preview.wasm "/tmp/preview-wasm/${kind}.wasm"
+            case "$kind" in
+              mermaid|typst) wasm_profile="wasm-release-size" ;;
+              *) wasm_profile="wasm-release" ;;
+            esac
+            cargo build --locked --profile "$wasm_profile" -p blocksuite-preview --no-default-features --features "${kind},wasm-worker" --target wasm32-unknown-unknown
+            wasm-opt -Oz --strip-debug --strip-producers \
+              --enable-bulk-memory \
+              --enable-nontrapping-float-to-int \
+              --enable-sign-ext \
+              --enable-mutable-globals \
+              "target/wasm32-unknown-unknown/${wasm_profile}/blocksuite_preview.wasm" \
+              -o "/tmp/preview-wasm/${kind}.wasm"
             test -s "/tmp/preview-wasm/${kind}.wasm"
           done
           cargo build --locked --profile wasm-release -p playground --target wasm32-unknown-unknown
           wasm-bindgen --target web --out-dir /tmp/preview-wasm/pkg target/wasm32-unknown-unknown/wasm-release/playground.wasm
+          wasm-opt -Oz --strip-debug --strip-producers \
+            --enable-bulk-memory \
+            --enable-nontrapping-float-to-int \
+            --enable-sign-ext \
+            --enable-mutable-globals \
+            /tmp/preview-wasm/pkg/playground_bg.wasm \
+            -o /tmp/preview-wasm/pkg/playground_bg.opt.wasm
+          mv /tmp/preview-wasm/pkg/playground_bg.opt.wasm /tmp/preview-wasm/pkg/playground_bg.wasm
           test -s /tmp/preview-wasm/pkg/playground_bg.wasm
           node hosts/web/scripts/stage-preview-workers.mjs /tmp/preview-wasm dev-local
           node hosts/web/scripts/verify-preview-workers-e2e.mjs

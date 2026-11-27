@@ -24,7 +24,7 @@ node --test hosts/web/tests/*.test.mjs
 node hosts/web/scripts/verify-zero-third-party-js.mjs
 ```
 
-After building the four `blocksuite-preview` `wasm32-unknown-unknown` workers and the main `playground` Wasm bundle (`wasm-bindgen --target web`) with `--profile wasm-release`, stage the binaries plus static fonts and run the end-to-end worker and real-browser verification scripts:
+After building the four `blocksuite-preview` `wasm32-unknown-unknown` workers (`--profile wasm-release` for `math` and `pdf`, `--profile wasm-release-size` for `mermaid` and `typst`) and the main `playground` Wasm bundle (`wasm-bindgen --target web`, `--profile wasm-release`), stage the binaries plus static fonts and run the end-to-end worker and real-browser verification scripts:
 
 ```sh
 node hosts/web/scripts/stage-preview-workers.mjs /tmp/preview-wasm dev-local

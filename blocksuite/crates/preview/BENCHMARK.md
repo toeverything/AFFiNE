@@ -56,16 +56,16 @@ The nine-family mean is 1,602 KiB (1.56 MiB) and the peak is 4,078 KiB (3.98 MiB
 
 ## 3. Standalone WebAssembly Worker Sizes
 
-Each preview capability builds independently under the unified `packages/frontend/Cargo.toml` workspace for `wasm32-unknown-unknown --release` with `--no-default-features --features <feature>,wasm-worker` so the main Web application pays zero upfront preview bundle cost.
+Each preview capability builds independently under the unified `packages/frontend/Cargo.toml` workspace for `wasm32-unknown-unknown` with `--no-default-features --features <feature>,wasm-worker` so the main Web application pays zero upfront preview bundle cost.
 
-The unified workspace `[profile.release]` sets `debug = "limited"`, `lto = "thin"`, and `codegen-units = 1`, which preserves DWARF custom sections in raw `.wasm` output. Production web packaging strips custom debug sections via `wasm-bindgen` and `wasm-opt` (in R1 stripped standalone builds with `opt-level = "s"` and `strip = true`, `gzip -9` sizes were 1.15 MiB for `math`, 1.77 MiB for `pdf`, 5.05 MiB for `mermaid`, and 7.70 MiB for `typst`).
+Production web packaging strips DWARF debug info (`debug = 0`) and post-processes every `.wasm` with Binaryen `wasm-opt -Oz --strip-debug --strip-producers`, selecting `opt-level = 3` (`--profile wasm-release`) for latency-sensitive `math` (`svg-raster` outline-only) and `pdf` (pure `hayro`, zero `resvg`/`usvg`) and `opt-level = "s"` (`--profile wasm-release-size`) for `mermaid` and `typst` (`svg-text`) so `typst` keeps comfortable headroom under Cloudflare Workers' 25 MiB single-asset limit without `opt-level = "z"` runtime slowdowns:
 
-| Worker Feature | Unified Workspace Raw `.wasm` Bytes | Raw Size (`debug = "limited"`) | Unified Workspace `gzip -9` Bytes | `gzip -9` Size |
-| --- | --- | --- | --- | --- |
-| `math,wasm-worker` (RaTeX + outlines) | 30,270,736 | 28.87 MiB | 7,760,539 | 7.40 MiB |
-| `pdf,wasm-worker` (`hayro 0.9.0`) | 51,300,697 | 48.92 MiB | 11,484,798 | 10.95 MiB |
-| `typst,wasm-worker` (`typst 0.15.1`) | 175,521,113 | 167.39 MiB | 37,523,574 | 35.79 MiB |
-| `mermaid,wasm-worker` (`merman 0.11.0`) | 188,055,986 | 179.34 MiB | 40,001,096 | 38.15 MiB |
+| Worker Feature | Profile | Stripped + `wasm-opt -Oz` Raw Size | `gzip -9` Size | Unstripped `--release` Raw (`debug = "limited"`) |
+| --- | --- | ---: | ---: | ---: |
+| `math,wasm-worker` (RaTeX + `svg-raster` outlines) | `wasm-release` (`opt-level = 3`) | ~3.72 MiB | ~1.40 MiB | 28.87 MiB |
+| `pdf,wasm-worker` (`hayro 0.9.0`, zero `resvg`) | `wasm-release` (`opt-level = 3`) | ~3.99 MiB | ~1.74 MiB | 48.92 MiB |
+| `mermaid,wasm-worker` (`merman 0.11.0` + `svg-text`) | `wasm-release-size` (`opt-level = "s"`) | ~15.53 MiB | ~5.79 MiB | 179.34 MiB |
+| `typst,wasm-worker` (`typst 0.15.1` + `svg-text`) | `wasm-release-size` (`opt-level = "s"`) | ~21.08 MiB | ~7.96 MiB | 167.39 MiB |
 
 ## 4. Native Build and Toolchain Audit
 

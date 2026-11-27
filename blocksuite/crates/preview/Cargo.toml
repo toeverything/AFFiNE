@@ -11,25 +11,29 @@ crate-type = ["rlib", "cdylib"]
 
 [features]
 default = ["mermaid", "math", "typst", "pdf"]
-mermaid = ["dep:merman"]
+svg-raster = ["dep:resvg", "dep:usvg"]
+svg-text = ["svg-raster", "resvg/text", "resvg/raster-images", "usvg/text"]
+mermaid = ["dep:merman", "svg-text"]
 math = [
     "dep:ratex-parser",
     "dep:ratex-layout",
     "dep:ratex-katex-fonts",
     "dep:ratex-types",
+    "svg-raster",
 ]
 typst = [
     "dep:comemo",
     "dep:typst",
     "dep:typst-layout",
     "dep:typst-svg",
+    "svg-text",
 ]
 pdf = ["dep:hayro"]
 wasm-worker = ["dep:wasm-bindgen"]
 
 [dependencies]
-resvg = { version = "0.46.0", default-features = false, features = ["text", "raster-images"] }
-usvg = { version = "0.46.0", default-features = false, features = ["text"] }
+resvg = { version = "0.46.0", default-features = false, optional = true }
+usvg = { version = "0.46.0", default-features = false, optional = true }
 sha2 = "0.10"
 thiserror.workspace = true
 ttf-parser.workspace = true

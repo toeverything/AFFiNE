@@ -32,14 +32,16 @@ pub mod wasm;
 #[cfg(feature = "wasm-worker")]
 pub mod wasm_worker;
 
-#[cfg(test)]
+#[cfg(all(test, any(feature = "mermaid", feature = "typst", feature = "math")))]
 pub(crate) mod test_support;
 
 pub use cache::{CacheLimits, EvictionReport, PinnedPixelCache};
 pub use engine::PreviewEngine;
 pub use error::PreviewError;
 pub use font_pool::FontPool;
-pub use svg_raster::{DEFAULT_MAX_EDGE_PX, RasterOptions, RgbaImageBuffer, SvgRasterizer};
+#[cfg(feature = "svg-raster")]
+pub use svg_raster::SvgRasterizer;
+pub use svg_raster::{DEFAULT_MAX_EDGE_PX, RasterOptions, RgbaImageBuffer};
 
 /// Deterministic calendar date injected into diagram and document renderers.
 ///

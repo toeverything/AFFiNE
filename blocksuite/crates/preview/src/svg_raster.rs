@@ -1,9 +1,15 @@
-use std::sync::{Arc, OnceLock};
+#[cfg(feature = "svg-raster")]
+use std::sync::Arc;
+#[cfg(feature = "svg-text")]
+use std::sync::OnceLock;
 
+#[cfg(feature = "svg-raster")]
 use resvg::tiny_skia::{Pixmap, Transform};
 use sha2::{Digest, Sha256};
 
+#[cfg(feature = "svg-raster")]
 use crate::error::PreviewError;
+#[cfg(feature = "svg-raster")]
 use crate::font_pool::FontPool;
 
 /// Default maximum raster edge in physical pixels to bound memory usage.
@@ -47,6 +53,7 @@ impl RgbaImageBuffer {
 
     /// Composites this premultiplied RGBA8 buffer over an opaque sRGB background
     /// and encodes the resulting opaque image as PNG bytes.
+    #[cfg(feature = "svg-raster")]
     pub fn encode_png_over_rgb(&self, bg: [u8; 3]) -> Result<Vec<u8>, PreviewError> {
         let rgb = self.composite_over_rgb(bg);
         let mut rgba = Vec::with_capacity(self.pixels.len());
@@ -119,9 +126,11 @@ pub struct RasterOptions {
     pub target_logical_height: Option<f32>,
     /// Maximum allowed physical width or height in pixels.
     pub max_edge_px: u32,
-    /// When `false` (default), missing glyphs in SVG `<text>` elements fail with
-    /// [`PreviewError::MissingGlyphFont`] so hosts can fetch script fonts on demand.
-    /// When `true`, rasterization proceeds best-effort even if some glyphs are uncovered.
+    /// When `false` (default) and compiled with `svg-text`, missing glyphs in SVG `<text>`
+    /// elements fail with [`PreviewError::MissingGlyphFont`] so hosts can fetch script fonts on
+    /// demand. When `true`, rasterization proceeds best-effort even if some glyphs are uncovered.
+    /// Without `svg-text` (path-only `svg-raster` builds), SVG `<text>` elements are rejected with
+    /// [`PreviewError::SvgParse`].
     pub allow_missing_glyphs: bool,
 }
 
@@ -151,57 +160,71 @@ impl RasterOptions {
 ///
 /// Uses only fonts explicitly registered in its [`FontPool`] and blocks all
 /// external filesystem or URL `<image href="...">` resolution.
+#[cfg(feature = "svg-raster")]
 #[derive(Clone)]
 pub struct SvgRasterizer {
     options: Arc<usvg::Options<'static>>,
     font_pool: FontPool,
 }
 
+#[cfg(feature = "svg-raster")]
 impl SvgRasterizer {
     /// Builds a rasterizer bound to the given explicit [`FontPool`].
     pub fn new(font_pool: &FontPool) -> Self {
-        let fontdb = font_pool.database();
-        let default_selector = usvg::FontResolver::default_font_selector();
-        let default_fallback = usvg::FontResolver::default_fallback_selector();
-
-        let select_font = Box::new(
-            move |font: &usvg::Font, db: &mut Arc<usvg::fontdb::Database>| {
-                if let Some(id) = default_selector(font, db) {
-                    return Some(id);
-                }
-                let sans_query = usvg::fontdb::Query {
-                    families: &[usvg::fontdb::Family::SansSerif],
-                    ..Default::default()
-                };
-                db.query(&sans_query)
-                    .or_else(|| db.faces().next().map(|face| face.id))
-            },
-        );
-
-        let select_fallback = Box::new(
-            move |ch: char, fonts: &[usvg::fontdb::ID], db: &mut Arc<usvg::fontdb::Database>| {
-                default_fallback(ch, fonts, db)
-            },
-        );
-
-        // Allow inline `data:` images only; block all host filesystem paths and URLs.
+        // Allow inline `data:` images only; block all host filesystem paths and URLs
+        // regardless of whether `svg-text` / `resvg/raster-images` are enabled.
         let image_href_resolver = usvg::ImageHrefResolver {
             resolve_data: usvg::ImageHrefResolver::default_data_resolver(),
             resolve_string: Box::new(|_, _| None),
         };
 
-        let mut usvg_options = usvg::Options {
-            fontdb,
-            font_resolver: usvg::FontResolver {
-                select_font,
-                select_fallback,
-            },
+        #[cfg(feature = "svg-text")]
+        let usvg_options = {
+            let fontdb = font_pool.database();
+            let default_selector = usvg::FontResolver::default_font_selector();
+            let default_fallback = usvg::FontResolver::default_fallback_selector();
+
+            let select_font = Box::new(
+                move |font: &usvg::Font, db: &mut Arc<usvg::fontdb::Database>| {
+                    if let Some(id) = default_selector(font, db) {
+                        return Some(id);
+                    }
+                    let sans_query = usvg::fontdb::Query {
+                        families: &[usvg::fontdb::Family::SansSerif],
+                        ..Default::default()
+                    };
+                    db.query(&sans_query)
+                        .or_else(|| db.faces().next().map(|face| face.id))
+                },
+            );
+
+            let select_fallback = Box::new(
+                move |ch: char,
+                      fonts: &[usvg::fontdb::ID],
+                      db: &mut Arc<usvg::fontdb::Database>| {
+                    default_fallback(ch, fonts, db)
+                },
+            );
+
+            let mut usvg_options = usvg::Options {
+                fontdb,
+                font_resolver: usvg::FontResolver {
+                    select_font,
+                    select_fallback,
+                },
+                image_href_resolver,
+                ..Default::default()
+            };
+            if let Some(sans) = font_pool.sans_serif_family() {
+                usvg_options.font_family = sans.to_string();
+            }
+            usvg_options
+        };
+        #[cfg(not(feature = "svg-text"))]
+        let usvg_options = usvg::Options {
             image_href_resolver,
             ..Default::default()
         };
-        if let Some(sans) = font_pool.sans_serif_family() {
-            usvg_options.font_family = sans.to_string();
-        }
 
         Self {
             options: Arc::new(usvg_options),
@@ -240,8 +263,28 @@ impl SvgRasterizer {
             ));
         }
 
+        #[cfg(not(feature = "svg-text"))]
+        let tree = {
+            let xml_opt = usvg::roxmltree::ParsingOptions {
+                allow_dtd: true,
+                ..Default::default()
+            };
+            let xml_doc =
+                usvg::roxmltree::Document::parse_with_options(svg, xml_opt).map_err(|err| {
+                    PreviewError::SvgParse(usvg::Error::ParsingFailed(err).to_string())
+                })?;
+            if xml_contains_svg_text_element(xml_doc.root()) {
+                return Err(PreviewError::SvgParse(
+                    "SVG <text> requires the `svg-text` feature".to_string(),
+                ));
+            }
+            usvg::Tree::from_xmltree(&xml_doc, &self.options)
+                .map_err(|err| PreviewError::SvgParse(err.to_string()))?
+        };
+        #[cfg(feature = "svg-text")]
         let tree = usvg::Tree::from_str(svg, &self.options)
             .map_err(|err| PreviewError::SvgParse(err.to_string()))?;
+        #[cfg(feature = "svg-text")]
         if !options.allow_missing_glyphs {
             // Collect uncovered codepoints across both the actual render tree and the synthetic
             // non-empty `.notdef` probe tree in one shared deduplicated pass so neither glyphs
@@ -256,6 +299,7 @@ impl SvgRasterizer {
     }
 }
 
+#[cfg(feature = "svg-raster")]
 fn rasterize_tree(
     tree: &usvg::Tree,
     options: RasterOptions,
@@ -314,6 +358,7 @@ fn rasterize_tree(
     })
 }
 
+#[cfg(feature = "svg-text")]
 fn verify_trees_text_glyph_coverage(
     trees: &[&usvg::Tree],
     font_pool: &FontPool,
@@ -340,6 +385,7 @@ fn verify_trees_text_glyph_coverage(
     Ok(())
 }
 
+#[cfg(feature = "svg-text")]
 fn walk_usvg_root_group(group: &usvg::Group, font_pool: &FontPool, missing: &mut Vec<char>) {
     if let Some(clip) = group.clip_path() {
         walk_usvg_root_group(clip.root(), font_pool, missing);
@@ -350,6 +396,7 @@ fn walk_usvg_root_group(group: &usvg::Group, font_pool: &FontPool, missing: &mut
     walk_usvg_children(group, font_pool, missing);
 }
 
+#[cfg(feature = "svg-text")]
 fn walk_usvg_children(group: &usvg::Group, font_pool: &FontPool, missing: &mut Vec<char>) {
     for node in group.children() {
         match node {
@@ -406,6 +453,7 @@ fn walk_usvg_children(group: &usvg::Group, font_pool: &FontPool, missing: &mut V
 /// preserves reachable `Node::Text` elements (expanding `<use>`/`<tref>` while pruning
 /// unreferenced `<defs>`) even when [`FontPool`] is empty or its selected face has an
 /// outline-less `.notdef` glyph.
+#[cfg(feature = "svg-text")]
 fn glyph_probe_options() -> &'static usvg::Options<'static> {
     static PROBE_OPTS: OnceLock<usvg::Options<'static>> = OnceLock::new();
     PROBE_OPTS.get_or_init(|| {
@@ -443,6 +491,7 @@ fn glyph_probe_options() -> &'static usvg::Options<'static> {
     })
 }
 
+#[cfg(feature = "svg-text")]
 fn build_minimal_probe_ttf() -> Vec<u8> {
     let mut head = vec![0u8; 54];
     head[0..4].copy_from_slice(&0x0001_0000_u32.to_be_bytes());
@@ -576,9 +625,35 @@ fn build_minimal_probe_ttf() -> Vec<u8> {
     out
 }
 
+/// Walks parsed XML elements (matching `usvg`'s SVG namespace and container rules) and returns
+/// `true` when any SVG `<text>` element (`http://www.w3.org/2000/svg` or unqualified) is present,
+/// ignoring XML comments, CDATA, foreign namespaces, and non-rendered metadata/style subtrees.
+#[cfg(all(feature = "svg-raster", not(feature = "svg-text")))]
+fn xml_contains_svg_text_element(root: usvg::roxmltree::Node<'_, '_>) -> bool {
+    let mut stack = vec![root];
+    while let Some(node) = stack.pop() {
+        for child in node.children() {
+            if !child.is_element() {
+                continue;
+            }
+            let tag = child.tag_name();
+            if !matches!(tag.namespace(), None | Some("http://www.w3.org/2000/svg")) {
+                continue;
+            }
+            match tag.name() {
+                "text" => return true,
+                "metadata" | "title" | "desc" | "style" | "script" | "foreignObject" => {}
+                _ => stack.push(child),
+            }
+        }
+    }
+    false
+}
+
 /// Returns true for whitespace, control characters, and Unicode `Default_Ignorable_Code_Point`
 /// scalars (including variation selectors such as `U+FE0F`, joiners, and bidi/tag formatters)
 /// that render invisibly and do not require font glyph coverage.
+#[cfg(feature = "svg-text")]
 pub(crate) fn is_ignorable_for_glyph_check(ch: char) -> bool {
     if ch.is_whitespace() || ch.is_control() {
         return true;
@@ -605,8 +680,10 @@ pub(crate) fn is_ignorable_for_glyph_check(ch: char) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "svg-raster")]
     use super::*;
 
+    #[cfg(feature = "svg-raster")]
     #[test]
     fn rasterizes_vector_svg_deterministically_at_multiple_scales() {
         let svg = r##"<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20">
@@ -626,6 +703,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "svg-raster")]
     #[test]
     fn clamps_oversized_raster_target_to_max_edge() {
         let svg = r##"<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="500" viewBox="0 0 1000 500">
@@ -645,6 +723,7 @@ mod tests {
         assert_eq!(buf.height_px, 128);
     }
 
+    #[cfg(feature = "svg-raster")]
     #[test]
     fn rejects_empty_svg_and_non_positive_scale() {
         let rasterizer = SvgRasterizer::new(&FontPool::new());
@@ -663,15 +742,37 @@ mod tests {
         ));
 
         let text_svg = r#"<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><text x="2" y="14">Hi</text></svg>"#;
-        assert!(matches!(
-            rasterizer.rasterize(text_svg, 1.0),
-            Err(PreviewError::MissingGlyphFont(_))
-        ));
+        let prefixed_text_svg = r#"<s:svg xmlns:s="http://www.w3.org/2000/svg" width="40" height="20"><s:text x="2" y="14">Hi</s:text></s:svg>"#;
+        let mixed_prefixed_text_svg = r#"<svg xmlns="http://www.w3.org/2000/svg" xmlns:s="http://www.w3.org/2000/svg" width="40" height="20"><s:text x="2" y="14">Hi</s:text></svg>"#;
+        for candidate in [text_svg, prefixed_text_svg, mixed_prefixed_text_svg] {
+            #[cfg(feature = "svg-text")]
+            assert!(matches!(
+                rasterizer.rasterize(candidate, 1.0),
+                Err(PreviewError::MissingGlyphFont(_))
+            ));
+            #[cfg(not(feature = "svg-text"))]
+            match rasterizer.rasterize(candidate, 1.0) {
+                Err(PreviewError::SvgParse(msg)) => assert!(msg.contains("svg-text"), "{msg}"),
+                other => panic!("expected SvgParse requiring svg-text, got {other:?}"),
+            }
+        }
+
+        // Path-only SVG with `<text> legend` inside an XML comment and foreign-namespace metadata
+        // has 0 SVG text elements and must rasterize cleanly regardless of `svg-text`.
+        let commented_path_svg = r##"<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20">
+            <!-- <text> legend -->
+            <metadata><x:text xmlns:x="urn:meta">legend</x:text></metadata>
+            <path d="M2 2 H38 V18 H2 Z" fill="#1e66f5"/>
+        </svg>"##;
+        let rendered = rasterizer.rasterize(commented_path_svg, 1.0).unwrap();
+        assert!(rendered.count_non_transparent_pixels() > 0);
     }
 
+    #[cfg(feature = "svg-raster")]
     #[test]
     fn blocks_external_filesystem_image_href_resolution() {
-        // Minimal valid 1x1 red PNG file written to a temporary path.
+        // Verify both raster PNG and external vector `.svg` local file paths are blocked
+        // even when `svg-text` / `resvg/raster-images` are disabled (`math` configuration).
         const ONE_BY_ONE_RED_PNG: &[u8] = &[
             0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48,
             0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00,
@@ -679,29 +780,47 @@ mod tests {
             0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00, 0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xDD, 0x8D,
             0xB0, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
         ];
+        const LOCAL_RED_SVG: &[u8] = br##"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="16" height="16" fill="#ff0000"/></svg>"##;
         static TMP_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         let seq = TMP_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let tmp_path = std::env::temp_dir().join(format!(
+        let tmp_png = std::env::temp_dir().join(format!(
             "blocksuite_preview_blocked_href_{}_{seq}.png",
             std::process::id()
         ));
-        std::fs::write(&tmp_path, ONE_BY_ONE_RED_PNG).expect("write temp png");
-
-        let svg_existing = format!(
-            r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><image href="{}" width="16" height="16"/></svg>"#,
-            tmp_path.display()
-        );
-        let svg_missing = r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><image href="/nonexistent/preview_blocked.png" width="16" height="16"/></svg>"#;
+        let tmp_svg = std::env::temp_dir().join(format!(
+            "blocksuite_preview_blocked_href_{}_{seq}.svg",
+            std::process::id()
+        ));
+        std::fs::write(&tmp_png, ONE_BY_ONE_RED_PNG).expect("write temp png");
+        std::fs::write(&tmp_svg, LOCAL_RED_SVG).expect("write temp svg");
 
         let rasterizer = SvgRasterizer::new(&FontPool::new());
-        let with_file = rasterizer.rasterize(&svg_existing, 1.0).unwrap();
-        let without_file = rasterizer.rasterize(svg_missing, 1.0).unwrap();
-        let _ = std::fs::remove_file(&tmp_path);
-
-        assert_eq!(with_file.sha256(), without_file.sha256());
-        assert_eq!(with_file.count_non_transparent_pixels(), 0);
+        for (existing, missing) in [
+            (
+                tmp_png.display().to_string(),
+                "/nonexistent/preview_blocked.png",
+            ),
+            (
+                tmp_svg.display().to_string(),
+                "/nonexistent/preview_blocked.svg",
+            ),
+        ] {
+            let svg_existing = format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><image href="{existing}" width="16" height="16"/></svg>"#
+            );
+            let svg_missing = format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><image href="{missing}" width="16" height="16"/></svg>"#
+            );
+            let with_file = rasterizer.rasterize(&svg_existing, 1.0).unwrap();
+            let without_file = rasterizer.rasterize(&svg_missing, 1.0).unwrap();
+            assert_eq!(with_file.sha256(), without_file.sha256());
+            assert_eq!(with_file.count_non_transparent_pixels(), 0);
+        }
+        let _ = std::fs::remove_file(&tmp_png);
+        let _ = std::fs::remove_file(&tmp_svg);
     }
 
+    #[cfg(all(feature = "svg-text", feature = "typst"))]
     #[test]
     fn non_empty_latin_font_pool_signals_missing_cjk_glyph_until_cjk_font_registered() {
         let mut pool = FontPool::new();
@@ -722,6 +841,7 @@ mod tests {
         assert!(img.count_non_transparent_pixels() > 0);
     }
 
+    #[cfg(all(feature = "svg-text", feature = "typst"))]
     #[test]
     fn xml_tree_glyph_check_handles_cdata_comments_dedup_and_lenient_mode() {
         let mut pool = FontPool::new();
