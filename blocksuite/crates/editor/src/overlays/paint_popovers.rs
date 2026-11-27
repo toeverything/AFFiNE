@@ -11,7 +11,132 @@ use crate::{
 
 use super::*;
 
+/// Side and alignment a popover prefers relative to its anchor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Placement {
+    /// Above the anchor, centered on it.
+    Above,
+    /// Below the anchor, starting at its left edge.
+    BelowStart,
+}
+
+/// Side of the anchor a popover ended up on.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PopoverSide {
+    Above,
+    Below,
+}
+
+/// Result of [`place_popover`], on the pixel grid.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PlacedPopover {
+    pub rect: FlowRect,
+    pub side: PopoverSide,
+    /// Whether the popover left its preferred side.
+    pub flipped: bool,
+}
+
+/// Place a popover of `popover_size` next to `anchor` inside `viewport`, all in screen
+/// space.
+pub fn place_popover(
+    anchor: FlowRect,
+    popover_size: (f32, f32),
+    viewport: FlowRect,
+    preferred: Placement,
+    gap: f32,
+    edge_margin: f32,
+) -> PlacedPopover {
+    let (width, height) = popover_size;
+    let top_limit = viewport.y + edge_margin;
+    let bottom_limit = viewport.bottom() - edge_margin;
+    let above_y = anchor.y - gap - height;
+    let below_y = anchor.bottom() + gap;
+    let fits_above = above_y >= top_limit;
+    let fits_below = below_y + height <= bottom_limit;
+
+    let preferred_side = match preferred {
+        Placement::Above => PopoverSide::Above,
+        Placement::BelowStart => PopoverSide::Below,
+    };
+    let side = match (preferred_side, fits_above, fits_below) {
+        (PopoverSide::Above, true, _) | (PopoverSide::Below, true, false) => PopoverSide::Above,
+        (PopoverSide::Below, _, true) | (PopoverSide::Above, false, true) => PopoverSide::Below,
+        (preferred_side, false, false) => {
+            let room_above = anchor.y - viewport.y;
+            let room_below = viewport.bottom() - anchor.bottom();
+            if room_above > room_below {
+                PopoverSide::Above
+            } else if room_below > room_above {
+                PopoverSide::Below
+            } else {
+                preferred_side
+            }
+        }
+    };
+    let y = match side {
+        PopoverSide::Above => above_y,
+        PopoverSide::Below => below_y,
+    };
+    let y = y.min(bottom_limit - height).max(top_limit);
+
+    let x = match preferred {
+        Placement::Above => anchor.x + (anchor.w - width) / 2.0,
+        Placement::BelowStart => anchor.x,
+    };
+    let left_limit = viewport.x + edge_margin;
+    let x = x
+        .min(viewport.right() - edge_margin - width)
+        .max(left_limit);
+
+    PlacedPopover {
+        rect: FlowRect::new(x.round(), y.round(), width, height),
+        side,
+        flipped: side != preferred_side,
+    }
+}
+
 impl Overlays {
+    /// Render the desktop right-click context menu and transient clipboard toast for any mode.
+    pub fn context_overlays<V: OverlayHost>(
+        &mut self,
+        window_size: (f32, f32),
+        palette: &Palette,
+        now_ms: f64,
+        window: &mut Window,
+        cx: &mut Context<V>,
+    ) -> Vec<AnyElement> {
+        if self
+            .context_menu
+            .as_ref()
+            .is_some_and(|menu| menu.presence.gone(now_ms))
+        {
+            self.context_menu = None;
+        }
+        if self
+            .context_menu
+            .as_ref()
+            .is_some_and(|menu| menu.presence.in_flight(now_ms) || menu.presence.closing)
+        {
+            window.request_animation_frame();
+        }
+        let viewport = FlowRect::new(
+            0.0,
+            TOPBAR_HEIGHT,
+            window_size.0,
+            (window_size.1 - TOPBAR_HEIGHT).max(0.0),
+        );
+        let mut elements = Vec::new();
+        if let Some(menu) = self.context_menu.as_mut() {
+            elements.extend(context_menu::render_context_menu(
+                menu, viewport, palette, now_ms, cx,
+            ));
+        }
+        if let Some(toast) = self.context_toast.as_ref() {
+            elements.push(context_menu::render_context_toast(toast, viewport, palette));
+        }
+        elements
+    }
+
     /// Build the screen-space popovers, positioned in window coordinates: the slash menu
     /// and the formatting toolbar. Call after [`Overlays::page_layer`] in the same frame.
     pub fn popovers<V: OverlayHost>(

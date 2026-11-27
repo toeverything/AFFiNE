@@ -21,6 +21,8 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) {
         self.editor_focus.focus(window, cx);
+        let now_ms = self.now_ms(cx);
+        self.overlays.close_context_menu(now_ms);
         let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
         let world_pt = self
             .edgeless
@@ -35,6 +37,7 @@ impl PlaygroundView {
             || self.edgeless.authoring.tool == EdgelessTool::Hand
             || self.edgeless.authoring.space_pan
         {
+            self.edgeless_camera_transition = None;
             self.edgeless_commit_inline_edit(window, cx);
             self.edgeless.authoring.gesture = Some(EdgelessGesture::Pan {
                 last_screen: event.position,
@@ -75,80 +78,32 @@ impl PlaygroundView {
 
         // If currently inline-editing a label (Shape/Connector/SurfaceText/Frame) and clicking
         // inside its overlay bounds, hit-test the laid-out RichParagraph and place the caret.
-        if let Some(ed) = self.edgeless.authoring.label_editor() {
-            let eff_rot = ed.effective_rotate_deg();
-            let inside_overlay = if ed.target.rotates_in_place() {
-                point_in_rotated_rect(wx, wy, ed.world_rect, eff_rot)
-            } else {
-                let bounds = self.edgeless_label_screen_bounds();
-                bounds.is_some_and(|b| b.contains(&event.position))
-                    || point_in_rotated_rect(wx, wy, ed.world_rect, 0.0)
-            };
-            if inside_overlay {
-                if self
-                    .edgeless
-                    .authoring
-                    .label_editor()
-                    .is_some_and(|e| e.composing())
-                {
-                    let _ =
-                        self.edgeless_label_edit(window, cx, super::EdgelessLabelEditor::unmark);
-                }
-                let bounds = self.edgeless_label_layout_screen_bounds();
-                let off = self
-                    .edgeless
-                    .authoring
-                    .label_editor()
-                    .map(|ed| {
-                        bounds
-                            .and_then(|b| {
-                                let zoom = self.edgeless.camera.zoom;
-                                let laid_out = layout_label_editor_paragraph(
-                                    ed,
-                                    f32::from(b.size.width),
-                                    zoom,
-                                    self.theme,
-                                    window,
-                                )?;
-                                let (ox, oy) = label_editor_text_origin(
-                                    ed,
-                                    f32::from(b.size.height),
-                                    f32::from(laid_out.size().height),
-                                    zoom,
-                                );
-                                let rot = ed.effective_rotate_deg();
-                                let (ux, uy) = if rot.abs() > 1e-4 {
-                                    let cx_s =
-                                        f32::from(b.origin.x) + f32::from(b.size.width) * 0.5;
-                                    let cy_s =
-                                        f32::from(b.origin.y) + f32::from(b.size.height) * 0.5;
-                                    rotate_point_around(
-                                        f32::from(event.position.x),
-                                        f32::from(event.position.y),
-                                        cx_s,
-                                        cy_s,
-                                        -rot,
-                                    )
-                                } else {
-                                    (f32::from(event.position.x), f32::from(event.position.y))
-                                };
-                                let local_pt = point(
-                                    px(ux) - b.origin.x - px(ox),
-                                    px(uy) - b.origin.y - px(oy),
-                                );
-                                Some(laid_out.hit_test(local_pt).utf16_offset as usize)
-                            })
-                            .unwrap_or_else(|| ed.input.text.encode_utf16().count())
-                    })
-                    .unwrap_or(0);
-                if let Some(ed_mut) = self.edgeless.authoring.label_editor_mut() {
-                    ed_mut.select(off..off);
-                }
-                self.edgeless_update_label_anchors();
-                window.notify_text_input_changed(&self.editor_focus);
-                cx.notify();
-                return;
+        if self.edgeless_point_in_label_editor(
+            f32::from(event.position.x),
+            f32::from(event.position.y),
+        ) {
+            if self
+                .edgeless
+                .authoring
+                .label_editor()
+                .is_some_and(|e| e.composing())
+            {
+                let _ = self.edgeless_label_edit(window, cx, super::EdgelessLabelEditor::unmark);
             }
+            let off = self
+                .hit_label_editor_at(
+                    f32::from(event.position.x),
+                    f32::from(event.position.y),
+                    window,
+                )
+                .map_or(0, |(off, _)| off);
+            if let Some(ed_mut) = self.edgeless.authoring.label_editor_mut() {
+                ed_mut.select(off..off);
+            }
+            self.edgeless_update_label_anchors();
+            window.notify_text_input_changed(&self.editor_focus);
+            cx.notify();
+            return;
         }
 
         // Clicking outside an active inline label/block edit commits and exits it.
@@ -505,5 +460,115 @@ impl PlaygroundView {
             });
         }
         out
+    }
+
+    /// Return whether window coordinates `(sx, sy)` hit the active Edgeless inline label editor.
+    pub(crate) fn edgeless_point_in_label_editor(&self, sx: f32, sy: f32) -> bool {
+        let Some(ed) = self.edgeless.authoring.label_editor() else {
+            return false;
+        };
+        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let wp = self
+            .edgeless
+            .camera
+            .screen_to_world(point(px(sx), px(sy)), vp_origin);
+        let wx = f32::from(wp.x);
+        let wy = f32::from(wp.y);
+        if ed.target.rotates_in_place() {
+            point_in_rotated_rect(wx, wy, ed.world_rect, ed.effective_rotate_deg())
+        } else {
+            let pt = point(px(sx), px(sy));
+            self.edgeless_label_screen_bounds()
+                .is_some_and(|b| b.contains(&pt))
+                || point_in_rotated_rect(wx, wy, ed.world_rect, 0.0)
+        }
+    }
+
+    /// Hit-test the UTF-16 caret offset and whether `(sx, sy)` lies inside the painted
+    /// selection highlight of the active Edgeless label editor.
+    pub(crate) fn hit_label_editor_at(
+        &self,
+        sx: f32,
+        sy: f32,
+        window: &mut Window,
+    ) -> Option<(usize, bool)> {
+        let bounds = self.edgeless_label_layout_screen_bounds();
+        let ed = self.edgeless.authoring.label_editor()?;
+        let res = bounds
+            .and_then(|b| {
+                let zoom = self.edgeless.camera.zoom;
+                let laid_out = layout_label_editor_paragraph(
+                    ed,
+                    f32::from(b.size.width),
+                    zoom,
+                    self.theme,
+                    window,
+                )?;
+                let (ox, oy) = label_editor_text_origin(
+                    ed,
+                    f32::from(b.size.height),
+                    f32::from(laid_out.size().height),
+                    zoom,
+                );
+                let rot = ed.effective_rotate_deg();
+                let (ux, uy) = if rot.abs() > 1e-4 {
+                    let cx_s = f32::from(b.origin.x) + f32::from(b.size.width) * 0.5;
+                    let cy_s = f32::from(b.origin.y) + f32::from(b.size.height) * 0.5;
+                    rotate_point_around(sx, sy, cx_s, cy_s, -rot)
+                } else {
+                    (sx, sy)
+                };
+                let local_pt = point(px(ux) - b.origin.x - px(ox), px(uy) - b.origin.y - px(oy));
+                let off = laid_out.hit_test(local_pt).utf16_offset as usize;
+                let in_sel = !ed.composing()
+                    && !ed.input.selection.is_empty()
+                    && laid_out
+                        .selection_rects(
+                            ed.input.selection.start as u64,
+                            ed.input.selection.end as u64,
+                        )
+                        .iter()
+                        .any(|r| r.contains(&local_pt));
+                Some((off, in_sel))
+            })
+            .unwrap_or_else(|| (ed.input.text.encode_utf16().count(), false));
+        Some(res)
+    }
+
+    /// Transform window coordinates `(x, y)` into an inline-edited Edgeless Note/EdgelessText
+    /// block's local flow coordinates `(flow_x, flow_y)` when `(x, y)` lies inside the card.
+    pub(crate) fn edgeless_screen_to_spatial_flow(
+        &self,
+        x: f32,
+        y: f32,
+        editing_id: &str,
+        is_note: bool,
+    ) -> Option<(f32, f32)> {
+        let info = self
+            .edgeless
+            .authoring
+            .painted_items
+            .iter()
+            .find(|i| i.id == editing_id)?;
+        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let world_pt = self
+            .edgeless
+            .camera
+            .screen_to_world(point(px(x), px(y)), vp_origin);
+        let wx = f32::from(world_pt.x);
+        let wy = f32::from(world_pt.y);
+        if !point_in_rotated_rect(wx, wy, info.rect, info.rotate_deg) {
+            return None;
+        }
+        let (cx_w, cy_w) = info.rect.center();
+        let (lx, ly) = rotate_point_around(wx, wy, cx_w, cy_w, -info.rotate_deg);
+        let pad = if is_note {
+            super::NOTE_CARD_PADDING
+        } else {
+            0.0
+        };
+        let flow_x = (lx - info.rect.x) / info.scale - pad;
+        let flow_y = (ly - info.rect.y) / info.scale - pad;
+        Some((flow_x, flow_y))
     }
 }

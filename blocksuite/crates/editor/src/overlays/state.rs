@@ -48,14 +48,93 @@ impl Overlays {
     }
 
     /// The primary button went down on the page: the slash menu, linked-doc menu, the link
-    /// field and a block drag end.
+    /// field, context menu, and a block drag end.
     pub fn pointer_pressed(&mut self, now_ms: f64) {
         self.close_slash(now_ms);
         self.close_linked_doc(now_ms);
+        self.close_context_menu(now_ms);
         self.close_link_field();
         self.close_equation_editor_at(now_ms);
         self.close_bookmark_prompt_at(now_ms);
         self.drag = None;
+    }
+
+    /// Open or reopen the desktop right-click context menu at window-space `anchor`.
+    pub fn open_context_menu(
+        &mut self,
+        anchor: (f32, f32),
+        can_copy: bool,
+        can_cut: bool,
+        can_paste: bool,
+        link_url: Option<String>,
+        now_ms: f64,
+    ) {
+        let presence = match self.context_menu.take() {
+            Some(menu) => menu.presence.reopened(now_ms),
+            None => Presence::opening(now_ms),
+        };
+        self.context_menu = Some(ContextMenuState {
+            anchor,
+            can_copy,
+            can_cut,
+            can_paste,
+            link_url,
+            presence,
+            rect: None,
+        });
+    }
+
+    /// Dismiss the desktop right-click context menu with a fade-out transition.
+    pub fn close_context_menu(&mut self, now_ms: f64) -> bool {
+        match self
+            .context_menu
+            .as_mut()
+            .filter(|menu| !menu.presence.closing)
+        {
+            Some(menu) => {
+                menu.presence.close(now_ms);
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// Active (non-closing) desktop right-click context menu.
+    pub fn context_menu(&self) -> Option<&ContextMenuState> {
+        self.context_menu
+            .as_ref()
+            .filter(|menu| !menu.presence.closing)
+    }
+
+    /// Show a transient clipboard fallback toast and return its generation token.
+    pub fn show_context_toast(&mut self, message: impl Into<String>) -> u64 {
+        self.context_toast_generation += 1;
+        let generation = self.context_toast_generation;
+        self.context_toast = Some(ContextToast {
+            message: message.into(),
+            generation,
+        });
+        generation
+    }
+
+    /// Expire the context toast if its generation matches.
+    pub fn context_toast_expired(&mut self, generation: u64) -> bool {
+        if self
+            .context_toast
+            .as_ref()
+            .is_some_and(|toast| toast.generation == generation)
+        {
+            self.context_toast = None;
+            return true;
+        }
+        false
+    }
+
+    /// Active context toast message, if any.
+    pub fn context_toast_message(&self) -> Option<&str> {
+        self.context_toast
+            .as_ref()
+            .map(|toast| toast.message.as_str())
     }
 
     pub(super) fn open_slash(
@@ -148,6 +227,7 @@ impl Overlays {
                         self.open_toolbar().and_then(|toolbar| toolbar.rect),
                         self.equation_editor().and_then(|editor| editor.rect),
                         self.bookmark_prompt().and_then(|prompt| prompt.rect),
+                        self.context_menu().and_then(|menu| menu.rect),
                     ]
                     .into_iter()
                     .flatten()
@@ -247,11 +327,20 @@ impl Overlays {
                     && let Some(BlockContent::List { checked, .. }) =
                         scene.snapshot.block(&block_id).map(|node| &node.content)
                 {
+                    if !*checked {
+                        self.todo_pulses.insert(
+                            block_id.clone(),
+                            EaseOut::with_duration(0.0, 1.0, now_ms, TODO_PULSE_MS),
+                        );
+                    } else {
+                        self.todo_pulses.remove(&block_id);
+                    }
                     effects.edits.push(DocEdit::SetProp {
                         block_id,
                         key: "prop:checked",
                         value: if *checked { Any::False } else { Any::True },
                     });
+                    effects.redraw = true;
                 }
             }
             OverlayEvent::ToggleCollapsed(block_id) => {
@@ -346,6 +435,9 @@ impl Overlays {
                     effects.redraw = true;
                 }
             }
+            OverlayEvent::CloseContextMenu => {
+                effects.redraw = self.close_context_menu(now_ms);
+            }
             OverlayEvent::OpenLinkedDocMenu { .. }
             | OverlayEvent::SetLinkedDocQuery(_)
             | OverlayEvent::LinkedDocHover(_)
@@ -358,7 +450,9 @@ impl Overlays {
             | OverlayEvent::FocusTableCell { .. }
             | OverlayEvent::AttachmentPdfPage { .. }
             | OverlayEvent::OpenEmbedDoc { .. }
-            | OverlayEvent::LongPressWord { .. } => {}
+            | OverlayEvent::LongPressWord { .. }
+            | OverlayEvent::OpenContextMenu { .. }
+            | OverlayEvent::ContextMenuAction(_) => {}
         }
         effects
     }
@@ -376,6 +470,12 @@ impl Overlays {
         let mut effects = OverlayEffects::default();
         let key = keystroke.key.as_str();
         let shift = keystroke.modifiers.shift;
+
+        if key == "escape" && self.close_context_menu(now_ms) {
+            effects.handled = true;
+            effects.redraw = true;
+            return effects;
+        }
 
         #[derive(Clone, Copy, PartialEq, Eq)]
         enum ActiveFieldKind {
@@ -570,6 +670,9 @@ impl Overlays {
         self.chevrons.retain(|block_id, motion| {
             !motion.is_finished(now_ms) && layout.block(block_id).is_some()
         });
+        self.todo_pulses.retain(|block_id, motion| {
+            !motion.is_finished(now_ms) && layout.block(block_id).is_some()
+        });
         self.code_scroll.retain(|block_id, scroll| {
             match layout
                 .block(block_id)
@@ -631,10 +734,18 @@ impl Overlays {
         }) {
             self.bookmark = None;
         }
+        if self
+            .context_menu
+            .as_ref()
+            .is_some_and(|menu| menu.presence.gone(now_ms))
+        {
+            self.context_menu = None;
+        }
     }
 
     pub(super) fn in_flight(&self, now_ms: f64) -> bool {
         !self.chevrons.is_empty()
+            || !self.todo_pulses.is_empty()
             || self
                 .slash
                 .as_ref()
@@ -654,5 +765,9 @@ impl Overlays {
                 .bookmark
                 .as_ref()
                 .is_some_and(|prompt| prompt.presence.in_flight(now_ms) || prompt.presence.closing)
+            || self
+                .context_menu
+                .as_ref()
+                .is_some_and(|menu| menu.presence.in_flight(now_ms) || menu.presence.closing)
     }
 }

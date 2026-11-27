@@ -1,12 +1,15 @@
 //! PlaygroundView glue for `blocksuite_editor::overlays`.
 
 mod view;
+mod view_context_menu;
 mod view_edits;
 mod view_linked_doc;
 mod view_mobile;
+mod view_scrollbar;
 mod view_table_cell;
 
 pub use blocksuite_editor::overlays::*;
+pub(crate) use view_context_menu::ContextTargetSnapshot;
 pub(crate) use view_table_cell::InlineTargetEnd;
 
 impl OverlayHost for crate::PlaygroundView {

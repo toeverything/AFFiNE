@@ -317,6 +317,11 @@ impl PlaygroundView {
                         self.edgeless.authoring.selection.clear();
                         self.edgeless.authoring.selection.insert(elem_id);
                         self.edgeless.authoring.tool = EdgelessTool::Select;
+                        self.edgeless.authoring.shape_picker_open = false;
+                        let close_ms = self.now_ms(cx);
+                        if let Some(p) = self.edgeless_shape_picker_presence.as_mut() {
+                            p.close(close_ms);
+                        }
                     }
                 }
             }

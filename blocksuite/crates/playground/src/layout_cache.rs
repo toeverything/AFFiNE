@@ -284,6 +284,8 @@ impl PlaygroundView {
         self.edgeless.authoring.reset_transient();
         self.mode = target;
         self.dirty_text = None;
+        self.context_paste_task = None;
+        self.context_menu_target = None;
         self.overlays.reset();
         self.pill_motion = Some(Motion::new(
             current_x,

@@ -158,6 +158,29 @@ impl PlaygroundView {
         }
         self.announce_selection(cx);
         self.sync_slash_trigger(cx);
+        self.reset_caret_blink(cx);
+        w.notify_text_selection_changed(&self.editor_focus);
+        cx.notify();
+    }
+
+    /// Clear body document selection and any in-flight body IME composition when focus moves
+    /// to an inline cell/label editor, overlay text field, or non-editable block.
+    pub(crate) fn clear_body_selection(&mut self, w: &mut Window, cx: &mut Context<Self>) {
+        if self.editor.preedit.take().is_some() {
+            self.dirty_text = None;
+            self.doc_rev += 1;
+        }
+        self.editor.selection = None;
+        self.editor.block_selection.clear();
+        self.editor.pending_marks.clear();
+        self.editor.last_typing = None;
+        self.editor.goal_x = None;
+        self.editor.dragging = false;
+        self.editor.slash_trigger = None;
+        self.announce_selection(cx);
+        self.sync_slash_trigger(cx);
+        self.reset_caret_blink(cx);
+        w.notify_text_input_changed(&self.editor_focus);
         w.notify_text_selection_changed(&self.editor_focus);
         cx.notify();
     }
@@ -379,6 +402,7 @@ impl PlaygroundView {
         self.announce_selection(cx);
         self.sync_slash_trigger(cx);
         self.sync_linked_doc_trigger(cx);
+        self.reset_caret_blink(cx);
         w.notify_text_input_changed(&self.editor_focus);
         cx.notify();
     }
@@ -436,6 +460,15 @@ impl PlaygroundView {
     }
 
     pub(super) fn resolve_relative_selection(&mut self, cx: &Context<Self>) {
+        if !self.editor.block_selection.is_empty() {
+            self.editor.relative_selection = None;
+            if let Some(snapshot) = self.snapshot.as_ref() {
+                self.editor
+                    .block_selection
+                    .retain(|id| snapshot.block(id).is_some());
+            }
+            return;
+        }
         if self.editor.relative_selection.is_none() {
             return;
         }

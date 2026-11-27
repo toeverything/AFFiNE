@@ -5,17 +5,23 @@
 //! Popovers mount at `>= 0.01` opacity while opening and drop listeners while fading out.
 
 mod bookmark_prompt;
+mod context_menu;
 mod equation;
 mod keyboard_toolbar;
 mod paint_linked_doc;
 mod paint_page;
 mod paint_popovers;
+mod scrollbar;
 mod slash;
 mod state;
 mod table_cell;
 mod toolbar;
 
 pub use bookmark_prompt::BookmarkPrompt;
+pub use context_menu::{
+    CONTEXT_MENU_PADDING, CONTEXT_MENU_RADIUS, CONTEXT_MENU_ROW_HEIGHT, CONTEXT_MENU_WIDTH,
+    CONTEXT_TOAST_MS, ContextMenuAction, ContextMenuState, ContextToast, place_context_menu,
+};
 pub use equation::{EquationEditor, EquationTarget};
 pub use keyboard_toolbar::{
     DEFAULT_KEYBOARD_TOOLBAR_ITEMS, HighlightColor, KEYBOARD_TOOL_PANEL_HEIGHT,
@@ -26,6 +32,12 @@ pub use keyboard_toolbar::{
     is_flavour_supported,
 };
 pub use paint_page::{block_text, bounding_rect, find_parent, shared_alignment};
+pub use paint_popovers::{PlacedPopover, Placement, PopoverSide, place_popover};
+pub use scrollbar::{
+    SCROLLBAR_DESKTOP_MIN_WIDTH, SCROLLBAR_EDGE_INSET, SCROLLBAR_MIN_THUMB,
+    SCROLLBAR_VERTICAL_INSET, SCROLLBAR_WIDTH, ScrollbarDrag, ScrollbarMetrics,
+    build_page_scrollbar,
+};
 pub use slash::{
     SLASH_ITEMS, SlashCommand, SlashItem, SlashMenu, SlashRow, filter_slash_items,
     slash_item_by_id, slash_rows, slash_rows_for_query,
@@ -66,6 +78,8 @@ use crate::{
 
 /// Duration of every overlay transition.
 pub const OVERLAY_MOTION_MS: f64 = 150.0;
+/// Duration of the to-do checkbox radial pulse feedback in milliseconds.
+pub const TODO_PULSE_MS: f64 = 240.0;
 /// How long a code block's copy button reads `Copied`.
 pub const COPIED_MS: u64 = 1_500;
 
@@ -148,10 +162,14 @@ pub struct EaseOut {
 
 impl EaseOut {
     pub fn new(from: f64, to: f64, start_ms: f64) -> Self {
+        Self::with_duration(from, to, start_ms, OVERLAY_MOTION_MS)
+    }
+
+    pub fn with_duration(from: f64, to: f64, start_ms: f64, duration_ms: f64) -> Self {
         Self {
             from,
             to,
-            clock: Motion::new(0.0, 1.0, MotionCurve::Linear, start_ms, OVERLAY_MOTION_MS),
+            clock: Motion::new(0.0, 1.0, MotionCurve::Linear, start_ms, duration_ms),
         }
     }
 
@@ -213,97 +231,6 @@ impl Presence {
 
     pub fn gone(&self, now_ms: f64) -> bool {
         self.closing && self.fade.is_finished(now_ms)
-    }
-}
-
-/// Side and alignment a popover prefers relative to its anchor.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Placement {
-    /// Above the anchor, centered on it.
-    Above,
-    /// Below the anchor, starting at its left edge.
-    BelowStart,
-}
-
-/// Side of the anchor a popover ended up on.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PopoverSide {
-    Above,
-    Below,
-}
-
-/// Result of [`place_popover`], on the pixel grid.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct PlacedPopover {
-    pub rect: FlowRect,
-    pub side: PopoverSide,
-    /// Whether the popover left its preferred side.
-    pub flipped: bool,
-}
-
-/// Place a popover of `popover_size` next to `anchor` inside `viewport`, all in screen
-/// space.
-///
-/// The popover sits `gap` away from the anchor on its preferred side. When that side would
-/// bring it closer than `edge_margin` to the viewport's top or bottom it flips to the other
-/// side; when neither side has room it takes the roomier one and is held inside the
-/// viewport. Horizontally it is clamped to
-/// `[viewport.x + edge_margin, viewport.right() - edge_margin - width]`.
-pub fn place_popover(
-    anchor: FlowRect,
-    popover_size: (f32, f32),
-    viewport: FlowRect,
-    preferred: Placement,
-    gap: f32,
-    edge_margin: f32,
-) -> PlacedPopover {
-    let (width, height) = popover_size;
-    let top_limit = viewport.y + edge_margin;
-    let bottom_limit = viewport.bottom() - edge_margin;
-    let above_y = anchor.y - gap - height;
-    let below_y = anchor.bottom() + gap;
-    let fits_above = above_y >= top_limit;
-    let fits_below = below_y + height <= bottom_limit;
-
-    let preferred_side = match preferred {
-        Placement::Above => PopoverSide::Above,
-        Placement::BelowStart => PopoverSide::Below,
-    };
-    let side = match (preferred_side, fits_above, fits_below) {
-        (PopoverSide::Above, true, _) | (PopoverSide::Below, true, false) => PopoverSide::Above,
-        (PopoverSide::Below, _, true) | (PopoverSide::Above, false, true) => PopoverSide::Below,
-        // Neither side has room: the roomier one, preferred side on a tie.
-        (preferred_side, false, false) => {
-            let room_above = anchor.y - viewport.y;
-            let room_below = viewport.bottom() - anchor.bottom();
-            if room_above > room_below {
-                PopoverSide::Above
-            } else if room_below > room_above {
-                PopoverSide::Below
-            } else {
-                preferred_side
-            }
-        }
-    };
-    let y = match side {
-        PopoverSide::Above => above_y,
-        PopoverSide::Below => below_y,
-    };
-    let y = y.min(bottom_limit - height).max(top_limit);
-
-    let x = match preferred {
-        Placement::Above => anchor.x + (anchor.w - width) / 2.0,
-        Placement::BelowStart => anchor.x,
-    };
-    let left_limit = viewport.x + edge_margin;
-    let x = x
-        .min(viewport.right() - edge_margin - width)
-        .max(left_limit);
-
-    PlacedPopover {
-        rect: FlowRect::new(x.round(), y.round(), width, height),
-        side,
-        flipped: side != preferred_side,
     }
 }
 
@@ -500,6 +427,15 @@ pub enum OverlayEvent {
         x: f32,
         y: f32,
     },
+    /// Open the desktop right-click context menu at window coordinates `(x, y)`.
+    OpenContextMenu {
+        x: f32,
+        y: f32,
+    },
+    /// Dismiss the desktop right-click context menu.
+    CloseContextMenu,
+    /// Execute a command from the desktop right-click context menu.
+    ContextMenuAction(ContextMenuAction),
 }
 
 /// Active `@` linked-document menu state populated from [`crate::directory::WorkspaceDocDirectory`].
@@ -604,6 +540,8 @@ pub struct Overlays {
     pub(super) drag: Option<BlockDrag>,
     /// Chevrons in flight by block id: `0.0` collapsed to `1.0` expanded.
     pub(super) chevrons: HashMap<String, EaseOut>,
+    /// Active to-do checkbox radial pulse animations by block id (`0.0 -> 1.0`).
+    pub(super) todo_pulses: HashMap<String, EaseOut>,
     /// Sideways scroll of unwrapped code blocks by block id.
     pub(super) code_scroll: HashMap<String, f32>,
     /// Code block whose copy button reads `Copied`, with the generation of its timer.
@@ -613,6 +551,9 @@ pub struct Overlays {
     pub(super) equation: Option<EquationEditor>,
     pub(super) bookmark: Option<BookmarkPrompt>,
     pub(super) keyboard_toolbar: KeyboardToolbarState,
+    pub(super) context_menu: Option<ContextMenuState>,
+    pub(super) context_toast: Option<ContextToast>,
+    pub(super) context_toast_generation: u64,
     pub format_cache: Option<FormatCache>,
 }
 
@@ -779,6 +720,11 @@ impl Overlays {
         false
     }
 
+    /// Whether a to-do checkbox radial pulse is currently in flight for `block_id`.
+    pub fn todo_pulse_active(&self, block_id: &str) -> bool {
+        self.todo_pulses.contains_key(block_id)
+    }
+
     /// Drop every popover, hover and gesture at once, e.g. when the page is hidden or
     /// replaced.
     pub fn reset(&mut self) {
@@ -788,9 +734,12 @@ impl Overlays {
         self.toolbar = None;
         self.drag = None;
         self.chevrons.clear();
+        self.todo_pulses.clear();
         self.linked_doc = None;
         self.equation = None;
         self.bookmark = None;
+        self.context_menu = None;
+        self.context_toast = None;
         self.keyboard_toolbar.close_transient();
         self.format_cache = None;
     }

@@ -3,8 +3,20 @@ use y_octo::TextDeltaOp;
 
 use super::*;
 
+enum PasteTarget {
+    TextSelection,
+    BlockSelection {
+        first_parent_id: String,
+        first_slot: usize,
+        first_id: String,
+        first_editable: bool,
+        first_len: u64,
+        extra_deletes: Vec<(String, String)>,
+    },
+}
+
 impl PlaygroundView {
-    pub(super) fn clipboard_slice(&self) -> Option<crate::clipboard::Slice> {
+    pub(crate) fn clipboard_slice(&self) -> Option<crate::clipboard::Slice> {
         let sel = self.editor.selection.as_ref()?;
         if sel.empty() {
             return None;
@@ -56,29 +68,155 @@ impl PlaygroundView {
             blocks,
         ))
     }
-    pub(super) fn paste_slice(
+
+    fn current_flow_layout(&mut self, w: &Window) -> Option<Rc<FlowLayout>> {
+        if self.mode == crate::PlaygroundMode::Page {
+            let width = page_geometry(f32::from(w.viewport_size().width)).column_width;
+            self.ensure_layout(width, w)
+        } else {
+            self.flow_layout()
+        }
+    }
+
+    pub(crate) fn paste_into_block_selection(
         &mut self,
-        mut slice: crate::clipboard::Slice,
+        item: &ui::ClipboardItem,
+        w: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
+        let Some((slice, rich)) = crate::clipboard::read_slice(item) else {
+            return Ok(());
+        };
+        let Some(snapshot) = self.snapshot.clone() else {
+            return Ok(());
+        };
+        let Some(root) = snapshot.root.as_ref() else {
+            return Ok(());
+        };
+        let selected_set: BTreeSet<&str> = self
+            .editor
+            .block_selection
+            .iter()
+            .map(String::as_str)
+            .collect();
+        let doc_nodes: Vec<&BlockNode> =
+            page_content_roots(root).flat_map(BlockNode::walk).collect();
+        let Some(&first_node) = doc_nodes.iter().find(|n| {
+            !matches!(
+                n.content,
+                BlockContent::Page { .. } | BlockContent::Note { .. }
+            ) && selected_set.contains(n.id.as_str())
+        }) else {
+            return Ok(());
+        };
+        let Some((first_parent, first_slot)) = parent_of(&snapshot, &first_node.id) else {
+            return Ok(());
+        };
+        let first_id = first_node.id.clone();
+        let first_editable = text_content(first_node).is_some();
+        let first_len = text_content(first_node).map_or(0, |s| s.encode_utf16().count() as u64);
+        // Walk the full document tree (including blocks hidden inside collapsed headings or
+        // toggles) and collect every other selected block not already covered by a subtree-deleted
+        // ancestor (`!first_editable` `first_id` or any non-`first_id` selected ancestor).
+        let mut extra_deletes: Vec<(String, String)> = Vec::new();
+        for n in doc_nodes {
+            if n.id == first_id
+                || matches!(
+                    n.content,
+                    BlockContent::Page { .. } | BlockContent::Note { .. }
+                )
+                || !selected_set.contains(n.id.as_str())
+            {
+                continue;
+            }
+            let mut cur = n.id.as_str();
+            let mut covered_by_deleted_ancestor = false;
+            while let Some((parent, _)) = parent_of(&snapshot, cur) {
+                if (parent.id == first_id && !first_editable)
+                    || (parent.id != first_id && selected_set.contains(parent.id.as_str()))
+                {
+                    covered_by_deleted_ancestor = true;
+                    break;
+                }
+                cur = &parent.id;
+            }
+            if !covered_by_deleted_ancestor && let Some((parent, _)) = parent_of(&snapshot, &n.id) {
+                extra_deletes.push((parent.id.clone(), n.id.clone()));
+            }
+        }
+        self.paste_with_target(
+            slice,
+            rich,
+            PasteTarget::BlockSelection {
+                first_parent_id: first_parent.id.clone(),
+                first_slot,
+                first_id,
+                first_editable,
+                first_len,
+                extra_deletes,
+            },
+            w,
+            cx,
+        )
+    }
+
+    pub(crate) fn paste_slice(
+        &mut self,
+        slice: crate::clipboard::Slice,
         rich: bool,
         w: &mut Window,
         cx: &mut Context<Self>,
     ) -> DocResult {
-        let Some(sel) = self.editor.selection.clone() else {
-            return Ok(());
-        };
-        let Some(layout) = self.flow_layout() else {
-            return Ok(());
-        };
-        let Some((start, end, a, b, _)) = sel.ordered(&layout) else {
-            return Ok(());
-        };
+        self.paste_with_target(slice, rich, PasteTarget::TextSelection, w, cx)
+    }
+
+    fn paste_with_target(
+        &mut self,
+        mut slice: crate::clipboard::Slice,
+        mut rich: bool,
+        target: PasteTarget,
+        w: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
+        let (text_sel, start, end, single_block, first_editable, block_dest, extra_deletes) =
+            match target {
+                PasteTarget::TextSelection => {
+                    let Some(layout) = self.current_flow_layout(w) else {
+                        return Ok(());
+                    };
+                    let Some(sel) = self.editor.selection.clone() else {
+                        return Ok(());
+                    };
+                    let (start, end, single_block) = {
+                        let Some((s, e, a, b, _)) = sel.ordered(&layout) else {
+                            return Ok(());
+                        };
+                        (s.clone(), e.clone(), a == b)
+                    };
+                    (Some(sel), start, end, single_block, true, None, Vec::new())
+                }
+                PasteTarget::BlockSelection {
+                    first_parent_id,
+                    first_slot,
+                    first_id,
+                    first_editable,
+                    first_len,
+                    extra_deletes,
+                } => (
+                    None,
+                    DocPoint::new(&first_id, 0),
+                    DocPoint::new(&first_id, first_len),
+                    true,
+                    first_editable,
+                    Some((first_parent_id, first_slot)),
+                    extra_deletes,
+                ),
+            };
         slice.unwrap_for_note_paste();
         if slice.content.is_empty() {
             return Ok(());
         }
-        if matches!(layout.blocks[a].body.kind, block_flow::FlowKind::Code) {
-            return self.replace_selection(sel, &slice.plain(), w, cx);
-        }
+        let is_block_paste = block_dest.is_some();
         let now = self.now_ms(cx) as u64;
         let from = start.offset();
         let id = start.block_id.clone();
@@ -89,14 +227,30 @@ impl PlaygroundView {
         let node = snapshot
             .block(&id)
             .ok_or_else(|| DocError::BlockNotFound(id.clone()))?;
+        if first_editable && matches!(node.content, BlockContent::Code { .. }) {
+            if extra_deletes.is_empty()
+                && let Some(sel) = text_sel
+            {
+                return self.replace_selection(sel, &slice.plain(), w, cx);
+            }
+            let plain = slice.plain();
+            slice = crate::clipboard::Slice::new(
+                self.state.workspace.room(),
+                self.page_id.as_deref().unwrap_or(""),
+                vec![crate::clipboard::SliceBlock::plain_block(&plain, 0)],
+            );
+            rich = false;
+        }
         let title = matches!(node.content, BlockContent::Page { .. });
         let key = if title { "prop:title" } else { "prop:text" };
-        let empty = a == b
-            && text_content(node)
-                .is_some_and(|s| s.encode_utf16().count() as u64 == end.offset() - from);
+        let empty = !first_editable
+            || (single_block
+                && text_content(node)
+                    .is_some_and(|s| s.encode_utf16().count() as u64 == end.offset() - from));
         let first = &slice.content[0];
-        let use_existing =
-            first.editable() && (!rich || !empty || first.flavour == node.flavour || title);
+        let use_existing = first_editable
+            && first.editable()
+            && (!rich || !empty || first.flavour == node.flavour || title);
         let discard_empty = !use_existing && empty && !title;
         if !slice.content.last().is_some_and(|b| b.editable()) {
             slice
@@ -106,7 +260,9 @@ impl PlaygroundView {
                     slice.content.len(),
                 ));
         }
-        let dest = if title {
+        let dest = if let Some((ref parent_id, slot)) = block_dest {
+            Some((parent_id.clone(), slot + usize::from(!discard_empty)))
+        } else if title {
             node.children
                 .iter()
                 .find(|n| n.is_page_visible_note())
@@ -122,14 +278,14 @@ impl PlaygroundView {
         }
         let blocks = RangeBlocks::between(&snapshot, &id, &end.block_id)
             .ok_or_else(|| DocError::InvalidState("selection outside page content".into()))?;
-        let keep_suffix =
-            slice.content.len() == 1 && use_existing && slice.content[0].children.is_empty();
+        let keep_suffix = !first_editable
+            || (slice.content.len() == 1 && use_existing && slice.content[0].children.is_empty());
         if title {
             let current = text_content(node).unwrap_or("");
             let from_byte = crate::rich_text::TextBiIndex::new(current).utf16_to_utf8_clamped(from);
             let suffix = if !keep_suffix {
                 ""
-            } else if a == b {
+            } else if single_block {
                 let end_byte =
                     crate::rich_text::TextBiIndex::new(current).utf16_to_utf8_clamped(end.offset());
                 &current[end_byte..]
@@ -193,9 +349,18 @@ impl PlaygroundView {
         let last_pos =
             last.plain().encode_utf16().count() as u64 + if last_id == id { from } else { 0 };
         let page = self.page_mut()?;
-        let before = sel.snapshot(page)?;
+        let before = match text_sel {
+            Some(ref sel) => Some(sel.snapshot(page)?),
+            None => None,
+        };
+        if is_block_paste {
+            page.stop_capturing()?;
+        }
         let commit = page.structural_edit(now, |page| {
-            if a != b {
+            for (parent_id, child_id) in extra_deletes.iter().rev() {
+                page.delete_block_subtree(parent_id, child_id, now)?;
+            }
+            if !single_block {
                 page.delete_cross_block_range(
                     (&id, from),
                     (&end.block_id, end.offset()),
@@ -203,7 +368,7 @@ impl PlaygroundView {
                     &blocks.survivors,
                     now,
                 )?;
-            } else if end.offset() > from {
+            } else if first_editable && end.offset() > from {
                 page.remove_text(&id, key, from, end.offset() - from, now)?;
             }
             let suffix = if keep_suffix {
@@ -260,7 +425,11 @@ impl PlaygroundView {
                 }
             }
             if discard_empty {
-                page.remove_lifting_children(&id, now)?;
+                if !first_editable && let Some((ref first_parent_id, _)) = block_dest {
+                    page.delete_block_subtree(first_parent_id, &id, now)?;
+                } else {
+                    page.remove_lifting_children(&id, now)?;
+                }
             }
             if !suffix.is_empty() {
                 let mut delta = vec![TextDeltaOp::Retain {
@@ -277,8 +446,14 @@ impl PlaygroundView {
             }
             Ok(())
         })?;
-        if commit.is_some() {
+        if commit.is_some()
+            && let Some(before) = before
+        {
             page.set_undo_selection_snapshot(before)?;
+        }
+        if is_block_paste {
+            self.editor.block_selection.clear();
+            self.suppress_unselected_root_input = false;
         }
         self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(last_id, last_pos)));
         self.editor.last_typing = None;

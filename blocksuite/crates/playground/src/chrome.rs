@@ -71,6 +71,9 @@ impl PlaygroundView {
 
         let page_button = segment("mode-page", PILL_PAGE_X, is_page)
             .on_click(cx.listener(|this, _, window, cx| {
+                this.edgeless_camera_transition = None;
+                let now_ms = this.now_ms(cx);
+                this.overlays.close_context_menu(now_ms);
                 this.set_mode(PlaygroundMode::Page, window, cx);
             }))
             .snapshot("chrome.mode_switcher.page", Some("chrome.mode_switcher"))
@@ -80,6 +83,8 @@ impl PlaygroundView {
 
         let edgeless_button = segment("mode-edgeless", PILL_EDGELESS_X, is_edgeless)
             .on_click(cx.listener(|this, _, window, cx| {
+                let now_ms = this.now_ms(cx);
+                this.overlays.close_context_menu(now_ms);
                 this.set_mode(PlaygroundMode::Edgeless, window, cx);
             }))
             .snapshot(
@@ -321,8 +326,13 @@ impl PlaygroundView {
             .overflow_hidden()
             .track_focus(&self.editor_focus)
             .on_mouse_down(MouseButton::Left, cx.listener(Self::page_mouse_down))
+            .on_mouse_down(MouseButton::Right, cx.listener(Self::page_right_mouse_down))
             .on_key_down(cx.listener(Self::editor_key_down))
-            .on_scroll(cx.listener(Self::on_scroll))
+            .on_scroll(cx.listener(|this, event, window, cx| {
+                let now_ms = this.now_ms(cx);
+                this.overlays.close_context_menu(now_ms);
+                this.on_scroll(event, window, cx);
+            }))
             .snapshot(PAGE_SURFACE_ID, Some("root.canvas"));
 
         self.flow.database_state.mobile_readonly = self.database_readonly;
@@ -347,7 +357,8 @@ impl PlaygroundView {
             height: viewport_height,
             scroll_y: self.scroll_y,
         };
-        let local = self.local_selection_elements(&layout, viewport, palette);
+        let caret_alpha = self.caret_blink_alpha(self.now_ms(cx));
+        let local = self.local_selection_elements(&layout, viewport, palette, caret_alpha);
         let focus = self.editor_focus.clone();
         let entity = cx.entity();
         let marks = layout.presence_marks(presences, palette, window);
@@ -360,6 +371,23 @@ impl PlaygroundView {
             self.overlays.set_keyboard_toolbar_visible(true);
         }
         let (paint, controls) = self.overlay_page_layer(&layout, palette, window, cx);
+        let scrollbar = overlays::ScrollbarMetrics::compute(
+            viewport_width,
+            viewport_height,
+            self.scroll_y,
+            self.max_scroll,
+            window.layout_direction(),
+            self.edgeless_readonly,
+        )
+        .map(|metrics| {
+            overlays::build_page_scrollbar(
+                metrics,
+                self.scrollbar_drag.is_some(),
+                palette,
+                Self::on_scrollbar_mouse_down,
+                cx,
+            )
+        });
         surface
             .children(page_elements(
                 &layout,
@@ -387,6 +415,7 @@ impl PlaygroundView {
                 .size_full(),
             )
             .children(controls)
+            .children(scrollbar)
             .into_any_element()
     }
 
@@ -449,7 +478,7 @@ impl PlaygroundView {
         palette: &Palette,
         viewport_width: f32,
         viewport_height: f32,
-        window: &Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let Some(snapshot) = self.snapshot.clone() else {
@@ -467,53 +496,14 @@ impl PlaygroundView {
         if viewport_width > 0.0 && viewport_height > 0.0 {
             self.edgeless.ensure_camera_initialized(&snapshot, vp_size);
         }
-
-        let toolbar_visible = !self.edgeless_readonly;
-        let zoom_controls = edgeless::build_zoom_controls(
-            self.edgeless.camera.zoom,
+        let (zoom_controls, toolbar) = self.step_edgeless_controls_and_toolbar(
+            vp_origin,
+            vp_size,
             viewport_width,
-            toolbar_visible,
             palette,
-            self.theme,
-            move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
-                this.edgeless.camera.zoom_out(vp_origin, vp_size);
-                this.edgeless.camera_initialized = true;
-                cx.notify();
-            },
-            move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
-                this.edgeless.camera.reset_zoom(vp_origin, vp_size);
-                this.edgeless.camera_initialized = true;
-                cx.notify();
-            },
-            move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
-                this.edgeless.camera.zoom_in(vp_origin, vp_size);
-                this.edgeless.camera_initialized = true;
-                cx.notify();
-            },
-            move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
-                if let Some(snap) = &this.snapshot {
-                    let bounds = this.edgeless.scene_world_bounds(snap);
-                    this.edgeless.camera.fit_to_bounds(bounds, vp_size, 48.0);
-                    this.edgeless.camera_initialized = true;
-                    cx.notify();
-                }
-            },
+            window,
             cx,
         );
-        let toolbar = toolbar_visible.then(|| {
-            edgeless::build_edgeless_toolbar(
-                self.edgeless.authoring.tool,
-                self.edgeless.authoring.shape_picker_open,
-                viewport_width,
-                palette,
-                self.theme,
-                cx,
-            )
-        });
 
         let render_snapshot = self
             .preedit_snapshot()
@@ -595,6 +585,10 @@ impl PlaygroundView {
             .on_pinch(cx.listener(Self::on_edgeless_pinch))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_edgeless_left_down))
             .on_mouse_down(
+                MouseButton::Right,
+                cx.listener(Self::edgeless_right_mouse_down),
+            )
+            .on_mouse_down(
                 MouseButton::Middle,
                 cx.listener(Self::on_edgeless_pan_start),
             )
@@ -626,6 +620,7 @@ impl ui::Render for PlaygroundView {
                     },
                 ) => {
                     let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+                    self.edgeless_camera_transition = None;
                     self.edgeless
                         .camera
                         .pan_by_screen_delta(f32::from(translation.x), f32::from(translation.y));

@@ -33,6 +33,10 @@ impl EntityInputHandler for PlaygroundView {
         {
             return;
         }
+        if !self.editor.block_selection.is_empty() {
+            let _ = self.paste_into_block_selection(&item, w, cx);
+            return;
+        }
         if self.suppress_unselected_root_input && self.editor.selection.is_none() {
             return;
         }
@@ -311,6 +315,7 @@ impl EntityInputHandler for PlaygroundView {
         });
         self.editor.reveal = true;
         self.doc_rev += 1;
+        self.reset_caret_blink(cx);
         w.notify_text_input_changed(&self.editor_focus);
         cx.notify();
     }

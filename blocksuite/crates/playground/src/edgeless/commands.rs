@@ -89,11 +89,19 @@ impl PlaygroundView {
         if self.edgeless_readonly {
             return;
         }
+        let now_ms = self.now_ms(cx);
         if let EdgelessTool::Shape(s) = tool {
             self.edgeless.authoring.last_shape_type = Some(s);
             self.edgeless.authoring.shape_picker_open = true;
+            self.edgeless_shape_picker_presence = Some(match self.edgeless_shape_picker_presence {
+                Some(p) => p.reopened(now_ms),
+                None => super::ShapePickerPresence::opening(now_ms),
+            });
         } else {
             self.edgeless.authoring.shape_picker_open = false;
+            if let Some(p) = self.edgeless_shape_picker_presence.as_mut() {
+                p.close(now_ms);
+            }
         }
         self.edgeless_commit_inline_edit(window, cx);
         self.edgeless.authoring.tool = tool;
@@ -106,7 +114,17 @@ impl PlaygroundView {
         if self.edgeless_readonly {
             return;
         }
-        self.edgeless.authoring.shape_picker_open = !self.edgeless.authoring.shape_picker_open;
+        let now_ms = self.now_ms(cx);
+        let next = !self.edgeless.authoring.shape_picker_open;
+        self.edgeless.authoring.shape_picker_open = next;
+        if next {
+            self.edgeless_shape_picker_presence = Some(match self.edgeless_shape_picker_presence {
+                Some(p) => p.reopened(now_ms),
+                None => super::ShapePickerPresence::opening(now_ms),
+            });
+        } else if let Some(p) = self.edgeless_shape_picker_presence.as_mut() {
+            p.close(now_ms);
+        }
         cx.notify();
     }
 
@@ -163,6 +181,11 @@ impl PlaygroundView {
         let m = e.keystroke.modifiers;
         let cmd = m.secondary(cx);
         let key = e.keystroke.key.as_str();
+
+        if key == "escape" && self.overlays.close_context_menu(self.now_ms(cx)) {
+            cx.notify();
+            return true;
+        }
 
         // 1. Active inline label editor (Shape / Connector / SurfaceText / Frame title).
         if let Some(ed) = self.edgeless.authoring.label_editor_mut() {
@@ -279,7 +302,12 @@ impl PlaygroundView {
                 return true;
             }
             "escape" => {
+                let now_ms = self.now_ms(cx);
                 self.edgeless.authoring.tool = EdgelessTool::Select;
+                self.edgeless.authoring.shape_picker_open = false;
+                if let Some(p) = self.edgeless_shape_picker_presence.as_mut() {
+                    p.close(now_ms);
+                }
                 self.edgeless.authoring.gesture = None;
                 self.edgeless.authoring.selection.clear();
                 cx.notify();

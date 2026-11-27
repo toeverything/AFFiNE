@@ -77,7 +77,15 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if before != self.link_input_state() {
+        let after = self.link_input_state();
+        if before != after {
+            if after.is_some() {
+                self.context_paste_task = None;
+                self.context_menu_target = None;
+            }
+            if before.is_some() && after.is_none() {
+                self.reset_caret_blink(cx);
+            }
             window.notify_text_input_changed(&self.editor_focus);
             window.notify_text_selection_changed(&self.editor_focus);
             cx.notify();
@@ -131,6 +139,7 @@ impl PlaygroundView {
                 return;
             }
             OverlayEvent::DragStart(_) => self.editor.dragging = false,
+            _ if self.handle_context_menu_event(&event, window, cx) => return,
             _ if self.handle_linked_doc_event(&event, window, cx) => return,
             _ if self.handle_mobile_and_rich_event(&event, window, cx) => return,
             _ => {}
@@ -333,6 +342,15 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.mode == PlaygroundMode::Page {
+            if event.pressed_button != Some(MouseButton::Left) {
+                if self.scrollbar_drag.take().is_some() {
+                    cx.notify();
+                }
+            } else if self.update_scrollbar_drag(f32::from(event.position.y), window, cx) {
+                return;
+            }
+        }
         self.dispatch_overlay(
             OverlayEvent::PointerMoved {
                 x: f32::from(event.position.x),
@@ -361,6 +379,9 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.scrollbar_drag.take().is_some() {
+            cx.notify();
+        }
         if self.mode == PlaygroundMode::Edgeless {
             self.on_edgeless_left_up(event, window, cx);
         }
@@ -663,21 +684,30 @@ impl PlaygroundView {
         layer
     }
 
-    /// Screen-space popovers of the Page view, drawn above the whole window.
+    /// Screen-space popovers of the Page view (plus desktop context overlays in any mode),
+    /// drawn above the whole window.
     pub(crate) fn overlay_popovers(
         &mut self,
         palette: &Palette,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Vec<AnyElement> {
-        if self.mode != PlaygroundMode::Page {
-            return Vec::new();
-        }
-        let Some((snapshot, layout)) = self.snapshot.clone().zip(self.flow_layout()) else {
-            return Vec::new();
-        };
         let now_ms = self.now_ms(cx);
-        let scene = self.overlay_scene(&snapshot, &layout, window.layout_direction(), None);
-        self.overlays.popovers(&scene, palette, now_ms, window, cx)
+        let mut elements = if self.mode == PlaygroundMode::Page
+            && let Some((snapshot, layout)) = self.snapshot.clone().zip(self.flow_layout())
+        {
+            let scene = self.overlay_scene(&snapshot, &layout, window.layout_direction(), None);
+            self.overlays.popovers(&scene, palette, now_ms, window, cx)
+        } else {
+            Vec::new()
+        };
+        elements.extend(self.overlays.context_overlays(
+            self.window_size,
+            palette,
+            now_ms,
+            window,
+            cx,
+        ));
+        elements
     }
 }

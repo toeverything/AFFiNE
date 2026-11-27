@@ -4,6 +4,7 @@ mod commands;
 mod commit;
 mod gestures;
 mod inline_edit;
+mod shape_picker;
 
 pub use blocksuite_editor::edgeless::*;
 

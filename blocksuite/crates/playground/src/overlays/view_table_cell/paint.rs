@@ -162,6 +162,7 @@ impl PlaygroundView {
         layout: &FlowLayout,
         v: PageViewport,
         palette: &Palette,
+        caret_alpha: f32,
     ) -> Vec<ui::AnyElement> {
         let mut out = Vec::new();
         let Some(cell) = self.table_cell.as_ref() else {
@@ -267,7 +268,7 @@ impl PlaygroundView {
                 .top(px(caret_rect.y - v.scroll_y))
                 .w(px(1.5))
                 .h(px(caret_rect.h))
-                .bg(palette.brand);
+                .bg(palette.brand.opacity(caret_alpha));
             if v.fully_visible(&caret_rect) {
                 caret_el = caret_el.snapshot("page.table_cell_caret", Some(PAGE_SURFACE_ID));
             }

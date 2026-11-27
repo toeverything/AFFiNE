@@ -191,6 +191,72 @@ impl Overlays {
                         );
                     }
                     elements.push(element.into_any_element());
+                    // Closed-form radial pulse burst when a to-do checkbox transitions unchecked -> checked.
+                    if kind == ListType::Todo
+                        && let Some(pulse) = self.todo_pulses.get(&block.block_id)
+                    {
+                        let p = pulse.value_at(now_ms) as f32;
+                        if p < 1.0 {
+                            let pad = 8.0;
+                            let burst_rect = FlowRect::new(
+                                target.x - pad,
+                                target.y - pad,
+                                target.w + 2.0 * pad,
+                                target.h + 2.0 * pad,
+                            );
+                            let brand = palette.brand;
+                            elements.push(
+                                place(viewport.to_local(&burst_rect))
+                                    .child(
+                                        canvas(
+                                            |_, _, _| (),
+                                            move |bounds, _, window, _| {
+                                                let cx = f32::from(bounds.origin.x)
+                                                    + f32::from(bounds.size.width) * 0.5;
+                                                let cy = f32::from(bounds.origin.y)
+                                                    + f32::from(bounds.size.height) * 0.5;
+                                                let alpha = ((1.0 - p) * 0.80).clamp(0.0, 1.0);
+                                                let ring_r = 7.5 + 7.0 * p;
+                                                let stroke_w = (2.0 * (1.0 - p)).max(0.75);
+                                                let ring_bounds = ui::Bounds::new(
+                                                    point(px(cx - ring_r), px(cy - ring_r)),
+                                                    size(px(ring_r * 2.0), px(ring_r * 2.0)),
+                                                );
+                                                window.paint_quad(ui::quad(
+                                                    ring_bounds,
+                                                    ui::Corners::all(px(ring_r)),
+                                                    ui::transparent_black(),
+                                                    ui::Edges::all(px(stroke_w)),
+                                                    brand.opacity(alpha),
+                                                    ui::BorderStyle::Solid,
+                                                ));
+                                                let mut pb = ui::PathBuilder::stroke(px(1.5));
+                                                let r0 = 9.0 + 3.5 * p;
+                                                let r1 = 11.5 + 6.0 * p;
+                                                for idx in 0..6 {
+                                                    let angle =
+                                                        (idx as f32) * std::f32::consts::TAU / 6.0;
+                                                    let (sin_a, cos_a) = angle.sin_cos();
+                                                    pb.move_to(point(
+                                                        px(cx + cos_a * r0),
+                                                        px(cy + sin_a * r0),
+                                                    ));
+                                                    pb.line_to(point(
+                                                        px(cx + cos_a * r1),
+                                                        px(cy + sin_a * r1),
+                                                    ));
+                                                }
+                                                if let Ok(path) = pb.build() {
+                                                    window.paint_path(path, brand.opacity(alpha));
+                                                }
+                                            },
+                                        )
+                                        .size_full(),
+                                    )
+                                    .into_any_element(),
+                            );
+                        }
+                    }
                 }
                 FlowKind::Code => {
                     let copied = self.copied_block() == Some(block.block_id.as_str());

@@ -96,6 +96,7 @@ impl PlaygroundView {
             w.notify_text_selection_changed(&self.editor_focus);
         }
         if let Some(cx_ref) = cx {
+            self.reset_caret_blink(cx_ref);
             cx_ref.notify();
         }
         true
@@ -154,11 +155,7 @@ impl PlaygroundView {
             let now_ms = self.now_ms(cx);
             self.overlays.pointer_pressed(now_ms);
             self.equation_snapshot = None;
-            self.editor.selection = None;
-            self.editor.block_selection.clear();
-            self.editor.dragging = false;
-            self.editor.slash_trigger = None;
-            self.announce_selection(cx);
+            self.clear_body_selection(window, cx);
 
             let initial = self
                 .snapshot
@@ -192,6 +189,7 @@ impl PlaygroundView {
             self.table_cell = Some(cell);
         }
         self.table_cell_update_anchors();
+        self.reset_caret_blink(cx);
         self.editor_focus.focus(window, cx);
         window.request_virtual_keyboard();
         window.notify_text_input_changed(&self.editor_focus);
@@ -237,6 +235,7 @@ impl PlaygroundView {
             }
         }
         self.table_cell_update_anchors();
+        self.reset_caret_blink(cx);
         window.notify_text_input_changed(&self.editor_focus);
         window.notify_text_selection_changed(&self.editor_focus);
         cx.notify();
@@ -267,6 +266,7 @@ impl PlaygroundView {
             self.doc_rev += 1;
         }
         self.table_cell_update_anchors();
+        self.reset_caret_blink(cx);
         window.notify_text_input_changed(&self.editor_focus);
         window.notify_text_selection_changed(&self.editor_focus);
         cx.notify();
@@ -503,6 +503,7 @@ impl PlaygroundView {
             "up" | "down" if !cmd => {
                 if self.move_table_cell_vertical(key == "down", m.shift) {
                     self.table_cell_update_anchors();
+                    self.reset_caret_blink(cx);
                     window.notify_text_input_changed(&self.editor_focus);
                     window.notify_text_selection_changed(&self.editor_focus);
                     cx.notify();
@@ -553,6 +554,7 @@ impl PlaygroundView {
                     }
                     Some(None) => {
                         self.table_cell_update_anchors();
+                        self.reset_caret_blink(cx);
                         window.notify_text_input_changed(&self.editor_focus);
                         window.notify_text_selection_changed(&self.editor_focus);
                         cx.notify();
@@ -658,6 +660,10 @@ mod tests {
                     cx,
                 );
                 assert!(view.table_cell.is_some());
+                assert!(
+                    view.caret_blink_task.is_some(),
+                    "focusing a table cell must start the caret blink task"
+                );
                 // Tab and Shift+Tab must be consumed without exiting the cell.
                 assert!(view.table_cell_key_down(&key_down("tab", false), window, cx));
                 assert!(view.table_cell.is_some());

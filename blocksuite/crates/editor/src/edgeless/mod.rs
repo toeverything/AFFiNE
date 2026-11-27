@@ -11,7 +11,10 @@ mod overlay;
 mod scene;
 mod toolbar;
 
-pub use camera::{EdgelessCamera, WorldRect, bg_grid_gap, parse_xywh};
+pub use camera::{
+    CAMERA_TRANSITION_MS, CameraTransition, EdgelessCamera, SHAPE_PICKER_MOTION_MS,
+    ShapePickerPresence, WorldRect, bg_grid_gap, parse_xywh,
+};
 pub use canvas::{
     EDGELESS_VIEWPORT_ID, EdgelessCanvasState, EdgelessRenderInput, NOTE_CARD_PADDING,
     note_border_radius, note_border_style, note_collapse, note_scale, note_shadow_type, prop_bool,
@@ -32,7 +35,8 @@ pub use overlay::{
 };
 pub use scene::{PreparedEdgelessScene, collect_frame_children, prepare_edgeless_scene};
 pub use toolbar::{
-    EdgelessTool, EdgelessToolbarHost, ShapePreset, build_edgeless_toolbar, build_zoom_controls,
+    EdgelessTool, EdgelessToolbarHost, ShapePickerVisualState, ShapePreset, build_edgeless_toolbar,
+    build_zoom_controls,
 };
 
 use canvas::{

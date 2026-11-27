@@ -44,7 +44,7 @@ pub(super) fn conversion_shortcut(key: &str, alt: bool, shift: bool) -> Option<S
 }
 
 impl PlaygroundView {
-    pub(super) fn block_selection_slice(&self) -> Option<crate::clipboard::Slice> {
+    pub(crate) fn block_selection_slice(&self) -> Option<crate::clipboard::Slice> {
         if self.editor.block_selection.is_empty() {
             return None;
         }
@@ -89,7 +89,7 @@ impl PlaygroundView {
         })
     }
 
-    pub(super) fn delete_selected_blocks(
+    pub(crate) fn delete_selected_blocks(
         &mut self,
         w: &mut Window,
         cx: &mut Context<Self>,
@@ -277,7 +277,7 @@ impl PlaygroundView {
         }
     }
 
-    pub(super) fn open_link_bar_shortcut(&mut self, w: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn open_link_bar_shortcut(&mut self, w: &mut Window, cx: &mut Context<Self>) {
         let width = page_geometry(f32::from(w.viewport_size().width)).column_width;
         let Some(layout) = self.ensure_layout(width, w) else {
             return;

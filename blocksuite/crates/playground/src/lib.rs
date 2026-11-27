@@ -216,6 +216,7 @@ pub struct PlaygroundView {
     pub(crate) blob_uploads: BTreeMap<String, view_room::BlobUploadState>,
     pub(crate) dirty_text: Option<BTreeSet<String>>,
     pub(crate) doc_rev: u64,
+    pub(crate) doc_epoch: u64,
     pub(crate) env_rev: u64,
     pub(crate) flow: BlockFlow,
     pub(crate) layout: Option<(LayoutKey, Rc<FlowLayout>)>,
@@ -224,8 +225,17 @@ pub struct PlaygroundView {
     /// Window size of the latest frame, in logical pixels.
     pub(crate) window_size: (f32, f32),
     pub(crate) edgeless: edgeless::EdgelessCanvasState,
+    pub(crate) edgeless_camera_transition: Option<edgeless::CameraTransition>,
+    pub(crate) edgeless_shape_picker_presence: Option<edgeless::ShapePickerPresence>,
     pub(crate) edgeless_readonly: bool,
     pub(crate) database_readonly: bool,
+    pub(crate) caret_active_since_ms: f64,
+    pub(crate) caret_blink_task: Option<Task<()>>,
+    pub(crate) scrollbar_drag: Option<overlays::ScrollbarDrag>,
+    pub(crate) context_toast_timer: Option<Task<()>>,
+    pub(crate) context_paste_task: Option<Task<()>>,
+    pub(crate) context_menu_target: Option<overlays::ContextTargetSnapshot>,
+    pub(crate) last_opened_link_url: Option<String>,
     pub(crate) overlays: Overlays,
     pub(crate) equation_snapshot: Option<blocksuite_playground_doc::session::SelectionSnapshot>,
     pub(crate) calendar_clock: Option<CalendarClockFn>,
@@ -331,6 +341,7 @@ impl PlaygroundView {
             blob_uploads: BTreeMap::new(),
             dirty_text: None,
             doc_rev: 0,
+            doc_epoch: 0,
             env_rev: 0,
             flow,
             layout: None,
@@ -338,8 +349,17 @@ impl PlaygroundView {
             max_scroll: 0.0,
             window_size: (0.0, 0.0),
             edgeless: edgeless::EdgelessCanvasState::new(),
+            edgeless_camera_transition: None,
+            edgeless_shape_picker_presence: None,
             edgeless_readonly: options.edgeless_readonly,
             database_readonly: options.edgeless_readonly,
+            caret_active_since_ms: 0.0,
+            caret_blink_task: None,
+            scrollbar_drag: None,
+            context_toast_timer: None,
+            context_paste_task: None,
+            context_menu_target: None,
+            last_opened_link_url: None,
             overlays: Overlays::new(),
             equation_snapshot: None,
             calendar_clock: None,
@@ -424,11 +444,13 @@ impl PlaygroundView {
         zoom: f32,
         cx: &mut Context<Self>,
     ) {
+        self.edgeless_camera_transition = None;
         self.edgeless.set_camera(pan_x, pan_y, zoom);
         cx.notify();
     }
 
     pub fn set_edgeless_zoom(&mut self, zoom: f32, cx: &mut Context<Self>) {
+        self.edgeless_camera_transition = None;
         let (vw, vh) = self.edgeless_viewport_size();
         self.edgeless.set_zoom_centered(
             zoom,
@@ -439,6 +461,7 @@ impl PlaygroundView {
     }
 
     pub fn set_edgeless_pan(&mut self, pan_x: f32, pan_y: f32, cx: &mut Context<Self>) {
+        self.edgeless_camera_transition = None;
         self.edgeless.set_pan(pan_x, pan_y);
         cx.notify();
     }
@@ -459,6 +482,9 @@ impl PlaygroundView {
         _: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        let now_ms = self.now_ms(cx);
+        self.overlays.close_context_menu(now_ms);
+        self.edgeless_camera_transition = None;
         let delta = event.delta.pixel_delta(px(SCROLL_LINE));
         let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
         if event.modifiers.control || event.modifiers.platform {
@@ -485,6 +511,7 @@ impl PlaygroundView {
         if event.delta.abs() < 1e-6 {
             return;
         }
+        self.edgeless_camera_transition = None;
         let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
         let target_zoom = self.edgeless.camera.zoom * (1.0 + event.delta).max(0.05);
         self.edgeless
@@ -527,6 +554,7 @@ impl PlaygroundView {
         _: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        self.edgeless_camera_transition = None;
         self.edgeless.drag_pan_anchor = Some(event.position);
         cx.notify();
     }
@@ -579,6 +607,15 @@ impl PlaygroundView {
         self.flow.database_state.clock_ms = self.local_calendar_now(cx).0;
         self.layout = None;
         self.edgeless = edgeless::EdgelessCanvasState::new();
+        self.edgeless_camera_transition = None;
+        self.edgeless_shape_picker_presence = None;
+        self.caret_blink_task = None;
+        self.scrollbar_drag = None;
+        self.context_toast_timer = None;
+        self.context_paste_task = None;
+        self.context_menu_target = None;
+        self.last_opened_link_url = None;
+        self.doc_epoch = self.doc_epoch.wrapping_add(1);
         self.state = state;
         self.default_doc_directory = directory::InMemoryDocDirectory::with_namespace(format!(
             "doc:{:x}",

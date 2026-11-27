@@ -13,7 +13,71 @@ use crate::block_flow::{FlowBlock, FlowRect, PAGE_SURFACE_ID, PageViewport, Scro
 use crate::rich_text::TextBiIndex;
 use crate::theme::Palette;
 
+/// Half-period of the editing text caret blink in milliseconds (`500ms` on / `500ms` off).
+pub const CARET_BLINK_HALF_PERIOD_MS: f64 = 500.0;
+
 impl PlaygroundView {
+    /// Closed-form scheduler-clock caret opacity (`1.0` for `0..500ms`, `0.0` for `500..1000ms`),
+    /// failing open to solid `1.0` whenever no periodic blink timer is active.
+    pub fn caret_blink_alpha(&self, now_ms: f64) -> f32 {
+        if self.caret_blink_task.is_none() {
+            return 1.0;
+        }
+        let elapsed = (now_ms - self.caret_active_since_ms).max(0.0);
+        if (elapsed % (2.0 * CARET_BLINK_HALF_PERIOD_MS)) < CARET_BLINK_HALF_PERIOD_MS {
+            1.0
+        } else {
+            0.0
+        }
+    }
+
+    /// Whether a visible collapsed caret is currently mounted in the page body or a table cell
+    /// (and not superseded by the link bar or an Edgeless label editor).
+    fn has_blinking_collapsed_caret(&self) -> bool {
+        if self.overlays.active_text_field().is_some()
+            || self.edgeless.authoring.label_editor().is_some()
+        {
+            return false;
+        }
+        if let Some(cell) = self.table_cell.as_ref() {
+            return cell.input.selection.is_empty();
+        }
+        self.editor.selection.as_ref().is_some_and(|s| s.empty())
+    }
+
+    /// Reset the caret blink phase so the caret is solid for the next `500ms` and schedule
+    /// scheduler-clock redraws on each `500ms` phase boundary while a collapsed caret remains active.
+    pub(crate) fn reset_caret_blink(&mut self, cx: &mut Context<Self>) {
+        self.caret_active_since_ms = self.now_ms(cx);
+        if !self.has_blinking_collapsed_caret() {
+            self.caret_blink_task = None;
+            return;
+        }
+        self.caret_blink_task = Some(cx.spawn(async move |this, cx| {
+            loop {
+                cx.background_executor()
+                    .timer(std::time::Duration::from_millis(
+                        CARET_BLINK_HALF_PERIOD_MS as u64,
+                    ))
+                    .await;
+                let keep_going = this
+                    .update(cx, |this, cx| {
+                        let active = this.has_blinking_collapsed_caret();
+                        if active {
+                            cx.notify();
+                        } else {
+                            this.caret_blink_task = None;
+                        }
+                        active
+                    })
+                    .unwrap_or(false);
+                if !keep_going {
+                    break;
+                }
+            }
+        }));
+    }
+
     pub(super) fn composition_selection(&self) -> Option<DocumentSelection> {
         let r = self
             .page()?
@@ -228,11 +292,25 @@ impl PlaygroundView {
         }
         out
     }
+    /// Selection highlight rectangles in page coordinates after horizontal code-block
+    /// scroll translation and clipping — shared by selection painting and hit-testing.
+    pub(crate) fn painted_selection_rects(&self, layout: &FlowLayout) -> Vec<FlowRect> {
+        let scrolled = self.overlays.scrolled_code(layout);
+        self.selection_rects(layout)
+            .into_iter()
+            .filter_map(|r| match ScrolledCode::containing(&scrolled, &r) {
+                Some(code) => code.span(r),
+                None => Some(r),
+            })
+            .collect()
+    }
+
     pub(crate) fn local_selection_elements(
         &self,
         layout: &FlowLayout,
         v: PageViewport,
         palette: &Palette,
+        caret_alpha: f32,
     ) -> Vec<AnyElement> {
         let mut el = Vec::new();
         if !self.editor.block_selection.is_empty() {
@@ -264,10 +342,10 @@ impl PlaygroundView {
         }
         let scrolled = self.overlays.scrolled_code(layout);
         let mut first_box = true;
-        let mut draw = |mut r: FlowRect, color: ui::Hsla, caret: bool| {
+        let mut draw = |mut r: FlowRect, color: ui::Hsla, caret: bool, apply_code_scroll: bool| {
             // Inside a sideways-scrolled code block the text sits left of its layout, and
             // what scrolled out of the code area is not painted.
-            if let Some(code) = ScrolledCode::containing(&scrolled, &r) {
+            if apply_code_scroll && let Some(code) = ScrolledCode::containing(&scrolled, &r) {
                 let shown = if caret { code.caret(r) } else { code.span(r) };
                 let Some(shown) = shown else {
                     return;
@@ -303,11 +381,11 @@ impl PlaygroundView {
             ) {
                 rect.y += rect.h - 1.0;
                 rect.h = 1.0;
-                draw(rect, palette.text_secondary, false);
+                draw(rect, palette.text_secondary, false, true);
             }
         } else {
-            for r in self.selection_rects(layout) {
-                draw(r, palette.brand.opacity(0.22), false);
+            for r in self.painted_selection_rects(layout) {
+                draw(r, palette.brand.opacity(0.22), false, false);
             }
         }
         // While an overlay text field (link bar or equation editor) or in-place table cell
@@ -319,12 +397,12 @@ impl PlaygroundView {
                 .block(&p.block_id)
                 .and_then(|b| b.caret_rect(p.caret))
         {
-            draw(rect, palette.text_primary, true);
+            draw(rect, palette.text_primary.opacity(caret_alpha), true, true);
         }
-        el.extend(self.table_cell_selection_elements(layout, v, palette));
+        el.extend(self.table_cell_selection_elements(layout, v, palette, caret_alpha));
         el
     }
-    pub(super) fn begin_input(&mut self) {
+    pub(crate) fn begin_input(&mut self) {
         if self.editor.selection.is_none()
             && self.editor.block_selection.is_empty()
             && let Some(root) = self.page_snapshot().and_then(|s| s.root.as_ref())

@@ -68,11 +68,21 @@ impl EdgelessTool {
     }
 }
 
+/// Animated visual state of the Edgeless Shape tool subpanel (`chrome.edgeless_toolbar.shape_picker`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ShapePickerVisualState {
+    pub active_shape: ShapePreset,
+    /// Closed-form ease-out progress (`0.0` hidden ..= `1.0` fully open).
+    pub progress: f32,
+    /// `true` while opening or open (interactive from Frame 1); `false` while closing.
+    pub interactive: bool,
+}
+
 /// Bottom screen-space creation toolbar (`chrome.edgeless_toolbar`).
 /// Concentric radii: outer `8px`, padding `4px`, buttons `4px` (`28×28`, `2px` gap).
 pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
     tool: EdgelessTool,
-    shape_picker_open: bool,
+    shape_picker_state: Option<ShapePickerVisualState>,
     viewport_width: f32,
     palette: &Palette,
     theme: PlaygroundTheme,
@@ -215,10 +225,18 @@ pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
         bar = bar.shadow(shadows.clone().into());
     }
 
-    // When the Shape tool is active and its picker is open, mount the 5-shape sub-pill above the bar.
-    if let EdgelessTool::Shape(active_shape) = tool
-        && shape_picker_open
-    {
+    // When the Shape subpanel is open or animating in/out, mount the 5-shape sub-pill above the bar.
+    if let Some(picker) = shape_picker_state {
+        const SLIDE_OFFSET_PX: f32 = 12.0;
+        let clamped = picker.progress.clamp(0.0, 1.0);
+        let opacity = if picker.interactive {
+            clamped.max(0.01)
+        } else {
+            clamped
+        };
+        let target_bottom = BAR_MARGIN + BTN_SIZE + 2.0 * BAR_PAD + 8.0;
+        let bottom = (target_bottom - (1.0 - clamped) * SLIDE_OFFSET_PX).round();
+
         let variants: [(
             &'static str,
             &'static str,
@@ -263,7 +281,7 @@ pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
         let mut sub = div()
             .absolute()
             .left(px(sub_left))
-            .bottom(px(BAR_MARGIN + BTN_SIZE + 2.0 * BAR_PAD + 8.0))
+            .bottom(px(bottom))
             .p(px(BAR_PAD))
             .rounded(px(BAR_RADIUS))
             .bg(palette.panel)
@@ -272,16 +290,19 @@ pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
             .flex()
             .items_center()
             .gap(px(BTN_GAP))
-            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+            .opacity(opacity)
             .snapshot(
                 "chrome.edgeless_toolbar.shape_picker",
                 Some(EDGELESS_VIEWPORT_ID),
             );
+        if picker.interactive {
+            sub = sub.on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation());
+        }
         if !shadows.is_empty() {
             sub = sub.shadow(shadows.into());
         }
         for (el_id, snap_id, icon_name, shape_kind) in variants {
-            let active = active_shape == shape_kind;
+            let active = picker.active_shape == shape_kind;
             let icon_color = if active { palette.brand } else { palette.icon };
             let mut btn = div()
                 .id(el_id)
@@ -291,16 +312,7 @@ pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
                 .flex()
                 .items_center()
                 .justify_center()
-                .cursor_pointer()
-                .hover(|s| s.bg(palette.hover))
                 .snapshot(snap_id, Some("chrome.edgeless_toolbar.shape_picker"))
-                .on_mouse_down(
-                    MouseButton::Left,
-                    cx.listener(move |this, _, window, cx| {
-                        cx.stop_propagation();
-                        this.edgeless_select_tool(EdgelessTool::Shape(shape_kind), window, cx);
-                    }),
-                )
                 .child(
                     canvas(
                         |_, _, _| (),
@@ -315,6 +327,18 @@ pub fn build_edgeless_toolbar<V: EdgelessToolbarHost>(
                     .w(px(16.0))
                     .h(px(16.0)),
                 );
+            if picker.interactive {
+                btn = btn
+                    .cursor_pointer()
+                    .hover(|s| s.bg(palette.hover))
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(move |this, _, window, cx| {
+                            cx.stop_propagation();
+                            this.edgeless_select_tool(EdgelessTool::Shape(shape_kind), window, cx);
+                        }),
+                    );
+            }
             if active {
                 btn = btn.bg(palette.brand.opacity(0.14));
             }

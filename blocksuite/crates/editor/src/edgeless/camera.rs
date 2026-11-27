@@ -1,6 +1,6 @@
 //! Spatial camera, coordinate conversion, and BlockSuite dot-grid spacing for Edgeless mode.
 
-use ui::{Pixels, Point, Size, TransformationMatrix, point, px};
+use ui::{Motion, MotionCurve, Pixels, Point, Size, TransformationMatrix, point, px};
 
 /// Minimum allowed Edgeless zoom factor (10%).
 pub const MIN_ZOOM: f32 = 0.1;
@@ -8,6 +8,10 @@ pub const MIN_ZOOM: f32 = 0.1;
 pub const MAX_ZOOM: f32 = 6.0;
 /// Multiplicative step applied by zoom-in / zoom-out controls.
 const ZOOM_STEP: f32 = 1.25;
+/// Duration of smooth Edgeless camera zoom/fit transitions in milliseconds.
+pub const CAMERA_TRANSITION_MS: f64 = 170.0;
+/// Duration of the Edgeless Shape tool subpanel slide-out transition in milliseconds.
+pub const SHAPE_PICKER_MOTION_MS: f64 = 230.0;
 
 /// Axis-aligned rectangle in Edgeless world coordinates.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -261,6 +265,162 @@ impl EdgelessCamera {
             (-self.pan_y * self.zoom + gap * 0.5).rem_euclid(gap),
         )
     }
+
+    /// World coordinate at the center of `viewport_size`.
+    pub fn viewport_center_world(&self, viewport_size: Size<Pixels>) -> (f32, f32) {
+        let z = self.zoom.max(MIN_ZOOM);
+        (
+            self.pan_x + f32::from(viewport_size.width) / (2.0 * z),
+            self.pan_y + f32::from(viewport_size.height) / (2.0 * z),
+        )
+    }
+}
+
+fn ease_out_cubic(t: f64) -> f64 {
+    let t = t.clamp(0.0, 1.0);
+    1.0 - (1.0 - t).powi(3)
+}
+
+/// Closed-form scheduler-clock transition between two [`EdgelessCamera`] states.
+///
+/// Interpolates world-space viewport center and zoom with ease-out cubic over
+/// [`CAMERA_TRANSITION_MS`] so center-anchored zooms keep the center rock-solid.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CameraTransition {
+    from_center: (f32, f32),
+    to_center: (f32, f32),
+    from_zoom: f32,
+    to_zoom: f32,
+    target: EdgelessCamera,
+    clock: Motion,
+}
+
+impl CameraTransition {
+    pub fn new(
+        from: EdgelessCamera,
+        to: EdgelessCamera,
+        viewport_size: Size<Pixels>,
+        start_ms: f64,
+    ) -> Self {
+        Self {
+            from_center: from.viewport_center_world(viewport_size),
+            to_center: to.viewport_center_world(viewport_size),
+            from_zoom: from.zoom.clamp(MIN_ZOOM, MAX_ZOOM),
+            to_zoom: to.zoom.clamp(MIN_ZOOM, MAX_ZOOM),
+            target: to,
+            clock: Motion::new(
+                0.0,
+                1.0,
+                MotionCurve::Linear,
+                start_ms,
+                CAMERA_TRANSITION_MS,
+            ),
+        }
+    }
+
+    /// Target camera once the transition finishes (used for smooth mid-flight retargeting).
+    pub fn target_camera(&self) -> EdgelessCamera {
+        self.target
+    }
+
+    pub fn is_finished(&self, now_ms: f64) -> bool {
+        self.clock.is_finished(now_ms)
+    }
+
+    pub fn camera_at(&self, now_ms: f64, viewport_size: Size<Pixels>) -> EdgelessCamera {
+        if self.clock.is_finished(now_ms) {
+            return self.target;
+        }
+        let t = ease_out_cubic(self.clock.value_at(now_ms)) as f32;
+        let zoom = (self.from_zoom + (self.to_zoom - self.from_zoom) * t).clamp(MIN_ZOOM, MAX_ZOOM);
+        let cx = self.from_center.0 + (self.to_center.0 - self.from_center.0) * t;
+        let cy = self.from_center.1 + (self.to_center.1 - self.from_center.1) * t;
+        let vw = f32::from(viewport_size.width).max(1.0);
+        let vh = f32::from(viewport_size.height).max(1.0);
+        EdgelessCamera {
+            pan_x: cx - vw / (2.0 * zoom),
+            pan_y: cy - vh / (2.0 * zoom),
+            zoom,
+        }
+    }
+}
+
+/// Closed-form `230ms` ease-out presence for the Edgeless Shape tool subpanel slide-out.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ShapePickerPresence {
+    from: f64,
+    to: f64,
+    clock: Motion,
+    pub closing: bool,
+}
+
+impl ShapePickerPresence {
+    pub fn opening(now_ms: f64) -> Self {
+        Self {
+            from: 0.0,
+            to: 1.0,
+            clock: Motion::new(
+                0.0,
+                1.0,
+                MotionCurve::Linear,
+                now_ms,
+                SHAPE_PICKER_MOTION_MS,
+            ),
+            closing: false,
+        }
+    }
+
+    pub fn reopened(self, now_ms: f64) -> Self {
+        if self.closing {
+            Self {
+                from: self.progress(now_ms) as f64,
+                to: 1.0,
+                clock: Motion::new(
+                    0.0,
+                    1.0,
+                    MotionCurve::Linear,
+                    now_ms,
+                    SHAPE_PICKER_MOTION_MS,
+                ),
+                closing: false,
+            }
+        } else {
+            self
+        }
+    }
+
+    pub fn close(&mut self, now_ms: f64) {
+        if !self.closing {
+            *self = Self {
+                from: self.progress(now_ms) as f64,
+                to: 0.0,
+                clock: Motion::new(
+                    0.0,
+                    1.0,
+                    MotionCurve::Linear,
+                    now_ms,
+                    SHAPE_PICKER_MOTION_MS,
+                ),
+                closing: true,
+            };
+        }
+    }
+
+    pub fn progress(&self, now_ms: f64) -> f32 {
+        if self.clock.is_finished(now_ms) {
+            return self.to as f32;
+        }
+        let eased = ease_out_cubic(self.clock.value_at(now_ms));
+        (self.from + (self.to - self.from) * eased).clamp(0.0, 1.0) as f32
+    }
+
+    pub fn in_flight(&self, now_ms: f64) -> bool {
+        !self.clock.is_finished(now_ms)
+    }
+
+    pub fn gone(&self, now_ms: f64) -> bool {
+        self.closing && self.clock.is_finished(now_ms)
+    }
 }
 
 /// Exact BlockSuite dot-grid screen spacing (`getBgGridGap` in `get-bg-grip-gap.ts`).
@@ -335,5 +495,42 @@ mod tests {
         );
         assert_eq!(parse_xywh("[1,2,3]"), None);
         assert_eq!(parse_xywh("bad"), None);
+    }
+
+    #[test]
+    fn camera_transition_interpolates_monotonically_and_anchors_center() {
+        let vp = size(px(1280.0), px(748.0));
+        let origin = point(px(0.0), px(52.0));
+        let from = EdgelessCamera::new(100.0, 50.0, 1.0);
+        let mut to = from;
+        to.zoom_in(origin, vp);
+        let tr = CameraTransition::new(from, to, vp, 100.0);
+
+        let mid = tr.camera_at(185.0, vp);
+        assert!(mid.zoom > from.zoom && mid.zoom < to.zoom);
+        let (fcx, fcy) = from.viewport_center_world(vp);
+        let (mcx, mcy) = mid.viewport_center_world(vp);
+        assert!((fcx - mcx).abs() < 1e-3);
+        assert!((fcy - mcy).abs() < 1e-3);
+        assert!(!tr.is_finished(185.0));
+
+        let end = tr.camera_at(100.0 + CAMERA_TRANSITION_MS, vp);
+        assert_eq!(end, to);
+        assert!(tr.is_finished(100.0 + CAMERA_TRANSITION_MS));
+    }
+
+    #[test]
+    fn shape_picker_presence_opens_and_closes_over_230ms() {
+        let mut p = ShapePickerPresence::opening(10.0);
+        assert_eq!(p.progress(10.0), 0.0);
+        let mid = p.progress(125.0);
+        assert!(mid > 0.5 && mid < 1.0);
+        assert_eq!(p.progress(10.0 + SHAPE_PICKER_MOTION_MS), 1.0);
+        assert!(!p.in_flight(10.0 + SHAPE_PICKER_MOTION_MS));
+
+        p.close(300.0);
+        assert!(p.closing);
+        assert!(p.progress(415.0) < 0.5);
+        assert!(p.gone(300.0 + SHAPE_PICKER_MOTION_MS));
     }
 }
