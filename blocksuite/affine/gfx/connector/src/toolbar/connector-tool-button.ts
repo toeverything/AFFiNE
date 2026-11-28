@@ -57,7 +57,7 @@ export class EdgelessConnectorToolButton extends QuickToolMixin(
           this.popper
             ? ''
             : html`<affine-tooltip-content-with-shortcut
-                data-tip="${getConnectorModeName(mode)}"
+                data-tip="${this.labelFor(getConnectorModeName(mode))}"
                 data-shortcut="${'C'}"
               ></affine-tooltip-content-with-shortcut>`
         }

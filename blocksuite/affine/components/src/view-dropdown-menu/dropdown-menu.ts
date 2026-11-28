@@ -40,13 +40,13 @@ export class ViewDropdownMenu extends SignalWatcher(LitElement) {
         .contentPadding="${'8px'}"
         .button=${html`
           <editor-icon-button
-            aria-label="Switch view"
-            .tooltip="${'Switch view'}"
+            aria-label=${context.translate('Switch view')}
+            .tooltip="${context.translate('Switch view')}"
             .justify="${'space-between'}"
             .labelHeight="${'20px'}"
             .iconContainerWidth="${'110px'}"
           >
-            <span class="label">${viewType}</span>
+            <span class="label">${context.translate(viewType)}</span>
             ${EditorChevronDown}
           </editor-icon-button>
         `}
@@ -61,7 +61,7 @@ export class ViewDropdownMenu extends SignalWatcher(LitElement) {
             action => action.id,
             ({ id, label, disabled, run }) => html`
               <editor-menu-action
-                aria-label="${ifDefined(label)}"
+                aria-label="${ifDefined(label && context.translate(label))}"
                 data-testid="${`link-to-${id}`}"
                 ?data-selected="${label === viewType}"
                 ?disabled="${ifDefined(
@@ -69,7 +69,7 @@ export class ViewDropdownMenu extends SignalWatcher(LitElement) {
                 )}"
                 @click=${() => run?.(context)}
               >
-                ${label}
+                ${label && context.translate(label)}
               </editor-menu-action>
             `
           )}

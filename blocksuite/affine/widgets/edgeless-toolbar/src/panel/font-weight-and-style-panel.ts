@@ -32,6 +32,9 @@ export class EdgelessFontWeightAndStylePanel extends LitElement {
     }
   `;
 
+  @property({ attribute: false })
+  accessor labelFor = (label: string) => label;
+
   private _isActive(
     fontWeight: FontWeight,
     fontStyle: FontStyle = FontStyle.Normal
@@ -99,7 +102,7 @@ export class EdgelessFontWeightAndStylePanel extends LitElement {
                     @click=${() =>
                       this._onSelect(fontFace.weight as FontWeight)}
                   >
-                    ${choose(fontFace.weight, FONT_WEIGHT_CHOOSE)}
+                    ${this.labelFor(choose(fontFace.weight, FONT_WEIGHT_CHOOSE) ?? '')}
                     ${active ? DoneIcon() : nothing}
                   </edgeless-tool-icon-button>
                 `;
@@ -131,8 +134,8 @@ export class EdgelessFontWeightAndStylePanel extends LitElement {
                         FontStyle.Italic
                       )}
                   >
-                    ${choose(fontFace.weight, FONT_WEIGHT_CHOOSE)} Italic
-                    ${active ? DoneIcon() : nothing}
+                    ${this.labelFor(choose(fontFace.weight, FONT_WEIGHT_CHOOSE) ?? '')}
+                    ${this.labelFor('Italic')} ${active ? DoneIcon() : nothing}
                   </edgeless-tool-icon-button>
                 `;
               }

@@ -211,8 +211,8 @@ const builtinToolbarConfig = {
 
         return html`
           <editor-icon-button
-            aria-label="Rename"
-            .tooltip="${'Rename'}"
+            aria-label=${ctx.translate('Rename')}
+            .tooltip="${ctx.translate('Rename')}"
             @click=${() => {
               ctx.hide();
 

@@ -83,7 +83,7 @@ export class EdgelessLinkToolButton extends QuickToolMixin(LitElement) {
     return html`<edgeless-tool-icon-button
       .iconContainerPadding="${6}"
       .tooltip="${html`<affine-tooltip-content-with-shortcut
-        data-tip="${'Link'}"
+        data-tip="${this.labelFor('Link')}"
         data-shortcut="${'@'}"
       ></affine-tooltip-content-with-shortcut>`}"
       .tooltipOffset=${17}

@@ -157,8 +157,8 @@ export function createTextActions<
             .contentPadding="${'8px'}"
             .button=${html`
               <editor-icon-button
-                aria-label="Font"
-                .tooltip="${'Font'}"
+                aria-label=${ctx.translate('Font')}
+                .tooltip="${ctx.translate('Font')}"
                 .justify="${'space-between'}"
                 .iconContainerWidth="${'40px'}"
               >
@@ -239,7 +239,7 @@ export function createTextActions<
         return html`
           <edgeless-color-picker-button
             class="text-color"
-            .label="${'Text color'}"
+            .label="${ctx.translate('Text color')}"
             .pick=${onPick}
             .color=${color}
             .theme=${theme}
@@ -289,29 +289,22 @@ export function createTextActions<
             .contentPadding="${'8px'}"
             .button=${html`
               <editor-icon-button
-                aria-label="Font style"
-                .tooltip="${'Font style'}"
+                aria-label=${ctx.translate('Font style')}
+                .tooltip="${ctx.translate('Font style')}"
                 .justify="${'space-between'}"
                 .iconContainerWidth="${'90px'}"
                 .disabled=${disabled}
               >
                 <span class="label ellipsis">
-                  ${renderCurrentMenuItemWith(
-                    FONT_WEIGHT_LIST,
-                    fontWeight,
-                    'key'
-                  )}
-                  ${renderCurrentMenuItemWith(
-                    FONT_STYLE_LIST,
-                    fontStyle,
-                    'key'
-                  )}
+                  ${ctx.translate(renderCurrentMenuItemWith(FONT_WEIGHT_LIST, fontWeight, 'key') ?? '')}
+                  ${ctx.translate(renderCurrentMenuItemWith(FONT_STYLE_LIST, fontStyle, 'key') ?? '')}
                 </span>
                 ${EditorChevronDown}
               </editor-icon-button>
             `}
           >
             <edgeless-font-weight-and-style-panel
+              .labelFor=${ctx.translate}
               .fontFamily=${fontFamily}
               .fontWeight=${fontWeight}
               .fontStyle=${fontStyle}
@@ -351,7 +344,7 @@ export function createTextActions<
 
         return html`<affine-size-dropdown-menu
           @select=${onPick}
-          .label="${'Font size'}"
+          .label="${ctx.translate('Font size')}"
           .sizes=${FONT_SIZE_LIST}
           .sizeSignal=${fontSize$}
         ></affine-size-dropdown-menu>`;
@@ -378,6 +371,7 @@ export function createTextActions<
         };
 
         return renderMenu({
+          translate: ctx.translate,
           label: 'Alignment',
           items: TEXT_ALIGN_LIST,
           currentValue: textAlign,

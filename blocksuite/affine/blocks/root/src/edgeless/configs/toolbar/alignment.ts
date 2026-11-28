@@ -272,8 +272,8 @@ export function renderAlignmentMenu(
       .contentPadding="${'8px'}"
       .button=${html`
         <editor-icon-button
-          aria-label="${label}"
-          .tooltip="${tooltip ?? label}"
+          aria-label="${ctx.translate(label)}"
+          .tooltip="${ctx.translate(tooltip ?? label)}"
         >
           ${icon} ${EditorChevronDown}
         </editor-icon-button>
@@ -281,12 +281,12 @@ export function renderAlignmentMenu(
     >
       <div data-orientation="vertical">
         <div style=${styleMap({ display: 'grid', gridGap: '8px', gridTemplateColumns: 'repeat(4, 1fr)' })}>
-          ${renderMenuItems(HORIZONTAL_ALIGNMENT, Alignment.None, onPick)}
-          ${renderMenuItems(VERTICAL_ALIGNMENT, Alignment.None, onPick)}
+          ${renderMenuItems(HORIZONTAL_ALIGNMENT, Alignment.None, onPick, ctx.translate)}
+          ${renderMenuItems(VERTICAL_ALIGNMENT, Alignment.None, onPick, ctx.translate)}
         </div>
         <editor-toolbar-separator data-orientation="horizontal"></editor-toolbar-separator>
         <div style=${styleMap({ display: 'grid', gridGap: '8px', gridTemplateColumns: 'repeat(4, 1fr)' })}>
-          ${renderMenuItems(AUTO_ALIGNMENT, Alignment.None, onPick)}
+          ${renderMenuItems(AUTO_ALIGNMENT, Alignment.None, onPick, ctx.translate)}
         </div>
     </editor-menu-button>
   `;

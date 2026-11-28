@@ -5,9 +5,14 @@ import {
 import { WorkspaceServerService } from '@affine/core/modules/cloud';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { ToolbarMoreMenuConfigExtension } from '@blocksuite/affine/components/toolbar';
-import { EditorSettingExtension } from '@blocksuite/affine/shared/services';
+import {
+  EditorLabelsExtension,
+  EditorSettingExtension,
+} from '@blocksuite/affine/shared/services';
 import type { ExtensionType } from '@blocksuite/store';
 import type { FrameworkProvider } from '@toeverything/infra';
+
+import { translateEditorLabel } from './editor-labels';
 
 export function getEditorConfigExtension(
   framework: FrameworkProvider
@@ -17,6 +22,7 @@ export function getEditorConfigExtension(
   const baseUrl = workspaceServerService.server?.baseUrl ?? location.origin;
 
   return [
+    EditorLabelsExtension({ translate: translateEditorLabel }),
     EditorSettingExtension({
       setting$: editorSettingService.editorSetting.settingSignal,
       set: (k, v) => editorSettingService.editorSetting.set(k, v),

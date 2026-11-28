@@ -17,6 +17,7 @@ export function renderCurrentMenuItemWith<T, F extends keyof MenuItem<T>>(
 
 export function renderMenu<T>({
   label,
+  translate = label => label,
   tooltip,
   icon,
   items,
@@ -28,15 +29,15 @@ export function renderMenu<T>({
       aria-label="${`${label.toLowerCase()}-menu`}"
       .button=${html`
         <editor-icon-button
-          aria-label="${label}"
-          .tooltip="${tooltip ?? label}"
+          aria-label="${translate(label)}"
+          .tooltip="${translate(tooltip ?? label)}"
         >
           ${icon ?? renderCurrentMenuItemWith(items, currentValue, 'icon')}
           ${EditorChevronDown}
         </editor-icon-button>
       `}
     >
-      ${renderMenuItems(items, currentValue, onPick)}
+      ${renderMenuItems(items, currentValue, onPick, translate)}
     </editor-menu-button>
   `;
 }
@@ -44,16 +45,17 @@ export function renderMenu<T>({
 export function renderMenuItems<T>(
   items: MenuItem<T>[],
   currentValue: T,
-  onPick: (value: T) => void
+  onPick: (value: T) => void,
+  translate: (label: string) => string = label => label
 ) {
   return repeat(
     items,
     item => item.value,
     ({ key, value, icon, disabled }) => html`
       <editor-icon-button
-        aria-label="${ifDefined(key)}"
+        aria-label="${ifDefined(key && translate(key))}"
         .disabled=${ifDefined(disabled)}
-        .tooltip="${ifDefined(key)}"
+        .tooltip="${ifDefined(key && translate(key))}"
         .active="${currentValue === value}"
         .activeMode="${'background'}"
         @click=${() => onPick(value)}

@@ -2252,6 +2252,904 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.editCollectionName.name.placeholder"](): string;
     /**
+      * `+1`
+      */
+    ["com.affine.edgeless.label.+1"](): string;
+    /**
+      * `4P Marketing Matrix`
+      */
+    ["com.affine.edgeless.label.4P Marketing Matrix"](): string;
+    /**
+      * `5W2H`
+      */
+    ["com.affine.edgeless.label.5W2H"](): string;
+    /**
+      * `A lot of question`
+      */
+    ["com.affine.edgeless.label.A lot of question"](): string;
+    /**
+      * `A visual divider`
+      */
+    ["com.affine.edgeless.label.A visual divider"](): string;
+    /**
+      * `AFFiNE`
+      */
+    ["com.affine.edgeless.label.AFFiNE"](): string;
+    /**
+      * `AFFiNE AI`
+      */
+    ["com.affine.edgeless.label.AFFiNE AI"](): string;
+    /**
+      * `AI`
+      */
+    ["com.affine.edgeless.label.AI"](): string;
+    /**
+      * `Add`
+      */
+    ["com.affine.edgeless.label.Add"](): string;
+    /**
+      * `Add media`
+      */
+    ["com.affine.edgeless.label.Add media"](): string;
+    /**
+      * `Add text`
+      */
+    ["com.affine.edgeless.label.Add text"](): string;
+    /**
+      * `Align bottom`
+      */
+    ["com.affine.edgeless.label.Align bottom"](): string;
+    /**
+      * `Align center`
+      */
+    ["com.affine.edgeless.label.Align center"](): string;
+    /**
+      * `Align horizontally`
+      */
+    ["com.affine.edgeless.label.Align horizontally"](): string;
+    /**
+      * `Align left`
+      */
+    ["com.affine.edgeless.label.Align left"](): string;
+    /**
+      * `Align objects`
+      */
+    ["com.affine.edgeless.label.Align objects"](): string;
+    /**
+      * `Align right`
+      */
+    ["com.affine.edgeless.label.Align right"](): string;
+    /**
+      * `Align top`
+      */
+    ["com.affine.edgeless.label.Align top"](): string;
+    /**
+      * `Align vertically`
+      */
+    ["com.affine.edgeless.label.Align vertically"](): string;
+    /**
+      * `Alignment`
+      */
+    ["com.affine.edgeless.label.Alignment"](): string;
+    /**
+      * `Arrow`
+      */
+    ["com.affine.edgeless.label.Arrow"](): string;
+    /**
+      * `Arrows`
+      */
+    ["com.affine.edgeless.label.Arrows"](): string;
+    /**
+      * `Ask AI`
+      */
+    ["com.affine.edgeless.label.Ask AI"](): string;
+    /**
+      * `Atention`
+      */
+    ["com.affine.edgeless.label.Atention"](): string;
+    /**
+      * `Auto arrange`
+      */
+    ["com.affine.edgeless.label.Auto arrange"](): string;
+    /**
+      * `Auto height`
+      */
+    ["com.affine.edgeless.label.Auto height"](): string;
+    /**
+      * `Background Color`
+      */
+    ["com.affine.edgeless.label.Background Color"](): string;
+    /**
+      * `Blue Screen`
+      */
+    ["com.affine.edgeless.label.Blue Screen"](): string;
+    /**
+      * `Boom`
+      */
+    ["com.affine.edgeless.label.Boom"](): string;
+    /**
+      * `Brainstorming`
+      */
+    ["com.affine.edgeless.label.Brainstorming"](): string;
+    /**
+      * `Bring Forward`
+      */
+    ["com.affine.edgeless.label.Bring Forward"](): string;
+    /**
+      * `Bring to Front`
+      */
+    ["com.affine.edgeless.label.Bring to Front"](): string;
+    /**
+      * `Brush`
+      */
+    ["com.affine.edgeless.label.Brush"](): string;
+    /**
+      * `Bulleted List`
+      */
+    ["com.affine.edgeless.label.Bulleted List"](): string;
+    /**
+      * `Business Proposal`
+      */
+    ["com.affine.edgeless.label.Business Proposal"](): string;
+    /**
+      * `Caption`
+      */
+    ["com.affine.edgeless.label.Caption"](): string;
+    /**
+      * `Card view`
+      */
+    ["com.affine.edgeless.label.Card view"](): string;
+    /**
+      * `Cat`
+      */
+    ["com.affine.edgeless.label.Cat"](): string;
+    /**
+      * `Center`
+      */
+    ["com.affine.edgeless.label.Center"](): string;
+    /**
+      * `Change background color`
+      */
+    ["com.affine.edgeless.label.Change background color"](): string;
+    /**
+      * `Change icon`
+      */
+    ["com.affine.edgeless.label.Change icon"](): string;
+    /**
+      * `Cheeky Piggies`
+      */
+    ["com.affine.edgeless.label.Cheeky Piggies"](): string;
+    /**
+      * `Click to unlock`
+      */
+    ["com.affine.edgeless.label.Click to unlock"](): string;
+    /**
+      * `Closed`
+      */
+    ["com.affine.edgeless.label.Closed"](): string;
+    /**
+      * `Code Block`
+      */
+    ["com.affine.edgeless.label.Code Block"](): string;
+    /**
+      * `Comment`
+      */
+    ["com.affine.edgeless.label.Comment"](): string;
+    /**
+      * `Concept Map`
+      */
+    ["com.affine.edgeless.label.Concept Map"](): string;
+    /**
+      * `Connector`
+      */
+    ["com.affine.edgeless.label.Connector"](): string;
+    /**
+      * `Connector shape`
+      */
+    ["com.affine.edgeless.label.Connector shape"](): string;
+    /**
+      * `Contorted Stickers`
+      */
+    ["com.affine.edgeless.label.Contorted Stickers"](): string;
+    /**
+      * `Cool`
+      */
+    ["com.affine.edgeless.label.Cool"](): string;
+    /**
+      * `Copy`
+      */
+    ["com.affine.edgeless.label.Copy"](): string;
+    /**
+      * `Copy as Image`
+      */
+    ["com.affine.edgeless.label.Copy as Image"](): string;
+    /**
+      * `Copy code`
+      */
+    ["com.affine.edgeless.label.Copy code"](): string;
+    /**
+      * `Copy link`
+      */
+    ["com.affine.edgeless.label.Copy link"](): string;
+    /**
+      * `Copy link to block`
+      */
+    ["com.affine.edgeless.label.Copy link to block"](): string;
+    /**
+      * `Create Linked Doc`
+      */
+    ["com.affine.edgeless.label.Create Linked Doc"](): string;
+    /**
+      * `Create Table`
+      */
+    ["com.affine.edgeless.label.Create Table"](): string;
+    /**
+      * `Create linked doc`
+      */
+    ["com.affine.edgeless.label.Create linked doc"](): string;
+    /**
+      * `Crybaby`
+      */
+    ["com.affine.edgeless.label.Crybaby"](): string;
+    /**
+      * `Curve`
+      */
+    ["com.affine.edgeless.label.Curve"](): string;
+    /**
+      * `Customized height`
+      */
+    ["com.affine.edgeless.label.Customized height"](): string;
+    /**
+      * `Cutting mode`
+      */
+    ["com.affine.edgeless.label.Cutting mode"](): string;
+    /**
+      * `Data Analysis`
+      */
+    ["com.affine.edgeless.label.Data Analysis"](): string;
+    /**
+      * `Delete`
+      */
+    ["com.affine.edgeless.label.Delete"](): string;
+    /**
+      * `Diamond`
+      */
+    ["com.affine.edgeless.label.Diamond"](): string;
+    /**
+      * `Dino`
+      */
+    ["com.affine.edgeless.label.Dino"](): string;
+    /**
+      * `Display in Page`
+      */
+    ["com.affine.edgeless.label.Display in Page"](): string;
+    /**
+      * `Displayed in Page`
+      */
+    ["com.affine.edgeless.label.Displayed in Page"](): string;
+    /**
+      * `Distribute horizontally`
+      */
+    ["com.affine.edgeless.label.Distribute horizontally"](): string;
+    /**
+      * `Distribute vertically`
+      */
+    ["com.affine.edgeless.label.Distribute vertically"](): string;
+    /**
+      * `Download`
+      */
+    ["com.affine.edgeless.label.Download"](): string;
+    /**
+      * `Drag/Click to insert Bulleted List`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert Bulleted List"](): string;
+    /**
+      * `Drag/Click to insert Code Block`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert Code Block"](): string;
+    /**
+      * `Drag/Click to insert Heading 1`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert Heading 1"](): string;
+    /**
+      * `Drag/Click to insert Heading 2`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert Heading 2"](): string;
+    /**
+      * `Drag/Click to insert Heading 3`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert Heading 3"](): string;
+    /**
+      * `Drag/Click to insert Heading 4`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert Heading 4"](): string;
+    /**
+      * `Drag/Click to insert Heading 5`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert Heading 5"](): string;
+    /**
+      * `Drag/Click to insert Heading 6`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert Heading 6"](): string;
+    /**
+      * `Drag/Click to insert Numbered List`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert Numbered List"](): string;
+    /**
+      * `Drag/Click to insert Quote`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert Quote"](): string;
+    /**
+      * `Drag/Click to insert Text block`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert Text block"](): string;
+    /**
+      * `Drag/Click to insert To-do List`
+      */
+    ["com.affine.edgeless.label.Drag/Click to insert To-do List"](): string;
+    /**
+      * `Draw connector`
+      */
+    ["com.affine.edgeless.label.Draw connector"](): string;
+    /**
+      * `Drool`
+      */
+    ["com.affine.edgeless.label.Drool"](): string;
+    /**
+      * `Duplicate`
+      */
+    ["com.affine.edgeless.label.Duplicate"](): string;
+    /**
+      * `Duplicate as note`
+      */
+    ["com.affine.edgeless.label.Duplicate as note"](): string;
+    /**
+      * `Edgeless Text`
+      */
+    ["com.affine.edgeless.label.Edgeless Text"](): string;
+    /**
+      * `Edit Description`
+      */
+    ["com.affine.edgeless.label.Edit Description"](): string;
+    /**
+      * `Elbowed`
+      */
+    ["com.affine.edgeless.label.Elbowed"](): string;
+    /**
+      * `Ellipse`
+      */
+    ["com.affine.edgeless.label.Ellipse"](): string;
+    /**
+      * `Embed view`
+      */
+    ["com.affine.edgeless.label.Embed view"](): string;
+    /**
+      * `End point style`
+      */
+    ["com.affine.edgeless.label.End point style"](): string;
+    /**
+      * `Eraser`
+      */
+    ["com.affine.edgeless.label.Eraser"](): string;
+    /**
+      * `Eyes`
+      */
+    ["com.affine.edgeless.label.Eyes"](): string;
+    /**
+      * `Fire`
+      */
+    ["com.affine.edgeless.label.Fire"](): string;
+    /**
+      * `Fishbone Diagram`
+      */
+    ["com.affine.edgeless.label.Fishbone Diagram"](): string;
+    /**
+      * `Flip direction`
+      */
+    ["com.affine.edgeless.label.Flip direction"](): string;
+    /**
+      * `Flowchart`
+      */
+    ["com.affine.edgeless.label.Flowchart"](): string;
+    /**
+      * `Font`
+      */
+    ["com.affine.edgeless.label.Font"](): string;
+    /**
+      * `Font size`
+      */
+    ["com.affine.edgeless.label.Font size"](): string;
+    /**
+      * `Font style`
+      */
+    ["com.affine.edgeless.label.Font style"](): string;
+    /**
+      * `Frame`
+      */
+    ["com.affine.edgeless.label.Frame"](): string;
+    /**
+      * `Frame section`
+      */
+    ["com.affine.edgeless.label.Frame section"](): string;
+    /**
+      * `Fuming`
+      */
+    ["com.affine.edgeless.label.Fuming"](): string;
+    /**
+      * `Gantt Chart`
+      */
+    ["com.affine.edgeless.label.Gantt Chart"](): string;
+    /**
+      * `General`
+      */
+    ["com.affine.edgeless.label.General"](): string;
+    /**
+      * `Group`
+      */
+    ["com.affine.edgeless.label.Group"](): string;
+    /**
+      * `Group section`
+      */
+    ["com.affine.edgeless.label.Group section"](): string;
+    /**
+      * `Hand`
+      */
+    ["com.affine.edgeless.label.Hand"](): string;
+    /**
+      * `Heading 1`
+      */
+    ["com.affine.edgeless.label.Heading 1"](): string;
+    /**
+      * `Heading 2`
+      */
+    ["com.affine.edgeless.label.Heading 2"](): string;
+    /**
+      * `Heading 3`
+      */
+    ["com.affine.edgeless.label.Heading 3"](): string;
+    /**
+      * `Heading 4`
+      */
+    ["com.affine.edgeless.label.Heading 4"](): string;
+    /**
+      * `Heading 5`
+      */
+    ["com.affine.edgeless.label.Heading 5"](): string;
+    /**
+      * `Heading 6`
+      */
+    ["com.affine.edgeless.label.Heading 6"](): string;
+    /**
+      * `Highlighter`
+      */
+    ["com.affine.edgeless.label.Highlighter"](): string;
+    /**
+      * `Histogram`
+      */
+    ["com.affine.edgeless.label.Histogram"](): string;
+    /**
+      * `Hi~`
+      */
+    ["com.affine.edgeless.label.Hi~"](): string;
+    /**
+      * `Holding Tears`
+      */
+    ["com.affine.edgeless.label.Holding Tears"](): string;
+    /**
+      * `Horizontal style`
+      */
+    ["com.affine.edgeless.label.Horizontal style"](): string;
+    /**
+      * `Icon Picker`
+      */
+    ["com.affine.edgeless.label.Icon Picker"](): string;
+    /**
+      * `Info`
+      */
+    ["com.affine.edgeless.label.Info"](): string;
+    /**
+      * `Inline Equation`
+      */
+    ["com.affine.edgeless.label.Inline Equation"](): string;
+    /**
+      * `Inline view`
+      */
+    ["com.affine.edgeless.label.Inline view"](): string;
+    /**
+      * `Insert into Page`
+      */
+    ["com.affine.edgeless.label.Insert into Page"](): string;
+    /**
+      * `Insert to page`
+      */
+    ["com.affine.edgeless.label.Insert to page"](): string;
+    /**
+      * `Italic`
+      */
+    ["com.affine.edgeless.label.Italic"](): string;
+    /**
+      * `King`
+      */
+    ["com.affine.edgeless.label.King"](): string;
+    /**
+      * `Large horizontal style`
+      */
+    ["com.affine.edgeless.label.Large horizontal style"](): string;
+    /**
+      * `Large vertical style`
+      */
+    ["com.affine.edgeless.label.Large vertical style"](): string;
+    /**
+      * `Layout`
+      */
+    ["com.affine.edgeless.label.Layout"](): string;
+    /**
+      * `Left`
+      */
+    ["com.affine.edgeless.label.Left"](): string;
+    /**
+      * `Light`
+      */
+    ["com.affine.edgeless.label.Light"](): string;
+    /**
+      * `Link`
+      */
+    ["com.affine.edgeless.label.Link"](): string;
+    /**
+      * `Local First`
+      */
+    ["com.affine.edgeless.label.Local First"](): string;
+    /**
+      * `Lock`
+      */
+    ["com.affine.edgeless.label.Lock"](): string;
+    /**
+      * `Love`
+      */
+    ["com.affine.edgeless.label.Love"](): string;
+    /**
+      * `Love Blows`
+      */
+    ["com.affine.edgeless.label.Love Blows"](): string;
+    /**
+      * `Love Face`
+      */
+    ["com.affine.edgeless.label.Love Face"](): string;
+    /**
+      * `Marketing`
+      */
+    ["com.affine.edgeless.label.Marketing"](): string;
+    /**
+      * `Me_ Really_`
+      */
+    ["com.affine.edgeless.label.Me_ Really_"](): string;
+    /**
+      * `Medal`
+      */
+    ["com.affine.edgeless.label.Medal"](): string;
+    /**
+      * `Mind Map`
+      */
+    ["com.affine.edgeless.label.Mind Map"](): string;
+    /**
+      * `Monthly Calendar`
+      */
+    ["com.affine.edgeless.label.Monthly Calendar"](): string;
+    /**
+      * `More`
+      */
+    ["com.affine.edgeless.label.More"](): string;
+    /**
+      * `More Tools`
+      */
+    ["com.affine.edgeless.label.More Tools"](): string;
+    /**
+      * `More menu`
+      */
+    ["com.affine.edgeless.label.More menu"](): string;
+    /**
+      * `Note`
+      */
+    ["com.affine.edgeless.label.Note"](): string;
+    /**
+      * `Notice`
+      */
+    ["com.affine.edgeless.label.Notice"](): string;
+    /**
+      * `Numbered List`
+      */
+    ["com.affine.edgeless.label.Numbered List"](): string;
+    /**
+      * `OK`
+      */
+    ["com.affine.edgeless.label.OK"](): string;
+    /**
+      * `Open this doc`
+      */
+    ["com.affine.edgeless.label.Open this doc"](): string;
+    /**
+      * `Original`
+      */
+    ["com.affine.edgeless.label.Original"](): string;
+    /**
+      * `Others`
+      */
+    ["com.affine.edgeless.label.Others"](): string;
+    /**
+      * `Pan`
+      */
+    ["com.affine.edgeless.label.Pan"](): string;
+    /**
+      * `Paper`
+      */
+    ["com.affine.edgeless.label.Paper"](): string;
+    /**
+      * `Pen`
+      */
+    ["com.affine.edgeless.label.Pen"](): string;
+    /**
+      * `Pin`
+      */
+    ["com.affine.edgeless.label.Pin"](): string;
+    /**
+      * `Presentation`
+      */
+    ["com.affine.edgeless.label.Presentation"](): string;
+    /**
+      * `Project Management`
+      */
+    ["com.affine.edgeless.label.Project Management"](): string;
+    /**
+      * `Project Planning`
+      */
+    ["com.affine.edgeless.label.Project Planning"](): string;
+    /**
+      * `Project Tracking Kanban`
+      */
+    ["com.affine.edgeless.label.Project Tracking Kanban"](): string;
+    /**
+      * `Question`
+      */
+    ["com.affine.edgeless.label.Question"](): string;
+    /**
+      * `Quote`
+      */
+    ["com.affine.edgeless.label.Quote"](): string;
+    /**
+      * `Radial`
+      */
+    ["com.affine.edgeless.label.Radial"](): string;
+    /**
+      * `Regular`
+      */
+    ["com.affine.edgeless.label.Regular"](): string;
+    /**
+      * `Release from group`
+      */
+    ["com.affine.edgeless.label.Release from group"](): string;
+    /**
+      * `Reload`
+      */
+    ["com.affine.edgeless.label.Reload"](): string;
+    /**
+      * `Remove link`
+      */
+    ["com.affine.edgeless.label.Remove link"](): string;
+    /**
+      * `Rename`
+      */
+    ["com.affine.edgeless.label.Rename"](): string;
+    /**
+      * `Replace attachment`
+      */
+    ["com.affine.edgeless.label.Replace attachment"](): string;
+    /**
+      * `Resize & Align`
+      */
+    ["com.affine.edgeless.label.Resize & Align"](): string;
+    /**
+      * `Right`
+      */
+    ["com.affine.edgeless.label.Right"](): string;
+    /**
+      * `Rounded rectangle`
+      */
+    ["com.affine.edgeless.label.Rounded rectangle"](): string;
+    /**
+      * `SMART`
+      */
+    ["com.affine.edgeless.label.SMART"](): string;
+    /**
+      * `SWOT`
+      */
+    ["com.affine.edgeless.label.SWOT"](): string;
+    /**
+      * `Sassy Flick`
+      */
+    ["com.affine.edgeless.label.Sassy Flick"](): string;
+    /**
+      * `Scribbled`
+      */
+    ["com.affine.edgeless.label.Scribbled"](): string;
+    /**
+      * `Search templates...`
+      */
+    ["com.affine.edgeless.label.Search templates..."](): string;
+    /**
+      * `Select`
+      */
+    ["com.affine.edgeless.label.Select"](): string;
+    /**
+      * `Semibold`
+      */
+    ["com.affine.edgeless.label.Semibold"](): string;
+    /**
+      * `Send Backward`
+      */
+    ["com.affine.edgeless.label.Send Backward"](): string;
+    /**
+      * `Send to Back`
+      */
+    ["com.affine.edgeless.label.Send to Back"](): string;
+    /**
+      * `Shape`
+      */
+    ["com.affine.edgeless.label.Shape"](): string;
+    /**
+      * `Shockwave`
+      */
+    ["com.affine.edgeless.label.Shockwave"](): string;
+    /**
+      * `Simple Presentation`
+      */
+    ["com.affine.edgeless.label.Simple Presentation"](): string;
+    /**
+      * `Size`
+      */
+    ["com.affine.edgeless.label.Size"](): string;
+    /**
+      * `Slicer`
+      */
+    ["com.affine.edgeless.label.Slicer"](): string;
+    /**
+      * `Small horizontal style`
+      */
+    ["com.affine.edgeless.label.Small horizontal style"](): string;
+    /**
+      * `Small vertical style`
+      */
+    ["com.affine.edgeless.label.Small vertical style"](): string;
+    /**
+      * `Smile Face`
+      */
+    ["com.affine.edgeless.label.Smile Face"](): string;
+    /**
+      * `Snooze Drool`
+      */
+    ["com.affine.edgeless.label.Snooze Drool"](): string;
+    /**
+      * `Square`
+      */
+    ["com.affine.edgeless.label.Square"](): string;
+    /**
+      * `Star`
+      */
+    ["com.affine.edgeless.label.Star"](): string;
+    /**
+      * `Start point style`
+      */
+    ["com.affine.edgeless.label.Start point style"](): string;
+    /**
+      * `Stop`
+      */
+    ["com.affine.edgeless.label.Stop"](): string;
+    /**
+      * `Storyboard`
+      */
+    ["com.affine.edgeless.label.Storyboard"](): string;
+    /**
+      * `Straight`
+      */
+    ["com.affine.edgeless.label.Straight"](): string;
+    /**
+      * `Stroke style`
+      */
+    ["com.affine.edgeless.label.Stroke style"](): string;
+    /**
+      * `Style`
+      */
+    ["com.affine.edgeless.label.Style"](): string;
+    /**
+      * `Support import of FreeMind,OPML.`
+      */
+    ["com.affine.edgeless.label.Support import of FreeMind,OPML."](): string;
+    /**
+      * `Swag`
+      */
+    ["com.affine.edgeless.label.Swag"](): string;
+    /**
+      * `Sweatdrop`
+      */
+    ["com.affine.edgeless.label.Sweatdrop"](): string;
+    /**
+      * `Switch shape type`
+      */
+    ["com.affine.edgeless.label.Switch shape type"](): string;
+    /**
+      * `Template`
+      */
+    ["com.affine.edgeless.label.Template"](): string;
+    /**
+      * `Text`
+      */
+    ["com.affine.edgeless.label.Text"](): string;
+    /**
+      * `Text color`
+      */
+    ["com.affine.edgeless.label.Text color"](): string;
+    /**
+      * `This note is part of Page Mode. Click to remove it from the page.`
+      */
+    ["com.affine.edgeless.label.This note is part of Page Mode. Click to remove it from the page."](): string;
+    /**
+      * `Thumbs Up`
+      */
+    ["com.affine.edgeless.label.Thumbs Up"](): string;
+    /**
+      * `To-do List`
+      */
+    ["com.affine.edgeless.label.To-do List"](): string;
+    /**
+      * `Triangle`
+      */
+    ["com.affine.edgeless.label.Triangle"](): string;
+    /**
+      * `Turn into card view`
+      */
+    ["com.affine.edgeless.label.Turn into card view"](): string;
+    /**
+      * `Turn into linked doc`
+      */
+    ["com.affine.edgeless.label.Turn into linked doc"](): string;
+    /**
+      * `Ungroup`
+      */
+    ["com.affine.edgeless.label.Ungroup"](): string;
+    /**
+      * `User Journey Map`
+      */
+    ["com.affine.edgeless.label.User Journey Map"](): string;
+    /**
+      * `Vertical style`
+      */
+    ["com.affine.edgeless.label.Vertical style"](): string;
+    /**
+      * `What_`
+      */
+    ["com.affine.edgeless.label.What_"](): string;
+    /**
+      * `source`
+      */
+    ["com.affine.edgeless.label.source"](): string;
+    /**
+      * `Card style`
+      */
+    ["com.affine.edgeless.label.Card style"](): string;
+    /**
+      * `Switch view`
+      */
+    ["com.affine.edgeless.label.Switch view"](): string;
+    /**
+      * `Open doc`
+      */
+    ["com.affine.edgeless.label.Open doc"](): string;
+    /**
+      * `arrow-{{number}}`
+      */
+    ["com.affine.edgeless.sticker.numbered-arrow"](options: {
+        readonly number: string;
+    }): string;
+    /**
       * `Default to Edgeless mode`
       */
     ["com.affine.editorDefaultMode.edgeless"](): string;

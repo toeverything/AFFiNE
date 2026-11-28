@@ -5,6 +5,7 @@ import {
 } from '@blocksuite/affine-components/toolbar';
 import {
   EditPropsStore,
+  getEditorLabel,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
 import {
@@ -376,6 +377,7 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
   }
 
   override render() {
+    const translate = getEditorLabel(this.edgeless.std);
     const { _categories, _currentCategory, _templates } = this;
     const { draggingElement } = this.draggableController?.states || {};
     const appTheme = this.edgeless.std.get(ThemeProvider).app$.value;
@@ -393,7 +395,7 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
           <input
             class="search-input"
             type="text"
-            placeholder="Search file or anything..."
+            placeholder=${translate('Search templates...')}
             @input=${this._updateSearchKeyword}
             @cut=${stopPropagation}
             @copy=${stopPropagation}
@@ -414,7 +416,7 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
                   this._updateTemplates();
                 }}
               >
-                ${cate}
+                ${translate(cate)}
               </div>`;
             }
           )}
@@ -462,7 +464,7 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
                             style=${styleMap({
                               opacity: isBeingDragged ? '0' : '1',
                             })}
-                            data-hover-text="Add"
+                            data-hover-text=${translate('Add')}
                             @mousedown=${(e: MouseEvent) =>
                               this.draggableController.onMouseDown(e, {
                                 data: template,
@@ -488,7 +490,7 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
                                     .autoHide=${true}
                                     tip-position="top"
                                   >
-                                    ${template.name}
+                                    ${translate(template.name)}
                                   </affine-tooltip>`
                                 : nothing
                             }

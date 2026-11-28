@@ -108,7 +108,10 @@ const openDocActionGroup = {
       <editor-menu-button
         .contentPadding="${'8px'}"
         .button=${html`
-          <editor-icon-button aria-label="Open doc" .tooltip=${'Open doc'}>
+          <editor-icon-button
+            aria-label=${ctx.translate('Open doc')}
+            .tooltip=${ctx.translate('Open doc')}
+          >
             ${OpenInNewIcon()} ${EditorChevronDown}
           </editor-icon-button>
         `}
@@ -119,13 +122,15 @@ const openDocActionGroup = {
             action => action.id,
             ({ label, icon, run, disabled }) => html`
               <editor-menu-action
-                aria-label=${ifDefined(label)}
+                aria-label=${ifDefined(label && ctx.translate(label))}
                 ?disabled=${ifDefined(
                   typeof disabled === 'function' ? disabled(ctx) : disabled
                 )}
                 @click=${() => run?.(ctx)}
               >
-                ${icon}<span class="label">${label}</span>
+                ${icon}<span class="label"
+                  >${label && ctx.translate(label)}</span
+                >
               </editor-menu-action>
             `
           )}

@@ -191,7 +191,7 @@ export const connectorToolbarConfig = {
         return html`
           <edgeless-color-picker-button
             class="stroke-color"
-            .label="${'Stroke style'}"
+            .label="${ctx.translate('Stroke style')}"
             .pick=${onPickColor}
             .color=${stroke}
             .theme=${theme}
@@ -232,6 +232,7 @@ export const connectorToolbarConfig = {
         };
 
         return renderMenu({
+          translate: ctx.translate,
           label: 'Style',
           items: LINE_STYLE_LIST,
           currentValue: rough,
@@ -256,6 +257,7 @@ export const connectorToolbarConfig = {
             };
 
             return renderMenu({
+              translate: ctx.translate,
               label: 'Start point style',
               items: FRONT_ENDPOINT_STYLE_LIST,
               currentValue: pointStyle,
@@ -302,6 +304,7 @@ export const connectorToolbarConfig = {
             };
 
             return renderMenu({
+              translate: ctx.translate,
               label: 'End point style',
               items: REAR_ENDPOINT_STYLE_LIST,
               currentValue: pointStyle,
@@ -323,6 +326,7 @@ export const connectorToolbarConfig = {
             };
 
             return renderMenu({
+              translate: ctx.translate,
               label: 'Shape',
               tooltip: 'Connector shape',
               items: CONNECTOR_MODE_LIST,

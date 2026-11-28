@@ -173,7 +173,7 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
       </button>
       <affine-tooltip tip-position="top" .offset=${12}>
         <affine-tooltip-content-with-shortcut
-          data-tip="${'Support import of FreeMind,OPML.'}"
+          data-tip="${this.labelFor('Support import of FreeMind,OPML.')}"
         ></affine-tooltip-content-with-shortcut>
       </affine-tooltip>
     </div>`;
@@ -305,7 +305,7 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
           </button>
           <affine-tooltip tip-position="top" .offset=${12}>
             <affine-tooltip-content-with-shortcut
-              data-tip="${'Add media'}"
+              data-tip="${this.labelFor('Add media')}"
             ></affine-tooltip-content-with-shortcut>
           </affine-tooltip>
         </div>
@@ -338,7 +338,7 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
           </button>
           <affine-tooltip tip-position="top" .offset=${12}>
             <affine-tooltip-content-with-shortcut
-              data-tip="${'Edgeless Text'}"
+              data-tip="${this.labelFor('Edgeless Text')}"
               data-shortcup="${'T'}"
             ></affine-tooltip-content-with-shortcut>
           </affine-tooltip>
@@ -386,7 +386,7 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
               </button>
               <affine-tooltip tip-position="top" .offset=${12}>
                 <affine-tooltip-content-with-shortcut
-                  data-tip="${'Mind Map'}"
+                  data-tip="${this.labelFor('Mind Map')}"
                   data-shortcup="${'M'}"
                 ></affine-tooltip-content-with-shortcut>
               </affine-tooltip>

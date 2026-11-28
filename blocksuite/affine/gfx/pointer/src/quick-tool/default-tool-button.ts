@@ -83,7 +83,7 @@ export class EdgelessDefaultToolButton extends QuickToolMixin(LitElement) {
       <edgeless-tool-icon-button
         class="edgeless-default-button ${type}"
         .tooltip=${html`<affine-tooltip-content-with-shortcut
-          data-tip="${tipInfo.tip}"
+          data-tip="${this.labelFor(tipInfo.tip)}"
           data-shortcut="${tipInfo.shortcut}"
         ></affine-tooltip-content-with-shortcut>`}
         .tooltipOffset=${17}

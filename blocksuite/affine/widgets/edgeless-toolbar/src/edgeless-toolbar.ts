@@ -15,6 +15,7 @@ import {
 import { ColorScheme, type RootBlockModel } from '@blocksuite/affine-model';
 import {
   EditPropsStore,
+  getEditorLabel,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
@@ -509,6 +510,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
   }
 
   private _renderContent() {
+    const translate = getEditorLabel(this.std);
     return html`
       <div class="quick-tools">
         ${this._quickTools
@@ -529,7 +531,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
         >
           ${MoreHorizontalIcon({ width: '20px', height: '20px' })}
           <affine-tooltip tip-position="top" .offset=${25}>
-            More Tools
+            ${translate('More Tools')}
           </affine-tooltip>
         </icon-button>
       </div>
@@ -545,7 +547,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
           ${cache(
             this._seniorPrevTooltip
               ? html` <affine-tooltip tip-position="top" .offset=${4}>
-                  ${this._seniorPrevTooltip}
+                  ${translate(this._seniorPrevTooltip)}
                 </affine-tooltip>`
               : nothing
           )}
@@ -572,7 +574,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
           ${cache(
             this._seniorNextTooltip
               ? html` <affine-tooltip tip-position="top" .offset=${4}>
-                  ${this._seniorNextTooltip}
+                  ${translate(this._seniorNextTooltip)}
                 </affine-tooltip>`
               : nothing
           )}

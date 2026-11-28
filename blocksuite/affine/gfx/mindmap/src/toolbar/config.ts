@@ -77,6 +77,7 @@ export const createMindmapStyleActionMenu = (
   };
 
   return renderMenu({
+    translate: ctx.translate,
     label: 'Style',
     icon: StyleIcon(),
     items: MINDMAP_STYLE_LIST,
@@ -100,6 +101,7 @@ export const createMindmapLayoutActionMenu = (
   };
 
   return renderMenu({
+    translate: ctx.translate,
     label: 'Layout',
     items: MINDMAP_LAYOUT_LIST,
     currentValue: layoutType,

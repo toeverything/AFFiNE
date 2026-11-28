@@ -125,7 +125,7 @@ export class EdgelessNoteMenu extends EdgelessToolbarToolMixin(LitElement) {
             <edgeless-tool-icon-button
               .activeMode=${'background'}
               .tooltip=${html`<affine-tooltip-content-with-shortcut
-                data-tip="${'Link'}"
+                data-tip="${this.labelFor('Link')}"
                 data-shortcut="${'@'}"
               ></affine-tooltip-content-with-shortcut>`}
               @click=${() => {

@@ -179,7 +179,7 @@ export class EdgelessPenToolButton extends EdgelessToolbarToolMixin(
           () => nothing,
           () =>
             html`<affine-tooltip-content-with-shortcut
-              data-tip="${tip}"
+              data-tip="${this.labelFor(tip)}"
               data-shortcut="${shortcut}"
             ></affine-tooltip-content-with-shortcut>`
         )}

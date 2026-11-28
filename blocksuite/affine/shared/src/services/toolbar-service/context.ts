@@ -16,6 +16,7 @@ import type {
   SelectionConstructor,
 } from '@blocksuite/store';
 
+import { getEditorLabel } from '../editor-labels';
 import { DocModeProvider } from '../doc-mode-service';
 import { EditPropsStore } from '../edit-props-store';
 import { FeatureFlagService } from '../feature-flag-service';
@@ -25,6 +26,10 @@ import { ToolbarRegistryIdentifier } from './registry';
 
 abstract class ToolbarContextBase {
   constructor(readonly std: BlockStdScope) {}
+
+  get translate() {
+    return getEditorLabel(this.std);
+  }
 
   get command() {
     return this.std.command;

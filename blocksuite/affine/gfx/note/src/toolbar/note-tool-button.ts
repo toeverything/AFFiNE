@@ -93,7 +93,7 @@ export class EdgelessNoteToolButton extends QuickToolMixin(LitElement) {
           this._noteMenu
             ? ''
             : html`<affine-tooltip-content-with-shortcut
-                data-tip="${'Note'}"
+                data-tip="${this.labelFor('Note')}"
                 data-shortcut="${'N'}"
               ></affine-tooltip-content-with-shortcut>`
         }

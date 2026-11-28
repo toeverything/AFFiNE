@@ -29,7 +29,7 @@ export class EdgelessFrameToolButton extends QuickToolMixin(LitElement) {
           this.popper
             ? ''
             : html`<affine-tooltip-content-with-shortcut
-                data-tip="${'Frame'}"
+                data-tip="${this.labelFor('Frame')}"
                 data-shortcut="${'F'}"
               ></affine-tooltip-content-with-shortcut>`
         }

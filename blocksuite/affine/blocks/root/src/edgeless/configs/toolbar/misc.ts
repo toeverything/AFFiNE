@@ -192,7 +192,8 @@ export const builtinMiscToolbarConfig = {
         const models = ctx.getSurfaceModels();
         if (!models.length) return null;
 
-        const { label, icon, tooltip } = this;
+        const { icon } = this;
+        const label = ctx.translate(this.label ?? 'Draw connector');
 
         const quickConnect = (e: MouseEvent) => {
           e.stopPropagation();
@@ -211,7 +212,7 @@ export const builtinMiscToolbarConfig = {
           <editor-icon-button
             data-testid="${'draw-connector'}"
             aria-label=${label}
-            .tooltip=${tooltip}
+            .tooltip=${label}
             @click=${quickConnect}
           >
             ${icon}

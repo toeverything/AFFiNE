@@ -81,8 +81,8 @@ const builtinSurfaceToolbarConfig = {
         );
         const label$ = computed(() =>
           firstModel.props.displayMode$.value === NoteDisplayMode.EdgelessOnly
-            ? 'Display in Page'
-            : 'Displayed in Page'
+            ? ctx.translate('Display in Page')
+            : ctx.translate('Displayed in Page')
         );
         const onSelect = () => {
           const newMode =
@@ -105,7 +105,7 @@ const builtinSurfaceToolbarConfig = {
           content: html`<editor-icon-button
             aria-label="${label$.value}"
             .showTooltip="${shouldShowTooltip$.value}"
-            .tooltip="${'This note is part of Page Mode. Click to remove it from the page.'}"
+            .tooltip="${ctx.translate('This note is part of Page Mode. Click to remove it from the page.')}"
             data-testid="display-in-page"
             @click=${() => onSelect()}
           >

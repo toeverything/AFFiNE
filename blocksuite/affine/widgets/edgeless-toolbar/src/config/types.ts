@@ -11,6 +11,7 @@ export type MenuItem<T> = {
 };
 
 export type Menu<T> = {
+  translate?: (label: string) => string;
   label: string;
   icon?: TemplateResult;
   tooltip?: string;

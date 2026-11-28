@@ -1,3 +1,4 @@
+import { getEditorLabel } from '@blocksuite/affine-shared/services';
 import type { ColorScheme } from '@blocksuite/affine-model';
 import {
   // oxlint-disable-next-line no-unused-vars
@@ -34,6 +35,8 @@ export declare abstract class EdgelessToolbarToolClass extends DisposableClass {
   createPopper: typeof createPopper;
 
   edgeless: BlockComponent;
+
+  readonly labelFor: (label: string) => string;
 
   edgelessTool: ToolOptionWithType;
 
@@ -78,6 +81,10 @@ export const EdgelessToolbarToolMixin = <T extends Constructor<LitElement>>(
           ? type.includes(activeType)
           : activeType === type
         : false;
+    }
+
+    get labelFor() {
+      return getEditorLabel(this.edgeless.std);
     }
 
     get gfx() {

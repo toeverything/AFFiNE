@@ -85,6 +85,7 @@ export const shapeToolbarConfig = {
         };
 
         return renderMenu({
+          translate: ctx.translate,
           icon: ShapeIcon(),
           label: 'Switch shape type',
           items: ShapeComponentConfig.map(item => ({
@@ -123,6 +124,7 @@ export const shapeToolbarConfig = {
         };
 
         return renderMenu({
+          translate: ctx.translate,
           label: 'Style',
           items: LINE_STYLE_LIST,
           currentValue: shapeStyle === ShapeStyle.Scribbled,

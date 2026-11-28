@@ -10,6 +10,8 @@
   "type": "module",
   "exports": {
     "./onboarding.zip": "./onboarding/onboarding.zip",
+    "./localize-snapshot": "./localize-snapshot.ts",
+    "./locales/zh-Hans": "./locales/zh-Hans.json",
     "./edgeless": "./edgeless-templates.gen.ts",
     "./stickers": "./stickers-templates.gen.ts",
     "./build-edgeless": "./build-edgeless.mjs"

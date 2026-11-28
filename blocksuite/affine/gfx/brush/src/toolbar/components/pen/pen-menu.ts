@@ -131,7 +131,7 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
           <edgeless-tool-icon-button
             class="edgeless-brush-button"
             .tooltip=${html`<affine-tooltip-content-with-shortcut
-              data-tip="${penInfoMap.brush.tip}"
+              data-tip="${this.labelFor(penInfoMap.brush.tip)}"
               data-shortcut="${penInfoMap.brush.shortcut}"
             ></affine-tooltip-content-with-shortcut>`}
             .tooltipOffset=${20}
@@ -150,7 +150,7 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
           <edgeless-tool-icon-button
             class="edgeless-highlighter-button"
             .tooltip=${html`<affine-tooltip-content-with-shortcut
-              data-tip="${penInfoMap.highlighter.tip}"
+              data-tip="${this.labelFor(penInfoMap.highlighter.tip)}"
               data-shortcut="${penInfoMap.highlighter.shortcut}"
             ></affine-tooltip-content-with-shortcut>`}
             .tooltipOffset=${20}

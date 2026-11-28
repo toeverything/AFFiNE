@@ -70,7 +70,7 @@ export const builtInTemplates = {
     return Object.keys(templates)
   },
 
-  search: async(query: string) => {
+  search: async(query: string, _category?: string, displayName?: (name: string) => string) => {
     const candidates: unknown[] = [];
     const cates = Object.keys(templates);
 
@@ -81,7 +81,8 @@ export const builtInTemplates = {
       const templatesOfCate = templates[cate];
 
       for(let temp of templatesOfCate) {
-        if(lcs(query, temp.name.toLowerCase()) === query.length) {
+        if(lcs(query, temp.name.toLowerCase()) === query.length ||
+           (displayName && lcs(query, displayName(temp.name).toLowerCase()) === query.length)) {
           candidates.push(temp);
         }
       }
