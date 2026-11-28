@@ -524,17 +524,29 @@ impl McpCredentialService {
     self.assert_workspace_writable_in(tx.tx_mut(), workspace_id).await?;
     lock_workspace_docs_ordered(tx.tx_mut(), workspace_id, &[&doc_id, workspace_id, &props_doc_id]).await?;
     let mut pushed = Vec::new();
-    let (effective_title, prop_creator, prop_editor) = if is_recover {
+    let (effective_title, page_meta, prop_creator, prop_editor) = if is_recover {
       let Some(existing) = load_and_merge_doc_exec(tx.tx_mut(), workspace_id, &doc_id).await? else {
         return Err(DomainError::NotFound(format!("Doc with id {doc_id} not found.")));
       };
       let (creator, editor) = resolve_recover_authors_in(tx.tx_mut(), workspace_id, &doc_id).await?;
-      let t = extract_title_from_yjs(&existing)
+      let parsed = crate::doc_meta::parse_page_doc_content(&existing, crate::doc_meta::DEFAULT_MAX_SUMMARY_LENGTH);
+      let t = parsed
+        .as_ref()
+        .map(|m| m.title.clone())
         .filter(|t| !t.trim().is_empty())
         .unwrap_or_else(|| title.to_owned());
-      (t, creator, editor)
+      let meta = crate::doc_meta::PageDocMeta {
+        title: t.clone(),
+        summary: parsed.map(|m| m.summary).unwrap_or_default(),
+      };
+      (t, meta, creator, editor)
     } else {
       let blob = new_blob.unwrap_or_default();
+      let parsed = crate::doc_meta::parse_page_doc_content(&blob, crate::doc_meta::DEFAULT_MAX_SUMMARY_LENGTH);
+      let meta = crate::doc_meta::PageDocMeta {
+        title: title.to_owned(),
+        summary: parsed.map(|m| m.summary).unwrap_or_default(),
+      };
       sqlx::query(
         r#"INSERT INTO snapshots (workspace_id, guid, blob, size, created_at, updated_at, created_by, updated_by)
            VALUES ($1, $2, $3, octet_length($3), clock_timestamp(), clock_timestamp(), $4, $4)"#,
@@ -547,7 +559,12 @@ impl McpCredentialService {
       .await
       .map_err(int_err("insert mcp document snapshot"))?;
       pushed.push((doc_id.clone(), blob));
-      (title.to_owned(), Some(user_id.to_owned()), Some(user_id.to_owned()))
+      (
+        title.to_owned(),
+        meta,
+        Some(user_id.to_owned()),
+        Some(user_id.to_owned()),
+      )
     };
     let now_ms = Utc::now().timestamp_millis();
     if !is_doc_lifecycle_active_in(tx.tx_mut()).await?
@@ -579,7 +596,9 @@ impl McpCredentialService {
     {
       pushed.push((props_doc_id, pd));
     }
-    upsert_workspace_page_in(tx.tx_mut(), workspace_id, &doc_id, &effective_title).await?;
+    crate::doc_meta::upsert_page_metadata_in(tx.tx_mut(), workspace_id, &doc_id, &page_meta)
+      .await
+      .map_err(db_err)?;
     tx.commit().await.map_err(int_err("commit create_document"))?;
     self.notify_doc_updates(workspace_id, user_id, pushed).await;
     Ok(doc_id)
@@ -613,9 +632,24 @@ impl McpCredentialService {
     let Some(merged) = load_and_merge_doc_exec(tx.tx_mut(), workspace_id, doc_id).await? else {
       return Ok(false);
     };
-    let delta = tokio::task::spawn_blocking(move || mutate(merged))
-      .await
-      .map_err(int_err("join mutate doc"))??;
+    let new_title_owned = new_title.map(str::to_owned);
+    let (delta, parsed_meta) = tokio::task::spawn_blocking(move || {
+      let base = merged.clone();
+      let delta = mutate(merged)?;
+      let parsed = if !delta.is_empty() {
+        y_octo::merge_updates_v1([base, delta.clone()])
+          .and_then(|u| u.encode_v1())
+          .ok()
+          .and_then(|full| crate::doc_meta::parse_page_doc_content(&full, crate::doc_meta::DEFAULT_MAX_SUMMARY_LENGTH))
+      } else if new_title_owned.is_some() {
+        crate::doc_meta::parse_page_doc_content(&base, crate::doc_meta::DEFAULT_MAX_SUMMARY_LENGTH)
+      } else {
+        None
+      };
+      Ok::<_, DomainError>((delta, parsed))
+    })
+    .await
+    .map_err(int_err("join mutate doc"))??;
     let mut pushed = Vec::new();
     if !delta.is_empty() {
       append_doc_update_in(tx.tx_mut(), workspace_id, doc_id, &delta, user_id).await?;
@@ -629,7 +663,22 @@ impl McpCredentialService {
       {
         pushed.push((workspace_id.to_owned(), rd));
       }
-      upsert_workspace_page_in(tx.tx_mut(), workspace_id, doc_id, title).await?;
+    }
+    if let Some(mut meta) = parsed_meta {
+      if let Some(title) = new_title {
+        meta.title = title.to_owned();
+      }
+      crate::doc_meta::upsert_page_metadata_in(tx.tx_mut(), workspace_id, doc_id, &meta)
+        .await
+        .map_err(db_err)?;
+    } else if let Some(title) = new_title {
+      let meta = crate::doc_meta::PageDocMeta {
+        title: title.to_owned(),
+        summary: String::new(),
+      };
+      crate::doc_meta::upsert_page_metadata_in(tx.tx_mut(), workspace_id, doc_id, &meta)
+        .await
+        .map_err(db_err)?;
     }
     if let Some(pd) = upsert_doc_properties_in(
       tx.tx_mut(),
@@ -991,18 +1040,6 @@ async fn upsert_doc_properties_in(
     return Ok(None);
   }
   finish_system_doc_in(tx, ws, props_id, existed, &doc, before_sv.as_deref(), actor).await
-}
-async fn upsert_workspace_page_in(
-  tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-  ws: &str,
-  doc_id: &str,
-  title: &str,
-) -> Result<(), DomainError> {
-  sqlx::query(
-    "INSERT INTO workspace_pages (workspace_id, page_id, mode, blocked, title) VALUES ($1, $2, 0, false, $3) ON CONFLICT (workspace_id, page_id) DO UPDATE SET title = EXCLUDED.title",
-  )
-  .bind(ws).bind(doc_id).bind(title).execute(&mut **tx).await.map_err(db_err)?;
-  Ok(())
 }
 fn row_to_view(row: sqlx::postgres::PgRow, now: DateTime<Utc>) -> McpCredentialView {
   let access_mode_str: String = row.get("access_mode");
@@ -1705,11 +1742,6 @@ fn extract_title_from_blocks(blocks: &y_octo::Map, page_id: &str) -> Option<Stri
     return None;
   };
   Some(t.to_string())
-}
-fn extract_title_from_yjs(blob: &[u8]) -> Option<String> {
-  let doc = y_octo::Doc::try_from_binary_v1(blob).ok()?;
-  let blocks = doc.get_or_create_map("blocks").ok()?;
-  extract_title_from_blocks(&blocks, &find_single_page_id(&blocks).ok()?)
 }
 fn render_list_lines(
   blocks: &y_octo::Map,

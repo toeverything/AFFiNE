@@ -14,6 +14,7 @@ use sqlx::{Postgres, Row, Transaction};
 use tokio::sync::Semaphore;
 
 use crate::acl::load_workspace_docs_access_in;
+use crate::doc_meta::{ParsedDocMeta, apply_parsed_doc_metadata_in, parse_doc_metadata};
 use crate::doc_sharing::{DocSharingService, is_empty_doc_bin};
 
 #[derive(Clone, Debug)]
@@ -433,6 +434,7 @@ struct Phase2Merged {
   final_blob: Vec<u8>,
   prev_snapshot_is_empty: bool,
   blob_changed: bool,
+  parsed_meta: ParsedDocMeta,
 }
 
 enum Phase3Outcome {
@@ -525,6 +527,8 @@ where
       }
       merge_inputs.extend(phase1.updates.iter().map(|u| u.blob.clone()));
       let prev_blob = phase1.snapshot.as_ref().map(|s| s.blob.clone());
+      let ws_owned = workspace_id.to_owned();
+      let doc_owned = doc_id.to_owned();
       run_blocking_with_merge_permit(compaction_merge_semaphore(), move || {
         let final_blob = if merge_inputs.len() == 1 {
           merge_inputs.remove(0)
@@ -535,10 +539,12 @@ where
         };
         let prev_snapshot_is_empty = prev_blob.as_deref().is_none_or(is_empty_doc_bin);
         let blob_changed = prev_blob.as_deref().is_none_or(|prev| prev != final_blob.as_slice());
+        let parsed_meta = parse_doc_metadata(&ws_owned, &doc_owned, &final_blob);
         Ok(Phase2Merged {
           final_blob,
           prev_snapshot_is_empty,
           blob_changed,
+          parsed_meta,
         })
       })
       .await?
@@ -923,6 +929,10 @@ async fn commit_compaction_phase3(
       .await
       .map_err(map_phase3_sqlx("reset workspace last_check_embeddings"))?;
   }
+
+  apply_parsed_doc_metadata_in(tx, workspace_id, doc_id, &phase2.parsed_meta)
+    .await
+    .map_err(map_phase3_sqlx("backfill compacted doc metadata"))?;
 
   let mut history_created = false;
   if let Some(snap) = &phase1.snapshot
@@ -1443,6 +1453,300 @@ mod tests {
           .await
           .expect("count remaining updates");
       assert_eq!(remaining_updates, 1, "updates must be preserved when snapshot write does not apply");
+    });
+    drop(lease);
+  }
+
+  fn build_synthetic_root_doc(name: &str, avatar: &str) -> Vec<u8> {
+    let doc = y_octo::Doc::with_client(401);
+    let mut meta = doc.get_or_create_map("meta").unwrap();
+    meta
+      .insert("name".to_owned(), y_octo::Any::String(name.to_owned()))
+      .unwrap();
+    meta
+      .insert("avatar".to_owned(), y_octo::Any::String(avatar.to_owned()))
+      .unwrap();
+    doc.encode_update_v1().unwrap()
+  }
+
+  fn build_synthetic_page_doc(title: &str, paragraphs: &[&str]) -> Vec<u8> {
+    let doc = y_octo::Doc::with_client(402);
+    let mut blocks = doc.get_or_create_map("blocks").unwrap();
+
+    let mut page = doc.create_map().unwrap();
+    page
+      .insert("sys:id".to_owned(), y_octo::Any::String("page-1".into()))
+      .unwrap();
+    page
+      .insert("sys:flavour".to_owned(), y_octo::Any::String("affine:page".into()))
+      .unwrap();
+    let mut title_text = doc.create_text().unwrap();
+    title_text.insert(0, title).unwrap();
+    page.insert("prop:title".to_owned(), title_text).unwrap();
+    let mut page_children = doc.create_array().unwrap();
+    page_children.push(y_octo::Any::String("note-1".into())).unwrap();
+    page.insert("sys:children".to_owned(), page_children).unwrap();
+    blocks.insert("page-1".to_owned(), page).unwrap();
+
+    let mut note = doc.create_map().unwrap();
+    note
+      .insert("sys:id".to_owned(), y_octo::Any::String("note-1".into()))
+      .unwrap();
+    note
+      .insert("sys:flavour".to_owned(), y_octo::Any::String("affine:note".into()))
+      .unwrap();
+    let mut note_children = doc.create_array().unwrap();
+    // Nested affine:list (parent -> child) before top-level paragraphs verifies pre-order DFS order.
+    note_children.push(y_octo::Any::String("list-parent".into())).unwrap();
+    let mut list_parent = doc.create_map().unwrap();
+    list_parent
+      .insert("sys:id".to_owned(), y_octo::Any::String("list-parent".into()))
+      .unwrap();
+    list_parent
+      .insert("sys:flavour".to_owned(), y_octo::Any::String("affine:list".into()))
+      .unwrap();
+    let mut lp_text = doc.create_text().unwrap();
+    lp_text.insert(0, "L1:").unwrap();
+    list_parent.insert("prop:text".to_owned(), lp_text).unwrap();
+    let mut lp_children = doc.create_array().unwrap();
+    lp_children.push(y_octo::Any::String("list-child".into())).unwrap();
+    list_parent.insert("sys:children".to_owned(), lp_children).unwrap();
+    blocks.insert("list-parent".to_owned(), list_parent).unwrap();
+
+    let mut list_child = doc.create_map().unwrap();
+    list_child
+      .insert("sys:id".to_owned(), y_octo::Any::String("list-child".into()))
+      .unwrap();
+    list_child
+      .insert("sys:flavour".to_owned(), y_octo::Any::String("affine:list".into()))
+      .unwrap();
+    let mut lc_text = doc.create_text().unwrap();
+    lc_text.insert(0, "L1a;").unwrap();
+    list_child.insert("prop:text".to_owned(), lc_text).unwrap();
+    blocks.insert("list-child".to_owned(), list_child).unwrap();
+
+    for (idx, body) in paragraphs.iter().enumerate() {
+      let para_id = format!("para-{idx}");
+      note_children.push(y_octo::Any::String(para_id.clone())).unwrap();
+      let mut para = doc.create_map().unwrap();
+      para
+        .insert("sys:id".to_owned(), y_octo::Any::String(para_id.clone()))
+        .unwrap();
+      para
+        .insert("sys:flavour".to_owned(), y_octo::Any::String("affine:paragraph".into()))
+        .unwrap();
+      let mut p_text = doc.create_text().unwrap();
+      p_text.insert(0, body).unwrap();
+      para.insert("prop:text".to_owned(), p_text).unwrap();
+      blocks.insert(para_id, para).unwrap();
+    }
+    note.insert("sys:children".to_owned(), note_children).unwrap();
+    blocks.insert("note-1".to_owned(), note).unwrap();
+
+    doc.encode_update_v1().unwrap()
+  }
+
+  #[test]
+  fn compaction_backfills_workspace_and_page_metadata_without_touching_reserved_or_deleted_docs() {
+    let cluster = test_db_harness::pg::PgCluster::from_env_or_docker().expect("test postgres cluster");
+    let migrations_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+    let migrations = test_db_harness::migrations::MigrationSet::load(&migrations_dir).expect("load migrations");
+    let template = cluster.ensure_template(&migrations).expect("ensure template");
+    let lease = cluster
+      .lease(&template, test_db_harness::pg::DEFAULT_LEASE_TTL)
+      .expect("lease test db");
+    let db_url = lease.url().to_owned();
+
+    let rt = tokio::runtime::Builder::new_current_thread()
+      .enable_all()
+      .build()
+      .expect("runtime");
+    rt.block_on(async move {
+      let db = ServerDb::connect(DbConfig {
+        database_url: db_url,
+        channel: "canary".into(),
+        role: server_types::ServerRole::Allinone,
+        selfhosted: true,
+        max_connections: 4,
+        statement_timeout_ms: 5_000,
+        tier_permits: [8, 4, 2, 2],
+      })
+      .await
+      .expect("connect db");
+      sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+        .execute(db.pool())
+        .await
+        .expect("reset schema");
+      db.ensure_schema_ready().await.expect("ensure schema");
+
+      let user_id = Uuid::new_v4().to_string();
+      let ws_compact = format!("ws-compact-{}", Uuid::new_v4().simple());
+      sqlx::query("INSERT INTO users (id, name, email) VALUES ($1, 'Author', 'meta@example.com')")
+        .bind(&user_id)
+        .execute(db.pool())
+        .await
+        .unwrap();
+      sqlx::query("INSERT INTO workspaces (id) VALUES ($1)")
+        .bind(&ws_compact)
+        .execute(db.pool())
+        .await
+        .unwrap();
+
+      let t0 = Utc::now() - Duration::seconds(60);
+      let root_bin = build_synthetic_root_doc("Synthetic Workspace", "avatar-key-1");
+      let para1 = "a".repeat(120);
+      let para2 = "b".repeat(60);
+      let para3 = "c".repeat(40);
+      let page_bin = build_synthetic_page_doc("Synthetic Page Title", &[&para1, &para2, &para3]);
+      let db_sys_doc = format!("db${ws_compact}$docProperties");
+      let userdata_doc = format!("userdata${user_id}${ws_compact}$favorite");
+
+      // Pre-populate a deleted page row that must never be resurrected.
+      sqlx::query(
+        "INSERT INTO workspace_pages (workspace_id, page_id, title, summary, lifecycle_state)
+         VALUES ($1, 'doc-deleted', 'Old Deleted', 'old', 'deleted')",
+      )
+      .bind(&ws_compact)
+      .execute(db.pool())
+      .await
+      .unwrap();
+
+      for (guid, blob) in [
+        (ws_compact.as_str(), root_bin.as_slice()),
+        ("doc-ordinary", page_bin.as_slice()),
+        ("doc-deleted", page_bin.as_slice()),
+        (db_sys_doc.as_str(), page_bin.as_slice()),
+        (userdata_doc.as_str(), page_bin.as_slice()),
+      ] {
+        sqlx::query(
+          "INSERT INTO updates (workspace_id, guid, blob, created_at, created_by)
+           VALUES ($1, $2, $3, $4, $5)",
+        )
+        .bind(&ws_compact)
+        .bind(guid)
+        .bind(blob)
+        .bind(t0)
+        .bind(&user_id)
+        .execute(db.pool())
+        .await
+        .unwrap();
+      }
+
+      let quota = server_spi::CommunityQuotaGate::new();
+      let compacted = compact_pending_docs_batch(&db, &quota, 100, 500, 600_000, || false)
+        .await
+        .expect("compact batch");
+      assert_eq!(compacted, 4, "deleted doc is skipped; 4 active docs compact");
+
+      let (ws_name, ws_avatar): (Option<String>, Option<String>) =
+        sqlx::query_as("SELECT name, avatar_key FROM workspaces WHERE id = $1")
+          .bind(&ws_compact)
+          .fetch_one(db.pool())
+          .await
+          .unwrap();
+      assert_eq!(ws_name.as_deref(), Some("Synthetic Workspace"));
+      assert_eq!(ws_avatar.as_deref(), Some("avatar-key-1"));
+
+      // Pre-order DFS: L1: (3) + L1a; (4) + para1 (120) + para2 (60) -> remaining drops below 0, so para3 is NOT appended.
+      let expected_summary = format!("L1:L1a;{para1}{para2}");
+      let (page_title, page_summary): (Option<String>, Option<String>) =
+        sqlx::query_as("SELECT title, summary FROM workspace_pages WHERE workspace_id = $1 AND page_id = 'doc-ordinary'")
+          .bind(&ws_compact)
+          .fetch_one(db.pool())
+          .await
+          .unwrap();
+      assert_eq!(page_title.as_deref(), Some("Synthetic Page Title"));
+      assert_eq!(page_summary.as_deref(), Some(expected_summary.as_str()));
+
+      // Reserved docs must not appear in workspace_pages.
+      let reserved_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::bigint FROM workspace_pages WHERE workspace_id = $1 AND page_id = ANY($2)",
+      )
+      .bind(&ws_compact)
+      .bind(vec![ws_compact.clone(), db_sys_doc.clone(), userdata_doc.clone()])
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+      assert_eq!(reserved_count, 0);
+
+      // Deleted doc remains deleted with original metadata untouched.
+      let (del_state, del_title): (String, Option<String>) = sqlx::query_as(
+        "SELECT lifecycle_state::text, title FROM workspace_pages WHERE workspace_id = $1 AND page_id = 'doc-deleted'",
+      )
+      .bind(&ws_compact)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+      assert_eq!(del_state, "deleted");
+      assert_eq!(del_title.as_deref(), Some("Old Deleted"));
+
+      // Second compaction on doc-ordinary must preserve existing mode and published_at.
+      let pub_ts = Utc::now() - Duration::hours(1);
+      sqlx::query(
+        "UPDATE workspace_pages SET mode = 1, published_at = $2 WHERE workspace_id = $1 AND page_id = 'doc-ordinary'",
+      )
+      .bind(&ws_compact)
+      .bind(pub_ts)
+      .execute(db.pool())
+      .await
+      .unwrap();
+      let mut updated_doc = y_octo::Doc::with_client(403);
+      updated_doc.apply_update_from_binary_v1(&page_bin).unwrap();
+      let sv = updated_doc.get_state_vector();
+      {
+        let blocks = updated_doc.get_or_create_map("blocks").unwrap();
+        if let Some(y_octo::Value::Map(mut page)) = blocks.get("page-1") {
+          let mut new_title = updated_doc.create_text().unwrap();
+          new_title.insert(0, "Updated Page Title").unwrap();
+          page.insert("prop:title".to_owned(), new_title).unwrap();
+        }
+        if let Some(y_octo::Value::Map(mut note)) = blocks.get("note-1") {
+          let mut new_children = updated_doc.create_array().unwrap();
+          new_children.push(y_octo::Any::String("para-fresh".into())).unwrap();
+          note.insert("sys:children".to_owned(), new_children).unwrap();
+        }
+        let mut fresh_para = updated_doc.create_map().unwrap();
+        fresh_para
+          .insert("sys:id".to_owned(), y_octo::Any::String("para-fresh".into()))
+          .unwrap();
+        fresh_para
+          .insert(
+            "sys:flavour".to_owned(),
+            y_octo::Any::String("affine:paragraph".into()),
+          )
+          .unwrap();
+        let mut fresh_text = updated_doc.create_text().unwrap();
+        fresh_text.insert(0, "fresh summary").unwrap();
+        fresh_para.insert("prop:text".to_owned(), fresh_text).unwrap();
+        let mut blocks = updated_doc.get_or_create_map("blocks").unwrap();
+        blocks.insert("para-fresh".to_owned(), fresh_para).unwrap();
+      }
+      let updated_page_bin = updated_doc.encode_state_as_update_v1(&sv).unwrap();
+      sqlx::query(
+        "INSERT INTO updates (workspace_id, guid, blob, created_at, created_by)
+         VALUES ($1, 'doc-ordinary', $2, $3, $4)",
+      )
+      .bind(&ws_compact)
+      .bind(&updated_page_bin)
+      .bind(Utc::now())
+      .bind(&user_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+      compact_pending_doc_updates(&db, &ws_compact, "doc-ordinary", 100, 0, 0)
+        .await
+        .expect("second compaction");
+      let (title2, summary2, mode2, pub2): (Option<String>, Option<String>, i16, Option<DateTime<Utc>>) = sqlx::query_as(
+        "SELECT title, summary, mode, published_at FROM workspace_pages WHERE workspace_id = $1 AND page_id = 'doc-ordinary'",
+      )
+      .bind(&ws_compact)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+      assert_eq!(title2.as_deref(), Some("Updated Page Title"));
+      assert_eq!(summary2.as_deref(), Some("fresh summary"));
+      assert_eq!(mode2, 1);
+      assert!(pub2.is_some());
     });
     drop(lease);
   }

@@ -1037,3 +1037,147 @@ fn reconcile_cleans_only_ownerless_workspaces_older_than_24h_and_their_orphan_ro
     );
   });
 }
+
+#[test]
+fn blob_manifests_handle_large_workspace_root_doc() {
+  let lease = leased_0275_database();
+  runtime().block_on(async {
+    let db = ServerDb::connect(DbConfig::new(lease.url())).await.expect("connect db");
+    sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+      .execute(db.pool())
+      .await
+      .expect("reset schema");
+    db.ensure_schema_ready().await.expect("ensure schema ready");
+
+    let dir = std::env::temp_dir().join(format!("server-blob-manifest-{}", uuid::Uuid::new_v4().simple()));
+    let _guard = TempDir(dir.clone());
+    let storage = Arc::new(LocalFsBlobStorage::new(dir.to_str().unwrap(), "blobs").unwrap());
+
+    let owner_id = format!("owner-{}", uuid::Uuid::new_v4().simple());
+    let ws_id = format!("ws-{}", uuid::Uuid::new_v4().simple());
+    sqlx::query("INSERT INTO users (id, name, email) VALUES ($1, 'Owner', $2)")
+      .bind(&owner_id)
+      .bind(format!("{owner_id}@example.test"))
+      .execute(db.pool())
+      .await
+      .unwrap();
+    sqlx::query("INSERT INTO workspaces (id) VALUES ($1)")
+      .bind(&ws_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO workspace_members (id, workspace_id, user_id, role, source, state, created_at, updated_at)
+       VALUES ($1, $2, $3, 'owner', 'legacy', 'active', now(), now())",
+    )
+    .bind(uuid::Uuid::new_v4().to_string())
+    .bind(&ws_id)
+    .bind(&owner_id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+
+    // Build a synthetic >1.5 MiB workspace root doc with 1,300 meta.pages entries and meta.avatar.
+    let root_doc = y_octo::Doc::with_client(301);
+    let mut meta = root_doc.get_or_create_map("meta").unwrap();
+    meta
+      .insert("avatar".to_owned(), y_octo::Any::String("avatar-large-root".into()))
+      .unwrap();
+    let mut pages = root_doc.create_array().unwrap();
+    let pad = "p".repeat(1_200);
+    for idx in 0..1_300 {
+      let mut entry = root_doc.create_map().unwrap();
+      entry
+        .insert("id".to_owned(), y_octo::Any::String(format!("synthetic-page-{idx:04}")))
+        .unwrap();
+      entry
+        .insert("title".to_owned(), y_octo::Any::String(format!("Title {idx:04} {pad}")))
+        .unwrap();
+      pages.push(entry).unwrap();
+    }
+    meta.insert("pages".to_owned(), pages).unwrap();
+    let root_bin = root_doc.encode_update_v1().unwrap();
+    assert!(
+      root_bin.len() > 1_500_000,
+      "synthetic root doc must exceed 1.5 MiB, got {} bytes",
+      root_bin.len()
+    );
+
+    // Build a valid page doc with one image blob reference.
+    let img_doc = y_octo::Doc::with_client(302);
+    let mut blocks = img_doc.get_or_create_map("blocks").unwrap();
+    let mut page = img_doc.create_map().unwrap();
+    page
+      .insert("sys:id".to_owned(), y_octo::Any::String("page-root".into()))
+      .unwrap();
+    page
+      .insert("sys:flavour".to_owned(), y_octo::Any::String("affine:page".into()))
+      .unwrap();
+    let mut children = img_doc.create_array().unwrap();
+    children.push(y_octo::Any::String("img-block".into())).unwrap();
+    page.insert("sys:children".to_owned(), children).unwrap();
+    blocks.insert("page-root".to_owned(), page).unwrap();
+
+    let mut img = img_doc.create_map().unwrap();
+    img
+      .insert("sys:id".to_owned(), y_octo::Any::String("img-block".into()))
+      .unwrap();
+    img
+      .insert("sys:flavour".to_owned(), y_octo::Any::String("affine:image".into()))
+      .unwrap();
+    img
+      .insert("prop:sourceId".to_owned(), y_octo::Any::String("blob-valid-img".into()))
+      .unwrap();
+    blocks.insert("img-block".to_owned(), img).unwrap();
+    let img_doc_bin = img_doc.encode_update_v1().unwrap();
+
+    for (guid, bin) in [
+      (ws_id.as_str(), root_bin.as_slice()),
+      ("doc-valid-img", img_doc_bin.as_slice()),
+    ] {
+      sqlx::query("INSERT INTO snapshots (workspace_id, guid, blob, size, created_at, updated_at) VALUES ($1, $2, $3, $4, now(), now())")
+        .bind(&ws_id)
+        .bind(guid)
+        .bind(bin)
+        .bind(bin.len() as i64)
+        .execute(db.pool())
+        .await
+        .unwrap();
+    }
+
+    let service = BlobService::new(
+      db.clone(),
+      storage,
+      Arc::new(FixedQuotaGate {
+        blob_limit: 1 << 20,
+        storage_quota: 1 << 30,
+        seat_limit: 10,
+      }),
+    );
+    service
+      .put_blob(&ws_id, "avatar-large-root", "image/png", b"png-avatar".to_vec())
+      .await
+      .unwrap();
+    service
+      .put_blob(&ws_id, "blob-valid-img", "image/png", b"png-image".to_vec())
+      .await
+      .unwrap();
+
+    let root_manifest = service
+      .get_doc_blob_manifest(&ws_id, "currentDoc", &ws_id, None, Some(&owner_id))
+      .await
+      .expect("large workspace root doc manifest must succeed");
+    assert_eq!(
+      root_manifest.iter().map(|e| e.key.as_str()).collect::<Vec<_>>(),
+      vec!["avatar-large-root"]
+    );
+
+    let readable = service
+      .get_readable_blob_manifest(&ws_id, &owner_id, None, 100)
+      .await
+      .expect("readable blob manifest with large workspace root doc must succeed");
+    let mut keys: Vec<&str> = readable.entries.iter().map(|e| e.key.as_str()).collect();
+    keys.sort();
+    assert_eq!(keys, vec!["avatar-large-root", "blob-valid-img"]);
+  });
+}

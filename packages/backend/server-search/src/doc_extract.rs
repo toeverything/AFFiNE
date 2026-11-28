@@ -13,6 +13,14 @@ use crate::error::{SearchError, SearchResult};
 const MAX_SOURCE_BINARY_BYTES: usize = 32 * 1024 * 1024;
 const MAX_SOURCE_BLOCKS: usize = 100_000;
 const MAX_CHILDREN_PER_BLOCK: u64 = 10_000;
+const SEARCH_DOC_READ_LIMITS: y_octo::ReadLimits = y_octo::ReadLimits {
+  max_input_bytes: 256 * 1024 * 1024,
+  max_structs: 16_000_000,
+  max_clients: 200_000,
+  max_collection_entries: 32_000_000,
+  max_any_depth: y_octo::Any::DEFAULT_MAX_DEPTH,
+  max_content_bytes: 256 * 1024 * 1024,
+};
 /// The most text bytes that one container takes from its children.
 const MAX_DESCENDANT_TEXT_BYTES: usize = 1024 * 1024;
 /// Flavours that the `v0.27.5` server indexes with no text.
@@ -90,8 +98,19 @@ pub fn project_document_search(blob: Vec<u8>, doc_id: String) -> SearchResult<Do
     ));
   }
   let source_hash = hex_sha256(&blob);
-  let doc = ReadDoc::from_full_update_v1(blob)
-    .map_err(|error| SearchError::SourceInvalid(format!("document decode failed: {error}")))?;
+  let doc = match ReadDoc::from_full_update_v1_with_limits(blob.clone(), SEARCH_DOC_READ_LIMITS) {
+    Ok(doc) => doc,
+    Err(y_octo::ReadError::IncompleteSnapshot(_)) => {
+      let decoded = Doc::try_from_binary_v1(&blob)
+        .map_err(|error| SearchError::SourceInvalid(format!("document decode failed: {error}")))?;
+      let encoded = decoded
+        .encode_update_v1()
+        .map_err(|error| SearchError::SourceInvalid(format!("document re-encode failed: {error}")))?;
+      ReadDoc::from_full_update_v1_with_limits(encoded, SEARCH_DOC_READ_LIMITS)
+        .map_err(|error| SearchError::SourceInvalid(format!("document decode failed: {error}")))?
+    }
+    Err(error) => return Err(SearchError::SourceInvalid(format!("document decode failed: {error}"))),
+  };
 
   let mut title = String::new();
   let mut units = Vec::new();

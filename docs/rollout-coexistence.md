@@ -61,10 +61,18 @@ Trigger and fence rules:
 2. Multi-workspace permission updates lock workspace keys in `LEAST` then `GREATEST` order to prevent deadlocks.
 3. The two-step `fenceXid` discovery fence requires writers to use `READ COMMITTED` isolation.
 4. In steady state, ordinary document snapshot writes skip redundant updates to `search_projection.workspace_states`.
-5. Generation creation and activation take only `search-projection-lifecycle`.
+5. Generation creation and activation take `search-projection-generation` to serialize with `v0.27.5`.
 
 Orphan GC takes only `search-projection-ws:<workspace_id>` with a `source_version <= H` bound.
 If all `server-search` workers stop, triggers revert to the global shared lock after 90 seconds.
 Set `idle_in_transaction_session_timeout` to `>= 60s` on the legacy database role.
 `v0.27.5` lazy compaction can wait up to 60 seconds for a Redis lock.
 This timeout still bounds idle transactions that stall `pg_snapshot_xmin`.
+
+## 7. Mixed-Stack Runtime Constraints
+
+These rules apply when `affine-server` runs beside the current `beta` or `stable` release from `canary`.
+
+1. Socket.IO clients must use the `websocket` transport during mixed runs and traffic cutover. `affine-server` returns HTTP `400` for Engine.IO HTTP `polling` requests.
+2. Do not run `AFFINE_INDEXER_PROVIDER=embedded` on both Node and `affine-server` against the same PostgreSQL database. Use shared external `elasticsearch` or `manticoresearch`, or enable search on one stack only.
+3. During mixed runs, the Prometheus metric `sync_active_users_minutely` reports active connections on the local server stack only. Counts converge after full traffic cutover.

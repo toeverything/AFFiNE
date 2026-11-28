@@ -112,9 +112,18 @@ pub fn is_empty_doc_bin(bin: &[u8]) -> bool {
   bin.is_empty() || (bin.len() == 1 && bin[0] == 0) || (bin.len() == 2 && bin[0] == 0 && bin[1] == 0)
 }
 
+const ROOT_DOC_READ_LIMITS: y_octo::ReadLimits = y_octo::ReadLimits {
+  max_input_bytes: 256 * 1024 * 1024,
+  max_structs: 16_000_000,
+  max_clients: 200_000,
+  max_collection_entries: 32_000_000,
+  max_any_depth: y_octo::Any::DEFAULT_MAX_DEPTH,
+  max_content_bytes: 256 * 1024 * 1024,
+};
+
 /// Extracts logical `pageId -> subdoc guid` aliases from a workspace root doc.
 pub fn extract_root_doc_id_aliases(root_doc_bin: &[u8]) -> Result<HashMap<String, String>, DomainError> {
-  extract_root_doc_id_aliases_with_limits(root_doc_bin, y_octo::ReadLimits::default())
+  extract_root_doc_id_aliases_with_limits(root_doc_bin, ROOT_DOC_READ_LIMITS)
 }
 
 fn extract_root_doc_id_aliases_with_limits(

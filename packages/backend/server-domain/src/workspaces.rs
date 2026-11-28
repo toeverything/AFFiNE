@@ -3705,13 +3705,28 @@ impl y_octo_core::decoder_v1::V1Sink for RejectZeroLengthSink {
   }
 }
 
+const WORKSPACE_INIT_READ_LIMITS: y_octo::ReadLimits = y_octo::ReadLimits {
+  max_input_bytes: 256 * 1024 * 1024,
+  max_structs: 16_000_000,
+  max_clients: 200_000,
+  max_collection_entries: 32_000_000,
+  max_any_depth: y_octo::Any::DEFAULT_MAX_DEPTH,
+  max_content_bytes: 256 * 1024 * 1024,
+};
+
 fn validate_workspace_init_update(bytes: &[u8]) -> Result<(), DomainError> {
   const MAX_INIT_BYTES: usize = 16 * 1024 * 1024;
   if bytes.len() > MAX_INIT_BYTES {
     return Err(DomainError::Validation("workspace init document is too large".into()));
   }
-  y_octo::ReadDoc::from_full_update_v1(bytes.to_vec())
-    .map_err(|err| DomainError::Validation(format!("invalid Yjs document update: {err}")))?;
+  match y_octo::ReadDoc::from_full_update_v1_with_limits(bytes.to_vec(), WORKSPACE_INIT_READ_LIMITS) {
+    Ok(_) => {}
+    Err(y_octo::ReadError::IncompleteSnapshot(_)) => {
+      y_octo::Doc::try_from_binary_v1(bytes)
+        .map_err(|err| DomainError::Validation(format!("invalid Yjs document update: {err}")))?;
+    }
+    Err(err) => return Err(DomainError::Validation(format!("invalid Yjs document update: {err}"))),
+  }
 
   let mut sink = RejectZeroLengthSink::default();
   let limits = y_octo_core::decoder_v1::DecodeLimitsCore::default_update();

@@ -158,7 +158,7 @@ fn cross_workspace_writes_do_not_block_on_generation_or_gc() {
       .unwrap();
     assert!(matches!(orphan_hw, OrphanGcFence::Ready(_)));
 
-    // 2) Generation ensure (search-projection-lifecycle) succeeds immediately.
+    // 2) Generation ensure (search-projection-generation) succeeds immediately under lockless_v2.
     tokio::time::timeout(Duration::from_secs(2), runtime.initialize())
       .await
       .expect("generation ensure must not block on workspace A write")
@@ -2195,6 +2195,124 @@ fn bridge_window_defers_deleted_workspace_gc_until_lease_recovers() {
       ws_state_after, 0,
       "deleted workspace_states row must converge and be removed"
     );
+
+    db.pool().close().await;
+  });
+}
+
+#[test]
+fn generation_ensure_and_activate_serialize_on_search_projection_generation_lock() {
+  let _xmin_guard = PRIVATE_CLUSTER_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+  let cluster = private_cluster();
+  let empty = EmptyDbGuard::create(&cluster, "s_genlock");
+
+  test_runtime().block_on(async {
+    let db = setup_db(&empty.url).await;
+    let pool = db.pool().clone();
+    let config = enabled_search_config();
+
+    // 1. Hold exclusive advisory lock on 'search-projection-generation' and verify generation::ensure waits.
+    let mut lock_tx = pool.begin().await.unwrap();
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+      .bind("search-projection-generation")
+      .execute(&mut *lock_tx)
+      .await
+      .unwrap();
+
+    let ensure_pool = pool.clone();
+    let ensure_cfg = config.clone();
+    let mut ensure_handle =
+      tokio::spawn(async move { server_search::generation::ensure(&ensure_pool, &ensure_cfg, None, false).await });
+
+    // Wait deterministically until PG reports a blocked waiter on the advisory lock.
+    let waiter_seen = tokio::time::timeout(Duration::from_secs(5), async {
+      loop {
+        let blocked: bool = sqlx::query_scalar(
+          "SELECT EXISTS (
+             SELECT 1 FROM pg_locks
+             WHERE locktype = 'advisory' AND NOT granted
+           )",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        if blocked {
+          return true;
+        }
+        tokio::task::yield_now().await;
+      }
+    })
+    .await
+    .expect("generation::ensure must block on search-projection-generation advisory lock");
+    assert!(waiter_seen);
+    assert!(!ensure_handle.is_finished());
+
+    lock_tx.rollback().await.unwrap();
+    let active_gen = tokio::time::timeout(Duration::from_secs(5), &mut ensure_handle)
+      .await
+      .expect("generation::ensure must complete after lock release")
+      .expect("join ensure")
+      .expect("ensure result");
+
+    // 2. Mark generation scan complete so activation can succeed, then verify generation::activate waits on the same lock.
+    sqlx::query(
+      "UPDATE search_projection.generations
+       SET scan_high_water_sid = 0, scan_cursor_sid = 0
+       WHERE id = $1",
+    )
+    .bind(active_gen.id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let mut lock_tx2 = pool.begin().await.unwrap();
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+      .bind("search-projection-generation")
+      .execute(&mut *lock_tx2)
+      .await
+      .unwrap();
+
+    let act_pool = pool.clone();
+    let act_gen = active_gen.clone();
+    let act_cfg = config.clone();
+    let mut act_handle =
+      tokio::spawn(async move { server_search::generation::activate(&act_pool, &act_gen, &act_cfg).await });
+
+    let waiter_seen2 = tokio::time::timeout(Duration::from_secs(5), async {
+      loop {
+        let blocked: bool = sqlx::query_scalar(
+          "SELECT EXISTS (
+             SELECT 1 FROM pg_locks
+             WHERE locktype = 'advisory' AND NOT granted
+           )",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        if blocked {
+          return true;
+        }
+        tokio::task::yield_now().await;
+      }
+    })
+    .await
+    .expect("generation::activate must block on search-projection-generation advisory lock");
+    assert!(waiter_seen2);
+    assert!(!act_handle.is_finished());
+
+    lock_tx2.rollback().await.unwrap();
+    tokio::time::timeout(Duration::from_secs(5), &mut act_handle)
+      .await
+      .expect("generation::activate must complete after lock release")
+      .expect("join activate")
+      .expect("activate result");
+
+    let state: String = sqlx::query_scalar("SELECT state FROM search_projection.generations WHERE id = $1")
+      .bind(active_gen.id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(state, "active");
 
     db.pool().close().await;
   });

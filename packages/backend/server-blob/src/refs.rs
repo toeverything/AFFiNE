@@ -25,6 +25,15 @@ const MAX_CHILDREN_PER_BLOCK: u64 = 10_000;
 const MAX_SOURCE_REFS: usize = 10_000;
 const MAX_BLOB_KEY_BYTES: usize = 1_024;
 
+const BLOB_REF_READ_LIMITS: y_octo::ReadLimits = y_octo::ReadLimits {
+  max_input_bytes: 256 * 1024 * 1024,
+  max_structs: 16_000_000,
+  max_clients: 200_000,
+  max_collection_entries: 32_000_000,
+  max_any_depth: y_octo::Any::DEFAULT_MAX_DEPTH,
+  max_content_bytes: 256 * 1024 * 1024,
+};
+
 const BLOB_REF_CACHE_MAX_ENTRIES: usize = 512;
 const BLOB_REF_CACHE_MAX_BYTES: usize = 32 * 1024 * 1024;
 
@@ -132,6 +141,14 @@ pub fn live_blob_keys_from_updates(
   updates: Vec<Vec<u8>>,
   workspace_root: bool,
 ) -> Result<BTreeSet<String>, DomainError> {
+  live_blob_keys_from_updates_with_limits(updates, workspace_root, BLOB_REF_READ_LIMITS)
+}
+
+fn live_blob_keys_from_updates_with_limits(
+  updates: Vec<Vec<u8>>,
+  workspace_root: bool,
+  limits: y_octo::ReadLimits,
+) -> Result<BTreeSet<String>, DomainError> {
   if updates.is_empty() {
     return Ok(BTreeSet::new());
   }
@@ -145,16 +162,27 @@ pub fn live_blob_keys_from_updates(
   if merged.len() > MAX_SOURCE_BINARY_BYTES {
     return Err(DomainError::Internal("blob_ref_source_too_large".into()));
   }
-  let doc = ReadDoc::from_full_update_v1(merged)
-    .map_err(|err| DomainError::Internal(format!("invalid document binary: {err}")))?;
+  let doc = match ReadDoc::from_full_update_v1_with_limits(merged.clone(), limits.clone()) {
+    Ok(doc) => doc,
+    Err(y_octo::ReadError::IncompleteSnapshot(_)) => {
+      let normalized = y_octo::Doc::try_from_binary_v1(&merged)
+        .and_then(|doc| doc.encode_update_v1())
+        .map_err(|err| DomainError::Internal(format!("invalid document binary: {err}")))?;
+      ReadDoc::from_full_update_v1_with_limits(normalized, limits)
+        .map_err(|err| DomainError::Internal(format!("invalid document binary: {err}")))?
+    }
+    Err(err) => return Err(DomainError::Internal(format!("invalid document binary: {err}"))),
+  };
 
   let mut keys = BTreeSet::new();
-  if workspace_root
-    && let Some(meta) = doc.map("meta")
-    && let Some(avatar) = string_value(meta, "avatar")
-    && !avatar.is_empty()
-  {
-    insert_key(&mut keys, avatar)?;
+  if workspace_root {
+    if let Some(meta) = doc.map("meta")
+      && let Some(avatar) = string_value(meta, "avatar")
+      && !avatar.is_empty()
+    {
+      insert_key(&mut keys, avatar)?;
+    }
+    return Ok(keys);
   }
 
   let Some(blocks) = doc.map("blocks") else {
@@ -965,5 +993,29 @@ mod tests {
     )
     .expect("live_blob_keys_from_updates must succeed");
     assert_eq!(keys, BTreeSet::from(["blob-att-1".to_owned(), "blob-img-1".to_owned()]));
+  }
+
+  #[test]
+  fn live_blob_keys_enforces_resource_limit_without_unbounded_fallback() {
+    let doc = y_octo::Doc::with_client(202);
+    let mut meta = doc.get_or_create_map("meta").unwrap();
+    meta
+      .insert("avatar".to_owned(), y_octo::Any::String("avatar-1".into()))
+      .unwrap();
+    meta
+      .insert("name".to_owned(), y_octo::Any::String("workspace-1".into()))
+      .unwrap();
+    let bin = doc.encode_update_v1().unwrap();
+
+    let tiny_limits = y_octo::ReadLimits {
+      max_structs: 1,
+      ..BLOB_REF_READ_LIMITS
+    };
+    let err = live_blob_keys_from_updates_with_limits(vec![bin], true, tiny_limits)
+      .expect_err("exceeding ReadLimits must return error without unbounded fallback");
+    assert!(
+      matches!(err, DomainError::Internal(ref msg) if msg.contains("invalid document binary")),
+      "expected resource limit error, got {err:?}"
+    );
   }
 }

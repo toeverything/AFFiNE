@@ -7,7 +7,7 @@
 - Keep `SearchConfig::default().enabled` set to `false` to match `v0.27.5`.
 - Do not depend on `napi` or `affine_doc_loader`.
 - Extract document titles, text blocks, and canvas elements directly with `y-octo`.
-- Take `search-projection-lifecycle` for generation creation and activation. Never take the legacy `search-projection-generation` global lock.
+- Take `search-projection-generation` for generation creation and activation so `affine-server` serializes with `v0.27.5` under the `xid8` fence. Never take `search-projection-generation` in steady-state worker ticks or `search_projection_lockless_v2` lease renewals.
 - Take per-workspace `search-projection-ws:<workspace_id>` advisory locks for orphan GC high-water capture and document target enqueue.
 
 Use a two-beat post-commit `fenceXid` discovery fence before latching `scan_high_water_sid`.

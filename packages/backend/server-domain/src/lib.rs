@@ -15,6 +15,7 @@ pub mod calendar;
 pub mod comments;
 pub mod content_policy;
 pub mod disposition;
+pub mod doc_meta;
 pub mod doc_sharing;
 pub mod events;
 pub mod histories;

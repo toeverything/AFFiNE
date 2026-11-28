@@ -10,7 +10,7 @@ use crate::provider::SearchProvider;
 use crate::types::SearchTable;
 use crate::{DOCUMENT_PROJECTION_FAILED, EMBEDDED_GENERATION_LOST, SCHEMA_FINGERPRINT, WORKSPACE_RECONCILE_FAILED};
 
-pub const LIFECYCLE_LOCK_KEY: &str = "search-projection-lifecycle";
+pub const LIFECYCLE_LOCK_KEY: &str = "search-projection-generation";
 
 #[derive(Clone, Debug)]
 pub struct ActiveGeneration {

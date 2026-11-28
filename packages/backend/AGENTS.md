@@ -66,7 +66,7 @@ It excludes `native/` and `server/` and does not join the root `Cargo.toml` work
 
 - `server-search` (library `server_search`): pure-Rust search runtime (`embedded`, `elasticsearch`, and `manticoresearch`) with no `napi` or `affine_doc_loader` dependency.
   It extracts document titles, blocks, and canvas elements directly with `y-octo`.
-  It renews the 90s `search_projection_lockless_v2` lease every 15s and serializes generations on `search-projection-lifecycle` with an `xid8` fence.
+  It renews the 90s `search_projection_lockless_v2` lease every 15s without global locks. Generation creation and activation serialize on `search-projection-generation` with `v0.27.5` under an `xid8` fence.
   It fences orphan GC per workspace on `search-projection-ws:<workspace_id>`.
 
 - `server-http` (library `server_http`): `axum 0.8` and `async-graphql 7` transport layer with `/healthz`, `/readyz`, `/info`, and `/graphql` (including workspace `search`, `aggregate`, `searchDocs`, `workspaceRolePermissions`, `DocType.{analytics, lastAccessedMembers}`, multipart blob upload mutations `createBlobUpload`, `completeBlobUpload`, `abortBlobUpload`, `WorkspaceType.blobUploadPartUrl`, admin console user, workspace, dashboard, shared-link, mail-delivery, and app-config metadata/validation queries and mutations, auth security challenges, signing key rotation, `UserType.token`, and `Query.error`).
