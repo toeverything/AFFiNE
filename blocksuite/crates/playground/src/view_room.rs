@@ -316,6 +316,7 @@ impl PlaygroundView {
                 if effects.doc_changed {
                     self.capture_reading_anchor();
                     self.refresh_document();
+                    self.prune_dangling_selection(None, cx);
                     self.resolve_remote_selection(cx);
                 }
             }

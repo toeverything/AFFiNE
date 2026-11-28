@@ -1,6 +1,6 @@
 use y_octo::{
-    Any, RelativePosition, SessionCommit, SessionReadValue, SessionValue, TextDeltaOp, TextInsert,
-    TypePath, TypeTarget,
+    Any, RelativePosition, SessionCommit, SessionReadValue, SessionTxOrigin, SessionValue,
+    TextDeltaOp, TextInsert, TypePath, TypeTarget,
 };
 
 use crate::{
@@ -474,12 +474,12 @@ impl PageDocSession {
                 .key(element_id),
         );
         if trimmed_text.is_empty() {
-            return self.structural_edit(now_ms, move |page| {
-                for key in ["text", "labelXYWH", "labelOffset"] {
-                    let _ = page.session.map_remove(&elem_target, key);
-                }
-                Ok(())
-            });
+            self.session.begin_tx(SessionTxOrigin::Tracked)?;
+            for key in ["text", "labelXYWH", "labelOffset"] {
+                let _ = self.session.map_remove(&elem_target, key);
+            }
+            let commit = self.session.commit_tx()?;
+            return Ok(self.record_commit(commit));
         }
         let has_offset = self
             .session
@@ -506,7 +506,16 @@ impl PageDocSession {
                 SessionValue::Any(Any::Object(Box::new(offset_map))),
             ));
         }
-        self.update_surface_element_fields(surface_block_id, element_id, fields, now_ms)
+        self.session.begin_tx(SessionTxOrigin::Tracked)?;
+        let res = (|| -> DocResult {
+            for (field, value) in fields {
+                self.session.map_set(&elem_target, field, value)?;
+            }
+            Ok(())
+        })();
+        let commit = self.session.commit_tx();
+        res?;
+        Ok(self.record_commit(commit?))
     }
 
     /// Replace the `Y.Text` field (`"text"` or `"title"`) on a surface element.

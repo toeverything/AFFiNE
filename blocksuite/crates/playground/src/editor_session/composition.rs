@@ -570,6 +570,59 @@ impl PlaygroundView {
         let layout = self
             .flow_layout()
             .ok_or_else(|| DocError::InvalidState("missing layout".into()))?;
+        if sel.ordered(&layout).is_none()
+            && sel.anchor.block_id == sel.focus.block_id
+            && let Some(row_plain) = self
+                .page_snapshot()
+                .and_then(|s| s.block(&sel.focus.block_id))
+                .and_then(text_content)
+        {
+            let id = sel.focus.block_id.clone();
+            let bi = TextBiIndex::new(row_plain);
+            let start_off = bi.utf8_to_utf16(
+                bi.utf16_to_utf8_clamped(sel.anchor.offset().min(sel.focus.offset())),
+            );
+            let end_off = bi.utf8_to_utf16(
+                bi.utf16_to_utf8_clamped(sel.anchor.offset().max(sel.focus.offset())),
+            );
+            let group = self
+                .editor
+                .last_typing
+                .is_some_and(|t| now.saturating_sub(t) < 500)
+                && sel.empty();
+            let page = self.page_mut()?;
+            if !group {
+                page.stop_capturing()?;
+            }
+            let mut delta = Vec::new();
+            if start_off > 0 {
+                delta.push(TextDeltaOp::Retain {
+                    retain: start_off,
+                    format: None,
+                });
+            }
+            if end_off > start_off {
+                delta.push(TextDeltaOp::Delete {
+                    delete: end_off - start_off,
+                });
+            }
+            if !text.is_empty() {
+                delta.push(TextDeltaOp::Insert {
+                    insert: TextInsert::Text(text.into()),
+                    format: None,
+                });
+            }
+            let commit = page.apply_text_delta(&id, "prop:text", &delta, now)?;
+            self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(
+                &id,
+                start_off + text.encode_utf16().count() as u64,
+            )));
+            self.editor.block_selection.clear();
+            self.editor.last_typing = Some(now);
+            self.editor.preedit = None;
+            self.did_edit(commit, Some(&id), w, cx);
+            return Ok(());
+        }
         let (start, end, a, b, _) = sel
             .ordered(&layout)
             .ok_or_else(|| DocError::InvalidState("selection is no longer visible".into()))?;

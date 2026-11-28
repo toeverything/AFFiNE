@@ -284,18 +284,24 @@ impl PlaygroundView {
                         (block.block_id.clone(), world_x - r.x, world_y - r.y)
                     })
             }) {
+                let prev_sel = self.editor.selection.clone();
                 let consumed =
                     self.click_database_point(&block_id, local_x, local_y, Some(window), cx);
                 if consumed || self.database_readonly {
                     self.show_database_readonly_toast_once(cx);
-                    self.clear_body_selection(window, cx);
-                    self.suppress_unselected_root_input = true;
-                    if !consumed && self.database_readonly {
-                        self.editor.block_selection = vec![block_id];
-                        self.keep_keyboard_on_block_selection = false;
-                        self.block_selection_return_caret = None;
-                        self.announce_selection(cx);
-                        window.notify_text_selection_changed(&self.editor_focus);
+                    let focused_new_row = consumed
+                        && self.editor.selection != prev_sel
+                        && self.editor.selection.is_some();
+                    if !focused_new_row {
+                        self.clear_body_selection(window, cx);
+                        self.suppress_unselected_root_input = true;
+                        if !consumed && self.database_readonly {
+                            self.editor.block_selection = vec![block_id];
+                            self.keep_keyboard_on_block_selection = false;
+                            self.block_selection_return_caret = None;
+                            self.announce_selection(cx);
+                            window.notify_text_selection_changed(&self.editor_focus);
+                        }
                     }
                     self.editor.dragging = false;
                     cx.notify();
@@ -303,11 +309,13 @@ impl PlaygroundView {
                 }
             }
             // Clicking a non-editable block (Bookmark, Image, Divider, Database body, Table frame)
-            // selects that whole block into `block_selection` instead of snapping caret to a
-            // neighbouring text block (`L3`).
+            // or its horizontal row band selects that whole block into `block_selection` instead
+            // of snapping the caret to a distant editable block.
             if let Some(non_editable_id) = layout.blocks.iter().find_map(|block| {
-                (!block.editable() && block.rect().contains(world_x, world_y))
-                    .then(|| block.block_id.clone())
+                (!block.editable()
+                    && (block.rect().contains(world_x, world_y)
+                        || (world_y >= block.rect().y && world_y <= block.rect().bottom())))
+                .then(|| block.block_id.clone())
             }) {
                 self.commit_active_preedit(window, cx);
                 self.suppress_unselected_root_input = false;
@@ -327,6 +335,27 @@ impl PlaygroundView {
                 cx.notify();
                 return;
             }
+            // Clicking empty space below the last block focuses a trailing empty paragraph or
+            // appends one (single undo step) instead of jumping back into an earlier code block.
+            if event.click_count == 1
+                && !event.modifiers.shift
+                && let Some(last) = layout.blocks.last()
+                && world_y > last.rect().bottom()
+            {
+                self.handle_click_below_last_block(last, window, cx);
+                return;
+            }
+        }
+        if event.click_count == 1
+            && !event.modifiers.shift
+            && let Some(page_id) = self.hit_inline_reference_at(
+                f32::from(event.position.x),
+                f32::from(event.position.y),
+                window,
+            )
+        {
+            self.open_linked_doc(&page_id, Some(window), cx);
+            return;
         }
         self.editor_mouse_down(event, window, cx);
         // A double or triple click selects at once; only a plain press starts a drag.

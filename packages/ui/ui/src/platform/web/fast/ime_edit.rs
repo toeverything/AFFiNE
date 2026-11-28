@@ -99,6 +99,29 @@ pub(crate) fn composition_replacement_range(
     Some(align + r.start..align + r.end)
 }
 
+/// Extracts the active IME clause UTF-16 sub-range inside `data` from the mirror's live selection.
+#[cfg_attr(not(target_family = "wasm"), allow(dead_code))]
+pub(crate) fn composition_selected_range(
+    live: &str,
+    sel: (u32, u32),
+    data: &str,
+    start: usize,
+) -> Option<Range<usize>> {
+    let (new_u, data_u): (Vec<u16>, Vec<u16>) =
+        (live.encode_utf16().collect(), data.encode_utf16().collect());
+    let (len, s0) = (data_u.len(), (sel.0 as usize).min(new_u.len()));
+    let s1 = (sel.1 as usize).clamp(s0, new_u.len());
+    let ok = |c: usize| {
+        len > 0 && c <= s0 && s1 <= c + len && new_u.get(c..c + len) == Some(&data_u[..])
+    };
+    let hi = s0.min(new_u.len().saturating_sub(len));
+    let cs = ok(start)
+        .then_some(start)
+        .or_else(|| s1.checked_sub(len).filter(|&c| ok(c)))
+        .or_else(|| (s1.saturating_sub(len)..=hi).rev().find(|&c| ok(c)))?;
+    Some((s0 - cs)..(s1 - cs))
+}
+
 #[cfg(test)]
 mod tests {
     use super::composition_replacement_range as r;
@@ -120,5 +143,24 @@ mod tests {
         c(("gos go", 6, 6), ("gos gos", 7, 7), "", "gos", Some(4..6));
         c(("hi", 2, 2), ("h", 1, 1), "", "longer", None);
         c(("a😀b", 3, 3), ("a😀x", 4, 4), "", "😀x", Some(1..4));
+    }
+
+    #[test]
+    fn composition_selected_range_cases() {
+        for (l, sel, d, st, w) in [
+            ("今日はいい天気", (0, 2), "今日はいい天気", 0, Some(0..2)),
+            ("前今日はいい後", (3, 5), "今日はいい", 1, Some(2..4)),
+            ("abc你好世界xyz", (5, 7), "你好世界", 3, Some(2..4)),
+            ("abc你好", (5, 5), "你好", 3, Some(2..2)),
+            ("前はははは後", (2, 3), "はは", 1, Some(1..2)),
+            ("前日日後", (2, 2), "日", 1, Some(1..1)),
+            ("火曜日です", (1, 2), "火曜日", 0, Some(1..2)),
+            ("火曜日です", (1, 2), "火曜日", 3, Some(1..2)),
+            ("X火曜日です", (2, 3), "火曜日", 4, Some(1..2)),
+            ("hell", (4, 4), "hell", 5, Some(4..4)),
+            ("abc", (1, 1), "", 1, None),
+        ] {
+            assert_eq!(super::composition_selected_range(l, sel, d, st), w);
+        }
     }
 }

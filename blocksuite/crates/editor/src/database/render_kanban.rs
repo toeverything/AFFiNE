@@ -182,7 +182,23 @@ pub(super) fn render_kanban_view(
         // Cards inside this lane.
         let card_w = LANE_WIDTH - 2.0 * LANE_PAD;
         for row in &bucket.rows {
-            let mut prop_lines: Vec<(String, Option<(ui::Hsla, ui::Hsla)>)> = Vec::new();
+            enum KanbanProp {
+                Text(String),
+                Pill {
+                    label: String,
+                    bg: ui::Hsla,
+                    ink: ui::Hsla,
+                },
+                Checkbox {
+                    label: String,
+                    checked: bool,
+                },
+                Progress {
+                    ratio: f32,
+                    label: String,
+                },
+            }
+            let mut prop_lines: Vec<KanbanProp> = Vec::new();
             for col in &visible_prop_ids {
                 let Some(val) = ctx.data.cells.get(&(row.row_id.clone(), col.id.clone())) else {
                     continue;
@@ -200,13 +216,18 @@ pub(super) fn render_kanban_view(
                                 .map_or((id.clone(), "var(--affine-tag-gray)"), |o| {
                                     (o.value.clone(), o.color.as_str())
                                 });
-                            prop_lines.push((lbl, Some(resolve_tag_color(clr, ctx.theme))));
+                            let (bg, ink) = resolve_tag_color(clr, ctx.theme);
+                            prop_lines.push(KanbanProp::Pill {
+                                label: lbl,
+                                bg,
+                                ink,
+                            });
                         }
                     }
                     "progress" => {
                         if let Some(p) = val.as_i64() {
-                            let (_, lbl) = format_database_progress(p);
-                            prop_lines.push((format!("{}: {lbl}", col.name), None));
+                            let (ratio, lbl) = format_database_progress(p);
+                            prop_lines.push(KanbanProp::Progress { ratio, label: lbl });
                         }
                     }
                     "number" => {
@@ -221,27 +242,29 @@ pub(super) fn render_kanban_view(
                                 .get("decimal")
                                 .and_then(serde_json::Value::as_u64)
                                 .map(|d| d as usize);
-                            prop_lines.push((format_database_number(n, fmt, dec), None));
+                            prop_lines.push(KanbanProp::Text(format_database_number(n, fmt, dec)));
                         }
                     }
                     "date" => {
                         if let Some(ts) = val.as_i64() {
-                            prop_lines
-                                .push((format_database_date(ts, (ctx.offset_at_ms)(ts)), None));
+                            prop_lines.push(KanbanProp::Text(format_database_date(
+                                ts,
+                                (ctx.offset_at_ms)(ts),
+                            )));
                         }
                     }
                     "checkbox" => {
                         let checked = val.as_bool().unwrap_or(false);
-                        prop_lines.push((
-                            format!("{}: {}", col.name, if checked { "Done" } else { "Open" }),
-                            None,
-                        ));
+                        prop_lines.push(KanbanProp::Checkbox {
+                            label: col.name.clone(),
+                            checked,
+                        });
                     }
                     _ => {
                         if let Some(s) = val.as_str()
                             && !s.is_empty()
                         {
-                            prop_lines.push((s.to_string(), None));
+                            prop_lines.push(KanbanProp::Text(s.to_string()));
                         }
                     }
                 }
@@ -277,46 +300,124 @@ pub(super) fn render_kanban_view(
             ));
 
             let mut py = card_rect.y + 30.0;
-            for (text, pill_colors) in prop_lines {
-                if let Some((bg, ink)) = pill_colors {
-                    let style = InlineStyle::new(FONT_SANS, TYPOGRAPHY.font_xs_px, 500.0, ink);
-                    let max_pw = (card_w - 2.0 * CARD_PAD).max(1.0);
-                    let (_, layout) =
-                        ctx.truncate_text(&text, style, (max_pw - 10.0).max(1.0), 18.0);
-                    let pw = (layout.content_width().ceil() + 10.0).min(max_pw);
-                    let px_pos = if ctx.direction.is_rtl() {
-                        card_rect.right() - CARD_PAD - pw
-                    } else {
-                        card_rect.x + CARD_PAD
-                    };
-                    prims.push(DatabasePrim::Quad {
-                        rect: FlowRect::new(px_pos, py, pw, 18.0),
-                        fill: Some(bg),
-                        border: None,
-                        radius: 4.0,
-                        dashed: false,
-                    });
-                    prims.push(DatabasePrim::Text {
-                        x: px_pos + 5.0,
-                        y: py,
-                        layout,
-                        clip: Some(FlowRect::new(px_pos + 3.0, py, (pw - 6.0).max(1.0), 18.0)),
-                    });
-                } else {
-                    prims.push(ctx.single_line_clipped(
-                        &text,
-                        InlineStyle::new(
-                            FONT_SANS,
-                            TYPOGRAPHY.font_xs_px,
-                            400.0,
-                            ctx.palette.text_secondary,
-                        ),
-                        card_rect.x + CARD_PAD,
-                        py,
-                        (card_w - 2.0 * CARD_PAD).max(1.0),
-                        18.0,
-                        align,
-                    ));
+            let inner_x = card_rect.x + CARD_PAD;
+            let inner_w = (card_w - 2.0 * CARD_PAD).max(1.0);
+            for prop in prop_lines {
+                match prop {
+                    KanbanProp::Pill { label, bg, ink } => {
+                        let style = InlineStyle::new(FONT_SANS, TYPOGRAPHY.font_xs_px, 500.0, ink);
+                        let (_, layout) =
+                            ctx.truncate_text(&label, style, (inner_w - 10.0).max(1.0), 18.0);
+                        let pw = (layout.content_width().ceil() + 10.0).min(inner_w);
+                        let px_pos = if ctx.direction.is_rtl() {
+                            card_rect.right() - CARD_PAD - pw
+                        } else {
+                            inner_x
+                        };
+                        prims.push(DatabasePrim::Quad {
+                            rect: FlowRect::new(px_pos, py, pw, 18.0),
+                            fill: Some(bg),
+                            border: None,
+                            radius: 4.0,
+                            dashed: false,
+                        });
+                        prims.push(DatabasePrim::Text {
+                            x: px_pos + 5.0,
+                            y: py,
+                            layout,
+                            clip: Some(FlowRect::new(px_pos + 3.0, py, (pw - 6.0).max(1.0), 18.0)),
+                        });
+                    }
+                    KanbanProp::Checkbox { label, checked } => {
+                        let icon_name = if checked {
+                            "CheckBoxCheckSolidIcon"
+                        } else {
+                            "CheckBoxUnIcon"
+                        };
+                        let icon_x = if ctx.direction.is_rtl() {
+                            card_rect.right() - CARD_PAD - 15.0
+                        } else {
+                            inner_x
+                        };
+                        prims.push(DatabasePrim::Icon {
+                            rect: FlowRect::new(icon_x, py + 1.5, 15.0, 15.0),
+                            icon: crate::theme::IconPaint::named(icon_name),
+                            color: if checked {
+                                ctx.palette.brand
+                            } else {
+                                ctx.palette.icon
+                            },
+                        });
+                        let text_x = if ctx.direction.is_rtl() {
+                            inner_x
+                        } else {
+                            inner_x + 20.0
+                        };
+                        prims.push(ctx.single_line_clipped(
+                            &label,
+                            InlineStyle::new(
+                                FONT_SANS,
+                                TYPOGRAPHY.font_xs_px,
+                                400.0,
+                                ctx.palette.text_secondary,
+                            ),
+                            text_x,
+                            py,
+                            (inner_w - 20.0).max(1.0),
+                            18.0,
+                            align,
+                        ));
+                    }
+                    KanbanProp::Progress { ratio, label } => {
+                        let bar_w = (inner_w - 40.0).max(24.0);
+                        let bar_y = py + 5.0;
+                        prims.push(DatabasePrim::Quad {
+                            rect: FlowRect::new(inner_x, bar_y, bar_w, 8.0),
+                            fill: Some(ctx.palette.background_secondary),
+                            border: Some(ctx.palette.border),
+                            radius: 4.0,
+                            dashed: false,
+                        });
+                        if ratio > 0.0 {
+                            prims.push(DatabasePrim::Quad {
+                                rect: FlowRect::new(inner_x, bar_y, (bar_w * ratio).max(4.0), 8.0),
+                                fill: Some(ctx.palette.brand),
+                                border: None,
+                                radius: 4.0,
+                                dashed: false,
+                            });
+                        }
+                        prims.push(ctx.single_line_clipped(
+                            &label,
+                            InlineStyle::new(
+                                FONT_SANS,
+                                TYPOGRAPHY.font_xs_px,
+                                500.0,
+                                ctx.palette.text_secondary,
+                            ),
+                            inner_x + bar_w + 6.0,
+                            py,
+                            34.0,
+                            18.0,
+                            InlineAlign::Right,
+                        ));
+                    }
+                    KanbanProp::Text(text) => {
+                        prims.push(ctx.single_line_clipped(
+                            &text,
+                            InlineStyle::new(
+                                FONT_SANS,
+                                TYPOGRAPHY.font_xs_px,
+                                400.0,
+                                ctx.palette.text_secondary,
+                            ),
+                            inner_x,
+                            py,
+                            inner_w,
+                            18.0,
+                            align,
+                        ));
+                    }
                 }
                 py += 22.0;
             }

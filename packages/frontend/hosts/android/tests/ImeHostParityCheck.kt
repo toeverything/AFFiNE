@@ -2051,5 +2051,36 @@ fun main() {
     NativeBridge.nativeDestroyHost(seq25Handle)
   }
 
-  println("Kotlin JNI Android host parity check passed (25/25 sequences)")
+  // Sequence 26: Code block toggles EditorInfo.inputType to NO_SUGGESTIONS (no CAP_SENTENCES/AUTO_CORRECT).
+  val seq26Handle = NativeBridge.nativeCreateHost()
+  try {
+    NativeBridge.nativeResetEmptyDocument(seq26Handle)
+    val proseCodeMode = NativeBridge.nativeWantsCodeInput(seq26Handle)
+    checkEq(proseCodeMode, false, "seq26 prose wantsCodeInput=false")
+    val proseInputType = AffineSurfaceView.resolveDocumentInputType(proseCodeMode)
+    checkEq(
+      (proseInputType and android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES) != 0,
+      true,
+      "seq26 prose inputType enables CAP_SENTENCES",
+    )
+    val ic26 = AffineSurfaceView.createInputConnection(handleProvider = { seq26Handle })
+    ic26.commitText("``` ", 1)
+    val codeMode = NativeBridge.nativeWantsCodeInput(seq26Handle)
+    checkEq(codeMode, true, "seq26 code block wantsCodeInput=true")
+    val codeInputType = AffineSurfaceView.resolveDocumentInputType(codeMode)
+    checkEq(
+      (codeInputType and android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS) != 0,
+      true,
+      "seq26 code inputType enables NO_SUGGESTIONS",
+    )
+    checkEq(
+      (codeInputType and (android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or android.text.InputType.TYPE_TEXT_FLAG_AUTO_CORRECT)) == 0,
+      true,
+      "seq26 code inputType disables CAP_SENTENCES and AUTO_CORRECT",
+    )
+  } finally {
+    NativeBridge.nativeDestroyHost(seq26Handle)
+  }
+
+  println("Kotlin JNI Android host parity check passed (26/26 sequences)")
 }

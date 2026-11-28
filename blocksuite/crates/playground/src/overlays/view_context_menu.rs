@@ -268,7 +268,7 @@ impl PlaygroundView {
             }
             PlaygroundMode::Edgeless => {
                 self.dismiss_overlay_text_fields(window, cx);
-                if self.edgeless_point_in_label_editor(x, y) {
+                if self.edgeless_point_in_label_editor(x, y, window) {
                     self.clear_body_selection(window, cx);
                     let (off, keep_sel) =
                         self.hit_label_editor_at(x, y, window).unwrap_or((0, false));
@@ -2559,7 +2559,7 @@ mod tests {
                         ed.input.text = "first line\nsecond line".to_string();
                         ed.select(11..17);
                     }
-                    let b = v.edgeless_label_layout_screen_bounds().unwrap();
+                    let b = v.edgeless_label_layout_screen_bounds(w).unwrap();
                     let sx = f32::from(b.origin.x) + 4.0;
                     let sy = f32::from(b.origin.y) + 4.0;
                     let (left_off, in_sel) = v.hit_label_editor_at(sx, sy, w).unwrap();

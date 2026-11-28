@@ -463,7 +463,11 @@ impl WgpuContext {
     pub fn instance(display: Option<Box<dyn wgpu::wgt::WgpuHasDisplayHandle>>) -> wgpu::Instance {
         wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::VULKAN | wgpu::Backends::GL,
-            flags: wgpu::InstanceFlags::empty(),
+            flags: if cfg!(target_os = "android") {
+                wgpu::InstanceFlags::empty()
+            } else {
+                wgpu::InstanceFlags::default()
+            },
             backend_options: wgpu::BackendOptions::default(),
             memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
             display,

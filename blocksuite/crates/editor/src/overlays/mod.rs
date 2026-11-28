@@ -35,9 +35,8 @@ pub use keyboard_toolbar::{
 pub use paint_page::{block_text, bounding_rect, find_parent, shared_alignment};
 pub use paint_popovers::{PlacedPopover, Placement, PopoverSide, place_popover};
 pub use scrollbar::{
-    SCROLLBAR_DESKTOP_MIN_WIDTH, SCROLLBAR_EDGE_INSET, SCROLLBAR_MIN_THUMB,
-    SCROLLBAR_VERTICAL_INSET, SCROLLBAR_WIDTH, ScrollbarDrag, ScrollbarMetrics,
-    build_page_scrollbar,
+    SCROLLBAR_EDGE_INSET, SCROLLBAR_HIT_WIDTH, SCROLLBAR_MIN_THUMB, SCROLLBAR_VERTICAL_INSET,
+    SCROLLBAR_WIDTH, ScrollbarDrag, ScrollbarMetrics, build_page_scrollbar,
 };
 pub use slash::{
     SLASH_ITEMS, SlashCommand, SlashItem, SlashMenu, SlashRow, filter_slash_items,

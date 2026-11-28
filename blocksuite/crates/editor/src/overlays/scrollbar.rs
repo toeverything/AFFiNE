@@ -1,6 +1,6 @@
 //! Desktop Page-mode thin viewport scrollbar (logical inline-end edge).
 //!
-//! Hidden on narrow viewports (`< 640px`) and mobile read-only mode to match native
+//! Hidden in mobile mode (`FormFactor::Phone | FormFactor::Tablet`) to match native
 //! mobile scrolling. On desktop Page viewports with `max_scroll > 0`, renders an `8px`
 //! rounded translucent thumb along the logical end edge (right in LTR, left in RTL)
 //! supporting direct thumb dragging and track page-jump clicks.
@@ -9,8 +9,6 @@ use ui::{AnyElement, Context, Direction, MouseButton, MouseDownEvent, div, prelu
 
 use crate::{block_flow::PAGE_SURFACE_ID, theme::Palette};
 
-/// Minimum viewport width in logical pixels required to display the desktop scrollbar.
-pub const SCROLLBAR_DESKTOP_MIN_WIDTH: f32 = 640.0;
 /// Interactive hit-target width of the scrollbar gutter in logical pixels (`>= 24px` hit target).
 pub const SCROLLBAR_HIT_WIDTH: f32 = 24.0;
 /// Visual width of the scrollbar thumb in logical pixels.
@@ -43,7 +41,7 @@ pub struct ScrollbarMetrics {
 
 impl ScrollbarMetrics {
     /// Compute scrollbar track and thumb geometry, returning `None` when hidden
-    /// (narrow viewport, mobile mode, or non-scrollable content).
+    /// (mobile mode or non-scrollable content).
     pub fn compute(
         viewport_width: f32,
         viewport_height: f32,
@@ -53,7 +51,6 @@ impl ScrollbarMetrics {
         mobile_mode: bool,
     ) -> Option<Self> {
         if mobile_mode
-            || viewport_width < SCROLLBAR_DESKTOP_MIN_WIDTH
             || max_scroll <= 0.0
             || viewport_height <= 2.0 * SCROLLBAR_VERTICAL_INSET + 1.0
         {
@@ -200,15 +197,12 @@ mod tests {
 
     #[test]
     fn scrollbar_visibility_and_logical_side() {
-        // Hidden on narrow viewports (< 640px), mobile mode, or when max_scroll == 0.
-        assert_eq!(
-            ScrollbarMetrics::compute(320.0, 748.0, 0.0, 1200.0, Direction::Ltr, false),
-            None
-        );
-        assert_eq!(
-            ScrollbarMetrics::compute(639.0, 748.0, 0.0, 1200.0, Direction::Ltr, false),
-            None
-        );
+        // Hidden on mobile mode or when max_scroll == 0; visible on narrow desktop (e.g. 600px).
+        let narrow_desktop =
+            ScrollbarMetrics::compute(600.0, 748.0, 0.0, 1200.0, Direction::Ltr, false)
+                .expect("600px desktop viewport must display scrollbar");
+        assert_eq!(narrow_desktop.track_w, 8.0);
+        assert_eq!(narrow_desktop.track_x, 590.0);
         assert_eq!(
             ScrollbarMetrics::compute(1280.0, 748.0, 0.0, 1200.0, Direction::Ltr, true),
             None

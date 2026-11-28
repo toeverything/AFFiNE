@@ -343,6 +343,7 @@ object NativeBridge {
   external fun nativeGetTextInputChangeSeq(handle: Long): Long
   external fun nativeGetFocusedBlockHash(handle: Long): Long
   external fun nativeWantsSoftwareKeyboard(handle: Long): Boolean
+  external fun nativeWantsCodeInput(handle: Long): Boolean
   external fun nativeGetCaretRectDpX(handle: Long): Float
   external fun nativeGetCaretRectDpY(handle: Long): Float
   external fun nativeGetCaretRectDpHeight(handle: Long): Float
@@ -2684,6 +2685,18 @@ internal class AffineSurfaceView(
       values: Map<Int, String>,
     ): Int = controller.onAutofillValues(values)
 
+    internal fun resolveDocumentInputType(wantsCodeInput: Boolean): Int =
+      if (wantsCodeInput) {
+        InputType.TYPE_CLASS_TEXT or
+          InputType.TYPE_TEXT_FLAG_MULTI_LINE or
+          InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+      } else {
+        InputType.TYPE_CLASS_TEXT or
+          InputType.TYPE_TEXT_FLAG_MULTI_LINE or
+          InputType.TYPE_TEXT_FLAG_AUTO_CORRECT or
+          InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+      }
+
     internal fun createInputConnection(
       handleProvider: () -> Long,
       outAttrs: EditorInfo? = null,
@@ -2695,10 +2708,9 @@ internal class AffineSurfaceView(
     ): InputConnection {
       val ime = AffineImeController(handleProvider, onMutated, onTextEdited)
       if (outAttrs != null) {
-        outAttrs.inputType = InputType.TYPE_CLASS_TEXT or
-          InputType.TYPE_TEXT_FLAG_MULTI_LINE or
-          InputType.TYPE_TEXT_FLAG_AUTO_CORRECT or
-          InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+        val handle = handleProvider()
+        val codeMode = handle != 0L && NativeBridge.nativeWantsCodeInput(handle)
+        outAttrs.inputType = resolveDocumentInputType(codeMode)
         outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI
         outAttrs.initialSelStart = ime.selectionStart()
         outAttrs.initialSelEnd = ime.selectionEnd()
@@ -2890,6 +2902,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
   private var backCallback: OnBackInvokedCallback? = null
   private val mainHandler = Handler(Looper.getMainLooper())
   private var lastWantsKeyboard: Boolean = false
+  private var lastWantsCodeInput: Boolean = false
   private var lastDarkTheme: Boolean? = null
   private val timerWakeRunnable: Runnable = Runnable {
     if (!frameLoopActive || !surfaceReady || nativeHandle == 0L) return@Runnable
@@ -3364,19 +3377,22 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     val nextSeq = NativeBridge.nativeGetTextInputChangeSeq(nativeHandle)
     val nextBlockHash = NativeBridge.nativeGetFocusedBlockHash(nativeHandle)
     val wantsKeyboard = NativeBridge.nativeWantsSoftwareKeyboard(nativeHandle)
+    val wantsCodeInput = NativeBridge.nativeWantsCodeInput(nativeHandle)
     val keyboardActivated = !lastWantsKeyboard && wantsKeyboard
-    if (nextSeq == lastImeChangeSeq && nextBlockHash == lastFocusedBlockHash && !keyboardActivated && wantsKeyboard == lastWantsKeyboard) {
+    val codeModeChanged = wantsCodeInput != lastWantsCodeInput
+    if (nextSeq == lastImeChangeSeq && nextBlockHash == lastFocusedBlockHash && !keyboardActivated && wantsKeyboard == lastWantsKeyboard && !codeModeChanged) {
       return
     }
     val blockChanged = nextBlockHash != lastFocusedBlockHash
     lastImeChangeSeq = nextSeq
     lastFocusedBlockHash = nextBlockHash
     lastWantsKeyboard = wantsKeyboard
+    lastWantsCodeInput = wantsCodeInput
     val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager ?: return
     if (!wantsKeyboard) {
       imm.hideSoftInputFromWindow(surfaceView.windowToken, 0)
     }
-    if (blockChanged || keyboardActivated) {
+    if (blockChanged || keyboardActivated || codeModeChanged) {
       imm.restartInput(surfaceView)
     } else {
       imm.updateSelection(

@@ -66,6 +66,15 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeIsDatabaseReadonly
 }
 
 #[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeWantsCodeInput(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) -> JBoolean {
+    u8::from(with_editor_mut(handle, |ed| ed.wants_code_input()).unwrap_or(false))
+}
+
+#[unsafe(no_mangle)]
 pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSetEditorMode(
     _env: JniEnvPtr,
     _class: JClass,

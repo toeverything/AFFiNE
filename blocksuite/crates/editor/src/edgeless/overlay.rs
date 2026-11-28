@@ -15,12 +15,12 @@ use crate::{
 
 use super::{
     EDGELESS_VIEWPORT_ID, EdgelessAuthoringState, EdgelessCamera, EdgelessGesture,
-    EdgelessLabelEditor, HandleKind, normalized_rect, rotate_point_around, rotated_bounds,
-    utf16_to_byte,
+    EdgelessLabelEditor, HandleKind, normalized_rect, rotate_point_around, utf16_to_byte,
 };
 
 /// Screen-space selection frame, 8 resize handles, rotation handle, Edgeless `2×3` `gfx` drag handle,
 /// marquee box, live creation previews, and inline label editor overlay.
+#[allow(clippy::too_many_arguments)]
 pub fn build_edgeless_authoring_overlay(
     authoring: &EdgelessAuthoringState,
     camera: EdgelessCamera,
@@ -28,6 +28,7 @@ pub fn build_edgeless_authoring_overlay(
     viewport_height: f32,
     palette: &Palette,
     theme: PlaygroundTheme,
+    window: &ui::Window,
 ) -> Vec<AnyElement> {
     let mut elements = Vec::new();
     let vp_origin = point(px(0.0), px(0.0));
@@ -440,55 +441,18 @@ pub fn build_edgeless_authoring_overlay(
 
     // 3. Inline label editor overlay (Shape / Connector / SurfaceText / Frame title).
     if let Some(editor) = authoring.label_editor() {
-        let tl = camera.world_to_screen(
-            point(px(editor.world_rect.x), px(editor.world_rect.y)),
-            vp_origin,
-        );
-        let br = camera.world_to_screen(
-            point(
-                px(editor.world_rect.right()),
-                px(editor.world_rect.bottom()),
-            ),
-            vp_origin,
-        );
         let in_place = editor.target.rotates_in_place();
         let eff_rotate = editor.effective_rotate_deg();
-        let raw_x = f32::from(tl.x);
-        let raw_y = f32::from(tl.y);
-        let raw_w = (f32::from(br.x) - raw_x).max(0.5);
-        let raw_h = (f32::from(br.y) - raw_y).max(0.5);
-        let (box_x, box_y, box_w, box_h, layout_x, layout_y, layout_w, layout_h) = if in_place {
-            let aabb_w = rotated_bounds(editor.world_rect, eff_rotate);
-            let aabb_tl = camera.world_to_screen(point(px(aabb_w.x), px(aabb_w.y)), vp_origin);
-            let aabb_br =
-                camera.world_to_screen(point(px(aabb_w.right()), px(aabb_w.bottom())), vp_origin);
-            let bleed = if matches!(editor.target, super::LabelTarget::SurfaceText { .. }) {
-                2.0
-            } else {
-                0.0
-            };
-            let x0 = (f32::from(aabb_tl.x) - bleed).clamp(0.0, viewport_width);
-            let y0 = (f32::from(aabb_tl.y) - bleed).clamp(0.0, viewport_height);
-            let x1 = (f32::from(aabb_br.x) + bleed).clamp(0.0, viewport_width);
-            let y1 = (f32::from(aabb_br.y) + bleed).clamp(0.0, viewport_height);
-            (x0, y0, x1 - x0, y1 - y0, raw_x, raw_y, raw_w, raw_h)
-        } else if matches!(editor.target, super::LabelTarget::Connector { .. }) {
-            let min_w = (48.0 * camera.zoom).max(20.0);
-            let min_h = (24.0 * camera.zoom).max(14.0);
-            let w = raw_w.max(min_w).min((viewport_width - 16.0).max(1.0));
-            let h = raw_h.max(min_h).min((viewport_height - 16.0).max(1.0));
-            let cx = raw_x + raw_w * 0.5;
-            let cy = raw_y + raw_h * 0.5;
-            let x = (cx - w * 0.5).clamp(8.0, (viewport_width - w - 8.0).max(8.0));
-            let y = (cy - h * 0.5).clamp(8.0, (viewport_height - h - 8.0).max(8.0));
-            (x, y, w, h, x, y, w, h)
-        } else {
-            let w = raw_w.max(120.0).min(viewport_width - 16.0);
-            let h = raw_h.max(32.0).min(viewport_height - 16.0);
-            let x = raw_x.clamp(8.0, (viewport_width - w - 8.0).max(8.0));
-            let y = raw_y.clamp(8.0, (viewport_height - h - 8.0).max(8.0));
-            (x, y, w, h, x, y, w, h)
-        };
+        let (box_x, box_y, box_w, box_h, layout_x, layout_y, layout_w, layout_h) =
+            super::label_editor_screen_box(
+                editor,
+                camera,
+                vp_origin,
+                viewport_width,
+                viewport_height,
+                theme,
+                window,
+            );
         if box_w > 0.0 && box_h > 0.0 {
             let display = editor.display_text();
             let (sel, reversed) = editor.shown_selection();
@@ -778,12 +742,18 @@ pub fn layout_label_editor_paragraph(
             ..RichParagraphStyle::from_theme(theme.mode())
         }
     } else {
+        let is_frame_title = matches!(editor.target, super::LabelTarget::FrameTitle { .. });
         RichParagraphStyle {
             font_family: FONT_SANS.into(),
             font_size: 14.0,
+            base_weight: if is_frame_title {
+                ui::FontWeight(500.0)
+            } else {
+                ui::FontWeight::NORMAL
+            },
             line_height: 20.0,
             text_color: theme.palette().text_primary,
-            gfx_per_delta_rtl: !matches!(editor.target, super::LabelTarget::FrameTitle { .. }),
+            gfx_per_delta_rtl: !is_frame_title,
             ..RichParagraphStyle::from_theme(theme.mode())
         }
     };

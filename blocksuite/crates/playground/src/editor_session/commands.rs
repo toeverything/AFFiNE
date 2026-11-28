@@ -179,6 +179,7 @@ impl PlaygroundView {
                     self.editor.last_typing = None;
                     self.editor.preedit = None;
                     self.refresh_document();
+                    self.prune_dangling_selection(Some(w), cx);
                     self.announce_selection(cx);
                     cx.notify();
                     return Ok(());
@@ -210,6 +211,7 @@ impl PlaygroundView {
         self.editor.last_typing = None;
         self.editor.preedit = None;
         self.did_edit(Some(commit), None, w, cx);
+        self.prune_dangling_selection(Some(w), cx);
         Ok(())
     }
     pub(super) fn insertion_marks(&self, point: &DocPoint) -> DocResult<TextAttributes> {
@@ -604,6 +606,10 @@ impl PlaygroundView {
         w: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.touch_selection_menu_open {
+            self.touch_selection_menu_open = false;
+            cx.notify();
+        }
         if self.mode == crate::PlaygroundMode::Edgeless {
             if self.edgeless_key_down(e, w, cx) {
                 w.prevent_default();

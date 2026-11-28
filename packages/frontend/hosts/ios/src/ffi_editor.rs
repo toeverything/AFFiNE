@@ -277,6 +277,20 @@ pub unsafe extern "C" fn affine_ios_host_wants_software_keyboard(
         .unwrap_or(false)
 }
 
+/// # Safety
+/// `host` must be null or a live pointer returned by `affine_ios_host_create`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn affine_ios_host_wants_code_input(host: *const AffineIosHost) -> bool {
+    let Some(host) = (unsafe { host.as_ref() }) else {
+        return false;
+    };
+    host.editor
+        .borrow()
+        .as_ref()
+        .map(IosEditorRuntime::wants_code_input)
+        .unwrap_or(false)
+}
+
 /// Replaces the mounted document with an empty single-paragraph page and focuses it.
 ///
 /// # Safety

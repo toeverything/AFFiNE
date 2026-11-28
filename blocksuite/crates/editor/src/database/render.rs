@@ -474,7 +474,7 @@ pub fn layout_database_block(
             }
         }
         view_tabs_scroll_px = scroll_x.round() as i32;
-        let clip_rect = FlowRect::new(strip_left, y, strip_w, tab_h);
+        let clip_rect = axis.map_rect(FlowRect::new(strip_left, y, strip_w, tab_h));
         let mut cursor = strip_left - scroll_x;
         for tab in &measured_tabs {
             let tab_right = cursor + tab.w;

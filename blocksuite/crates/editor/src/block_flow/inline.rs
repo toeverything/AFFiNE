@@ -149,7 +149,7 @@ impl InlineLayout {
         spans
     }
 
-    pub(crate) fn paint(&self, origin: Point<Pixels>, window: &mut Window, cx: &mut App) {
+    pub fn paint(&self, origin: Point<Pixels>, window: &mut Window, cx: &mut App) {
         for piece in &self.pieces {
             let piece_origin = point(
                 origin.x + px(piece.x),

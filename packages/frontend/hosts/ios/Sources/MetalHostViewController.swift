@@ -118,6 +118,45 @@ final class MetalHostView: UIView, UITextInput {
   var onSelectedRangeChanged: ((NSRange) -> Void)?
   var onInteractionWake: (() -> Void)?
   private(set) var lastCopiedText: String?
+  private var lastWantsCodeInput: Bool = false
+
+  private var wantsCodeInput: Bool {
+    guard let handle = hostHandle else {
+      return false
+    }
+    return affine_ios_host_wants_code_input(handle)
+  }
+
+  var autocorrectionType: UITextAutocorrectionType {
+    get { wantsCodeInput ? .no : .default }
+    set {}
+  }
+
+  var autocapitalizationType: UITextAutocapitalizationType {
+    get { wantsCodeInput ? .none : .sentences }
+    set {}
+  }
+
+  var smartQuotesType: UITextSmartQuotesType {
+    get { wantsCodeInput ? .no : .default }
+    set {}
+  }
+
+  var smartDashesType: UITextSmartDashesType {
+    get { wantsCodeInput ? .no : .default }
+    set {}
+  }
+
+  func syncCodeInputTraitsIfNeeded() {
+    let next = wantsCodeInput
+    if next != lastWantsCodeInput {
+      lastWantsCodeInput = next
+      if isFirstResponder {
+        reloadInputViews()
+      }
+    }
+  }
+
   private(set) var editorInputNotificationCount: Int = 0
 
   private var isInsideImeMutation = false
@@ -205,6 +244,7 @@ final class MetalHostView: UIView, UITextInput {
       inputDelegate?.selectionDidChange(self)
     }
     onSelectedRangeChanged?(currentSelectedUtf16Range)
+    syncCodeInputTraitsIfNeeded()
     if let handle = hostHandle,
       !affine_ios_host_wants_software_keyboard(handle),
       isFirstResponder
@@ -274,6 +314,7 @@ final class MetalHostView: UIView, UITextInput {
       notifyInputDelegate(kind: pending)
     } else {
       onSelectedRangeChanged?(currentSelectedUtf16Range)
+      syncCodeInputTraitsIfNeeded()
     }
     onInteractionWake?()
   }
@@ -768,6 +809,7 @@ final class MetalHostView: UIView, UITextInput {
         endedEditableTap = true
       }
     }
+    syncCodeInputTraitsIfNeeded()
     if affine_ios_host_wants_software_keyboard(handle) {
       if endedEditableTap && !isFirstResponder {
         _ = becomeFirstResponder()

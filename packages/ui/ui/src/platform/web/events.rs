@@ -136,8 +136,8 @@ impl WebWindowInner {
             self.register_composition_start(),
             self.register_composition_update(),
             self.register_composition_end(),
-            self.register_focus(),
-            self.register_blur(),
+            self.register_focus_event("focus"),
+            self.register_focus_event("blur"),
             self.register_pointer_enter(),
         ];
         handles.extend(self.register_selection_change());
@@ -831,9 +831,18 @@ impl WebWindowInner {
         self.listen_input("input", move |event: JsValue| {
             let event: web_sys::InputEvent = event.unchecked_into();
 
-            // Composition text is delivered through the composition events;
-            // the mirror is reconciled once on compositionend.
+            // Composition text is delivered through compositionupdate, but Chromium updates
+            // textarea.value and selectionStart..selectionEnd on the subsequent input event.
             if this.is_composing.get() || event.is_composing() {
+                if let Some(d) = event.data().filter(|d| !d.is_empty())
+                    && let Some(c) = this.live_composition_clause(&d)
+                {
+                    this.with_input_handler(|h| {
+                        if h.marked_text_range().is_some() {
+                            h.replace_and_mark_text_in_range(None, &d, Some(c));
+                        }
+                    });
+                }
                 return;
             }
 
@@ -1128,38 +1137,47 @@ impl WebWindowInner {
         let this = Rc::clone(self);
         self.listen_input("compositionstart", move |event: JsValue| {
             let event: web_sys::CompositionEvent = event.unchecked_into();
-            *this.composition_start_data.borrow_mut() = event.data().unwrap_or_default();
+            let m = &this.ime_mirror;
+            let s0 = m.selection_start().unwrap_or(m.stored_selection().0);
+            *this.composition_start_data.borrow_mut() = (event.data().unwrap_or_default(), s0);
             this.is_composing.set(true);
             crate::platform::web::fast::ime_position::follow_input(&this);
         })
     }
 
+    fn live_composition_clause(&self, data: &str) -> Option<std::ops::Range<usize>> {
+        let s0 = self.composition_start_data.borrow().1;
+        let ls = self.ime_mirror.selection_start().unwrap_or(s0);
+        let sel = (ls, self.ime_mirror.element_selection_end().unwrap_or(ls));
+        let v = self.ime_mirror.value();
+        crate::platform::web::fast::ime_edit::composition_selected_range(&v, sel, data, s0 as usize)
+    }
+
     fn register_composition_update(self: &Rc<Self>) -> EventListenerHandle {
+        use crate::platform::web::fast::ime_edit;
         let this = Rc::clone(self);
         self.listen_input("compositionupdate", move |event: JsValue| {
-            let event: web_sys::CompositionEvent = event.unchecked_into();
-            let data = event.data().unwrap_or_default();
+            let ev: web_sys::CompositionEvent = event.unchecked_into();
+            let data = ev.data().unwrap_or_default();
             this.is_composing.set(true);
             crate::platform::web::fast::ime_position::follow_input(&this);
             let stored_sel = this.ime_mirror.stored_selection();
             let ls = this.ime_mirror.selection_start().unwrap_or(stored_sel.0);
             let live_sel = (ls, this.ime_mirror.element_selection_end().unwrap_or(ls));
-            let sd = this.composition_start_data.borrow().clone();
-            this.with_input_handler(|handler| {
-                let range = if handler.marked_text_range().is_none() {
-                    handler.selected_text_range(false).and_then(|sel| {
-                        crate::platform::web::fast::ime_edit::composition_replacement_range(
-                            (&this.ime_mirror.stored_text(), stored_sel),
-                            (&this.ime_mirror.value(), live_sel),
-                            &sd,
-                            &data,
-                            sel.range,
-                        )
-                    })
-                } else {
-                    None
-                };
-                handler.replace_and_mark_text_in_range(range, &data, None);
+            let live_text = this.ime_mirror.value();
+            let sd = this.composition_start_data.borrow().0.clone();
+            let clause = this.live_composition_clause(&data);
+            this.with_input_handler(|h| {
+                let st = this.ime_mirror.stored_text();
+                let sel0 = h
+                    .marked_text_range()
+                    .is_none()
+                    .then(|| h.selected_text_range(false));
+                let range = sel0.flatten().and_then(|sel| {
+                    let pair = ((st.as_str(), stored_sel), (live_text.as_str(), live_sel));
+                    ime_edit::composition_replacement_range(pair.0, pair.1, &sd, &data, sel.range)
+                });
+                h.replace_and_mark_text_in_range(range, &data, clause);
             });
         })
     }
@@ -1167,10 +1185,10 @@ impl WebWindowInner {
     fn register_composition_end(self: &Rc<Self>) -> EventListenerHandle {
         let this = Rc::clone(self);
         self.listen_input("compositionend", move |event: JsValue| {
-            let event: web_sys::CompositionEvent = event.unchecked_into();
-            let data = event.data().unwrap_or_default();
+            let ev: web_sys::CompositionEvent = event.unchecked_into();
+            let data = ev.data().unwrap_or_default();
             this.is_composing.set(false);
-            this.composition_start_data.borrow_mut().clear();
+            *this.composition_start_data.borrow_mut() = (String::new(), 0);
             this.with_input_handler(|handler| {
                 // Only commit the final text when a marked range still
                 // exists. When a caret move ended the composition, the
@@ -1192,45 +1210,20 @@ impl WebWindowInner {
         })
     }
 
-    fn register_focus(self: &Rc<Self>) -> EventListenerHandle {
+    fn register_focus_event(self: &Rc<Self>, event: &'static str) -> EventListenerHandle {
         let this = Rc::clone(self);
-        EventListenerHandle::add(
-            self.browser_window.as_ref(),
-            "focus",
-            move |_event: JsValue| {
-                if this.suppress_focus_status_events.get() {
-                    return;
-                }
+        EventListenerHandle::add(self.browser_window.as_ref(), event, move |_: JsValue| {
+            if !this.suppress_focus_status_events.get() {
                 this.refresh_active_status();
-            },
-        )
-    }
-
-    fn register_blur(self: &Rc<Self>) -> EventListenerHandle {
-        let this = Rc::clone(self);
-        EventListenerHandle::add(
-            self.browser_window.as_ref(),
-            "blur",
-            move |_event: JsValue| {
-                if this.suppress_focus_status_events.get() {
-                    return;
-                }
-                this.refresh_active_status();
-            },
-        )
+            }
+        })
     }
 
     fn register_pointer_enter(self: &Rc<Self>) -> EventListenerHandle {
         let this = Rc::clone(self);
-        self.listen("pointerenter", move |_event: JsValue| {
-            {
-                let mut state = this.state.borrow_mut();
-                state.is_hovered = true;
-            }
-            this.with_callback(
-                |callbacks| &mut callbacks.hover_status_change,
-                |callback| callback(true),
-            );
+        self.listen("pointerenter", move |_: JsValue| {
+            this.state.borrow_mut().is_hovered = true;
+            this.with_callback(|c| &mut c.hover_status_change, |cb| cb(true));
         })
     }
 }
@@ -1238,36 +1231,9 @@ impl WebWindowInner {
 fn dom_key_to_gpui_key(event: &web_sys::KeyboardEvent) -> String {
     let key = event.key();
     match key.as_str() {
-        "Enter" => "enter".to_string(),
-        "Backspace" => "backspace".to_string(),
-        "Tab" => "tab".to_string(),
-        "Escape" => "escape".to_string(),
-        "Delete" => "delete".to_string(),
         " " => "space".to_string(),
-        "ArrowLeft" => "left".to_string(),
-        "ArrowRight" => "right".to_string(),
-        "ArrowUp" => "up".to_string(),
-        "ArrowDown" => "down".to_string(),
-        "Home" => "home".to_string(),
-        "End" => "end".to_string(),
-        "PageUp" => "pageup".to_string(),
-        "PageDown" => "pagedown".to_string(),
-        "Insert" => "insert".to_string(),
-        "Control" => "control".to_string(),
-        "Alt" => "alt".to_string(),
-        "Shift" => "shift".to_string(),
         "Meta" => "platform".to_string(),
-        "CapsLock" => "capslock".to_string(),
-        other => {
-            if let Some(rest) = other.strip_prefix('F') {
-                if let Ok(number) = rest.parse::<u8>() {
-                    if (1..=35).contains(&number) {
-                        return format!("f{number}");
-                    }
-                }
-            }
-            other.to_lowercase()
-        }
+        other => other.strip_prefix("Arrow").unwrap_or(other).to_lowercase(),
     }
 }
 
@@ -1292,15 +1258,8 @@ fn modifiers_from_keyboard_event(event: &web_sys::KeyboardEvent, _is_mac: bool) 
     }
 }
 
-fn modifiers_from_mouse_event(event: &web_sys::PointerEvent, _is_mac: bool) -> Modifiers {
-    let mouse_event: &web_sys::MouseEvent = event.as_ref();
-    Modifiers {
-        control: mouse_event.ctrl_key(),
-        alt: mouse_event.alt_key(),
-        shift: mouse_event.shift_key(),
-        platform: mouse_event.meta_key(),
-        function: false,
-    }
+fn modifiers_from_mouse_event(event: &web_sys::PointerEvent, is_mac: bool) -> Modifiers {
+    modifiers_from_wheel_event(event.as_ref(), is_mac)
 }
 
 fn modifiers_from_wheel_event(event: &web_sys::MouseEvent, _is_mac: bool) -> Modifiers {

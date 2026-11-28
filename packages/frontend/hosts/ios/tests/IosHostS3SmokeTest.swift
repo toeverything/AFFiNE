@@ -1077,6 +1077,24 @@ struct IosHostS3SmokeTest {
         "External editor mutation must notify UITextInputDelegate"
       )
       vcSafe.textHostView.inputDelegate = nil
+
+      // Code input mode disables autocorrection, autocapitalization, smart quotes, and smart dashes.
+      affine_ios_host_reset_empty_doc(safeHandle)
+      requireS3(
+        !affine_ios_host_wants_code_input(safeHandle)
+          && vcSafe.textHostView.autocorrectionType == .default
+          && vcSafe.textHostView.autocapitalizationType == .sentences,
+        "prose paragraph must use default autocorrection and sentence capitalization"
+      )
+      vcSafe.textHostView.insertText("``` ")
+      requireS3(
+        affine_ios_host_wants_code_input(safeHandle)
+          && vcSafe.textHostView.autocorrectionType == .no
+          && vcSafe.textHostView.autocapitalizationType == .none
+          && vcSafe.textHostView.smartQuotesType == .no
+          && vcSafe.textHostView.smartDashesType == .no,
+        "code block must disable autocorrection, autocapitalization, smart quotes, and smart dashes"
+      )
     }
 
     // Reload showcase document and trigger a real GPU Metal frame render.

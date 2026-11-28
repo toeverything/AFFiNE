@@ -137,6 +137,7 @@ impl PlaygroundView {
                         .hit_text(local_x, local_y, &cell.input.text)
                         .utf16_offset as usize;
                     cell.input.select(off..off);
+                    cell.goal_x = None;
                 }
             }
         } else {
@@ -207,6 +208,7 @@ impl PlaygroundView {
     ) -> Option<()> {
         let (block_id, row_id, column_id, splice) = {
             let cell = self.table_cell.as_mut()?;
+            cell.goal_x = None;
             let splice = f(cell);
             (
                 cell.block_id.clone(),
@@ -418,22 +420,28 @@ impl PlaygroundView {
     }
 
     /// Move the table cell caret one visual line up or down using `TableCellHit` geometry.
-    /// Returns `Some(moved_within_cell)` or `None` when at the top/bottom visual edge (unshifted).
+    /// Returns `Some(moved_within_cell)` or `None` when at the top/bottom visual edge (unshifted),
+    /// always latching `cell.goal_x` so cross-row navigation preserves horizontal column position.
     fn move_table_cell_vertical(&mut self, down: bool, shift: bool) -> Option<bool> {
-        let (block_id, row_id, column_id, focus, display) = self.table_cell.as_ref().map(|c| {
-            (
-                c.block_id.clone(),
-                c.row_id.clone(),
-                c.column_id.clone(),
-                c.input.focus(),
-                c.input.display_text(),
-            )
-        })?;
+        let (block_id, row_id, column_id, focus, display, saved_goal) =
+            self.table_cell.as_ref().map(|c| {
+                (
+                    c.block_id.clone(),
+                    c.row_id.clone(),
+                    c.column_id.clone(),
+                    c.input.focus(),
+                    c.input.display_text(),
+                    c.goal_x,
+                )
+            })?;
         let end = utf16_len(&display);
+        let mut latched_x = saved_goal;
         let at_edge = self.flow_layout().and_then(|layout| {
             let (_, _, hit) = Self::find_table_cell_hit(&layout, &block_id, &row_id, &column_id)?;
             let lh = hit.text.line_height();
             let (cx_local, line) = hit.text.caret(focus);
+            let gx = saved_goal.unwrap_or(cx_local);
+            latched_x = Some(gx);
             let lines = (hit.text.height() / lh.max(1.0)).round().max(1.0) as usize;
             if down && line + 1 >= lines {
                 return Some(Err(end));
@@ -444,9 +452,12 @@ impl PlaygroundView {
             let target = if down { line + 1 } else { line - 1 };
             let y = hit.text_origin.1 + target as f32 * lh + lh * 0.5;
             Some(Ok(hit
-                .hit_text(hit.text_origin.0 + cx_local, y, &display)
+                .hit_text(hit.text_origin.0 + gx, y, &display)
                 .utf16_offset as usize))
         });
+        if let Some(cell) = self.table_cell.as_mut() {
+            cell.goal_x = latched_x;
+        }
         let to = match at_edge {
             Some(Ok(pos)) => pos,
             Some(Err(_)) if !shift => return None,
@@ -539,6 +550,9 @@ impl PlaygroundView {
                     }
                     return true;
                 }
+                if let Some(cell) = self.table_cell.as_mut() {
+                    cell.goal_x = None;
+                }
                 if let Some(Some(splice)) = self
                     .table_cell
                     .as_mut()
@@ -582,6 +596,9 @@ impl PlaygroundView {
                     }
                     return true;
                 }
+                if let Some(cell) = self.table_cell.as_mut() {
+                    cell.goal_x = None;
+                }
                 if let Some(Some(splice)) = self
                     .table_cell
                     .as_mut()
@@ -607,29 +624,32 @@ impl PlaygroundView {
                         cx.notify();
                     }
                     None if !m.shift => {
+                        let goal_x = self.table_cell.as_ref().and_then(|c| c.goal_x);
                         if let Some((bid, rows, cols, r, c)) = self.focused_table_grid() {
                             if down && r + 1 < rows.len() {
-                                self.focus_table_cell_at_edge(
+                                self.focus_table_cell_at_x(
                                     bid,
                                     rows[r + 1].clone(),
                                     cols[c].clone(),
-                                    false,
+                                    goal_x,
+                                    true,
                                     window,
                                     cx,
                                 );
                             } else if !down && r > 0 {
-                                self.focus_table_cell_at_edge(
+                                self.focus_table_cell_at_x(
                                     bid,
                                     rows[r - 1].clone(),
                                     cols[c].clone(),
-                                    true,
+                                    goal_x,
+                                    false,
                                     window,
                                     cx,
                                 );
                             } else if !self
                                 .exit_table_to_adjacent_block(&bid, down, true, window, cx)
                             {
-                                // R1: last block in document — keep cell focus and move to edge.
+                                // Last/first block in document — keep cell focus and move to edge.
                                 if let Some(cell) = self.table_cell.as_mut() {
                                     let pos = if down { utf16_len(&cell.input.text) } else { 0 };
                                     cell.input.select(pos..pos);

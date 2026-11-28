@@ -11,6 +11,7 @@ pub struct InlineTableCell {
     pub row_id: String,
     pub column_id: String,
     pub anchored: AnchoredInlineInput,
+    pub goal_x: Option<f32>,
 }
 
 impl Deref for InlineTableCell {
@@ -34,6 +35,7 @@ impl InlineTableCell {
             row_id,
             column_id,
             anchored: AnchoredInlineInput::new(initial, true),
+            goal_x: None,
         }
     }
 }

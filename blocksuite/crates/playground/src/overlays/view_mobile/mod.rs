@@ -28,6 +28,10 @@ mod tests_mindmap_and_embed;
 #[cfg(test)]
 mod tests_parity;
 #[cfg(test)]
+mod tests_record_sheet_touch;
+#[cfg(test)]
+mod tests_retest_fixes;
+#[cfg(test)]
 mod tests_sync;
 #[cfg(test)]
 mod tests_touch_gestures;
@@ -90,8 +94,7 @@ impl PlaygroundView {
                 true
             }
             OverlayEvent::OpenEmbedDoc { page_id } => {
-                self.last_opened_embed_doc = Some(page_id.clone());
-                cx.notify();
+                self.open_linked_doc(page_id, Some(window), cx);
                 true
             }
             OverlayEvent::FocusTableCell {
@@ -694,7 +697,101 @@ impl PlaygroundView {
         }
         if closed {
             cx.notify();
+            return true;
         }
-        closed
+        self.navigate_back(Some(window), cx)
+    }
+
+    /// Navigate to a linked document inside the current workspace when present, or show a
+    /// gentle toast if the target page does not exist locally. Always records `last_opened_embed_doc`.
+    pub fn open_linked_doc(
+        &mut self,
+        page_id: &str,
+        window: Option<&mut Window>,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        self.last_opened_embed_doc = Some(page_id.to_string());
+        if self.page_id.as_deref() == Some(page_id) {
+            cx.notify();
+            return true;
+        }
+        if self.state.workspace.page(page_id).is_some() {
+            if let Some(prev) = self.page_id.clone() {
+                self.nav_history.push(prev);
+            }
+            self.switch_active_page(page_id, window, cx);
+            true
+        } else {
+            let generation = self
+                .overlays
+                .show_context_toast("Linked document not found in this workspace.");
+            self.context_toast_timer = Some(cx.spawn(async move |this, cx| {
+                cx.background_executor()
+                    .timer(std::time::Duration::from_millis(CONTEXT_TOAST_MS))
+                    .await;
+                let _ = this.update(cx, |this, cx| {
+                    if this.overlays.context_toast_expired(generation) {
+                        cx.notify();
+                    }
+                });
+            }));
+            cx.notify();
+            false
+        }
+    }
+
+    /// Return to the previously visited workspace page if one exists on the navigation stack.
+    pub fn navigate_back(&mut self, window: Option<&mut Window>, cx: &mut Context<Self>) -> bool {
+        while let Some(prev) = self.nav_history.pop() {
+            if self.state.workspace.page(&prev).is_some() {
+                self.switch_active_page(&prev, window, cx);
+                return true;
+            }
+        }
+        false
+    }
+
+    fn switch_active_page(
+        &mut self,
+        page_id: &str,
+        mut window: Option<&mut Window>,
+        cx: &mut Context<Self>,
+    ) {
+        self.editor.preedit = None;
+        self.finish_inline_targets(
+            InlineTargetEnd::DiscardPreedit,
+            window.as_deref_mut(),
+            Some(cx),
+        );
+        self.editor = Default::default();
+        self.suppress_unselected_root_input = true;
+        self.overlays.reset();
+        self.reading_anchor = None;
+        self.flow = crate::block_flow::BlockFlow::new();
+        self.flow.database_state.mobile_readonly = self.database_readonly;
+        self.flow.database_state.clock_ms = self.local_calendar_now(cx).0;
+        self.layout = None;
+        self.edgeless = crate::edgeless::EdgelessCanvasState::new();
+        self.active_touch_owner = crate::TouchStrokeOwner::None;
+        self.touch_long_press_anchor = None;
+        self.touch_scroll_axis_lock = None;
+        self.scrollbar_drag = None;
+        self.edgeless_readonly_selection_target = None;
+        self.page_scroll_fling = None;
+        self.code_scroll_fling = None;
+        self.edgeless_pan_fling = None;
+        self.touch_selection_menu_open = false;
+        self.database_record_sheet = None;
+        self.scroll_y = 0.0;
+        self.page_id = Some(page_id.to_string());
+        self.refresh_document();
+        if let Some(cb) = self.on_active_doc_changed.as_mut() {
+            cb(page_id);
+        }
+        if let Some(w) = window {
+            w.notify_text_input_changed(&self.editor_focus);
+            w.notify_text_selection_changed(&self.editor_focus);
+        }
+        cx.notify();
     }
 }

@@ -458,12 +458,29 @@ impl PlaygroundView {
                     cx.notify();
                     return true;
                 }
+                let before = self.selection_snapshot();
                 let now_ms = self.now_ms(cx) as u64;
                 let row_id = self.fresh_block_id();
                 if let Ok(page) = self.page_mut() {
                     let _ = page.stop_capturing();
                     if let Ok(commit) = page.add_database_row(block_id, &row_id, now_ms) {
-                        self.apply_database_commit(commit, window, cx);
+                        if commit.is_some()
+                            && let Some(before) = before
+                        {
+                            let _ = page.set_undo_selection_snapshot(before);
+                        }
+                        let _ = page.stop_capturing();
+                        let mut window = window;
+                        self.apply_database_commit(commit, window.as_deref_mut(), cx);
+                        if let Some(window) = window {
+                            self.select_document_range(
+                                crate::editor_session::DocumentSelection::caret(
+                                    crate::editor_session::DocPoint::new(&row_id, 0),
+                                ),
+                                window,
+                                cx,
+                            );
+                        }
                     }
                 }
                 true

@@ -1,24 +1,21 @@
-//! Touch gesture handling: inertial flings (`J1`/`T7`), long-press drag selection & action
-//! capsule (`J2`), expanded 44pt control hit targets (`T2`), touch link/reference tap (`J4`/`J5`),
-//! and read-only Edgeless link/reference tap + long-press word selection (`T6`).
+//! Touch gesture handling: inertial flings, long-press drag selection & action capsule,
+//! expanded 44pt control hit targets, touch link/reference tap, and read-only Edgeless tap/selection.
+
+mod selection;
 
 use blocksuite_playground_doc::schema::ListType;
-use ui::{
-    AnyElement, Bounds, Context, FontWeight, InertialDecay, MouseButton, Pixels, TouchGesture,
-    Window, div, point, prelude::*, px,
-};
+use ui::{Context, InertialDecay, Pixels, TouchGesture, Window, point, px};
 
 use crate::{
     PlaygroundMode, PlaygroundView, TOPBAR_HEIGHT,
     block_flow::{
-        FlowKind, FlowLayout, FlowRect, FlowTextLayout, PAGE_SURFACE_ID,
-        heading_marker_rect_for_direction, page_geometry,
+        FlowKind, FlowLayout, FlowRect, FlowTextLayout, heading_marker_rect_for_direction,
+        page_geometry,
     },
     edgeless::{NOTE_CARD_PADDING, SpatialItemKind, point_in_rotated_rect, rotate_point_around},
     editor_session::{DocPoint, DocumentSelection, word_range},
     overlays::{CONTROL_HIT_SIZE, OverlayEvent},
     rich_text::DecorationKind,
-    theme::Palette,
 };
 
 const FLING_FRICTION: f64 = 3.25;
@@ -32,11 +29,38 @@ pub(crate) enum TouchScrollAxis {
     Vertical,
 }
 
+/// Stroke-level touch ownership latched at finger-down and held until release so closing a
+/// modal overlay mid-gesture never leaks trailing motion or fling momentum to the page behind it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) enum TouchStrokeOwner {
+    #[default]
+    None,
+    Page,
+    ModalOverlay,
+}
+
 impl PlaygroundView {
     pub(crate) fn cancel_flings(&mut self) {
         self.page_scroll_fling = None;
         self.code_scroll_fling = None;
         self.edgeless_pan_fling = None;
+    }
+
+    pub(crate) fn has_live_modal_touch_overlay(
+        &mut self,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if self.database_record_sheet.is_some() {
+            if self.record_sheet_geometry(window).is_some() {
+                return true;
+            }
+            self.database_record_sheet = None;
+            cx.notify();
+        }
+        self.overlays.bookmark_prompt().is_some()
+            || self.overlays.equation_editor().is_some()
+            || self.overlays.link_field().is_some()
     }
 
     pub(crate) fn handle_touch_gestures(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -46,35 +70,51 @@ impl PlaygroundView {
             self.touch_scroll_axis_lock = None;
         }
         let now_ms = self.now_ms(cx);
-        if self.database_record_sheet.is_some() {
+        let sheet_geom = if self.database_record_sheet.is_some() {
+            let g = self.record_sheet_geometry(window);
+            if g.is_none() {
+                self.database_record_sheet = None;
+                cx.notify();
+            }
+            g
+        } else {
+            None
+        };
+        let modal_open = sheet_geom.is_some()
+            || self.overlays.bookmark_prompt().is_some()
+            || self.overlays.equation_editor().is_some()
+            || self.overlays.link_field().is_some();
+        if self.active_touch_owner == TouchStrokeOwner::ModalOverlay || modal_open {
             self.cancel_flings();
-            let geom = self.record_sheet_geometry(window);
             for gesture in window.take_touch_gestures() {
-                let Some((sheet_left, sheet_top, sheet_w, _, max_scroll)) = geom else {
-                    continue;
-                };
                 match gesture {
-                    TouchGesture::Tap { position, count: 1 } => {
-                        let (x, y) = (f32::from(position.x), f32::from(position.y));
-                        let outside = y < sheet_top || x < sheet_left || x > sheet_left + sheet_w;
-                        if outside {
-                            self.close_database_record_sheet(cx);
+                    TouchGesture::PanStart { origin, .. } => {
+                        self.active_touch_owner = TouchStrokeOwner::ModalOverlay;
+                        if let Some((sheet_left, sheet_top, sheet_w, _, _)) = sheet_geom {
+                            let (x, y) = (f32::from(origin.x), f32::from(origin.y));
+                            if let Some(s) = self.database_record_sheet.as_mut() {
+                                s.scroll_fling = None;
+                                let in_sheet_x = x >= sheet_left && x <= sheet_left + sheet_w;
+                                if in_sheet_x && y >= sheet_top && y <= sheet_top + 68.0 {
+                                    s.grabber_drag_start_y.get_or_insert(y);
+                                    s.touch_body_drag = false;
+                                } else if in_sheet_x && y > sheet_top + 68.0 {
+                                    s.grabber_drag_start_y = None;
+                                    s.touch_body_drag = true;
+                                } else {
+                                    s.grabber_drag_start_y = None;
+                                    s.touch_body_drag = false;
+                                }
+                            }
                         }
                     }
-                    TouchGesture::PanStart { origin, .. } => {
-                        let (x, y) = (f32::from(origin.x), f32::from(origin.y));
-                        if let Some(s) = self.database_record_sheet.as_mut() {
-                            s.scroll_fling = None;
-                            let in_sheet_x = x >= sheet_left && x <= sheet_left + sheet_w;
-                            if in_sheet_x && y >= sheet_top && y <= sheet_top + 56.0 {
-                                s.grabber_drag_start_y = Some(y);
-                                s.touch_body_drag = false;
-                            } else if in_sheet_x && y > sheet_top + 56.0 {
-                                s.grabber_drag_start_y = None;
-                                s.touch_body_drag = true;
-                            } else {
-                                s.grabber_drag_start_y = None;
-                                s.touch_body_drag = false;
+                    TouchGesture::Tap { position, count: 1 } => {
+                        if let Some((sheet_left, sheet_top, sheet_w, _, _)) = sheet_geom {
+                            let (x, y) = (f32::from(position.x), f32::from(position.y));
+                            let outside =
+                                y < sheet_top || x < sheet_left || x > sheet_left + sheet_w;
+                            if outside {
+                                self.close_database_record_sheet(cx);
                             }
                         }
                     }
@@ -114,6 +154,7 @@ impl PlaygroundView {
                         } else if was_body
                             && !cancelled
                             && vy.abs() >= FLING_MIN_VELOCITY
+                            && let Some((_, _, _, _, max_scroll)) = sheet_geom
                             && max_scroll > 0.0
                             && let Some(s) = self.database_record_sheet.as_mut()
                         {
@@ -132,6 +173,7 @@ impl PlaygroundView {
             if window.active_touch_count() == 0 {
                 self.touch_long_press_anchor = None;
                 self.touch_scroll_axis_lock = None;
+                self.active_touch_owner = TouchStrokeOwner::None;
             }
             return;
         }
@@ -153,8 +195,7 @@ impl PlaygroundView {
                         continue;
                     }
                     if let Some(page_id) = self.hit_inline_reference_at(x, y, window) {
-                        self.last_opened_embed_doc = Some(page_id);
-                        cx.notify();
+                        self.open_linked_doc(&page_id, Some(window), cx);
                     } else if let Some(url) = self.hit_link_url_at(x, y, window) {
                         self.last_opened_link_url = Some(url.clone());
                         cx.open_url(&url);
@@ -322,32 +363,33 @@ impl PlaygroundView {
         if window.active_touch_count() == 0 {
             self.touch_long_press_anchor = None;
             self.touch_scroll_axis_lock = None;
+            self.active_touch_owner = TouchStrokeOwner::None;
         }
     }
 
     pub(crate) fn step_page_flings(&mut self, now_ms: f64, window: &mut Window) {
         if self.database_record_sheet.is_some() {
-            self.page_scroll_fling = None;
-            self.code_scroll_fling = None;
-            let max_scroll = self
-                .record_sheet_geometry(window)
-                .map_or(0.0, |(_, _, _, _, m)| m);
-            if let Some(s) = self.database_record_sheet.as_mut()
-                && let Some(fling) = s.scroll_fling
-            {
-                let next = fling.value_at(now_ms) as f32;
-                let clamped = next.clamp(0.0, max_scroll).round();
-                s.scroll_y = clamped;
-                if fling.velocity_at(now_ms).abs() <= fling.stop_velocity
-                    || next <= 0.0
-                    || next >= max_scroll
+            if let Some((_, _, _, _, max_scroll)) = self.record_sheet_geometry(window) {
+                self.page_scroll_fling = None;
+                self.code_scroll_fling = None;
+                if let Some(s) = self.database_record_sheet.as_mut()
+                    && let Some(fling) = s.scroll_fling
                 {
-                    s.scroll_fling = None;
-                } else {
-                    window.request_animation_frame();
+                    let next = fling.value_at(now_ms) as f32;
+                    let clamped = next.clamp(0.0, max_scroll).round();
+                    s.scroll_y = clamped;
+                    if fling.velocity_at(now_ms).abs() <= fling.stop_velocity
+                        || next <= 0.0
+                        || next >= max_scroll
+                    {
+                        s.scroll_fling = None;
+                    } else {
+                        window.request_animation_frame();
+                    }
                 }
+                return;
             }
-            return;
+            self.database_record_sheet = None;
         }
         if let Some(fling) = self.page_scroll_fling {
             let next = fling.value_at(now_ms) as f32;
@@ -567,6 +609,7 @@ impl PlaygroundView {
         &mut self,
         wx: f32,
         wy: f32,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
         let Some(snapshot) = self.snapshot.clone() else {
@@ -590,8 +633,7 @@ impl PlaygroundView {
                 continue;
             };
             if let Some(pid) = Self::hit_inline_reference_in_layout(&layout, fx, fy) {
-                self.last_opened_embed_doc = Some(pid);
-                cx.notify();
+                self.open_linked_doc(&pid, Some(window), cx);
                 return true;
             }
             if let Some(url) = self.hit_link_in_layout(&layout, fx, fy, &snapshot) {
@@ -647,149 +689,5 @@ impl PlaygroundView {
                 return;
             }
         }
-    }
-
-    /// Screen-space bounding rectangles `(start_rect, end_rect)` of the active text selection
-    /// endpoints for native iOS/Android selection-handle overlays (`J2`).
-    pub fn selection_endpoint_rects(
-        &self,
-        window: &Window,
-    ) -> Option<(Bounds<Pixels>, Bounds<Pixels>)> {
-        if self.mode == PlaygroundMode::Edgeless {
-            let (spatial_id, is_note) = self
-                .edgeless
-                .authoring
-                .editing_spatial_block()
-                .map(|(id, n)| (id.to_string(), n))
-                .or_else(|| self.edgeless_readonly_selection_target.clone())?;
-            let sel = self.editor.selection.as_ref()?;
-            let layout = self.edgeless.cached_block_layout(&spatial_id, is_note)?;
-            let item = self
-                .edgeless
-                .authoring
-                .painted_items
-                .iter()
-                .find(|i| i.id == spatial_id)?;
-            let (start, end, _, _, _) = sel.ordered(&layout)?;
-            let sr = layout.block(&start.block_id)?.caret_rect(start.caret)?;
-            let er = layout.block(&end.block_id)?.caret_rect(end.caret)?;
-            let pad = if is_note { NOTE_CARD_PADDING } else { 0.0 };
-            let vp = point(px(0.0), px(TOPBAR_HEIGHT));
-            let to_screen = |r: FlowRect| {
-                let lx = item.rect.x + (r.x + pad) * item.scale;
-                let ly = item.rect.y + (r.y + pad) * item.scale;
-                let (cx_w, cy_w) = item.rect.center();
-                let (wx, wy) = rotate_point_around(lx, ly, cx_w, cy_w, item.rotate_deg);
-                let p = self
-                    .edgeless
-                    .camera
-                    .world_to_screen(point(px(wx), px(wy)), vp);
-                let z = self.edgeless.camera.zoom * item.scale;
-                Bounds::new(p, ui::size(px((r.w * z).max(1.0)), px((r.h * z).max(1.0))))
-            };
-            return Some((to_screen(sr), to_screen(er)));
-        }
-        if let Some(cell) = self.table_cell.as_ref() {
-            let layout = self.flow_layout()?;
-            let s = cell.input.selection.start;
-            let e = cell.input.selection.end;
-            let start_b = self
-                .table_cell_selection_bounds(s..s, &layout, window)
-                .into_iter()
-                .next()?;
-            let end_b = self
-                .table_cell_selection_bounds(e..e, &layout, window)
-                .into_iter()
-                .next()?;
-            return Some((start_b, end_b));
-        }
-        let sel = self.editor.selection.as_ref()?;
-        let layout = self.flow_layout()?;
-        let (start, end, _, _, _) = sel.ordered(&layout)?;
-        let sr = layout.block(&start.block_id)?.caret_rect(start.caret)?;
-        let er = layout.block(&end.block_id)?.caret_rect(end.caret)?;
-        Some((self.screen_rect(sr, window), self.screen_rect(er, window)))
-    }
-
-    /// Compact touch selection action capsule (`Copy` / `Cut` / `Paste` / `Select All`) shown
-    /// after touch long-press selection when no native host menu takes over (`J2`).
-    pub(crate) fn render_touch_selection_menu(
-        &self,
-        palette: &Palette,
-        window: &Window,
-        cx: &mut Context<Self>,
-    ) -> Option<AnyElement> {
-        if self.native_selection_ui || !self.touch_selection_menu_open {
-            return None;
-        }
-        let (start_b, end_b) = self.selection_endpoint_rects(window)?;
-        let mid_x = (f32::from(start_b.origin.x) + f32::from(end_b.origin.x)) * 0.5;
-        let top_y = (f32::from(start_b.origin.y) - 48.0).max(TOPBAR_HEIGHT + 6.0);
-        let readonly = self.mode == PlaygroundMode::Edgeless && self.edgeless_readonly;
-        let menu_w = if readonly { 72.0 } else { 228.0 };
-        let left = (mid_x - menu_w * 0.5)
-            .clamp(8.0, (self.window_size.0 - menu_w - 8.0).max(8.0))
-            .round();
-        let mut bar = div()
-            .absolute()
-            .left(px(left))
-            .top(px(top_y.round()))
-            .h(px(40.0))
-            .px(px(6.0))
-            .rounded(px(8.0))
-            .bg(palette.panel)
-            .border_1()
-            .border_color(palette.border)
-            .flex()
-            .items_center()
-            .gap(px(4.0))
-            .snapshot("overlay.touch_selection_menu", Some(PAGE_SURFACE_ID));
-        let btn = |id: &'static str, label: &'static str| {
-            div()
-                .id(id)
-                .px(px(8.0))
-                .h(px(36.0))
-                .rounded(px(4.0))
-                .flex()
-                .items_center()
-                .text_size(px(12.0))
-                .font_weight(FontWeight::MEDIUM)
-                .text_color(palette.text_primary)
-                .cursor_pointer()
-                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                .child(label)
-        };
-        bar = bar.child(
-            btn("touch-sel-copy", "Copy").on_click(cx.listener(|this, _, w, cx| {
-                this.run_selection_copy(None, w, cx);
-                this.touch_selection_menu_open = false;
-                cx.notify();
-            })),
-        );
-        if !readonly {
-            bar = bar
-                .child(
-                    btn("touch-sel-cut", "Cut").on_click(cx.listener(|this, _, w, cx| {
-                        this.run_selection_cut(None, w, cx);
-                        this.touch_selection_menu_open = false;
-                        cx.notify();
-                    })),
-                )
-                .child(
-                    btn("touch-sel-paste", "Paste").on_click(cx.listener(|this, _, w, cx| {
-                        this.run_selection_paste(None, w, cx);
-                        this.touch_selection_menu_open = false;
-                        cx.notify();
-                    })),
-                )
-                .child(btn("touch-sel-all", "Select All").on_click(cx.listener(
-                    |this, _, w, cx| {
-                        this.run_selection_select_all(None, w, cx);
-                        this.touch_selection_menu_open = false;
-                        cx.notify();
-                    },
-                )));
-        }
-        Some(bar.into_any_element())
     }
 }

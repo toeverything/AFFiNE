@@ -176,7 +176,7 @@ pub(crate) type CalendarClockFn = Rc<dyn Fn() -> (i64, i32)>;
 pub(crate) type CalendarOffsetAtFn = Rc<dyn Fn(i64) -> i32>;
 pub(crate) type ImagePickerFn = Rc<dyn Fn()>;
 
-pub(crate) use touch_interaction::TouchScrollAxis;
+pub(crate) use touch_interaction::{TouchScrollAxis, TouchStrokeOwner};
 
 /// Interactive GPUI root view for desktop, Web canvas, and headless verification sessions.
 pub struct PlaygroundView {
@@ -217,6 +217,10 @@ pub struct PlaygroundView {
     pub(crate) suppress_unselected_root_input: bool,
     /// Most recent document id opened via clicking an `embed-linked-doc` / `embed-synced-doc` card.
     pub(crate) last_opened_embed_doc: Option<String>,
+    /// Stack of previously visited page ids for in-workspace back navigation.
+    pub(crate) nav_history: Vec<String>,
+    /// Optional host callback invoked when the active workspace document id changes.
+    pub(crate) on_active_doc_changed: Option<Box<dyn FnMut(&str)>>,
     pub(crate) blob_fetches: BTreeMap<String, BlobFetchState>,
     pub(crate) blob_uploads: BTreeMap<String, view_room::BlobUploadState>,
     pub(crate) dirty_text: Option<BTreeSet<String>>,
@@ -243,6 +247,7 @@ pub struct PlaygroundView {
     pub(crate) code_scroll_fling: Option<(String, ui::InertialDecay)>,
     pub(crate) edgeless_pan_fling: Option<(ui::InertialDecay, ui::InertialDecay)>,
     pub(crate) touch_scroll_axis_lock: Option<TouchScrollAxis>,
+    pub(crate) active_touch_owner: TouchStrokeOwner,
     pub(crate) last_touch_scroll_ms: Option<f64>,
     pub(crate) keep_keyboard_on_block_selection: bool,
     pub(crate) block_selection_return_caret: Option<String>,
@@ -366,6 +371,8 @@ impl PlaygroundView {
             table_cell: None,
             suppress_unselected_root_input: false,
             last_opened_embed_doc: None,
+            nav_history: Vec::new(),
+            on_active_doc_changed: None,
             blob_fetches: BTreeMap::new(),
             blob_uploads: BTreeMap::new(),
             dirty_text: None,
@@ -391,6 +398,7 @@ impl PlaygroundView {
             code_scroll_fling: None,
             edgeless_pan_fling: None,
             touch_scroll_axis_lock: None,
+            active_touch_owner: TouchStrokeOwner::None,
             last_touch_scroll_ms: None,
             keep_keyboard_on_block_selection: false,
             block_selection_return_caret: None,
@@ -479,6 +487,16 @@ impl PlaygroundView {
         self.last_opened_embed_doc.as_deref()
     }
 
+    /// Currently active workspace page id, if any.
+    pub fn active_doc_id(&self) -> Option<&str> {
+        self.page_id.as_deref()
+    }
+
+    /// Register a host callback notified whenever the active workspace document changes.
+    pub fn set_on_active_doc_changed(&mut self, cb: Box<dyn FnMut(&str)>) {
+        self.on_active_doc_changed = Some(cb);
+    }
+
     /// Active 0-based PDF preview page index for an attachment block.
     pub fn attachment_pdf_page_index(&self, block_id: &str) -> Option<usize> {
         self.pdf_previews.get(block_id).map(|p| p.page_index)
@@ -535,6 +553,7 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) {
         let now_ms = self.now_ms(cx);
+        self.touch_selection_menu_open = false;
         self.overlays.close_context_menu(now_ms);
         self.edgeless_camera_transition = None;
         self.edgeless_pan_fling = None;
@@ -698,6 +717,7 @@ impl PlaygroundView {
         self.code_scroll_fling = None;
         self.edgeless_pan_fling = None;
         self.touch_scroll_axis_lock = None;
+        self.active_touch_owner = TouchStrokeOwner::None;
         self.touch_long_press_anchor = None;
         self.touch_selection_menu_open = false;
         self.edgeless_readonly_selection_target = None;
@@ -727,6 +747,8 @@ impl PlaygroundView {
         self.ime_insets = chrome::ImeInsetsState::default();
         self.suppress_unselected_root_input = had_composing;
         self.last_opened_embed_doc = None;
+        self.nav_history.clear();
+        self.page_id = None;
         self.blob_fetches.clear();
         self.blob_uploads.clear();
         self.scroll_y = 0.0;
@@ -9773,8 +9795,14 @@ pub(crate) mod tests {
                     .unwrap();
             });
             let _ = session.frame();
-            let bounds =
-                session.view(|v, _| v.edgeless_label_screen_bounds().expect("label bounds"));
+            let bounds = session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |v, w, _| {
+                        v.edgeless_label_screen_bounds(w).expect("label bounds")
+                    })
+                    .unwrap()
+            });
             session.headless.simulate_click(point(
                 bounds.origin.x + px(4.0),
                 bounds.origin.y + bounds.size.height * 0.5,

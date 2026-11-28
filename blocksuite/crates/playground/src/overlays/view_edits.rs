@@ -51,6 +51,76 @@ impl PlaygroundView {
         self.editor.selection.as_ref()?.snapshot(self.page()?).ok()
     }
 
+    /// Focus a trailing empty paragraph or append a new empty paragraph below the last block
+    /// when the user clicks empty canvas space below the page's final block.
+    pub(super) fn handle_click_below_last_block(
+        &mut self,
+        last: &crate::block_flow::FlowBlock,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.page_readonly {
+            return;
+        }
+        self.commit_active_preedit(window, cx);
+        if matches!(last.body.kind, FlowKind::Paragraph(_)) && last.body.plain.is_empty() {
+            self.select_document_range(
+                DocumentSelection::caret(DocPoint::new(&last.block_id, 0)),
+                window,
+                cx,
+            );
+            window.request_virtual_keyboard();
+            return;
+        }
+        let note_id = self.snapshot.as_ref().and_then(|snap| {
+            let root = snap.root.as_ref()?;
+            // Prefer the Page-visible note owning `last.block_id`, never an edgeless-only note.
+            root.children
+                .iter()
+                .find(|c| c.is_page_visible_note() && c.walk().any(|n| n.id == last.block_id))
+                .or_else(|| root.children.iter().find(|c| c.is_page_visible_note()))
+                .map(|c| c.id.clone())
+        });
+        let Some(note_id) = note_id else {
+            return;
+        };
+        let before = self.selection_snapshot();
+        let new_id = self.fresh_block_id();
+        let now_ms = self.now_ms(cx) as u64;
+        let commit = self.page_mut().ok().and_then(|page| {
+            let _ = page.stop_capturing();
+            let commit = page
+                .add_block(
+                    &new_id,
+                    BlockSpec::Paragraph {
+                        paragraph_type: ParagraphType::Text,
+                        text: String::new(),
+                    },
+                    Some(&note_id),
+                    None,
+                    now_ms,
+                )
+                .ok()
+                .flatten();
+            if commit.is_some()
+                && let Some(before) = before
+            {
+                let _ = page.set_undo_selection_snapshot(before);
+            }
+            let _ = page.stop_capturing();
+            commit
+        });
+        if commit.is_some() {
+            self.did_edit(commit, None, window, cx);
+            self.select_document_range(
+                DocumentSelection::caret(DocPoint::new(&new_id, 0)),
+                window,
+                cx,
+            );
+            window.request_virtual_keyboard();
+        }
+    }
+
     /// Carry out one overlay edit as a single undo step and publish it.
     pub(super) fn run_overlay_edit(
         &mut self,

@@ -183,6 +183,11 @@ impl PlaygroundView {
         if !is_selectable_non_mergeable_block(adjacent.body.kind) {
             return false;
         }
+        let return_caret = self.editor.selection.as_ref().and_then(|s| {
+            (remove_empty_block != Some(s.focus.block_id.as_str()))
+                .then(|| s.focus.block_id.clone())
+        });
+        let had_selection = self.editor.selection.is_some();
         if let Some(empty_id) = remove_empty_block {
             let now = self.now_ms(cx) as u64;
             if let Ok(page) = self.page_mut()
@@ -191,11 +196,6 @@ impl PlaygroundView {
                 self.did_edit(commit, None, w, cx);
             }
         }
-        let return_caret = self.editor.selection.as_ref().and_then(|s| {
-            (remove_empty_block != Some(s.focus.block_id.as_str()))
-                .then(|| s.focus.block_id.clone())
-        });
-        let had_selection = self.editor.selection.is_some();
         self.editor.selection = None;
         self.editor.block_selection = vec![adjacent.block_id.clone()];
         self.keep_keyboard_on_block_selection = had_selection;

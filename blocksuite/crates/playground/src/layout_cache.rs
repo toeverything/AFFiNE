@@ -44,11 +44,17 @@ impl PlaygroundView {
                 self.page_titles = titles;
                 self.env_rev += 1;
             }
-            self.page_id = pages
-                .iter()
-                .find(|page| page.id == HOME_PAGE_ID)
-                .or(pages.first())
-                .map(|page| page.id.clone());
+            let keep_current = self
+                .page_id
+                .as_deref()
+                .is_some_and(|cur| pages.iter().any(|page| page.id == cur));
+            if !keep_current {
+                self.page_id = pages
+                    .iter()
+                    .find(|page| page.id == HOME_PAGE_ID)
+                    .or(pages.first())
+                    .map(|page| page.id.clone());
+            }
         } else if self
             .page_id
             .as_deref()
@@ -181,6 +187,7 @@ impl PlaygroundView {
         }
         self.edgeless_refresh_label_editor_from_snapshot();
         self.sync_table_cell_from_snapshot();
+        self.sync_database_record_sheet_from_snapshot();
 
         let mut referenced = BTreeSet::new();
         let mut pdf_attachments: Vec<(String, String)> = Vec::new();
@@ -248,6 +255,50 @@ impl PlaygroundView {
         }
     }
 
+    /// Drop any body caret/range or block selection whose target block was removed by
+    /// undo/redo or a remote CRDT update so subsequent typing never targets a deleted block.
+    pub(crate) fn prune_dangling_selection(
+        &mut self,
+        w: Option<&mut Window>,
+        cx: &mut ui::Context<Self>,
+    ) {
+        let selection_alive = self.editor.selection.as_ref().is_none_or(|sel| {
+            self.snapshot.as_ref().is_some_and(|snap| {
+                snap.block(&sel.anchor.block_id).is_some()
+                    && snap.block(&sel.focus.block_id).is_some()
+            })
+        });
+        let mut pruned = false;
+        if !selection_alive {
+            self.editor.selection = None;
+            self.editor.preedit = None;
+            self.editor.last_typing = None;
+            self.editor.pending_marks.clear();
+            self.editor.slash_trigger = None;
+            self.suppress_unselected_root_input = true;
+            self.overlays.set_keyboard_toolbar_visible(false);
+            pruned = true;
+        }
+        if !self.editor.block_selection.is_empty() {
+            let snap_ref = self.snapshot.as_ref();
+            let before_len = self.editor.block_selection.len();
+            self.editor
+                .block_selection
+                .retain(|id| snap_ref.is_some_and(|s| s.block(id).is_some()));
+            if self.editor.block_selection.len() != before_len {
+                pruned = true;
+            }
+        }
+        if pruned {
+            self.announce_selection(cx);
+            if let Some(w) = w {
+                w.notify_text_input_changed(&self.editor_focus);
+                w.notify_text_selection_changed(&self.editor_focus);
+            }
+            cx.notify();
+        }
+    }
+
     pub(crate) fn target_pill_x(mode: PlaygroundMode) -> f64 {
         match mode {
             PlaygroundMode::Page => PILL_PAGE_X,
@@ -311,25 +362,81 @@ impl PlaygroundView {
     ) {
         self.page_scroll_fling = None;
         self.code_scroll_fling = None;
-        if self.database_record_sheet.is_some() {
-            let drag_in_header = self
-                .database_record_sheet
-                .as_ref()
-                .is_some_and(|s| s.grabber_drag_start_y.is_some());
-            if !drag_in_header
-                && let Some((_, _, _, _, max_scroll)) = self.record_sheet_geometry(window)
+        if event.source == ui::ScrollSource::Touch {
+            if event.touch_phase == ui::TouchPhase::Started
+                || self.active_touch_owner == crate::TouchStrokeOwner::None
             {
-                let dy = f32::from(event.delta.pixel_delta(px(SCROLL_LINE)).y);
-                if let Some(s) = self.database_record_sheet.as_mut() {
-                    s.scroll_fling = None;
-                    let next = (s.scroll_y - dy).clamp(0.0, max_scroll).round();
-                    if (next - s.scroll_y).abs() > 0.5 {
-                        s.scroll_y = next;
-                        cx.notify();
+                if self.has_live_modal_touch_overlay(window, cx) {
+                    self.active_touch_owner = crate::TouchStrokeOwner::ModalOverlay;
+                    if let Some((sheet_left, sheet_top, sheet_w, _, _)) =
+                        self.record_sheet_geometry(window)
+                        && let Some(s) = self.database_record_sheet.as_mut()
+                    {
+                        let d = event.delta.pixel_delta(px(SCROLL_LINE));
+                        let x0 = f32::from(event.position.x) - f32::from(d.x);
+                        let y0 = f32::from(event.position.y) - f32::from(d.y);
+                        let in_sheet_x = x0 >= sheet_left && x0 <= sheet_left + sheet_w;
+                        if in_sheet_x && y0 >= sheet_top && y0 <= sheet_top + 68.0 {
+                            s.grabber_drag_start_y.get_or_insert(y0);
+                            s.touch_body_drag = false;
+                        }
                     }
+                } else {
+                    self.active_touch_owner = crate::TouchStrokeOwner::Page;
                 }
             }
+            if self.active_touch_owner == crate::TouchStrokeOwner::ModalOverlay {
+                if let Some((_, _, _, _, max_scroll)) = self.record_sheet_geometry(window) {
+                    let drag_in_header = self
+                        .database_record_sheet
+                        .as_ref()
+                        .is_some_and(|s| s.grabber_drag_start_y.is_some());
+                    if !drag_in_header {
+                        let dy = f32::from(event.delta.pixel_delta(px(SCROLL_LINE)).y);
+                        if let Some(s) = self.database_record_sheet.as_mut() {
+                            s.scroll_fling = None;
+                            let next = (s.scroll_y - dy).clamp(0.0, max_scroll).round();
+                            if (next - s.scroll_y).abs() > 0.5 {
+                                s.scroll_y = next;
+                                cx.notify();
+                            }
+                        }
+                    }
+                }
+                return;
+            }
+        }
+        if self.database_record_sheet.is_some() {
+            if let Some((_, _, _, _, max_scroll)) = self.record_sheet_geometry(window) {
+                let drag_in_header = self
+                    .database_record_sheet
+                    .as_ref()
+                    .is_some_and(|s| s.grabber_drag_start_y.is_some());
+                if !drag_in_header {
+                    let dy = f32::from(event.delta.pixel_delta(px(SCROLL_LINE)).y);
+                    if let Some(s) = self.database_record_sheet.as_mut() {
+                        s.scroll_fling = None;
+                        let next = (s.scroll_y - dy).clamp(0.0, max_scroll).round();
+                        if (next - s.scroll_y).abs() > 0.5 {
+                            s.scroll_y = next;
+                            cx.notify();
+                        }
+                    }
+                }
+                return;
+            }
+            self.database_record_sheet = None;
+            cx.notify();
+        }
+        if self.overlays.bookmark_prompt().is_some()
+            || self.overlays.equation_editor().is_some()
+            || self.overlays.active_text_field().is_some()
+        {
             return;
+        }
+        if self.touch_selection_menu_open {
+            self.touch_selection_menu_open = false;
+            cx.notify();
         }
         let raw_delta = event.delta.pixel_delta(px(SCROLL_LINE));
         let (mut dx, mut dy) = (f32::from(raw_delta.x), f32::from(raw_delta.y));
@@ -385,11 +492,16 @@ impl PlaygroundView {
             }) {
                 let block_id = block.block_id.clone();
                 let (cur_px, max_px) = self.flow.database_view_tabs_metrics(&block_id);
+                let logical_dx = if window.layout_direction().is_rtl() {
+                    -dx
+                } else {
+                    dx
+                };
                 if max_px > 0
                     && self.flow.database_state.scroll_view_tabs_from(
                         &block_id,
                         cur_px,
-                        dx.round() as i32,
+                        logical_dx.round() as i32,
                         max_px,
                     )
                 {

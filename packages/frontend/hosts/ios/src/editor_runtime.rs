@@ -256,6 +256,15 @@ impl IosEditorRuntime {
             .unwrap_or(false)
     }
 
+    pub(crate) fn wants_code_input(&self) -> bool {
+        self.app
+            .update(|cx| {
+                self.view
+                    .read_with(cx, |view, _| view.wants_code_input_mode())
+            })
+            .unwrap_or(false)
+    }
+
     pub(crate) fn database_readonly(&self) -> bool {
         self.app
             .update(|cx| self.view.read_with(cx, |view, _| view.database_readonly()))

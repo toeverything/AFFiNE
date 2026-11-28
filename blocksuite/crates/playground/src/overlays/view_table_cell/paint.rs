@@ -342,6 +342,53 @@ impl PlaygroundView {
         cx.notify();
     }
 
+    pub(super) fn focus_table_cell_at_x(
+        &mut self,
+        block_id: String,
+        row_id: String,
+        column_id: String,
+        goal_x: Option<f32>,
+        from_top: bool,
+        window: &mut Window,
+        cx: &mut ui::Context<Self>,
+    ) {
+        self.focus_table_cell(
+            block_id.clone(),
+            row_id.clone(),
+            column_id.clone(),
+            None,
+            window,
+            cx,
+        );
+        let target_pos = goal_x.and_then(|gx| {
+            let layout = self.flow_layout()?;
+            let (_, _, hit) = Self::find_table_cell_hit(&layout, &block_id, &row_id, &column_id)?;
+            let display = self.table_cell.as_ref()?.input.display_text();
+            let lh = hit.text.line_height();
+            let lines = (hit.text.height() / lh.max(1.0)).round().max(1.0) as usize;
+            let line = if from_top { 0 } else { lines.saturating_sub(1) };
+            let y = hit.text_origin.1 + line as f32 * lh + lh * 0.5;
+            Some(
+                hit.hit_text(hit.text_origin.0 + gx, y, &display)
+                    .utf16_offset as usize,
+            )
+        });
+        if let Some(cell) = self.table_cell.as_mut() {
+            let pos = target_pos.unwrap_or_else(|| {
+                if from_top {
+                    0
+                } else {
+                    blocksuite_editor::inline_input::utf16_len(&cell.input.text)
+                }
+            });
+            cell.input.select(pos..pos);
+            cell.goal_x = goal_x;
+        }
+        self.table_cell_update_anchors();
+        window.notify_text_selection_changed(&self.editor_focus);
+        cx.notify();
+    }
+
     pub(super) fn exit_table_to_adjacent_block(
         &mut self,
         table_block_id: &str,

@@ -421,15 +421,24 @@ fn database_click_clears_title_selection_and_readonly_selects_block() {
                 w,
                 cx,
             );
-            assert!(
-                v.document_selection().is_none(),
-                "clicking database + New record clears title selection"
+            let sel = v
+                .document_selection()
+                .expect("clicking database + New record focuses the new row");
+            assert_ne!(
+                sel.focus.block_id, "root",
+                "clicking database + New record must move selection off page title"
             );
-            v.replace_text_in_range(None, "SHOULD_NOT_EDIT_TITLE", w, cx);
+            let new_row_id = sel.focus.block_id.clone();
+            v.replace_text_in_range(None, "New Record Title", w, cx);
             assert_eq!(
                 v.block_text("root"),
                 Some("Original Title"),
                 "typing after clicking database + New record must not overwrite page title"
+            );
+            assert_eq!(
+                v.block_text(&new_row_id),
+                Some("New Record Title"),
+                "typing after clicking database + New record must write into the newly created row"
             );
         })
         .unwrap();

@@ -32,8 +32,8 @@ pub use hit_test::{
     rotate_point_around,
 };
 pub use label_editor::{
-    EdgelessInlineEdit, EdgelessLabelEditor, LabelSplice, LabelTarget, ShapeTextStyle, utf16_len,
-    utf16_to_byte,
+    EdgelessInlineEdit, EdgelessLabelEditor, LabelSplice, LabelTarget, ShapeTextStyle,
+    label_editor_screen_box, utf16_len, utf16_to_byte,
 };
 pub use order::{Layers, PaintItem};
 pub use overlay::{

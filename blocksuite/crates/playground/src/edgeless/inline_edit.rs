@@ -478,7 +478,7 @@ impl PlaygroundView {
                                 id: el.id.clone(),
                             },
                             c.text.plain.clone(),
-                            false,
+                            true,
                             edit_rect,
                             Some(super::ShapeTextStyle {
                                 font_family: ls.font_family.clone(),
@@ -608,86 +608,47 @@ impl PlaygroundView {
         Some(out)
     }
 
-    pub(crate) fn edgeless_label_layout_screen_bounds(&self) -> Option<Bounds<Pixels>> {
-        let ed = self.edgeless.authoring.label_editor()?;
-        if ed.target.rotates_in_place() {
-            let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
-            let cam = self.edgeless.camera;
-            let tl =
-                cam.world_to_screen(point(px(ed.world_rect.x), px(ed.world_rect.y)), vp_origin);
-            let br = cam.world_to_screen(
-                point(px(ed.world_rect.right()), px(ed.world_rect.bottom())),
-                vp_origin,
-            );
-            let w = (f32::from(br.x) - f32::from(tl.x)).max(0.5);
-            let h = (f32::from(br.y) - f32::from(tl.y)).max(0.5);
-            return Some(Bounds::new(tl, size(px(w), px(h))));
-        }
-        self.edgeless_label_screen_bounds()
-    }
-
-    pub(crate) fn edgeless_label_screen_bounds(&self) -> Option<Bounds<Pixels>> {
+    pub(crate) fn edgeless_label_layout_screen_bounds(
+        &self,
+        window: &Window,
+    ) -> Option<Bounds<Pixels>> {
         let ed = self.edgeless.authoring.label_editor()?;
         let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
         let vp_w = self.window_size.0.max(1.0);
         let vp_h = (self.window_size.1 - TOPBAR_HEIGHT).max(1.0);
-        let cam = self.edgeless.camera;
-        let tl = cam.world_to_screen(point(px(ed.world_rect.x), px(ed.world_rect.y)), vp_origin);
-        let br = cam.world_to_screen(
-            point(px(ed.world_rect.right()), px(ed.world_rect.bottom())),
+        let (_, _, _, _, lx, ly, lw, lh) = blocksuite_editor::edgeless::label_editor_screen_box(
+            ed,
+            self.edgeless.camera,
             vp_origin,
+            vp_w,
+            vp_h,
+            self.theme,
+            window,
         );
-        if ed.target.rotates_in_place() {
-            let aabb_w = blocksuite_editor::edgeless::rotated_bounds(
-                ed.world_rect,
-                ed.effective_rotate_deg(),
-            );
-            let aabb_tl = cam.world_to_screen(point(px(aabb_w.x), px(aabb_w.y)), vp_origin);
-            let aabb_br =
-                cam.world_to_screen(point(px(aabb_w.right()), px(aabb_w.bottom())), vp_origin);
-            let bleed = if matches!(ed.target, LabelTarget::SurfaceText { .. }) {
-                2.0
-            } else {
-                0.0
-            };
-            let raw_x = f32::from(aabb_tl.x) - bleed;
-            let raw_y = f32::from(aabb_tl.y) - TOPBAR_HEIGHT - bleed;
-            let raw_w = (f32::from(aabb_br.x) + bleed - raw_x).max(0.5);
-            let raw_h = (f32::from(aabb_br.y) - TOPBAR_HEIGHT + bleed - raw_y).max(0.5);
-            let x0 = raw_x.clamp(0.0, vp_w);
-            let y0 = raw_y.clamp(0.0, vp_h);
-            let x1 = (raw_x + raw_w).clamp(0.0, vp_w);
-            let y1 = (raw_y + raw_h).clamp(0.0, vp_h);
-            let w = (x1 - x0).max(1.0);
-            let h = (y1 - y0).max(1.0);
-            return Some(Bounds::new(
-                point(px(x0), px(y0 + TOPBAR_HEIGHT)),
-                size(px(w), px(h)),
-            ));
-        }
-        if matches!(ed.target, LabelTarget::Connector { .. }) {
-            let raw_w = (f32::from(br.x) - f32::from(tl.x)).max(0.5);
-            let raw_h = (f32::from(br.y) - f32::from(tl.y)).max(0.5);
-            let min_w = (48.0 * cam.zoom).max(20.0);
-            let min_h = (24.0 * cam.zoom).max(14.0);
-            let w = raw_w.max(min_w).min((vp_w - 16.0).max(1.0));
-            let h = raw_h.max(min_h).min((vp_h - 16.0).max(1.0));
-            let cx = f32::from(tl.x) + raw_w * 0.5;
-            let cy = (f32::from(tl.y) - TOPBAR_HEIGHT) + raw_h * 0.5;
-            let x = (cx - w * 0.5).clamp(8.0, (vp_w - w - 8.0).max(8.0));
-            let y = (cy - h * 0.5).clamp(8.0, (vp_h - h - 8.0).max(8.0)) + TOPBAR_HEIGHT;
-            return Some(Bounds::new(point(px(x), px(y)), size(px(w), px(h))));
-        }
-        let w = (f32::from(br.x) - f32::from(tl.x))
-            .max(120.0)
-            .min(vp_w - 16.0);
-        let h = (f32::from(br.y) - f32::from(tl.y))
-            .max(32.0)
-            .min(vp_h - 16.0);
-        let x = f32::from(tl.x).clamp(8.0, (vp_w - w - 8.0).max(8.0));
-        let y =
-            (f32::from(tl.y) - TOPBAR_HEIGHT).clamp(8.0, (vp_h - h - 8.0).max(8.0)) + TOPBAR_HEIGHT;
-        Some(Bounds::new(point(px(x), px(y)), size(px(w), px(h))))
+        Some(Bounds::new(
+            point(px(lx), px(ly + TOPBAR_HEIGHT)),
+            size(px(lw.max(0.5)), px(lh.max(0.5))),
+        ))
+    }
+
+    pub(crate) fn edgeless_label_screen_bounds(&self, window: &Window) -> Option<Bounds<Pixels>> {
+        let ed = self.edgeless.authoring.label_editor()?;
+        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let vp_w = self.window_size.0.max(1.0);
+        let vp_h = (self.window_size.1 - TOPBAR_HEIGHT).max(1.0);
+        let (x, y, w, h, _, _, _, _) = blocksuite_editor::edgeless::label_editor_screen_box(
+            ed,
+            self.edgeless.camera,
+            vp_origin,
+            vp_w,
+            vp_h,
+            self.theme,
+            window,
+        );
+        Some(Bounds::new(
+            point(px(x), px(y + TOPBAR_HEIGHT)),
+            size(px(w.max(1.0)), px(h.max(1.0))),
+        ))
     }
 
     /// Map a local caret `FlowRect` inside an actively edited Edgeless Note or EdgelessText

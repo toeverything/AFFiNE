@@ -135,6 +135,7 @@ pub fn build_edgeless_layer(
         input.viewport_height,
         &palette,
         theme,
+        window,
     );
     let editing_overlay: Option<(String, bool, Vec<FlowRect>, Option<FlowRect>)> = input
         .editing_selection

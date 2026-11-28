@@ -280,6 +280,8 @@ AffineUtf16Range affine_ios_host_selected_range(const AffineIosHost *host);
 
 AffineUtf16Range affine_ios_host_marked_range(const AffineIosHost *host);
 
+bool affine_ios_host_wants_code_input(const AffineIosHost *host);
+
 typedef void (*AffineTextInputChangedCallback)(uint8_t change_kind, void *user_data);
 
 void *affine_ios_host_metal_layer(const AffineIosHost *host);

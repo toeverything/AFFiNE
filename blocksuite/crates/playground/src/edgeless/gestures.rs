@@ -98,6 +98,7 @@ impl PlaygroundView {
         if self.edgeless_point_in_label_editor(
             f32::from(event.position.x),
             f32::from(event.position.y),
+            window,
         ) {
             if self
                 .edgeless
@@ -489,7 +490,7 @@ impl PlaygroundView {
     }
 
     /// Return whether window coordinates `(sx, sy)` hit the active Edgeless inline label editor.
-    pub(crate) fn edgeless_point_in_label_editor(&self, sx: f32, sy: f32) -> bool {
+    pub(crate) fn edgeless_point_in_label_editor(&self, sx: f32, sy: f32, window: &Window) -> bool {
         let Some(ed) = self.edgeless.authoring.label_editor() else {
             return false;
         };
@@ -504,7 +505,7 @@ impl PlaygroundView {
             point_in_rotated_rect(wx, wy, ed.world_rect, ed.effective_rotate_deg())
         } else {
             let pt = point(px(sx), px(sy));
-            self.edgeless_label_screen_bounds()
+            self.edgeless_label_screen_bounds(window)
                 .is_some_and(|b| b.contains(&pt))
                 || point_in_rotated_rect(wx, wy, ed.world_rect, 0.0)
         }
@@ -518,7 +519,7 @@ impl PlaygroundView {
         sy: f32,
         window: &mut Window,
     ) -> Option<(usize, bool)> {
-        let bounds = self.edgeless_label_layout_screen_bounds();
+        let bounds = self.edgeless_label_layout_screen_bounds(window);
         let ed = self.edgeless.authoring.label_editor()?;
         let res = bounds
             .and_then(|b| {

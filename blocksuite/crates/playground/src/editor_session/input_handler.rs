@@ -10,6 +10,7 @@ use crate::rich_text::TextBiIndex;
 
 impl EntityInputHandler for PlaygroundView {
     fn paste(&mut self, item: ui::ClipboardItem, w: &mut Window, cx: &mut Context<Self>) {
+        self.touch_selection_menu_open = false;
         if self.overlays.active_text_field().is_some() {
             if let Some(text) = item.text() {
                 let _ = self.link_input(w, cx, |link| link.replace(None, &text));
@@ -169,6 +170,7 @@ impl EntityInputHandler for PlaygroundView {
         Some(start..start + self.editor.preedit.as_ref()?.text.encode_utf16().count())
     }
     fn unmark_text(&mut self, w: &mut Window, cx: &mut Context<Self>) {
+        self.touch_selection_menu_open = false;
         if self.link_input(w, cx, LinkBar::unmark).is_some() {
             return;
         }
@@ -204,6 +206,7 @@ impl EntityInputHandler for PlaygroundView {
         w: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        self.touch_selection_menu_open = false;
         if self
             .link_input(w, cx, |link| link.replace(r.clone(), text))
             .is_some()
@@ -263,6 +266,7 @@ impl EntityInputHandler for PlaygroundView {
         w: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        self.touch_selection_menu_open = false;
         if self
             .link_input(w, cx, |link| link.mark(r.clone(), text, selected.clone()))
             .is_some()
@@ -378,7 +382,7 @@ impl EntityInputHandler for PlaygroundView {
             return vec![];
         }
         if self.mode == crate::PlaygroundMode::Edgeless {
-            if let Some(bounds) = self.edgeless_label_screen_bounds() {
+            if let Some(bounds) = self.edgeless_label_screen_bounds(w) {
                 return vec![bounds];
             }
             if let Some(sel) = &self.editor.selection {
@@ -467,7 +471,7 @@ impl EntityInputHandler for PlaygroundView {
         _: &mut Window,
         _: &mut Context<Self>,
     ) -> ui::TextInputConfiguration {
-        if self.overlays.active_text_field().is_some() {
+        if self.overlays.active_text_field().is_some() || self.wants_code_input_mode() {
             return ui::TextInputConfiguration::default();
         }
         let prose = ui::TextInputConfiguration {
@@ -479,18 +483,67 @@ impl EntityInputHandler for PlaygroundView {
         if self.table_cell.is_some() || self.edgeless.authoring.label_editor().is_some() {
             return prose;
         }
+        if self.editor.selection.is_some() {
+            prose
+        } else {
+            ui::TextInputConfiguration::default()
+        }
+    }
+}
+
+impl PlaygroundView {
+    /// Whether the active editor caret is inside a code block or inline code mark, signaling
+    /// platform hosts (iOS / Android / Web) to disable auto-capitalization, autocorrect, and suggestions.
+    pub fn wants_code_input_mode(&self) -> bool {
+        if self.overlays.active_text_field().is_some()
+            || self.table_cell.is_some()
+            || self.edgeless.authoring.label_editor().is_some()
+        {
+            return false;
+        }
         let Some(sel) = self.editor.selection.as_ref() else {
-            return ui::TextInputConfiguration::default();
+            return false;
         };
-        let is_code = self
+        let Some(block) = self
             .page_snapshot()
             .and_then(|s| s.block(&sel.focus.block_id))
-            .is_some_and(|b| matches!(b.content, BlockContent::Code { .. }));
-        if is_code {
-            ui::TextInputConfiguration::default()
-        } else {
-            prose
+        else {
+            return false;
+        };
+        if matches!(block.content, BlockContent::Code { .. }) {
+            return true;
         }
+        if let Some(pending_code) = self.editor.pending_marks.get("code") {
+            return pending_code
+                .as_ref()
+                .is_some_and(|v| !matches!(v, y_octo::Any::False | y_octo::Any::Null));
+        }
+        let rich = match &block.content {
+            BlockContent::Paragraph { text, .. } | BlockContent::List { text, .. } => Some(text),
+            _ => None,
+        };
+        let Some(rich) = rich else {
+            return false;
+        };
+        let target = sel.focus.offset();
+        let mut cursor = 0_u64;
+        for op in &rich.delta {
+            if let y_octo::TextDeltaOp::Insert { insert, format } = op {
+                let len = match insert {
+                    y_octo::TextInsert::Text(s) => s.encode_utf16().count() as u64,
+                    _ => 1,
+                };
+                let has_code = format
+                    .as_ref()
+                    .and_then(|f| f.get("code"))
+                    .is_some_and(|v| !matches!(v, y_octo::Any::False | y_octo::Any::Null));
+                if has_code && target > cursor && target <= cursor + len {
+                    return true;
+                }
+                cursor += len;
+            }
+        }
+        false
     }
 }
 

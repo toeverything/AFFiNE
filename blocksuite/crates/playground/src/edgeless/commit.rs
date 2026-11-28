@@ -42,6 +42,7 @@ impl PlaygroundView {
                     self.try_open_edgeless_readonly_link_or_ref(
                         f32::from(wp.x),
                         f32::from(wp.y),
+                        window,
                         cx,
                     );
                 }

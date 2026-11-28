@@ -1580,7 +1580,7 @@ mod tests {
             win.update(cx, |view, window, cx| {
                 // 1. Open 2-line shape label, click inside line 1, type '*', assert '*' lands in line 1.
                 assert!(view.edgeless_begin_inline_edit("sh-2line", window, cx));
-                let bounds = view.edgeless_label_screen_bounds().unwrap();
+                let bounds = view.edgeless_label_screen_bounds(window).unwrap();
                 let line1_x = f32::from(bounds.origin.x) + 24.0;
                 let line1_y = f32::from(bounds.origin.y) + 14.0;
                 view.on_edgeless_left_down(&mouse_down(line1_x, line1_y, 1), window, cx);
@@ -1903,7 +1903,7 @@ mod tests {
         app.update(|cx| {
             win.update(cx, |view, window, cx| {
                 assert!(view.edgeless_begin_inline_edit("edge-shape", window, cx));
-                let layout_bounds = view.edgeless_label_layout_screen_bounds().unwrap();
+                let layout_bounds = view.edgeless_label_layout_screen_bounds(window).unwrap();
                 assert!(
                     (f32::from(layout_bounds.origin.x) - (-100.0)).abs() < 0.01
                         && (f32::from(layout_bounds.size.width) - 300.0).abs() < 0.01,
