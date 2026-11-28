@@ -14,6 +14,7 @@ import {
   createDocWithMarkdown,
   extractWorkspaceLifecycleRootPages,
   mergeUpdates,
+  parseYDocToMarkdown,
   updateDocProperties,
 } from '../../native';
 import { WorkspaceMcpProvider } from '../../plugins/copilot/mcp/provider';
@@ -520,6 +521,27 @@ test('MCP create_document recovers incomplete registration as collaborator witho
   } finally {
     (globalThis as any).env = prevEnv;
   }
+});
+
+test('DocWriter.updateDoc updates a created markdown doc with repeated characters', async t => {
+  const workspaceId = 'ws-update-doc-markdown';
+  const docs = new Map<string, Uint8Array>([
+    [workspaceId, createLegacyArrayRootDoc([])],
+  ]);
+  const { writer, initialDocs } = createWriterHarness(docs);
+
+  const { docId } = await writer.createDoc(
+    workspaceId,
+    'MCP update test',
+    'Line one.',
+    'user-1'
+  );
+  await writer.updateDoc(workspaceId, docId, 'Line one, edited.', 'user-1');
+
+  const updated = initialDocs.get(docId)!;
+  const parsed = parseYDocToMarkdown(Buffer.from(updated), docId);
+  t.is(parsed.title, 'MCP update test');
+  t.is(parsed.markdown.trim(), 'Line one, edited.');
 });
 
 test('MCP update tools return not found only for NotFoundException', async t => {

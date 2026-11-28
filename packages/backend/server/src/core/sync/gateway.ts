@@ -35,6 +35,7 @@ import {
   OnEvent,
   SpaceAccessDenied,
   SyncPermissionGenerationChanged,
+  UnsupportedClientVersion,
 } from '../../base';
 import { Models } from '../../models';
 import { canonicalizeDocumentIdentity } from '../../native';
@@ -1259,6 +1260,22 @@ export class SpaceSyncGateway
     }
 
     return adapters[spaceType];
+  }
+
+  @SubscribeMessage('space:join')
+  onJoinSpace(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() message: unknown
+  ): never {
+    const clientVersion =
+      isRecord(message) && typeof message.clientVersion === 'string'
+        ? message.clientVersion
+        : 'unset_or_invalid';
+    this.rejectJoin(client);
+    throw new UnsupportedClientVersion({
+      clientVersion,
+      requiredVersion: '>=0.27.5-0',
+    });
   }
 
   @SubscribeMessage('space:join-batch')
