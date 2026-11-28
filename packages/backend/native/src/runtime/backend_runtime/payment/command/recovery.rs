@@ -44,38 +44,37 @@ pub(in crate::runtime::backend_runtime::payment) async fn recover_one_stripe_ope
       .map_err(|error| RuntimeError::json("decode pending Stripe operation", error))?,
   };
   let reserves_trial = checkout_reserves_trial(&intent.steps);
-  let OperationExecution::Sent {
-    connection,
-    operation_id,
-    response,
-  } = runtime.execute_stripe_operation(intent).await?
-  else {
-    return Ok(None);
-  };
-  let snapshot = match operation_type.as_str() {
-    "create_customer" => recover_customer(
-      stripe.namespace().clone(),
-      target_type,
-      target_id,
-      operation_id,
-      response,
-    )?,
-    "create_checkout" | "purchase_checkout" => recover_checkout(
-      stripe.namespace().clone(),
-      target_type,
-      target_id,
-      operation_id,
-      response,
-      reserves_trial,
-    )?,
-    "cancel" | "resume" | "update_recurring" | "update_quantity" => {
-      recover_subscription(runtime, operation_id, target_type, target_id).await?
-    }
-    "account_delete_cancel" => recover_account_delete(stripe.namespace().clone(), operation_id, response)?,
-    "provision_price" => recover_price(stripe.namespace().clone(), operation_id, response)?,
-    _ => return Err(RuntimeError::invalid_state("unsupported pending Stripe operation")),
-  };
-  runtime.apply_with_connection(connection, snapshot).await.map(Some)
+  runtime
+    .with_stripe_operation(intent, async |connection, execution| {
+      let OperationExecution::Sent { operation_id, response } = execution else {
+        return Ok(None);
+      };
+      let snapshot = match operation_type.as_str() {
+        "create_customer" => recover_customer(
+          stripe.namespace().clone(),
+          target_type,
+          target_id,
+          operation_id,
+          response,
+        )?,
+        "create_checkout" | "purchase_checkout" => recover_checkout(
+          stripe.namespace().clone(),
+          target_type,
+          target_id,
+          operation_id,
+          response,
+          reserves_trial,
+        )?,
+        "cancel" | "resume" | "update_recurring" | "update_quantity" => {
+          recover_subscription(runtime, operation_id, target_type, target_id).await?
+        }
+        "account_delete_cancel" => recover_account_delete(stripe.namespace().clone(), operation_id, response)?,
+        "provision_price" => recover_price(stripe.namespace().clone(), operation_id, response)?,
+        _ => return Err(RuntimeError::invalid_state("unsupported pending Stripe operation")),
+      };
+      runtime.apply_in_connection(connection, snapshot).await.map(Some)
+    })
+    .await
 }
 
 fn recover_price(

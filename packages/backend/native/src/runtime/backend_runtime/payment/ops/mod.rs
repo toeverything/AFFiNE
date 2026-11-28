@@ -89,259 +89,261 @@ impl PaymentRuntime {
 
     let family_scope = PaymentScope::cloud_target("user", &request.user_id, plan)?;
     let request_scope = PaymentScope::billing_target("payment:v1:cloud", "reconciliation", &request.request_id)?;
-    let mut connection = PaymentConnection::try_acquire(&self.pool, vec![family_scope, request_scope])
+    let connection = PaymentConnection::try_acquire(&self.pool, vec![family_scope, request_scope])
       .await?
       .ok_or_else(payment_busy)?;
 
-    for _ in 0..=4 {
-      if let Some(value) = request.replay(connection.connection()).await? {
-        return Ok(value);
-      }
-      let before = request.load_case(connection.connection()).await?;
-      let attempt = request.attempt(&before)?;
-      if let (Some(attempt), Some(transaction)) = (attempt, request.transaction_id.as_deref()) {
-        if attempt.provider != "revenuecat" {
-          return Err(RuntimeError::invalid_input(
-            "Stripe reconciliation uses the recorded checkout session",
-          ));
-        }
-        if attempt
-          .transaction_id
-          .as_deref()
-          .is_some_and(|recorded| recorded != transaction)
-        {
-          return Err(RuntimeError::invalid_input(
-            "App Store reconciliation transaction changed",
-          ));
-        }
-      }
-      if attempt.is_none() && !before.conflicted {
-        return Err(RuntimeError::invalid_input(
-          "no payment reconciliation case for this family",
-        ));
-      }
-      let stripe_namespace = namespace(self.stripe.as_deref().map(StripeClient::namespace))?;
-      let revenuecat_namespace = namespace(self.revenuecat.as_ref().map(|client| client.namespace()))?;
-      let stripe_customer = if let Some(namespace) = stripe_namespace.as_deref() {
-        load_stripe_customer(&self.pool, &request.user_id, namespace).await?
-      } else {
-        None
-      };
-
-      let mut required = Vec::new();
-      for source in &before.sources {
-        if let (Some(namespace), Some(source_id)) = (&source.provider_namespace, &source.source_identity) {
-          required.push(PaymentScope::source(namespace, source_id)?);
-          for fact in &source.financial_facts {
-            required.push(PaymentScope::financial(namespace, &fact.kind, &fact.id)?);
+    connection
+      .with_release(async |connection| {
+        for _ in 0..=4 {
+          if let Some(value) = request.replay(connection.connection()).await? {
+            return Ok(value);
           }
-          if let Some(customer) = &source.external_customer_id {
+          let before = request.load_case(connection.connection()).await?;
+          let attempt = request.attempt(&before)?;
+          if let (Some(attempt), Some(transaction)) = (attempt, request.transaction_id.as_deref()) {
+            if attempt.provider != "revenuecat" {
+              return Err(RuntimeError::invalid_input(
+                "Stripe reconciliation uses the recorded checkout session",
+              ));
+            }
+            if attempt
+              .transaction_id
+              .as_deref()
+              .is_some_and(|recorded| recorded != transaction)
+            {
+              return Err(RuntimeError::invalid_input(
+                "App Store reconciliation transaction changed",
+              ));
+            }
+          }
+          if attempt.is_none() && !before.conflicted {
+            return Err(RuntimeError::invalid_input(
+              "no payment reconciliation case for this family",
+            ));
+          }
+          let stripe_namespace = namespace(self.stripe.as_deref().map(StripeClient::namespace))?;
+          let revenuecat_namespace = namespace(self.revenuecat.as_ref().map(|client| client.namespace()))?;
+          let stripe_customer = if let Some(namespace) = stripe_namespace.as_deref() {
+            load_stripe_customer(&self.pool, &request.user_id, namespace).await?
+          } else {
+            None
+          };
+
+          let mut required = Vec::new();
+          for source in &before.sources {
+            if let (Some(namespace), Some(source_id)) = (&source.provider_namespace, &source.source_identity) {
+              required.push(PaymentScope::source(namespace, source_id)?);
+              for fact in &source.financial_facts {
+                required.push(PaymentScope::financial(namespace, &fact.kind, &fact.id)?);
+              }
+              if let Some(customer) = &source.external_customer_id {
+                required.push(PaymentScope::customer(namespace, customer)?);
+              }
+            }
+          }
+          if let (Some(namespace), Some(customer)) = (&stripe_namespace, &stripe_customer) {
             required.push(PaymentScope::customer(namespace, customer)?);
           }
-        }
-      }
-      if let (Some(namespace), Some(customer)) = (&stripe_namespace, &stripe_customer) {
-        required.push(PaymentScope::customer(namespace, customer)?);
-      }
-      if let Some(namespace) = &revenuecat_namespace {
-        required.push(PaymentScope::customer(namespace, &request.user_id)?);
-      }
-      let expansion = required_scope_expansion(connection.scopes(), required);
-      if !expansion.is_empty() {
-        connection = connection
-          .reacquire_with(&self.pool, expansion)
-          .await?
-          .ok_or_else(payment_busy)?;
-        continue;
-      }
-
-      let all_providers_verified = !(before.conflicted
-        && (stripe_namespace.is_none() || revenuecat_namespace.is_none()))
-        && before.sources.iter().all(|source| {
-          source.source_identity.is_some()
-            && match Provider::parse(&source.provider) {
-              Some(Provider::Stripe) => stripe_customer.is_some() && source.provider_namespace == stripe_namespace,
-              Some(Provider::RevenueCat) => {
-                self.revenuecat.is_some() && source.provider_namespace == revenuecat_namespace
-              }
-              None => false,
-            }
-        });
-      let mut snapshots = Vec::new();
-      let mut stripe_completion = None;
-      let mut app_store_completion = None;
-      let mut attempt_observation = Value::Null;
-      if all_providers_verified {
-        let stripe_invoices = if let (Some(client), Some(namespace), Some(customer)) = (
-          self.stripe.as_ref(),
-          stripe_namespace.as_deref(),
-          stripe_customer.as_deref(),
-        ) {
-          let (stripe_snapshots, invoices) = observe_stripe(self, client, namespace, customer, &before, family).await?;
-          snapshots.extend(stripe_snapshots);
-          invoices
-        } else {
-          Default::default()
-        };
-        if let Some(attempt) = attempt.filter(|attempt| attempt.status == "waiting") {
-          if attempt.provider == "stripe" && stripe_namespace.as_deref() == Some(&attempt.provider_namespace) {
-            let client = self.stripe.as_ref().expect("configured Stripe namespace");
-            let (result, observation) = observe_checkout(
-              &mut connection,
-              client,
-              attempt,
-              stripe_customer.as_deref(),
-              &snapshots,
-              &stripe_invoices,
-            )
-            .await?;
-            stripe_completion = result.map(|reason| (attempt.id.as_str(), reason));
-            attempt_observation = observation;
-          } else if attempt.provider == "revenuecat"
-            && revenuecat_namespace.as_deref() == Some(&attempt.provider_namespace)
-            && let (Some(product_id), Some(transaction_id)) = (
-              attempt.product_id.as_deref(),
-              request.transaction_id.as_deref().or(attempt.transaction_id.as_deref()),
-            )
-          {
-            let transaction = AppStoreTransaction {
-              namespace: &attempt.provider_namespace,
-              user_id: &request.user_id,
-              product_id,
-              transaction_id,
-              family,
-            };
-            let client = self.revenuecat.as_ref().expect("configured RevenueCat namespace");
-            let (source_id, observation) = observe_app_store_attempt(client, &transaction).await?;
-            app_store_completion = source_id.map(|source_id| (attempt.id.as_str(), transaction, source_id));
-            attempt_observation = observation;
+          if let Some(namespace) = &revenuecat_namespace {
+            required.push(PaymentScope::customer(namespace, &request.user_id)?);
           }
-        }
-        if self.revenuecat.is_some() {
-          snapshots.push(self.observe_revenuecat_customer(&request.user_id).await?);
-        }
-      }
-
-      let mut required = Vec::new();
-      let mut prepared = Vec::with_capacity(snapshots.len());
-      for snapshot in snapshots {
-        let (namespace, expansion) = check_snapshot_scopes(&mut connection, &snapshot).await?;
-        required.extend(expansion);
-        for fact in &snapshot.financial_facts {
-          required.push(PaymentScope::financial(
-            &namespace,
-            fact.fact.kind.as_str(),
-            &fact.external_id,
-          )?);
-        }
-        prepared.push((snapshot, namespace));
-      }
-      let expansion = required_scope_expansion(connection.scopes(), required);
-      if !expansion.is_empty() {
-        connection = connection
-          .reacquire_with(&self.pool, expansion)
-          .await?
-          .ok_or_else(payment_busy)?;
-        continue;
-      }
-
-      let scopes = connection.scopes().to_vec();
-      let mut tx = connection.begin().await?;
-      let settlement = all_providers_verified.then_some(BindingSettlement {
-        user_id: &request.user_id,
-        family: family.as_str(),
-      });
-      let applied = if all_providers_verified {
-        match apply_locked_snapshots(
-          &mut tx,
-          &prepared,
-          &scopes,
-          self.deployment,
-          &self.mail_hash_key,
-          settlement.as_ref(),
-        )
-        .await
-        {
-          Ok(applied) => applied,
-          Err(PaymentApplyError::Runtime(error)) => return Err(error),
-          Err(PaymentApplyError::LockSetExpanded(expansion)) => {
-            tx.rollback()
-              .await
-              .map_err(|error| RuntimeError::database("rollback payment reconciliation", error))?;
-            connection = connection
-              .reacquire_with(&self.pool, expansion)
-              .await?
-              .ok_or_else(payment_busy)?;
+          let expansion = required_scope_expansion(connection.scopes(), required);
+          if !expansion.is_empty() {
+            if !connection.reacquire_with(&self.pool, expansion).await? {
+              return Err(payment_busy());
+            }
             continue;
           }
+
+          let all_providers_verified = !(before.conflicted
+            && (stripe_namespace.is_none() || revenuecat_namespace.is_none()))
+            && before.sources.iter().all(|source| {
+              source.source_identity.is_some()
+                && match Provider::parse(&source.provider) {
+                  Some(Provider::Stripe) => stripe_customer.is_some() && source.provider_namespace == stripe_namespace,
+                  Some(Provider::RevenueCat) => {
+                    self.revenuecat.is_some() && source.provider_namespace == revenuecat_namespace
+                  }
+                  None => false,
+                }
+            });
+          let mut snapshots = Vec::new();
+          let mut stripe_completion = None;
+          let mut app_store_completion = None;
+          let mut attempt_observation = Value::Null;
+          if all_providers_verified {
+            let stripe_invoices = if let (Some(client), Some(namespace), Some(customer)) = (
+              self.stripe.as_ref(),
+              stripe_namespace.as_deref(),
+              stripe_customer.as_deref(),
+            ) {
+              let (stripe_snapshots, invoices) =
+                observe_stripe(self, client, namespace, customer, &before, family).await?;
+              snapshots.extend(stripe_snapshots);
+              invoices
+            } else {
+              Default::default()
+            };
+            if let Some(attempt) = attempt.filter(|attempt| attempt.status == "waiting") {
+              if attempt.provider == "stripe" && stripe_namespace.as_deref() == Some(&attempt.provider_namespace) {
+                let client = self.stripe.as_ref().expect("configured Stripe namespace");
+                let (result, observation) = observe_checkout(
+                  connection,
+                  client,
+                  attempt,
+                  stripe_customer.as_deref(),
+                  &snapshots,
+                  &stripe_invoices,
+                )
+                .await?;
+                stripe_completion = result.map(|reason| (attempt.id.as_str(), reason));
+                attempt_observation = observation;
+              } else if attempt.provider == "revenuecat"
+                && revenuecat_namespace.as_deref() == Some(&attempt.provider_namespace)
+                && let (Some(product_id), Some(transaction_id)) = (
+                  attempt.product_id.as_deref(),
+                  request.transaction_id.as_deref().or(attempt.transaction_id.as_deref()),
+                )
+              {
+                let transaction = AppStoreTransaction {
+                  namespace: &attempt.provider_namespace,
+                  user_id: &request.user_id,
+                  product_id,
+                  transaction_id,
+                  family,
+                };
+                let client = self.revenuecat.as_ref().expect("configured RevenueCat namespace");
+                let (source_id, observation) = observe_app_store_attempt(client, &transaction).await?;
+                app_store_completion = source_id.map(|source_id| (attempt.id.as_str(), transaction, source_id));
+                attempt_observation = observation;
+              }
+            }
+            if self.revenuecat.is_some() {
+              snapshots.push(self.observe_revenuecat_customer(&request.user_id).await?);
+            }
+          }
+
+          let mut required = Vec::new();
+          let mut prepared = Vec::with_capacity(snapshots.len());
+          for snapshot in snapshots {
+            let (namespace, expansion) = check_snapshot_scopes(connection, &snapshot).await?;
+            required.extend(expansion);
+            for fact in &snapshot.financial_facts {
+              required.push(PaymentScope::financial(
+                &namespace,
+                fact.fact.kind.as_str(),
+                &fact.external_id,
+              )?);
+            }
+            prepared.push((snapshot, namespace));
+          }
+          let expansion = required_scope_expansion(connection.scopes(), required);
+          if !expansion.is_empty() {
+            if !connection.reacquire_with(&self.pool, expansion).await? {
+              return Err(payment_busy());
+            }
+            continue;
+          }
+
+          let scopes = connection.scopes().to_vec();
+          let mut tx = connection.begin().await?;
+          let settlement = all_providers_verified.then_some(BindingSettlement {
+            user_id: &request.user_id,
+            family: family.as_str(),
+          });
+          let applied = if all_providers_verified {
+            match apply_locked_snapshots(
+              &mut tx,
+              &prepared,
+              &scopes,
+              self.deployment,
+              &self.mail_hash_key,
+              settlement.as_ref(),
+            )
+            .await
+            {
+              Ok(applied) => applied,
+              Err(PaymentApplyError::Runtime(error)) => return Err(error),
+              Err(PaymentApplyError::LockSetExpanded(expansion)) => {
+                tx.rollback()
+                  .await
+                  .map_err(|error| RuntimeError::database("rollback payment reconciliation", error))?;
+                if !connection.reacquire_with(&self.pool, expansion).await? {
+                  return Err(payment_busy());
+                }
+                continue;
+              }
+            }
+          } else {
+            PaymentApplyResult::default()
+          };
+          if let Some((attempt_id, reason)) = stripe_completion {
+            finish_stripe_attempt(&mut tx, attempt_id, reason).await?;
+          }
+          if let Some((attempt_id, transaction, source_id)) = app_store_completion
+            && let Some(source) = prepared
+              .iter()
+              .filter(|(_, namespace)| namespace == transaction.namespace)
+              .find_map(|(snapshot, _)| transaction.source(snapshot, &source_id))
+          {
+            transaction
+              .confirm_and_finish(&mut tx, source, Some(attempt_id))
+              .await?;
+          }
+          let after = request.load_case(&mut tx).await?;
+          let attempt_status = request.attempt(&after)?.map(|attempt| attempt.status.as_str());
+          let reason = if !all_providers_verified {
+            Some("provider_unverified")
+          } else if after.conflicted {
+            Some("multiple_sources")
+          } else if attempt_status.is_some_and(|status| status != "completed") {
+            Some("attempt_unverified")
+          } else {
+            None
+          };
+          let value = json!({
+            "requestId": request.request_id, "userId": request.user_id, "planFamily": request.plan_family,
+            "status": if reason.is_some() { "pending" } else { "resolved" }, "reason": reason,
+            "conflicted": after.conflicted, "boundProviderNamespace": after.bound_provider_namespace,
+            "boundSourceIdentity": after.bound_source_identity, "attemptId": request.attempt_id, "attemptStatus": attempt_status
+          });
+          let observations = prepared.iter().map(|(snapshot, namespace)| {
+            json!({
+              "providerNamespace": namespace, "customerId": snapshot.customer_id,
+              "verifiedMissingSources": match &snapshot.coverage {
+                SnapshotCoverage::Complete { verified_missing_revenuecat_sources } => Some(verified_missing_revenuecat_sources),
+                _ => None
+              },
+              "sources": snapshot.subscriptions.iter().map(|source| json!({
+                "sourceIdentity": source.source_id, "externalRef": source.external_ref, "plan": source.plan.as_str(),
+                "status": source.lifecycle.as_str(), "givesAccess": source.gives_access, "willRenew": source.will_renew,
+                "periodEnd": source.period_end
+              })).collect::<Vec<_>>(),
+              "financialFacts": snapshot.financial_facts.iter().map(|fact| json!({
+                "kind": fact.fact.kind.as_str(), "id": fact.external_id, "invoiceId": fact.external_invoice_id,
+                "status": fact.fact.status.as_str(), "observedAt": fact.observed_at
+              })).collect::<Vec<_>>()
+            })
+          }).collect::<Vec<_>>();
+          request
+            .record(
+              &mut tx,
+              json!({
+                "response": value, "before": before, "after": after,
+                "providerObservations": observations, "attemptObservation": attempt_observation
+              }),
+            )
+            .await?;
+          tx.commit()
+            .await
+            .map_err(|error| RuntimeError::database("commit payment reconciliation", error))?;
+          changes.extend(applied);
+          return Ok(value);
         }
-      } else {
-        PaymentApplyResult::default()
-      };
-      if let Some((attempt_id, reason)) = stripe_completion {
-        finish_stripe_attempt(&mut tx, attempt_id, reason).await?;
-      }
-      if let Some((attempt_id, transaction, source_id)) = app_store_completion
-        && let Some(source) = prepared
-          .iter()
-          .filter(|(_, namespace)| namespace == transaction.namespace)
-          .find_map(|(snapshot, _)| transaction.source(snapshot, &source_id))
-      {
-        transaction
-          .confirm_and_finish(&mut tx, source, Some(attempt_id))
-          .await?;
-      }
-      let after = request.load_case(&mut tx).await?;
-      let attempt_status = request.attempt(&after)?.map(|attempt| attempt.status.as_str());
-      let reason = if !all_providers_verified {
-        Some("provider_unverified")
-      } else if after.conflicted {
-        Some("multiple_sources")
-      } else if attempt_status.is_some_and(|status| status != "completed") {
-        Some("attempt_unverified")
-      } else {
-        None
-      };
-      let value = json!({
-        "requestId": request.request_id, "userId": request.user_id, "planFamily": request.plan_family,
-        "status": if reason.is_some() { "pending" } else { "resolved" }, "reason": reason,
-        "conflicted": after.conflicted, "boundProviderNamespace": after.bound_provider_namespace,
-        "boundSourceIdentity": after.bound_source_identity, "attemptId": request.attempt_id, "attemptStatus": attempt_status
-      });
-      let observations = prepared.iter().map(|(snapshot, namespace)| {
-        json!({
-          "providerNamespace": namespace, "customerId": snapshot.customer_id,
-          "verifiedMissingSources": match &snapshot.coverage {
-            SnapshotCoverage::Complete { verified_missing_revenuecat_sources } => Some(verified_missing_revenuecat_sources),
-            _ => None
-          },
-          "sources": snapshot.subscriptions.iter().map(|source| json!({
-            "sourceIdentity": source.source_id, "externalRef": source.external_ref, "plan": source.plan.as_str(),
-            "status": source.lifecycle.as_str(), "givesAccess": source.gives_access, "willRenew": source.will_renew,
-            "periodEnd": source.period_end
-          })).collect::<Vec<_>>(),
-          "financialFacts": snapshot.financial_facts.iter().map(|fact| json!({
-            "kind": fact.fact.kind.as_str(), "id": fact.external_id, "invoiceId": fact.external_invoice_id,
-            "status": fact.fact.status.as_str(), "observedAt": fact.observed_at
-          })).collect::<Vec<_>>()
-        })
-      }).collect::<Vec<_>>();
-      request
-        .record(
-          &mut tx,
-          json!({
-            "response": value, "before": before, "after": after,
-            "providerObservations": observations, "attemptObservation": attempt_observation
-          }),
-        )
-        .await?;
-      tx.commit()
-        .await
-        .map_err(|error| RuntimeError::database("commit payment reconciliation", error))?;
-      changes.extend(applied);
-      return Ok(value);
-    }
-    Err(payment_busy())
+        Err(payment_busy())
+      })
+      .await
   }
 }
 

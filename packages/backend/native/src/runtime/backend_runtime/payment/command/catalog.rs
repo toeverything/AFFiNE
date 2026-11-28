@@ -124,28 +124,27 @@ impl PaymentRuntime {
         "v1/prices",
         fields,
       );
-      match self.execute_stripe_operation(operation).await? {
-        OperationExecution::Completed(result) => results.push(result),
-        OperationExecution::Sent {
-          connection,
-          operation_id,
-          response,
-        } => {
-          let price: StripePrice = serde_json::from_value(response)
-            .map_err(|error| RuntimeError::json("invalid provisioned Stripe price", error))?;
-          validate_catalog_price(&price, specification)?;
-          let result = catalog_result(&price, true);
-          changes.extend(
-            self
-              .apply_with_connection(
-                connection,
-                empty_snapshot(namespace.clone(), None, operation_id, result.clone()),
-              )
-              .await?,
-          );
-          results.push(result);
-        }
-      }
+      let result = self
+        .with_stripe_operation(operation, async |connection, execution| match execution {
+          OperationExecution::Completed(result) => Ok(result),
+          OperationExecution::Sent { operation_id, response } => {
+            let price: StripePrice = serde_json::from_value(response)
+              .map_err(|error| RuntimeError::json("invalid provisioned Stripe price", error))?;
+            validate_catalog_price(&price, specification)?;
+            let result = catalog_result(&price, true);
+            changes.extend(
+              self
+                .apply_in_connection(
+                  connection,
+                  empty_snapshot(namespace.clone(), None, operation_id, result.clone()),
+                )
+                .await?,
+            );
+            Ok(result)
+          }
+        })
+        .await?;
+      results.push(result);
     }
     Ok(json!({ "prices": results }))
   }
@@ -179,39 +178,37 @@ impl PaymentRuntime {
         text_field("metadata[affineUserId]", user_id),
       ],
     );
-    match self.execute_stripe_operation(intent).await? {
-      OperationExecution::Completed(result) => result
-        .get("customerId")
-        .and_then(Value::as_str)
-        .map(str::to_string)
-        .ok_or_else(|| RuntimeError::invalid_state("stored Stripe customer result is invalid")),
-      OperationExecution::Sent {
-        connection,
-        operation_id,
-        response,
-      } => {
-        let customer: StripeCustomer = serde_json::from_value(response)
-          .map_err(|error| RuntimeError::json("invalid Stripe customer response", error))?;
-        if !customer.matches_email(email) {
-          return Err(RuntimeError::invalid_state(
-            "Stripe customer response does not match request",
-          ));
+    self
+      .with_stripe_operation(intent, async |connection, execution| match execution {
+        OperationExecution::Completed(result) => result
+          .get("customerId")
+          .and_then(Value::as_str)
+          .map(str::to_string)
+          .ok_or_else(|| RuntimeError::invalid_state("stored Stripe customer result is invalid")),
+        OperationExecution::Sent { operation_id, response } => {
+          let customer: StripeCustomer = serde_json::from_value(response)
+            .map_err(|error| RuntimeError::json("invalid Stripe customer response", error))?;
+          if !customer.matches_email(email) {
+            return Err(RuntimeError::invalid_state(
+              "Stripe customer response does not match request",
+            ));
+          }
+          let result = json!({ "customerId": customer.id });
+          let mut snapshot = empty_snapshot(
+            namespace.clone(),
+            Some(customer.id.clone()),
+            operation_id,
+            result.clone(),
+          );
+          snapshot.customers.push(CustomerSnapshot {
+            user_id: user_id.to_string(),
+            external_customer_id: customer.id.clone(),
+          });
+          changes.extend(self.apply_in_connection(connection, snapshot).await?);
+          Ok(customer.id)
         }
-        let result = json!({ "customerId": customer.id });
-        let mut snapshot = empty_snapshot(
-          namespace.clone(),
-          Some(customer.id.clone()),
-          operation_id,
-          result.clone(),
-        );
-        snapshot.customers.push(CustomerSnapshot {
-          user_id: user_id.to_string(),
-          external_customer_id: customer.id.clone(),
-        });
-        changes.extend(self.apply_with_connection(connection, snapshot).await?);
-        Ok(customer.id)
-      }
-    }
+      })
+      .await
   }
 
   pub(super) async fn find_price(

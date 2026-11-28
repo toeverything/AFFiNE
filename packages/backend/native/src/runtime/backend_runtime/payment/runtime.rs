@@ -140,22 +140,28 @@ impl PaymentRuntime {
 
   pub(super) async fn apply_with_connection(
     &self,
-    mut connection: PaymentConnection,
+    connection: PaymentConnection,
+    snapshot: PaymentSnapshot,
+  ) -> RuntimeResult<PaymentApplyResult> {
+    connection
+      .with_release(async |connection| self.apply_in_connection(connection, snapshot).await)
+      .await
+  }
+
+  pub(super) async fn apply_in_connection(
+    &self,
+    connection: &mut PaymentConnection,
     mut snapshot: PaymentSnapshot,
   ) -> RuntimeResult<PaymentApplyResult> {
     const MAX_LOCK_EXPANSIONS: usize = 4;
     for attempt in 0..=MAX_LOCK_EXPANSIONS {
-      match apply_payment_snapshot(&mut connection, snapshot.clone(), self.deployment, &self.mail_hash_key).await {
+      match apply_payment_snapshot(connection, snapshot.clone(), self.deployment, &self.mail_hash_key).await {
         Ok(result) => return Ok(result),
         Err(PaymentApplyError::Runtime(error)) => return Err(error),
         Err(PaymentApplyError::LockSetExpanded(expansion)) => {
-          if attempt == MAX_LOCK_EXPANSIONS {
+          if attempt == MAX_LOCK_EXPANSIONS || !connection.reacquire_with(&self.pool, expansion).await? {
             return Err(RuntimeError::invalid_state("payment_busy"));
           }
-          connection = connection
-            .reacquire_with(&self.pool, expansion)
-            .await?
-            .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
           if matches!(snapshot.coverage, super::SnapshotCoverage::Complete { .. }) {
             snapshot = self.refresh_complete_snapshot(&snapshot).await?;
           }

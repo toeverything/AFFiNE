@@ -141,86 +141,83 @@ impl PaymentRuntime {
     let mut resources = super::super::apply::snapshot_scopes(&provisional, &namespace)?;
     resources.push(PaymentScope::customer(&namespace, source_customer_id)?);
     let step_key = format!("payment:{intent_id}:revenuecat-identify");
-    let mut connection = PaymentConnection::try_acquire(&self.pool, resources.clone())
+    let connection = PaymentConnection::try_acquire(&self.pool, resources.clone())
       .await?
       .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-    let frozen = freeze_operation(
-      &mut connection,
-      &OperationIntent {
-        namespace: client.namespace().clone(),
-        operation_type: "revenuecat_identify".to_string(),
-        intent_id: intent_id.to_string(),
-        resources,
-        target_type: Some("user".to_string()),
-        target_id: Some(user_id.to_string()),
-        steps: vec![PaymentStepState {
-          key: step_key.clone(),
-          request: PaymentStep::IdentifyRevenueCat {
-            source_customer_id: source_customer_id.to_string(),
-            customer_id: user_id.to_string(),
-            source_ids: source_ids.clone(),
-            store_subscription_identifier: transaction_id.to_string(),
+    connection
+      .with_release(async |connection| {
+        let frozen = freeze_operation(
+          connection,
+          &OperationIntent {
+            namespace: client.namespace().clone(),
+            operation_type: "revenuecat_identify".to_string(),
+            intent_id: intent_id.to_string(),
+            resources,
+            target_type: Some("user".to_string()),
+            target_id: Some(user_id.to_string()),
+            steps: vec![PaymentStepState {
+              key: step_key.clone(),
+              request: PaymentStep::IdentifyRevenueCat {
+                source_customer_id: source_customer_id.to_string(),
+                customer_id: user_id.to_string(),
+                source_ids: source_ids.clone(),
+                store_subscription_identifier: transaction_id.to_string(),
+              },
+              first_sent_at: None,
+              result: None,
+            }],
           },
-          first_sent_at: None,
-          result: None,
-        }],
-      },
-    )
-    .await?;
-    if frozen.status == "completed" {
-      return Ok(IdentifyOutcome::Confirmed(super::super::PaymentApplyResult::default()));
-    }
-    if frozen.status != "pending" {
-      return Err(RuntimeError::invalid_state("payment_operation_blocked"));
-    }
-    if let Some(snapshot) = self
-      .confirmed_revenuecat_identify(user_id, &source_ids, &frozen.id)
-      .await?
-    {
-      return self
-        .apply_with_connection(connection, snapshot)
-        .await
-        .map(IdentifyOutcome::Confirmed);
-    }
-    if frozen.steps[0].first_sent_at.is_some() {
-      return Ok(IdentifyOutcome::Pending);
-    }
-    if mark_operation_step_sent(&mut connection, &frozen.id, &step_key, Duration::minutes(10)).await?
-      == PaymentSendDecision::Blocked
-    {
-      return Err(RuntimeError::invalid_state("payment_operation_blocked"));
-    }
-    let response = match client.identify(source_customer_id, user_id).await {
-      Ok(response) => response,
-      Err(error) => {
-        record_operation_error(
-          &mut connection,
-          &frozen.id,
-          error.code,
-          error.retryable,
-          error.uncertain,
         )
         .await?;
-        return Err(provider_runtime_error(error));
-      }
-    };
-    record_operation_step_result(
-      &mut connection,
-      &frozen.id,
-      &step_key,
-      json!({ "wasCreated": response.was_created }),
-    )
-    .await?;
-    let Some(snapshot) = self
-      .confirmed_revenuecat_identify(user_id, &source_ids, &frozen.id)
-      .await?
-    else {
-      return Ok(IdentifyOutcome::Pending);
-    };
-    self
-      .apply_with_connection(connection, snapshot)
+        if frozen.status == "completed" {
+          return Ok(IdentifyOutcome::Confirmed(super::super::PaymentApplyResult::default()));
+        }
+        if frozen.status != "pending" {
+          return Err(RuntimeError::invalid_state("payment_operation_blocked"));
+        }
+        if let Some(snapshot) = self
+          .confirmed_revenuecat_identify(user_id, &source_ids, &frozen.id)
+          .await?
+        {
+          return self
+            .apply_in_connection(connection, snapshot)
+            .await
+            .map(IdentifyOutcome::Confirmed);
+        }
+        if frozen.steps[0].first_sent_at.is_some() {
+          return Ok(IdentifyOutcome::Pending);
+        }
+        if mark_operation_step_sent(connection, &frozen.id, &step_key, Duration::minutes(10)).await?
+          == PaymentSendDecision::Blocked
+        {
+          return Err(RuntimeError::invalid_state("payment_operation_blocked"));
+        }
+        let response = match client.identify(source_customer_id, user_id).await {
+          Ok(response) => response,
+          Err(error) => {
+            record_operation_error(connection, &frozen.id, error.code, error.retryable, error.uncertain).await?;
+            return Err(provider_runtime_error(error));
+          }
+        };
+        record_operation_step_result(
+          connection,
+          &frozen.id,
+          &step_key,
+          json!({ "wasCreated": response.was_created }),
+        )
+        .await?;
+        let Some(snapshot) = self
+          .confirmed_revenuecat_identify(user_id, &source_ids, &frozen.id)
+          .await?
+        else {
+          return Ok(IdentifyOutcome::Pending);
+        };
+        self
+          .apply_in_connection(connection, snapshot)
+          .await
+          .map(IdentifyOutcome::Confirmed)
+      })
       .await
-      .map(IdentifyOutcome::Confirmed)
   }
 
   async fn confirmed_revenuecat_identify(
@@ -328,26 +325,30 @@ pub(in crate::runtime::backend_runtime::payment) async fn recover_one_revenuecat
   let Some(connection) = PaymentConnection::try_acquire(&runtime.pool, scopes).await? else {
     return Ok(None);
   };
-  if let Some(snapshot) = runtime
-    .confirmed_revenuecat_identify(customer_id, source_ids, &operation_id)
-    .await?
-  {
-    return runtime.apply_with_connection(connection, snapshot).await.map(Some);
-  }
-  let deadline: Option<chrono::DateTime<chrono::Utc>> = row.get("replay_deadline");
-  let now: chrono::DateTime<chrono::Utc> = row.get("now");
-  let blocked = deadline.is_some_and(|deadline| deadline <= now);
-  sqlx::query(
-    "UPDATE payment_operations SET status=CASE WHEN $2 THEN 'blocked' ELSE status END,next_attempt_at=CASE WHEN $2 \
-     THEN NULL ELSE $3 \
-     END,last_error_code='revenuecat_identify_unconfirmed',last_error='revenuecat_identify_unconfirmed',updated_at=$3 \
-     WHERE id=$1 AND status='pending'",
-  )
-  .bind(&operation_id)
-  .bind(blocked)
-  .bind(now + Duration::seconds(5))
-  .execute(&runtime.pool)
-  .await
-  .map_err(|error| RuntimeError::database("defer RevenueCat identify confirmation", error))?;
-  Ok(None)
+  connection
+    .with_release(async |connection| {
+      if let Some(snapshot) = runtime
+        .confirmed_revenuecat_identify(customer_id, source_ids, &operation_id)
+        .await?
+      {
+        return runtime.apply_in_connection(connection, snapshot).await.map(Some);
+      }
+      let deadline: Option<chrono::DateTime<chrono::Utc>> = row.get("replay_deadline");
+      let now: chrono::DateTime<chrono::Utc> = row.get("now");
+      let blocked = deadline.is_some_and(|deadline| deadline <= now);
+      sqlx::query(
+        "UPDATE payment_operations SET status=CASE WHEN $2 THEN 'blocked' ELSE status END,next_attempt_at=CASE WHEN \
+         $2 THEN NULL ELSE $3 \
+         END,last_error_code='revenuecat_identify_unconfirmed',last_error='revenuecat_identify_unconfirmed',\
+         updated_at=$3 WHERE id=$1 AND status='pending'",
+      )
+      .bind(&operation_id)
+      .bind(blocked)
+      .bind(now + Duration::seconds(5))
+      .execute(&runtime.pool)
+      .await
+      .map_err(|error| RuntimeError::database("defer RevenueCat identify confirmation", error))?;
+      Ok(None)
+    })
+    .await
 }

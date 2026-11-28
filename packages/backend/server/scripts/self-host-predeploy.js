@@ -3,6 +3,7 @@ import { generateKeyPairSync } from 'node:crypto';
 import fs from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { upgradeConfig } from './upgrade-config.js';
 
@@ -42,32 +43,23 @@ function prepare() {
   }
 }
 
-function runPrismaMigrations() {
-  console.log('running prisma migrations.');
-  execSync('yarn prisma migrate deploy', {
+function runStep(command, label, exec) {
+  console.log(label);
+  exec(command, {
     encoding: 'utf-8',
     env: process.env,
     stdio: 'inherit',
   });
 }
 
-function runDataMigrations() {
-  console.log('running data migrations.');
-  execSync('yarn cli run', {
-    encoding: 'utf-8',
-    env: process.env,
-    stdio: 'inherit',
-  });
-}
-
-function fixFailedMigrations() {
+function fixFailedMigrations(exec) {
   console.log('fixing failed migrations.');
   const maybeFailedMigrations = [
     '20250521083048_fix_workspace_embedding_chunk_primary_key',
   ];
   for (const migration of maybeFailedMigrations) {
     try {
-      execSync(`yarn prisma migrate resolve --rolled-back ${migration}`, {
+      exec(`yarn prisma migrate resolve --rolled-back ${migration}`, {
         encoding: 'utf-8',
         env: process.env,
         stdio: 'pipe',
@@ -96,7 +88,25 @@ function fixFailedMigrations() {
   }
 }
 
-prepare();
-fixFailedMigrations();
-runPrismaMigrations();
-runDataMigrations();
+export function runSelfHostPredeploy({
+  prepareConfig = prepare,
+  exec = execSync,
+} = {}) {
+  prepareConfig();
+  fixFailedMigrations(exec);
+  runStep(
+    'yarn cli admit-legacy-context-blobs',
+    'admitting legacy context blobs.',
+    exec
+  );
+  runStep('yarn prisma migrate deploy', 'running prisma migrations.', exec);
+  runStep('yarn cli run', 'running data migrations.', exec);
+  runStep('yarn cli validate-cutover', 'validating canonical cutover.', exec);
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
+) {
+  runSelfHostPredeploy();
+}

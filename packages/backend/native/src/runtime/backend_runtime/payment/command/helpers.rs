@@ -122,7 +122,6 @@ pub(super) fn required_column(row: &sqlx::postgres::PgRow, column: &str, error: 
 }
 
 pub(super) struct LockedStripeSubscription {
-  pub connection: PaymentConnection,
   pub resources: Vec<PaymentScope>,
   pub subscription_id: String,
   pub recurring: Option<String>,
@@ -133,13 +132,14 @@ pub(super) struct LockedStripeSubscription {
 }
 
 impl PaymentRuntime {
-  pub(super) async fn lock_stripe_subscription(
+  pub(super) async fn with_locked_stripe_subscription<T>(
     &self,
     namespace: &str,
     target_type: &str,
     target_id: &str,
     plan: Plan,
-  ) -> RuntimeResult<LockedStripeSubscription> {
+    work: impl AsyncFnOnce(&mut PaymentConnection, LockedStripeSubscription) -> RuntimeResult<T>,
+  ) -> RuntimeResult<T> {
     let discovery = sqlx::query(
       r#"SELECT source_identity,external_customer_id
          FROM provider_subscriptions
@@ -168,45 +168,49 @@ impl PaymentRuntime {
       PaymentScope::customer(namespace, &customer_id)?,
       target_scope,
     ];
-    let mut connection = PaymentConnection::try_acquire(&self.pool, resources.clone())
+    let connection = PaymentConnection::try_acquire(&self.pool, resources.clone())
       .await?
       .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-    let row = sqlx::query(
-      r#"SELECT source_identity,external_customer_id,external_subscription_id,recurring,canceled_at,
-                period_start,metadata,quantity
-         FROM provider_subscriptions
-         WHERE provider='stripe' AND provider_namespace=$1 AND target_type=$2 AND target_id=$3
-           AND (plan=$4 OR ($4='selfhost_team' AND plan='selfhostedteam'))
-           AND status IN ('active','trialing','past_due') AND (period_end IS NULL OR period_end>clock_timestamp())
-         ORDER BY updated_at DESC LIMIT 1"#,
-    )
-    .bind(namespace)
-    .bind(target_type)
-    .bind(target_id)
-    .bind(plan.as_str())
-    .fetch_optional(connection.connection())
-    .await
-    .map_err(|error| RuntimeError::database("load locked Stripe subscription", error))?
-    .ok_or_else(|| RuntimeError::invalid_state("subscription_not_found"))?;
-    let locked_source_id = required_column(&row, "source_identity", "payment subscription identity missing")?;
-    let locked_customer_id = required_column(&row, "external_customer_id", "payment customer identity missing")?;
-    if locked_source_id != source_id || locked_customer_id != customer_id {
-      return Err(RuntimeError::invalid_state("payment_subscription_changed"));
-    }
-    Ok(LockedStripeSubscription {
-      connection,
-      resources,
-      subscription_id: required_column(
-        &row,
-        "external_subscription_id",
-        "payment subscription identity missing",
-      )?,
-      recurring: row.get("recurring"),
-      canceled_at: row.get("canceled_at"),
-      period_start: row.get("period_start"),
-      metadata: row.get("metadata"),
-      quantity: row.get("quantity"),
-    })
+    connection
+      .with_release(async |connection| {
+        let row = sqlx::query(
+          r#"SELECT source_identity,external_customer_id,external_subscription_id,recurring,canceled_at,
+                    period_start,metadata,quantity
+             FROM provider_subscriptions
+             WHERE provider='stripe' AND provider_namespace=$1 AND target_type=$2 AND target_id=$3
+               AND (plan=$4 OR ($4='selfhost_team' AND plan='selfhostedteam'))
+               AND status IN ('active','trialing','past_due') AND (period_end IS NULL OR period_end>clock_timestamp())
+             ORDER BY updated_at DESC LIMIT 1"#,
+        )
+        .bind(namespace)
+        .bind(target_type)
+        .bind(target_id)
+        .bind(plan.as_str())
+        .fetch_optional(connection.connection())
+        .await
+        .map_err(|error| RuntimeError::database("load locked Stripe subscription", error))?
+        .ok_or_else(|| RuntimeError::invalid_state("subscription_not_found"))?;
+        let locked_source_id = required_column(&row, "source_identity", "payment subscription identity missing")?;
+        let locked_customer_id = required_column(&row, "external_customer_id", "payment customer identity missing")?;
+        if locked_source_id != source_id || locked_customer_id != customer_id {
+          return Err(RuntimeError::invalid_state("payment_subscription_changed"));
+        }
+        let locked = LockedStripeSubscription {
+          resources,
+          subscription_id: required_column(
+            &row,
+            "external_subscription_id",
+            "payment subscription identity missing",
+          )?,
+          recurring: row.get("recurring"),
+          canceled_at: row.get("canceled_at"),
+          period_start: row.get("period_start"),
+          metadata: row.get("metadata"),
+          quantity: row.get("quantity"),
+        };
+        work(connection, locked).await
+      })
+      .await
   }
 }
 

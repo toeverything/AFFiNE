@@ -5,44 +5,17 @@ use std::{
   time::{Duration, Instant},
 };
 
-use affine_doc_loader::blob_refs::{BlobRefProjectionError, MAX_SOURCE_BINARY_BYTES, live_blob_keys};
+use affine_doc_loader::blob_refs::{MAX_SOURCE_BINARY_BYTES, live_blob_keys};
 use tokio::sync::{Mutex, OwnedSemaphorePermit, Semaphore};
 
 use super::{SourceIdentity, blocking, types::LoadedSource};
 use crate::runtime::{
   RuntimeError, RuntimeResult, backend_runtime::permission::PermissionTelemetry, blob_ref_projection_error_code,
+  extract_workspace_avatar_keys,
 };
 
 const DEFAULT_MAX_BYTES: usize = 64 * 1024 * 1024;
 const HARD_TTL: Duration = Duration::from_secs(5 * 60);
-
-fn workspace_avatar_keys(blob: Vec<u8>) -> Result<Vec<Box<str>>, BlobRefProjectionError> {
-  use y_octo::{Any, Doc, ReadDoc, ReadError, ReadValue, Value};
-
-  let blob = Arc::<[u8]>::from(blob);
-  let avatar = match ReadDoc::from_full_update_v1(Arc::clone(&blob)) {
-    Ok(doc) => match doc.map("meta").and_then(|meta| meta.get("avatar")) {
-      Some(ReadValue::Any(value)) => value.as_str().map(str::to_owned),
-      Some(ReadValue::Text(text)) => Some(text.to_string()),
-      _ => None,
-    },
-    Err(ReadError::IncompleteSnapshot(_)) => {
-      let doc = Doc::try_from_binary_v1(&blob).map_err(|_| BlobRefProjectionError::InvalidBinary)?;
-      match doc.get_map("meta").ok().and_then(|meta| meta.get("avatar")) {
-        Some(Value::Any(Any::String(key))) => Some(key),
-        Some(Value::Text(text)) => Some(text.to_string()),
-        _ => None,
-      }
-    }
-    Err(ReadError::ResourceLimit(_)) => return Err(BlobRefProjectionError::Unsupported),
-    Err(ReadError::InvalidUpdate(_)) => return Err(BlobRefProjectionError::InvalidBinary),
-  };
-  match avatar {
-    Some(key) if key.len() > 1024 => Err(BlobRefProjectionError::KeyTooLarge),
-    Some(key) if !key.is_empty() => Ok(vec![key.into_boxed_str()]),
-    _ => Ok(Vec::new()),
-  }
-}
 
 #[derive(Clone)]
 struct Entry {
@@ -173,7 +146,7 @@ impl BlobRefCache {
     let workspace_root = identity.is_workspace_root();
     let parsed = blocking::spawn(permit, move || {
       if workspace_root {
-        workspace_avatar_keys(blob)
+        extract_workspace_avatar_keys(blob)
       } else {
         live_blob_keys(blob, false)
       }
@@ -611,5 +584,65 @@ mod tests {
     release_confirmation.notify_one();
     first_task.await.unwrap().unwrap();
     assert_eq!(cache.flights().await, 0);
+  }
+
+  #[tokio::test]
+  async fn large_workspace_root_doc_extracts_avatar_keys() {
+    let root = Doc::with_client(1);
+    let mut meta = root.get_or_create_map("meta").unwrap();
+    meta
+      .insert("avatar".to_string(), Any::String("synthetic-avatar-key".to_string()))
+      .unwrap();
+    let mut pages = root.create_array().unwrap();
+    let title_padding = "t".repeat(900);
+    for index in 0..1_200 {
+      let mut page = root.create_map().unwrap();
+      page
+        .insert("id".to_string(), Any::String(format!("synthetic-page-{index:04}")))
+        .unwrap();
+      page
+        .insert(
+          "title".to_string(),
+          Any::String(format!("Synthetic Page {index:04} {title_padding}")),
+        )
+        .unwrap();
+      pages.push(page).unwrap();
+    }
+    meta.insert("pages".to_string(), pages).unwrap();
+    let complete_blob = root.encode_update_v1().unwrap();
+    assert!(complete_blob.len() > 1024 * 1024);
+
+    let peer = Doc::with_client(42);
+    let mut peer_meta = peer.get_or_create_map("meta").unwrap();
+    peer_meta
+      .insert("name".to_string(), Any::String("missing-prefix".to_string()))
+      .unwrap();
+    let state = peer.get_state_vector();
+    peer_meta
+      .insert("avatar".to_string(), Any::String("pending-avatar".to_string()))
+      .unwrap();
+    let delta = peer.encode_state_as_update_v1(&state).unwrap();
+    let incomplete_blob = y_octo::merge_updates_v1([complete_blob.as_slice(), delta.as_slice()])
+      .unwrap()
+      .encode_v1()
+      .unwrap();
+    assert!(incomplete_blob.len() > 1024 * 1024);
+
+    let cache = BlobRefCache::with_limits(4096, 1, 2);
+    for (stamp, blob) in [("complete", complete_blob), ("incomplete", incomplete_blob)] {
+      let source = LoadedSource {
+        identity: SourceIdentity::CurrentDoc {
+          workspace_id: "synthetic-workspace".to_string(),
+          doc_id: "synthetic-workspace".to_string(),
+        },
+        stamp: stamp.to_string(),
+        blob,
+      };
+      let refs = cache.refs(source, || async { Ok(()) }).await.unwrap();
+      assert_eq!(
+        refs.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
+        ["synthetic-avatar-key"]
+      );
+    }
   }
 }

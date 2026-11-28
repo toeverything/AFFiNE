@@ -59,8 +59,12 @@ async fn reconcile_financial(
   let connection = PaymentConnection::try_acquire(&runtime.pool, resources)
     .await?
     .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-  let snapshot = recover_financial(runtime, candidate).await?;
-  runtime.apply_with_connection(connection, snapshot).await
+  connection
+    .with_release(async |connection| {
+      let snapshot = recover_financial(runtime, candidate).await?;
+      runtime.apply_in_connection(connection, snapshot).await
+    })
+    .await
 }
 
 async fn recover_financial(runtime: &PaymentRuntime, candidate: &FinancialCandidate) -> RuntimeResult<PaymentSnapshot> {

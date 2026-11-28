@@ -146,62 +146,62 @@ impl PaymentRuntime {
       PaymentScope::source(transaction.namespace, &matched.id)?,
       PaymentScope::customer(transaction.namespace, transaction.user_id)?,
     ];
-    let Some(mut connection) = PaymentConnection::try_acquire(&self.pool, resources).await? else {
+    let Some(connection) = PaymentConnection::try_acquire(&self.pool, resources).await? else {
       return Ok("processing");
     };
-    for expansions in 0..=4 {
-      let [matched] = matches.as_slice() else {
-        return Ok(if matches.is_empty() { "processing" } else { "failed" });
-      };
-      let source_scope = PaymentScope::source(transaction.namespace, &matched.id)?;
-      let mut expansion = required_scope_expansion(connection.scopes(), [source_scope]);
-      if expansion.is_empty() {
-        let subscriptions = client
-          .customer_subscriptions(transaction.user_id)
-          .await
-          .map_err(|error| RuntimeError::invalid_state(error.code))?;
-        let Some(owned) = subscriptions.into_iter().find(|source| {
-          source.id == matched.id
-            && source.customer_id.as_deref() == Some(transaction.user_id)
-            && source.store == "app_store"
-            && source.environment == client.namespace().environment.as_str()
-        }) else {
-          return Ok("processing");
-        };
-        let snapshot = revenuecat_customer_snapshot(
-          &self.pool,
-          client,
-          config,
-          transaction.user_id,
-          vec![owned],
-          SnapshotCoverage::Single,
-          Vec::new(),
-        )
-        .await?;
-        let Some(source) = transaction.source(&snapshot, &matched.id).cloned() else {
-          return Ok("failed");
-        };
-        match apply_payment_snapshot(&mut connection, snapshot, self.deployment, &self.mail_hash_key).await {
-          Ok(applied) => {
-            changes.extend(applied);
-            return transaction
-              .confirm_and_finish(connection.connection(), &source, attempt_id)
-              .await;
+    connection
+      .with_release(async |connection| {
+        for expansions in 0..=4 {
+          let [matched] = matches.as_slice() else {
+            return Ok(if matches.is_empty() { "processing" } else { "failed" });
+          };
+          let source_scope = PaymentScope::source(transaction.namespace, &matched.id)?;
+          let mut expansion = required_scope_expansion(connection.scopes(), [source_scope]);
+          if expansion.is_empty() {
+            let subscriptions = client
+              .customer_subscriptions(transaction.user_id)
+              .await
+              .map_err(|error| RuntimeError::invalid_state(error.code))?;
+            let Some(owned) = subscriptions.into_iter().find(|source| {
+              source.id == matched.id
+                && source.customer_id.as_deref() == Some(transaction.user_id)
+                && source.store == "app_store"
+                && source.environment == client.namespace().environment.as_str()
+            }) else {
+              return Ok("processing");
+            };
+            let snapshot = revenuecat_customer_snapshot(
+              &self.pool,
+              client,
+              config,
+              transaction.user_id,
+              vec![owned],
+              SnapshotCoverage::Single,
+              Vec::new(),
+            )
+            .await?;
+            let Some(source) = transaction.source(&snapshot, &matched.id).cloned() else {
+              return Ok("failed");
+            };
+            match apply_payment_snapshot(connection, snapshot, self.deployment, &self.mail_hash_key).await {
+              Ok(applied) => {
+                changes.extend(applied);
+                return transaction
+                  .confirm_and_finish(connection.connection(), &source, attempt_id)
+                  .await;
+              }
+              Err(PaymentApplyError::Runtime(error)) => return Err(error),
+              Err(PaymentApplyError::LockSetExpanded(required)) => expansion = required,
+            }
           }
-          Err(PaymentApplyError::Runtime(error)) => return Err(error),
-          Err(PaymentApplyError::LockSetExpanded(required)) => expansion = required,
+          if expansions == 4 || !connection.reacquire_with(&self.pool, expansion).await? {
+            return Ok("processing");
+          }
+          matches = locate_app_store_transaction(client, transaction.transaction_id).await?;
         }
-      }
-      if expansions == 4 {
-        break;
-      }
-      let Some(reacquired) = connection.reacquire_with(&self.pool, expansion).await? else {
-        return Ok("processing");
-      };
-      connection = reacquired;
-      matches = locate_app_store_transaction(client, transaction.transaction_id).await?;
-    }
-    Ok("processing")
+        Ok("processing")
+      })
+      .await
   }
 }
 

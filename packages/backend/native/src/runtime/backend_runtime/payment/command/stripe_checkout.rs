@@ -67,55 +67,59 @@ impl PaymentRuntime {
     let stripe = self.stripe()?;
     let namespace = canonical_namespace(stripe.namespace())?;
     let scope = PaymentScope::cloud_target("user", user_id, plan)?;
-    let mut connection = PaymentConnection::try_acquire(&self.pool, vec![scope.clone()])
+    let connection = PaymentConnection::try_acquire(&self.pool, vec![scope.clone()])
       .await?
       .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-    let now = purchase_time(&mut connection).await?;
-    let Some(attempt) = open_purchase(&mut connection, &scope, now).await? else {
-      return Ok(Value::Bool(true));
-    };
-    if attempt.id != attempt_id
-      || attempt.operation_type != "purchase_checkout"
-      || attempt.namespace != namespace
-      || attempt.status != "waiting"
-    {
-      return Ok(Value::Bool(false));
-    }
-    let session_id = attempt
-      .result
-      .as_ref()
-      .and_then(|value| value["sessionId"].as_str())
-      .ok_or_else(|| RuntimeError::invalid_state("missing checkout session"))?;
-    let session = stripe
-      .checkout_session(session_id)
-      .await
-      .map_err(provider_runtime_error)?;
-    let expired = match session.status.as_deref() {
-      Some("expired") => true,
-      Some("open") => {
-        let path = format!("v1/checkout/sessions/{}/expire", encode_segment(session_id));
-        match stripe
-          .post::<StripeCheckoutSession>(&path, &StripeForm::default(), &format!("payment:{}:expire", attempt.id))
-          .await
+    connection
+      .with_release(async |connection| {
+        let now = purchase_time(connection).await?;
+        let Some(attempt) = open_purchase(connection, &scope, now).await? else {
+          return Ok(Value::Bool(true));
+        };
+        if attempt.id != attempt_id
+          || attempt.operation_type != "purchase_checkout"
+          || attempt.namespace != namespace
+          || attempt.status != "waiting"
         {
-          Ok(session) => session.status.as_deref() == Some("expired"),
-          Err(_) => {
-            stripe
-              .checkout_session(session_id)
-              .await
-              .map_err(provider_runtime_error)?
-              .status
-              .as_deref()
-              == Some("expired")
-          }
+          return Ok(Value::Bool(false));
         }
-      }
-      _ => false,
-    };
-    if expired {
-      finish_purchase(&mut connection, &attempt.id, "expired").await?;
-    }
-    Ok(Value::Bool(expired))
+        let session_id = attempt
+          .result
+          .as_ref()
+          .and_then(|value| value["sessionId"].as_str())
+          .ok_or_else(|| RuntimeError::invalid_state("missing checkout session"))?;
+        let session = stripe
+          .checkout_session(session_id)
+          .await
+          .map_err(provider_runtime_error)?;
+        let expired = match session.status.as_deref() {
+          Some("expired") => true,
+          Some("open") => {
+            let path = format!("v1/checkout/sessions/{}/expire", encode_segment(session_id));
+            match stripe
+              .post::<StripeCheckoutSession>(&path, &StripeForm::default(), &format!("payment:{}:expire", attempt.id))
+              .await
+            {
+              Ok(session) => session.status.as_deref() == Some("expired"),
+              Err(_) => {
+                stripe
+                  .checkout_session(session_id)
+                  .await
+                  .map_err(provider_runtime_error)?
+                  .status
+                  .as_deref()
+                  == Some("expired")
+              }
+            }
+          }
+          _ => false,
+        };
+        if expired {
+          finish_purchase(connection, &attempt.id, "expired").await?;
+        }
+        Ok(Value::Bool(expired))
+      })
+      .await
   }
 }
 
@@ -129,7 +133,7 @@ pub(in crate::runtime::backend_runtime::payment) async fn stripe_checkout_receip
     .and_then(Value::as_str)
     .ok_or_else(|| RuntimeError::invalid_input("Stripe checkout receipt has no identity"))?;
   sqlx::query(
-    "UPDATE payment_operations SET next_attempt_at=clock_timestamp()
+    "UPDATE payment_operations SET next_attempt_at=date_trunc('milliseconds', clock_timestamp())
       WHERE provider_namespace=$1 AND operation_type='purchase_checkout' AND status='waiting'
         AND result->>'sessionId'=$2",
   )
@@ -191,56 +195,61 @@ pub(in crate::runtime::backend_runtime::payment) async fn recover_waiting_checko
     if let Some(customer) = session.customer.as_ref() {
       scopes.push(PaymentScope::customer(&namespace, customer.id())?);
     }
-    let Some(mut connection) = PaymentConnection::try_acquire(&runtime.pool, scopes).await? else {
+    let Some(connection) = PaymentConnection::try_acquire(&runtime.pool, scopes).await? else {
       return Ok(None);
     };
-    for _ in 0..=4 {
-      let observed_at = chrono::Utc::now();
-      let mut snapshot = if let Some(invoice) = session.invoice.as_ref() {
-        let invoice = stripe.invoice(invoice.id()).await.map_err(provider_runtime_error)?;
-        stripe_invoice_snapshot(&runtime.pool, stripe, invoice, Vec::new(), observed_at).await?
-      } else if let Some(subscription) = session.subscription.as_ref() {
-        let subscription = stripe
-          .subscription(subscription.id())
-          .await
-          .map_err(provider_runtime_error)?;
-        stripe_subscription_snapshot(&runtime.pool, stripe, subscription, Vec::new(), None).await?
-      } else {
-        return Ok(None);
-      };
-      if !snapshot
-        .subscriptions
-        .iter()
-        .any(|source| source.target_type == "user" && source.target_id == target_id && source.source_id == source_id)
-      {
-        return Err(RuntimeError::invalid_state(
-          "Stripe checkout source target does not match",
-        ));
-      }
-      snapshot.operation = Some(OperationCompletion {
-        operation_id: operation_id.clone(),
-        result: result.clone(),
-      });
-      match apply_payment_snapshot(&mut connection, snapshot, runtime.deployment, &runtime.mail_hash_key).await {
-        Ok(changes) => return Ok(Some(changes)),
-        Err(PaymentApplyError::Runtime(error)) => return Err(error),
-        Err(PaymentApplyError::LockSetExpanded(expansion)) => {
-          let Some(reacquired) = connection.reacquire_with(&runtime.pool, expansion).await? else {
+    return connection
+      .with_release(async |connection| {
+        for _ in 0..=4 {
+          let observed_at = chrono::Utc::now();
+          let mut snapshot = if let Some(invoice) = session.invoice.as_ref() {
+            let invoice = stripe.invoice(invoice.id()).await.map_err(provider_runtime_error)?;
+            stripe_invoice_snapshot(&runtime.pool, stripe, invoice, Vec::new(), observed_at).await?
+          } else if let Some(subscription) = session.subscription.as_ref() {
+            let subscription = stripe
+              .subscription(subscription.id())
+              .await
+              .map_err(provider_runtime_error)?;
+            stripe_subscription_snapshot(&runtime.pool, stripe, subscription, Vec::new(), None).await?
+          } else {
             return Ok(None);
           };
-          connection = reacquired;
+          if !snapshot.subscriptions.iter().any(|source| {
+            source.target_type == "user" && source.target_id == target_id && source.source_id == source_id
+          }) {
+            return Err(RuntimeError::invalid_state(
+              "Stripe checkout source target does not match",
+            ));
+          }
+          snapshot.operation = Some(OperationCompletion {
+            operation_id: operation_id.clone(),
+            result: result.clone(),
+          });
+          match apply_payment_snapshot(connection, snapshot, runtime.deployment, &runtime.mail_hash_key).await {
+            Ok(changes) => return Ok(Some(changes)),
+            Err(PaymentApplyError::Runtime(error)) => return Err(error),
+            Err(PaymentApplyError::LockSetExpanded(expansion)) => {
+              if !connection.reacquire_with(&runtime.pool, expansion).await? {
+                return Ok(None);
+              }
+            }
+          }
         }
-      }
-    }
-    return Err(RuntimeError::invalid_state("payment_busy"));
+        Err(RuntimeError::invalid_state("payment_busy"))
+      })
+      .await;
   }
-  let Some(mut connection) = PaymentConnection::try_acquire(&runtime.pool, vec![scope]).await? else {
+  let Some(connection) = PaymentConnection::try_acquire(&runtime.pool, vec![scope]).await? else {
     return Ok(None);
   };
-  if let Some((reason, _)) =
-    stripe_checkout_termination(connection.connection(), stripe, &namespace, &session, None).await?
-  {
-    finish_purchase(&mut connection, &operation_id, reason).await?;
-  }
-  Ok(None)
+  connection
+    .with_release(async |connection| {
+      if let Some((reason, _)) =
+        stripe_checkout_termination(connection.connection(), stripe, &namespace, &session, None).await?
+      {
+        finish_purchase(connection, &operation_id, reason).await?;
+      }
+      Ok(None)
+    })
+    .await
 }

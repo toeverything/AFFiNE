@@ -206,11 +206,15 @@ async fn reconcile_source(
   let connection = PaymentConnection::try_acquire(&runtime.pool, resources)
     .await?
     .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-  let snapshot = match candidate.provider {
-    Provider::Stripe => reconcile_stripe(runtime, candidate).await?,
-    Provider::RevenueCat => reconcile_revenuecat(runtime, candidate).await?,
-  };
-  runtime.apply_with_connection(connection, snapshot).await.map(Some)
+  connection
+    .with_release(async |connection| {
+      let snapshot = match candidate.provider {
+        Provider::Stripe => reconcile_stripe(runtime, candidate).await?,
+        Provider::RevenueCat => reconcile_revenuecat(runtime, candidate).await?,
+      };
+      runtime.apply_in_connection(connection, snapshot).await.map(Some)
+    })
+    .await
 }
 
 async fn reconcile_stripe(runtime: &PaymentRuntime, candidate: &SourceCandidate) -> RuntimeResult<PaymentSnapshot> {

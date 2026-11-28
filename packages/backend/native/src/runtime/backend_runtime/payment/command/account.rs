@@ -53,22 +53,27 @@ impl PaymentRuntime {
       });
     }
     if prepared != 0 {
-      let Some(mut connection) = PaymentConnection::try_acquire(&self.pool, resources.clone()).await? else {
+      let Some(connection) = PaymentConnection::try_acquire(&self.pool, resources.clone()).await? else {
         return Err(RuntimeError::invalid_state("payment_busy"));
       };
-      freeze_operation(
-        &mut connection,
-        &OperationIntent {
-          namespace: namespace.clone(),
-          operation_type: "account_delete_cancel".to_string(),
-          intent_id: format!("account-delete:{user_id}"),
-          resources,
-          target_type: Some("user".to_string()),
-          target_id: Some(user_id.to_string()),
-          steps,
-        },
-      )
-      .await?;
+      connection
+        .with_release(async |connection| {
+          freeze_operation(
+            connection,
+            &OperationIntent {
+              namespace: namespace.clone(),
+              operation_type: "account_delete_cancel".to_string(),
+              intent_id: format!("account-delete:{user_id}"),
+              resources,
+              target_type: Some("user".to_string()),
+              target_id: Some(user_id.to_string()),
+              steps,
+            },
+          )
+          .await?;
+          Ok(())
+        })
+        .await?;
     }
     Ok(json!({ "prepared": prepared }))
   }
