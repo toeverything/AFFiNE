@@ -57,6 +57,8 @@ swiftc -emit-executable \
   -framework CoreFoundation \
   -framework Foundation \
   -framework UniformTypeIdentifiers \
+  -framework StoreKit \
+  -framework AuthenticationServices \
   -o "$APP_DIR/AffineIosHost" \
   "$IOS_HOST_DIR"/Sources/*.swift
 

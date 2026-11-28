@@ -170,6 +170,28 @@ final class WorkspaceStorageBridge {
     return affine_ios_workspace_checkpoint(handle)
   }
 
+  func readBlob(key: String) -> Data? {
+    guard let handle else { return nil }
+    let buffer = key.withCString { affine_ios_workspace_read_blob(handle, $0) }
+    return takeBytes(buffer)
+  }
+
+  func ingestShareItem(requestJson: String, blobBytes: Data) -> String? {
+    guard let handle else { return nil }
+    let ptr: UnsafeMutablePointer<CChar>? = requestJson.withCString { cReq in
+      if blobBytes.isEmpty {
+        return affine_ios_workspace_ingest_share_item(handle, cReq, nil, 0)
+      }
+      return blobBytes.withUnsafeBytes { raw in
+        let base = raw.bindMemory(to: UInt8.self).baseAddress
+        return affine_ios_workspace_ingest_share_item(handle, cReq, base, blobBytes.count)
+      }
+    }
+    guard let ptr else { return nil }
+    defer { affine_ios_string_free(ptr) }
+    return String(cString: ptr)
+  }
+
   private func takeBytes(_ buffer: AffineIosByteBuffer) -> Data? {
     defer { affine_ios_bytes_free(buffer) }
     guard let ptr = buffer.ptr, buffer.len > 0 else {

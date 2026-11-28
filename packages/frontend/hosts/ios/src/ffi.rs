@@ -27,11 +27,12 @@ pub struct AffineIosHost {
     pub(crate) haptics_user_data: *mut c_void,
     pub(crate) pdf_provider: Option<super::ffi_s3::AffinePdfProvider>,
     pub(crate) text_provider: Option<super::ffi_text::AffineTextProvider>,
+    pub(crate) islands: super::native_islands::IosNativeIslandsState,
 }
 
 /// Opaque C-ABI handle matching `typedef struct AffineIosWorkspace AffineIosWorkspace`.
 pub struct AffineIosWorkspace {
-    handle: IosWorkspaceHandle,
+    pub(crate) handle: IosWorkspaceHandle,
 }
 
 /// Owned byte buffer returned across the C ABI. Free with `affine_ios_bytes_free`.
@@ -120,6 +121,7 @@ pub extern "C" fn affine_ios_host_create(
         haptics_user_data: core::ptr::null_mut(),
         pdf_provider: None,
         text_provider: None,
+        islands: super::native_islands::IosNativeIslandsState::default(),
     });
     Box::into_raw(host)
 }

@@ -7,6 +7,54 @@
 /// Default observable first-frame clear color (opaque `#FAFAFC` ARGB, matching iOS light canvas).
 pub const DEFAULT_CLEAR_COLOR_ARGB: u32 = 0xFFFA_FAFC;
 
+/// Logical-dp window insets forwarded across the Android JNI boundary.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct LogicalWindowInsets {
+    pub safe_top: f32,
+    pub safe_right: f32,
+    pub safe_bottom: f32,
+    pub safe_left: f32,
+    /// Absolute keyboard overlap height from the window bottom edge in logical `dp`.
+    /// Does not subtract `safe_bottom`; `ui::WindowInsets::effective()` takes the max.
+    pub ime_bottom: f32,
+}
+
+impl LogicalWindowInsets {
+    /// Returns keyboard height strictly above the bottom navigation bar in logical `dp`,
+    /// preventing double-deduction when combining `safe_bottom` and `ime_bottom`.
+    pub fn effective_ime_above_nav_bar(&self) -> f32 {
+        (self.ime_bottom - self.safe_bottom).max(0.0)
+    }
+}
+
+/// Converts Android `WindowInsets` physical pixel measurements into logical `dp`.
+pub fn physical_insets_to_logical_dp(
+    safe_top_px: i32,
+    safe_right_px: i32,
+    safe_bottom_px: i32,
+    safe_left_px: i32,
+    ime_bottom_px: i32,
+    density: f32,
+) -> LogicalWindowInsets {
+    let safe_density = if density.is_finite() && density > 0.0 {
+        density
+    } else {
+        1.0
+    };
+    let top = safe_top_px.max(0);
+    let right = safe_right_px.max(0);
+    let bottom = safe_bottom_px.max(0);
+    let left = safe_left_px.max(0);
+    let ime = ime_bottom_px.max(0);
+    LogicalWindowInsets {
+        safe_top: top as f32 / safe_density,
+        safe_right: right as f32 / safe_density,
+        safe_bottom: bottom as f32 / safe_density,
+        safe_left: left as f32 / safe_density,
+        ime_bottom: ime as f32 / safe_density,
+    }
+}
+
 /// Active Android presentation backend with deterministic fallback order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]

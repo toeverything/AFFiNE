@@ -1,6 +1,7 @@
 import android.view.inputmethod.InputConnection
 import app.affine.pro.host.AffineImeController
 import app.affine.pro.host.AffineSurfaceView
+import app.affine.pro.host.ShareIntentBridge
 import app.affine.pro.host.AndroidAutofillController
 import app.affine.pro.host.AndroidBackDispatcher
 import app.affine.pro.host.AndroidBootstrapCoordinator
@@ -2082,5 +2083,127 @@ fun main() {
     NativeBridge.nativeDestroyHost(seq26Handle)
   }
 
-  println("Kotlin JNI Android host parity check passed (26/26 sequences)")
+  // Sequence 27: Android native island (ShareIntentBridge) hand-written JNI parity.
+  val seq27Handle = NativeBridge.nativeCreateHost()
+  try {
+    checkEq(
+      NativeBridge.nativeShareEnqueue(seq27Handle, "bad-1", ShareIntentBridge.KIND_URL, "Bad", "javascript:alert(1)", "text/plain"),
+      false,
+      "seq27 rejects non-http(s) share URL",
+    )
+    checkEq(
+      NativeBridge.nativeShareEnqueue(seq27Handle, "share-1", ShareIntentBridge.KIND_URL, "AFFiNE", "https://affine.pro", "text/plain"),
+      true,
+      "seq27 accepts https share URL",
+    )
+    checkEq(NativeBridge.nativeSharePendingCount(seq27Handle), 1, "seq27 pendingCount == 1")
+    val drained = NativeBridge.nativeShareDrainJson(seq27Handle) ?: ""
+    checkEq(drained.contains("https://affine.pro"), true, "seq27 drained JSON contains shared URL")
+    checkEq(NativeBridge.nativeSharePendingCount(seq27Handle), 0, "seq27 pendingCount == 0 after drain")
+
+    // Verify ShareIntentBridge wiring for ACTION_SEND carrying both EXTRA_TEXT and EXTRA_STREAM
+    // (must ingest both without dropping EXTRA_STREAM) and ACTION_SEND_MULTIPLE.
+    val shareBridge = ShareIntentBridge(handleProvider = { seq27Handle })
+    val enqueuedBoth = shareBridge.enqueueParsedPayloads(
+      action = "android.intent.action.SEND",
+      mimeType = "image/png",
+      subject = "Caption + Image",
+      text = "https://affine.pro/shared",
+      streamUris = listOf("content://media/external/images/media/42"),
+      idPrefix = "main-send",
+    )
+    checkEq(enqueuedBoth, 2, "seq27 ACTION_SEND with EXTRA_TEXT + EXTRA_STREAM enqueues both")
+    val enqueuedMulti = shareBridge.enqueueParsedPayloads(
+      action = "android.intent.action.SEND_MULTIPLE",
+      mimeType = "image/*",
+      subject = "Gallery",
+      text = null,
+      streamUris = listOf("content://media/1", "content://media/2"),
+      idPrefix = "main-multi",
+    )
+    checkEq(enqueuedMulti, 2, "seq27 ACTION_SEND_MULTIPLE enqueues all stream URIs")
+    checkEq(shareBridge.pendingCount(), 4, "seq27 ShareIntentBridge pendingCount == 4")
+    NativeBridge.nativeResetEmptyDocument(seq27Handle)
+    val ingestedCount = NativeBridge.nativeIngestSharedItems(seq27Handle)
+    checkEq(ingestedCount, 4, "seq27 nativeIngestSharedItems inserts all 4 shared items")
+    checkEq(shareBridge.pendingCount(), 0, "seq27 ShareIntentBridge pendingCount == 0 after ingest")
+    val docTextAfterShare = NativeBridge.nativeGetUtf16Text(seq27Handle)
+    checkEq(
+      docTextAfterShare.contains("https://affine.pro/shared")
+        && docTextAfterShare.contains("content://media/external/images/media/42"),
+      true,
+      "seq27 active document contains ingested shared URL and stream URI",
+    )
+    val dupEnqueued = shareBridge.enqueueParsedPayloads(
+      action = "android.intent.action.SEND",
+      mimeType = "image/png",
+      subject = "Caption + Image",
+      text = "https://affine.pro/shared",
+      streamUris = listOf("content://media/external/images/media/42"),
+      idPrefix = "main-send",
+    )
+    checkEq(dupEnqueued, 0, "seq27 duplicate share IDs rejected idempotently after ingest")
+
+    // Two consecutive independent ACTION_SEND shares (default null idPrefix) must BOTH succeed
+    // without colliding on a fixed "share-0" ID in consumed_ids.
+    val indep1 = shareBridge.enqueueParsedPayloads(
+      action = "android.intent.action.SEND",
+      mimeType = "text/plain",
+      subject = "First",
+      text = "https://affine.pro/first",
+      streamUris = emptyList(),
+    )
+    val indep2 = shareBridge.enqueueParsedPayloads(
+      action = "android.intent.action.SEND",
+      mimeType = "text/plain",
+      subject = "Second",
+      text = "https://affine.pro/second",
+      streamUris = emptyList(),
+    )
+    checkEq(indep1, 1, "seq27 first independent share accepted")
+    checkEq(indep2, 1, "seq27 second independent share accepted without ID collision")
+    checkEq(NativeBridge.nativeIngestSharedItems(seq27Handle), 2, "seq27 both independent shares ingested")
+    val docAfterTwoShares = NativeBridge.nativeGetUtf16Text(seq27Handle)
+    checkEq(
+      docAfterTwoShares.contains("https://affine.pro/first")
+        && docAfterTwoShares.contains("https://affine.pro/second"),
+      true,
+      "seq27 active document contains both consecutive independent shares",
+    )
+  } finally {
+    NativeBridge.nativeDestroyHost(seq27Handle)
+  }
+
+  // Sequence 28: 0.27.5 https://localhost same-signature upgrade + rollback writeback drill.
+  val seq28Handle = NativeBridge.nativeCreateHost()
+  val seq28Dir = java.nio.file.Files.createTempDirectory("affine-0275-drill-").toFile()
+  try {
+    val probePayload = """
+      {
+        "origin": "https://localhost",
+        "length": 4,
+        "keys": ["affine-local-workspace", "theme", "last_workspace_id", "capacitor_noise"],
+        "entries": {
+          "affine-local-workspace": "[\"ws-0275-a\"]",
+          "theme": "dark",
+          "last_workspace_id": "ws-0275-a"
+        }
+      }
+    """.trimIndent()
+    val coordinator28 = AndroidBootstrapCoordinator(
+      handleProvider = { seq28Handle },
+      filesDirProvider = { seq28Dir.absolutePath },
+    )
+    val outcome = coordinator28.completeWithProbePayload(probePayload)
+    checkEq(outcome.imported, true, "seq28 0.27.5 probe imported")
+    checkEq(outcome.connectedWorkspaceKeys.size, 1, "seq28 allowlisted ws-0275-a mounted in place")
+    val writebackJson = NativeBridge.nativePlanLegacyLocalStorageWriteBack(seq28Handle) ?: ""
+    checkEq(writebackJson.contains("ws-0275-a"), true, "seq28 rollback writeback preserves ws-0275-a")
+    checkEq(writebackJson.contains("capacitor_noise"), false, "seq28 rollback writeback never deletes noise key")
+  } finally {
+    NativeBridge.nativeDestroyHost(seq28Handle)
+    seq28Dir.deleteRecursively()
+  }
+
+  println("Kotlin JNI Android host parity check passed (28/28 sequences)")
 }

@@ -5,6 +5,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod drill;
 pub mod sentinel;
 pub mod writeback;
 

@@ -264,6 +264,7 @@ jobs:
             packages/frontend/hosts/android/kotlin/app/affine/pro/host/LegacyLocalStorageProbe.kt \
             packages/frontend/hosts/android/kotlin/app/affine/pro/host/AndroidBootstrapCoordinator.kt \
             packages/frontend/hosts/android/kotlin/app/affine/pro/host/AuthDataStore.kt \
+            packages/frontend/hosts/android/kotlin/app/affine/pro/host/ShareIntentBridge.kt \
             packages/frontend/hosts/android/tests/ImeHostParityCheck.kt
           test -s /tmp/affine-android-kotlin/app/affine/pro/host/MainActivity.class
           test -s /tmp/affine-android-kotlin/app/affine/pro/host/AffineImeController.class

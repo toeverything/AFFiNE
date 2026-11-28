@@ -45,6 +45,7 @@ kotlinc -classpath "$ANDROID_JAR" -d /tmp/affine-android-kotlin \
   hosts/android/kotlin/app/affine/pro/host/LegacyLocalStorageProbe.kt \
   hosts/android/kotlin/app/affine/pro/host/AndroidBootstrapCoordinator.kt \
   hosts/android/kotlin/app/affine/pro/host/AuthDataStore.kt \
+  hosts/android/kotlin/app/affine/pro/host/ShareIntentBridge.kt \
   hosts/android/tests/ImeHostParityCheck.kt
 kotlin -J-Djava.library.path="$PWD/target/debug" -cp "/tmp/affine-android-kotlin:$ANDROID_JAR" ImeHostParityCheckKt
 ```

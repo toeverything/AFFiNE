@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -367,6 +368,17 @@ object NativeBridge {
   external fun nativeSelectionActionSelectAll(handle: Long)
   external fun nativeTakePendingClipboardJson(handle: Long): String?
   external fun nativeSetPageReadonly(handle: Long, readonly: Boolean)
+  external fun nativeShareEnqueue(
+    handle: Long,
+    id: String,
+    kind: Int,
+    title: String,
+    content: String,
+    mimeType: String,
+  ): Boolean
+  external fun nativeSharePendingCount(handle: Long): Int
+  external fun nativeShareDrainJson(handle: Long): String?
+  external fun nativeIngestSharedItems(handle: Long): Int
 }
 
 private fun drainPendingOpenUrl(context: Context, handle: Long) {
@@ -2887,6 +2899,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
   private lateinit var surfaceView: AffineSurfaceView
   private lateinit var documentHandleView: DocumentSelectionHandleView
   private lateinit var bootstrapCoordinator: AndroidBootstrapCoordinator
+  private lateinit var shareIntentBridge: ShareIntentBridge
   private lateinit var backDispatcher: AndroidBackDispatcher
   private lateinit var imeController: AffineImeController
   private lateinit var clipboardAdapter: HostClipboard
@@ -3178,10 +3191,35 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
       handleProvider = { nativeHandle },
       filesDirProvider = { filesDir.absolutePath },
     )
+    shareIntentBridge = ShareIntentBridge(handleProvider = { nativeHandle })
+    if (savedInstanceState == null) {
+      consumeIncomingShareIntent(intent)
+    }
     bootstrapCoordinator.start(LegacyLocalStorageProbe(this)) { outcome ->
       lastBootstrapOutcome = outcome
       requestFrameAndSchedule()
     }
+  }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    consumeIncomingShareIntent(intent)
+  }
+
+  private fun consumeIncomingShareIntent(incoming: Intent?): Int {
+    if (nativeHandle == 0L || !::shareIntentBridge.isInitialized || incoming == null) {
+      return 0
+    }
+    val enqueued = shareIntentBridge.handleIncomingIntent(incoming)
+    if (enqueued > 0) {
+      NativeBridge.nativeIngestSharedItems(nativeHandle)
+      incoming.action = null
+      syncSystemImeFromEditor()
+      syncDocumentSelectionFromEditor()
+      requestFrameAndSchedule()
+    }
+    return enqueued
   }
 
   fun retryBootstrapIfNeeded(onComplete: (BootstrapOutcome) -> Unit = {}) {

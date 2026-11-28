@@ -11,6 +11,7 @@ use affine_store::{
 use blocksuite_playground_doc::{
     DocError,
     read::{BlockContent, BlockNode, PageSnapshot},
+    schema::{BlockSpec, ParagraphType},
     session::PageDocSession,
 };
 use serde::Serialize;
@@ -82,6 +83,10 @@ pub enum WorkspaceStoreError {
     Json(#[from] serde_json::Error),
     #[error("local workspace {0:?} requires an explicit affine-local-workspace allowlist entry")]
     WorkspaceNotAllowlisted(String),
+    #[error("invalid share ingest payload: {0}")]
+    InvalidSharePayload(String),
+    #[error("database error: {0}")]
+    Database(String),
 }
 
 /// Persisted result of an offline paragraph edit on an in-place SQLite WAL database.
@@ -136,10 +141,10 @@ pub fn resolve_allowlisted_local_workspaces(
 
 /// Handle to an opened 0.27.5-compatible in-place SQLite WAL workspace or userspace database.
 pub struct IosWorkspaceHandle {
-    storage: SqliteDocStorage,
-    runtime: Runtime,
+    pub(crate) storage: SqliteDocStorage,
+    pub(crate) runtime: Runtime,
     space_id: String,
-    db_path: PathBuf,
+    pub(crate) db_path: PathBuf,
 }
 
 impl IosWorkspaceHandle {
@@ -230,12 +235,41 @@ impl IosWorkspaceHandle {
         now_ms: i64,
     ) -> Result<OfflineEditResult, WorkspaceStoreError> {
         let mut session = PageDocSession::new(doc_id, client_id)?;
+        let now_u64 = now_ms.max(0) as u64;
         if let Some(existing) = self.read_doc_binary(doc_id)? {
             session.apply_remote_update_v1(&existing)?;
+        } else {
+            session.add_block(
+                "page-1",
+                BlockSpec::Page {
+                    title: doc_id.into(),
+                },
+                None,
+                None,
+                now_u64,
+            )?;
+            session.add_block(
+                "note-1",
+                BlockSpec::Note {
+                    xywh: Some("[0,0,800,600]".into()),
+                },
+                Some("page-1"),
+                None,
+                now_u64.saturating_add(1),
+            )?;
+            session.add_block(
+                block_id,
+                BlockSpec::Paragraph {
+                    paragraph_type: ParagraphType::Text,
+                    text: String::new(),
+                },
+                Some("note-1"),
+                None,
+                now_u64.saturating_add(2),
+            )?;
         }
 
         let sv_before = session.encode_state_vector_v1()?;
-        let now_u64 = now_ms.max(0) as u64;
         if delete_len > 0 {
             session.remove_text(block_id, "prop:text", utf16_index, delete_len, now_u64)?;
         }
@@ -243,7 +277,11 @@ impl IosWorkspaceHandle {
             session.insert_text(block_id, "prop:text", utf16_index, insert_text, now_u64)?;
         }
 
-        let delta = session.encode_diff_v1(&sv_before)?;
+        let delta = if self.read_doc_binary(doc_id)?.is_none() {
+            session.encode_update_v1()?
+        } else {
+            session.encode_diff_v1(&sv_before)?
+        };
         let state_vector = session.encode_state_vector_v1()?;
         let batch = [PendingDocUpdate {
             doc_id: doc_id.to_string(),

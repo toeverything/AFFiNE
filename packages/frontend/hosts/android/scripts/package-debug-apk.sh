@@ -49,7 +49,8 @@ kotlinc -classpath "$ANDROID_JAR" \
   "$ANDROID_HOST_DIR/kotlin/app/affine/pro/host/MainActivity.kt" \
   "$ANDROID_HOST_DIR/kotlin/app/affine/pro/host/LegacyLocalStorageProbe.kt" \
   "$ANDROID_HOST_DIR/kotlin/app/affine/pro/host/AndroidBootstrapCoordinator.kt" \
-  "$ANDROID_HOST_DIR/kotlin/app/affine/pro/host/AuthDataStore.kt"
+  "$ANDROID_HOST_DIR/kotlin/app/affine/pro/host/AuthDataStore.kt" \
+  "$ANDROID_HOST_DIR/kotlin/app/affine/pro/host/ShareIntentBridge.kt"
 
 echo "==> Converting bytecode to DEX with d8"
 "$BUILD_TOOLS_DIR/d8" \

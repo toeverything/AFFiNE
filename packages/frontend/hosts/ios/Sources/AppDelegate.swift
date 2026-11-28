@@ -36,8 +36,21 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
       return
     }
     let window = UIWindow(windowScene: windowScene)
-    window.rootViewController = MetalHostViewController()
+    let rootVC = MetalHostViewController()
+    window.rootViewController = rootVC
     window.makeKeyAndVisible()
     self.window = window
+    for context in connectionOptions.urlContexts {
+      _ = rootVC.handleIncomingUrl(context.url)
+    }
+  }
+
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    guard let rootVC = window?.rootViewController as? MetalHostViewController else {
+      return
+    }
+    for context in URLContexts {
+      _ = rootVC.handleIncomingUrl(context.url)
+    }
   }
 }

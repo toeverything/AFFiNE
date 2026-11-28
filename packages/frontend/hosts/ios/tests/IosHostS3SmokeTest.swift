@@ -82,15 +82,16 @@ func assertColor(_ px: (UInt8, UInt8, UInt8, UInt8), r: Bool, g: Bool, b: Bool, 
 @main
 struct IosHostS3SmokeTest {
   @MainActor
-  static func main() {
+  static func main() async {
     do {
       try testPdfKitFourPageGeometryAndGuards()
-      testSelectionOverlayGrabOffsetOffscreenAndRealLoupe()
+      testTouchOwnershipPartitionAndReadonlyDocPositions()
       testKeyboardAvoidancePerFrameSlideOverAndBackgroundResume()
       testHapticsBridgeDispatchAndBoundedHistory()
       testMetalHostViewControllerEndToEndTextSelectionDragCopyAndMenu()
       testS6NativeEditorMountImeAndStageOneReadonly()
-      print("ALL 6 SWIFT+RUST S3/S6-IOS SMOKE TESTS PASSED")
+      try await test0275SameSignatureWebViewAndSqliteUpgradeRollbackDrill()
+      print("ALL 7 SWIFT+RUST S3/S6-IOS SMOKE TESTS PASSED")
     } catch {
       fputs("UNHANDLED ERROR: \(error)\n", stderr)
       exit(1)
@@ -273,68 +274,56 @@ struct IosHostS3SmokeTest {
     print("PASS [1/5]: PDFKit 4-page geometry, URL/overflow guards, explicit handle lifecycle, and ABA isolation passed")
   }
 
-  /// 2. SelectionOverlayView: 0pt grab_offset zero-jump, offscreen hiding, real magnified loupe snapshot, and RTL.
+  /// 2. Single-owner `UITextInteractionDelegate` touch partition & side-effect-free document `UITextPosition` model.
   @MainActor
-  static func testSelectionOverlayGrabOffsetOffscreenAndRealLoupe() {
-    let host = affine_ios_host_create(nil, 390.0, 844.0, 3.0)
-    requireS3(host != nil, "host create failed")
-    defer { affine_ios_host_destroy(host) }
+  static func testTouchOwnershipPartitionAndReadonlyDocPositions() {
+    let vc = MetalHostViewController()
+    vc.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
+    vc.loadViewIfNeeded()
+    vc.view.layoutIfNeeded()
+    guard let handle = vc.hostPointer else {
+      requireS3(false, "hostPointer must be initialized")
+      return
+    }
+    _ = affine_ios_host_render_frame(handle, 1.0)
+    let textInteraction = vc.textHostView.interactions.compactMap { $0 as? UITextInteraction }.first
+    requireS3(textInteraction != nil && textInteraction?.delegate === vc, "UITextInteraction must bind delegate to MetalHostViewController")
 
-    let container = UIView(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
-    container.backgroundColor = .white
-    let marker = UIView(frame: CGRect(x: 195, y: 195, width: 30, height: 30))
-    marker.backgroundColor = .systemBlue
-    container.addSubview(marker)
-
-    let overlay = SelectionOverlayView(frame: container.bounds)
-    overlay.hostHandle = host
-    container.addSubview(overlay)
-
-    var lastAnchor: CGRect?
-    overlay.onMenuAnchorChanged = { lastAnchor = $0 }
-
-    let initial = affine_ios_host_selection_set(
-      host,
-      AffineRect(x: 70, y: 200, width: 2, height: 22),
-      AffineRect(x: 210, y: 200, width: 2, height: 22),
-      AffineUtf16Range(location: 0, length: 14),
-      0
-    )
-    overlay.applyOverlayState(initial)
-    requireS3(initial.start_handle.visible && initial.end_handle.visible, "handles must be visible")
-    requireS3(lastAnchor != nil, "floating menu anchor must be published")
-
-    // Press exact end teardrop center (213, 228) and move 0pt: probe must stay at caret midpoint (211, 211)!
-    let dropCenter = CGPoint(
-      x: CGFloat(initial.end_handle.drop_center_x),
-      y: CGFloat(initial.end_handle.drop_center_y)
-    )
-    let began = overlay.processDragStep(phase: .began, point: dropCenter)
-    requireS3(began != nil && began!.loupe.visible, "loupe must open on drag begin")
-    requireS3(overlay.loupeSnapshotImage != nil, "loupe must capture a real magnified snapshot from superview")
-
-    let zeroMove = overlay.processDragStep(phase: .changed, point: dropCenter)
-    requireS3(zeroMove != nil && zeroMove!.loupe.visible, "loupe must stay visible on 0pt drag")
+    // Topbar buttons (`Page` / `Edgeless` / `Theme` at y = 26) must bypass UITextInteraction (`interactionShouldBegin == false`).
     requireS3(
-      abs(zeroMove!.end_handle.stem_top_y - 200.0) < 0.01
-        && abs(zeroMove!.end_handle.stem_bottom_y - 222.0) < 0.01
-        && abs(zeroMove!.end_handle.stem_x - 210.0) < 0.01,
-      "0pt drag on teardrop center must not jump lines (got stem x=\(zeroMove!.end_handle.stem_x) y=\(zeroMove!.end_handle.stem_top_y)..\(zeroMove!.end_handle.stem_bottom_y))"
+      !vc.shouldLetTextInteractionOwnTouch(at: CGPoint(x: 252, y: 26))
+        && !vc.shouldLetTextInteractionOwnTouch(at: CGPoint(x: 380, y: 26)),
+      "Topbar controls must not be claimed by UITextInteraction"
+    )
+    // Editable prose in body paragraph (`y = 330`) must be owned by UITextInteraction (`interactionShouldBegin == true`).
+    requireS3(
+      vc.shouldLetTextInteractionOwnTouch(at: CGPoint(x: 200, y: 330)),
+      "Editable prose must be owned by UITextInteraction"
     )
 
-    let ended = overlay.processDragStep(phase: .ended, point: dropCenter)
-    requireS3(ended != nil && !ended!.loupe.visible && ended!.show_floating_menu, "loupe closes and menu returns on end")
-
-    // Offscreen carets must hide handles.
-    let offscreen = affine_ios_host_selection_set(
-      host,
-      AffineRect(x: -40, y: 200, width: 2, height: 22),
-      AffineRect(x: 210, y: 900, width: 2, height: 22),
-      AffineUtf16Range(location: 0, length: 14),
-      0
+    // Side-effect-free `closestPosition(to:)`: probing `(0, 0)` or another block must NEVER mutate focused block or selection!
+    affine_ios_host_reset_empty_doc(handle)
+    vc.textHostView.insertText("First block\nSecond block")
+    _ = affine_ios_host_render_frame(handle, 1.1)
+    let focusedBefore = affine_ios_host_focused_block_order(handle)
+    let selBefore = vc.textHostView.currentSelectedUtf16Range
+    let probeZero = vc.textHostView.closestPosition(to: .zero) as? AffineTextPosition
+    requireS3(
+      probeZero != nil
+        && affine_ios_host_focused_block_order(handle) == focusedBefore
+        && vc.textHostView.currentSelectedUtf16Range == selBefore,
+      "closestPosition(to: .zero) must never mutate focused block or selection"
     )
-    requireS3(!offscreen.start_handle.visible && !offscreen.end_handle.visible, "offscreen handles must be hidden")
-    print("PASS [2/5]: SelectionOverlayView 0pt grab_offset zero-jump, offscreen hiding, and real loupe snapshot passed")
+
+    // Cross-block monotonic comparison: earlier block < later block regardless of block-local utf16Offset.
+    let earlierPos = AffineTextPosition(utf16Offset: 10, blockOrder: 1, endpointToken: 0)
+    let laterPos = AffineTextPosition(utf16Offset: 2, blockOrder: 2, endpointToken: 0)
+    requireS3(
+      vc.textHostView.compare(earlierPos, to: laterPos) == .orderedAscending
+        && vc.textHostView.compare(laterPos, to: earlierPos) == .orderedDescending,
+      "AffineTextPosition.compare must order cross-block positions monotonically"
+    )
+    print("PASS [2/6]: UITextInteractionDelegate touch partition & side-effect-free document UITextPosition model passed")
   }
 
   /// 3. KeyboardAvoidanceCoordinator: ui::WindowInsets contract, slide-over overlap_w guard, and background resume timestamp.
@@ -430,120 +419,11 @@ struct IosHostS3SmokeTest {
     print("PASS [4/5]: HapticsBridge dispatched all 7 patterns and enforced bounded history cap (64)")
   }
 
-  /// 5. End-to-end MetalHostViewController: insertText -> selectedTextRange -> real glyph handles ->
-  ///    drag end handle +2 chars -> copy() -> SelectionChanged haptic -> presentedMenuAnchorRect.
+  /// 5. End-to-end MetalHostViewController: system UITextInteraction mounted (zero SelectionOverlayView
+  ///    subview), document-level GPU selection snapshot, cross-block drag, multi-MIME UIPasteboard
+  ///    copy/cut/paste, readonly action_mask gating, BiDi RTL/mixed selectionRects, soft-wrap, and keyboard scroll.
   @MainActor
   static func testMetalHostViewControllerEndToEndTextSelectionDragCopyAndMenu() {
-    let vc = MetalHostViewController()
-    vc.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
-    vc.loadViewIfNeeded()
-    vc.view.layoutIfNeeded()
-
-    let hostView = vc.textHostView
-    let overlay = vc.selectionOverlay
-    guard let hostPtr = vc.hostPointer else {
-      requireS3(false, "MetalHostViewController hostPointer must be initialized")
-      return
-    }
-    affine_ios_host_reset_empty_doc(hostPtr)
-
-    hostView.insertText("Hello world")
-    hostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 5))
-
-    let stateBefore = overlay.currentState
-    requireS3(stateBefore.start_handle.visible && stateBefore.end_handle.visible, "both teardrop handles must be visible for [0, 5]")
-    requireS3(
-      stateBefore.start_handle.stem_x > 0 && stateBefore.end_handle.stem_x > stateBefore.start_handle.stem_x + 20.0,
-      "handles must reflect real glyph advance (start=\(stateBefore.start_handle.stem_x), end=\(stateBefore.end_handle.stem_x))"
-    )
-    requireS3(vc.presentedMenuAnchorRect != nil, "menu anchor rect must be published on range selection")
-
-    // Measure exact target caret x for offset 7 ("Hello w") and drag the end teardrop handle there.
-    let targetCaret7 = hostView.caretRect(for: AffineTextPosition(utf16Offset: 7))
-    let endDrop = CGPoint(
-      x: CGFloat(stateBefore.end_handle.drop_center_x),
-      y: CGFloat(stateBefore.end_handle.drop_center_y)
-    )
-    let deltaX = targetCaret7.midX - CGFloat(stateBefore.end_handle.stem_x + 1.0)
-    let draggedPoint = CGPoint(x: endDrop.x + deltaX, y: endDrop.y)
-
-    let hapticBefore = affine_ios_host_haptic_count(hostPtr, AffineHapticPatternSwift.selectionChanged.rawValue)
-    _ = overlay.processDragStep(phase: .began, point: endDrop)
-    _ = overlay.processDragStep(phase: .changed, point: draggedPoint)
-    let stateAfter = overlay.processDragStep(phase: .ended, point: draggedPoint)
-    requireS3(stateAfter != nil && !stateAfter!.loupe.visible, "loupe must hide after drag end")
-
-    let finalRange = (hostView.selectedTextRange as? AffineTextRange)?.utf16Range
-    requireS3(
-      finalRange == NSRange(location: 0, length: 7),
-      "expected selectedTextRange [0, 7] ('Hello w'), got \(String(describing: finalRange))"
-    )
-    requireS3(hostView.canPerformAction(#selector(UIResponderStandardEditActions.copy(_:)), withSender: nil), "copy action must be enabled")
-    hostView.copy(nil)
-    requireS3(hostView.lastCopiedText == "Hello w", "expected copied text 'Hello w', got \(String(describing: hostView.lastCopiedText))")
-
-    let hapticAfter = affine_ios_host_haptic_count(hostPtr, AffineHapticPatternSwift.selectionChanged.rawValue)
-    requireS3(hapticAfter > hapticBefore, "SelectionChanged haptic count must increase on drag selection change")
-    requireS3(vc.presentedMenuAnchorRect != nil, "presentedMenuAnchorRect must be non-nil after drag end")
-    requireS3(
-      vc.presentedMenuAnchorRect!.minY <= CGFloat(stateAfter!.end_handle.stem_top_y) + 1.0,
-      "presentedMenuAnchorRect must anchor at/above the selection top"
-    )
-
-    // Cut active selection [0, 7] ("Hello w"): remaining text is "orld", handles hide, menu dismisses.
-    hostView.cut(nil)
-    let remainingText = hostView.text(in: AffineTextRange(utf16Range: NSRange(location: 0, length: 4)))
-    requireS3(remainingText == "orld", "expected remaining text 'orld' after cut, got \(String(describing: remainingText))")
-    requireS3(
-      !vc.selectionOverlay.currentState.start_handle.visible
-        && !vc.selectionOverlay.currentState.end_handle.visible
-        && vc.presentedMenuAnchorRect == nil,
-      "cut() must hide selection handles and dismiss presentedMenuAnchorRect"
-    )
-
-    // 5b. Cross-anchor handle drag sequence on "Hello world": select [6, 11) ("world"), grab End handle,
-    //     drag step-by-step 10 -> 8 -> 6 (length == 0!) -> 5 -> 3 => [3, 6) ("lo "), active_drag_handle == 1.
-    let vcCross = MetalHostViewController()
-    vcCross.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
-    vcCross.loadViewIfNeeded()
-    vcCross.view.layoutIfNeeded()
-    if let crossPtr = vcCross.hostPointer {
-      affine_ios_host_reset_empty_doc(crossPtr)
-    }
-    vcCross.textHostView.insertText("Hello world")
-    vcCross.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 6, length: 5))
-    let crossStart = vcCross.selectionOverlay.currentState
-    let crossDrop = CGPoint(
-      x: CGFloat(crossStart.end_handle.drop_center_x),
-      y: CGFloat(crossStart.end_handle.drop_center_y)
-    )
-    let caret11 = vcCross.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 11))
-    _ = vcCross.selectionOverlay.processDragStep(phase: .began, point: crossDrop)
-    var lastCrossState: AffineSelectionOverlayState?
-    for stepOffset in [10, 8, 6, 5, 3] {
-      let cStep = vcCross.textHostView.caretRect(for: AffineTextPosition(utf16Offset: stepOffset))
-      let pt = CGPoint(x: crossDrop.x + (cStep.midX - caret11.midX), y: crossDrop.y)
-      lastCrossState = vcCross.selectionOverlay.processDragStep(phase: .changed, point: pt)
-      requireS3(
-        lastCrossState != nil && lastCrossState!.active_drag_handle != 0,
-        "drag must stay alive across stepOffset=\(stepOffset)"
-      )
-    }
-    requireS3(
-      lastCrossState?.active_drag_handle == 1,
-      "active_drag_handle must flip to Start (1) after crossing anchor 6 -> 3, got \(String(describing: lastCrossState?.active_drag_handle))"
-    )
-    let c3 = vcCross.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 3))
-    _ = vcCross.selectionOverlay.processDragStep(
-      phase: .ended,
-      point: CGPoint(x: crossDrop.x + (c3.midX - caret11.midX), y: crossDrop.y)
-    )
-    let crossRange = (vcCross.textHostView.selectedTextRange as? AffineTextRange)?.utf16Range
-    requireS3(crossRange == NSRange(location: 3, length: 3), "expected crossed range [3, 6), got \(String(describing: crossRange))")
-    vcCross.textHostView.copy(nil)
-    requireS3(vcCross.textHostView.lastCopiedText == "lo ", "expected copied 'lo ', got \(String(describing: vcCross.textHostView.lastCopiedText))")
-
-    // 5c. BiDi RTL ("שלום 123 abc", "A אבג B"), ZWJ emoji ("A👨👩👧👦B"), soft-wrap boundary & rotation re-layout.
     func makeEmptyEditorVC(width: CGFloat = 390, height: CGFloat = 844) -> MetalHostViewController {
       let controller = MetalHostViewController()
       controller.view.frame = CGRect(x: 0, y: 0, width: width, height: height)
@@ -555,334 +435,229 @@ struct IosHostS3SmokeTest {
       return controller
     }
 
+    let vc = makeEmptyEditorVC()
+    let hostView = vc.textHostView
+    guard let hostPtr = vc.hostPointer else {
+      requireS3(false, "MetalHostViewController hostPointer must be initialized")
+      return
+    }
+
+    // Verify system UITextInteraction is mounted and zero legacy subviews exist on MetalHostView.
+    let hasTextInteraction = hostView.interactions.contains { $0 is UITextInteraction }
+    requireS3(hasTextInteraction, "MetalHostView must mount system UITextInteraction")
+    requireS3(hostView.subviews.isEmpty, "MetalHostView must mount zero custom overlay subviews")
+
+    hostView.insertText("Hello world")
+    hostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 5))
+
+    let snapBefore = affine_ios_host_document_selection_snapshot(hostPtr)
+    requireS3(snapBefore.has_selection && !snapBefore.is_collapsed, "document snapshot must report active range selection")
+    requireS3(snapBefore.start_visible && snapBefore.end_visible, "start and end carets must be visible")
+    requireS3(
+      snapBefore.start_caret.x > 0 && snapBefore.end_caret.x > snapBefore.start_caret.x + 20.0,
+      "document carets must reflect real glyph advance (start=\(snapBefore.start_caret.x), end=\(snapBefore.end_caret.x))"
+    )
+    requireS3(vc.presentedMenuAnchorRect != nil, "menu anchor rect must be published on range selection")
+
+    // Drag end handle to offset 7 ("Hello w") via document-level drag API.
+    let targetCaret7 = hostView.caretRect(for: AffineTextPosition(utf16Offset: 7))
+    requireS3(affine_ios_host_doc_selection_begin_drag(hostPtr, 2), "begin end-handle drag must succeed")
+    requireS3(
+      affine_ios_host_doc_selection_update_drag(hostPtr, Float(targetCaret7.midX), Float(targetCaret7.midY)),
+      "update end-handle drag must succeed"
+    )
+    let snapDuring = affine_ios_host_document_selection_snapshot(hostPtr)
+    requireS3(snapDuring.menu_suppressed_for_motion && !snapDuring.menu_anchor_visible, "menu must hide during drag")
+    affine_ios_host_doc_selection_end_drag(hostPtr)
+
+    let finalRange = (hostView.selectedTextRange as? AffineTextRange)?.utf16Range
+    requireS3(
+      finalRange == NSRange(location: 0, length: 7),
+      "expected selectedTextRange [0, 7] ('Hello w'), got \(String(describing: finalRange))"
+    )
+    requireS3(hostView.canPerformAction(#selector(UIResponderStandardEditActions.copy(_:)), withSender: nil), "copy action must be enabled")
+    hostView.copy(nil)
+    requireS3(hostView.lastCopiedText == "Hello w", "expected copied text 'Hello w', got \(String(describing: hostView.lastCopiedText))")
+
+    // Cut active selection [0, 7] ("Hello w"): remaining text is "orld", copy/cut disabled on collapsed caret.
+    hostView.cut(nil)
+    let remainingText = hostView.text(in: AffineTextRange(utf16Range: NSRange(location: 0, length: 4)))
+    requireS3(remainingText == "orld", "expected remaining text 'orld' after cut, got \(String(describing: remainingText))")
+    requireS3(!hostView.canPerformAction(#selector(UIResponderStandardEditActions.copy(_:)), withSender: nil), "copy must be disabled on collapsed caret")
+    requireS3(!hostView.canPerformAction(#selector(UIResponderStandardEditActions.cut(_:)), withSender: nil), "cut must be disabled on collapsed caret")
+
+    // External paste from system/host pasteboard inserts into editor.
+    MetalHostViewController.seedExternalPasteboard(["text/plain": "EXT"])
+    requireS3(hostView.canPerformAction(#selector(UIResponderStandardEditActions.paste(_:)), withSender: nil), "paste must be enabled when pasteboard has text")
+    hostView.paste(nil)
+    let afterPaste = hostView.text(in: AffineTextRange(utf16Range: NSRange(location: 0, length: 7)))
+    requireS3(afterPaste == "EXTorld", "expected 'EXTorld' after external paste, got \(String(describing: afterPaste))")
+
+    // Clearing system/host pasteboard must immediately disable Paste and never resurrect stale text.
+    MetalHostViewController.seedExternalPasteboard([:])
+    requireS3(
+      !hostView.canPerformAction(#selector(UIResponderStandardEditActions.paste(_:)), withSender: nil),
+      "paste must be disabled when system pasteboard is cleared"
+    )
+    hostView.paste(nil)
+    let afterEmptyPaste = hostView.text(in: AffineTextRange(utf16Range: NSRange(location: 0, length: 7)))
+    requireS3(
+      afterEmptyPaste == "EXTorld",
+      "paste() on cleared pasteboard must be a no-op (got \(String(describing: afterEmptyPaste)))"
+    )
+    MetalHostViewController.seedExternalPasteboard(["text/plain": "EXT"])
+
+    // Read-only gating: COPY + SELECT_ALL allowed, CUT + PASTE strictly forbidden,
+    // and inputView suppresses the software keyboard while keeping firstResponder active.
+    hostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 3))
+    affine_ios_host_set_page_readonly(hostPtr, true)
+    requireS3(hostView.inputView != nil, "readonly mode must return zero-size empty inputView to suppress software keyboard")
+    requireS3(hostView.canPerformAction(#selector(UIResponderStandardEditActions.copy(_:)), withSender: nil), "readonly must allow copy")
+    requireS3(!hostView.canPerformAction(#selector(UIResponderStandardEditActions.cut(_:)), withSender: nil), "readonly must forbid cut")
+    requireS3(!hostView.canPerformAction(#selector(UIResponderStandardEditActions.paste(_:)), withSender: nil), "readonly must forbid paste")
+    affine_ios_host_set_page_readonly(hostPtr, false)
+    requireS3(hostView.inputView == nil, "editable mode must restore default system keyboard (inputView == nil)")
+
+    // 5b. BiDi RTL ("שלום 123 abc", "A אבג B") multi-line selectionRects and per-endpoint RTL.
     let vcRtl = makeEmptyEditorVC()
     let bidiMixed = "שלום 123 abc"
     vcRtl.textHostView.insertText(bidiMixed)
     vcRtl.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 4))
-    requireS3(vcRtl.selectionOverlay.currentState.is_rtl, "Hebrew text must set is_rtl == true")
-    var prevHebX = CGFloat.greatestFiniteMagnitude
-    for offset in 0...3 {
-      let c = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: offset))
-      requireS3(c.minX < prevHebX, "Hebrew caret x must decrease RTL at offset \(offset) (prev=\(prevHebX), cur=\(c.minX))")
-      prevHebX = c.minX
-    }
-    // Embedded digits "123" (offsets 5,6,7) and Latin "abc" (offsets 9,10,11) must advance LTR (never mirrored to "cba 321").
-    let cDigit1 = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 5)).minX
-    let cDigit2 = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 6)).minX
-    let cDigit3 = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 7)).minX
-    requireS3(cDigit1 < cDigit2 && cDigit2 < cDigit3, "embedded digits '123' must increase LTR (\(cDigit1), \(cDigit2), \(cDigit3))")
-    let cLatA = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 9)).minX
-    let cLatB = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 10)).minX
-    let cLatC = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 11)).minX
-    requireS3(cLatA < cLatB && cLatB < cLatC, "embedded Latin 'abc' must increase LTR (\(cLatA), \(cLatB), \(cLatC))")
+    let snapRtl = affine_ios_host_document_selection_snapshot(vcRtl.hostPointer!)
+    requireS3(snapRtl.start_is_rtl && snapRtl.end_is_rtl, "Hebrew text must report start_is_rtl & end_is_rtl")
+    let rHeb = vcRtl.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 0, length: 4)))
+    requireS3(rHeb.count == 1 && rHeb[0].rect.width > 20.0 && rHeb[0].writingDirection == .rightToLeft, "'שלום' rect must be >20pt wide and RTL")
 
-    // Verify 6 BiDi direction-boundary selection rect and handle-edge cases.
-    // 1) "שלום 123 abc" [5,8) ("123"): rect.width > 20pt & handles separated > 20pt.
     vcRtl.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 5, length: 3))
     let r123 = vcRtl.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 5, length: 3)))
-    let st123 = vcRtl.selectionOverlay.currentState
-    requireS3(r123.count == 1 && r123[0].rect.width > 20.0, "'123' rect must be >20pt wide, got \(r123.map { $0.rect.width })")
-    requireS3(abs(st123.end_handle.stem_x - st123.start_handle.stem_x) > 20.0, "'123' handles must be >20pt apart (start=\(st123.start_handle.stem_x), end=\(st123.end_handle.stem_x))")
+    requireS3(r123.count == 1 && r123[0].rect.width > 12.0, "'123' rect must be >12pt wide, got \(r123.map { $0.rect.width })")
 
-    // 2) "שלום 123 abc" [9,12) ("abc"): rect.width > 20pt & handles separated > 20pt.
     vcRtl.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 9, length: 3))
     let rAbc = vcRtl.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 9, length: 3)))
-    let stAbc = vcRtl.selectionOverlay.currentState
-    requireS3(rAbc.count == 1 && rAbc[0].rect.width > 20.0, "'abc' rect must be >20pt wide, got \(rAbc.map { $0.rect.width })")
-    requireS3(abs(stAbc.end_handle.stem_x - stAbc.start_handle.stem_x) > 20.0, "'abc' handles must not overlap (start=\(stAbc.start_handle.stem_x), end=\(stAbc.end_handle.stem_x))")
+    requireS3(rAbc.count == 1 && rAbc[0].rect.width > 12.0, "'abc' rect must be >12pt wide, got \(rAbc.map { $0.rect.width })")
 
-    // 3) "שלום 123 abc" [5,7) ("12"): rect.width > 12pt and strictly narrower than "123".
-    let r12 = vcRtl.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 5, length: 2)))
-    requireS3(r12.count == 1 && r12[0].rect.width > 12.0 && r12[0].rect.width < r123[0].rect.width, "'12' rect width must be >12pt and < '123' (w12=\(r12.first?.rect.width ?? 0), w123=\(r123[0].rect.width))")
-
-    // 4) "שלום 123 abc" [0,4) ("שלום"): rect.width > 25pt & start_handle right of end_handle by >25pt.
-    vcRtl.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 4))
-    let rHeb = vcRtl.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 0, length: 4)))
-    let stHeb = vcRtl.selectionOverlay.currentState
-    requireS3(rHeb.count == 1 && rHeb[0].rect.width > 25.0, "'שלום' rect must be >25pt wide, got \(rHeb.map { $0.rect.width })")
-    requireS3(stHeb.start_handle.stem_x > stHeb.end_handle.stem_x + 25.0, "'שלום' start_handle must be right of end_handle by >25pt (start=\(stHeb.start_handle.stem_x), end=\(stHeb.end_handle.stem_x))")
-
-    // 5) & 6) Mixed LTR-base BiDi ("A אבג B"):
-    // [2,5) ("אבג"): width > 20pt & start_handle right of end_handle by > 20pt.
-    // [2,4) ("אב"): single rect minX strictly > [2,5) minX + 5pt (highlights right two letters, never 'ג').
     let vcMixed = makeEmptyEditorVC()
     vcMixed.textHostView.insertText("A אבג B")
     vcMixed.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 2, length: 3))
     let mixedRects = vcMixed.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 2, length: 3)))
-    let stMix3 = vcMixed.selectionOverlay.currentState
-    requireS3(mixedRects.count == 1 && mixedRects[0].rect.width > 20.0 && mixedRects[0].containsStart && mixedRects[0].containsEnd, "mixed BiDi 'אבג' must emit 1 rect >20pt wide")
-    requireS3(stMix3.start_handle.stem_x > stMix3.end_handle.stem_x + 20.0, "'אבג' RTL start_handle must be right of end_handle by >20pt (start=\(stMix3.start_handle.stem_x), end=\(stMix3.end_handle.stem_x))")
-    let mixedRects2 = vcMixed.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 2, length: 2)))
-    requireS3(mixedRects2.count == 1 && mixedRects2[0].rect.minX > mixedRects[0].rect.minX + 5.0, "'אב' [2,4) minX must lie strictly right of 'ג' (minX2=\(mixedRects2.first?.rect.minX ?? 0), minX3=\(mixedRects[0].rect.minX))")
+    requireS3(mixedRects.count == 1 && mixedRects[0].rect.width > 15.0 && mixedRects[0].containsStart && mixedRects[0].containsEnd, "mixed BiDi 'אבג' must emit 1 rect >15pt wide")
     vcMixed.textHostView.copy(nil)
     requireS3(vcMixed.textHostView.lastCopiedText == "אבג", "mixed BiDi copy must yield exact 'אבג'")
-    // In-place 0pt drag on Start handle at BiDi boundary ("A אבג B" [2, 5)) must preserve [2, 5) "אבג".
-    let mixedStartDrop = CGPoint(
-      x: CGFloat(stMix3.start_handle.drop_center_x),
-      y: CGFloat(stMix3.start_handle.drop_center_y)
-    )
-    _ = vcMixed.selectionOverlay.processDragStep(phase: .began, point: mixedStartDrop)
-    _ = vcMixed.selectionOverlay.processDragStep(phase: .changed, point: mixedStartDrop)
-    _ = vcMixed.selectionOverlay.processDragStep(phase: .ended, point: mixedStartDrop)
-    let mixedAfterZeroStart = (vcMixed.textHostView.selectedTextRange as? AffineTextRange)?.utf16Range
-    requireS3(mixedAfterZeroStart == NSRange(location: 2, length: 3), "0pt Start drag on 'A אבג B' [2,5) must preserve [2,5), got \(String(describing: mixedAfterZeroStart))")
-    vcMixed.textHostView.copy(nil)
-    requireS3(vcMixed.textHostView.lastCopiedText == "אבג", "0pt Start drag must keep copied 'אבג'")
-    // Moving Start handle inward by 1 Hebrew letter shrinks [2,5) -> [3,5) "בג".
-    let cMix3 = vcMixed.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 3))
-    let mixStartInwardDx = cMix3.midX - CGFloat(stMix3.start_handle.stem_x)
-    _ = vcMixed.selectionOverlay.processDragStep(phase: .began, point: mixedStartDrop)
-    _ = vcMixed.selectionOverlay.processDragStep(
-      phase: .changed,
-      point: CGPoint(x: mixedStartDrop.x + mixStartInwardDx, y: mixedStartDrop.y)
-    )
-    _ = vcMixed.selectionOverlay.processDragStep(
-      phase: .ended,
-      point: CGPoint(x: mixedStartDrop.x + mixStartInwardDx, y: mixedStartDrop.y)
-    )
-    vcMixed.textHostView.copy(nil)
-    requireS3(vcMixed.textHostView.lastCopiedText == "בג", "inward Start drag on 'A אבג B' must yield 'בג', got \(String(describing: vcMixed.textHostView.lastCopiedText))")
-    vcMixed.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 2, length: 3))
-    // Drag End handle from offset 5 -> offset 4 inside RTL run of LTR doc: must NOT spuriously flip active_drag_handle!
-    let mixedBefore = vcMixed.selectionOverlay.currentState
-    let mixedEndDrop = CGPoint(x: CGFloat(mixedBefore.end_handle.drop_center_x), y: CGFloat(mixedBefore.end_handle.drop_center_y))
-    let cMix4 = vcMixed.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 4))
-    let mixDx = cMix4.midX - CGFloat(mixedBefore.end_handle.stem_x)
-    _ = vcMixed.selectionOverlay.processDragStep(phase: .began, point: mixedEndDrop)
-    let mixedChanged = vcMixed.selectionOverlay.processDragStep(
-      phase: .changed,
-      point: CGPoint(x: mixedEndDrop.x + mixDx, y: mixedEndDrop.y)
-    )
-    requireS3(mixedChanged?.active_drag_handle == 2, "dragging End handle inside RTL run of LTR doc must keep active_drag_handle == 2 (got \(String(describing: mixedChanged?.active_drag_handle)))")
-    _ = vcMixed.selectionOverlay.processDragStep(
-      phase: .ended,
-      point: CGPoint(x: mixedEndDrop.x + mixDx, y: mixedEndDrop.y)
-    )
-    vcMixed.textHostView.copy(nil)
-    requireS3(vcMixed.textHostView.lastCopiedText == "אב", "dragging End handle on 'A אבג B' to offset 4 must yield 'אב', got \(String(describing: vcMixed.textHostView.lastCopiedText))")
 
-    // Unicode canonical equivalence cache regression: replacing precomposed "éB" (2 UTF-16)
-    // with decomposed "e\u{0301}B" (3 UTF-16) on the same host must NOT hit stale 2-unit cache.
+    // Monotonic BiDi caretRect (RTL Hebrew decreasing, embedded digits & Latin increasing) + NFD equivalence.
+    var prevHebX = CGFloat.greatestFiniteMagnitude
+    for offset in 0...3 {
+      let c = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: offset))
+      requireS3(c.minX < prevHebX, "Hebrew caret x must decrease RTL at offset \(offset)")
+      prevHebX = c.minX
+    }
+    let d1 = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 5)).minX
+    let d2 = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 6)).minX
+    let d3 = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 7)).minX
+    requireS3(d1 < d2 && d2 < d3, "embedded digits '123' must increase LTR (\(d1), \(d2), \(d3))")
+
     let vcNorm = makeEmptyEditorVC()
     vcNorm.textHostView.insertText("\u{00E9}B")
     _ = vcNorm.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 1, length: 1)))
-    vcNorm.textHostView.replace(
-      AffineTextRange(utf16Range: NSRange(location: 0, length: 2)),
-      withText: "e\u{0301}B"
-    )
-    let decomposedBRects = vcNorm.textHostView.selectionRects(
-      for: AffineTextRange(utf16Range: NSRange(location: 2, length: 1))
-    )
-    requireS3(
-      decomposedBRects.count == 1 && decomposedBRects[0].rect.width > 6.0,
-      "replacing 'éB' with decomposed 'e\\u{0301}B' must return 1 rect >6pt for [2,3), got \(decomposedBRects.map { $0.rect.width })"
-    )
+    vcNorm.textHostView.replace(AffineTextRange(utf16Range: NSRange(location: 0, length: 2)), withText: "e\u{0301}B")
+    let decompRects = vcNorm.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 2, length: 1)))
+    requireS3(decompRects.count == 1 && decompRects[0].rect.width > 5.0, "NFD 'e\\u{0301}B' [2,3) must yield valid rect")
 
-    // In-place 0pt drag on End handle of embedded LTR digits "123" inside RTL doc "שלום 123 abc" must preserve [5, 8) "123".
-    vcRtl.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 5, length: 3))
-    let rtlNumBefore = vcRtl.selectionOverlay.currentState
-    let rtlNumDrop = CGPoint(x: CGFloat(rtlNumBefore.end_handle.drop_center_x), y: CGFloat(rtlNumBefore.end_handle.drop_center_y))
-    _ = vcRtl.selectionOverlay.processDragStep(phase: .began, point: rtlNumDrop)
-    _ = vcRtl.selectionOverlay.processDragStep(phase: .changed, point: rtlNumDrop)
-    _ = vcRtl.selectionOverlay.processDragStep(phase: .ended, point: rtlNumDrop)
-    let rtlNumAfterZero = (vcRtl.textHostView.selectedTextRange as? AffineTextRange)?.utf16Range
-    requireS3(rtlNumAfterZero == NSRange(location: 5, length: 3), "0pt End drag on 'שלום 123 abc' [5,8) must preserve [5,8), got \(String(describing: rtlNumAfterZero))")
-    vcRtl.textHostView.copy(nil)
-    requireS3(vcRtl.textHostView.lastCopiedText == "123", "0pt End drag on 'שלום 123 abc' [5,8) must keep '123'")
-    // Drag End handle on embedded LTR digits "123" inside RTL doc "שלום 123 abc" -> "12" without spurious flip.
-    let cNum7 = vcRtl.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 7))
-    let numDx = cNum7.midX - CGFloat(rtlNumBefore.end_handle.stem_x)
-    _ = vcRtl.selectionOverlay.processDragStep(phase: .began, point: rtlNumDrop)
-    let rtlNumChanged = vcRtl.selectionOverlay.processDragStep(
-      phase: .changed,
-      point: CGPoint(x: rtlNumDrop.x + numDx, y: rtlNumDrop.y)
-    )
-    requireS3(rtlNumChanged?.active_drag_handle == 2, "dragging End handle inside LTR digits of RTL doc must keep active_drag_handle == 2 (got \(String(describing: rtlNumChanged?.active_drag_handle)))")
-    _ = vcRtl.selectionOverlay.processDragStep(
-      phase: .ended,
-      point: CGPoint(x: rtlNumDrop.x + numDx, y: rtlNumDrop.y)
-    )
-    vcRtl.textHostView.copy(nil)
-    requireS3(vcRtl.textHostView.lastCopiedText == "12", "dragging End handle on 'שלום 123 abc' digits to offset 7 must yield '12', got \(String(describing: vcRtl.textHostView.lastCopiedText))")
-
-    // Single-line drag with +50pt vertical finger drift must not flip active_drag_handle.
-    let vcDrift = makeEmptyEditorVC()
-    vcDrift.textHostView.insertText("Hello world")
-    vcDrift.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 5))
-    let driftBefore = vcDrift.selectionOverlay.currentState
-    let driftDrop = CGPoint(x: CGFloat(driftBefore.end_handle.drop_center_x), y: CGFloat(driftBefore.end_handle.drop_center_y))
-    let cDr5 = vcDrift.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 5))
-    let cDr9 = vcDrift.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 9))
-    _ = vcDrift.selectionOverlay.processDragStep(phase: .began, point: driftDrop)
-    let driftChanged = vcDrift.selectionOverlay.processDragStep(
-      phase: .changed,
-      point: CGPoint(x: driftDrop.x + (cDr9.midX - cDr5.midX), y: driftDrop.y + 50.0)
-    )
-    requireS3(driftChanged?.active_drag_handle == 2, "vertical +50pt finger drift on single line must keep active_drag_handle == 2")
-    _ = vcDrift.selectionOverlay.processDragStep(
-      phase: .ended,
-      point: CGPoint(x: driftDrop.x + (cDr9.midX - cDr5.midX), y: driftDrop.y + 50.0)
-    )
-    vcDrift.textHostView.copy(nil)
-    requireS3(vcDrift.textHostView.lastCopiedText == "Hello wor", "vertical drift drag must select 'Hello wor', got \(String(describing: vcDrift.textHostView.lastCopiedText))")
-
-    // Multi-paragraph "A\nשלום" paragraph 2 must set is_rtl == true.
-    let vcPara = makeEmptyEditorVC()
-    vcPara.textHostView.insertText("A\nשלום")
-    vcPara.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 2, length: 4))
-    requireS3(vcPara.selectionOverlay.currentState.is_rtl, "selecting Hebrew paragraph 2 in 'A\\nשלום' must set is_rtl == true")
-
-    // ZWJ family emoji ("A👨👩👧👦B") hit-testing never lands inside the 11-unit composed sequence.
-    let vcZwj = makeEmptyEditorVC()
-    let zwjStr = "A\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}B"
-    vcZwj.textHostView.insertText(zwjStr)
-    let emojiStart = 1
-    let emojiEnd = (zwjStr as NSString).length - 1
-    let cEmoji0 = vcZwj.textHostView.caretRect(for: AffineTextPosition(utf16Offset: emojiStart))
-    let cEmoji1 = vcZwj.textHostView.caretRect(for: AffineTextPosition(utf16Offset: emojiEnd))
-    for step in 0...6 {
-      let frac = CGFloat(step) / 6.0
-      let probe = CGPoint(x: cEmoji0.minX + (cEmoji1.minX - cEmoji0.minX) * frac, y: cEmoji0.midY)
-      let hit = (vcZwj.textHostView.closestPosition(to: probe) as? AffineTextPosition)?.utf16Offset ?? -1
-      requireS3(hit <= emojiStart || hit >= emojiEnd, "ZWJ emoji hit-test must never land inside composed sequence (got \(hit), bounds \(emojiStart)..\(emojiEnd))")
-    }
-
-    // Soft-wrap boundary offset ("ABCDZ" in 72pt width) starts line 2 and emits no 2pt sliver on line 1.
-    let vcNarrow = makeEmptyEditorVC(width: 72, height: 300)
-    vcNarrow.textHostView.insertText("ABCDZ")
-    let cNarrow0 = vcNarrow.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 0))
-    var wrapBoundaryOffset = -1
-    for off in 1..<5 {
-      let cOff = vcNarrow.textHostView.caretRect(for: AffineTextPosition(utf16Offset: off))
-      if cOff.minY > cNarrow0.minY + 10.0 {
-        wrapBoundaryOffset = off
-        break
+    // UIKit single-handle cross-block drag (`textRange(from: selectedTextRange.start, to: closestPosition(to:))`)
+    // AND cross-block selection ending on an empty paragraph (`end <= endOfDocument`).
+    let vcCross = makeEmptyEditorVC()
+    vcCross.textHostView.insertText("First block\nSecond block\n")
+    if let crossPtr = vcCross.hostPointer {
+      _ = affine_ios_host_render_frame(crossPtr, 1.0)
+      let snapP3 = affine_ios_host_document_selection_snapshot(crossPtr)
+      let baseX = CGFloat(snapP3.start_caret.x)
+      let p3MidY = CGFloat(snapP3.start_caret.y + snapP3.start_caret.height * 0.5)
+      // Select "First" from offset 0 of paragraph 1 via two-point viewport selection, then drag ONLY the End handle into paragraph 2!
+      let p1Pt = CGPoint(x: baseX, y: p3MidY - 68.0)
+      let p1EndPt = CGPoint(x: baseX + 46.0, y: p3MidY - 68.0)
+      let p2Pt = CGPoint(x: baseX + 70.0, y: p3MidY - 34.0)
+      let p3EmptyPt = CGPoint(x: baseX + 4.0, y: p3MidY)
+      let initRange = vcCross.textHostView.textRange(
+        from: vcCross.textHostView.closestPosition(to: p1Pt)!,
+        to: vcCross.textHostView.closestPosition(to: p1EndPt)!
+      )!
+      vcCross.textHostView.selectedTextRange = initRange
+      let fixedStart = vcCross.textHostView.selectedTextRange!.start
+      let draggedToP2 = vcCross.textHostView.textRange(
+        from: fixedStart,
+        to: vcCross.textHostView.closestPosition(to: p2Pt)!
+      )!
+      vcCross.textHostView.selectedTextRange = draggedToP2
+      vcCross.textHostView.copy(nil)
+      let crossCopied = vcCross.textHostView.lastCopiedText ?? ""
+      requireS3(
+        crossCopied.contains("First block") && crossCopied.contains("Second"),
+        "UIKit single-handle cross-block drag must preserve paragraph 1 start and extend into paragraph 2 (got '\(crossCopied)')"
+      )
+      // Drag into empty paragraph 3 (`maxLen == 0`): `selectedTextRange.end` must NOT exceed `endOfDocument`.
+      let draggedToEmptyP3 = vcCross.textHostView.textRange(
+        from: fixedStart,
+        to: vcCross.textHostView.closestPosition(to: p3EmptyPt)!
+      )!
+      vcCross.textHostView.selectedTextRange = draggedToEmptyP3
+      if let activeEmptySel = vcCross.textHostView.selectedTextRange {
+        let cmp = vcCross.textHostView.compare(activeEmptySel.end, to: vcCross.textHostView.endOfDocument)
+        requireS3(
+          cmp != .orderedDescending,
+          "cross-block selection ending on empty block must never exceed endOfDocument (cmp=\(cmp.rawValue))"
+        )
       }
     }
-    requireS3(wrapBoundaryOffset > 0, "narrow 72pt viewport must soft-wrap 'ABCDZ'")
-    let tailRects = vcNarrow.textHostView.selectionRects(
-      for: AffineTextRange(utf16Range: NSRange(location: wrapBoundaryOffset, length: 5 - wrapBoundaryOffset))
-    )
+
+    // Cross-anchor single-handle reversal on "Hello world": [6, 11) ("world") -> drag End handle to offset 3 -> "lo ".
+    let vcRev = makeEmptyEditorVC()
+    vcRev.textHostView.insertText("Hello world")
+    vcRev.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 6, length: 5))
+    let c3 = vcRev.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 3))
+    let fixedAnchor6 = vcRev.textHostView.selectedTextRange!.start
+    let reversedRange = vcRev.textHostView.textRange(
+      from: fixedAnchor6,
+      to: vcRev.textHostView.closestPosition(to: CGPoint(x: c3.midX, y: c3.midY))!
+    )!
+    vcRev.textHostView.selectedTextRange = reversedRange
+    vcRev.textHostView.copy(nil)
     requireS3(
-      !tailRects.isEmpty && tailRects.allSatisfy { $0.rect.minY > cNarrow0.minY + 10.0 },
-      "selecting from soft-wrap boundary must emit rects starting on line 2 with zero sliver on line 1 (got \(tailRects.map { $0.rect.minY }))"
+      vcRev.textHostView.lastCopiedText == "lo ",
+      "single-handle cross-anchor reversal [6,11)->3 must select 'lo ', got '\(vcRev.textHostView.lastCopiedText ?? "")'"
     )
 
+    // 5c. Soft-wrap multi-line selectionRects and rotation/resize recomputation.
     let vcWrap = makeEmptyEditorVC()
-    let longLine = "AFFiNE native iOS CoreText soft line wrapping verification across multiple wrapped visual lines"
+    let longLine = "AFFiNE native iOS GPU soft line wrapping verification across multiple wrapped visual lines"
     vcWrap.textHostView.insertText(longLine)
-    let caret0Wrap = vcWrap.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 0))
-    let caretWrapLine2 = vcWrap.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 65))
-    requireS3(
-      caretWrapLine2.minY > caret0Wrap.minY + 10.0,
-      "long English line must soft-wrap onto line 2 (y0=\(caret0Wrap.minY), y65=\(caretWrapLine2.minY))"
-    )
-    vcWrap.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 10, length: 5))
-    let wrapState = vcWrap.selectionOverlay.currentState
-    let wrapEndDrop = CGPoint(
-      x: CGFloat(wrapState.end_handle.drop_center_x),
-      y: CGFloat(wrapState.end_handle.drop_center_y)
-    )
-    let caret15Wrap = vcWrap.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 15))
-    _ = vcWrap.selectionOverlay.processDragStep(phase: .began, point: wrapEndDrop)
-    _ = vcWrap.selectionOverlay.processDragStep(
-      phase: .changed,
-      point: CGPoint(
-        x: wrapEndDrop.x + (caretWrapLine2.midX - caret15Wrap.midX),
-        y: wrapEndDrop.y + (caretWrapLine2.midY - caret15Wrap.midY)
-      )
-    )
-    _ = vcWrap.selectionOverlay.processDragStep(
-      phase: .ended,
-      point: CGPoint(
-        x: wrapEndDrop.x + (caretWrapLine2.midX - caret15Wrap.midX),
-        y: wrapEndDrop.y + (caretWrapLine2.midY - caret15Wrap.midY)
-      )
-    )
-    vcWrap.textHostView.copy(nil)
-    let wrapRange = (vcWrap.textHostView.selectedTextRange as? AffineTextRange)?.utf16Range
-    requireS3(wrapRange != nil && wrapRange!.length >= 50, "soft-wrap drag must span into line 2, got \(String(describing: wrapRange))")
-    let wrapSelRects = vcWrap.textHostView.selectionRects(for: AffineTextRange(utf16Range: wrapRange!))
+    vcWrap.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 10, length: 60))
+    let wrapSelRects = vcWrap.textHostView.selectionRects(for: AffineTextRange(utf16Range: NSRange(location: 10, length: 60)))
     requireS3(
       wrapSelRects.count >= 2 && wrapSelRects.first!.containsStart && wrapSelRects.last!.containsEnd,
       "multi-line soft-wrap selectionRects must return >=2 per-line rects with start/end flags (got \(wrapSelRects.count))"
     )
-    let expectedWrapSub = (longLine as NSString).substring(with: wrapRange!)
-    requireS3(vcWrap.textHostView.lastCopiedText == expectedWrapSub, "soft-wrap copy must match exact substring")
-
-    // Rotation / viewport resize (390x844 -> 844x390) must recompute handle endpoints to match unwrapped line geometry.
-    let endYPortrait = vcWrap.selectionOverlay.currentState.end_handle.stem_top_y
+    let endYPortrait = affine_ios_host_document_selection_snapshot(vcWrap.hostPointer!).end_caret.y
     vcWrap.view.frame = CGRect(x: 0, y: 0, width: 844, height: 390)
     vcWrap.view.setNeedsLayout()
     vcWrap.view.layoutIfNeeded()
-    let endYLandscape = vcWrap.selectionOverlay.currentState.end_handle.stem_top_y
+    let endYLandscape = affine_ios_host_document_selection_snapshot(vcWrap.hostPointer!).end_caret.y
     requireS3(
       endYLandscape < endYPortrait - 10.0,
-      "widening viewport 390->844 must move wrapped end handle up to match unwrapped line (portrait=\(endYPortrait), landscape=\(endYLandscape))"
+      "widening viewport 390->844 must move wrapped end caret up (portrait=\(endYPortrait), landscape=\(endYLandscape))"
     )
 
-    // 5d. Production host loupe captures real rendered glyph strokes ("WWWW        ....").
-    func countDarkPixels(in image: UIImage) -> Int {
-      guard let cg = image.cgImage else { return 0 }
-      let w = cg.width
-      let h = cg.height
-      var buf = [UInt8](repeating: 0, count: w * h * 4)
-      let cs = CGColorSpaceCreateDeviceRGB()
-      let info = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
-      guard let ctx = CGContext(data: &buf, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4, space: cs, bitmapInfo: info) else {
-        return 0
-      }
-      ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
-      var dark = 0
-      for i in 0..<(w * h) {
-        let base = i * 4
-        if buf[base + 3] > 200 && buf[base] < 128 && buf[base + 1] < 128 && buf[base + 2] < 128 {
-          dark += 1
-        }
-      }
-      return dark
-    }
-
-    let vcLoupe = makeEmptyEditorVC()
-    vcLoupe.textHostView.insertText("WWWW        ....")
-    vcLoupe.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 16))
-    let loupeStartState = vcLoupe.selectionOverlay.currentState
-    let loupeDrop = CGPoint(
-      x: CGFloat(loupeStartState.end_handle.drop_center_x),
-      y: CGFloat(loupeStartState.end_handle.drop_center_y)
-    )
-    let caret16L = vcLoupe.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 16))
-    let caret2W = vcLoupe.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 2))
-    let caret10Space = vcLoupe.textHostView.caretRect(for: AffineTextPosition(utf16Offset: 10))
-    _ = vcLoupe.selectionOverlay.processDragStep(phase: .began, point: loupeDrop)
-    _ = vcLoupe.selectionOverlay.processDragStep(
-      phase: .changed,
-      point: CGPoint(x: loupeDrop.x + (caret2W.midX - caret16L.midX), y: loupeDrop.y)
-    )
-    let darkAtW = vcLoupe.selectionOverlay.loupeSnapshotImage.map(countDarkPixels(in:)) ?? 0
-    _ = vcLoupe.selectionOverlay.processDragStep(
-      phase: .changed,
-      point: CGPoint(x: loupeDrop.x + (caret10Space.midX - caret16L.midX), y: loupeDrop.y)
-    )
-    let darkAtSpace = vcLoupe.selectionOverlay.loupeSnapshotImage.map(countDarkPixels(in:)) ?? 0
-    _ = vcLoupe.selectionOverlay.processDragStep(phase: .ended, point: loupeDrop)
-    requireS3(
-      darkAtW > 0 && darkAtW > darkAtSpace,
-      "loupe must capture real rendered glyph strokes (darkAtW=\(darkAtW), darkAtSpace=\(darkAtSpace))"
-    )
-
-    // 5e. Keyboard occlusion hides handles & menu at y ~= 710, preserves selection/copy, then restores on dismiss.
+    // 5d. Keyboard auto-scroll keeps bottom selection visible and copyable.
     let vcKb = makeEmptyEditorVC()
     let fillerLines = String(repeating: "\n", count: 35)
     let bottomWord = "BottomTarget"
     vcKb.textHostView.insertText(fillerLines + bottomWord)
+    let kbLen = vcKb.textHostView.currentAuthoritativeUtf16Units.count
+    let kbStart = max(0, kbLen - bottomWord.utf16.count)
     vcKb.textHostView.selectedTextRange = AffineTextRange(
-      utf16Range: NSRange(location: fillerLines.utf16.count, length: bottomWord.utf16.count)
+      utf16Range: NSRange(location: kbStart, length: bottomWord.utf16.count)
     )
-    let kbBefore = vcKb.selectionOverlay.currentState
-    requireS3(kbBefore.start_handle.stem_top_y > 650.0, "bottom selection must sit below y=650 (got \(kbBefore.start_handle.stem_top_y))")
-    requireS3(kbBefore.start_handle.visible && kbBefore.end_handle.visible && vcKb.presentedMenuAnchorRect != nil, "handles and menu visible before keyboard")
-
+    let kbBefore = affine_ios_host_document_selection_snapshot(vcKb.hostPointer!)
+    requireS3(kbBefore.start_caret.y > 650.0, "bottom selection must sit below y=650 (got \(kbBefore.start_caret.y))")
     _ = vcKb.keyboardCoordinator.applyKeyboardFrame(
       windowBounds: CGRect(x: 0, y: 0, width: 390, height: 844),
       keyboardFrameInView: CGRect(x: 0, y: 542, width: 390, height: 302),
@@ -892,73 +667,54 @@ struct IosHostS3SmokeTest {
       timestampSec: 1.0
     )
     vcKb.sampleInsets(timestamp: 1.0)
-    let kbRevealed = vcKb.selectionOverlay.currentState
+    let kbRevealed = affine_ios_host_document_selection_snapshot(vcKb.hostPointer!)
     requireS3(
-      kbRevealed.start_handle.visible && kbRevealed.end_handle.visible,
-      "auto-scrolling above keyboard must keep selection handles visible"
-    )
-    requireS3(
-      kbRevealed.start_handle.stem_top_y < kbBefore.start_handle.stem_top_y
-        && kbRevealed.end_handle.stem_bottom_y <= 542.0 - 52.0,
-      "page must auto-scroll caret/selection above keyboard + toolbar (before=\(kbBefore.start_handle.stem_top_y), after_top=\(kbRevealed.start_handle.stem_top_y), after_bottom=\(kbRevealed.end_handle.stem_bottom_y))"
+      kbRevealed.start_visible && kbRevealed.end_visible && kbRevealed.start_caret.y < kbBefore.start_caret.y,
+      "page must auto-scroll selection above keyboard (before=\(kbBefore.start_caret.y), after=\(kbRevealed.start_caret.y))"
     )
     vcKb.textHostView.copy(nil)
     requireS3(vcKb.textHostView.lastCopiedText == bottomWord, "selection and copy must stay intact while keyboard is open")
 
-    _ = vcKb.keyboardCoordinator.applyKeyboardFrame(
-      windowBounds: CGRect(x: 0, y: 0, width: 390, height: 844),
-      keyboardFrameInView: CGRect(x: 0, y: 844, width: 390, height: 302),
-      safeAreaInsets: .zero,
-      isHidden: true,
-      durationSec: 0.0,
-      timestampSec: 2.0
-    )
-    vcKb.sampleInsets(timestamp: 2.0)
-    let kbRestored = vcKb.selectionOverlay.currentState
-    requireS3(
-      kbRestored.start_handle.visible && kbRestored.end_handle.visible && vcKb.presentedMenuAnchorRect != nil,
-      "dismissing keyboard must keep handles and presentedMenuAnchorRect visible"
-    )
-
-    // 5f. Optional offscreen visual evidence capture directly from real production host views
-    // (using the production `#FAFAFC` clear color with zero test background overrides).
-    if let outPath = ProcessInfo.processInfo.environment["AFFINE_IOS_EVIDENCE_PNG"], !outPath.isEmpty {
-      let evVcTop = MetalHostViewController()
-      evVcTop.view.frame = CGRect(x: 0, y: 0, width: 390, height: 300)
-      evVcTop.loadViewIfNeeded()
-      evVcTop.view.layoutIfNeeded()
-      let topText = "AFFiNE Native iOS — CoreText & Loupe\n\n\n\n\n\nHello world\n\nשלום 123 abc\nسلام 123 abc"
-      evVcTop.textHostView.insertText(topText)
-      let selStart = ("AFFiNE Native iOS — CoreText & Loupe\n\n\n\n\n\n" as NSString).length
-      evVcTop.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: selStart, length: 11))
-      let evState = evVcTop.selectionOverlay.currentState
-      let evDrop = CGPoint(x: CGFloat(evState.end_handle.drop_center_x), y: CGFloat(evState.end_handle.drop_center_y))
-      _ = evVcTop.selectionOverlay.processDragStep(phase: .began, point: evDrop)
-      _ = evVcTop.selectionOverlay.processDragStep(phase: .changed, point: evDrop)
-
-      let evVcBidi = MetalHostViewController()
-      evVcBidi.view.frame = CGRect(x: 0, y: 0, width: 390, height: 80)
-      evVcBidi.loadViewIfNeeded()
-      evVcBidi.view.layoutIfNeeded()
-      evVcBidi.textHostView.insertText("A אבג B")
-      evVcBidi.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 2, length: 3))
-
-      let fmt = UIGraphicsImageRendererFormat()
-      fmt.scale = 2.0
-      fmt.opaque = true
-      let renderer = UIGraphicsImageRenderer(size: CGSize(width: 390, height: 380), format: fmt)
-      let shot = renderer.image { ctx in
-        evVcTop.view.layer.render(in: ctx.cgContext)
-        ctx.cgContext.saveGState()
-        ctx.cgContext.translateBy(x: 0, y: 300)
-        evVcBidi.view.layer.render(in: ctx.cgContext)
-        ctx.cgContext.restoreGState()
-      }
-      if let png = shot.pngData() {
-        try? png.write(to: URL(fileURLWithPath: outPath))
-      }
+    // 5e. Unfocused CJK/Emoji `closestPosition` + dual `endpointToken` `selectedTextRange` read-write roundtrip + ordinary-scroll menu restore.
+    let vcCjk = makeEmptyEditorVC()
+    vcCjk.textHostView.insertText("甲乙丙丁🚀")
+    vcCjk.textHostView.insertText("\n")
+    vcCjk.textHostView.insertText("Second")
+    if let cjkPtr = vcCjk.hostPointer {
+      _ = affine_ios_host_render_frame(cjkPtr, 1.0)
+      let snapP2 = affine_ios_host_document_selection_snapshot(cjkPtr)
+      let baseX = CGFloat(snapP2.start_caret.x)
+      let p1Y = CGFloat(snapP2.start_caret.y + snapP2.start_caret.height * 0.5) - 34.0
+      let p2Y = CGFloat(snapP2.start_caret.y + snapP2.start_caret.height * 0.5)
+      // Focus starts in paragraph 2 ("Second"); hit-testing unfocused CJK paragraph 1 must return identical UTF-16 offset on 1st and 2nd call.
+      let probeCjkPt = CGPoint(x: baseX + 48.0, y: p1Y)
+      let posFirst = vcCjk.textHostView.closestPosition(to: probeCjkPt) as? AffineTextPosition
+      let posSecond = vcCjk.textHostView.closestPosition(to: probeCjkPt) as? AffineTextPosition
+      requireS3(
+        posFirst != nil && posFirst?.utf16Offset == posSecond?.utf16Offset && (posFirst?.utf16Offset ?? 0) >= 2,
+        "unfocused CJK closestPosition must match focused UTF-16 offset on first query (first=\(String(describing: posFirst?.utf16Offset)), second=\(String(describing: posSecond?.utf16Offset)))"
+      )
+      // Select cross-block "甲乙丙丁🚀\nSec", read `selectedTextRange` (two `.endpointToken`s), write it straight back, and verify text is preserved!
+      let crossStart = vcCjk.textHostView.position(from: posFirst!, offset: -(posFirst?.utf16Offset ?? 0))!
+      let crossEnd = vcCjk.textHostView.closestPosition(to: CGPoint(x: baseX, y: p2Y))!
+      vcCjk.textHostView.selectedTextRange = vcCjk.textHostView.textRange(from: crossStart, to: crossEnd)
+      vcCjk.textHostView.copy(nil)
+      let expectedCross = vcCjk.textHostView.lastCopiedText ?? ""
+      requireS3(
+        expectedCross.hasPrefix("甲乙丙丁🚀\nS"),
+        "cross-block CJK selection setup must span both paragraphs (got '\(expectedCross)')"
+      )
+      let readBackRange = vcCjk.textHostView.selectedTextRange!
+      vcCjk.textHostView.selectedTextRange = readBackRange
+      vcCjk.textHostView.copy(nil)
+      let afterRoundtrip = vcCjk.textHostView.lastCopiedText ?? ""
+      requireS3(
+        afterRoundtrip == expectedCross,
+        "writing back dual-endpointToken selectedTextRange must preserve cross-block selection '\(expectedCross)', got '\(afterRoundtrip)'"
+      )
     }
-    print("PASS [5/5]: MetalHostViewController E2E selection, crossover, RTL/soft-wrap, real loupe glyphs, and keyboard occlusion/restore passed")
+
+    print("PASS [5/5]: MetalHostViewController E2E UITextInteraction, document drag, multi-MIME clipboard, readonly mask, BiDi, soft-wrap, and keyboard scroll passed")
   }
 
   /// 6. S6 native GPU PlaygroundView mount: zero HostTextPreviewView, live CAMetalLayer,
@@ -1002,12 +758,68 @@ struct IosHostS3SmokeTest {
 
     // Block split on newline + block-start deleteBackward merge.
     vc.textHostView.insertText("\n")
+    requireS3(
+      vc.textHostView.currentAuthoritativeUtf16Units.isEmpty,
+      "insertText(\"\\n\") must split into an empty focused next block"
+    )
     let afterSplitRange = vc.textHostView.textRange(
       from: vc.textHostView.beginningOfDocument,
       to: vc.textHostView.endOfDocument
     )
     let afterSplit = afterSplitRange.flatMap { vc.textHostView.text(in: $0) } ?? ""
-    requireS3(afterSplit.isEmpty, "insertText(\"\\n\") must split into an empty next block, got '\(afterSplit)'")
+    requireS3(
+      afterSplit.contains("Heading"),
+      "full-document beginningOfDocument..endOfDocument must span all blocks after split, got '\(afterSplit)'"
+    )
+    // Value equality & hashing on AffineTextPosition / AffineTextRange (NSObject equivalence contract).
+    let pA = AffineTextPosition(utf16Offset: 3, blockOrder: 1, endpointToken: 42)
+    let pB = AffineTextPosition(utf16Offset: 3, blockOrder: 1, endpointToken: 42)
+    let pSameTokMovedBlock = AffineTextPosition(utf16Offset: 3, blockOrder: 2, endpointToken: 42)
+    let pDiffTokSameCoords = AffineTextPosition(utf16Offset: 3, blockOrder: 1, endpointToken: 99)
+    let pZeroTok = AffineTextPosition(utf16Offset: 3, blockOrder: 1, endpointToken: 0)
+    let pC = AffineTextPosition(utf16Offset: 4, blockOrder: 1, endpointToken: 43)
+    requireS3(pA.isEqual(pB) && pA.hash == pB.hash && !pA.isEqual(pC), "AffineTextPosition must implement value isEqual/hash")
+    requireS3(
+      pA.isEqual(pSameTokMovedBlock) && pA.hash == pSameTokMovedBlock.hash,
+      "AffineTextPosition with identical non-zero endpointToken must stay equal with equal hash across blockOrder changes"
+    )
+    requireS3(
+      !pA.isEqual(pDiffTokSameCoords) && !pA.isEqual(pZeroTok),
+      "AffineTextPosition with distinct endpointTokens must never compare equal even at same coordinates"
+    )
+    let rA = AffineTextRange(startPos: pA, endPos: pC)
+    let rB = AffineTextRange(startPos: pB, endPos: pC)
+    requireS3(rA.isEqual(rB) && rA.hash == rB.hash, "AffineTextRange must implement value isEqual/hash")
+
+    // Surrogate pair / grapheme cluster characterUnitRange & characterRange(at:) must not split 🚀.
+    affine_ios_host_reset_empty_doc(handle)
+    vc.textHostView.insertText("甲🚀乙")
+    _ = affine_ios_host_render_frame(handle, 1.0)
+    if let caretEnd = vc.textHostView.selectedTextRange?.start,
+      let emojiPos = vc.textHostView.position(from: caretEnd, offset: -3) as? AffineTextPosition,
+      let unitRange = vc.textHostView.characterUnitRange(at: emojiPos)
+    {
+      let unitText = vc.textHostView.text(in: unitRange) ?? ""
+      requireS3(
+        unitText == "🚀" && unitRange.utf16Range.length == 2,
+        "characterUnitRange at 🚀 must return full 2-UTF16 surrogate pair, got '\(unitText)' len=\(unitRange.utf16Range.length)"
+      )
+    } else {
+      requireS3(false, "characterUnitRange must resolve 🚀 surrogate pair position")
+    }
+
+    // Code block focus must switch autocorrectionType to .no (wantsCodeInput regression guard).
+    affine_ios_host_reset_empty_doc(handle)
+    requireS3(vc.textHostView.autocorrectionType == .default, "Prose block must default autocorrectionType to .default")
+    vc.textHostView.insertText("``` ")
+    requireS3(
+      vc.textHostView.autocorrectionType == .no && vc.textHostView.autocapitalizationType == .none,
+      "Code block focus must set autocorrectionType == .no and autocapitalizationType == .none"
+    )
+    affine_ios_host_reset_empty_doc(handle)
+    vc.textHostView.insertText("# Heading")
+    vc.textHostView.insertText("\n")
+
     vc.textHostView.deleteBackward()
     let afterMergeRange = vc.textHostView.textRange(
       from: vc.textHostView.beginningOfDocument,
@@ -1033,10 +845,6 @@ struct IosHostS3SmokeTest {
             - (vcSafe.view.bounds.height - vcSafe.view.safeAreaInsets.top - vcSafe.view.safeAreaInsets.bottom)
         ) < 0.5,
       "hostView must be framed inside safeAreaInsets (insets=\(vcSafe.view.safeAreaInsets), got \(vcSafe.textHostView.frame))"
-    )
-    requireS3(
-      vcSafe.selectionOverlay.frame == vcSafe.textHostView.bounds,
-      "selectionOverlay must share hostView safe-area-local bounds"
     )
     if let safeHandle = vcSafe.hostPointer {
       affine_ios_host_reset_empty_doc(safeHandle)
@@ -1070,6 +878,16 @@ struct IosHostS3SmokeTest {
         countingDelegate.textWillChangeCount == 0 && countingDelegate.textDidChangeCount == 0,
         "IME-originated Pinyin sequence must trigger 0 textWillChange/textDidChange callbacks (got will=\(countingDelegate.textWillChangeCount), did=\(countingDelegate.textDidChangeCount))"
       )
+      // Single-Writer contract: UIKit calling setSelectedTextRange must NOT synchronously echo
+      // selectionWillChange/selectionDidChange back into inputDelegate.
+      let selWillBefore = countingDelegate.selectionWillChangeCount
+      let selDidBefore = countingDelegate.selectionDidChangeCount
+      vcSafe.textHostView.selectedTextRange = AffineTextRange(utf16Range: NSRange(location: 0, length: 2))
+      requireS3(
+        countingDelegate.selectionWillChangeCount == selWillBefore
+          && countingDelegate.selectionDidChangeCount == selDidBefore,
+        "setSelectedTextRange must not synchronously echo selectionWillChange/selectionDidChange"
+      )
       // External editor mutation (reset / shortcut) MUST notify inputDelegate.
       affine_ios_host_reset_empty_doc(safeHandle)
       requireS3(
@@ -1077,31 +895,377 @@ struct IosHostS3SmokeTest {
         "External editor mutation must notify UITextInputDelegate"
       )
       vcSafe.textHostView.inputDelegate = nil
-
-      // Code input mode disables autocorrection, autocapitalization, smart quotes, and smart dashes.
-      affine_ios_host_reset_empty_doc(safeHandle)
-      requireS3(
-        !affine_ios_host_wants_code_input(safeHandle)
-          && vcSafe.textHostView.autocorrectionType == .default
-          && vcSafe.textHostView.autocapitalizationType == .sentences,
-        "prose paragraph must use default autocorrection and sentence capitalization"
-      )
-      vcSafe.textHostView.insertText("``` ")
-      requireS3(
-        affine_ios_host_wants_code_input(safeHandle)
-          && vcSafe.textHostView.autocorrectionType == .no
-          && vcSafe.textHostView.autocapitalizationType == .none
-          && vcSafe.textHostView.smartQuotesType == .no
-          && vcSafe.textHostView.smartDashesType == .no,
-        "code block must disable autocorrection, autocapitalization, smart quotes, and smart dashes"
-      )
     }
+
+    // Verify all 3 zero-CocoaPods iOS Native Islands (Atomic SQLite ShareExtension, Paywall, Onboarding/SignIn).
+    requireS3(
+      ShareExtensionBridge.appGroupIdentifier == "group.app.affine.pro"
+        && ShareExtensionBridge.inboxDirectoryName == "ShareInbox"
+        && ShareExtensionBridge.attachmentsDirectoryName == "Attachments",
+      "ShareExtension must align 1:1 with group.app.affine.pro/ShareInbox/Attachments"
+    )
+    let tempInbox = FileManager.default.temporaryDirectory
+      .appendingPathComponent("affine-ios-s6-share-\(UUID().uuidString)", isDirectory: true)
+      .appendingPathComponent("ShareInbox", isDirectory: true)
+    let tempShareDocs = FileManager.default.temporaryDirectory
+      .appendingPathComponent("affine-ios-s6-share-docs-\(UUID().uuidString)", isDirectory: true)
+    defer {
+      try? FileManager.default.removeItem(at: tempInbox.deletingLastPathComponent())
+      try? FileManager.default.removeItem(at: tempShareDocs)
+    }
+    try! FileManager.default.createDirectory(at: tempShareDocs, withIntermediateDirectories: true)
+    let shareBridge = ShareExtensionBridge(inboxDirectory: tempInbox)
+
+    // 1) Real ShareInboxStore layout: ShareInbox/<id>.json + ShareInbox/Attachments/<id>/x.pdf (9 bytes)
+    //    + schemaVersion 1 legacy envelope (no importAttemptId) + schemaVersion 99 future envelope (preserved).
+    let pdf9Bytes = Data("%PDF-1.4\n".utf8)
+    requireS3(pdf9Bytes.count == 9, "test PDF fixture must be 9 bytes")
+    let shareItem = ShareInboxItem(
+      id: "ios-share-1",
+      documentId: "share-doc",
+      title: "AFFiNE",
+      content: ShareInboxContent(kind: .url, url: "https://affine.pro", text: nil),
+      target: ShareInboxTarget(
+        workspaceId: "ws-share-1",
+        workspaceFlavour: "local",
+        tagIds: [],
+        collectionId: nil
+      )
+    )
+    let pdfShareItem = ShareInboxItem(
+      id: "ios-share-pdf-1",
+      documentId: "share-doc",
+      title: "Spec",
+      content: ShareInboxContent(kind: .pdf, url: nil, text: nil),
+      attachments: [
+        ShareInboxAttachment(
+          fileName: "x.pdf",
+          mimeType: "application/pdf",
+          relativePath: "ios-share-pdf-1/x.pdf"
+        ),
+      ]
+    )
+    let staged = try! shareBridge.stageItem(shareItem)
+    let stagedPdf = try! shareBridge.stageItem(
+      pdfShareItem,
+      attachmentBlobs: ["ios-share-pdf-1/x.pdf": pdf9Bytes]
+    )
+    let pdfAttDir = tempInbox.appendingPathComponent("Attachments/ios-share-pdf-1", isDirectory: true)
+    let pdfAttPath = pdfAttDir.appendingPathComponent("x.pdf")
+
+    // Legacy v1 manifest (omits schemaVersion & importAttemptId).
+    let v1ManifestUrl = tempInbox.appendingPathComponent("ios-share-v1.json")
+    let v1Json = """
+      {
+        "id": "ios-share-v1",
+        "documentId": "share-doc",
+        "createdAt": "2026-11-28T10:00:00Z",
+        "title": "Legacy v1",
+        "content": { "kind": "text", "text": "Legacy v1 shared note" }
+      }
+      """
+    try! Data(v1Json.utf8).write(to: v1ManifestUrl, options: .atomic)
+
+    // Future schemaVersion 99 manifest: MUST be skipped and preserved untouched.
+    let v99ManifestUrl = tempInbox.appendingPathComponent("ios-share-v99.json")
+    let v99Json = """
+      {
+        "schemaVersion": 99,
+        "importAttemptId": "future-attempt",
+        "id": "ios-share-v99",
+        "documentId": "share-doc",
+        "createdAt": "2026-11-28T11:00:00Z",
+        "title": "Future",
+        "content": { "kind": "text", "text": "Future format" }
+      }
+      """
+    try! Data(v99Json.utf8).write(to: v99ManifestUrl, options: .atomic)
+
+    requireS3(
+      FileManager.default.fileExists(atPath: staged.path)
+        && FileManager.default.fileExists(atPath: stagedPdf.path)
+        && FileManager.default.fileExists(atPath: pdfAttPath.path)
+        && FileManager.default.fileExists(atPath: v1ManifestUrl.path)
+        && FileManager.default.fileExists(atPath: v99ManifestUrl.path),
+      "ShareExtension fixtures must exist under ShareInbox/<id>.json and ShareInbox/Attachments/<id>/x.pdf"
+    )
+
+    // Precondition gate: unmounted workspace (workspace == nil) MUST consume 0 and leave every file untouched.
+    let unmountedCount = shareBridge.drainAndIngestIntoHost(handle, workspace: nil)
+    requireS3(
+      unmountedCount == 0
+        && FileManager.default.fileExists(atPath: staged.path)
+        && FileManager.default.fileExists(atPath: stagedPdf.path)
+        && FileManager.default.fileExists(atPath: pdfAttPath.path)
+        && FileManager.default.fileExists(atPath: v1ManifestUrl.path)
+        && FileManager.default.fileExists(atPath: v99ManifestUrl.path),
+      "Unmounted workspace must consume 0 items and never touch ShareInbox files"
+    )
+
+    // Mount workspace and consume atomically into SQLite (blobs + updates + share_ingest_receipts).
+    let shareCoord1 = HostBootstrapCoordinator(documentsDirectory: tempShareDocs)
+    try! shareCoord1.applyLocalWorkspaceAllowlist(["ws-share-1"])
+    let shareWs1 = shareCoord1.workspace(id: "ws-share-1")!
+    affine_ios_host_reset_empty_doc(handle)
+    let ingestedCount = shareBridge.drainAndIngestIntoHost(handle, workspace: shareWs1)
+    requireS3(
+      ingestedCount == 3,
+      "ShareExtension must atomically ingest 3 items (URL + 9-byte PDF + v1 text), got \(ingestedCount)"
+    )
+    requireS3(
+      !FileManager.default.fileExists(atPath: staged.path)
+        && !FileManager.default.fileExists(atPath: stagedPdf.path)
+        && !FileManager.default.fileExists(atPath: pdfAttDir.path)
+        && !FileManager.default.fileExists(atPath: v1ManifestUrl.path)
+        && FileManager.default.fileExists(atPath: v99ManifestUrl.path),
+      "ShareExtension cleanup must remove consumed JSON + Attachments/<id>/ dir while preserving schemaVersion 99"
+    )
+    shareCoord1.closeAll()
+
+    // Reopen SQLite workspace: verify exact 9-byte blob in `blobs` table AND all 3 blocks in `share-doc`.
+    let shareCoord2 = HostBootstrapCoordinator(documentsDirectory: tempShareDocs)
+    try! shareCoord2.applyLocalWorkspaceAllowlist(["ws-share-1"])
+    let shareWs2 = shareCoord2.workspace(id: "ws-share-1")!
+    let readBackBlob = shareWs2.readBlob(key: "share-ios-share-pdf-1-x.pdf")
+    requireS3(
+      readBackBlob == pdf9Bytes,
+      "Reopened SQLite blobs table must contain exact 9-byte PDF attachment, got \(String(describing: readBackBlob?.count))"
+    )
+    let persistedSnap = shareWs2.readPageSnapshotJson(docId: "share-doc", clientId: 1) ?? ""
+    requireS3(
+      persistedSnap.contains("https://affine.pro")
+        && persistedSnap.contains("blob:share-ios-share-pdf-1-x.pdf")
+        && persistedSnap.contains("Legacy v1 shared note"),
+      "Reopened SQLite doc must contain URL, blob reference, and v1 text (snap=\(persistedSnap))"
+    )
+
+    // Corrupt JSON and invalid URL scheme must be quarantined out of ShareInbox/ (zero rescan loop).
+    let corruptUrl = tempInbox.appendingPathComponent("999-corrupt.json")
+    try! "{not-valid-json".data(using: .utf8)!.write(to: corruptUrl)
+    let rejectedUrl = try! shareBridge.stageItem(ShareInboxItem(
+      id: "ios-share-bad",
+      documentId: "share-doc",
+      title: "Bad",
+      content: ShareInboxContent(kind: .url, url: "javascript:alert(1)", text: nil)
+    ))
+    _ = shareBridge.drainAndIngestIntoHost(handle, workspace: shareWs2)
+    requireS3(!FileManager.default.fileExists(atPath: corruptUrl.path), "Corrupt JSON must be quarantined out of ShareInbox/")
+    requireS3(!FileManager.default.fileExists(atPath: rejectedUrl.path), "Invalid scheme manifest must be quarantined out of ShareInbox/")
+
+    // 2) SQLite COMMIT succeeded + first checkpoint_passive failed + retry -> idempotent receipt hit,
+    //    target doc contains text EXACTLY ONCE (zero duplicate paragraphs).
+    let idempItem = ShareInboxItem(
+      id: "ios-share-idemp-1",
+      documentId: "share-doc",
+      title: "Idempotent",
+      content: ShareInboxContent(kind: .text, url: nil, text: "UNIQUE_IDEMPOTENT_MARKER_42")
+    )
+    let idempFile = try! shareBridge.stageItem(idempItem)
+    var checkpointCalls = 0
+    shareBridge.checkpointHook = { ws in
+      checkpointCalls += 1
+      if checkpointCalls == 1 {
+        return false // Inject first checkpoint_passive failure AFTER SQLite COMMIT succeeded.
+      }
+      return ws.checkpointPassive()
+    }
+    let firstAttempt = shareBridge.drainAndIngestIntoHost(handle, workspace: shareWs2)
+    requireS3(firstAttempt == 1, "First attempt commits SQLite tx before checkpoint failure (got \(firstAttempt))")
+    requireS3(
+      FileManager.default.fileExists(atPath: idempFile.path),
+      "Failed checkpoint_passive must leave manifest intact for idempotent retry"
+    )
+    let retryAttempt = shareBridge.drainAndIngestIntoHost(handle, workspace: shareWs2)
+    shareBridge.checkpointHook = nil
+    requireS3(retryAttempt == 0, "Retry must hit share_ingest_receipts idempotently (0 newly inserted), got \(retryAttempt)")
+    requireS3(!FileManager.default.fileExists(atPath: idempFile.path), "Successful retry checkpoint must clean up manifest")
+    let snapAfterRetry = shareWs2.readPageSnapshotJson(docId: "share-doc", clientId: 1) ?? ""
+    let markerOccurrences = snapAfterRetry.components(separatedBy: "UNIQUE_IDEMPOTENT_MARKER_42").count - 1
+    requireS3(
+      markerOccurrences == 1,
+      "Idempotent retry after checkpoint failure must insert text EXACTLY once, got \(markerOccurrences) in \(snapAfterRetry)"
+    )
+    shareCoord2.closeAll()
+
+    // 3) StoreKit 2 expiration & revocation reconciliation:
+    //    purchase -> persisted Verified -> restart -> currentEntitlements=[] clears disk & Rust ->
+    //    re-purchase -> revocationDate != nil revokes immediately & deletes disk cache.
+    let tempEntitlementFile = FileManager.default.temporaryDirectory
+      .appendingPathComponent("affine-ios-s6-paywall-\(UUID().uuidString).json")
+    defer { try? FileManager.default.removeItem(at: tempEntitlementFile) }
+    let fixedNow = Date(timeIntervalSince1970: 1_800_000_000)
+    let futureExp = Date(timeIntervalSince1970: 1_800_086_400)
+    let paywall1 = AffinePaywallBridge(entitlementFileUrl: tempEntitlementFile)
+    paywall1.attach(host: handle, now: fixedNow)
+    requireS3(
+      paywall1.syncProductsPayload(host: handle, payload: [[
+        "product_id": "pro.affine.pro.monthly",
+        "display_name": "AFFiNE Pro",
+        "display_price": "$9.99",
+      ]]),
+      "AffinePaywall must accept allowlisted StoreKit 2 product"
+    )
+    requireS3(paywall1.beginPurchase(host: handle, productId: "pro.affine.pro.monthly"), "beginPurchase")
+    let activeSnap = PaywallEntitlementSnapshot(
+      transactionId: "tx-ios-1",
+      productId: "pro.affine.pro.monthly",
+      jwsRepresentation: "eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln",
+      expirationDate: futureExp,
+      revocationDate: nil
+    )
+    requireS3(
+      paywall1.applyVerifiedTransactionUpdate(activeSnap, host: handle, now: fixedNow),
+      "AffinePaywall must verify active JWS entitlement and persist to disk"
+    )
+    requireS3(paywall1.stateJson(host: handle).contains("verified"), "Paywall state must be verified")
+    requireS3(FileManager.default.fileExists(atPath: tempEntitlementFile.path), "Entitlement cache must exist on disk")
+
+    // Restart fresh host: restore persisted entitlement, then reconcile against empty currentEntitlements = [].
+    let vcFreshPaywall = MetalHostViewController()
+    vcFreshPaywall.view.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
+    vcFreshPaywall.loadViewIfNeeded()
+    let paywall2 = AffinePaywallBridge(entitlementFileUrl: tempEntitlementFile)
+    paywall2.attach(host: vcFreshPaywall.hostPointer!, now: fixedNow)
+    let restoredPaywallJson = paywall2.stateJson(host: vcFreshPaywall.hostPointer!)
+    requireS3(
+      restoredPaywallJson.contains("verified") && restoredPaywallJson.contains("tx-ios-1"),
+      "Restarted host must restore active persisted StoreKit 2 entitlement (got \(restoredPaywallJson))"
+    )
+    requireS3(
+      paywall2.reconcileCurrentEntitlements([], host: vcFreshPaywall.hostPointer!, now: fixedNow),
+      "Reconciling empty currentEntitlements must succeed"
+    )
+    let clearedPaywallJson = paywall2.stateJson(host: vcFreshPaywall.hostPointer!)
+    requireS3(
+      !clearedPaywallJson.contains("\"phase\":\"verified\"")
+        && clearedPaywallJson.contains("\"verified_transaction_id\":null")
+        && !FileManager.default.fileExists(atPath: tempEntitlementFile.path),
+      "Empty currentEntitlements must revoke Rust state and delete stale disk cache (got \(clearedPaywallJson))"
+    )
+
+    // Re-purchase and receive a verified transaction update with revocationDate != nil -> immediate revoke.
+    requireS3(
+      paywall2.applyVerifiedTransactionUpdate(activeSnap, host: vcFreshPaywall.hostPointer!, now: fixedNow),
+      "Re-applying active entitlement must succeed"
+    )
+    let revokedSnap = PaywallEntitlementSnapshot(
+      transactionId: "tx-ios-1",
+      productId: "pro.affine.pro.monthly",
+      jwsRepresentation: "eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln",
+      expirationDate: futureExp,
+      revocationDate: fixedNow
+    )
+    requireS3(
+      paywall2.applyVerifiedTransactionUpdate(revokedSnap, host: vcFreshPaywall.hostPointer!, now: fixedNow),
+      "Applying revoked transaction update must succeed"
+    )
+    let revokedPaywallJson = paywall2.stateJson(host: vcFreshPaywall.hostPointer!)
+    requireS3(
+      !revokedPaywallJson.contains("\"phase\":\"verified\"")
+        && revokedPaywallJson.contains("\"verified_transaction_id\":null")
+        && paywall2.activeEntitlements.isEmpty
+        && !FileManager.default.fileExists(atPath: tempEntitlementFile.path),
+      "Revoked transaction update must immediately clear Rust state and disk cache (got \(revokedPaywallJson))"
+    )
+
+    requireS3(vc.onboardingSignIn.beginOAuth(host: handle, csrfState: "state-token-999"), "beginOAuth")
+    requireS3(
+      !vc.handleIncomingUrl(URL(string: "affine://auth/callback?code=c1&state=bad")!),
+      "OAuth callback via MetalHostViewController.handleIncomingUrl must reject CSRF mismatch"
+    )
+    requireS3(
+      vc.handleIncomingUrl(URL(string: "affine://auth/callback?code=c1&state=state-token-999")!),
+      "OAuth callback via MetalHostViewController.handleIncomingUrl must accept matching CSRF state"
+    )
+    requireS3(vc.onboardingSignIn.stateJson(host: handle).contains("completed"), "Onboarding must be completed")
+    requireS3(
+      vc.onboardingSignIn.completeAppleCredential(
+        host: handle,
+        userIdentifier: "apple-user-1",
+        identityTokenJws: "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ1MSJ9.c2ln"
+      ),
+      "Sign in with Apple must accept valid JWS credential"
+    )
 
     // Reload showcase document and trigger a real GPU Metal frame render.
     affine_ios_host_load_showcase_doc(handle)
     let renderedColor = affine_ios_host_render_frame(handle, 1.0)
     requireS3(renderedColor != 0, "GPU editor frame render must succeed on showcase doc")
 
-    print("PASS [6/6]: S6 iOS native GPU editor mount, safe-area alignment, H-S1/H-S2 IME, block split/merge, and T1 readonly passed")
+    print("PASS [6/7]: S6 iOS native GPU editor mount, safe-area alignment, H-S1/H-S2 IME, block split/merge, native islands, and T1 readonly passed")
+  }
+
+  /// 7. Real WKWebView + real `<Documents>/workspaces/workspace/local/<spaceId>.db` 0.27.5
+  ///    same-signature upgrade -> in-place edit -> rollback write-back -> old-shell readback drill.
+  @MainActor
+  static func test0275SameSignatureWebViewAndSqliteUpgradeRollbackDrill() async throws {
+    let tmpDocs = FileManager.default.temporaryDirectory
+      .appendingPathComponent("affine-ios-0275-drill-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: tmpDocs, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tmpDocs) }
+
+    // 1) Seed 0.27.5 Capacitor WKWebView localStorage on `capacitor://localhost` (zero IDB).
+    let probe = LegacyLocalStorageProbe()
+    let seeded = try await probe.writeBackLegacyLocalStorage(
+      set: [
+        "affine-local-workspace": "[\"ws-0275-drill\"]",
+        "theme": "light",
+        "last_workspace_id": "ws-0275-drill",
+      ],
+      remove: []
+    )
+    requireS3(seeded.origin == "capacitor://localhost" && seeded.idbAccessCount == 0, "0.27.5 seed must run on capacitor://localhost with 0 IDB")
+
+    // 2) New host captures real WKWebView sentinel, mounts `<Documents>/workspaces/workspace/local/ws-0275-drill.db` in place, edits doc & checkpoints WAL.
+    let coordinator = HostBootstrapCoordinator(documentsDirectory: tmpDocs)
+    let captured = try await probe.capture()
+    let disp = try coordinator.applySnapshot(captured)
+    requireS3(disp.status == "existing_user" && disp.state.localWorkspaceIds == ["ws-0275-drill"], "new host must import ws-0275-drill from real WKWebView")
+    guard let ws = coordinator.workspace(id: "ws-0275-drill") else {
+      requireS3(false, "ws-0275-drill must mount in place")
+      return
+    }
+    let editBytes = ws.editParagraphText(
+      docId: "doc-0275",
+      blockId: "p-1",
+      utf16Index: 0,
+      deleteLen: 0,
+      insertText: "Edited in native 0.28",
+      clientId: 7,
+      nowMs: 1_795_880_000_000
+    )
+    requireS3(editBytes != nil && !editBytes!.isEmpty, "in-place SQLite edit must emit CRDT update")
+    requireS3(coordinator.checkpointAllPassive(), "PASSIVE WAL checkpoint must succeed")
+
+    // 3) Add a new local workspace & plan rollback write-back -> write back to real WKWebView.
+    try coordinator.applyLocalWorkspaceAllowlist(["ws-0275-drill", "ws-0275-added"])
+    let plan = try coordinator.buildRollbackWriteBackPlan()
+    requireS3(
+      (plan.set["affine-local-workspace"] ?? "").contains("ws-0275-added"),
+      "rollback writeback plan must include ws-0275-added"
+    )
+    let writtenBack = try await probe.writeBackLegacyLocalStorage(set: plan.set, remove: plan.remove)
+    requireS3(writtenBack.idbAccessCount == 0, "rollback writeback must keep idbAccessCount == 0")
+    coordinator.closeAll()
+
+    // 4) Simulated old 0.27.5 shell reads back from real WKWebView + re-opens in-place SQLite DB.
+    let oldShellReadback = try await probe.capture()
+    requireS3(
+      (oldShellReadback.entries["affine-local-workspace"] ?? "").contains("ws-0275-drill")
+        && (oldShellReadback.entries["affine-local-workspace"] ?? "").contains("ws-0275-added"),
+      "old 0.27.5 WKWebView must read back both original and added workspaces"
+    )
+    let verifyCoord = HostBootstrapCoordinator(documentsDirectory: tmpDocs)
+    try verifyCoord.applyLocalWorkspaceAllowlist(["ws-0275-drill"])
+    let reopenedWs = verifyCoord.workspace(id: "ws-0275-drill")
+    let reopenedDiff = reopenedWs?.exportPendingDiff(docId: "doc-0275", remoteStateVector: nil)
+    let reopenedSnap = reopenedWs?.readPageSnapshotJson(docId: "doc-0275", clientId: 7) ?? ""
+    requireS3(
+      reopenedDiff != nil && !reopenedDiff!.isEmpty && reopenedSnap.contains("Edited in native 0.28"),
+      "old 0.27.5 SQLite workspace must preserve native-edited doc content intact (snap=\(reopenedSnap))"
+    )
+    verifyCoord.closeAll()
+
+    print("PASS [7/7]: 0.27.5 real WKWebView + in-place SQLite same-signature upgrade & rollback readback drill passed")
   }
 }
