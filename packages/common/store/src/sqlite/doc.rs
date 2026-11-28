@@ -221,6 +221,59 @@ impl SqliteDocStorage {
         row.as_ref().map(row_to_doc_record).transpose()
     }
 
+    /// Read and merge `snapshots` + `updates` for `doc_id` in memory without writing back.
+    ///
+    /// Safe on strictly read-only SQLite connections even when uncompacted `updates` rows exist.
+    pub async fn get_doc_readonly(&self, doc_id: &str) -> StoreResult<Option<DocRecord>> {
+        let mut read_tx = self.pool.begin().await?;
+        let snapshot_row = sqlx::query(
+            "SELECT doc_id, data AS bin, updated_at AS timestamp FROM snapshots WHERE doc_id = ?",
+        )
+        .bind(doc_id)
+        .fetch_optional(&mut *read_tx)
+        .await?;
+        let snapshot = snapshot_row.as_ref().map(row_to_doc_record).transpose()?;
+
+        let update_rows = sqlx::query(
+            "SELECT doc_id, created_at AS timestamp, data AS bin \
+             FROM updates WHERE doc_id = ? ORDER BY created_at ASC",
+        )
+        .bind(doc_id)
+        .fetch_all(&mut *read_tx)
+        .await?;
+        let updates: Vec<DocUpdate> = update_rows
+            .iter()
+            .map(row_to_doc_update)
+            .collect::<StoreResult<_>>()?;
+        read_tx.commit().await?;
+
+        if updates.is_empty() {
+            return Ok(snapshot);
+        }
+
+        let timestamp = updates
+            .last()
+            .map(|u| u.timestamp)
+            .into_iter()
+            .chain(snapshot.as_ref().map(|r| r.timestamp))
+            .max()
+            .ok_or(StoreError::ConcurrentModification)?;
+
+        let mut segments = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
+        if let Some(record) = &snapshot {
+            segments.push(record.bin.as_slice());
+        }
+        for update in &updates {
+            segments.push(update.bin.as_slice());
+        }
+        let bin = merge_updates(&segments)?;
+        Ok(Some(DocRecord {
+            doc_id: doc_id.to_string(),
+            bin,
+            timestamp,
+        }))
+    }
+
     /// Read and atomically compact `snapshots` + `updates` for `doc_id`.
     pub async fn get_doc(&self, doc_id: &str) -> StoreResult<Option<DocRecord>> {
         for _ in 0..8 {

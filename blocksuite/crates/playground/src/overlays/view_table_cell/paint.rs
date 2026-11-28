@@ -10,7 +10,7 @@ use ui::{Bounds, Pixels, Point, Window, div, prelude::*, px};
 use y_octo::{TextDeltaOp, TextInsert};
 
 use crate::{
-    PlaygroundView, TOPBAR_HEIGHT,
+    PlaygroundView,
     block_flow::{FlowLayout, FlowRect, PAGE_SURFACE_ID, PageViewport, page_geometry},
     theme::Palette,
 };
@@ -111,9 +111,10 @@ impl PlaygroundView {
         let (bx, by, hit) =
             Self::find_table_cell_hit(&layout, &cell.block_id, &cell.row_id, &cell.column_id)?;
         let scroll_x = self.overlays.code_scroll_x(&cell.block_id);
-        let geom = page_geometry(f32::from(w.viewport_size().width));
-        let local_x = f32::from(p.x) - geom.column_x - bx + scroll_x;
-        let local_y = f32::from(p.y) - TOPBAR_HEIGHT + self.scroll_y - by;
+        let (origin, sz) = self.canvas_rect(w);
+        let geom = page_geometry(f32::from(sz.width));
+        let local_x = f32::from(p.x) - f32::from(origin.x) - geom.column_x - bx + scroll_x;
+        let local_y = f32::from(p.y) - f32::from(origin.y) + self.scroll_y - by;
         hit.rect.contains(local_x, local_y).then(|| {
             hit.hit_text(local_x, local_y, &cell.input.display_text())
                 .utf16_offset as usize

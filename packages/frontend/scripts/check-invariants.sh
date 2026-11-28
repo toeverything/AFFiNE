@@ -149,6 +149,7 @@ ALLOWED_DEPS = {
         "packages/frontend/client",
     },
     "packages/frontend/desktop": UI_ALL | BS_LOWER | {
+        "blocksuite/crates/playground",
         "packages/common/store",
         "packages/frontend/legacy-import",
         "packages/frontend/client",
@@ -351,8 +352,9 @@ if [ -n "$WALL_CLOCK_HITS" ]; then
   fail "Instant::now() / SystemTime::now() / Zoned::now() / Timestamp::now() is forbidden outside packages/ui/ui/src/platform/"
 fi
 
-echo "==> Checking zero tester branches inside shipping editor and playground view modules"
-for view_dir in "$EDITOR_DIR" "$PLAYGROUND_DIR"; do
+echo "==> Checking zero tester branches inside shipping editor, playground, and desktop view modules"
+DESKTOP_DIR="$REPO_ROOT/packages/frontend/desktop"
+for view_dir in "$EDITOR_DIR" "$PLAYGROUND_DIR" "$DESKTOP_DIR"; do
   if grep -rn 'is_headless' "$view_dir/src" 2>/dev/null; then
     fail "is_headless branches are forbidden in $view_dir/src"
   fi

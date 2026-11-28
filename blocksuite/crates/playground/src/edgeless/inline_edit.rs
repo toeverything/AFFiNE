@@ -8,7 +8,7 @@ use ui::{Bounds, Context, Pixels, Window, point, px, size};
 use y_octo::{Any, SessionValue};
 
 use crate::{
-    PlaygroundView, TOPBAR_HEIGHT,
+    PlaygroundView,
     editor_session::{DocPoint, DocumentSelection},
 };
 
@@ -186,7 +186,7 @@ impl PlaygroundView {
     /// Flush and commit an active inline label edit to `PageDocSession`, returning `true` if one was active.
     pub(crate) fn edgeless_flush_label_edit(
         &mut self,
-        window: &Window,
+        window: Option<&Window>,
         cx: &mut Context<Self>,
     ) -> bool {
         let Some(EdgelessInlineEdit::Label(mut ed)) = self.edgeless.authoring.inline_edit.take()
@@ -236,10 +236,11 @@ impl PlaygroundView {
                     .find(|i| i.id == *id)
                     .map(|i| i.polyline.clone())
                     .unwrap_or_default();
-                if let Some((_, el)) = self
-                    .snapshot
-                    .as_deref()
-                    .and_then(|snap| find_surface_element(snap, id))
+                if let Some(w) = window
+                    && let Some((_, el)) = self
+                        .snapshot
+                        .as_deref()
+                        .and_then(|snap| find_surface_element(snap, id))
                     && let SurfaceElementKind::Connector(c) = &el.kind
                 {
                     measure_connector_label_xywh(
@@ -248,7 +249,7 @@ impl PlaygroundView {
                         ed.world_rect.center(),
                         trimmed,
                         self.theme.mode(),
-                        window,
+                        w,
                     )
                 } else {
                     let (cx_w, cy_w) = ed.world_rect.center();
@@ -275,12 +276,22 @@ impl PlaygroundView {
 
     /// Commit and exit any active Edgeless inline edit (label or spatial block).
     pub fn edgeless_commit_inline_edit(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.edgeless_commit_inline_edit_inner(Some(window), cx);
+    }
+
+    pub(crate) fn edgeless_commit_inline_edit_inner(
+        &mut self,
+        mut window: Option<&mut Window>,
+        cx: &mut Context<Self>,
+    ) {
         if matches!(
             self.edgeless.authoring.inline_edit,
             Some(EdgelessInlineEdit::Label(_))
         ) {
-            self.edgeless_flush_label_edit(window, cx);
-            window.notify_text_input_changed(&self.editor_focus);
+            self.edgeless_flush_label_edit(window.as_deref(), cx);
+            if let Some(w) = window {
+                w.notify_text_input_changed(&self.editor_focus);
+            }
             cx.notify();
             return;
         }
@@ -292,7 +303,13 @@ impl PlaygroundView {
         else {
             return;
         };
-        self.commit_active_preedit(window, cx);
+        if let Some(w) = window.as_deref_mut() {
+            self.commit_active_preedit(w, cx);
+        } else if self.editor.preedit.is_some() {
+            self.editor.preedit = None;
+            self.dirty_text = None;
+            self.doc_rev += 1;
+        }
         if created_new
             && !is_note
             && let Some(snap) = self.snapshot.as_deref()
@@ -324,7 +341,9 @@ impl PlaygroundView {
         self.overlays.close_linked_doc(now_ms);
         self.overlays.close_link_field();
         self.announce_selection(cx);
-        window.notify_text_input_changed(&self.editor_focus);
+        if let Some(w) = window {
+            w.notify_text_input_changed(&self.editor_focus);
+        }
         cx.notify();
     }
 
@@ -596,9 +615,9 @@ impl PlaygroundView {
         window: &Window,
     ) -> Option<Bounds<Pixels>> {
         let ed = self.edgeless.authoring.label_editor()?;
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let vp_origin = self.canvas_origin();
         let vp_w = self.window_size.0.max(1.0);
-        let vp_h = (self.window_size.1 - TOPBAR_HEIGHT).max(1.0);
+        let vp_h = (self.window_size.1 - self.topbar_height()).max(1.0);
         let (_, _, _, _, lx, ly, lw, lh) = blocksuite_editor::edgeless::label_editor_screen_box(
             ed,
             self.edgeless.camera,
@@ -609,16 +628,16 @@ impl PlaygroundView {
             window,
         );
         Some(Bounds::new(
-            point(px(lx), px(ly + TOPBAR_HEIGHT)),
+            point(px(lx) + vp_origin.x, px(ly) + vp_origin.y),
             size(px(lw.max(0.5)), px(lh.max(0.5))),
         ))
     }
 
     pub(crate) fn edgeless_label_screen_bounds(&self, window: &Window) -> Option<Bounds<Pixels>> {
         let ed = self.edgeless.authoring.label_editor()?;
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let vp_origin = self.canvas_origin();
         let vp_w = self.window_size.0.max(1.0);
-        let vp_h = (self.window_size.1 - TOPBAR_HEIGHT).max(1.0);
+        let vp_h = (self.window_size.1 - self.topbar_height()).max(1.0);
         let (x, y, w, h, _, _, _, _) = blocksuite_editor::edgeless::label_editor_screen_box(
             ed,
             self.edgeless.camera,
@@ -629,7 +648,7 @@ impl PlaygroundView {
             window,
         );
         Some(Bounds::new(
-            point(px(x), px(y + TOPBAR_HEIGHT)),
+            point(px(x) + vp_origin.x, px(y) + vp_origin.y),
             size(px(w.max(1.0)), px(h.max(1.0))),
         ))
     }
@@ -665,7 +684,7 @@ impl PlaygroundView {
         let tl = self
             .edgeless
             .camera
-            .world_to_screen(point(px(rx), px(ry)), point(px(0.0), px(TOPBAR_HEIGHT)));
+            .world_to_screen(point(px(rx), px(ry)), self.canvas_origin());
         let z = self.edgeless.camera.zoom;
         Some(Bounds::new(
             tl,
@@ -696,7 +715,7 @@ impl PlaygroundView {
                     .iter()
                     .find(|i| i.id == editing_id)?;
                 let pad = if is_note { NOTE_CARD_PADDING } else { 0.0 };
-                let topbar = point(px(0.0), px(TOPBAR_HEIGHT));
+                let topbar = self.canvas_origin();
                 let origin_screen = self.edgeless.camera.world_to_screen(
                     point(
                         px(info.rect.x + pad * info.scale),

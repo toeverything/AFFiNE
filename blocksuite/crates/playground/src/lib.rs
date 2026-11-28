@@ -14,6 +14,7 @@ pub mod edgeless;
 pub mod editor_session;
 #[cfg(test)]
 mod embed_preview_tests;
+mod embedded;
 mod layout_cache;
 pub mod overlays;
 pub mod room_client;
@@ -135,6 +136,9 @@ pub struct PlaygroundOptions {
     /// When `true` (iOS `UITextInteraction`), UIKit renders the authoritative cursor and selection
     /// highlight views, so GPU suppresses local caret and selection highlight painting.
     pub native_suppresses_gpu_caret_and_selection: bool,
+    /// When `true`, hides the standalone playground top bar so an enclosing L4 shell
+    /// (such as `affine-desktop`) can embed [`PlaygroundView`] seamlessly inside a pane.
+    pub hide_chrome: bool,
 }
 
 impl PlaygroundOptions {
@@ -285,6 +289,8 @@ pub struct PlaygroundView {
     pub(crate) doc_panel_tab: Option<DocPanelTab>,
     /// Vertical scroll offset for the TOC Outline heading list.
     pub(crate) doc_panel_scroll_y: f32,
+    pub(crate) hide_chrome: bool,
+    pub(crate) embedded_rect: Option<(f32, f32, f32, f32)>,
     pub(crate) _tasks: Vec<Task<()>>,
 }
 
@@ -384,6 +390,8 @@ impl PlaygroundView {
             table_cell: None,
             doc_panel_tab: None,
             doc_panel_scroll_y: 0.0,
+            hide_chrome: options.hide_chrome,
+            embedded_rect: None,
             last_opened_embed_doc: None,
             nav_history: Vec::new(),
             on_active_doc_changed: None,
@@ -537,11 +545,8 @@ impl PlaygroundView {
     pub fn set_edgeless_zoom(&mut self, zoom: f32, cx: &mut Context<Self>) {
         self.edgeless_camera_transition = None;
         let (vw, vh) = self.edgeless_viewport_size();
-        self.edgeless.set_zoom_centered(
-            zoom,
-            point(px(0.0), px(TOPBAR_HEIGHT)),
-            size(px(vw), px(vh)),
-        );
+        self.edgeless
+            .set_zoom_centered(zoom, self.canvas_origin(), size(px(vw), px(vh)));
         cx.notify();
     }
 
@@ -557,7 +562,7 @@ impl PlaygroundView {
 
     pub(crate) fn edgeless_viewport_size(&self) -> (f32, f32) {
         let vw = self.window_size.0.max(1.0);
-        let vh = (self.window_size.1 - TOPBAR_HEIGHT).max(1.0);
+        let vh = (self.window_size.1 - self.topbar_height()).max(1.0);
         (vw, vh)
     }
 
@@ -573,7 +578,7 @@ impl PlaygroundView {
         self.edgeless_camera_transition = None;
         self.edgeless_pan_fling = None;
         let delta = event.delta.pixel_delta(px(SCROLL_LINE));
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let vp_origin = self.canvas_origin();
         if event.modifiers.control || event.modifiers.platform {
             let factor = (f32::from(delta.y) * 0.002).exp();
             let target_zoom = self.edgeless.camera.zoom * factor;
@@ -603,7 +608,7 @@ impl PlaygroundView {
             return;
         }
         self.edgeless_camera_transition = None;
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let vp_origin = self.canvas_origin();
         let target_zoom = self.edgeless.camera.zoom * (1.0 + event.delta).max(0.05);
         self.edgeless
             .camera

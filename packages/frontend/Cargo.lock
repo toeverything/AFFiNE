@@ -64,6 +64,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "affine-desktop"
+version = "0.1.0"
+dependencies = [
+ "affine-client",
+ "affine-legacy-import",
+ "affine-store",
+ "anyhow",
+ "blocksuite-editor",
+ "blocksuite-playground-doc",
+ "blocksuite-preview",
+ "image",
+ "playground",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.21",
+ "tokio",
+ "ui",
+ "ui-kit",
+ "ui-tokens",
+ "wasm-bindgen",
+ "y-octo",
+]
+
+[[package]]
 name = "affine-ios-host"
 version = "0.1.0"
 dependencies = [

@@ -364,6 +364,16 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut ui::Context<Self>,
     ) {
+        self.transition_mode_core(target, Some(window), true, cx);
+    }
+
+    pub(crate) fn transition_mode_core(
+        &mut self,
+        target: PlaygroundMode,
+        mut window: Option<&mut Window>,
+        animate_pill: bool,
+        cx: &mut ui::Context<Self>,
+    ) {
         if self.mode == target {
             return;
         }
@@ -371,9 +381,13 @@ impl PlaygroundView {
         let current_x = self.indicator_x(now_ms);
         let prev_mode = self.mode;
         // Commit any pending inline edit (table cell or Edgeless label) cleanly before switching modes.
-        self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
+        self.finish_inline_targets(
+            InlineTargetEnd::CommitPreedit,
+            window.as_deref_mut(),
+            Some(cx),
+        );
         if self.edgeless.authoring.editing_spatial_block().is_some() {
-            self.edgeless_commit_inline_edit(window, cx);
+            self.edgeless_commit_inline_edit_inner(window.as_deref_mut(), cx);
         }
         if prev_mode == PlaygroundMode::Page && target == PlaygroundMode::Edgeless {
             self.saved_page_selection = self.editor.selection.take();
@@ -393,14 +407,19 @@ impl PlaygroundView {
         if target == PlaygroundMode::Page && self.editor.selection.is_none() {
             self.editor.selection = self.saved_page_selection.take();
         }
-        self.prune_dangling_selection(Some(window), cx);
-        self.pill_motion = Some(Motion::new(
-            current_x,
-            Self::target_pill_x(target),
-            MotionCurve::EaseInOutCubic,
-            now_ms,
-            PILL_TRANSITION_MS,
-        ));
+        self.prune_dangling_selection(window, cx);
+        if animate_pill {
+            self.pill_motion = Some(Motion::new(
+                current_x,
+                Self::target_pill_x(target),
+                MotionCurve::EaseInOutCubic,
+                now_ms,
+                PILL_TRANSITION_MS,
+            ));
+        } else {
+            self.pill_motion = None;
+            self.edgeless.camera_initialized = false;
+        }
         cx.notify();
     }
 
@@ -542,8 +561,10 @@ impl PlaygroundView {
             && let Some(layout) = self.flow_layout()
         {
             let geom = crate::block_flow::page_geometry(self.window_size.0);
-            let wx = f32::from(event.position.x) - geom.column_x;
-            let wy = f32::from(event.position.y) - crate::TOPBAR_HEIGHT + self.scroll_y;
+            let wx =
+                f32::from(event.position.x) - f32::from(self.canvas_origin().x) - geom.column_x;
+            let wy =
+                f32::from(event.position.y) - f32::from(self.canvas_origin().y) + self.scroll_y;
             if let Some(block) = layout.blocks.iter().find(|b| {
                 b.body.kind == crate::block_flow::FlowKind::Database
                     && b.rect().contains(wx, wy)

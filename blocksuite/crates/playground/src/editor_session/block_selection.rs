@@ -516,7 +516,7 @@ impl PlaygroundView {
 
     pub(crate) fn select_all_progressive(&mut self, w: &mut Window, cx: &mut Context<Self>) {
         let layout = if self.mode == PlaygroundMode::Page {
-            let width = page_geometry(f32::from(w.viewport_size().width)).column_width;
+            let width = page_geometry(f32::from(self.canvas_rect(w).1.width)).column_width;
             self.ensure_layout(width, w)
         } else {
             self.flow_layout()
@@ -554,7 +554,7 @@ impl PlaygroundView {
     }
 
     pub(crate) fn open_link_bar_shortcut(&mut self, w: &mut Window, cx: &mut Context<Self>) {
-        let width = page_geometry(f32::from(w.viewport_size().width)).column_width;
+        let width = page_geometry(f32::from(self.canvas_rect(w).1.width)).column_width;
         let Some(layout) = self.ensure_layout(width, w) else {
             return;
         };

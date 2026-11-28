@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use blocksuite_playground_doc::read::SurfaceElementKind;
 use ui::{Context, MouseDownEvent, MouseMoveEvent, Window, point, px};
 
-use crate::{PlaygroundView, TOPBAR_HEIGHT, editor_session::DocumentSelection};
+use crate::{PlaygroundView, editor_session::DocumentSelection};
 
 use super::{
     DragItemInitial, EdgelessGesture, EdgelessTool, HandleKind, NOTE_CARD_PADDING, SpatialItemKind,
@@ -23,7 +23,7 @@ impl PlaygroundView {
         self.editor_focus.focus(window, cx);
         let now_ms = self.now_ms(cx);
         self.overlays.close_context_menu(now_ms);
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let vp_origin = self.canvas_origin();
         let world_pt = self
             .edgeless
             .camera
@@ -159,7 +159,7 @@ impl PlaygroundView {
             EdgelessTool::Select => {
                 // 1. Check active selection handles first.
                 let vp_w = self.window_size.0.max(1.0);
-                let vp_h = (self.window_size.1 - TOPBAR_HEIGHT).max(1.0);
+                let vp_h = (self.window_size.1 - self.topbar_height()).max(1.0);
                 if let Some(handle) = self.edgeless.authoring.hit_test_handles(
                     event.position,
                     vp_origin,
@@ -370,7 +370,6 @@ impl PlaygroundView {
             cx.notify();
             return;
         }
-
         // Drag-selecting text inside an inline-edited Edgeless Note or EdgelessText block.
         if self.editor.dragging
             && let Some((editing_id, is_note)) = self.edgeless.authoring.editing_spatial_block()
@@ -385,7 +384,7 @@ impl PlaygroundView {
                 .cloned()
                 && let Some(layout) = self.edgeless.cached_block_layout(&editing_id, is_note)
             {
-                let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+                let vp_origin = self.canvas_origin();
                 let world_pt = self
                     .edgeless
                     .camera
@@ -432,7 +431,7 @@ impl PlaygroundView {
             return;
         }
 
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let vp_origin = self.canvas_origin();
         let world_pt = self
             .edgeless
             .camera
@@ -649,7 +648,7 @@ impl PlaygroundView {
         let Some(ed) = self.edgeless.authoring.label_editor() else {
             return false;
         };
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let vp_origin = self.canvas_origin();
         let wp = self
             .edgeless
             .camera
@@ -732,7 +731,7 @@ impl PlaygroundView {
             .painted_items
             .iter()
             .find(|i| i.id == editing_id)?;
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let vp_origin = self.canvas_origin();
         let world_pt = self
             .edgeless
             .camera

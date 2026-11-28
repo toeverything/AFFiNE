@@ -44,6 +44,39 @@ impl SqliteDocStorage {
         }
     }
 
+    /// Prepare a strictly read-only SQLite connection pool for inspecting existing `.affine` /
+    /// `<spaceId>.db` files with zero writeback.
+    ///
+    /// Uses standard `read_only(true)` so committed live WAL frames written by external processes
+    /// remain immediately visible. Callers on read-only filesystems where SQLite cannot create a
+    /// `-shm` sidecar may fall back to [`Self::new_read_only_immutable`].
+    pub fn new_read_only(path: impl Into<String>) -> Self {
+        let path = path.into();
+        let options = SqliteConnectOptions::new()
+            .filename(&path)
+            .read_only(true)
+            .busy_timeout(std::time::Duration::from_millis(5_000));
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_lazy_with(options);
+        Self { pool, path }
+    }
+
+    /// Prepare a read-only `immutable=1` SQLite connection pool for read-only directories where
+    /// SQLite cannot create `-shm` sidecars.
+    pub fn new_read_only_immutable(path: impl Into<String>) -> Self {
+        let path = path.into();
+        let options = SqliteConnectOptions::new()
+            .filename(&path)
+            .read_only(true)
+            .immutable(true)
+            .busy_timeout(std::time::Duration::from_millis(5_000));
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_lazy_with(options);
+        Self { pool, path }
+    }
+
     /// Return the underlying database path string.
     pub fn path(&self) -> &str {
         &self.path

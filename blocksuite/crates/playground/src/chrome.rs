@@ -382,7 +382,7 @@ impl PlaygroundView {
             self.editor.reveal = true;
         }
         let bottom_inset = self.ime_insets.last_bottom;
-        let avail_win_h = (self.window_size.1 - bottom_inset).max(TOPBAR_HEIGHT);
+        let avail_win_h = (self.window_size.1 - bottom_inset).max(self.topbar_height());
         let toolbar_reserved = self.overlays.keyboard_toolbar_reserved_height(avail_win_h);
         let bottom_occlusion = bottom_inset + toolbar_reserved;
         let effective_viewport_height = (viewport_height - bottom_occlusion).max(40.0);
@@ -543,7 +543,7 @@ impl PlaygroundView {
                 .into_any_element();
         };
 
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let vp_origin = self.canvas_origin();
         let vp_size = size(px(viewport_width.max(1.0)), px(viewport_height.max(1.0)));
         if viewport_width > 0.0 && viewport_height > 0.0 {
             self.edgeless.ensure_camera_initialized(&snapshot, vp_size);
@@ -685,12 +685,10 @@ impl ui::Render for PlaygroundView {
         self.ime_insets.last_bottom = eff_bottom;
 
         let palette = self.theme.palette();
-        let viewport = window.viewport_size();
-        let viewport_width = f32::from(viewport.width).floor();
-        let viewport_height = (f32::from(viewport.height) - TOPBAR_HEIGHT)
-            .max(0.0)
-            .floor();
-        self.window_size = (viewport_width, f32::from(viewport.height).floor());
+        let (raw_w, raw_h) = self.effective_viewport_size(window);
+        let viewport_width = raw_w.floor();
+        let viewport_height = (raw_h - self.topbar_height()).max(0.0).floor();
+        self.window_size = (viewport_width, raw_h.floor());
 
         let presences = self.remote_presences(&palette);
         let switcher_left = ((viewport_width - PILL_WIDTH) / 2.0).floor().max(0.0);
@@ -732,7 +730,7 @@ impl ui::Render for PlaygroundView {
         popovers.extend(self.render_database_record_sheet(&palette, window, cx));
         popovers.extend(self.render_doc_panel(&palette, viewport_width, viewport_height, cx));
 
-        div()
+        let mut root = div()
             .relative()
             .size_full()
             .font_family(FONT_SANS)
@@ -749,9 +747,9 @@ impl ui::Render for PlaygroundView {
                         this.on_edgeless_pan_end(e, w, cx);
                     }
                 }),
-            )
-            .snapshot("root.canvas", None)
-            .child(
+            );
+        if !self.hide_chrome {
+            root = root.snapshot("root.canvas", None).child(
                 div()
                     .relative()
                     .flex_none()
@@ -786,8 +784,8 @@ impl ui::Render for PlaygroundView {
                             .children(badges)
                             .child(theme_toggle),
                     ),
-            )
-            .child(content)
-            .children(popovers)
+            );
+        }
+        root.child(content).children(popovers)
     }
 }

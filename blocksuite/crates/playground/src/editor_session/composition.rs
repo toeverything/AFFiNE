@@ -227,7 +227,7 @@ impl PlaygroundView {
             self.dirty_text = None;
             self.doc_rev += 1;
             self.ensure_layout(
-                page_geometry(f32::from(w.viewport_size().width)).column_width,
+                page_geometry(f32::from(self.canvas_rect(w).1.width)).column_width,
                 w,
             );
             self.announce_selection(cx);
@@ -553,7 +553,7 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) -> DocResult {
         self.ensure_layout(
-            page_geometry(f32::from(w.viewport_size().width)).column_width,
+            page_geometry(f32::from(self.canvas_rect(w).1.width)).column_width,
             w,
         );
         if self.apply_markdown(&sel, text, w, cx)? {
@@ -781,10 +781,11 @@ impl PlaygroundView {
         Ok(())
     }
     pub(crate) fn screen_rect(&self, r: FlowRect, w: &Window) -> Bounds<Pixels> {
+        let (origin, sz) = self.canvas_rect(w);
         Bounds::new(
             point(
-                px(page_geometry(f32::from(w.viewport_size().width)).column_x + r.x),
-                px(TOPBAR_HEIGHT + r.y - self.scroll_y),
+                px(f32::from(origin.x) + page_geometry(f32::from(sz.width)).column_x + r.x),
+                px(f32::from(origin.y) + r.y - self.scroll_y),
             ),
             size(px(r.w), px(r.h)),
         )

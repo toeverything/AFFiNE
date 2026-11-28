@@ -2,7 +2,7 @@
 
 use ui::{Context, MouseDownEvent, Window};
 
-use crate::{PlaygroundView, TOPBAR_HEIGHT};
+use crate::PlaygroundView;
 
 use super::{ScrollbarDrag, ScrollbarMetrics};
 
@@ -18,7 +18,7 @@ impl PlaygroundView {
         let now_ms = self.now_ms(cx);
         self.overlays.close_context_menu(now_ms);
         let vp_w = self.window_size.0;
-        let vp_h = (self.window_size.1 - TOPBAR_HEIGHT).max(0.0);
+        let vp_h = (self.window_size.1 - self.topbar_height()).max(0.0);
         let Some(metrics) = ScrollbarMetrics::compute(
             vp_w,
             vp_h,
@@ -29,7 +29,7 @@ impl PlaygroundView {
         ) else {
             return;
         };
-        let local_y = f32::from(event.position.y) - TOPBAR_HEIGHT;
+        let local_y = f32::from(event.position.y) - f32::from(self.canvas_origin().y);
         if metrics.hits_thumb(local_y) {
             self.scrollbar_drag = Some(ScrollbarDrag {
                 grab_offset_y: local_y - metrics.thumb_top,
@@ -53,7 +53,7 @@ impl PlaygroundView {
             return false;
         };
         let vp_w = self.window_size.0;
-        let vp_h = (self.window_size.1 - TOPBAR_HEIGHT).max(0.0);
+        let vp_h = (self.window_size.1 - self.topbar_height()).max(0.0);
         let Some(metrics) = ScrollbarMetrics::compute(
             vp_w,
             vp_h,
@@ -65,7 +65,7 @@ impl PlaygroundView {
             self.scrollbar_drag = None;
             return false;
         };
-        let local_y = y - TOPBAR_HEIGHT;
+        let local_y = y - f32::from(self.canvas_origin().y);
         let next = metrics.scroll_y_for_thumb_drag(local_y, drag.grab_offset_y, self.max_scroll);
         if (next - self.scroll_y).abs() > 0.5 {
             self.scroll_y = next;

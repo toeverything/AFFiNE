@@ -753,7 +753,7 @@ impl PlaygroundView {
         false
     }
 
-    fn switch_active_page(
+    pub(crate) fn switch_active_page(
         &mut self,
         page_id: &str,
         mut window: Option<&mut Window>,
