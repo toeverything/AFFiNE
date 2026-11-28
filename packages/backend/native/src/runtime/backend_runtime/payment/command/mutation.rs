@@ -36,105 +36,108 @@ impl PaymentRuntime {
     let stripe = self.stripe()?;
     let namespace = stripe.namespace().clone();
     let namespace_key = canonical_namespace(&namespace)?;
-    let locked = self
-      .lock_stripe_subscription(&namespace_key, target_type, target_id, plan)
-      .await?;
-    let subscription_id = locked.subscription_id.clone();
-    let canceled_at = locked.canceled_at;
-    let stored_recurring = locked
-      .recurring
-      .as_deref()
-      .and_then(SubscriptionRecurring::parse)
-      .ok_or_else(|| RuntimeError::invalid_state("payment subscription recurring is invalid"))?;
-    validate_subscription_mutation(
-      plan,
-      billing_target(target_type)?,
-      stored_recurring,
-      canceled_at.is_some(),
-      mutation,
-    )
-    .map_err(subscription_mutation_error)?;
-    let direct_form = vec![text_field(
-      "cancel_at_period_end",
-      if mutation == SubscriptionMutation::Cancel {
-        "true"
-      } else {
-        "false"
-      },
-    )];
-    let schedule_id = locked
-      .metadata
-      .get("stripeScheduleId")
-      .and_then(Value::as_str)
-      .map(str::to_string);
-    let (path, form) = if let Some(schedule_id) = schedule_id.as_deref() {
-      let schedule = stripe
-        .subscription_schedule(schedule_id)
-        .await
-        .map_err(provider_runtime_error)?;
-      super::schedule::validate_subscription(&schedule, &subscription_id)?;
-      let anchor = locked
-        .period_start
-        .map(|value| value.timestamp())
-        .ok_or_else(|| RuntimeError::invalid_state("payment subscription period is missing"))?;
-      let form = if mutation == SubscriptionMutation::Cancel {
-        schedule::cancel_fields(&schedule, anchor)?
-      } else {
-        schedule::resume_fields(&schedule, anchor)?
-      };
-      (
-        format!("v1/subscription_schedules/{}", encode_segment(schedule_id)),
-        form,
+    self
+      .with_locked_stripe_subscription(
+        &namespace_key,
+        target_type,
+        target_id,
+        plan,
+        async |connection, locked| {
+          let subscription_id = locked.subscription_id.clone();
+          let canceled_at = locked.canceled_at;
+          let stored_recurring = locked
+            .recurring
+            .as_deref()
+            .and_then(SubscriptionRecurring::parse)
+            .ok_or_else(|| RuntimeError::invalid_state("payment subscription recurring is invalid"))?;
+          validate_subscription_mutation(
+            plan,
+            billing_target(target_type)?,
+            stored_recurring,
+            canceled_at.is_some(),
+            mutation,
+          )
+          .map_err(subscription_mutation_error)?;
+          let direct_form = vec![text_field(
+            "cancel_at_period_end",
+            if mutation == SubscriptionMutation::Cancel {
+              "true"
+            } else {
+              "false"
+            },
+          )];
+          let schedule_id = locked
+            .metadata
+            .get("stripeScheduleId")
+            .and_then(Value::as_str)
+            .map(str::to_string);
+          let (path, form) = if let Some(schedule_id) = schedule_id.as_deref() {
+            let schedule = stripe
+              .subscription_schedule(schedule_id)
+              .await
+              .map_err(provider_runtime_error)?;
+            super::schedule::validate_subscription(&schedule, &subscription_id)?;
+            let anchor = locked
+              .period_start
+              .map(|value| value.timestamp())
+              .ok_or_else(|| RuntimeError::invalid_state("payment subscription period is missing"))?;
+            let form = if mutation == SubscriptionMutation::Cancel {
+              schedule::cancel_fields(&schedule, anchor)?
+            } else {
+              schedule::resume_fields(&schedule, anchor)?
+            };
+            (
+              format!("v1/subscription_schedules/{}", encode_segment(schedule_id)),
+              form,
+            )
+          } else {
+            (
+              format!("v1/subscriptions/{}", encode_segment(&subscription_id)),
+              direct_form,
+            )
+          };
+          let intent = stripe_operation(
+            namespace.clone(),
+            mutation.as_str(),
+            intent_id,
+            locked.resources.clone(),
+            Some((target_type, target_id)),
+            &path,
+            form,
+          );
+          match self
+            .execute_locked_stripe_operation(connection, intent, workspace_actor)
+            .await?
+          {
+            OperationExecution::Completed(result) => Ok(result),
+            OperationExecution::Sent { operation_id, response } => {
+              let subscription: StripeSubscription = if schedule_id.is_some() {
+                stripe
+                  .subscription(&subscription_id)
+                  .await
+                  .map_err(provider_runtime_error)?
+              } else {
+                serde_json::from_value(response)
+                  .map_err(|error| RuntimeError::json("invalid Stripe subscription response", error))?
+              };
+              let result = subscription_result(&subscription, plan);
+              let snapshot = super::super::snapshot::stripe_subscription_snapshot(
+                &self.pool,
+                stripe,
+                subscription,
+                Vec::new(),
+                Some(OperationCompletion {
+                  operation_id,
+                  result: result.clone(),
+                }),
+              )
+              .await?;
+              changes.extend(self.apply_in_connection(connection, snapshot).await?);
+              Ok(result)
+            }
+          }
+        },
       )
-    } else {
-      (
-        format!("v1/subscriptions/{}", encode_segment(&subscription_id)),
-        direct_form,
-      )
-    };
-    let intent = stripe_operation(
-      namespace.clone(),
-      mutation.as_str(),
-      intent_id,
-      locked.resources.clone(),
-      Some((target_type, target_id)),
-      &path,
-      form,
-    );
-    match self
-      .execute_locked_stripe_operation(locked.connection, intent, workspace_actor)
-      .await?
-    {
-      OperationExecution::Completed(result) => Ok(result),
-      OperationExecution::Sent {
-        connection,
-        operation_id,
-        response,
-      } => {
-        let subscription: StripeSubscription = if schedule_id.is_some() {
-          stripe
-            .subscription(&subscription_id)
-            .await
-            .map_err(provider_runtime_error)?
-        } else {
-          serde_json::from_value(response)
-            .map_err(|error| RuntimeError::json("invalid Stripe subscription response", error))?
-        };
-        let result = subscription_result(&subscription, plan);
-        let snapshot = super::super::snapshot::stripe_subscription_snapshot(
-          &self.pool,
-          stripe,
-          subscription,
-          Vec::new(),
-          Some(OperationCompletion {
-            operation_id,
-            result: result.clone(),
-          }),
-        )
-        .await?;
-        changes.extend(self.apply_with_connection(connection, snapshot).await?);
-        Ok(result)
-      }
-    }
+      .await
   }
 }

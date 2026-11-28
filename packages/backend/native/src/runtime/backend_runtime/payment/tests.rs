@@ -387,13 +387,13 @@ async fn payment_session_locks_are_sorted_nonblocking_and_connection_bound() {
 
   for step in 0..32 {
     let extra = PaymentScope::source(namespace(), &format!("sub-lock-reacquire-{step}")).unwrap();
-    replacement = replacement
-      .reacquire_with(&pool, vec![extra.clone()])
-      .await
-      .unwrap()
-      .expect("reacquire_with must not collide with its own released session locks");
+    assert!(
+      replacement.reacquire_with(&pool, vec![extra.clone()]).await.unwrap(),
+      "reacquire_with must not collide with its own released session locks"
+    );
     assert!(replacement.scopes().contains(&extra));
   }
+  replacement.release().await.unwrap();
 }
 
 #[tokio::test]
@@ -1578,8 +1578,8 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     assert!((retry.1 - delay).abs() < 1.0);
     assert!(super::worker::claim_receipt(&webhook_runtime).await.unwrap().is_none());
     sqlx::query(
-      "UPDATE payment_events SET next_attempt_at=clock_timestamp() WHERE provider_namespace=$1 AND \
-       external_event_id=$2",
+      "UPDATE payment_events SET next_attempt_at=clock_timestamp()-INTERVAL '1 second' WHERE provider_namespace=$1 \
+       AND external_event_id=$2",
     )
     .bind(&namespace)
     .bind(&healthy_event)
@@ -4620,7 +4620,7 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
       .to_string()
       .contains("purchase_in_progress")
   );
-  sqlx::query("UPDATE payment_operations SET next_attempt_at=clock_timestamp() WHERE id=$1")
+  sqlx::query("UPDATE payment_operations SET next_attempt_at=clock_timestamp()-INTERVAL '1 second' WHERE id=$1")
     .bind(attempt_id)
     .execute(&pool)
     .await
@@ -4833,7 +4833,7 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
 
   sqlx::query(
     "UPDATE payment_operations SET first_sent_at=clock_timestamp()-INTERVAL '1 minute',
-       next_attempt_at=clock_timestamp() WHERE id=$1",
+       next_attempt_at=clock_timestamp()-INTERVAL '1 second' WHERE id=$1",
   )
   .bind(attempt_id)
   .execute(&pool)
@@ -4868,7 +4868,7 @@ async fn purchase_attempts_survive_checkout_and_storekit_handoff() {
       .any(|target| target.target_id == user_id)
   );
   assert_eq!(load_attempt(waiting_id).await.unwrap().0, "waiting");
-  sqlx::query("UPDATE payment_operations SET next_attempt_at=clock_timestamp() WHERE id=$1")
+  sqlx::query("UPDATE payment_operations SET next_attempt_at=clock_timestamp()-INTERVAL '1 second' WHERE id=$1")
     .bind(waiting_id)
     .execute(&pool)
     .await

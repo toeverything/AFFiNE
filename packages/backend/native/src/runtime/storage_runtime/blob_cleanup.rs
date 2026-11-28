@@ -1230,4 +1230,69 @@ mod tests {
     }
     Ok(())
   }
+
+  #[tokio::test]
+  #[ignore = "requires DATABASE_URL and a migrated PostgreSQL database"]
+  async fn blob_cleanup_projection_handles_large_incomplete_workspace_root_doc() -> AnyResult<()> {
+    let _guard = EMBEDDING_TEST_LOCK.lock().await;
+    let fixture = blob_cleanup_fixture(true).await?;
+    let _object_root = &fixture.object_root;
+
+    let root = y_octo::Doc::with_client(1);
+    let mut meta = root.get_or_create_map("meta")?;
+    meta.insert("avatar".to_string(), y_octo::Any::String(fixture.blob_key.clone()))?;
+    let mut pages = root.create_array()?;
+    let title_padding = "t".repeat(900);
+    for index in 0..1_200 {
+      let mut page = root.create_map()?;
+      page.insert(
+        "id".to_string(),
+        y_octo::Any::String(format!("synthetic-page-{index:04}")),
+      )?;
+      page.insert(
+        "title".to_string(),
+        y_octo::Any::String(format!("Synthetic Page {index:04} {title_padding}")),
+      )?;
+      pages.push(page)?;
+    }
+    meta.insert("pages".to_string(), pages)?;
+    let complete_blob = root.encode_update_v1()?;
+
+    let peer = y_octo::Doc::with_client(42);
+    let mut peer_meta = peer.get_or_create_map("meta")?;
+    peer_meta.insert("name".to_string(), y_octo::Any::String("missing-prefix".to_string()))?;
+    let state = peer.get_state_vector();
+    peer_meta.insert("avatar".to_string(), y_octo::Any::String("pending-avatar".to_string()))?;
+    let delta = peer.encode_state_as_update_v1(&state)?;
+    let large_incomplete_root = y_octo::merge_updates_v1([complete_blob.as_slice(), delta.as_slice()])?.encode_v1()?;
+    assert!(large_incomplete_root.len() > 1024 * 1024);
+
+    sqlx::query(
+      "INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$1,$2,CURRENT_TIMESTAMP)
+       ON CONFLICT (workspace_id,guid) DO UPDATE SET blob=EXCLUDED.blob,updated_at=EXCLUDED.updated_at",
+    )
+    .bind(&fixture.workspace_id)
+    .bind(&large_incomplete_root)
+    .execute(&fixture.pool)
+    .await?;
+
+    let rebuilt = fixture
+      .runtime
+      .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(rebuilt.failed_docs, 0);
+    assert!(rebuilt.parsed_docs >= 1);
+
+    let avatar_ref: Option<String> = sqlx::query_scalar(
+      "SELECT blob_key FROM doc_blob_refs WHERE workspace_id=$1 AND doc_id=$1 AND flavour='workspace:avatar'",
+    )
+    .bind(&fixture.workspace_id)
+    .fetch_optional(&fixture.pool)
+    .await?;
+    assert_eq!(avatar_ref.as_deref(), Some(fixture.blob_key.as_str()));
+
+    cleanup_blob_fixture(&fixture).await?;
+    Ok(())
+  }
 }

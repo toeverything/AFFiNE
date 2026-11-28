@@ -340,8 +340,23 @@ async fn rebuild_doc_blob_refs_inner(
     return Ok(stats);
   }
   let mut refs = Vec::new();
+  let is_workspace_root = doc_id == workspace_id;
   for blob in current.into_iter().map(|doc| doc.blob).chain(histories) {
-    match super::extract_blob_refs(blob) {
+    let extracted = if is_workspace_root {
+      crate::runtime::extract_workspace_avatar_keys(blob).map(|keys| {
+        keys
+          .into_iter()
+          .map(|key| ExtractedRef {
+            blob_key: key.into_string(),
+            block_id: "meta".to_string(),
+            flavour: "workspace:avatar".to_string(),
+          })
+          .collect()
+      })
+    } else {
+      super::extract_blob_refs(blob)
+    };
+    match extracted {
       Ok(extracted) => refs.extend(extracted),
       Err(error) => {
         let code = super::blob_ref_projection_error_code(error);

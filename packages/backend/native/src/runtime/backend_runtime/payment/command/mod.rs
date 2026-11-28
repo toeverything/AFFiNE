@@ -53,11 +53,7 @@ use crate::runtime::{RuntimeError, RuntimeResult};
 
 enum OperationExecution {
   Completed(Value),
-  Sent {
-    connection: PaymentConnection,
-    operation_id: String,
-    response: Value,
-  },
+  Sent { operation_id: String, response: Value },
 }
 
 #[derive(serde::Deserialize)]

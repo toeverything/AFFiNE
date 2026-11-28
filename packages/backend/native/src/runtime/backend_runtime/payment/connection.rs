@@ -89,7 +89,7 @@ pub(super) fn required_scope_expansion(
 }
 
 pub(super) struct PaymentConnection {
-  connection: PoolConnection<Postgres>,
+  connection: Option<PoolConnection<Postgres>>,
   scopes: Vec<PaymentScope>,
 }
 
@@ -126,36 +126,61 @@ impl PaymentConnection {
       }
       acquired_any = true;
     }
-    Ok(Some(Self { connection, scopes }))
+    Ok(Some(Self {
+      connection: Some(connection),
+      scopes,
+    }))
   }
 
   pub(super) fn scopes(&self) -> &[PaymentScope] {
     &self.scopes
   }
 
-  pub(super) async fn release(mut self) -> RuntimeResult<()> {
+  pub(super) async fn with_release<T>(
+    mut self,
+    work: impl AsyncFnOnce(&mut PaymentConnection) -> RuntimeResult<T>,
+  ) -> RuntimeResult<T> {
+    let result = work(&mut self).await;
+    let _ = self.release().await;
+    result
+  }
+
+  pub(super) async fn release_locks(&mut self) -> RuntimeResult<()> {
+    let Some(mut connection) = self.connection.take() else {
+      return Ok(());
+    };
     let unlock_res = sqlx::query("SELECT pg_advisory_unlock_all()")
-      .execute(&mut *self.connection)
+      .execute(&mut *connection)
       .await;
-    let _ = self.connection.close().await;
+    let _ = connection.close().await;
     unlock_res
       .map(|_| ())
       .map_err(|error| RuntimeError::database("release payment session locks", error))
   }
 
-  pub(super) async fn reacquire_with(self, pool: &PgPool, required: Vec<PaymentScope>) -> RuntimeResult<Option<Self>> {
+  pub(super) async fn release(mut self) -> RuntimeResult<()> {
+    self.release_locks().await
+  }
+
+  pub(super) async fn reacquire_with(&mut self, pool: &PgPool, required: Vec<PaymentScope>) -> RuntimeResult<bool> {
     let scopes = self.scopes.iter().cloned().chain(required).collect::<Vec<_>>();
-    self.release().await?;
-    Self::try_acquire(pool, scopes).await
+    self.release_locks().await?;
+    if let Some(reacquired) = Self::try_acquire(pool, scopes).await? {
+      self.connection = reacquired.connection;
+      self.scopes = reacquired.scopes;
+      Ok(true)
+    } else {
+      Ok(false)
+    }
   }
 
   pub(super) fn connection(&mut self) -> &mut sqlx::PgConnection {
-    &mut self.connection
+    self.connection.as_deref_mut().expect("payment connection is active")
   }
 
   pub(super) async fn begin(&mut self) -> RuntimeResult<Transaction<'_, Postgres>> {
     self
-      .connection
+      .connection()
       .begin()
       .await
       .map_err(|error| RuntimeError::database("begin payment transaction", error))

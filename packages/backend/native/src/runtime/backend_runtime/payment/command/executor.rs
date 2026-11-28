@@ -1,16 +1,25 @@
 use super::*;
 
 impl PaymentRuntime {
-  pub(super) async fn execute_stripe_operation(&self, intent: OperationIntent) -> RuntimeResult<OperationExecution> {
+  pub(super) async fn with_stripe_operation<T>(
+    &self,
+    intent: OperationIntent,
+    work: impl AsyncFnOnce(&mut PaymentConnection, OperationExecution) -> RuntimeResult<T>,
+  ) -> RuntimeResult<T> {
     let connection = PaymentConnection::try_acquire(&self.pool, intent.resources.clone())
       .await?
       .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-    self.execute_locked_stripe_operation(connection, intent, None).await
+    connection
+      .with_release(async |connection| {
+        let execution = self.execute_locked_stripe_operation(connection, intent, None).await?;
+        work(connection, execution).await
+      })
+      .await
   }
 
   pub(super) async fn execute_locked_stripe_operation(
     &self,
-    mut connection: PaymentConnection,
+    connection: &mut PaymentConnection,
     intent: OperationIntent,
     workspace_actor: Option<&str>,
   ) -> RuntimeResult<OperationExecution> {
@@ -19,16 +28,16 @@ impl PaymentRuntime {
       use super::super::super::permission::{PermissionAuthorizer, PermissionTelemetry};
       let authorizer =
         PermissionAuthorizer::with_telemetry(self.pool.clone(), self.deployment, PermissionTelemetry::default());
-      freeze_stripe_operation(&mut connection, &intent, Some((&authorizer, actor))).await?
+      freeze_stripe_operation(connection, &intent, Some((&authorizer, actor))).await?
     } else {
-      freeze_operation(&mut connection, &intent).await?
+      freeze_operation(connection, &intent).await?
     };
     match frozen.status.as_str() {
       "completed" => {
-        return frozen
+        let result = frozen
           .result
-          .map(OperationExecution::Completed)
-          .ok_or_else(|| RuntimeError::invalid_state("completed payment operation has no result"));
+          .ok_or_else(|| RuntimeError::invalid_state("completed payment operation has no result"))?;
+        return Ok(OperationExecution::Completed(result));
       }
       "pending" => {}
       "blocked" => return Err(RuntimeError::invalid_state("payment_operation_blocked")),
@@ -40,7 +49,7 @@ impl PaymentRuntime {
         continue;
       }
       let step = &steps[index];
-      if mark_operation_step_sent(&mut connection, &frozen.id, &step.key, Duration::minutes(10)).await?
+      if mark_operation_step_sent(connection, &frozen.id, &step.key, Duration::minutes(10)).await?
         == PaymentSendDecision::Blocked
       {
         return Err(RuntimeError::invalid_state("payment_operation_blocked"));
@@ -79,18 +88,11 @@ impl PaymentRuntime {
       let response: Value = match response {
         Ok(response) => response,
         Err(error) => {
-          record_operation_error(
-            &mut connection,
-            &frozen.id,
-            error.code,
-            error.retryable,
-            error.uncertain,
-          )
-          .await?;
+          record_operation_error(connection, &frozen.id, error.code, error.retryable, error.uncertain).await?;
           return Err(provider_runtime_error(error));
         }
       };
-      record_operation_step_result(&mut connection, &frozen.id, &step.key, response.clone()).await?;
+      record_operation_step_result(connection, &frozen.id, &step.key, response.clone()).await?;
       steps[index].result = Some(response);
     }
     let response = steps
@@ -98,7 +100,6 @@ impl PaymentRuntime {
       .and_then(|step| step.result.clone())
       .ok_or_else(|| RuntimeError::invalid_state("payment operation produced no result"))?;
     Ok(OperationExecution::Sent {
-      connection,
       operation_id: frozen.id,
       response,
     })

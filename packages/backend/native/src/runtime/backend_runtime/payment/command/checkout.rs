@@ -96,192 +96,196 @@ impl PaymentRuntime {
     if let Some(customer_id) = customer_id.as_deref().filter(|_| family.is_none()) {
       resources.push(PaymentScope::customer(&namespace_key, customer_id)?);
     }
-    let mut connection = PaymentConnection::try_acquire(&self.pool, resources.clone())
+    let connection = PaymentConnection::try_acquire(&self.pool, resources.clone())
       .await?
       .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-    let now = purchase_time(&mut connection).await?;
-    if let Some(family) = family {
-      let attempt = open_purchase(&mut connection, &target_scope, now).await?;
-      let facts = load_user_purchase_facts(&mut connection, &target_id, family).await?;
-      let admission = facts.admission(family, Provider::Stripe, recurring, now, attempt.is_some());
-      match admission {
-        PurchaseAdmission::Allowed => {}
-        PurchaseAdmission::Existing(Provider::RevenueCat) => {
-          return Err(RuntimeError::invalid_state("managed_by_app_store"));
-        }
-        PurchaseAdmission::Existing(Provider::Stripe) => {
-          return Err(RuntimeError::invalid_state("subscription_already_exists"));
-        }
-        PurchaseAdmission::NeedsVerification => {
-          return Err(RuntimeError::invalid_state("purchase_needs_verification"));
-        }
-        PurchaseAdmission::InProgress => {
-          let attempt = attempt.expect("purchase admission found an open attempt");
-          if attempt.operation_type != "purchase_checkout"
-            || attempt.namespace != namespace_key
-            || checkout_product(&attempt.steps) != Some(&lookup_key)
-          {
-            return Err(RuntimeError::invalid_state("purchase_in_progress"));
-          }
-          if attempt.status == "waiting" {
-            let result = attempt
-              .result
-              .ok_or_else(|| RuntimeError::invalid_state("missing checkout result"))?;
-            let session_id = result["sessionId"]
-              .as_str()
-              .ok_or_else(|| RuntimeError::invalid_state("missing checkout session"))?;
-            let session = self
-              .stripe()?
-              .checkout_session(session_id)
-              .await
-              .map_err(provider_runtime_error)?;
-            if session.status.as_deref() == Some("open") {
-              return Ok(result);
+    connection
+      .with_release(async |connection| {
+        let now = purchase_time(connection).await?;
+        if let Some(family) = family {
+          let attempt = open_purchase(connection, &target_scope, now).await?;
+          let facts = load_user_purchase_facts(connection, &target_id, family).await?;
+          let admission = facts.admission(family, Provider::Stripe, recurring, now, attempt.is_some());
+          match admission {
+            PurchaseAdmission::Allowed => {}
+            PurchaseAdmission::Existing(Provider::RevenueCat) => {
+              return Err(RuntimeError::invalid_state("managed_by_app_store"));
             }
-            if session.status.as_deref() != Some("expired") {
-              return Err(RuntimeError::invalid_state("purchase_in_progress"));
+            PurchaseAdmission::Existing(Provider::Stripe) => {
+              return Err(RuntimeError::invalid_state("subscription_already_exists"));
             }
-            finish_purchase(&mut connection, &attempt.id, "expired").await?;
-            match facts.admission(family, Provider::Stripe, recurring, now, false) {
-              PurchaseAdmission::Allowed => {}
-              PurchaseAdmission::Existing(Provider::Stripe) => {
-                return Err(RuntimeError::invalid_state("subscription_already_exists"));
+            PurchaseAdmission::NeedsVerification => {
+              return Err(RuntimeError::invalid_state("purchase_needs_verification"));
+            }
+            PurchaseAdmission::InProgress => {
+              let attempt = attempt.expect("purchase admission found an open attempt");
+              if attempt.operation_type != "purchase_checkout"
+                || attempt.namespace != namespace_key
+                || checkout_product(&attempt.steps) != Some(&lookup_key)
+              {
+                return Err(RuntimeError::invalid_state("purchase_in_progress"));
               }
-              PurchaseAdmission::Existing(Provider::RevenueCat) => {
-                return Err(RuntimeError::invalid_state("managed_by_app_store"));
+              if attempt.status == "waiting" {
+                let result = attempt
+                  .result
+                  .ok_or_else(|| RuntimeError::invalid_state("missing checkout result"))?;
+                let session_id = result["sessionId"]
+                  .as_str()
+                  .ok_or_else(|| RuntimeError::invalid_state("missing checkout session"))?;
+                let session = self
+                  .stripe()?
+                  .checkout_session(session_id)
+                  .await
+                  .map_err(provider_runtime_error)?;
+                if session.status.as_deref() == Some("open") {
+                  return Ok(result);
+                }
+                if session.status.as_deref() != Some("expired") {
+                  return Err(RuntimeError::invalid_state("purchase_in_progress"));
+                }
+                finish_purchase(connection, &attempt.id, "expired").await?;
+                match facts.admission(family, Provider::Stripe, recurring, now, false) {
+                  PurchaseAdmission::Allowed => {}
+                  PurchaseAdmission::Existing(Provider::Stripe) => {
+                    return Err(RuntimeError::invalid_state("subscription_already_exists"));
+                  }
+                  PurchaseAdmission::Existing(Provider::RevenueCat) => {
+                    return Err(RuntimeError::invalid_state("managed_by_app_store"));
+                  }
+                  _ => return Err(RuntimeError::invalid_state("purchase_needs_verification")),
+                }
+              } else {
+                return self
+                  .send_checkout(
+                    changes,
+                    connection,
+                    OperationIntent {
+                      namespace,
+                      operation_type: attempt.operation_type,
+                      intent_id: attempt.intent_id,
+                      resources,
+                      target_type: Some(target_type.to_string()),
+                      target_id: Some(target_id),
+                      steps: attempt.steps,
+                    },
+                    None,
+                  )
+                  .await;
               }
-              _ => return Err(RuntimeError::invalid_state("purchase_needs_verification")),
             }
-          } else {
-            return self
-              .send_checkout(
-                changes,
-                connection,
-                OperationIntent {
-                  namespace,
-                  operation_type: attempt.operation_type,
-                  intent_id: attempt.intent_id,
-                  resources,
-                  target_type: Some(target_type.to_string()),
-                  target_id: Some(target_id),
-                  steps: attempt.steps,
-                },
-                None,
-              )
-              .await;
           }
-        }
-      }
-    } else {
-      let rows = sqlx::query(
-        r#"SELECT plan,status,recurring,period_end,NULL::timestamptz AS grace_until,
-                  NULL::timestamptz AS expires_at,true AS provider
-             FROM provider_subscriptions WHERE target_type=$1 AND target_id=$2
-           UNION ALL
-           SELECT plan,status,metadata->>'recurring',NULL,grace_until,expires_at,false
-             FROM entitlements WHERE target_type=$1 AND target_id=$2 AND source='cloud_subscription'"#,
-      )
-      .bind(target_type)
-      .bind(&target_id)
-      .fetch_all(connection.connection())
-      .await
-      .map_err(|error| RuntimeError::database("load existing checkout subscriptions", error))?;
-      let facts = rows
-        .into_iter()
-        .map(|row| checkout_existing_fact(&row))
-        .collect::<RuntimeResult<Vec<_>>>()?;
-      if checkout_has_conflict(plan, recurring, now, &facts) {
-        return Err(RuntimeError::invalid_state("subscription_already_exists"));
-      }
-    }
-    let price = self.find_price(&lookup_key, recurring).await?;
-    let coupon_id = if let Some(coupon) = coupon.filter(|coupon| !coupon.is_empty()) {
-      self.resolve_coupon(coupon, customer_id.as_deref()).await?
-    } else {
-      None
-    };
-    let trial_used = if plan == Plan::Ai {
-      sqlx::query_scalar::<_, bool>(
-        "SELECT EXISTS(SELECT 1 FROM subscription_trial_usages WHERE target_type='user' AND target_id=$1 AND \
-         plan='ai')",
-      )
-      .bind(&target_id)
-      .fetch_one(connection.connection())
-      .await
-      .map_err(|error| RuntimeError::database("check payment trial history", error))?
-    } else {
-      false
-    };
-    let trial = trial_eligible(plan, trial_used);
-    let mut fields = vec![
-      text_field("line_items[0][price]", price.id),
-      text_field("line_items[0][quantity]", quantity.unwrap_or(1).to_string()),
-      text_field(
-        "success_url",
-        if target_type == "instance" {
-          append_checkout_session_placeholder(success_url)?
         } else {
-          success_url.to_string()
-        },
-      ),
-      text_field(
-        "mode",
+          let rows = sqlx::query(
+            r#"SELECT plan,status,recurring,period_end,NULL::timestamptz AS grace_until,
+                      NULL::timestamptz AS expires_at,true AS provider
+                 FROM provider_subscriptions WHERE target_type=$1 AND target_id=$2
+               UNION ALL
+               SELECT plan,status,metadata->>'recurring',NULL,grace_until,expires_at,false
+                 FROM entitlements WHERE target_type=$1 AND target_id=$2 AND source='cloud_subscription'"#,
+          )
+          .bind(target_type)
+          .bind(&target_id)
+          .fetch_all(connection.connection())
+          .await
+          .map_err(|error| RuntimeError::database("load existing checkout subscriptions", error))?;
+          let facts = rows
+            .into_iter()
+            .map(|row| checkout_existing_fact(&row))
+            .collect::<RuntimeResult<Vec<_>>>()?;
+          if checkout_has_conflict(plan, recurring, now, &facts) {
+            return Err(RuntimeError::invalid_state("subscription_already_exists"));
+          }
+        }
+        let price = self.find_price(&lookup_key, recurring).await?;
+        let coupon_id = if let Some(coupon) = coupon.filter(|coupon| !coupon.is_empty()) {
+          self.resolve_coupon(coupon, customer_id.as_deref()).await?
+        } else {
+          None
+        };
+        let trial_used = if plan == Plan::Ai {
+          sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM subscription_trial_usages WHERE target_type='user' AND target_id=$1 AND \
+             plan='ai')",
+          )
+          .bind(&target_id)
+          .fetch_one(connection.connection())
+          .await
+          .map_err(|error| RuntimeError::database("check payment trial history", error))?
+        } else {
+          false
+        };
+        let trial = trial_eligible(plan, trial_used);
+        let mut fields = vec![
+          text_field("line_items[0][price]", price.id),
+          text_field("line_items[0][quantity]", quantity.unwrap_or(1).to_string()),
+          text_field(
+            "success_url",
+            if target_type == "instance" {
+              append_checkout_session_placeholder(success_url)?
+            } else {
+              success_url.to_string()
+            },
+          ),
+          text_field(
+            "mode",
+            if recurring == SubscriptionRecurring::Lifetime {
+              "payment"
+            } else {
+              "subscription"
+            },
+          ),
+        ];
+        if family.is_some() {
+          fields.push(text_field("metadata[affine_checkout_product]", lookup_key));
+        }
+        if let Some(customer_id) = customer_id.as_deref() {
+          fields.push(text_field("customer", customer_id));
+        }
+        if target_type == "workspace" {
+          fields.push(text_field("subscription_data[metadata][workspaceId]", &target_id));
+        } else if target_type == "instance" {
+          fields.push(text_field("subscription_data[metadata][licenseKey]", &target_id));
+          fields.push(text_field("line_items[0][adjustable_quantity][enabled]", "true"));
+          fields.push(text_field("line_items[0][adjustable_quantity][minimum]", "1"));
+          fields.push(text_field("tax_id_collection[enabled]", "true"));
+        } else if trial {
+          fields.push(text_field(
+            "subscription_data[trial_period_days]",
+            AI_TRIAL_DAYS.to_string(),
+          ));
+        }
         if recurring == SubscriptionRecurring::Lifetime {
-          "payment"
+          fields.push(text_field("invoice_creation[enabled]", "true"));
+        }
+        if let Some(coupon_id) = coupon_id {
+          fields.push(text_field("discounts[0][coupon]", coupon_id));
         } else {
-          "subscription"
-        },
-      ),
-    ];
-    if family.is_some() {
-      fields.push(text_field("metadata[affine_checkout_product]", lookup_key));
-    }
-    if let Some(customer_id) = customer_id.as_deref() {
-      fields.push(text_field("customer", customer_id));
-    }
-    if target_type == "workspace" {
-      fields.push(text_field("subscription_data[metadata][workspaceId]", &target_id));
-    } else if target_type == "instance" {
-      fields.push(text_field("subscription_data[metadata][licenseKey]", &target_id));
-      fields.push(text_field("line_items[0][adjustable_quantity][enabled]", "true"));
-      fields.push(text_field("line_items[0][adjustable_quantity][minimum]", "1"));
-      fields.push(text_field("tax_id_collection[enabled]", "true"));
-    } else if trial {
-      fields.push(text_field(
-        "subscription_data[trial_period_days]",
-        AI_TRIAL_DAYS.to_string(),
-      ));
-    }
-    if recurring == SubscriptionRecurring::Lifetime {
-      fields.push(text_field("invoice_creation[enabled]", "true"));
-    }
-    if let Some(coupon_id) = coupon_id {
-      fields.push(text_field("discounts[0][coupon]", coupon_id));
-    } else {
-      fields.push(text_field("allow_promotion_codes", "true"));
-    }
-    let operation_intent = stripe_operation(
-      namespace.clone(),
-      if family.is_some() {
-        "purchase_checkout"
-      } else {
-        "create_checkout"
-      },
-      intent_id,
-      resources,
-      Some((target_type, &target_id)),
-      "v1/checkout/sessions",
-      fields,
-    );
-    self
-      .send_checkout(changes, connection, operation_intent, workspace_actor)
+          fields.push(text_field("allow_promotion_codes", "true"));
+        }
+        let operation_intent = stripe_operation(
+          namespace.clone(),
+          if family.is_some() {
+            "purchase_checkout"
+          } else {
+            "create_checkout"
+          },
+          intent_id,
+          resources,
+          Some((target_type, &target_id)),
+          "v1/checkout/sessions",
+          fields,
+        );
+        self
+          .send_checkout(changes, connection, operation_intent, workspace_actor)
+          .await
+      })
       .await
   }
 
   async fn send_checkout(
     &self,
     changes: &mut super::super::PaymentApplyResult,
-    connection: PaymentConnection,
+    connection: &mut PaymentConnection,
     intent: OperationIntent,
     workspace_actor: Option<&str>,
   ) -> RuntimeResult<Value> {
@@ -298,11 +302,7 @@ impl PaymentRuntime {
         Err(RuntimeError::invalid_state("purchase_checkout_intent_used"))
       }
       OperationExecution::Completed(result) => Ok(result),
-      OperationExecution::Sent {
-        connection,
-        operation_id,
-        response,
-      } => {
+      OperationExecution::Sent { operation_id, response } => {
         let snapshot = recover_checkout(
           namespace,
           target_type,
@@ -312,7 +312,7 @@ impl PaymentRuntime {
           reserves_trial,
         )?;
         let result = snapshot.operation.as_ref().expect("checkout completion").result.clone();
-        changes.extend(self.apply_with_connection(connection, snapshot).await?);
+        changes.extend(self.apply_in_connection(connection, snapshot).await?);
         Ok(result)
       }
     }
@@ -357,59 +357,63 @@ impl PaymentRuntime {
       PaymentScope::source(&namespace_key, &source.source_id)?,
       PaymentScope::billing_target(&namespace_key, "instance", &license_key)?,
     ];
-    let mut connection = PaymentConnection::try_acquire(&self.pool, resources.clone())
+    let connection = PaymentConnection::try_acquire(&self.pool, resources.clone())
       .await?
       .ok_or_else(|| RuntimeError::invalid_state("payment_busy"))?;
-    let step_key = format!("payment:{intent_id}:verify-session");
-    let frozen = freeze_operation(
-      &mut connection,
-      &OperationIntent {
-        namespace: namespace.clone(),
-        operation_type: "reveal_license".to_string(),
-        intent_id: intent_id.to_string(),
-        resources,
-        target_type: Some("instance".to_string()),
-        target_id: Some(license_key.clone()),
-        steps: vec![PaymentStepState {
-          key: step_key.clone(),
-          request: PaymentStep::VerifySource {
-            source_id: session_id.to_string(),
+    connection
+      .with_release(async |connection| {
+        let step_key = format!("payment:{intent_id}:verify-session");
+        let frozen = freeze_operation(
+          connection,
+          &OperationIntent {
+            namespace: namespace.clone(),
+            operation_type: "reveal_license".to_string(),
+            intent_id: intent_id.to_string(),
+            resources,
+            target_type: Some("instance".to_string()),
+            target_id: Some(license_key.clone()),
+            steps: vec![PaymentStepState {
+              key: step_key.clone(),
+              request: PaymentStep::VerifySource {
+                source_id: session_id.to_string(),
+              },
+              first_sent_at: None,
+              result: None,
+            }],
           },
-          first_sent_at: None,
-          result: None,
-        }],
-      },
-    )
-    .await?;
-    if frozen.status == "completed" {
-      return frozen
-        .result
-        .ok_or_else(|| RuntimeError::invalid_state("completed payment operation has no result"));
-    }
-    if frozen.status != "pending" {
-      return Err(RuntimeError::invalid_state("payment_operation_blocked"));
-    }
-    if frozen.steps[0].result.is_none() {
-      if mark_operation_step_sent(&mut connection, &frozen.id, &step_key, chrono::Duration::days(1)).await?
-        == PaymentSendDecision::Blocked
-      {
-        return Err(RuntimeError::invalid_state("payment_operation_blocked"));
-      }
-      record_operation_step_result(
-        &mut connection,
-        &frozen.id,
-        &step_key,
-        json!({ "sessionId": session.id, "subscriptionId": subscription_id }),
-      )
-      .await?;
-    }
-    let result = Value::String(license_key.clone());
-    snapshot.licenses[0].revealed_at = Some(chrono::Utc::now());
-    snapshot.operation = Some(OperationCompletion {
-      operation_id: frozen.id,
-      result: result.clone(),
-    });
-    changes.extend(self.apply_with_connection(connection, snapshot).await?);
-    Ok(result)
+        )
+        .await?;
+        if frozen.status == "completed" {
+          return frozen
+            .result
+            .ok_or_else(|| RuntimeError::invalid_state("completed payment operation has no result"));
+        }
+        if frozen.status != "pending" {
+          return Err(RuntimeError::invalid_state("payment_operation_blocked"));
+        }
+        if frozen.steps[0].result.is_none() {
+          if mark_operation_step_sent(connection, &frozen.id, &step_key, chrono::Duration::days(1)).await?
+            == PaymentSendDecision::Blocked
+          {
+            return Err(RuntimeError::invalid_state("payment_operation_blocked"));
+          }
+          record_operation_step_result(
+            connection,
+            &frozen.id,
+            &step_key,
+            json!({ "sessionId": session.id, "subscriptionId": subscription_id }),
+          )
+          .await?;
+        }
+        let result = Value::String(license_key.clone());
+        snapshot.licenses[0].revealed_at = Some(chrono::Utc::now());
+        snapshot.operation = Some(OperationCompletion {
+          operation_id: frozen.id,
+          result: result.clone(),
+        });
+        changes.extend(self.apply_in_connection(connection, snapshot).await?);
+        Ok(result)
+      })
+      .await
   }
 }

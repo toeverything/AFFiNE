@@ -19,7 +19,45 @@ use storage_lifecycle::{
 };
 pub(crate) mod types;
 
-pub(super) use affine_doc_loader::blob_refs::{BlobRefProjectionError, extract_blob_refs};
+pub(super) use affine_doc_loader::blob_refs::{BlobRefProjectionError, MAX_SOURCE_BINARY_BYTES, extract_blob_refs};
+
+pub(in crate::runtime) fn extract_workspace_avatar_keys(
+  blob: Vec<u8>,
+) -> Result<Vec<Box<str>>, BlobRefProjectionError> {
+  use std::sync::Arc;
+
+  use y_octo::{Any, Doc, ReadDoc, ReadError, ReadValue, Value};
+
+  if blob.len() > MAX_SOURCE_BINARY_BYTES {
+    return Err(BlobRefProjectionError::SourceTooLarge);
+  }
+  let blob = Arc::<[u8]>::from(blob);
+  let avatar = match ReadDoc::from_full_update_v1_with_limits(
+    Arc::clone(&blob),
+    crate::doc::WORKSPACE_LIFECYCLE_MIGRATION_READ_LIMITS,
+  ) {
+    Ok(doc) => match doc.map("meta").and_then(|meta| meta.get("avatar")) {
+      Some(ReadValue::Any(value)) => value.as_str().map(str::to_owned),
+      Some(ReadValue::Text(text)) => Some(text.to_string()),
+      _ => None,
+    },
+    Err(ReadError::IncompleteSnapshot(_)) => {
+      let doc = Doc::try_from_binary_v1(&blob).map_err(|_| BlobRefProjectionError::InvalidBinary)?;
+      match doc.get_map("meta").ok().and_then(|meta| meta.get("avatar")) {
+        Some(Value::Any(Any::String(key))) => Some(key),
+        Some(Value::Text(text)) => Some(text.to_string()),
+        _ => None,
+      }
+    }
+    Err(ReadError::ResourceLimit(_)) => return Err(BlobRefProjectionError::Unsupported),
+    Err(ReadError::InvalidUpdate(_)) => return Err(BlobRefProjectionError::InvalidBinary),
+  };
+  match avatar {
+    Some(key) if key.len() > 1024 => Err(BlobRefProjectionError::KeyTooLarge),
+    Some(key) if !key.is_empty() => Ok(vec![key.into_boxed_str()]),
+    _ => Ok(Vec::new()),
+  }
+}
 #[cfg(test)]
 pub(crate) use config::AuthRuntimeConfig;
 pub use config::{AppConfigDescriptor, app_config_descriptors, validate_app_config_value};
