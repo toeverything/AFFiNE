@@ -20,6 +20,8 @@ import { WorkspaceMcpProvider } from '../../plugins/copilot/mcp/provider';
 import { executeToolCall } from '../../plugins/copilot/runtime/tool/bridge';
 import {
   buildDocCreateHandler,
+  buildDocUpdateHandler,
+  buildDocUpdateMetaHandler,
   createDocCreateTool,
 } from '../../plugins/copilot/tools/doc-write';
 
@@ -950,3 +952,72 @@ test('updateDocMeta skips empty title update and updates root doc via native hel
   }>;
   t.is(updatedPages[0].title, 'New Title');
 });
+
+const docWriteHandlerCases = [
+  {
+    name: 'doc update',
+    build: buildDocUpdateHandler,
+    method: 'updateDoc',
+    errorName: 'Doc Update Failed',
+    arg: 'content',
+  },
+  {
+    name: 'doc update meta',
+    build: buildDocUpdateMetaHandler,
+    method: 'updateDocMeta',
+    errorName: 'Doc Meta Update Failed',
+    arg: 'New Title',
+  },
+] as const;
+
+const docWriteOutcomes = [
+  {
+    name: 'surfaces the writer error message',
+    thrown: new Error('source_merge: ambiguous_identity'),
+    expected: 'source_merge: ambiguous_identity',
+  },
+  {
+    name: 'surfaces a non-Error thrown value',
+    thrown: 'source_merge: invalid_projection',
+    expected: 'source_merge: invalid_projection',
+  },
+  {
+    name: 'reports not found for NotFoundException',
+    thrown: new NotFoundException('Document doc-1 not found'),
+    expected: 'Doc with id doc-1 not found.',
+  },
+];
+
+for (const handlerCase of docWriteHandlerCases) {
+  for (const outcome of docWriteOutcomes) {
+    test(`${handlerCase.name} handler ${outcome.name}`, async t => {
+      const writer = {
+        async [handlerCase.method]() {
+          throw outcome.thrown;
+        },
+      };
+      const reader = {
+        async resolveStorageDocId(_workspaceId: string, docId: string) {
+          return docId;
+        },
+      };
+      const handler = handlerCase.build(
+        writer as any,
+        createPermissionMock() as any,
+        reader as any
+      );
+
+      const result: any = await handler(
+        { user: 'user-1', workspace: 'ws-1' } as any,
+        'doc-1',
+        handlerCase.arg
+      );
+
+      t.like(result, {
+        type: 'error',
+        name: handlerCase.errorName,
+        message: outcome.expected,
+      });
+    });
+  }
+}

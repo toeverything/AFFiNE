@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Logger, NotFoundException } from '@nestjs/common';
 import { z } from 'zod';
 
 import {
@@ -135,8 +135,14 @@ export const buildDocUpdateHandler = (
       .assert('Doc.Update');
     try {
       await writer.updateDoc(options.workspace, docId, content, options.user);
-    } catch {
-      return notFound;
+    } catch (err) {
+      if (err instanceof NotFoundException) {
+        return notFound;
+      }
+      return toolError(
+        'Doc Update Failed',
+        err instanceof Error ? err.message : String(err)
+      );
     }
 
     return {
@@ -180,8 +186,14 @@ export const buildDocUpdateMetaHandler = (
         { title: sanitizedTitle },
         options.user
       );
-    } catch {
-      return notFound;
+    } catch (err) {
+      if (err instanceof NotFoundException) {
+        return notFound;
+      }
+      return toolError(
+        'Doc Meta Update Failed',
+        err instanceof Error ? err.message : String(err)
+      );
     }
 
     return {
