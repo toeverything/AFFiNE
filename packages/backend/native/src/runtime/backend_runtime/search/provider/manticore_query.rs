@@ -2,6 +2,10 @@ use serde_json::{Map, Value, json};
 
 use crate::runtime::{RuntimeError, RuntimeResult};
 
+/// Manticore keeps only the best `max_matches` results of a query (1000 unless the request says otherwise), and a
+/// page that ends beyond that window cannot be served.
+const MANTICORE_DEFAULT_MAX_MATCHES: u64 = 1000;
+
 pub(super) fn translate_search_request(physical_table: &str, dsl: Value) -> RuntimeResult<Value> {
   let object = dsl
     .as_object()
@@ -26,6 +30,10 @@ pub(super) fn translate_search_request(physical_table: &str, dsl: Value) -> Runt
     "limit":size,
     "offset":offset,
   });
+  let window = offset.saturating_add(size);
+  if window > MANTICORE_DEFAULT_MAX_MATCHES {
+    request["max_matches"] = json!(window);
+  }
   if let Some(sort) = object.get("sort") {
     request["sort"] = translate_sort(sort)?;
   }

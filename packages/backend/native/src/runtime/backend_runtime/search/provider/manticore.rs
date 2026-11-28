@@ -433,7 +433,8 @@ fn normalize(value: Value, offset: u64) -> RuntimeResult<Value> {
       })
     })
     .collect::<Vec<_>>();
-  let next_cursor = (offset.saturating_add(nodes.len() as u64) < total)
+  // An empty page must end the pagination: its cursor would be the one just requested.
+  let next_cursor = (!nodes.is_empty() && offset.saturating_add(nodes.len() as u64) < total)
     .then(|| json!({"offset":offset.saturating_add(nodes.len() as u64)}).to_string());
   Ok(json!({"total":total,"nodes":nodes,"nextCursor":next_cursor}))
 }
@@ -454,7 +455,7 @@ mod tests {
   use serde_json::json;
 
   use super::{
-    SearchTable, document_id, manticore_document, translate_query, translate_search_request, translate_sort,
+    SearchTable, document_id, manticore_document, normalize, translate_query, translate_search_request, translate_sort,
     validate_bulk_response,
   };
   use crate::runtime::RuntimeError;
@@ -539,6 +540,32 @@ mod tests {
       document_id("generation/workspace/doc/1/1/block"),
       document_id("generation/workspace/doc/2/1/block")
     );
+  }
+
+  #[test]
+  fn widens_max_matches_for_pages_past_the_default_window() {
+    let request = |dsl| translate_search_request("blocks", dsl).unwrap();
+    assert!(request(json!({"size":10,"from":0})).get("max_matches").is_none());
+    assert!(request(json!({"size":100,"from":900})).get("max_matches").is_none());
+    assert_eq!(request(json!({"size":50,"from":1000}))["max_matches"], json!(1050));
+    assert_eq!(
+      request(json!({"size":20,"cursor":json!({"offset":2000}).to_string()}))["max_matches"],
+      json!(2020)
+    );
+  }
+
+  #[test]
+  fn empty_pages_end_pagination() {
+    let page = |hits: serde_json::Value, total: u64, offset: u64| {
+      normalize(json!({"hits":{"total":total,"hits":hits}}), offset).unwrap()["nextCursor"].clone()
+    };
+    let hit = json!({"_source":{"external_id":"a"}});
+    assert_eq!(
+      page(json!([hit.clone(), hit.clone()]), 5, 0),
+      json!(json!({"offset":2}).to_string())
+    );
+    assert_eq!(page(json!([hit]), 3, 2), json!(null));
+    assert_eq!(page(json!([]), 1500, 1000), json!(null));
   }
 
   #[test]
