@@ -566,27 +566,27 @@ impl PlaygroundView {
                 return true;
             }
             "1" if m.alt && !cmd && !m.control => {
-                if let Some(snap) = self.snapshot.as_deref() {
+                if let Some(snap) = self.snapshot.clone() {
                     let (vw, vh) = self.edgeless_viewport_size();
-                    let bounds = self.edgeless.scene_world_bounds(snap);
-                    self.edgeless_camera_transition = None;
-                    self.edgeless
-                        .camera
-                        .fit_to_bounds(bounds, size(px(vw), px(vh)), 48.0);
-                    self.edgeless.camera_initialized = true;
-                    cx.notify();
+                    let vp_size = size(px(vw), px(vh));
+                    let bounds = self.edgeless.scene_world_bounds(&snap);
+                    self.animate_edgeless_camera(
+                        vp_size,
+                        |cam| cam.fit_to_bounds(bounds, vp_size, 48.0),
+                        cx,
+                    );
                 }
                 return true;
             }
             "2" if m.alt && !cmd && !m.control => {
                 if let Some(sel_box) = self.edgeless.authoring.selection_world_box() {
                     let (vw, vh) = self.edgeless_viewport_size();
-                    self.edgeless_camera_transition = None;
-                    self.edgeless
-                        .camera
-                        .fit_to_bounds(sel_box, size(px(vw), px(vh)), 48.0);
-                    self.edgeless.camera_initialized = true;
-                    cx.notify();
+                    let vp_size = size(px(vw), px(vh));
+                    self.animate_edgeless_camera(
+                        vp_size,
+                        |cam| cam.fit_to_bounds(sel_box, vp_size, 48.0),
+                        cx,
+                    );
                 }
                 return true;
             }

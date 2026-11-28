@@ -407,7 +407,8 @@ fn paint_ellipse_icon(bounds: ui::Bounds<ui::Pixels>, color: ui::Hsla, window: &
     }
 }
 
-/// Build the bottom-right screen-space zoom control bar (`chrome.edgeless_zoom`).
+/// Build the logical bottom-left screen-space zoom control bar (`chrome.edgeless_zoom`):
+/// LTR bottom-left, RTL automatically mirrored to bottom-right, ordered `[FitIcon] [−] [100%] [+]`.
 /// On narrow viewports (`viewport_width < 660.0`) when `toolbar_visible` is `true`, stacks cleanly
 /// above `chrome.edgeless_toolbar` so the two screen-space bars never overlap or clip.
 #[allow(clippy::too_many_arguments)]
@@ -416,6 +417,7 @@ pub fn build_zoom_controls<V: 'static>(
     viewport_width: f32,
     toolbar_visible: bool,
     touch_mode: bool,
+    direction: ui::Direction,
     palette: &Palette,
     theme: PlaygroundTheme,
     on_out: impl Fn(&mut V, &ui::ClickEvent, &mut Window, &mut ui::Context<V>) + 'static,
@@ -430,8 +432,9 @@ pub fn build_zoom_controls<V: 'static>(
     let (w_step, w_reset, w_fit) = if touch_mode {
         (44.0, 56.0, 44.0)
     } else {
-        (28.0, 48.0, 36.0)
+        (28.0, 48.0, 28.0)
     };
+    let icon_color = palette.icon;
 
     let button = |id: &'static str, snap_id: &'static str, label: String, width: f32| {
         div()
@@ -453,15 +456,40 @@ pub fn build_zoom_controls<V: 'static>(
             .child(label)
     };
 
+    let fit_btn = div()
+        .id("edgeless-zoom-fit")
+        .w(px(w_fit))
+        .h(px(btn_h))
+        .rounded(px(ZOOM_BTN_RADIUS))
+        .flex()
+        .items_center()
+        .justify_center()
+        .cursor_pointer()
+        .hover(|s| s.bg(palette.hover))
+        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+        .on_click(cx.listener(on_fit))
+        .snapshot("chrome.edgeless_zoom.fit", Some("chrome.edgeless_zoom"))
+        .snapshot_text("Fit")
+        .child(
+            canvas(
+                |_, _, _| (),
+                move |bounds, _, window, _| paint_fit_icon(bounds, icon_color, window),
+            )
+            .w(px(16.0))
+            .h(px(16.0)),
+        );
+
     let zoom_bottom = if toolbar_visible && viewport_width < 660.0 {
         ZOOM_BAR_MARGIN + ZOOM_BTN_HEIGHT + 2.0 * ZOOM_BAR_PAD + 8.0
     } else {
         ZOOM_BAR_MARGIN
     };
-    let mut bar = div()
-        .absolute()
-        .right(px(ZOOM_BAR_MARGIN))
-        .bottom(px(zoom_bottom))
+    let mut bar = div().absolute().bottom(px(zoom_bottom));
+    bar = match direction {
+        ui::Direction::Ltr => bar.left(px(ZOOM_BAR_MARGIN)),
+        ui::Direction::Rtl => bar.right(px(ZOOM_BAR_MARGIN)),
+    };
+    bar = bar
         .p(px(ZOOM_BAR_PAD))
         .rounded(px(ZOOM_BAR_RADIUS))
         .bg(palette.panel)
@@ -472,11 +500,12 @@ pub fn build_zoom_controls<V: 'static>(
         .gap(px(4.0))
         .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
         .snapshot("chrome.edgeless_zoom", Some(EDGELESS_VIEWPORT_ID))
+        .child(fit_btn)
         .child(
             button(
                 "edgeless-zoom-out",
                 "chrome.edgeless_zoom.out",
-                "-".into(),
+                "\u{2212}".into(),
                 w_step,
             )
             .on_click(cx.listener(on_out)),
@@ -498,15 +527,6 @@ pub fn build_zoom_controls<V: 'static>(
                 w_step,
             )
             .on_click(cx.listener(on_in)),
-        )
-        .child(
-            button(
-                "edgeless-zoom-fit",
-                "chrome.edgeless_zoom.fit",
-                "Fit".into(),
-                w_fit,
-            )
-            .on_click(cx.listener(on_fit)),
         );
 
     if !shadows.is_empty() {
@@ -514,4 +534,32 @@ pub fn build_zoom_controls<V: 'static>(
     }
 
     bar.into_any_element()
+}
+
+fn paint_fit_icon(bounds: ui::Bounds<ui::Pixels>, color: ui::Hsla, window: &mut Window) {
+    let x0 = f32::from(bounds.origin.x) + 2.5;
+    let y0 = f32::from(bounds.origin.y) + 2.5;
+    let x1 = f32::from(bounds.origin.x) + f32::from(bounds.size.width) - 2.5;
+    let y1 = f32::from(bounds.origin.y) + f32::from(bounds.size.height) - 2.5;
+    let arm = 3.5;
+    let mut pb = PathBuilder::stroke(px(1.4));
+    // Top-left bracket
+    pb.move_to(point(px(x0), px(y0 + arm)));
+    pb.line_to(point(px(x0), px(y0)));
+    pb.line_to(point(px(x0 + arm), px(y0)));
+    // Top-right bracket
+    pb.move_to(point(px(x1 - arm), px(y0)));
+    pb.line_to(point(px(x1), px(y0)));
+    pb.line_to(point(px(x1), px(y0 + arm)));
+    // Bottom-right bracket
+    pb.move_to(point(px(x1), px(y1 - arm)));
+    pb.line_to(point(px(x1), px(y1)));
+    pb.line_to(point(px(x1 - arm), px(y1)));
+    // Bottom-left bracket
+    pb.move_to(point(px(x0 + arm), px(y1)));
+    pb.line_to(point(px(x0), px(y1)));
+    pb.line_to(point(px(x0), px(y1 - arm)));
+    if let Ok(path) = pb.build() {
+        window.paint_path(path, color);
+    }
 }

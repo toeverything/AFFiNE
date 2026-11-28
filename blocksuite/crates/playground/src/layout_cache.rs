@@ -573,7 +573,14 @@ impl PlaygroundView {
         }
         // A sideways scroll over an unwrapped code block or wide table scrolls it, not the page.
         if let Some((snapshot, layout)) = self.snapshot.clone().zip(self.flow_layout()) {
-            let scene = self.overlay_scene(&snapshot, &layout, window.layout_direction(), None);
+            let local_collapsed = self.flow.local_collapsed.clone();
+            let scene = self.overlay_scene(
+                &snapshot,
+                &layout,
+                window.layout_direction(),
+                None,
+                &local_collapsed,
+            );
             if self.overlays.scroll_code(
                 &scene,
                 f32::from(event.position.x),

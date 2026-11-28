@@ -490,6 +490,13 @@ impl FlowPass<'_> {
                 collapsed,
                 ..
             } => {
+                let effective_collapsed = match kind {
+                    blocksuite_playground_doc::schema::ParagraphType::Text
+                    | blocksuite_playground_doc::schema::ParagraphType::Quote => {
+                        !node.children.is_empty() && self.local_collapsed.contains(&node.id)
+                    }
+                    _ => *collapsed,
+                };
                 if let Some(EquationDraft::Inline {
                     block_id,
                     utf16_offset,
@@ -498,9 +505,9 @@ impl FlowPass<'_> {
                     && block_id == &node.id
                 {
                     let patched = body::patch_inline_latex_draft(text, *utf16_offset, latex);
-                    return self.paragraph_body(*kind, &patched, *collapsed, width, align);
+                    return self.paragraph_body(*kind, &patched, effective_collapsed, width, align);
                 }
-                self.paragraph_body(*kind, text, *collapsed, width, align)
+                self.paragraph_body(*kind, text, effective_collapsed, width, align)
             }
             BlockContent::List {
                 kind,

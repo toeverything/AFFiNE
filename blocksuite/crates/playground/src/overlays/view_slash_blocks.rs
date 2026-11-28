@@ -311,12 +311,152 @@ impl PlaygroundView {
         }
         page.stop_capturing()?;
         self.editor.last_typing = None;
+        let had_local_collapse = self.flow.local_collapsed.remove(parent_id);
+        if had_local_collapse {
+            self.env_rev = self.env_rev.wrapping_add(1);
+        }
+        let keep_multi = child_ids.len() > 1 || self.editor.block_selection.len() > 1;
         self.did_edit(commit, None, window, cx);
-        self.editor.block_selection = child_ids;
+        if keep_multi {
+            self.editor.block_selection = child_ids;
+        }
         self.announce_selection(cx);
         self.editor.reveal = false;
         window.notify_text_selection_changed(&self.editor_focus);
         cx.notify();
+        Ok(())
+    }
+
+    /// Execute one command from the drag-handle block action menu (`MoveUp`, `MoveDown`,
+    /// `Duplicate`, `Copy`, `Delete`) as a single undoable step.
+    pub(super) fn execute_block_menu_action(
+        &mut self,
+        block_id: &str,
+        action: BlockMenuAction,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
+        if self.mode == crate::PlaygroundMode::Page
+            && self.page_readonly
+            && action != BlockMenuAction::Copy
+        {
+            return Ok(());
+        }
+        let ids = self.resolve_multi_drag_ids(block_id);
+        match action {
+            BlockMenuAction::MoveUp | BlockMenuAction::MoveDown => {
+                let prev_sel = self.editor.block_selection.clone();
+                self.editor.block_selection = ids;
+                let _ =
+                    self.move_block_by_shortcut(action == BlockMenuAction::MoveUp, window, cx)?;
+                if prev_sel.len() <= 1 {
+                    self.editor.block_selection.clear();
+                } else {
+                    self.editor.block_selection = prev_sel;
+                }
+                cx.notify();
+            }
+            BlockMenuAction::Delete => {
+                self.editor.block_selection = ids;
+                self.delete_selected_blocks(window, cx)?;
+            }
+            BlockMenuAction::Copy => {
+                let prev_sel = self.editor.block_selection.clone();
+                self.editor.block_selection = ids;
+                if let Some(slice) = self.block_selection_slice() {
+                    crate::clipboard::write_slice(&slice, cx);
+                }
+                self.editor.block_selection = prev_sel;
+                cx.notify();
+            }
+            BlockMenuAction::Duplicate => {
+                let Some(snapshot) = self.snapshot.clone() else {
+                    return Ok(());
+                };
+                let Some(root) = snapshot.root.as_ref() else {
+                    return Ok(());
+                };
+                let Some((parent, slot)) = find_parent(root, block_id) else {
+                    return Ok(());
+                };
+                let prev_sel = self.editor.block_selection.clone();
+                self.editor.block_selection = ids;
+                let slice = self.block_selection_slice();
+                self.editor.block_selection = prev_sel;
+                if let Some(slice) = slice {
+                    self.duplicate_slice_after_block(&parent.id, slot + 1, &slice, window, cx)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn duplicate_slice_after_block(
+        &mut self,
+        parent_id: &str,
+        insert_slot: usize,
+        slice: &crate::clipboard::Slice,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
+        if slice.content.is_empty() {
+            return Ok(());
+        }
+        let count: usize = slice.content.iter().map(|b| b.walk().count()).sum();
+        let fresh: Vec<String> = (0..count).map(|_| self.fresh_block_id()).collect();
+        let mut next = fresh.iter();
+        let mut entries = Vec::new();
+        for block in &slice.content {
+            let mut pending = vec![(block, None)];
+            while let Some((block, parent)) = pending.pop() {
+                let new_id = next
+                    .next()
+                    .ok_or_else(|| DocError::InvalidState("missing duplicate id".into()))?
+                    .clone();
+                entries.push((
+                    block.flavour.clone(),
+                    block
+                        .version
+                        .and_then(|n| i32::try_from(n).ok())
+                        .unwrap_or(1),
+                    new_id.clone(),
+                    parent,
+                    block.properties()?,
+                ));
+                pending.extend(
+                    block
+                        .children
+                        .iter()
+                        .rev()
+                        .map(|b| (b, Some(new_id.clone()))),
+                );
+            }
+        }
+        let before = self.selection_snapshot();
+        let now = self.now_ms(cx) as u64;
+        let root_parent = parent_id.to_string();
+        let page = self.page_mut()?;
+        page.stop_capturing()?;
+        let commit = page.structural_edit(now, move |page| {
+            let mut slot = insert_slot;
+            for (flavour, version, target, parent, props) in entries.clone() {
+                let p = parent.as_deref().unwrap_or(&root_parent);
+                let at = parent.is_none().then_some(slot as u64);
+                if at.is_some() {
+                    slot += 1;
+                }
+                page.add_raw_block(&target, &flavour, version, props, Some(p), at, now)?;
+            }
+            Ok(())
+        })?;
+        if commit.is_some()
+            && let Some(before) = before
+        {
+            page.set_undo_selection_snapshot(before)?;
+        }
+        page.stop_capturing()?;
+        self.editor.last_typing = None;
+        self.did_edit(commit, None, window, cx);
         Ok(())
     }
 

@@ -509,6 +509,7 @@ impl PlaygroundView {
         self.edgeless = crate::edgeless::EdgelessCanvasState::new();
         self.edgeless_camera_transition = None;
         self.edgeless_shape_picker_presence = None;
+        self.edgeless_element_color_picker = None;
         self.page_scroll_fling = None;
         self.code_scroll_fling = None;
         self.edgeless_pan_fling = None;

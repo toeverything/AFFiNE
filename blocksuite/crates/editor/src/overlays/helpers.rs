@@ -112,10 +112,23 @@ impl Overlays {
         }
     }
 
-    /// Begin dragging one or more blocks from a gutter drag handle.
+    /// Begin dragging one or more blocks from a gutter drag handle (or clicking to open the block menu).
     pub fn start_drag(&mut self, block_id: String, dragged_ids: Vec<String>, now_ms: f64) {
+        self.start_drag_with_anchor(block_id, dragged_ids, None, now_ms);
+    }
+
+    /// Begin a drag-handle press at optional screen-space `anchor`. When `anchor` is `Some`,
+    /// releasing before moving [`super::DRAG_START_THRESHOLD_PX`] opens the block action menu.
+    pub fn start_drag_with_anchor(
+        &mut self,
+        block_id: String,
+        dragged_ids: Vec<String>,
+        anchor: Option<(f32, f32)>,
+        now_ms: f64,
+    ) {
         self.close_slash(now_ms);
         self.close_link_field();
+        self.close_block_menu(now_ms);
         let ids = if dragged_ids.is_empty() {
             vec![block_id.clone()]
         } else {
@@ -124,6 +137,8 @@ impl Overlays {
         self.drag = Some(super::BlockDrag {
             block_id,
             dragged_ids: ids,
+            start_screen: anchor,
+            moved: anchor.is_none(),
             slot: None,
         });
     }
@@ -175,6 +190,7 @@ impl Overlays {
         self.equation = None;
         self.bookmark = None;
         self.context_menu = None;
+        self.block_menu = None;
         self.context_toast = None;
         self.keyboard_toolbar.close_transient();
         self.format_cache = None;
@@ -204,6 +220,10 @@ impl Overlays {
                 .is_some_and(|prompt| prompt.presence.in_flight(now_ms) || prompt.presence.closing)
             || self
                 .context_menu
+                .as_ref()
+                .is_some_and(|menu| menu.presence.in_flight(now_ms) || menu.presence.closing)
+            || self
+                .block_menu
                 .as_ref()
                 .is_some_and(|menu| menu.presence.in_flight(now_ms) || menu.presence.closing)
     }

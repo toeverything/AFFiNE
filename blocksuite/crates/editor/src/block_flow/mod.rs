@@ -352,19 +352,22 @@ pub(super) fn node_has_gutter_chevron(
     if heading_level(node).is_some() {
         return true;
     }
-    let supports_fold = matches!(
+    if matches!(
         kind,
         FlowKind::Paragraph(ParagraphType::Text | ParagraphType::Quote)
-            | FlowKind::List(ListType::Bulleted | ListType::Numbered | ListType::Todo)
+    ) {
+        // Release the 24px gutter slot whenever a non-heading Paragraph/Quote has no children.
+        return !node.children.is_empty();
+    }
+    let supports_fold = matches!(
+        kind,
+        FlowKind::List(ListType::Bulleted | ListType::Numbered | ListType::Todo)
     );
     supports_fold
         && (!node.children.is_empty()
             || matches!(
                 node.content,
                 BlockContent::List {
-                    collapsed: true,
-                    ..
-                } | BlockContent::Paragraph {
                     collapsed: true,
                     ..
                 }

@@ -4,8 +4,10 @@
 //! emitting `OverlayEffects` (single-undo-step `DocEdit`s, clipboard writes, and timers).
 //! Popovers mount at `>= 0.01` opacity while opening and drop listeners while fading out.
 
+mod block_menu;
 mod bookmark_prompt;
 mod context_menu;
+mod drag;
 mod equation;
 mod helpers;
 mod keyboard_toolbar;
@@ -19,10 +21,15 @@ mod table_cell;
 mod toolbar;
 mod transform;
 
+pub use block_menu::{BLOCK_MENU_WIDTH, BlockMenuAction, BlockMenuState};
 pub use bookmark_prompt::BookmarkPrompt;
 pub use context_menu::{
     CONTEXT_MENU_PADDING, CONTEXT_MENU_RADIUS, CONTEXT_MENU_ROW_HEIGHT, CONTEXT_MENU_WIDTH,
     CONTEXT_TOAST_MS, ContextMenuAction, ContextMenuState, ContextToast, place_context_menu,
+};
+pub use drag::{
+    DRAG_START_THRESHOLD_PX, DropSlot, TreeDropTarget, can_accept_nested_child,
+    is_valid_reparent_target, resolve_tree_drop_target,
 };
 pub use equation::{EquationEditor, EquationTarget};
 pub use keyboard_toolbar::{
@@ -51,12 +58,11 @@ pub use toolbar::{
 pub use transform::OverlayScreenTransform;
 
 use paint_page::{
-    align_glyph, caret_world_rect, drag_handle_rect, drop_slot, emit, hover_block, icon, place,
-    text_len,
+    align_glyph, caret_world_rect, drag_handle_rect, emit, hover_block, icon, place, text_len,
 };
 use toolbar::{FormatToolbar, utf16_to_byte};
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use blocksuite_playground_doc::read::{PageSnapshot, TextAlign as BlockAlign};
 use ui::{Context, Motion, MotionCurve, Window};
@@ -236,44 +242,13 @@ impl Presence {
     }
 }
 
-/// Where a dragged block would land.
-#[derive(Clone, Debug, PartialEq)]
-pub struct DropSlot {
-    pub parent_id: String,
-    /// Index in the parent's children the block would be inserted before, counted with the
-    /// block still in place.
-    pub insert_index: usize,
-    /// The dragged block's current index in the parent's children.
-    pub old_index: usize,
-    /// World y of the indicator line's center.
-    pub indicator_world_y: f32,
-    /// World x of the indicator line's left end.
-    pub indicator_world_x: f32,
-    /// World width of the sibling column spanned by the indicator line.
-    pub indicator_world_width: f32,
-}
-
-impl DropSlot {
-    /// Index of the block among its siblings once it is taken out and put back, `None`
-    /// when the slot leaves the block where it is.
-    pub fn reorder_index(&self) -> Option<u64> {
-        if self.insert_index == self.old_index || self.insert_index == self.old_index + 1 {
-            return None;
-        }
-        let index = if self.insert_index > self.old_index {
-            self.insert_index - 1
-        } else {
-            self.insert_index
-        };
-        Some(index as u64)
-    }
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct BlockDrag {
     pub(super) block_id: String,
     pub(super) dragged_ids: Vec<String>,
-    pub(super) slot: Option<DropSlot>,
+    pub(super) start_screen: Option<(f32, f32)>,
+    pub(super) moved: bool,
+    pub(super) slot: Option<TreeDropTarget>,
 }
 
 /// A document edit an overlay asks the view for. The view carries each out through the
@@ -371,6 +346,23 @@ pub enum OverlayEvent {
         activate: bool,
     },
     DragStart(String),
+    /// Pointer press on the gutter drag handle: drag after threshold, or click to open block menu.
+    DragHandlePress {
+        block_id: String,
+        anchor: (f32, f32),
+    },
+    /// Open the drag-handle block action menu for `block_id` at window-space `anchor`.
+    OpenBlockMenu {
+        block_id: String,
+        anchor: (f32, f32),
+    },
+    /// Dismiss the drag-handle block action menu.
+    CloseBlockMenu,
+    /// Execute a command from the drag-handle block action menu.
+    BlockMenuAction {
+        block_id: String,
+        action: BlockMenuAction,
+    },
     /// Open the `@` linked-document picker with an initial query.
     OpenLinkedDocMenu {
         block_id: String,
@@ -504,6 +496,10 @@ pub struct OverlayEffects {
     pub paste: bool,
     /// Desktop context-menu command triggered via keyboard (`Enter`).
     pub context_menu_action: Option<ContextMenuAction>,
+    /// Drag-handle block menu command triggered via keyboard (`Enter`) or click.
+    pub block_menu_action: Option<(String, BlockMenuAction)>,
+    /// Local-only collapse toggle for non-heading `Paragraph`/`Quote` blocks (zero CRDT write).
+    pub toggle_local_collapse: Option<String>,
     pub redraw: bool,
     /// Whether a key was consumed.
     pub handled: bool,
@@ -532,6 +528,8 @@ pub struct OverlayScene<'a> {
     pub screen_transform: Option<OverlayScreenTransform>,
     /// Suppress the desktop floating format button row when native mobile selection UI owns the menu.
     pub suppress_floating_format_buttons: bool,
+    /// Non-heading `Paragraph`/`Quote` block ids currently collapsed in local view state only.
+    pub local_collapsed: &'a BTreeSet<String>,
 }
 
 impl OverlayScene<'_> {
@@ -614,6 +612,7 @@ pub struct Overlays {
     pub(super) bookmark: Option<BookmarkPrompt>,
     pub(super) keyboard_toolbar: KeyboardToolbarState,
     pub(super) context_menu: Option<ContextMenuState>,
+    pub(super) block_menu: Option<BlockMenuState>,
     pub(super) context_toast: Option<ContextToast>,
     pub(super) context_toast_generation: u64,
     pub(super) database_readonly: bool,

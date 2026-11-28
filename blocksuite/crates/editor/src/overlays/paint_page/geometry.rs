@@ -1,7 +1,5 @@
 //! Pure geometry, hit-testing, and block-tree helpers for Page-layer overlays.
 
-use std::collections::HashMap;
-
 use blocksuite_playground_doc::read::{BlockContent, BlockNode, RichText, TextAlign as BlockAlign};
 use ui::{App, Context, Div, Hsla, Window, canvas, div, point, prelude::*, px, size};
 
@@ -12,8 +10,8 @@ use crate::{
 };
 
 use super::{
-    CONTROL_HIT_SIZE, DRAG_HANDLE_MIN_X, DRAG_HANDLE_SIZE, DropSlot, HOVER_SLACK, OverlayEvent,
-    OverlayHost, OverlayScene,
+    CONTROL_HIT_SIZE, DRAG_HANDLE_MIN_X, DRAG_HANDLE_SIZE, HOVER_SLACK, OverlayEvent, OverlayHost,
+    OverlayScene,
 };
 
 /// Hit target of a block's gutter handle in world space, `None` where the gutter has no
@@ -245,66 +243,4 @@ pub fn bounding_rect(rects: &[FlowRect]) -> Option<FlowRect> {
         bottom = bottom.max(rect.bottom());
     }
     Some(FlowRect::new(left, top, right - left, bottom - top))
-}
-
-/// The nearest slot among the dragged block's siblings for a pointer at `world_y`.
-pub(crate) fn drop_slot(
-    scene: &OverlayScene<'_>,
-    block_id: &str,
-    world_y: f32,
-) -> Option<DropSlot> {
-    let root = scene.snapshot.root.as_ref()?;
-    let (parent, old_index) = find_parent(root, block_id)?;
-    let blocks = &scene.layout.blocks;
-    let laid_out: HashMap<&str, usize> = blocks
-        .iter()
-        .enumerate()
-        .map(|(at, block)| (block.block_id.as_str(), at))
-        .collect();
-    let siblings: Vec<(usize, usize)> = parent
-        .children
-        .iter()
-        .enumerate()
-        .filter_map(|(raw, child)| laid_out.get(child.id.as_str()).map(|at| (raw, *at)))
-        .collect();
-    let &(_, first_at) = siblings.first()?;
-    let &(last_raw, last_at) = siblings.last()?;
-    let x = blocks[first_at].x;
-    let sibling_width = blocks[first_at].body.width;
-
-    let mut candidates: Vec<(usize, f32)> = siblings
-        .iter()
-        .map(|&(raw, at)| {
-            let top = blocks[at].y;
-            let above = match at.checked_sub(1) {
-                Some(previous) => blocks[previous].rect().bottom(),
-                None => top,
-            };
-            (raw, ((above + top) / 2.0).round())
-        })
-        .collect();
-    let mut end = last_at;
-    while end + 1 < blocks.len()
-        && match scene.direction {
-            ui::Direction::Ltr => blocks[end + 1].x > blocks[last_at].x,
-            ui::Direction::Rtl => blocks[end + 1].rect().right() < blocks[last_at].rect().right(),
-        }
-    {
-        end += 1;
-    }
-    let bottom = blocks[end].rect().bottom();
-    let below = blocks.get(end + 1).map_or(bottom + 10.0, |block| block.y);
-    candidates.push((last_raw + 1, ((bottom + below) / 2.0).round()));
-
-    let (insert_index, indicator_world_y) = candidates
-        .into_iter()
-        .min_by(|a, b| (a.1 - world_y).abs().total_cmp(&(b.1 - world_y).abs()))?;
-    Some(DropSlot {
-        parent_id: parent.id.clone(),
-        insert_index,
-        old_index,
-        indicator_world_y,
-        indicator_world_x: x,
-        indicator_world_width: sibling_width,
-    })
 }

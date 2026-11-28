@@ -415,6 +415,142 @@ pub(super) fn render_context_toast(
         .into_any_element()
 }
 
+impl super::Overlays {
+    /// Open or reopen the desktop right-click context menu at window-space `anchor`.
+    pub fn open_context_menu(
+        &mut self,
+        anchor: (f32, f32),
+        can_copy: bool,
+        can_cut: bool,
+        can_paste: bool,
+        link_url: Option<String>,
+        now_ms: f64,
+    ) {
+        let presence = match self.context_menu.take() {
+            Some(menu) => menu.presence.reopened(now_ms),
+            None => Presence::opening(now_ms),
+        };
+        self.context_menu = Some(ContextMenuState {
+            anchor,
+            can_copy,
+            can_cut,
+            can_paste,
+            link_url,
+            selected: None,
+            presence,
+            rect: None,
+        });
+    }
+
+    /// Dismiss the desktop right-click context menu with a fade-out transition.
+    pub fn close_context_menu(&mut self, now_ms: f64) -> bool {
+        match self
+            .context_menu
+            .as_mut()
+            .filter(|menu| !menu.presence.closing)
+        {
+            Some(menu) => {
+                menu.presence.close(now_ms);
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// Active (non-closing) desktop right-click context menu.
+    pub fn context_menu(&self) -> Option<&ContextMenuState> {
+        self.context_menu
+            .as_ref()
+            .filter(|menu| !menu.presence.closing)
+    }
+
+    /// Show a transient clipboard fallback toast and return its generation token.
+    pub fn show_context_toast(&mut self, message: impl Into<String>) -> u64 {
+        self.context_toast_generation += 1;
+        let generation = self.context_toast_generation;
+        self.context_toast = Some(ContextToast {
+            message: message.into(),
+            generation,
+        });
+        generation
+    }
+
+    /// Expire the context toast if its generation matches.
+    pub fn context_toast_expired(&mut self, generation: u64) -> bool {
+        if self
+            .context_toast
+            .as_ref()
+            .is_some_and(|toast| toast.generation == generation)
+        {
+            self.context_toast = None;
+            return true;
+        }
+        false
+    }
+
+    /// Active context toast message, if any.
+    pub fn context_toast_message(&self) -> Option<&str> {
+        self.context_toast
+            .as_ref()
+            .map(|toast| toast.message.as_str())
+    }
+
+    /// Render the desktop right-click context menu, drag-handle block menu, and clipboard toast.
+    pub fn context_overlays<V: OverlayHost>(
+        &mut self,
+        window_size: (f32, f32),
+        palette: &Palette,
+        now_ms: f64,
+        window: &mut ui::Window,
+        cx: &mut Context<V>,
+    ) -> Vec<AnyElement> {
+        if self
+            .context_menu
+            .as_ref()
+            .is_some_and(|m| m.presence.gone(now_ms))
+        {
+            self.context_menu = None;
+        }
+        if self
+            .block_menu
+            .as_ref()
+            .is_some_and(|m| m.presence.gone(now_ms))
+        {
+            self.block_menu = None;
+        }
+        if self
+            .context_menu
+            .as_ref()
+            .is_some_and(|m| m.presence.in_flight(now_ms) || m.presence.closing)
+            || self
+                .block_menu
+                .as_ref()
+                .is_some_and(|m| m.presence.in_flight(now_ms) || m.presence.closing)
+        {
+            window.request_animation_frame();
+        }
+        let viewport = FlowRect::new(
+            0.0,
+            crate::TOPBAR_HEIGHT,
+            window_size.0,
+            (window_size.1 - crate::TOPBAR_HEIGHT).max(0.0),
+        );
+        let mut elements = Vec::new();
+        if let Some(menu) = self.context_menu.as_mut() {
+            elements.extend(render_context_menu(menu, viewport, palette, now_ms, cx));
+        }
+        if let Some(menu) = self.block_menu.as_mut() {
+            elements.extend(super::block_menu::render_block_menu(
+                menu, viewport, palette, now_ms, cx,
+            ));
+        }
+        if let Some(toast) = self.context_toast.as_ref() {
+            elements.push(render_context_toast(toast, viewport, palette));
+        }
+        elements
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

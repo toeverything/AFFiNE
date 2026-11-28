@@ -2,8 +2,7 @@ mod controls;
 mod geometry;
 
 pub(super) use geometry::{
-    align_glyph, caret_world_rect, drag_handle_rect, drop_slot, emit, hover_block, icon, place,
-    text_len,
+    align_glyph, caret_world_rect, drag_handle_rect, emit, hover_block, icon, place, text_len,
 };
 pub use geometry::{block_text, bounding_rect, find_parent, shared_alignment};
 
@@ -72,7 +71,7 @@ impl Overlays {
         let mut elements = Vec::new();
 
         // The dragged blocks are tinted where they still sit.
-        if let Some(drag) = self.drag.as_ref() {
+        if let Some(drag) = self.drag.as_ref().filter(|d| d.moved) {
             for dragged_id in &drag.dragged_ids {
                 if let Some(block) = layout.block(dragged_id) {
                     let rect = block.rect();
@@ -506,9 +505,12 @@ impl Overlays {
                 .justify_center()
                 .on_mouse_down(
                     MouseButton::Left,
-                    cx.listener(move |view, _: &MouseDownEvent, window, cx| {
+                    cx.listener(move |view, ev: &MouseDownEvent, window, cx| {
                         view.dispatch_overlay(
-                            OverlayEvent::DragStart(block_id.clone()),
+                            OverlayEvent::DragHandlePress {
+                                block_id: block_id.clone(),
+                                anchor: (f32::from(ev.position.x), f32::from(ev.position.y)),
+                            },
                             window,
                             cx,
                         );
@@ -550,18 +552,13 @@ impl Overlays {
             elements.push(element.child(grip).into_any_element());
         }
 
-        if let Some(slot) = self.drop_slot() {
-            let (line_x, line_w) = match direction {
-                ui::Direction::Ltr => (
-                    slot.indicator_world_x,
-                    (layout.width - slot.indicator_world_x).max(0.0),
-                ),
-                ui::Direction::Rtl => (0.0, slot.indicator_world_width.max(0.0)),
-            };
+        if let Some(slot) = self.drop_slot()
+            && self.drag.as_ref().is_some_and(|d| d.moved)
+        {
             let line = FlowRect::new(
-                line_x,
+                slot.indicator_world_x,
                 slot.indicator_world_y - DROP_INDICATOR_THICKNESS / 2.0,
-                line_w,
+                slot.indicator_world_width.max(0.0),
                 DROP_INDICATOR_THICKNESS,
             );
             if viewport.intersects(&line) {

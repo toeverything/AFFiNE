@@ -241,6 +241,7 @@ pub struct PlaygroundView {
     pub(crate) edgeless: edgeless::EdgelessCanvasState,
     pub(crate) edgeless_camera_transition: Option<edgeless::CameraTransition>,
     pub(crate) edgeless_shape_picker_presence: Option<edgeless::ShapePickerPresence>,
+    pub(crate) edgeless_element_color_picker: Option<edgeless::ElementColorSlot>,
     pub(crate) pointer_kind: PointerKind,
     pub(crate) form_factor: FormFactor,
     pub(crate) page_readonly: bool,
@@ -401,6 +402,7 @@ impl PlaygroundView {
             edgeless: edgeless::EdgelessCanvasState::new(),
             edgeless_camera_transition: None,
             edgeless_shape_picker_presence: None,
+            edgeless_element_color_picker: None,
             pointer_kind: options.pointer_kind,
             form_factor: options.form_factor,
             page_readonly: options.page_readonly,
@@ -10357,7 +10359,14 @@ pub(crate) mod tests {
                 .update(cx, |v, _w, cx| {
                     let (_, layout) = v.layout.as_ref().expect("layout").clone();
                     let snapshot = v.page_snapshot().expect("snapshot").clone();
-                    let scene = v.overlay_scene(&snapshot, &layout, ui::Direction::Ltr, None);
+                    let local_collapsed = v.flow.local_collapsed.clone();
+                    let scene = v.overlay_scene(
+                        &snapshot,
+                        &layout,
+                        ui::Direction::Ltr,
+                        None,
+                        &local_collapsed,
+                    );
                     assert!(
                         v.overlays
                             .scroll_code(&scene, tbl_center.0, tbl_center.1, -80.0, 0.0),

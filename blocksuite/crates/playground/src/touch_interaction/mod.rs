@@ -217,7 +217,35 @@ impl PlaygroundView {
                 (PlaygroundMode::Page, TouchGesture::LongPress { position }) => {
                     self.cancel_flings();
                     self.touch_selection_menu_open = false;
-                    self.long_press_word(f32::from(position.x), f32::from(position.y), window, cx);
+                    let (x, y) = (f32::from(position.x), f32::from(position.y));
+                    // Long-pressing a block's gutter drag handle starts the shared TreeDropTarget drag.
+                    if !self.page_readonly
+                        && let Some(layout) = self.flow_layout()
+                    {
+                        let geom = page_geometry(f32::from(window.viewport_size().width));
+                        let (wx, wy) = (x - geom.column_x, y - TOPBAR_HEIGHT + self.scroll_y);
+                        let dir = window.layout_direction();
+                        let gutter_block = layout.blocks.iter().find(|b| {
+                            b.body.kind != FlowKind::Title
+                                && wy >= b.y - 4.0
+                                && wy <= b.rect().bottom() + 4.0
+                                && match dir {
+                                    ui::Direction::Ltr => wx < b.x && wx >= b.x - 48.0,
+                                    ui::Direction::Rtl => {
+                                        wx > b.rect().right() && wx <= b.rect().right() + 48.0
+                                    }
+                                }
+                        });
+                        if let Some(blk) = gutter_block {
+                            self.dispatch_overlay(
+                                OverlayEvent::DragStart(blk.block_id.clone()),
+                                window,
+                                cx,
+                            );
+                            continue;
+                        }
+                    }
+                    self.long_press_word(x, y, window, cx);
                     self.touch_long_press_anchor = self
                         .editor
                         .selection
@@ -225,6 +253,18 @@ impl PlaygroundView {
                         .map(|s| (s.anchor.clone(), s.focus.clone()));
                 }
                 (PlaygroundMode::Page, TouchGesture::LongPressDrag { position }) => {
+                    if self.overlays.dragged_block().is_some() {
+                        self.dispatch_overlay(
+                            OverlayEvent::PointerMoved {
+                                x: f32::from(position.x),
+                                y: f32::from(position.y),
+                                pressed: true,
+                            },
+                            window,
+                            cx,
+                        );
+                        continue;
+                    }
                     if let Some((word_start, word_end)) = self.touch_long_press_anchor.clone()
                         && let Some(hit) = self.input_point(position, window)
                         && let Some(layout) = self.flow_layout()
@@ -251,6 +291,10 @@ impl PlaygroundView {
                     }
                 }
                 (PlaygroundMode::Page, TouchGesture::LongPressEnd { .. }) => {
+                    if self.overlays.dragged_block().is_some() {
+                        self.dispatch_overlay(OverlayEvent::PointerUp, window, cx);
+                        continue;
+                    }
                     self.touch_long_press_anchor = None;
                     let geom = self.document_selection_geometry(window);
                     if geom.action_mask != 0 {
@@ -419,8 +463,14 @@ impl PlaygroundView {
                         let geom = page_geometry(self.window_size.0);
                         let sx = geom.column_x + block.x + block.body.width * 0.5;
                         let sy = TOPBAR_HEIGHT + block.y + block.body.height * 0.5 - self.scroll_y;
-                        let scene =
-                            self.overlay_scene(&snap, &layout, window.layout_direction(), None);
+                        let local_collapsed = self.flow.local_collapsed.clone();
+                        let scene = self.overlay_scene(
+                            &snap,
+                            &layout,
+                            window.layout_direction(),
+                            None,
+                            &local_collapsed,
+                        );
                         self.overlays.scroll_code(&scene, sx, sy, -delta, 0.0)
                     });
             if !moved || fling.velocity_at(now_ms).abs() <= fling.stop_velocity {

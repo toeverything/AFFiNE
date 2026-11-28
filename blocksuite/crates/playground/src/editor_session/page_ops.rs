@@ -196,12 +196,7 @@ impl PlaygroundView {
                 if let Some(dest) = first_pos
                     .checked_sub(1)
                     .and_then(|idx| parent.children.get(idx))
-                    .filter(|b| {
-                        matches!(
-                            b.content,
-                            BlockContent::List { .. } | BlockContent::Paragraph { .. }
-                        )
-                    })
+                    .filter(|b| crate::overlays::can_accept_nested_child(b))
                 {
                     plans.push((
                         parent.id.clone(),

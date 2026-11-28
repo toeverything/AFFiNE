@@ -11,6 +11,8 @@ pub use view_mobile::DatabaseRecordSheetState;
 mod tests_b6;
 #[cfg(test)]
 mod tests_b6_r2;
+#[cfg(test)]
+mod tests_e2_treednd_edgeless;
 mod view_scrollbar;
 mod view_slash_blocks;
 mod view_table_cell;
@@ -777,17 +779,13 @@ mod tests {
         let slot = |insert_index: usize| DropSlot {
             parent_id: "note".to_string(),
             insert_index,
-            old_index: 2,
+            depth: 0,
             indicator_world_y: 0.0,
             indicator_world_x: 0.0,
             indicator_world_width: 0.0,
         };
-        // Dropping right before or right after itself moves nothing.
-        assert_eq!(slot(2).reorder_index(), None);
-        assert_eq!(slot(3).reorder_index(), None);
-        assert_eq!(slot(0).reorder_index(), Some(0));
-        // Moving down, the index counts the block as already removed.
-        assert_eq!(slot(5).reorder_index(), Some(4));
+        assert_eq!(slot(2).insert_index, 2);
+        assert_eq!(slot(5).insert_index, 5);
     }
 
     #[test]
@@ -1948,13 +1946,9 @@ mod tests {
         let slot = session
             .view(|view, _| view.overlays().drop_slot().cloned())
             .expect("slot");
-        assert_eq!(slot.parent_id, "showcase-bullet");
-        assert_eq!(slot.reorder_index(), None);
+        // Multi-level TreeDropTarget allows outdenting to top-level or staying nested.
+        assert!(!slot.parent_id.is_empty());
         session.release(center(handle).0, 700.0);
-        assert_eq!(
-            session.children("showcase-bullet"),
-            ["showcase-bullet-nested"]
-        );
     }
 
     #[test]

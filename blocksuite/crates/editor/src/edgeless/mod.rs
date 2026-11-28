@@ -4,6 +4,7 @@
 mod camera;
 mod canvas;
 mod canvas_paint;
+mod element_toolbar;
 mod frame_membership;
 mod geometry;
 mod hit_test;
@@ -25,6 +26,11 @@ pub use canvas::{
     world_bounds, world_rect,
 };
 pub use canvas_paint::build_edgeless_layer;
+pub use element_toolbar::{
+    EdgelessElementAction, EdgelessElementToolbarHost, ElementColorSlot, ElementToolbarSummary,
+    FILL_PALETTE, FONT_SIZE_TIERS, STROKE_PALETTE, STROKE_WIDTH_TIERS,
+    build_edgeless_element_toolbar, summarize_element_toolbar,
+};
 pub use frame_membership::{
     compute_frame_membership_updates, find_frame_containing_point, hovered_frame_for_drag,
 };

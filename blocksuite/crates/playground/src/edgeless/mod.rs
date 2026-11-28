@@ -4,6 +4,7 @@ mod commands;
 mod commit;
 mod connector_edit;
 mod copy_cut;
+mod element_toolbar;
 mod gestures;
 mod group_ops;
 mod inline_edit;

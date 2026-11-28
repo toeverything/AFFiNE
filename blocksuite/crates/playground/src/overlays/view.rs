@@ -29,8 +29,16 @@ impl PlaygroundView {
         layout: &'a FlowLayout,
         direction: ui::Direction,
         selection: Option<&'a SelectionFormat>,
+        local_collapsed: &'a std::collections::BTreeSet<String>,
     ) -> OverlayScene<'a> {
-        self.overlay_scene_with_transform(snapshot, layout, direction, selection, None)
+        self.overlay_scene_with_transform(
+            snapshot,
+            layout,
+            direction,
+            selection,
+            None,
+            local_collapsed,
+        )
     }
 
     pub(crate) fn overlay_scene_with_transform<'a>(
@@ -40,6 +48,7 @@ impl PlaygroundView {
         direction: ui::Direction,
         selection: Option<&'a SelectionFormat>,
         screen_transform: Option<OverlayScreenTransform>,
+        local_collapsed: &'a std::collections::BTreeSet<String>,
     ) -> OverlayScene<'a> {
         let focused_code_block = self.focused_code_block_id(layout);
         OverlayScene {
@@ -55,6 +64,7 @@ impl PlaygroundView {
             selection,
             screen_transform,
             suppress_floating_format_buttons: self.native_selection_ui,
+            local_collapsed,
         }
     }
 
@@ -162,6 +172,19 @@ impl PlaygroundView {
                 cx.notify();
                 return;
             }
+            OverlayEvent::DragHandlePress { block_id, anchor } => {
+                self.editor.dragging = false;
+                let now_ms = self.now_ms(cx);
+                let dragged_ids = self.resolve_multi_drag_ids(block_id);
+                self.overlays.start_drag_with_anchor(
+                    block_id.clone(),
+                    dragged_ids,
+                    Some(*anchor),
+                    now_ms,
+                );
+                cx.notify();
+                return;
+            }
             OverlayEvent::TableCellMouseDown {
                 block_id,
                 row_id,
@@ -199,8 +222,15 @@ impl PlaygroundView {
         );
         let effects = match &target {
             Some((snapshot, layout, transform)) => {
-                let scene = self
-                    .overlay_scene_with_transform(snapshot, layout, direction, None, *transform);
+                let local_collapsed = self.flow.local_collapsed.clone();
+                let scene = self.overlay_scene_with_transform(
+                    snapshot,
+                    layout,
+                    direction,
+                    None,
+                    *transform,
+                    &local_collapsed,
+                );
                 self.overlays.handle(event, Some(&scene), now_ms)
             }
             None => self.overlays.handle(event, None, now_ms),
@@ -255,6 +285,18 @@ impl PlaygroundView {
         if let Some(action) = effects.context_menu_action {
             let menu_target = self.context_menu_target.take();
             self.execute_context_menu_action(action, menu_target, window, cx);
+        }
+        if let Some((block_id, action)) = effects.block_menu_action {
+            if let Err(error) = self.execute_block_menu_action(&block_id, action, window, cx) {
+                eprintln!("block menu action: {error}");
+            }
+        }
+        if let Some(block_id) = effects.toggle_local_collapse {
+            if !self.flow.local_collapsed.remove(&block_id) {
+                self.flow.local_collapsed.insert(block_id);
+            }
+            self.env_rev = self.env_rev.wrapping_add(1);
+            cx.notify();
         }
         if self.overlays.slash_menu().is_none() {
             self.editor.slash_trigger = None;
@@ -629,11 +671,13 @@ impl PlaygroundView {
             .then(|| self.selection_format(layout))
             .flatten();
         self.overlays.set_database_readonly(self.database_readonly);
+        let local_collapsed = self.flow.local_collapsed.clone();
         let scene = self.overlay_scene(
             &snapshot,
             layout,
             window.layout_direction(),
             selection.as_ref(),
+            &local_collapsed,
         );
         let input = self.link_input_state();
         let layer = self
@@ -662,6 +706,7 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) -> Vec<AnyElement> {
         let now_ms = self.now_ms(cx);
+        let local_collapsed = self.flow.local_collapsed.clone();
         let mut elements = if let Some((snapshot, layout, transform)) = self.active_overlay_target()
         {
             if self.mode == PlaygroundMode::Edgeless {
@@ -674,6 +719,7 @@ impl PlaygroundView {
                     window.layout_direction(),
                     selection.as_ref(),
                     transform,
+                    &local_collapsed,
                 );
                 let input = self.link_input_state();
                 self.overlays.reconcile_edgeless(&scene, now_ms, window);
@@ -692,6 +738,7 @@ impl PlaygroundView {
                     window.layout_direction(),
                     None,
                     transform,
+                    &local_collapsed,
                 );
                 self.overlays.popovers(&scene, palette, now_ms, window, cx)
             }

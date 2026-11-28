@@ -24,6 +24,9 @@ pub struct BlockFlow {
     pub database_state: crate::database::DatabaseFlowState,
     /// `affine:code` block ids currently toggled into visual preview mode (zero CRDT writeback).
     pub code_preview_blocks: BTreeSet<String>,
+    /// Non-heading `Paragraph`/`Quote` block ids collapsed strictly in local view state
+    /// (zero CRDT `prop:collapsed` writeback; cleared when switching documents).
+    pub local_collapsed: BTreeSet<String>,
     /// Currently focused editable `affine:table` block id, if any (`None` when unfocused/readonly).
     pub focused_table_block: Option<String>,
     /// Transient four-state interaction map for external embed cards (`showOverlay` shield).
@@ -44,6 +47,7 @@ pub(super) struct FlowPass<'a> {
     pub(super) database_hits: HashMap<String, Vec<crate::database::DatabaseHitTarget>>,
     pub(super) database_view_tabs_max_scroll: HashMap<String, (i32, i32)>,
     pub(super) code_preview_blocks: &'a BTreeSet<String>,
+    pub(super) local_collapsed: &'a BTreeSet<String>,
     pub(super) focused_table_block: Option<&'a str>,
     pub(super) embed_states: &'a HashMap<String, EmbedCardState>,
     pub(super) embeds_shielded: bool,
@@ -111,6 +115,7 @@ impl BlockFlow {
             database_hits: std::mem::take(&mut self.database_hits),
             database_view_tabs_max_scroll: std::mem::take(&mut self.database_view_tabs_max_scroll),
             code_preview_blocks: &self.code_preview_blocks,
+            local_collapsed: &self.local_collapsed,
             focused_table_block: self.focused_table_block.as_deref(),
             embed_states: &self.embed_states,
             embeds_shielded: self.embeds_shielded,
@@ -213,6 +218,7 @@ impl BlockFlow {
             database_hits: std::mem::take(&mut self.database_hits),
             database_view_tabs_max_scroll: std::mem::take(&mut self.database_view_tabs_max_scroll),
             code_preview_blocks: &self.code_preview_blocks,
+            local_collapsed: &self.local_collapsed,
             focused_table_block: self.focused_table_block.as_deref(),
             embed_states: &self.embed_states,
             embeds_shielded: self.embeds_shielded,
@@ -378,6 +384,15 @@ impl<'a> FlowPass<'a> {
                 && self.focused_table_block == Some(node.id.as_str());
             let embed_card_state = matches!(node.content, BlockContent::ExternalEmbed { .. })
                 .then(|| self.effective_embed_state(&node.id));
+            let local_collapsed = matches!(
+                node.content,
+                BlockContent::Paragraph {
+                    kind: blocksuite_playground_doc::schema::ParagraphType::Text
+                        | blocksuite_playground_doc::schema::ParagraphType::Quote,
+                    ..
+                }
+            ) && !node.children.is_empty()
+                && self.local_collapsed.contains(&node.id);
             let fingerprint = (
                 &node.content,
                 node.children.is_empty(),
@@ -390,7 +405,12 @@ impl<'a> FlowPass<'a> {
                 block_utc_offset,
                 surface_ref_sig,
                 db_sig,
-                (code_preview_sig, table_focused, embed_card_state),
+                (
+                    code_preview_sig,
+                    table_focused,
+                    embed_card_state,
+                    local_collapsed,
+                ),
             );
             let body = self.body(&node.id, &fingerprint, |pass| {
                 pass.block_body(node, width, list_depth, align)
@@ -420,6 +440,12 @@ impl<'a> FlowPass<'a> {
 
             let (shows_children, child_depth) = match &node.content {
                 BlockContent::List { collapsed, .. } => (!collapsed, list_depth + 1),
+                BlockContent::Paragraph {
+                    kind:
+                        blocksuite_playground_doc::schema::ParagraphType::Text
+                        | blocksuite_playground_doc::schema::ParagraphType::Quote,
+                    ..
+                } => (!local_collapsed, 0),
                 BlockContent::Paragraph { collapsed, .. } => (!collapsed, 0),
                 BlockContent::Database(_) | BlockContent::Unknown(_) => (false, 0),
                 _ => (true, 0),

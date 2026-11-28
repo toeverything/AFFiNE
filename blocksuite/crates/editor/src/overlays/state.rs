@@ -53,89 +53,11 @@ impl Overlays {
         self.close_slash(now_ms);
         self.close_linked_doc(now_ms);
         self.close_context_menu(now_ms);
+        self.close_block_menu(now_ms);
         self.close_link_field();
         self.close_equation_editor_at(now_ms);
         self.close_bookmark_prompt_at(now_ms);
         self.drag = None;
-    }
-
-    /// Open or reopen the desktop right-click context menu at window-space `anchor`.
-    pub fn open_context_menu(
-        &mut self,
-        anchor: (f32, f32),
-        can_copy: bool,
-        can_cut: bool,
-        can_paste: bool,
-        link_url: Option<String>,
-        now_ms: f64,
-    ) {
-        let presence = match self.context_menu.take() {
-            Some(menu) => menu.presence.reopened(now_ms),
-            None => Presence::opening(now_ms),
-        };
-        self.context_menu = Some(ContextMenuState {
-            anchor,
-            can_copy,
-            can_cut,
-            can_paste,
-            link_url,
-            selected: None,
-            presence,
-            rect: None,
-        });
-    }
-
-    /// Dismiss the desktop right-click context menu with a fade-out transition.
-    pub fn close_context_menu(&mut self, now_ms: f64) -> bool {
-        match self
-            .context_menu
-            .as_mut()
-            .filter(|menu| !menu.presence.closing)
-        {
-            Some(menu) => {
-                menu.presence.close(now_ms);
-                true
-            }
-            None => false,
-        }
-    }
-
-    /// Active (non-closing) desktop right-click context menu.
-    pub fn context_menu(&self) -> Option<&ContextMenuState> {
-        self.context_menu
-            .as_ref()
-            .filter(|menu| !menu.presence.closing)
-    }
-
-    /// Show a transient clipboard fallback toast and return its generation token.
-    pub fn show_context_toast(&mut self, message: impl Into<String>) -> u64 {
-        self.context_toast_generation += 1;
-        let generation = self.context_toast_generation;
-        self.context_toast = Some(ContextToast {
-            message: message.into(),
-            generation,
-        });
-        generation
-    }
-
-    /// Expire the context toast if its generation matches.
-    pub fn context_toast_expired(&mut self, generation: u64) -> bool {
-        if self
-            .context_toast
-            .as_ref()
-            .is_some_and(|toast| toast.generation == generation)
-        {
-            self.context_toast = None;
-            return true;
-        }
-        false
-    }
-
-    /// Active context toast message, if any.
-    pub fn context_toast_message(&self) -> Option<&str> {
-        self.context_toast
-            .as_ref()
-            .map(|toast| toast.message.as_str())
     }
 
     pub(super) fn open_slash(
@@ -214,11 +136,21 @@ impl Overlays {
                     effects.redraw = true;
                 }
                 if let Some(drag) = self.drag.as_mut() {
-                    let (_, world_y) = scene.screen_to_world(x, y);
-                    let slot = drop_slot(scene, &drag.block_id, world_y);
-                    if slot != drag.slot {
-                        drag.slot = slot;
+                    if !drag.moved
+                        && let Some((sx, sy)) = drag.start_screen
+                        && (x - sx).hypot(y - sy) >= DRAG_START_THRESHOLD_PX
+                    {
+                        drag.moved = true;
                         effects.redraw = true;
+                    }
+                    if drag.moved {
+                        let (world_x, world_y) = scene.screen_to_world(x, y);
+                        let slot =
+                            resolve_tree_drop_target(scene, &drag.dragged_ids, world_x, world_y);
+                        if slot != drag.slot {
+                            drag.slot = slot;
+                            effects.redraw = true;
+                        }
                     }
                 } else {
                     // A pointer on an open popover does not reach the blocks under it.
@@ -229,6 +161,7 @@ impl Overlays {
                         self.equation_editor().and_then(|editor| editor.rect),
                         self.bookmark_prompt().and_then(|prompt| prompt.rect),
                         self.context_menu().and_then(|menu| menu.rect),
+                        self.block_menu().and_then(|menu| menu.rect),
                     ]
                     .into_iter()
                     .flatten()
@@ -262,18 +195,25 @@ impl Overlays {
             }
             OverlayEvent::PointerUp => {
                 if let Some(drag) = self.drag.take() {
-                    if let Some(slot) = drag.slot {
-                        if drag.dragged_ids.len() > 1 {
+                    if !drag.moved
+                        && let Some(anchor) = drag.start_screen
+                    {
+                        let (can_up, can_down) = scene
+                            .and_then(|s| s.snapshot.root.as_ref())
+                            .and_then(|root| find_parent(root, &drag.block_id))
+                            .map_or((false, false), |(parent, idx)| {
+                                (idx > 0, idx + 1 < parent.children.len())
+                            });
+                        self.open_block_menu(drag.block_id, anchor, can_up, can_down, now_ms);
+                    } else if let Some(slot) = drag.slot {
+                        let noop = scene
+                            .and_then(|s| s.snapshot.root.as_ref())
+                            .is_some_and(|root| slot.is_noop_for(root, &drag.dragged_ids));
+                        if !noop {
                             effects.edits.push(DocEdit::ReorderMany {
                                 parent_id: slot.parent_id,
                                 child_ids: drag.dragged_ids,
                                 insert_index: slot.insert_index,
-                            });
-                        } else if let Some(new_index) = slot.reorder_index() {
-                            effects.edits.push(DocEdit::Reorder {
-                                parent_id: slot.parent_id,
-                                child_id: drag.block_id,
-                                new_index,
                             });
                         }
                     }
@@ -357,6 +297,34 @@ impl Overlays {
                 let Some(node) = scene.snapshot.block(&block_id) else {
                     return effects;
                 };
+                let is_local_paragraph = matches!(
+                    node.content,
+                    BlockContent::Paragraph {
+                        kind: blocksuite_playground_doc::schema::ParagraphType::Text
+                            | blocksuite_playground_doc::schema::ParagraphType::Quote,
+                        ..
+                    }
+                );
+                if is_local_paragraph {
+                    // Non-heading Paragraph/Quote collapse is stored strictly in local view state
+                    // (zero CRDT `prop:collapsed` writeback) to prevent Web collaborative ping-pong.
+                    if node.children.is_empty() {
+                        return effects;
+                    }
+                    let collapsed = scene.local_collapsed.contains(&block_id);
+                    let rest = |c: bool| if c { 0.0 } else { 1.0 };
+                    let from = self
+                        .chevrons
+                        .get(&block_id)
+                        .map_or(rest(collapsed), |motion| motion.value_at(now_ms));
+                    self.chevrons.insert(
+                        block_id.clone(),
+                        EaseOut::new(from, rest(!collapsed), now_ms),
+                    );
+                    effects.toggle_local_collapse = Some(block_id);
+                    effects.redraw = true;
+                    return effects;
+                }
                 // A toggle without children shows no state to turn between.
                 let (collapsed, animated) = match &node.content {
                     BlockContent::List { collapsed, .. } => (*collapsed, !node.children.is_empty()),
@@ -406,6 +374,28 @@ impl Overlays {
             OverlayEvent::ToggleCodePreview(_) | OverlayEvent::ExternalEmbedInteract { .. } => {}
             OverlayEvent::DragStart(block_id) => {
                 self.start_drag(block_id, Vec::new(), now_ms);
+                effects.redraw = true;
+            }
+            OverlayEvent::DragHandlePress { block_id, anchor } => {
+                self.start_drag_with_anchor(block_id, Vec::new(), Some(anchor), now_ms);
+                effects.redraw = true;
+            }
+            OverlayEvent::OpenBlockMenu { block_id, anchor } => {
+                let (can_up, can_down) = scene
+                    .and_then(|s| s.snapshot.root.as_ref())
+                    .and_then(|root| find_parent(root, &block_id))
+                    .map_or((false, false), |(parent, idx)| {
+                        (idx > 0, idx + 1 < parent.children.len())
+                    });
+                self.open_block_menu(block_id, anchor, can_up, can_down, now_ms);
+                effects.redraw = true;
+            }
+            OverlayEvent::CloseBlockMenu => {
+                effects.redraw = self.close_block_menu(now_ms);
+            }
+            OverlayEvent::BlockMenuAction { block_id, action } => {
+                self.close_block_menu(now_ms);
+                effects.block_menu_action = Some((block_id, action));
                 effects.redraw = true;
             }
             OverlayEvent::OpenEquationEditor { target, initial } => {
@@ -487,6 +477,20 @@ impl Overlays {
         let shift = keystroke.modifiers.shift;
 
         if key == "escape" && self.drag.take().is_some() {
+            effects.handled = true;
+            effects.redraw = true;
+            return effects;
+        }
+
+        if let Some((close, action)) = self
+            .block_menu
+            .as_mut()
+            .and_then(|menu| menu.handle_key(key))
+        {
+            if close {
+                self.close_block_menu(now_ms);
+            }
+            effects.block_menu_action = action;
             effects.handled = true;
             effects.redraw = true;
             return effects;
@@ -770,6 +774,11 @@ impl Overlays {
             .is_some_and(|menu| menu.presence.gone(now_ms))
         {
             self.context_menu = None;
+        }
+        if self.block_menu.as_ref().is_some_and(|menu| {
+            menu.presence.gone(now_ms) || layout.block(&menu.block_id).is_none()
+        }) {
+            self.block_menu = None;
         }
     }
 }

@@ -53,6 +53,7 @@ impl PlaygroundView {
             viewport_width,
             toolbar_visible,
             self.form_factor.is_touch_form_factor(),
+            window.layout_direction(),
             palette,
             self.theme,
             move |this: &mut Self, _, _, cx| {
@@ -76,6 +77,30 @@ impl PlaygroundView {
             },
             cx,
         );
+        if self.edgeless.authoring.selection.is_empty()
+            || self.edgeless.authoring.inline_edit.is_some()
+            || self.edgeless.authoring.gesture.is_some()
+        {
+            self.edgeless_element_color_picker = None;
+        }
+        let viewport_height = f32::from(vp_size.height);
+        let element_toolbar = (toolbar_visible
+            && self.form_factor != crate::block_flow::FormFactor::Phone)
+            .then(|| {
+                let snap = self.snapshot.as_ref()?;
+                super::build_edgeless_element_toolbar(
+                    snap,
+                    &self.edgeless.authoring,
+                    self.edgeless.camera,
+                    viewport_width,
+                    viewport_height,
+                    self.edgeless_element_color_picker,
+                    palette,
+                    self.theme,
+                    cx,
+                )
+            })
+            .flatten();
         let toolbar = toolbar_visible.then(|| {
             let picker_state = self.edgeless_shape_picker_presence.and_then(|presence| {
                 let progress = presence.progress(now_ms);
@@ -88,14 +113,25 @@ impl PlaygroundView {
                     interactive: !presence.closing,
                 })
             });
-            super::build_edgeless_toolbar(
+            let creation = super::build_edgeless_toolbar(
                 self.edgeless.authoring.tool,
                 picker_state,
                 viewport_width,
                 palette,
                 self.theme,
                 cx,
-            )
+            );
+            if let Some(el_bar) = element_toolbar {
+                use ui::prelude::*;
+                ui::div()
+                    .absolute()
+                    .inset_0()
+                    .child(el_bar)
+                    .child(creation)
+                    .into_any_element()
+            } else {
+                creation
+            }
         });
         (zoom_controls, toolbar)
     }
@@ -117,10 +153,15 @@ impl PlaygroundView {
             None => current,
         };
         compute_target(&mut target);
-        self.edgeless.camera = current;
         self.edgeless.camera_initialized = true;
-        self.edgeless_camera_transition =
-            Some(CameraTransition::new(current, target, vp_size, now_ms));
+        if cx.reduce_motion() {
+            self.edgeless.camera = target;
+            self.edgeless_camera_transition = None;
+        } else {
+            self.edgeless.camera = current;
+            self.edgeless_camera_transition =
+                Some(CameraTransition::new(current, target, vp_size, now_ms));
+        }
         cx.notify();
     }
 }

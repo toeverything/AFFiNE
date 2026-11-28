@@ -96,47 +96,6 @@ pub fn place_popover(
 }
 
 impl Overlays {
-    /// Render the desktop right-click context menu and transient clipboard toast for any mode.
-    pub fn context_overlays<V: OverlayHost>(
-        &mut self,
-        window_size: (f32, f32),
-        palette: &Palette,
-        now_ms: f64,
-        window: &mut Window,
-        cx: &mut Context<V>,
-    ) -> Vec<AnyElement> {
-        if self
-            .context_menu
-            .as_ref()
-            .is_some_and(|menu| menu.presence.gone(now_ms))
-        {
-            self.context_menu = None;
-        }
-        if self
-            .context_menu
-            .as_ref()
-            .is_some_and(|menu| menu.presence.in_flight(now_ms) || menu.presence.closing)
-        {
-            window.request_animation_frame();
-        }
-        let viewport = FlowRect::new(
-            0.0,
-            TOPBAR_HEIGHT,
-            window_size.0,
-            (window_size.1 - TOPBAR_HEIGHT).max(0.0),
-        );
-        let mut elements = Vec::new();
-        if let Some(menu) = self.context_menu.as_mut() {
-            elements.extend(context_menu::render_context_menu(
-                menu, viewport, palette, now_ms, cx,
-            ));
-        }
-        if let Some(toast) = self.context_toast.as_ref() {
-            elements.push(context_menu::render_context_toast(toast, viewport, palette));
-        }
-        elements
-    }
-
     /// Build the screen-space popovers, positioned in window coordinates: the slash menu
     /// and the formatting toolbar. Call after [`Overlays::page_layer`] in the same frame.
     pub fn popovers<V: OverlayHost>(
