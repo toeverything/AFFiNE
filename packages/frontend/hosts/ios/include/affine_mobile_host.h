@@ -604,6 +604,203 @@ uint64_t affine_ios_host_haptic_count(
 uint64_t affine_ios_host_haptic_total_count(
     const AffineIosHost *host);
 
+/* Document-level selection, multi-MIME clipboard, and full-document UITextPosition C ABI. */
+
+typedef void (*AffineClipboardWriteFn)(
+    const uint8_t *utf8_ptr,
+    size_t utf8_len,
+    void *user_data);
+
+typedef void (*AffineClipboardReadSinkFn)(
+    const uint8_t *utf8_ptr,
+    size_t utf8_len,
+    void *ctx);
+
+typedef void (*AffineClipboardReadFn)(
+    AffineClipboardReadSinkFn sink,
+    void *ctx,
+    void *user_data);
+
+typedef struct AffineClipboardProvider {
+  AffineClipboardWriteFn write_json;
+  AffineClipboardReadFn read_json;
+  void *user_data;
+} AffineClipboardProvider;
+
+typedef struct AffineDocumentSelectionSnapshot {
+  bool has_selection;
+  bool is_collapsed;
+  bool is_reversed;
+  bool start_is_rtl;
+  bool end_is_rtl;
+  bool start_visible;
+  bool end_visible;
+  bool menu_anchor_visible;
+  bool menu_suppressed_for_motion;
+  AffineRect start_caret;
+  AffineRect end_caret;
+  AffineRect menu_anchor_rect;
+  uint32_t action_mask;
+  uint64_t menu_request_seq;
+  size_t rect_count;
+} AffineDocumentSelectionSnapshot;
+
+typedef struct AffineDocumentSelectionRect {
+  AffineRect rect;
+  bool is_rtl;
+  bool contains_start;
+  bool contains_end;
+} AffineDocumentSelectionRect;
+
+typedef struct AffineDocPosition {
+  bool valid;
+  int32_t block_order;
+  uint32_t utf16_offset;
+  uint64_t endpoint_token;
+} AffineDocPosition;
+
+void affine_ios_host_set_clipboard_provider(
+    AffineIosHost *host,
+    AffineClipboardProvider provider);
+
+void affine_ios_host_set_page_readonly(
+    AffineIosHost *host,
+    bool readonly);
+
+bool affine_ios_host_is_surface_readonly(
+    const AffineIosHost *host);
+
+void affine_ios_host_restore_software_keyboard(
+    AffineIosHost *host);
+
+AffineDocumentSelectionSnapshot affine_ios_host_document_selection_snapshot(
+    const AffineIosHost *host);
+
+void affine_ios_host_doc_selection_endpoint_tokens(
+    const AffineIosHost *host,
+    uint64_t *out_start,
+    uint64_t *out_end);
+
+size_t affine_ios_host_document_selection_rects(
+    const AffineIosHost *host,
+    AffineDocumentSelectionRect *out_rects,
+    size_t capacity);
+
+size_t affine_ios_host_doc_selection_preview_rects(
+    const AffineIosHost *host,
+    uint64_t fixed_endpoint_token,
+    float fx,
+    float fy,
+    AffineDocumentSelectionRect *out_rects,
+    size_t capacity);
+
+bool affine_ios_host_doc_caret_rect_at_point(
+    const AffineIosHost *host,
+    float x,
+    float y,
+    AffineRect *out_rect);
+
+char *affine_ios_host_selected_plain_text(
+    const AffineIosHost *host);
+
+bool affine_ios_host_should_forward_touch_immediately(
+    const AffineIosHost *host,
+    float x,
+    float y);
+
+bool affine_ios_host_select_word_at_point(
+    AffineIosHost *host,
+    float x,
+    float y);
+
+void affine_ios_host_bump_selection_menu_request_seq(
+    AffineIosHost *host);
+
+bool affine_ios_host_doc_selection_begin_drag(
+    AffineIosHost *host,
+    uint8_t handle);
+
+bool affine_ios_host_doc_selection_update_drag(
+    AffineIosHost *host,
+    float x,
+    float y);
+
+void affine_ios_host_doc_selection_end_drag(
+    AffineIosHost *host);
+
+bool affine_ios_host_doc_selection_select_from_endpoint_token(
+    AffineIosHost *host,
+    uint64_t fixed_endpoint_token,
+    float fx,
+    float fy);
+
+bool affine_ios_host_doc_selection_select_between_points(
+    AffineIosHost *host,
+    float ax,
+    float ay,
+    float fx,
+    float fy);
+
+bool affine_ios_host_doc_selection_select_between_endpoint_tokens(
+    AffineIosHost *host,
+    uint64_t start_endpoint_token,
+    uint64_t end_endpoint_token);
+
+void affine_ios_host_selection_action_copy(AffineIosHost *host);
+void affine_ios_host_selection_action_cut(AffineIosHost *host);
+void affine_ios_host_selection_action_paste(AffineIosHost *host);
+void affine_ios_host_selection_action_select_all(AffineIosHost *host);
+
+int32_t affine_ios_host_focused_block_order(const AffineIosHost *host);
+
+bool affine_ios_host_doc_document_bounds(
+    const AffineIosHost *host,
+    AffineDocPosition *out_start,
+    AffineDocPosition *out_end);
+
+bool affine_ios_host_doc_selection_positions(
+    const AffineIosHost *host,
+    AffineDocPosition *out_start,
+    AffineDocPosition *out_end);
+
+AffineDocPosition affine_ios_host_doc_hit_position(
+    const AffineIosHost *host,
+    float x,
+    float y);
+
+bool affine_ios_host_doc_caret_rect_for_token(
+    const AffineIosHost *host,
+    uint64_t endpoint_token,
+    AffineRect *out_rect);
+
+size_t affine_ios_host_doc_selection_rects_between_tokens(
+    const AffineIosHost *host,
+    uint64_t start_endpoint_token,
+    uint64_t end_endpoint_token,
+    AffineDocumentSelectionRect *out_rects,
+    size_t capacity);
+
+AffineDocPosition affine_ios_host_doc_step_position(
+    const AffineIosHost *host,
+    uint64_t endpoint_token,
+    ptrdiff_t delta);
+
+bool affine_ios_host_doc_word_range(
+    const AffineIosHost *host,
+    uint64_t endpoint_token,
+    AffineDocPosition *out_start,
+    AffineDocPosition *out_end);
+
+int32_t affine_ios_host_doc_offset_between_tokens(
+    const AffineIosHost *host,
+    uint64_t from_token,
+    uint64_t to_token);
+
+char *affine_ios_host_doc_text_between_tokens(
+    const AffineIosHost *host,
+    uint64_t start_endpoint_token,
+    uint64_t end_endpoint_token);
+
 #ifdef __cplusplus
 }
 #endif

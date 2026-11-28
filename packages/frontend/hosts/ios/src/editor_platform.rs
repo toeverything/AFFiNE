@@ -509,7 +509,7 @@ pub(crate) struct IosEditorPlatform {
     initial_bounds: Bounds<Pixels>,
     initial_scale: f32,
     opened_window: RefCell<Option<IosEditorWindow>>,
-    clipboard: RefCell<Option<ClipboardItem>>,
+    pub(crate) clipboard: super::clipboard::IosClipboardStore,
     open_url_observer: RefCell<Option<OpenUrlObserver>>,
 }
 
@@ -554,7 +554,7 @@ impl IosEditorPlatform {
                 2.0
             },
             opened_window: RefCell::new(None),
-            clipboard: RefCell::new(None),
+            clipboard: super::clipboard::IosClipboardStore::default(),
             open_url_observer: RefCell::new(None),
         }
     }
@@ -727,11 +727,11 @@ impl Platform for IosEditorPlatform {
     }
 
     fn write_to_clipboard(&self, item: ClipboardItem) {
-        *self.clipboard.borrow_mut() = Some(item);
+        self.clipboard.write(item);
     }
 
     fn read_from_clipboard(&self) -> Option<ClipboardItem> {
-        self.clipboard.borrow().clone()
+        self.clipboard.read()
     }
 
     #[cfg(target_os = "linux")]

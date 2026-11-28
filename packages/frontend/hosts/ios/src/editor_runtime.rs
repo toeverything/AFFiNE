@@ -67,6 +67,8 @@ pub(crate) struct IosEditorRuntime {
     form_factor: FormFactor,
     frame_count: u64,
     last_frame_timestamp_sec: f64,
+    pub(crate) endpoint_tokens: Vec<(u64, playground::SelectionEndpointAnchor)>,
+    pub(crate) next_endpoint_token: u64,
 }
 
 impl IosEditorRuntime {
@@ -99,7 +101,9 @@ impl IosEditorRuntime {
             Rc::new(std::cell::RefCell::new(None));
         let view_slot_init = Rc::clone(&view_slot);
 
-        let options = PlaygroundOptions::for_form_factor(form_factor);
+        let mut options = PlaygroundOptions::for_form_factor(form_factor);
+        options.native_selection_ui = true;
+        options.native_suppresses_gpu_caret_and_selection = true;
         let bounds = Bounds::new(point(px(0.0), px(0.0)), size(px(w), px(h)));
 
         let app = Application::with_platform(platform).run_embedded(move |cx| {
@@ -141,6 +145,8 @@ impl IosEditorRuntime {
             form_factor,
             frame_count: 0,
             last_frame_timestamp_sec: 0.0,
+            endpoint_tokens: Vec::with_capacity(256),
+            next_endpoint_token: 1,
         };
         // Render initial frame so layout and `PlatformInputHandler` are live immediately.
         runtime.window.request_frame_now();
@@ -178,8 +184,16 @@ impl IosEditorRuntime {
         };
         let prev = self.window.state.borrow().insets.clone();
         if prev != ui_insets {
+            let was_wants_keyboard = self.wants_software_keyboard();
             self.window.set_insets(ui_insets);
             self.window.request_frame_now();
+            // Prevent transient `ime_bottom == 0` samples during `becomeFirstResponder` or
+            // keyboard frame transitions from flipping `keyboard_toolbar_dismissed = true`
+            // in `PlaygroundView::render`. Explicit toolbar dismiss already cleared
+            // `wants_software_keyboard()` before this inset update arrived.
+            if ime_above_safe == 0.0 && was_wants_keyboard && !self.wants_software_keyboard() {
+                self.restore_software_keyboard();
+            }
         }
     }
 
@@ -467,6 +481,7 @@ impl IosEditorRuntime {
 
     pub(crate) fn set_selected_range(&mut self, range: AffineUtf16Range) {
         self.ensure_input_handler();
+        self.restore_software_keyboard();
         let start = range.location as usize;
         let end = start.saturating_add(range.length as usize);
         let _ = self
@@ -540,11 +555,14 @@ impl IosEditorRuntime {
 
     pub(crate) fn closest_offset(&mut self, pt: AffinePoint) -> Option<u32> {
         self.ensure_input_handler();
-        let off = self
+        if let Some(off) = self
             .window
             .with_input_handler(|h| h.character_index_for_point(point(px(pt.x), px(pt.y))))
-            .flatten()?;
-        Some(off.min(u32::MAX as usize) as u32)
+            .flatten()
+        {
+            return Some(off.min(u32::MAX as usize) as u32);
+        }
+        self.doc_hit_position(pt.x, pt.y).map(|p| p.utf16_offset)
     }
 
     pub(crate) fn change_kind_code(change: TextInputStateChange) -> u8 {
@@ -554,6 +572,40 @@ impl IosEditorRuntime {
             TextInputStateChange::SelectionChanged => 3,
             TextInputStateChange::ContentChanged => 4,
         }
+    }
+
+    pub(crate) fn set_clipboard_provider(
+        &self,
+        provider: Option<super::clipboard::AffineClipboardProvider>,
+    ) {
+        self.platform.clipboard.set_provider(provider);
+    }
+
+    pub(crate) fn set_page_readonly(&mut self, readonly: bool) {
+        let _ = self.app.update(|cx| {
+            let _ = self
+                .view
+                .update(cx, |view, _, cx| view.set_page_readonly(readonly, cx));
+        });
+        self.window.request_frame_now();
+    }
+
+    pub(crate) fn is_surface_readonly(&self) -> bool {
+        self.app
+            .update(|cx| {
+                self.view.read_with(cx, |view, _| match view.mode() {
+                    PlaygroundMode::Page => view.page_readonly(),
+                    PlaygroundMode::Edgeless => view.edgeless_readonly(),
+                })
+            })
+            .unwrap_or(true)
+    }
+
+    pub(crate) fn restore_software_keyboard(&mut self) {
+        let view = self.view;
+        let _ = self.app.update(|cx| {
+            let _ = view.update(cx, |v, _, _| v.restore_software_keyboard_on_focus());
+        });
     }
 }
 
