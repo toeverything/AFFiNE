@@ -64,6 +64,7 @@ impl RuntimeAggregateRequest {
 const MAX_QUERY_GRAPH_NODES: usize = 100;
 const MAX_QUERY_DEPTH: usize = 100;
 const MAX_DECODED_QUERY_NODES: usize = 1_000;
+const MAX_SEARCH_PAGINATION: u64 = 10_000;
 
 fn decode_query(
   nodes: &[RuntimeSearchQuery],
@@ -127,17 +128,23 @@ pub(super) fn compile(request: &SearchRequest, scope: &AuthorizedSearchScope) ->
     "sort": stable_sort(request.table),
   });
   let pagination = &request.options.pagination;
-  if pagination.limit.unwrap_or(10) > 10_000 {
+  let limit = pagination.limit.unwrap_or(10);
+  if u64::from(limit) > MAX_SEARCH_PAGINATION {
     return Err(RuntimeError::invalid_input("search limit exceeds 10000"));
   }
-  dsl["size"] = json!(pagination.limit.unwrap_or(10));
+  dsl["size"] = json!(limit);
   if let Some(skip) = pagination.skip {
-    if skip.saturating_add(pagination.limit.unwrap_or(10)) > 10_000 {
+    if u64::from(skip).saturating_add(u64::from(limit)) > MAX_SEARCH_PAGINATION {
       return Err(RuntimeError::invalid_input("search offset exceeds 10000"));
     }
     dsl["from"] = json!(skip);
   }
   if let Some(cursor) = &pagination.cursor {
+    if super::parse_offset_cursor(cursor)
+      .is_some_and(|offset| offset.saturating_add(u64::from(limit)) > MAX_SEARCH_PAGINATION)
+    {
+      return Err(RuntimeError::invalid_input("search offset exceeds 10000"));
+    }
     dsl["cursor"] = json!(cursor);
   }
   if !request.options.highlights.is_empty() {
@@ -397,6 +404,44 @@ mod tests {
     oversized.options.pagination.limit = Some(10_000);
     oversized.options.pagination.skip = Some(1);
     assert!(compile(&oversized, &scope()).is_err());
+  }
+
+  #[test]
+  fn validates_cursor_pagination_offset_bounds() {
+    for (cursor, limit, expected_error) in [
+      (r#"{"offset":1000}"#, Some(20), None),
+      (r#"{"offset":9990}"#, Some(10), None),
+      (r#"{"offset":9990}"#, None, None),
+      (r#"{"offset":10000}"#, Some(0), None),
+      (r#"{"offset":9991}"#, None, Some("search offset exceeds 10000")),
+      (r#"{"offset":10000}"#, Some(1), Some("search offset exceeds 10000")),
+      (r#"{"offset":100000000}"#, Some(1), Some("search offset exceeds 10000")),
+      (
+        r#"{"offset":18446744073709551615}"#,
+        Some(1),
+        Some("search offset exceeds 10000"),
+      ),
+      (r#"[1.5,1700000000,"doc-1"]"#, Some(20), None),
+      ("opaque-cursor", Some(20), None),
+    ] {
+      let mut search = request(json!({"type":"all"}));
+      search.options.pagination.skip = None;
+      search.options.pagination.limit = limit;
+      search.options.pagination.cursor = Some(cursor.to_string());
+      let result = compile(&search, &scope());
+      match expected_error {
+        Some(expected) => {
+          assert!(
+            matches!(&result, Err(RuntimeError::InvalidInput(message)) if message == expected),
+            "expected invalid input `{expected}` for cursor={cursor}, limit={limit:?}, got {result:?}"
+          );
+        }
+        None => {
+          let dsl = result.unwrap_or_else(|error| panic!("cursor={cursor}, limit={limit:?} failed: {error:?}"));
+          assert_eq!(dsl["cursor"], cursor);
+        }
+      }
+    }
   }
 
   #[test]
