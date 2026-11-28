@@ -9,11 +9,11 @@ use y_octo::{Any, SessionValue, TextDeltaOp, TextInsert};
 
 pub(super) const PASTE_OFFSET: f64 = 24.0;
 
-pub(super) fn offset_xywh_str(raw: &str) -> String {
+pub(super) fn offset_xywh_by(raw: &str, dx: f64, dy: f64) -> String {
     match super::parse_xywh(raw) {
         Some(r) => PageDocSession::format_xywh([
-            f64::from(r.x) + PASTE_OFFSET,
-            f64::from(r.y) + PASTE_OFFSET,
+            f64::from(r.x) + dx,
+            f64::from(r.y) + dy,
             f64::from(r.w),
             f64::from(r.h),
         ]),
@@ -45,6 +45,17 @@ pub(super) fn remap_surface_element(
     new_index: &str,
     id_map: &HashMap<String, String>,
 ) -> Vec<(String, SessionValue)> {
+    remap_surface_element_with_offset(elem, new_id, new_index, PASTE_OFFSET, PASTE_OFFSET, id_map)
+}
+
+pub(super) fn remap_surface_element_with_offset(
+    elem: &Map<String, Value>,
+    new_id: &str,
+    new_index: &str,
+    dx: f64,
+    dy: f64,
+    id_map: &HashMap<String, String>,
+) -> Vec<(String, SessionValue)> {
     let elem_type = elem.get("type").and_then(Value::as_str).unwrap_or("");
     let mut entries = Vec::new();
     for (k, v) in elem {
@@ -58,7 +69,10 @@ pub(super) fn remap_surface_element(
                 SessionValue::Any(Any::String(new_index.to_string())),
             )),
             "xywh" => {
-                let shifted = v.as_str().map(offset_xywh_str).unwrap_or_default();
+                let shifted = v
+                    .as_str()
+                    .map(|s| offset_xywh_by(s, dx, dy))
+                    .unwrap_or_default();
                 entries.push(("xywh".to_string(), SessionValue::Any(Any::String(shifted))));
             }
             "children" if elem_type == "mindmap" => {
@@ -68,7 +82,7 @@ pub(super) fn remap_surface_element(
                 entries.push(("children".to_string(), remap_group_children(v, id_map)));
             }
             "source" | "target" if elem_type == "connector" => {
-                entries.push((k.clone(), remap_connector_endpoint(v, id_map)));
+                entries.push((k.clone(), remap_connector_endpoint(v, dx, dy, id_map)));
             }
             "childElementIds" if elem_type == "frame" => {
                 entries.push((
@@ -160,11 +174,17 @@ pub(super) fn remap_group_children(val: &Value, id_map: &HashMap<String, String>
 
 pub(super) fn remap_connector_endpoint(
     val: &Value,
+    dx: f64,
+    dy: f64,
     id_map: &HashMap<String, String>,
 ) -> SessionValue {
     let Some(obj) = val.as_object() else {
         return surface_json_to_session_value(val);
     };
+    let has_id = obj
+        .get("id")
+        .and_then(Value::as_str)
+        .is_some_and(|s| !s.is_empty());
     let mut out = HashMap::new();
     for (k, v) in obj {
         if k == "id"
@@ -172,6 +192,21 @@ pub(super) fn remap_connector_endpoint(
             && let Some(new_id) = id_map.get(old_id)
         {
             out.insert(k.clone(), Any::String(new_id.clone()));
+            continue;
+        }
+        if k == "position"
+            && !has_id
+            && let Some(arr) = v.as_array()
+            && arr.len() == 2
+            && let (Some(x), Some(y)) = (arr[0].as_f64(), arr[1].as_f64())
+        {
+            out.insert(
+                k.clone(),
+                Any::Array(vec![
+                    Any::Float64((x + dx).into()),
+                    Any::Float64((y + dy).into()),
+                ]),
+            );
             continue;
         }
         out.insert(k.clone(), json_to_any(v));

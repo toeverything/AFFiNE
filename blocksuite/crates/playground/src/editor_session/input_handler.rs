@@ -44,9 +44,6 @@ impl EntityInputHandler for PlaygroundView {
             let _ = self.paste_into_block_selection(&item, w, cx);
             return;
         }
-        if self.suppress_unselected_root_input && self.editor.selection.is_none() {
-            return;
-        }
         self.paste_body_clipboard_item(&item, w, cx);
     }
     fn text_for_range(
@@ -244,10 +241,6 @@ impl EntityInputHandler for PlaygroundView {
             self.keep_keyboard_on_block_selection = false;
             self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(ret_id, 0)));
         }
-        if self.suppress_unselected_root_input && self.editor.selection.is_none() {
-            return;
-        }
-        self.begin_input();
         let selection = self.replacement_selection(r);
         if self.editor.preedit.is_some() {
             self.clear_composition(w, cx);
@@ -306,10 +299,6 @@ impl EntityInputHandler for PlaygroundView {
             self.keep_keyboard_on_block_selection = false;
             self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(ret_id, 0)));
         }
-        if self.suppress_unselected_root_input && self.editor.selection.is_none() {
-            return;
-        }
-        self.begin_input();
         if text.is_empty() {
             self.clear_composition(w, cx);
             return;

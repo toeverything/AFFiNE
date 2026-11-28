@@ -497,20 +497,6 @@ impl PlaygroundView {
 
     /// Replace the shown document, e.g. with one prepared by a host or a test.
     pub fn set_document(&mut self, state: crate::DocState, cx: &mut ui::Context<Self>) {
-        let had_composing = self.editor.composing()
-            || self
-                .overlays
-                .active_text_field()
-                .is_some_and(|f| f.composing())
-            || self
-                .table_cell
-                .as_ref()
-                .is_some_and(|c| c.input.composing())
-            || self
-                .edgeless
-                .authoring
-                .label_editor()
-                .is_some_and(|e| e.composing());
         self.finish_inline_targets(crate::overlays::InlineTargetEnd::DiscardPreedit, None, None);
         self.editor = Default::default();
         self.overlays.reset();
@@ -555,7 +541,6 @@ impl PlaygroundView {
         self.pdf_page_indices.clear();
         self.keyboard_toolbar_dismissed = false;
         self.ime_insets = crate::chrome::ImeInsetsState::default();
-        self.suppress_unselected_root_input = had_composing;
         self.last_opened_embed_doc = None;
         self.nav_history.clear();
         self.page_id = None;

@@ -216,6 +216,11 @@ impl PlaygroundView {
             DocEdit::Bookmark { block_id, url } => {
                 self.insert_bookmark_after_block(&block_id, url, window, cx)
             }
+            DocEdit::ReorderMany {
+                parent_id,
+                child_ids,
+                insert_index,
+            } => self.run_reorder_many(&parent_id, child_ids, insert_index, window, cx),
             edit @ (DocEdit::SetProp { .. } | DocEdit::Reorder { .. }) => {
                 let before = self.selection_snapshot();
                 let page = self.page_mut()?;
@@ -386,6 +391,14 @@ impl PlaygroundView {
         }
         if command == SlashCommand::LinkedDoc {
             return self.run_linked_doc_slash_command(block_id, offset, strip, window, cx);
+        }
+        if matches!(
+            command,
+            SlashCommand::Table | SlashCommand::Equation | SlashCommand::Database
+        ) {
+            return self.run_block_insert_slash_command(
+                block_id, parent_id, slot, node, command, strip, window, cx,
+            );
         }
         let fresh = self.fresh_block_id();
         let trailing = self.fresh_block_id();

@@ -212,6 +212,71 @@ pub fn preview_curve_cubic(
     target_world: (f32, f32),
     items: &[crate::edgeless::SpatialItemInfo],
 ) -> ((f32, f32), (f32, f32), (f32, f32), (f32, f32)) {
+    let (a, b) = resolve_preview_ports(
+        source_id,
+        source_port,
+        source_world,
+        target_id,
+        target_port,
+        target_world,
+        items,
+    );
+    let (p, q) = curve_controls(a, b);
+    (
+        (a.p.0 as f32, a.p.1 as f32),
+        (p.0 as f32, p.1 as f32),
+        (q.0 as f32, q.1 as f32),
+        (b.p.0 as f32, b.p.1 as f32),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn preview_connector_polyline(
+    mode: ConnectorMode,
+    source_id: Option<&str>,
+    source_port: Option<[f64; 2]>,
+    source_world: (f32, f32),
+    target_id: Option<&str>,
+    target_port: Option<[f64; 2]>,
+    target_world: (f32, f32),
+    items: &[crate::edgeless::SpatialItemInfo],
+) -> Vec<(f32, f32)> {
+    let (a, b) = resolve_preview_ports(
+        source_id,
+        source_port,
+        source_world,
+        target_id,
+        target_port,
+        target_world,
+        items,
+    );
+    match mode {
+        ConnectorMode::Straight => vec![(a.p.0 as f32, a.p.1 as f32), (b.p.0 as f32, b.p.1 as f32)],
+        ConnectorMode::Orthogonal => super::orthogonal::path(a, b)
+            .into_iter()
+            .map(|p| (p.0 as f32, p.1 as f32))
+            .collect(),
+        ConnectorMode::Curve => {
+            let (p, q) = curve_controls(a, b);
+            (0..=32)
+                .map(|i| {
+                    let pt = cubic(a.p, p, q, b.p, i as f64 / 32.0);
+                    (pt.0 as f32, pt.1 as f32)
+                })
+                .collect()
+        }
+    }
+}
+
+fn resolve_preview_ports(
+    source_id: Option<&str>,
+    source_port: Option<[f64; 2]>,
+    source_world: (f32, f32),
+    target_id: Option<&str>,
+    target_port: Option<[f64; 2]>,
+    target_world: (f32, f32),
+    items: &[crate::edgeless::SpatialItemInfo],
+) -> (Port, Port) {
     let resolve_port = |id: Option<&str>, port: Option<[f64; 2]>, fallback: (f32, f32)| -> Port {
         if let Some(id) = id
             && let Some(item) = items.iter().find(|i| i.id == id)
@@ -239,14 +304,9 @@ pub fn preview_curve_cubic(
             bound: None,
         }
     };
-    let a = resolve_port(source_id, source_port, source_world);
-    let b = resolve_port(target_id, target_port, target_world);
-    let (p, q) = curve_controls(a, b);
     (
-        (a.p.0 as f32, a.p.1 as f32),
-        (p.0 as f32, p.1 as f32),
-        (q.0 as f32, q.1 as f32),
-        (b.p.0 as f32, b.p.1 as f32),
+        resolve_port(source_id, source_port, source_world),
+        resolve_port(target_id, target_port, target_world),
     )
 }
 

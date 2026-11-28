@@ -514,6 +514,33 @@ pub fn prepare_edgeless_scene(
                         _ => None,
                     })
                     .collect();
+            let mut direct_parent_group: std::collections::HashMap<String, String> =
+                std::collections::HashMap::new();
+            for (_, elements) in &surface_nodes {
+                for el in *elements {
+                    if let blocksuite_playground_doc::read::SurfaceElementKind::Group {
+                        children,
+                        ..
+                    } = &el.kind
+                    {
+                        for cid in children {
+                            direct_parent_group.insert(cid.clone(), el.id.clone());
+                        }
+                    }
+                }
+            }
+            let resolve_outermost_group = |id: &str| -> Option<String> {
+                let mut cur = direct_parent_group.get(id)?.as_str();
+                let mut depth = 0;
+                while let Some(next) = direct_parent_group.get(cur) {
+                    if next == cur || depth >= 16 {
+                        break;
+                    }
+                    cur = next.as_str();
+                    depth += 1;
+                }
+                Some(cur.to_string())
+            };
             for item in order.iter() {
                 match *item {
                     PaintItem::Frame(i) => {
@@ -530,6 +557,8 @@ pub fn prepare_edgeless_scene(
                             stroke_width: 1.0,
                             polyline: Vec::new(),
                             frame_children: f.frame_children.clone(),
+                            group_children: Vec::new(),
+                            parent_group_id: resolve_outermost_group(&f.id),
                             title_pill_rect: Some(f.title_pill_rect),
                         });
                     }
@@ -547,6 +576,8 @@ pub fn prepare_edgeless_scene(
                             stroke_width: 1.0,
                             polyline: Vec::new(),
                             frame_children: Vec::new(),
+                            group_children: Vec::new(),
+                            parent_group_id: resolve_outermost_group(&n.id),
                             title_pill_rect: None,
                         });
                     }
@@ -564,6 +595,8 @@ pub fn prepare_edgeless_scene(
                             stroke_width: 1.0,
                             polyline: Vec::new(),
                             frame_children: Vec::new(),
+                            group_children: Vec::new(),
+                            parent_group_id: resolve_outermost_group(&t.id),
                             title_pill_rect: None,
                         });
                     }
@@ -633,6 +666,14 @@ pub fn prepare_edgeless_scene(
                             .get(id)
                             .and_then(|o| o.rotate_deg)
                             .unwrap_or(el.rotate as f32);
+                        let group_children = match &el.kind {
+                            blocksuite_playground_doc::read::SurfaceElementKind::Group {
+                                children,
+                                ..
+                            } => children.clone(),
+                            _ => Vec::new(),
+                        };
+                        let parent_group_id = resolve_outermost_group(&el.id);
                         built_items.push(SpatialItemInfo {
                             id: el.id.clone(),
                             kind,
@@ -650,6 +691,8 @@ pub fn prepare_edgeless_scene(
                             stroke_width,
                             polyline,
                             frame_children: Vec::new(),
+                            group_children,
+                            parent_group_id,
                             title_pill_rect: None,
                         });
                     }

@@ -4,6 +4,15 @@ use std::ops::{Deref, DerefMut};
 
 use crate::inline_input::AnchoredInlineInput;
 
+/// Granularity of an active pointer drag inside a focused table cell.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum TableCellDragMode {
+    #[default]
+    Character,
+    Word(usize, usize),
+    All,
+}
+
 /// Focused `affine:table` cell edited directly in place against its live `Y.Text`.
 #[derive(Clone, Debug)]
 pub struct InlineTableCell {
@@ -12,6 +21,8 @@ pub struct InlineTableCell {
     pub column_id: String,
     pub anchored: AnchoredInlineInput,
     pub goal_x: Option<f32>,
+    pub dragging: bool,
+    pub drag_mode: TableCellDragMode,
 }
 
 impl Deref for InlineTableCell {
@@ -36,6 +47,8 @@ impl InlineTableCell {
             column_id,
             anchored: AnchoredInlineInput::new(initial, true),
             goal_x: None,
+            dragging: false,
+            drag_mode: TableCellDragMode::Character,
         }
     }
 }

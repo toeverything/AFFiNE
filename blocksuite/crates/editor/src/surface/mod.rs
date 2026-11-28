@@ -10,7 +10,7 @@ pub mod rtl;
 mod shapes;
 mod strokes;
 
-pub use connector::preview_curve_cubic;
+pub use connector::{preview_connector_polyline, preview_curve_cubic};
 pub use mindmap::{
     MindmapTree, MindmapTreeNode, build_mindmap_tree, collapsed_descendant_ids,
     compute_mindmap_layout, mindmap_connectors, resolve_surface_element_bounds,

@@ -41,9 +41,9 @@ pub use scrollbar::{
 };
 pub use slash::{
     SLASH_ITEMS, SlashCommand, SlashItem, SlashMenu, SlashRow, filter_slash_items,
-    slash_item_by_id, slash_rows, slash_rows_for_query,
+    filter_slash_items_for, slash_item_by_id, slash_rows, slash_rows_for_query,
 };
-pub use table_cell::InlineTableCell;
+pub use table_cell::{InlineTableCell, TableCellDragMode};
 pub use toolbar::LinkBar;
 pub use toolbar::{
     ActiveSelection, FormatAction, MarkState, SelectionFormat, marks_in_range, normalize_url,
@@ -272,6 +272,7 @@ impl DropSlot {
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct BlockDrag {
     pub(super) block_id: String,
+    pub(super) dragged_ids: Vec<String>,
     pub(super) slot: Option<DropSlot>,
 }
 
@@ -288,6 +289,12 @@ pub enum DocEdit {
         parent_id: String,
         child_id: String,
         new_index: u64,
+    },
+    /// Reorder a multi-block selection as one atomic undo step before `insert_index` in `parent_id`.
+    ReorderMany {
+        parent_id: String,
+        child_ids: Vec<String>,
+        insert_index: usize,
     },
     Slash {
         block_id: String,
@@ -428,6 +435,15 @@ pub enum OverlayEvent {
         row_id: String,
         column_id: String,
         screen_pos: Option<(f32, f32)>,
+    },
+    /// Pointer press on an `affine:table` cell (supports click, double/triple click, Shift+click, drag).
+    TableCellMouseDown {
+        block_id: String,
+        row_id: String,
+        column_id: String,
+        screen_pos: (f32, f32),
+        click_count: usize,
+        shift: bool,
     },
     /// Step the active PDF page preview of an `affine:attachment` block by `delta` (`-1` / `+1`).
     AttachmentPdfPage {
@@ -600,6 +616,7 @@ pub struct Overlays {
     pub(super) context_menu: Option<ContextMenuState>,
     pub(super) context_toast: Option<ContextToast>,
     pub(super) context_toast_generation: u64,
+    pub(super) database_readonly: bool,
     pub format_cache: Option<FormatCache>,
 }
 

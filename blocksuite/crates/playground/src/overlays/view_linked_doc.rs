@@ -85,11 +85,18 @@ impl PlaygroundView {
                 let visible_items = menu.results.items.len().min(6);
                 let trigger = self.editor.linked_doc_trigger.take();
                 let strip = if menu.query_in_document {
-                    trigger
+                    let found = trigger
                         .as_ref()
                         .filter(|(b, _, _)| *b == menu.block_id)
                         .and_then(|(b, pos, _)| self.typed_linked_doc(b, pos))
-                        .map(|(at, caret, _)| (at, caret - at))
+                        .map(|(at, caret, _)| (at, caret - at));
+                    // Trigger `@` is gone or caret moved out of range: close without leaving a zombie `@`.
+                    if found.is_none() {
+                        self.overlays.close_linked_doc(now_ms);
+                        cx.notify();
+                        return true;
+                    }
+                    found
                 } else {
                     None
                 };

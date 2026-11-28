@@ -82,10 +82,14 @@ impl PlaygroundView {
                         sel.anchor =
                             crate::editor_session::DocPoint::new(&pt.block_id, range.start);
                         sel.focus = crate::editor_session::DocPoint::new(&pt.block_id, range.end);
+                        self.editor.dragging = false;
                     } else if event.modifiers.shift
                         && let Some(old) = &self.editor.selection
                     {
                         sel.anchor = old.anchor.clone();
+                        self.editor.dragging = true;
+                    } else {
+                        self.editor.dragging = true;
                     }
                     self.change_selection(sel, window, cx);
                     return;
@@ -119,7 +123,26 @@ impl PlaygroundView {
                 )
                 .map_or(0, |(off, _)| off);
             if let Some(ed_mut) = self.edgeless.authoring.label_editor_mut() {
-                ed_mut.select(off..off);
+                if event.click_count >= 3 {
+                    ed_mut.select_all();
+                } else if event.click_count == 2 {
+                    let r = crate::editor_session::word_range(&ed_mut.input.text, off as u64);
+                    ed_mut.select(r.start as usize..r.end as usize);
+                } else if event.modifiers.shift {
+                    ed_mut.input.move_caret(off, true);
+                    ed_mut.preedit_anchors = None;
+                    self.edgeless.authoring.gesture = Some(EdgelessGesture::SelectLabelText {
+                        anchor_utf16: if ed_mut.input.reversed {
+                            ed_mut.input.selection.end
+                        } else {
+                            ed_mut.input.selection.start
+                        },
+                    });
+                } else {
+                    ed_mut.select(off..off);
+                    self.edgeless.authoring.gesture =
+                        Some(EdgelessGesture::SelectLabelText { anchor_utf16: off });
+                }
             }
             self.edgeless_update_label_anchors();
             window.notify_text_input_changed(&self.editor_focus);
@@ -134,19 +157,6 @@ impl PlaygroundView {
 
         match self.edgeless.authoring.tool {
             EdgelessTool::Select => {
-                // Double-click enters inline rich-text / label IME editing.
-                if event.click_count >= 2 {
-                    if let Some(hit) = self
-                        .edgeless
-                        .authoring
-                        .hit_test_world(wx, wy, self.edgeless.camera.zoom)
-                        .cloned()
-                    {
-                        self.edgeless_begin_inline_edit_at(&hit.id, Some((wx, wy)), window, cx);
-                        return;
-                    }
-                }
-
                 // 1. Check active selection handles first.
                 let vp_w = self.window_size.0.max(1.0);
                 let vp_h = (self.window_size.1 - TOPBAR_HEIGHT).max(1.0);
@@ -158,6 +168,11 @@ impl PlaygroundView {
                     self.edgeless.camera,
                 ) {
                     match handle {
+                        HandleKind::ConnectorStart | HandleKind::ConnectorEnd => {
+                            if self.begin_connector_endpoint_drag(handle, wx, wy, cx) {
+                                return;
+                            }
+                        }
                         HandleKind::Rotate => {
                             if let Some(single) = self.edgeless.authoring.single_selected().cloned()
                             {
@@ -187,6 +202,9 @@ impl PlaygroundView {
                                         start_world: (wx, wy),
                                         current_world: (wx, wy),
                                         initial,
+                                        shift: event.modifiers.shift,
+                                        alt_clone: event.modifiers.alt,
+                                        pending_dblclick: None,
                                     });
                                 cx.notify();
                                 return;
@@ -196,6 +214,11 @@ impl PlaygroundView {
                             if let Some(initial_box) = self.edgeless.authoring.selection_world_box()
                             {
                                 let initial = self.collect_drag_initials();
+                                let rotate_deg = if initial.len() == 1 {
+                                    initial[0].rotate_deg
+                                } else {
+                                    0.0
+                                };
                                 self.edgeless.authoring.gesture =
                                     Some(EdgelessGesture::ResizeSelection {
                                         handle,
@@ -203,6 +226,8 @@ impl PlaygroundView {
                                         current_world: (wx, wy),
                                         initial_box,
                                         initial,
+                                        shift: event.modifiers.shift,
+                                        rotate_deg,
                                     });
                                 cx.notify();
                                 return;
@@ -218,20 +243,41 @@ impl PlaygroundView {
                     .hit_test_world(wx, wy, self.edgeless.camera.zoom)
                     .cloned()
                 {
+                    // Clicking a member of a Group selects the outermost Group first (unless
+                    // double-clicking into it or the Group is already selected).
+                    let select_id = if let Some(gid) = &hit.parent_group_id
+                        && event.click_count < 2
+                        && !self.edgeless.authoring.selection.contains(gid)
+                        && !self.edgeless.authoring.selection.contains(&hit.id)
+                    {
+                        gid.clone()
+                    } else {
+                        hit.id.clone()
+                    };
                     if event.modifiers.shift {
-                        if !self.edgeless.authoring.selection.remove(&hit.id) {
-                            self.edgeless.authoring.selection.insert(hit.id.clone());
+                        if !self.edgeless.authoring.selection.remove(&select_id) {
+                            self.edgeless.authoring.selection.insert(select_id.clone());
                         }
-                    } else if !self.edgeless.authoring.selection.contains(&hit.id) {
+                    } else if !self.edgeless.authoring.selection.contains(&select_id) {
                         self.edgeless.authoring.selection.clear();
-                        self.edgeless.authoring.selection.insert(hit.id.clone());
+                        self.edgeless.authoring.selection.insert(select_id.clone());
                     }
+                    let pending_dblclick =
+                        if event.click_count >= 2 && !event.modifiers.shift && !event.modifiers.alt
+                        {
+                            Some((hit.id.clone(), (wx, wy)))
+                        } else {
+                            None
+                        };
                     let initial = self.collect_drag_initials();
-                    if !initial.is_empty() {
+                    if !initial.is_empty() || pending_dblclick.is_some() {
                         self.edgeless.authoring.gesture = Some(EdgelessGesture::DragSelection {
                             start_world: (wx, wy),
                             current_world: (wx, wy),
                             initial,
+                            shift: event.modifiers.shift,
+                            alt_clone: event.modifiers.alt,
+                            pending_dblclick,
                         });
                     }
                     cx.notify();
@@ -252,6 +298,7 @@ impl PlaygroundView {
                     shape_type,
                     start_world: (wx, wy),
                     current_world: (wx, wy),
+                    shift: event.modifiers.shift,
                 });
                 cx.notify();
             }
@@ -281,6 +328,7 @@ impl PlaygroundView {
                     None => (None, None, (wx, wy)),
                 };
                 self.edgeless.authoring.gesture = Some(EdgelessGesture::CreateConnector {
+                    mode: self.edgeless.authoring.connector_mode,
                     source_id,
                     source_port,
                     source_world,
@@ -309,7 +357,7 @@ impl PlaygroundView {
     pub(crate) fn on_edgeless_pointer_move(
         &mut self,
         event: &MouseMoveEvent,
-        _window: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         // Middle-button pan continues to work as before.
@@ -322,6 +370,68 @@ impl PlaygroundView {
             cx.notify();
             return;
         }
+
+        // Drag-selecting text inside an inline-edited Edgeless Note or EdgelessText block.
+        if self.editor.dragging
+            && let Some((editing_id, is_note)) = self.edgeless.authoring.editing_spatial_block()
+        {
+            let editing_id = editing_id.to_string();
+            if let Some(info) = self
+                .edgeless
+                .authoring
+                .painted_items
+                .iter()
+                .find(|i| i.id == editing_id)
+                .cloned()
+                && let Some(layout) = self.edgeless.cached_block_layout(&editing_id, is_note)
+            {
+                let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+                let world_pt = self
+                    .edgeless
+                    .camera
+                    .screen_to_world(event.position, vp_origin);
+                let (cx_w, cy_w) = info.rect.center();
+                let (lx, ly) = rotate_point_around(
+                    f32::from(world_pt.x),
+                    f32::from(world_pt.y),
+                    cx_w,
+                    cy_w,
+                    -info.rotate_deg,
+                );
+                let pad = if is_note { NOTE_CARD_PADDING } else { 0.0 };
+                let flow_x = (lx - info.rect.x) / info.scale - pad;
+                let flow_y = (ly - info.rect.y) / info.scale - pad;
+                if let Some(pt) = Self::hit_test_flow_layout(&layout, flow_x, flow_y)
+                    && let Some(old) = self.editor.selection.clone()
+                {
+                    let next = DocumentSelection {
+                        anchor: old.anchor,
+                        focus: pt,
+                    };
+                    self.change_selection(next, window, cx);
+                }
+            }
+            return;
+        }
+
+        // Drag-selecting text inside an active EdgelessLabelEditor (Shape / Connector / Frame / SurfaceText).
+        if let Some(EdgelessGesture::SelectLabelText { anchor_utf16 }) =
+            self.edgeless.authoring.gesture
+        {
+            if let Some((off, _)) = self.hit_label_editor_at(
+                f32::from(event.position.x),
+                f32::from(event.position.y),
+                window,
+            ) && let Some(ed_mut) = self.edgeless.authoring.label_editor_mut()
+            {
+                ed_mut.select_directional(anchor_utf16, off);
+                self.edgeless_update_label_anchors();
+                window.notify_text_input_changed(&self.editor_focus);
+                cx.notify();
+            }
+            return;
+        }
+
         let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
         let world_pt = self
             .edgeless
@@ -337,6 +447,10 @@ impl PlaygroundView {
                 .edgeless
                 .authoring
                 .snap_connector_port(wx, wy, zoom, source_id.as_deref()),
+            Some(EdgelessGesture::DragConnectorEndpoint { fixed_id, .. }) => self
+                .edgeless
+                .authoring
+                .snap_connector_port(wx, wy, zoom, fixed_id.as_deref()),
             _ => None,
         };
 
@@ -369,16 +483,42 @@ impl PlaygroundView {
                     .authoring
                     .painted_items
                     .iter()
-                    .filter(|item| item.rect.intersects(marquee))
+                    .filter(|item| {
+                        if item.kind == SpatialItemKind::Frame {
+                            // Align with Web `frame-block.ts:72-80`: a Frame is only marquee-selected
+                            // when the marquee rectangle fully contains it.
+                            marquee.contains_rect(item.rect)
+                        } else if item.kind == SpatialItemKind::Group {
+                            false
+                        } else {
+                            item.rect.intersects(marquee)
+                        }
+                    })
                     .map(|item| item.id.clone())
                     .collect();
                 self.edgeless.authoring.selection = hits;
                 cx.notify();
             }
-            Some(EdgelessGesture::DragSelection { current_world, .. })
-            | Some(EdgelessGesture::ResizeSelection { current_world, .. })
-            | Some(EdgelessGesture::CreateShape { current_world, .. })
-            | Some(EdgelessGesture::CreateFrame { current_world, .. })
+            Some(EdgelessGesture::DragSelection {
+                current_world,
+                shift: g_shift,
+                ..
+            })
+            | Some(EdgelessGesture::ResizeSelection {
+                current_world,
+                shift: g_shift,
+                ..
+            })
+            | Some(EdgelessGesture::CreateShape {
+                current_world,
+                shift: g_shift,
+                ..
+            }) => {
+                *current_world = (wx, wy);
+                *g_shift = shift;
+                cx.notify();
+            }
+            Some(EdgelessGesture::CreateFrame { current_world, .. })
             | Some(EdgelessGesture::CreateNote { current_world, .. }) => {
                 *current_world = (wx, wy);
                 cx.notify();
@@ -419,6 +559,25 @@ impl PlaygroundView {
                 }
                 cx.notify();
             }
+            Some(EdgelessGesture::DragConnectorEndpoint {
+                current_world,
+                snap_id,
+                snap_port,
+                snap_world,
+                ..
+            }) => {
+                *current_world = (wx, wy);
+                if let Some((tid, port, pt)) = conn_snap {
+                    *snap_id = Some(tid);
+                    *snap_port = Some(port);
+                    *snap_world = Some(pt);
+                } else {
+                    *snap_id = None;
+                    *snap_port = None;
+                    *snap_world = None;
+                }
+                cx.notify();
+            }
             Some(EdgelessGesture::DrawStroke { points_world, .. }) => {
                 let should_push = points_world
                     .last()
@@ -428,7 +587,7 @@ impl PlaygroundView {
                     cx.notify();
                 }
             }
-            None => {}
+            Some(EdgelessGesture::SelectLabelText { .. }) | None => {}
         }
     }
 
@@ -436,15 +595,7 @@ impl PlaygroundView {
         let Some(snapshot) = &self.snapshot else {
             return Vec::new();
         };
-        let mut ids: BTreeSet<String> = self.edgeless.authoring.selection.clone();
-        // When dragging a Frame, include all of its `prop:childElementIds` members too!
-        for item in self.edgeless.authoring.painted_items.iter() {
-            if item.kind == SpatialItemKind::Frame && ids.contains(&item.id) {
-                for child_id in &item.frame_children {
-                    ids.insert(child_id.clone());
-                }
-            }
-        }
+        let ids = self.expand_selection_with_containers(&self.edgeless.authoring.selection);
         let mut out = Vec::new();
         for item in self.edgeless.authoring.painted_items.iter() {
             if !ids.contains(&item.id) {
@@ -483,6 +634,7 @@ impl PlaygroundView {
                 kind: item.kind,
                 surface_id: item.surface_id.clone(),
                 rect: item.rect,
+                rotate_deg: item.rotate_deg,
                 points,
                 connector_source,
                 connector_target,
@@ -601,45 +753,4 @@ impl PlaygroundView {
         let flow_y = (ly - info.rect.y) / info.scale - pad;
         Some((flow_x, flow_y))
     }
-}
-
-/// Sample the routed connector polyline at `distance` (`0.0..=1.0`), matching
-/// `surface::paint`'s `route.point_at_distance(mode, distance)`.
-pub(super) fn connector_label_anchor_point(
-    polyline: &[(f32, f32)],
-    fallback_center: (f32, f32),
-    mode: blocksuite_playground_doc::read::ConnectorMode,
-    distance: f64,
-) -> (f64, f64) {
-    if polyline.len() < 2 {
-        return (fallback_center.0 as f64, fallback_center.1 as f64);
-    }
-    let d = distance.clamp(0.0, 1.0);
-    if mode == blocksuite_playground_doc::read::ConnectorMode::Curve {
-        let f = d * (polyline.len() - 1) as f64;
-        let i = (f.floor() as usize).min(polyline.len() - 2);
-        let t = f - i as f64;
-        let a = polyline[i];
-        let b = polyline[i + 1];
-        return (
-            a.0 as f64 + (b.0 as f64 - a.0 as f64) * t,
-            a.1 as f64 + (b.1 as f64 - a.1 as f64) * t,
-        );
-    }
-    let seg_len = |a: (f32, f32), b: (f32, f32)| ((b.0 - a.0) as f64).hypot((b.1 - a.1) as f64);
-    let total: f64 = polyline.windows(2).map(|w| seg_len(w[0], w[1])).sum();
-    let mut rem = total * d;
-    for w in polyline.windows(2) {
-        let l = seg_len(w[0], w[1]);
-        if rem <= l && l > 0.0 {
-            let t = rem / l;
-            return (
-                w[0].0 as f64 + (w[1].0 as f64 - w[0].0 as f64) * t,
-                w[0].1 as f64 + (w[1].1 as f64 - w[0].1 as f64) * t,
-            );
-        }
-        rem -= l;
-    }
-    let last = *polyline.last().unwrap();
-    (last.0 as f64, last.1 as f64)
 }

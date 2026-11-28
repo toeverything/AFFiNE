@@ -23,6 +23,24 @@ pub enum ShapePreset {
 }
 
 impl ShapePreset {
+    pub const ALL: [Self; 5] = [
+        Self::Rect,
+        Self::Ellipse,
+        Self::Diamond,
+        Self::Triangle,
+        Self::RoundedRect,
+    ];
+
+    pub fn next(self) -> Self {
+        let i = Self::ALL.iter().position(|&p| p == self).unwrap_or(0);
+        Self::ALL[(i + 1) % Self::ALL.len()]
+    }
+
+    pub fn prev(self) -> Self {
+        let i = Self::ALL.iter().position(|&p| p == self).unwrap_or(0);
+        Self::ALL[(i + Self::ALL.len() - 1) % Self::ALL.len()]
+    }
+
     pub fn as_spec_str(self) -> &'static str {
         match self {
             Self::Rect => "rect",

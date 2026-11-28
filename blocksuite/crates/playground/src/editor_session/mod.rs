@@ -7,6 +7,7 @@ mod composition;
 mod edit_ops;
 mod input_handler;
 mod markdown;
+mod page_ops;
 mod paste_markdown;
 
 pub use blocksuite_editor::editor_session::*;
@@ -87,29 +88,48 @@ impl PlaygroundView {
         self.editor_focus.focus(w, cx);
         w.request_virtual_keyboard();
         self.editor.dragging = true;
+        self.editor.drag_moved = false;
         let mut sel = DocumentSelection::caret(p.clone());
         if e.click_count >= 2 {
-            let s = self.block_text(&p.block_id).unwrap_or("");
-            let range = if e.click_count == 2 {
-                word_range(s, p.offset())
-            } else {
-                0..s.encode_utf16().count() as u64
+            let (range, drag_mode) = {
+                let s = self.block_text(&p.block_id).unwrap_or("");
+                if e.click_count == 2 {
+                    let r = word_range(s, p.offset());
+                    let mode = DragSelectionMode::Word {
+                        block_id: p.block_id.clone(),
+                        start: r.start,
+                        end: r.end,
+                    };
+                    (r, mode)
+                } else {
+                    let len = s.encode_utf16().count() as u64;
+                    (
+                        0..len,
+                        DragSelectionMode::Paragraph {
+                            block_id: p.block_id.clone(),
+                        },
+                    )
+                }
             };
+            self.editor.drag_mode = drag_mode;
             sel.anchor = DocPoint::new(&p.block_id, range.start);
             sel.focus = DocPoint::new(&p.block_id, range.end);
-        } else if e.modifiers.shift
-            && let Some(old) = &self.editor.selection
-        {
-            let same_domain = self.flow_layout().is_none_or(|layout| {
-                let is_title = |id: &str| {
-                    layout
-                        .block(id)
-                        .is_some_and(|b| matches!(b.body.kind, block_flow::FlowKind::Title))
-                };
-                is_title(&old.anchor.block_id) == is_title(&p.block_id)
-            });
-            if same_domain {
-                sel.anchor = old.anchor.clone();
+        } else {
+            self.editor.drag_mode = DragSelectionMode::Character;
+            if e.modifiers.shift
+                && let Some(old) = &self.editor.selection
+            {
+                let same_domain = self.flow_layout().is_none_or(|layout| {
+                    let is_title = |id: &str| {
+                        layout
+                            .block(id)
+                            .is_some_and(|b| matches!(b.body.kind, block_flow::FlowKind::Title))
+                    };
+                    is_title(&old.anchor.block_id) == is_title(&p.block_id)
+                });
+                if same_domain {
+                    sel.anchor = old.anchor.clone();
+                }
             }
         }
         self.change_selection(sel, w, cx);
@@ -125,13 +145,17 @@ impl PlaygroundView {
     ) {
         if e.pressed_button != Some(MouseButton::Left) {
             self.editor.dragging = false;
+            self.editor.drag_moved = false;
+            self.editor.drag_mode = DragSelectionMode::Character;
             return;
         }
         if self.editor.dragging
             && let Some(mut focus) = self.input_point(e.position, w)
             && let Some(sel) = &self.editor.selection
         {
-            if let Some(layout) = self.flow_layout() {
+            self.editor.drag_moved = true;
+            let layout = self.flow_layout();
+            if let Some(layout) = layout.as_ref() {
                 let anchor_title = layout
                     .block(&sel.anchor.block_id)
                     .is_some_and(|b| matches!(b.body.kind, block_flow::FlowKind::Title));
@@ -153,14 +177,8 @@ impl PlaygroundView {
                     }
                 }
             }
-            self.change_selection(
-                DocumentSelection {
-                    anchor: sel.anchor.clone(),
-                    focus,
-                },
-                w,
-                cx,
-            );
+            let next_sel = self.extend_drag_selection(sel, focus, layout.as_deref());
+            self.change_selection(next_sel, w, cx);
         }
     }
 
@@ -207,9 +225,10 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) {
         self.commit_active_preedit(w, cx);
-        self.suppress_unselected_root_input = false;
         self.editor.selection = Some(sel);
         self.editor.block_selection.clear();
+        self.editor.block_selection_anchor = None;
+        self.editor.block_selection_focus = None;
         self.keep_keyboard_on_block_selection = false;
         self.block_selection_return_caret = None;
         self.editor.pending_marks.clear();
@@ -221,6 +240,7 @@ impl PlaygroundView {
         }
         self.announce_selection(cx);
         self.sync_slash_trigger(cx);
+        self.sync_linked_doc_trigger(cx);
         self.reset_caret_blink(cx);
         w.notify_text_selection_changed(&self.editor_focus);
         cx.notify();
@@ -232,6 +252,8 @@ impl PlaygroundView {
         self.commit_active_preedit(w, cx);
         self.editor.selection = None;
         self.editor.block_selection.clear();
+        self.editor.block_selection_anchor = None;
+        self.editor.block_selection_focus = None;
         self.keep_keyboard_on_block_selection = false;
         self.block_selection_return_caret = None;
         self.editor.pending_marks.clear();
@@ -241,6 +263,7 @@ impl PlaygroundView {
         self.editor.slash_trigger = None;
         self.announce_selection(cx);
         self.sync_slash_trigger(cx);
+        self.sync_linked_doc_trigger(cx);
         self.reset_caret_blink(cx);
         w.notify_text_input_changed(&self.editor_focus);
         w.notify_text_selection_changed(&self.editor_focus);
@@ -518,6 +541,7 @@ impl PlaygroundView {
     pub(super) fn resolve_remote_selection(&mut self, cx: &Context<Self>) {
         self.resolve_relative_selection(cx);
         self.sync_slash_trigger(cx);
+        self.sync_linked_doc_trigger(cx);
         self.sync_equation_target();
     }
 

@@ -15,6 +15,12 @@ pub enum SlashCommand {
     NewDoc,
     /// Replaces `/query` with `@` and opens the `@` linked-document picker at the caret.
     LinkedDoc,
+    /// Inserts a default 2x2 `affine:table` block and focuses its first cell.
+    Table,
+    /// Inserts a block-level `affine:latex` equation and opens the equation editor.
+    Equation,
+    /// Inserts a default Table-view `affine:database` block with one initial row.
+    Database,
 }
 
 impl SlashCommand {
@@ -36,7 +42,16 @@ impl SlashCommand {
                 language: None,
                 caption: String::new(),
             },
-            Self::NewDoc | Self::LinkedDoc => BlockSpec::Paragraph {
+            Self::Table => BlockSpec::Table {
+                rows: vec![
+                    vec![String::new(), String::new()],
+                    vec![String::new(), String::new()],
+                ],
+            },
+            Self::Equation => BlockSpec::Latex {
+                latex: String::new(),
+            },
+            Self::NewDoc | Self::LinkedDoc | Self::Database => BlockSpec::Paragraph {
                 paragraph_type: ParagraphType::Text,
                 text: String::new(),
             },
@@ -80,9 +95,9 @@ const fn slash_item(
 }
 
 /// Every slash menu item, in menu order; items of one group are adjacent. The order is
-/// BlockSuite's (text, headings, code, quote, divider, then lists), with all six headings
-/// in the list itself so each is one filter away.
-pub const SLASH_ITEMS: [SlashItem; 16] = [
+/// BlockSuite's (text, headings, code, quote, divider, then lists, then content/database),
+/// with all six headings in the list itself so each is one filter away.
+pub const SLASH_ITEMS: [SlashItem; 19] = [
     slash_item(
         "text",
         "Text",
@@ -227,6 +242,33 @@ pub const SLASH_ITEMS: [SlashItem; 16] = [
         &["collapse", "fold"],
         SlashCommand::List(ListType::Toggle),
     ),
+    slash_item(
+        "table",
+        "Table",
+        "Create a simple table.",
+        "Content & Media",
+        "SquareIcon",
+        &["grid", "rows", "columns"],
+        SlashCommand::Table,
+    ),
+    slash_item(
+        "equation",
+        "Equation",
+        "Create a LaTeX equation block.",
+        "Content & Media",
+        "TeXIcon",
+        &["math", "latex", "formula", "tex"],
+        SlashCommand::Equation,
+    ),
+    slash_item(
+        "database",
+        "Database",
+        "Create a table database.",
+        "Content & Media",
+        "SquareIcon",
+        &["table view", "db", "kanban", "board"],
+        SlashCommand::Database,
+    ),
 ];
 
 /// Look up a built-in slash item by its stable `id` (shared by `KeyboardToolbar`).
@@ -294,6 +336,11 @@ pub fn substring_match_score(name: &str, query: &str) -> f64 {
 /// descending [`substring_match_score`] against the title when `query` is non-empty.
 /// An empty query returns every item in menu order.
 pub fn filter_slash_items(query: &str) -> Vec<&'static SlashItem> {
+    filter_slash_items_for(query, true)
+}
+
+/// Like [`filter_slash_items`], omitting [`SlashCommand::Database`] when `allow_database` is false.
+pub fn filter_slash_items_for(query: &str, allow_database: bool) -> Vec<&'static SlashItem> {
     let needle: String = query
         .chars()
         .filter(|ch| !ch.is_whitespace())
@@ -301,6 +348,7 @@ pub fn filter_slash_items(query: &str) -> Vec<&'static SlashItem> {
         .collect();
     let mut matched: Vec<&'static SlashItem> = SLASH_ITEMS
         .iter()
+        .filter(|item| allow_database || item.command != SlashCommand::Database)
         .filter(|item| {
             needle.is_empty()
                 || is_fuzzy_match(item.title, &needle)
@@ -324,16 +372,12 @@ pub fn filter_slash_items(query: &str) -> Vec<&'static SlashItem> {
 pub enum SlashRow {
     Header(&'static str),
     Item(usize),
-    Empty,
 }
 
 /// Rows of the slash menu list as `(row, y, height)`, and the list's total height.
 pub fn slash_rows(items: &[&'static SlashItem]) -> (Vec<(SlashRow, f32, f32)>, f32) {
     if items.is_empty() {
-        return (
-            vec![(SlashRow::Empty, 0.0, SLASH_ITEM_HEIGHT)],
-            SLASH_ITEM_HEIGHT,
-        );
+        return (Vec::new(), 0.0);
     }
     let mut rows = Vec::new();
     let mut y = 0.0;
@@ -362,10 +406,7 @@ pub fn slash_rows_for_query(
         return slash_rows(items);
     }
     if items.is_empty() {
-        return (
-            vec![(SlashRow::Empty, 0.0, SLASH_ITEM_HEIGHT)],
-            SLASH_ITEM_HEIGHT,
-        );
+        return (Vec::new(), 0.0);
     }
     let mut rows = Vec::with_capacity(items.len());
     let mut y = 0.0;

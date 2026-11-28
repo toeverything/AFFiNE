@@ -188,6 +188,8 @@ impl PlaygroundView {
             Ok(())
         })?;
         self.editor.block_selection.clear();
+        self.editor.block_selection_anchor = None;
+        self.editor.block_selection_focus = None;
         self.editor.selection = if remaining_editable.is_none() && first_parent_id.is_some() {
             Some(DocumentSelection::caret(DocPoint::new(fallback_id, 0)))
         } else if keep_kb {
@@ -222,6 +224,10 @@ impl PlaygroundView {
         let m = e.keystroke.modifiers;
         let cmd = m.secondary(cx);
         let key = e.keystroke.key.as_str();
+        if cmd && let Some(command) = conversion_shortcut(key, m.alt, m.shift) {
+            self.convert_selected_blocks(command, w, cx)?;
+            return Ok(true);
+        }
         match key {
             "up" | "down"
                 if (cmd && m.alt && !m.shift)
@@ -230,8 +236,21 @@ impl PlaygroundView {
                 self.move_block_by_shortcut(key == "up", w, cx)?;
                 Ok(true)
             }
+            "up" | "down" if !cmd && !m.alt => {
+                self.navigate_block_selection(key == "up", m.shift, w, cx);
+                Ok(true)
+            }
+            "tab" if !cmd && !m.alt => {
+                let ids = self.editor.block_selection.clone();
+                self.indent_or_outdent_blocks(&ids, m.shift, None, w, cx)?;
+                Ok(true)
+            }
             "escape" => {
                 self.editor.block_selection.clear();
+                self.editor.block_selection_anchor = None;
+                self.editor.block_selection_focus = None;
+                self.announce_selection(cx);
+                w.notify_text_selection_changed(&self.editor_focus);
                 cx.notify();
                 Ok(true)
             }
@@ -240,11 +259,27 @@ impl PlaygroundView {
                 Ok(true)
             }
             "enter" => {
+                if self.editor.block_selection.len() == 1
+                    && let Some(single_id) = self.editor.block_selection.first().cloned()
+                    && let Some(snapshot) = self.snapshot.as_ref()
+                    && let Some(node) = snapshot.block(&single_id)
+                    && !matches!(node.content, BlockContent::Page { .. })
+                    && let Some(text) = text_content(node)
+                {
+                    let len = text.encode_utf16().count() as u64;
+                    self.change_selection(
+                        DocumentSelection::caret(DocPoint::new(single_id, len)),
+                        w,
+                        cx,
+                    );
+                    return Ok(true);
+                }
                 let last_id = self.editor.block_selection.last().cloned();
                 if let Some(last_id) = last_id
                     && let Some(snapshot) = self.snapshot.clone()
                     && let Some((parent, slot)) = parent_of(&snapshot, &last_id)
                 {
+                    let insert_slot = page_ops::slot_after_collapsed_heading(parent, slot);
                     let new_id = self.fresh_block_id();
                     let now = self.now_ms(cx) as u64;
                     let page = self.page_mut()?;
@@ -253,10 +288,12 @@ impl PlaygroundView {
                         &new_id,
                         paragraph(),
                         Some(&parent.id),
-                        Some(slot as u64 + 1),
+                        Some(insert_slot as u64),
                         now,
                     )?;
                     self.editor.block_selection.clear();
+                    self.editor.block_selection_anchor = None;
+                    self.editor.block_selection_focus = None;
                     self.editor.selection =
                         Some(DocumentSelection::caret(DocPoint::new(new_id, 0)));
                     self.editor.last_typing = None;
@@ -274,28 +311,130 @@ impl PlaygroundView {
                 Ok(true)
             }
             "a" if cmd => {
-                if let Some(layout) = self.flow_layout() {
-                    self.editor.block_selection = layout
-                        .blocks
-                        .iter()
-                        .filter(|b| !matches!(b.body.kind, block_flow::FlowKind::Title))
-                        .map(|b| b.block_id.clone())
-                        .collect();
-                    cx.notify();
-                }
+                self.select_all_blocks(w, cx);
                 Ok(true)
             }
             "z" if cmd => {
                 self.editor.block_selection.clear();
+                self.editor.block_selection_anchor = None;
+                self.editor.block_selection_focus = None;
                 self.history(m.shift, w, cx)?;
                 Ok(true)
             }
             "y" if cmd => {
                 self.editor.block_selection.clear();
+                self.editor.block_selection_anchor = None;
+                self.editor.block_selection_focus = None;
                 self.history(true, w, cx)?;
                 Ok(true)
             }
             _ => Ok(false),
+        }
+    }
+
+    fn navigate_block_selection(
+        &mut self,
+        up: bool,
+        shift: bool,
+        w: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let layout = if self.mode == crate::PlaygroundMode::Page {
+            let width = page_geometry(f32::from(w.viewport_size().width)).column_width;
+            self.ensure_layout(width, w)
+        } else {
+            self.flow_layout()
+        };
+        let Some(layout) = layout else {
+            return;
+        };
+        let body: Vec<&crate::block_flow::FlowBlock> = layout
+            .blocks
+            .iter()
+            .filter(|b| !matches!(b.body.kind, block_flow::FlowKind::Title))
+            .collect();
+        if body.is_empty() {
+            return;
+        }
+        if shift {
+            let anchor_id = self
+                .editor
+                .block_selection_anchor
+                .clone()
+                .or_else(|| {
+                    if up {
+                        self.editor.block_selection.first().cloned()
+                    } else {
+                        self.editor.block_selection.last().cloned()
+                    }
+                })
+                .unwrap_or_else(|| body[0].block_id.clone());
+            let focus_id = self
+                .editor
+                .block_selection_focus
+                .clone()
+                .unwrap_or_else(|| anchor_id.clone());
+            let Some(anchor_idx) = body.iter().position(|b| b.block_id == anchor_id) else {
+                return;
+            };
+            let focus_idx = body
+                .iter()
+                .position(|b| b.block_id == focus_id)
+                .unwrap_or(anchor_idx);
+            let next_idx = if up {
+                focus_idx.saturating_sub(1)
+            } else {
+                (focus_idx + 1).min(body.len() - 1)
+            };
+            let lo = anchor_idx.min(next_idx);
+            let hi = anchor_idx.max(next_idx);
+            self.editor.block_selection =
+                body[lo..=hi].iter().map(|b| b.block_id.clone()).collect();
+            self.editor.block_selection_anchor = Some(anchor_id);
+            self.editor.block_selection_focus = Some(body[next_idx].block_id.clone());
+            self.announce_selection(cx);
+            w.notify_text_selection_changed(&self.editor_focus);
+            cx.notify();
+            return;
+        }
+        let edge_id = if up {
+            self.editor.block_selection.first()
+        } else {
+            self.editor.block_selection.last()
+        };
+        let Some(cur_idx) = edge_id.and_then(|id| body.iter().position(|b| b.block_id == *id))
+        else {
+            return;
+        };
+        let target_idx = if up {
+            let Some(prev) = cur_idx.checked_sub(1) else {
+                return;
+            };
+            prev
+        } else if cur_idx + 1 < body.len() {
+            cur_idx + 1
+        } else {
+            return;
+        };
+        let target = body[target_idx];
+        if target.editable() {
+            let offset = if up {
+                target.body.plain.encode_utf16().count() as u64
+            } else {
+                0
+            };
+            self.change_selection(
+                DocumentSelection::caret(DocPoint::new(&target.block_id, offset)),
+                w,
+                cx,
+            );
+        } else {
+            self.editor.block_selection = vec![target.block_id.clone()];
+            self.editor.block_selection_anchor = Some(target.block_id.clone());
+            self.editor.block_selection_focus = Some(target.block_id.clone());
+            self.announce_selection(cx);
+            w.notify_text_selection_changed(&self.editor_focus);
+            cx.notify();
         }
     }
 
@@ -401,21 +540,16 @@ impl PlaygroundView {
     }
 
     pub(crate) fn select_all_blocks(&mut self, w: &mut Window, cx: &mut Context<Self>) {
-        if let Some(layout) = self.flow_layout() {
-            let ids: Vec<String> = layout
-                .blocks
-                .iter()
-                .filter(|b| !matches!(b.body.kind, block_flow::FlowKind::Title))
-                .map(|b| b.block_id.clone())
-                .collect();
-            if !ids.is_empty() {
-                self.editor.selection = None;
-                self.editor.block_selection = ids;
-                self.editor.pending_marks.clear();
-                self.announce_selection(cx);
-                w.notify_text_selection_changed(&self.editor_focus);
-                cx.notify();
-            }
+        let ids = self.all_scope_block_ids();
+        if !ids.is_empty() {
+            self.editor.selection = None;
+            self.editor.block_selection_anchor = ids.first().cloned();
+            self.editor.block_selection_focus = ids.last().cloned();
+            self.editor.block_selection = ids;
+            self.editor.pending_marks.clear();
+            self.announce_selection(cx);
+            w.notify_text_selection_changed(&self.editor_focus);
+            cx.notify();
         }
     }
 

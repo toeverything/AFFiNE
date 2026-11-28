@@ -1,97 +1,27 @@
 //! Double-click inline rich-text & IME editing for Edgeless shapes, connectors, text, frames, and notes.
 
-use blocksuite_playground_doc::read::{
-    BlockContent, SurfaceConnector, SurfaceElementKind, TextAlign,
+use blocksuite_playground_doc::{
+    read::{BlockContent, SurfaceElementKind},
+    session::PageDocSession,
 };
-use ui::{Bounds, Context, FontWeight, Pixels, Window, point, px, size};
-use y_octo::{TextDeltaOp, TextInsert};
+use ui::{Bounds, Context, Pixels, Window, point, px, size};
+use y_octo::{Any, SessionValue};
 
 use crate::{
     PlaygroundView, TOPBAR_HEIGHT,
     editor_session::{DocPoint, DocumentSelection},
-    rich_text::{RichParagraph, RichParagraphStyle},
-    theme::ThemeMode,
 };
 
 use super::{
     EdgelessInlineEdit, EdgelessLabelEditor, LabelSplice, LabelTarget, NOTE_CARD_PADDING,
-    SpatialItemKind, WorldRect, find_block, find_surface_element,
-    gestures::connector_label_anchor_point, rotate_point_around,
+    SpatialItemKind, WorldRect,
+    connector_edit::{connector_label_anchor_point, measure_connector_label_xywh},
+    find_block, find_surface_element, layout_label_editor_paragraph, rotate_point_around,
 };
 
-fn measure_connector_label_xywh(
-    c: &SurfaceConnector,
-    polyline: &[(f32, f32)],
-    fallback_center: (f32, f32),
-    trimmed: &str,
-    theme_mode: ThemeMode,
-    window: &Window,
-) -> [f64; 4] {
-    let p = super::gestures::connector_label_anchor_point(
-        polyline,
-        fallback_center,
-        c.mode,
-        c.label_offset.distance,
-    );
-    let l = &c.label_style;
-    let max_w = if c.label_constraints.has_max_width {
-        c.label_constraints.max_width as f32
-    } else {
-        1e6_f32
-    };
-    let mut style = RichParagraphStyle {
-        font_family: l
-            .font_family
-            .trim_start_matches("blocksuite:surface:")
-            .to_string()
-            .into(),
-        font_size: l.font_size as f32,
-        base_weight: FontWeight(l.font_weight.parse().unwrap_or(if l.font_weight == "bold" {
-            700.0
-        } else {
-            400.0
-        })),
-        align: match l.text_align {
-            TextAlign::Left => ui::TextAlign::Left,
-            TextAlign::Center => ui::TextAlign::Center,
-            TextAlign::Right => ui::TextAlign::Right,
-        },
-        ..RichParagraphStyle::from_theme(theme_mode)
-    };
-    let ts = window.text_system();
-    let mut face = ui::font(style.font_family.clone());
-    face.weight = style.base_weight;
-    let font_id = ts.resolve_font(&face);
-    let font_px = px(style.font_size);
-    let ascent = f32::from(ts.ascent(font_id, font_px));
-    let descent = f32::from(ts.descent(font_id, font_px)).abs();
-    style.line_height = ascent + descent;
-    style.baseline_offset = Some(ascent);
-    let delta = vec![TextDeltaOp::Insert {
-        insert: TextInsert::Text(trimmed.to_string()),
-        format: None,
-    }];
-    let (w, h) = if let Ok(para) = RichParagraph::from_delta(delta) {
-        let laid = para.layout(ts, &style, max_w);
-        let measured_w = laid
-            .lines()
-            .iter()
-            .map(|line| f32::from(line.width))
-            .fold(0.0_f32, f32::max)
-            .ceil()
-            .max(1.0) as f64;
-        let measured_h = f64::from(f32::from(laid.size().height)).max(1.0);
-        (measured_w, measured_h)
-    } else {
-        let fallback_w = (trimmed.chars().count() as f64 * 8.0 + 24.0).clamp(64.0, 260.0);
-        (fallback_w, 28.0)
-    };
-    [p.0 - w * 0.5, p.1 - h * 0.5, w, h]
-}
-
 impl PlaygroundView {
-    /// Apply a live UTF-16 splice on the active inline label editor directly into `PageDocSession`
-    /// and update its `RelativePosition` anchors so concurrent remote edits merge cleanly.
+    /// Apply a live UTF-16 splice on the active inline label editor directly into `PageDocSession`,
+    /// auto-grow Shape height when multiline text overflows (`AUTO_HEIGHT`), and update CRDT anchors.
     pub(crate) fn edgeless_label_edit(
         &mut self,
         window: &mut Window,
@@ -112,11 +42,66 @@ impl PlaygroundView {
             if let Some(commit) = commit {
                 self.did_edgeless_doc_commit(commit, cx);
             }
+            self.edgeless_sync_shape_auto_height(window, cx);
         }
         self.edgeless_update_label_anchors();
         window.notify_text_input_changed(&self.editor_focus);
         cx.notify();
         Some(())
+    }
+
+    /// Grow (or shrink back down to `min_world_height`) an actively edited Shape's `xywh` height
+    /// to fit its wrapped multiline label, matching Web `edgeless-shape-text-editor.ts` `AUTO_HEIGHT`.
+    pub(crate) fn edgeless_sync_shape_auto_height(
+        &mut self,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some((surface_id, id, new_rect)) =
+            self.edgeless.authoring.label_editor().and_then(|ed| {
+                let LabelTarget::Shape { surface_id, id } = &ed.target else {
+                    return None;
+                };
+                let laid =
+                    layout_label_editor_paragraph(ed, ed.world_rect.w, 1.0, self.theme, window)?;
+                let pad_y = ed.shape_style.as_ref().map_or(10.0, |st| st.padding[0]);
+                let needed_h = (f32::from(laid.size().height) + 2.0 * pad_y)
+                    .ceil()
+                    .max(ed.min_world_height);
+                if (needed_h - ed.world_rect.h).abs() < 1.0 {
+                    return None;
+                }
+                let mut r = ed.world_rect;
+                r.h = needed_h;
+                Some((surface_id.clone(), id.clone(), r))
+            })
+        else {
+            return;
+        };
+        if let Some(ed) = self.edgeless.authoring.label_editor_mut() {
+            ed.world_rect = new_rect;
+        }
+        let now_ms = self.now_ms(cx) as u64;
+        let xywh = PageDocSession::format_xywh([
+            new_rect.x as f64,
+            new_rect.y as f64,
+            new_rect.w as f64,
+            new_rect.h as f64,
+        ]);
+        let commit = self.page_mut().ok().and_then(|page| {
+            page.set_surface_element_field(
+                &surface_id,
+                &id,
+                "xywh",
+                SessionValue::Any(Any::String(xywh)),
+                now_ms,
+            )
+            .ok()
+            .flatten()
+        });
+        if let Some(commit) = commit {
+            self.did_edgeless_doc_commit(commit, cx);
+        }
     }
 
     pub(crate) fn edgeless_update_label_anchors(&mut self) {
@@ -526,7 +511,6 @@ impl PlaygroundView {
                     ),
                     _ => return false,
                 };
-                self.suppress_unselected_root_input = false;
                 self.edgeless.authoring.selection.clear();
                 self.edgeless
                     .authoring
@@ -562,7 +546,6 @@ impl PlaygroundView {
                 let rect = info.title_pill_rect.unwrap_or_else(|| {
                     WorldRect::new(info.rect.x, info.rect.y - 28.0, 140.0, 24.0)
                 });
-                self.suppress_unselected_root_input = false;
                 self.edgeless.authoring.selection.clear();
                 self.edgeless
                     .authoring

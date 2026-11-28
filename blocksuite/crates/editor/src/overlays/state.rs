@@ -262,14 +262,20 @@ impl Overlays {
             }
             OverlayEvent::PointerUp => {
                 if let Some(drag) = self.drag.take() {
-                    if let Some(slot) = drag.slot
-                        && let Some(new_index) = slot.reorder_index()
-                    {
-                        effects.edits.push(DocEdit::Reorder {
-                            parent_id: slot.parent_id,
-                            child_id: drag.block_id,
-                            new_index,
-                        });
+                    if let Some(slot) = drag.slot {
+                        if drag.dragged_ids.len() > 1 {
+                            effects.edits.push(DocEdit::ReorderMany {
+                                parent_id: slot.parent_id,
+                                child_ids: drag.dragged_ids,
+                                insert_index: slot.insert_index,
+                            });
+                        } else if let Some(new_index) = slot.reorder_index() {
+                            effects.edits.push(DocEdit::Reorder {
+                                parent_id: slot.parent_id,
+                                child_id: drag.block_id,
+                                new_index,
+                            });
+                        }
                     }
                     effects.redraw = true;
                 }
@@ -399,12 +405,7 @@ impl Overlays {
             }
             OverlayEvent::ToggleCodePreview(_) | OverlayEvent::ExternalEmbedInteract { .. } => {}
             OverlayEvent::DragStart(block_id) => {
-                self.close_slash(now_ms);
-                self.close_link_field();
-                self.drag = Some(BlockDrag {
-                    block_id,
-                    slot: None,
-                });
+                self.start_drag(block_id, Vec::new(), now_ms);
                 effects.redraw = true;
             }
             OverlayEvent::OpenEquationEditor { target, initial } => {
@@ -461,6 +462,7 @@ impl Overlays {
             | OverlayEvent::KeyboardToolbar(_)
             | OverlayEvent::InsertImageBytes { .. }
             | OverlayEvent::FocusTableCell { .. }
+            | OverlayEvent::TableCellMouseDown { .. }
             | OverlayEvent::AttachmentPdfPage { .. }
             | OverlayEvent::OpenEmbedDoc { .. }
             | OverlayEvent::LongPressWord { .. }
@@ -580,10 +582,11 @@ impl Overlays {
             return effects;
         }
 
+        let allow_database = !self.database_readonly;
         let Some(menu) = self.open_slash_mut() else {
             return effects;
         };
-        let count = filter_slash_items(&menu.query).len();
+        let count = filter_slash_items_for(&menu.query, allow_database).len();
         effects.handled = true;
         effects.redraw = true;
         match key {
@@ -594,14 +597,14 @@ impl Overlays {
                 menu.selected = (menu.selected + if back { count - 1 } else { 1 }) % count;
                 menu.reveal_selected = true;
             }
-            "tab" => {}
-            "enter" if count > 0 => self.execute_slash(None, now_ms, &mut effects),
-            // When triggered in-document with no matching items, `Enter`, `Up`, and `Down`
-            // close the menu and pass through to the editor.
-            "enter" | "up" | "down" if menu.query_in_document => {
+            // When triggered in-document with no matching items (popover hidden), `Enter`,
+            // `Up`, and `Down` close the menu and pass through to the editor.
+            "enter" | "up" | "down" if count == 0 && menu.query_in_document => {
                 self.close_slash(now_ms);
                 effects.handled = false;
             }
+            "tab" => {}
+            "enter" if count > 0 => self.execute_slash(None, now_ms, &mut effects),
             "enter" | "escape" => {
                 self.close_slash(now_ms);
             }
@@ -638,7 +641,7 @@ impl Overlays {
         let Some(menu) = self.slash_menu() else {
             return;
         };
-        let items = filter_slash_items(&menu.query);
+        let items = filter_slash_items_for(&menu.query, !self.database_readonly);
         let Some(item) = items.get(index.unwrap_or(menu.selected)) else {
             return;
         };

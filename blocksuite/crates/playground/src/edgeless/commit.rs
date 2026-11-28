@@ -16,8 +16,8 @@ use crate::{
 
 use super::{
     EdgelessGesture, EdgelessInlineEdit, EdgelessTool, HandleKind, NOTE_MIN_WIDTH, SpatialItemKind,
-    WorldRect, compute_frame_membership_updates, max_spatial_index, normalized_rect,
-    resized_rect_with_min, rotated_bounds,
+    WorldRect, compute_frame_membership_updates, constrain_shift_drag, constrain_shift_square,
+    max_spatial_index, normalized_rect, resized_rect_constrained, rotated_bounds,
 };
 
 impl PlaygroundView {
@@ -48,24 +48,44 @@ impl PlaygroundView {
                 }
                 cx.notify();
             }
-            EdgelessGesture::Marquee { .. } => {
+            EdgelessGesture::Marquee { .. } | EdgelessGesture::SelectLabelText { .. } => {
                 cx.notify();
             }
             EdgelessGesture::DragSelection {
                 start_world,
                 current_world,
                 initial,
+                shift,
+                alt_clone,
+                pending_dblclick,
             } => {
-                let dx = (current_world.0 - start_world.0) as f64;
-                let dy = (current_world.1 - start_world.1) as f64;
+                let (dx_f32, dy_f32) = if shift {
+                    constrain_shift_drag(start_world, current_world)
+                } else {
+                    (
+                        current_world.0 - start_world.0,
+                        current_world.1 - start_world.1,
+                    )
+                };
+                let dx = dx_f32 as f64;
+                let dy = dy_f32 as f64;
                 if dx.hypot(dy) < 0.5 {
-                    cx.notify();
+                    if let Some((item_id, world_pos)) = pending_dblclick {
+                        self.edgeless_begin_inline_edit_at(&item_id, Some(world_pos), window, cx);
+                    } else {
+                        cx.notify();
+                    }
                     return;
                 }
+                if alt_clone {
+                    self.edgeless_clone_items_by_delta(&initial, dx, dy, cx);
+                    return;
+                }
+                let constrained_world = (start_world.0 + dx_f32, start_world.1 + dy_f32);
                 let frame_updates = compute_frame_membership_updates(
                     &self.edgeless.authoring.painted_items,
                     &initial,
-                    current_world,
+                    constrained_world,
                 );
                 let commit = self.page_mut().ok().and_then(|page| {
                     page.structural_edit(now_ms, move |page| {
@@ -153,19 +173,24 @@ impl PlaygroundView {
                 current_world,
                 initial_box,
                 initial,
+                shift,
+                rotate_deg,
             } => {
                 let min_w = if initial.len() == 1 && initial[0].kind == SpatialItemKind::Note {
                     NOTE_MIN_WIDTH
                 } else {
                     24.0
                 };
-                let new_box = resized_rect_with_min(
+                let lock_ratio = shift || initial.len() > 1;
+                let new_box = resized_rect_constrained(
                     initial_box,
                     handle,
                     start_world,
                     current_world,
                     min_w,
                     24.0,
+                    lock_ratio,
+                    rotate_deg,
                 );
                 if (new_box.x - initial_box.x).abs() < 0.5
                     && (new_box.y - initial_box.y).abs() < 0.5
@@ -186,18 +211,31 @@ impl PlaygroundView {
                         | HandleKind::SE
                         | HandleKind::SW
                 );
+                let single_rotated = initial.len() == 1 && rotate_deg.abs() > 1e-3;
                 let commit = self.page_mut().ok().and_then(|page| {
                     page.structural_edit(now_ms, move |page| {
                         for item in &initial {
-                            let nx = new_box.x as f64 + (item.rect.x - initial_box.x) as f64 * sx;
-                            let ny = new_box.y as f64 + (item.rect.y - initial_box.y) as f64 * sy;
-                            let item_min_w = if item.kind == SpatialItemKind::Note {
-                                NOTE_MIN_WIDTH as f64
+                            let (nx, ny, nw, nh) = if single_rotated {
+                                (
+                                    new_box.x as f64,
+                                    new_box.y as f64,
+                                    new_box.w as f64,
+                                    new_box.h as f64,
+                                )
                             } else {
-                                16.0
+                                let nx =
+                                    new_box.x as f64 + (item.rect.x - initial_box.x) as f64 * sx;
+                                let ny =
+                                    new_box.y as f64 + (item.rect.y - initial_box.y) as f64 * sy;
+                                let item_min_w = if item.kind == SpatialItemKind::Note {
+                                    NOTE_MIN_WIDTH as f64
+                                } else {
+                                    16.0
+                                };
+                                let nw = (item.rect.w as f64 * sx).max(item_min_w);
+                                let nh = (item.rect.h as f64 * sy).max(16.0);
+                                (nx, ny, nw, nh)
                             };
-                            let nw = (item.rect.w as f64 * sx).max(item_min_w);
-                            let nh = (item.rect.h as f64 * sy).max(16.0);
                             if item.kind.is_block() {
                                 page.set_block_xywh(&item.id, [nx, ny, nw, nh], now_ms)?;
                                 if item.kind == SpatialItemKind::EdgelessText && horizontal_resize {
@@ -330,10 +368,19 @@ impl PlaygroundView {
                 shape_type,
                 start_world,
                 current_world,
+                shift,
             } => {
-                let mut r = normalized_rect(start_world, current_world);
+                let mut r = if shift {
+                    constrain_shift_square(start_world, current_world)
+                } else {
+                    normalized_rect(start_world, current_world)
+                };
                 if r.w < 12.0 && r.h < 12.0 {
                     r = WorldRect::new(start_world.0 - 80.0, start_world.1 - 50.0, 160.0, 100.0);
+                } else if shift {
+                    let side = r.w.max(r.h).max(40.0);
+                    r.w = side;
+                    r.h = side;
                 } else {
                     r.w = r.w.max(40.0);
                     r.h = r.h.max(32.0);
@@ -522,6 +569,7 @@ impl PlaygroundView {
                 }
             }
             EdgelessGesture::CreateConnector {
+                mode,
                 source_id,
                 source_port,
                 source_world,
@@ -530,64 +578,38 @@ impl PlaygroundView {
                 target_port,
                 target_world,
             } => {
-                let dst = target_world.unwrap_or(current_world);
-                if (dst.0 - source_world.0).hypot(dst.1 - source_world.1) < 8.0
-                    && target_id.is_none()
-                {
-                    cx.notify();
-                    return;
-                }
-                let next_idx = self
-                    .snapshot
-                    .as_deref()
-                    .and_then(max_spatial_index)
-                    .and_then(|m| generate_key_between(Some(&m), None).ok())
-                    .unwrap_or_else(|| "a0".to_string());
-                let seed = (self.edgeless.authoring.next_id_seq as i32 + 31) * 89;
-                let cid = self.page().map(|p| p.client_id());
-                let id_opt = cid.map(|c| self.edgeless.authoring.next_id("conn", c));
-                if let Some(conn_id) = id_opt {
-                    let conn_id_clone = conn_id.clone();
-                    let source = match (source_id, source_port) {
-                        (Some(id), port) => ConnectorEndpointSpec::element(id, port),
-                        _ => ConnectorEndpointSpec::point(
-                            source_world.0 as f64,
-                            source_world.1 as f64,
-                        ),
-                    };
-                    let target = match (target_id, target_port) {
-                        (Some(id), port) => ConnectorEndpointSpec::element(id, port),
-                        _ => ConnectorEndpointSpec::point(dst.0 as f64, dst.1 as f64),
-                    };
-                    let commit = self.page_mut().ok().and_then(|page| {
-                        page.structural_edit(now_ms, move |page| {
-                            let surface_id = page.ensure_surface_block(now_ms)?;
-                            page.add_surface_element(
-                                &surface_id,
-                                conn_id_clone.clone(),
-                                &next_idx,
-                                SurfaceElementSpec::Connector {
-                                    mode: 2, // Curve
-                                    seed,
-                                    source: source.clone(),
-                                    target: target.clone(),
-                                    text: None,
-                                    label_xywh: None,
-                                },
-                                now_ms,
-                            )?;
-                            Ok(())
-                        })
-                        .ok()
-                        .flatten()
-                    });
-                    if let Some(commit) = commit {
-                        self.did_edgeless_doc_commit(commit, cx);
-                        self.edgeless.authoring.selection.clear();
-                        self.edgeless.authoring.selection.insert(conn_id);
-                        self.edgeless.authoring.tool = EdgelessTool::Select;
-                    }
-                }
+                self.commit_create_connector(
+                    mode,
+                    source_id,
+                    source_port,
+                    source_world,
+                    current_world,
+                    target_id,
+                    target_port,
+                    target_world,
+                    now_ms,
+                    cx,
+                );
+            }
+            EdgelessGesture::DragConnectorEndpoint {
+                id,
+                surface_id,
+                is_start,
+                current_world,
+                snap_id,
+                snap_port,
+                ..
+            } => {
+                self.commit_connector_endpoint_drag(
+                    id,
+                    surface_id,
+                    is_start,
+                    current_world,
+                    snap_id,
+                    snap_port,
+                    now_ms,
+                    cx,
+                );
             }
             EdgelessGesture::DrawStroke {
                 highlighter,
@@ -660,8 +682,9 @@ impl PlaygroundView {
                     });
                     if let Some(commit) = commit {
                         self.did_edgeless_doc_commit(commit, cx);
+                        // Align with Web `brush-tool.ts`: stay in Brush/Highlighter mode with
+                        // empty selection so the user can keep drawing continuously.
                         self.edgeless.authoring.selection.clear();
-                        self.edgeless.authoring.selection.insert(stroke_id);
                     }
                 }
             }
@@ -712,7 +735,6 @@ impl PlaygroundView {
             self.edgeless.authoring.selection.clear();
             self.edgeless.authoring.selection.insert(text_id.clone());
             self.edgeless.authoring.tool = EdgelessTool::Select;
-            self.suppress_unselected_root_input = false;
             self.edgeless.authoring.inline_edit = Some(EdgelessInlineEdit::SpatialBlock {
                 block_id: text_id,
                 is_note: false,

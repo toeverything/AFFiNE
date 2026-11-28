@@ -187,11 +187,30 @@ pub struct Preedit {
     pub selected: Range<usize>,
 }
 
+/// Granularity of an active mouse drag selection in the Page editor.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum DragSelectionMode {
+    #[default]
+    Character,
+    /// Double-click + drag: anchor word range `(block_id, start_utf16, end_utf16)`.
+    Word {
+        block_id: String,
+        start: u64,
+        end: u64,
+    },
+    /// Triple-click + drag: anchor paragraph block id.
+    Paragraph { block_id: String },
+}
+
 #[derive(Default)]
 pub struct EditorSession {
     pub selection: Option<DocumentSelection>,
     /// Selected whole-block IDs in document order (entered via `Escape` or second `Mod-a`).
     pub block_selection: Vec<String>,
+    /// Anchor block ID for `Shift+ArrowUp/Down` block-selection extension.
+    pub block_selection_anchor: Option<String>,
+    /// Focus block ID for `Shift+ArrowUp/Down` block-selection extension.
+    pub block_selection_focus: Option<String>,
     pub goal_x: Option<f32>,
     pub preedit: Option<Preedit>,
     pub relative_selection: Option<SelectionSnapshot>,
@@ -200,6 +219,10 @@ pub struct EditorSession {
     pub reveal: bool,
     /// The primary button is held and extends the selection.
     pub dragging: bool,
+    /// Granularity of the active mouse drag (character, word, or paragraph).
+    pub drag_mode: DragSelectionMode,
+    /// Whether the pointer has moved since mouse-down during a multi-click drag.
+    pub drag_moved: bool,
     /// The `/` that opened the slash menu from typed text: its block and a relative
     /// position naming that character.
     pub slash_trigger: Option<(String, SelectionSnapshot)>,

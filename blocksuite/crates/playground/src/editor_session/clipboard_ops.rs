@@ -461,7 +461,6 @@ impl PlaygroundView {
         }
         if is_block_paste {
             self.editor.block_selection.clear();
-            self.suppress_unselected_root_input = false;
         }
         self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(last_id, last_pos)));
         self.editor.last_typing = None;

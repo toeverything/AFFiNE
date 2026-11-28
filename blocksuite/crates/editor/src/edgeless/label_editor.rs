@@ -115,6 +115,7 @@ pub struct EdgelessLabelEditor {
     pub original_text: String,
     pub anchored: AnchoredInlineInput,
     pub world_rect: WorldRect,
+    pub min_world_height: f32,
     pub rotate_deg: f32,
     pub shape_style: Option<ShapeTextStyle>,
     pub created_new_text: bool,
@@ -148,6 +149,7 @@ impl EdgelessLabelEditor {
             original_text: initial.clone(),
             anchored: AnchoredInlineInput::new(initial, multiline),
             world_rect,
+            min_world_height: world_rect.h,
             rotate_deg,
             shape_style: None,
             created_new_text: false,
@@ -226,6 +228,96 @@ impl EdgelessLabelEditor {
     pub fn select(&mut self, range: Range<usize>) {
         self.preedit_anchors = None;
         self.input.select(range);
+    }
+
+    pub fn select_directional(&mut self, anchor: usize, focus: usize) {
+        self.preedit_anchors = None;
+        let len = utf16_len(&self.input.text);
+        let a = anchor.min(len);
+        let f = focus.min(len);
+        self.input.selection = a.min(f)..a.max(f);
+        self.input.reversed = f < a;
+    }
+
+    pub fn move_to_line_edge(&mut self, to_end: bool, extend: bool) {
+        self.preedit_anchors = None;
+        let text = &self.input.text;
+        let focus = self.input.focus();
+        let target = if !self.input.multiline {
+            if to_end { utf16_len(text) } else { 0 }
+        } else {
+            let byte = utf16_to_byte(text, focus);
+            let target_byte = if to_end {
+                text[byte..].find('\n').map_or(text.len(), |rel| byte + rel)
+            } else {
+                text[..byte].rfind('\n').map_or(0, |pos| pos + 1)
+            };
+            utf16_len(&text[..target_byte])
+        };
+        self.input.move_caret(target, extend);
+    }
+
+    pub fn word_boundary(&self, from: usize, forward: bool) -> usize {
+        let text = &self.input.text;
+        let byte = utf16_to_byte(text, from);
+        let is_word = |c: char| c.is_alphanumeric() || c == '_';
+        let next_byte = if forward {
+            let mut idx = byte;
+            let mut iter = text[byte..].char_indices().peekable();
+            while let Some((rel, ch)) = iter.peek().copied() {
+                if is_word(ch) {
+                    break;
+                }
+                idx = byte + rel + ch.len_utf8();
+                iter.next();
+            }
+            while let Some((rel, ch)) = iter.peek().copied() {
+                if !is_word(ch) {
+                    break;
+                }
+                idx = byte + rel + ch.len_utf8();
+                iter.next();
+            }
+            idx
+        } else {
+            let mut idx = byte;
+            let mut iter = text[..byte].char_indices().rev().peekable();
+            while let Some((pos, ch)) = iter.peek().copied() {
+                if is_word(ch) {
+                    break;
+                }
+                idx = pos;
+                iter.next();
+            }
+            while let Some((pos, ch)) = iter.peek().copied() {
+                if !is_word(ch) {
+                    break;
+                }
+                idx = pos;
+                iter.next();
+            }
+            idx
+        };
+        utf16_len(&text[..next_byte])
+    }
+
+    pub fn move_word(&mut self, left: bool, extend: bool) {
+        self.preedit_anchors = None;
+        let to = self.word_boundary(self.input.focus(), !left);
+        self.input.move_caret(to, extend);
+    }
+
+    pub fn delete_word(&mut self, forward: bool) -> Option<LabelSplice> {
+        self.preedit_anchors = None;
+        if !self.input.selection.is_empty() {
+            return self.replace(None, "");
+        }
+        let pos = self.input.focus();
+        let target = self.word_boundary(pos, forward);
+        if target == pos {
+            return None;
+        }
+        self.replace(Some(pos.min(target)..pos.max(target)), "")
     }
 
     pub fn delete_backward(&mut self) -> Option<LabelSplice> {

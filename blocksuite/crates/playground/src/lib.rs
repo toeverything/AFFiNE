@@ -220,7 +220,6 @@ pub struct PlaygroundView {
     pub(crate) ime_insets: chrome::ImeInsetsState,
     /// Focused in-place `affine:table` cell editor, if active.
     pub(crate) table_cell: Option<overlays::InlineTableCell>,
-    pub(crate) suppress_unselected_root_input: bool,
     /// Most recent document id opened via clicking an `embed-linked-doc` / `embed-synced-doc` card.
     pub(crate) last_opened_embed_doc: Option<String>,
     /// Stack of previously visited page ids for in-workspace back navigation.
@@ -384,7 +383,6 @@ impl PlaygroundView {
             table_cell: None,
             doc_panel_tab: None,
             doc_panel_scroll_y: 0.0,
-            suppress_unselected_root_input: false,
             last_opened_embed_doc: None,
             nav_history: Vec::new(),
             on_active_doc_changed: None,
@@ -580,6 +578,10 @@ impl PlaygroundView {
             self.edgeless
                 .camera
                 .zoom_at(target_zoom, event.position, vp_origin);
+        } else if event.modifiers.shift && f32::from(delta.x).abs() < 1e-3 {
+            self.edgeless
+                .camera
+                .pan_by_screen_delta(f32::from(delta.y), 0.0);
         } else {
             self.edgeless
                 .camera
@@ -9462,7 +9464,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn set_document_discards_preedit_and_suppresses_late_input_only_when_composing() {
+    fn set_document_discards_preedit_and_never_hijacks_unselected_title() {
         use blocksuite_playground_doc::schema::SurfaceElementSpec;
         use ui::EntityInputHandler;
 
@@ -9507,16 +9509,16 @@ pub(crate) mod tests {
         };
 
         let cases = [
-            ("paragraph_composing", true),
-            ("link_bar_composing", true),
-            ("equation_bar_composing", true),
-            ("table_cell_composing", true),
-            ("edgeless_label_composing", true),
-            ("no_active_target", false),
-            ("table_cell_focused_idle", false),
+            "paragraph_composing",
+            "link_bar_composing",
+            "equation_bar_composing",
+            "table_cell_composing",
+            "edgeless_label_composing",
+            "no_active_target",
+            "table_cell_focused_idle",
         ];
 
-        for (case, expect_suppressed) in cases {
+        for case in cases {
             let session = open(1280, 800, PlaygroundOptions::default());
             session.view(|v, cx| v.set_document(make_doc_a(), cx));
             let _ = session.frame();
@@ -9623,15 +9625,21 @@ pub(crate) mod tests {
             type_text(&session, "X");
             let _ = session.frame();
             let title_b = session.view(|v, _| v.page_snapshot().unwrap().title().to_string());
-            if expect_suppressed {
+            assert_eq!(
+                title_b, "DocB",
+                "case {case}: unselected input after set_document must never mutate new title"
+            );
+            if case != "edgeless_label_composing" {
+                let root_id = session
+                    .view(|v, _| v.page_snapshot().unwrap().root.as_ref().unwrap().id.clone());
+                set_caret(&session, &root_id, 0);
+                type_text(&session, "X");
+                let _ = session.frame();
+                let title_after =
+                    session.view(|v, _| v.page_snapshot().unwrap().title().to_string());
                 assert_eq!(
-                    title_b, "DocB",
-                    "case {case}: late input after composing set_document must not mutate new title"
-                );
-            } else {
-                assert_eq!(
-                    title_b, "XDocB",
-                    "case {case}: non-composing set_document must allow typing into new title"
+                    title_after, "XDocB",
+                    "case {case}: explicit title focus must accept typing after set_document"
                 );
             }
         }

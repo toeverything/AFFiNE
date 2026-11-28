@@ -70,7 +70,6 @@ impl PlaygroundView {
             .filter(|snapshot| snapshot.root.is_some())
             .map(Rc::new);
         self.doc_rev += 1;
-
         if let Some(pages) = pages
             && self.custom_doc_directory.is_none()
         {
@@ -275,7 +274,6 @@ impl PlaygroundView {
             self.editor.last_typing = None;
             self.editor.pending_marks.clear();
             self.editor.slash_trigger = None;
-            self.suppress_unselected_root_input = true;
             self.overlays.set_keyboard_toolbar_visible(false);
             pruned = true;
         }
@@ -327,10 +325,7 @@ impl PlaygroundView {
         // Commit any pending inline edit (table cell or Edgeless label) cleanly before switching modes.
         self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
         if self.edgeless.authoring.editing_spatial_block().is_some() {
-            self.edgeless.authoring.inline_edit = None;
-            self.editor.clear_preedit_state();
-            self.editor.selection = None;
-            self.announce_selection(cx);
+            self.edgeless_commit_inline_edit(window, cx);
         }
         self.edgeless.authoring.reset_transient();
         self.page_scroll_fling = None;
@@ -440,6 +435,16 @@ impl PlaygroundView {
         }
         let raw_delta = event.delta.pixel_delta(px(SCROLL_LINE));
         let (mut dx, mut dy) = (f32::from(raw_delta.x), f32::from(raw_delta.y));
+        // On Windows/Linux, Shift+wheel delivers a vertical delta with `modifiers.shift`:
+        // convert it to horizontal scroll for wide tables, code blocks, and databases.
+        if event.source != ui::ScrollSource::Touch
+            && event.modifiers.shift
+            && dx.abs() < f32::EPSILON
+            && dy.abs() > f32::EPSILON
+        {
+            dx = dy;
+            dy = 0.0;
+        }
         // Touch scroll axis lock — once a touch drag establishes a dominant axis,
         // suppress orthogonal jitter until the gesture ends, restarts, or pauses >160ms.
         if event.source == ui::ScrollSource::Touch {

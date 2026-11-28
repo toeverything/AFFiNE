@@ -119,6 +119,8 @@ mod tests {
             stroke_width: 1.0,
             polyline: Vec::new(),
             frame_children: children.into_iter().map(str::to_string).collect(),
+            group_children: Vec::new(),
+            parent_group_id: None,
             title_pill_rect: None,
         }
     }
@@ -129,6 +131,7 @@ mod tests {
             kind,
             surface_id: (kind == SpatialItemKind::Shape).then(|| "surf".into()),
             rect,
+            rotate_deg: 0.0,
             points: None,
             connector_source: None,
             connector_target: None,
@@ -174,6 +177,9 @@ mod tests {
             start_world: (620.0, 70.0),
             current_world: (310.0, 70.0),
             initial: init_s2.clone(),
+            shift: false,
+            alt_clone: false,
+            pending_dblclick: None,
         };
         assert_eq!(
             hovered_frame_for_drag(&painted, Some(&gesture)).as_deref(),

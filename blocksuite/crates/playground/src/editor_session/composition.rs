@@ -273,6 +273,7 @@ impl PlaygroundView {
             } else if rect.bottom() + margin > self.scroll_y + height {
                 self.scroll_y = (rect.bottom() + margin - height).round();
             }
+            self.reveal_table_cell_horizontal();
         }
     }
     pub(super) fn world_spans(block: &FlowBlock, r: Range<u64>) -> Vec<FlowRect> {
@@ -521,14 +522,6 @@ impl PlaygroundView {
         el.extend(self.table_cell_selection_elements(layout, v, palette, caret_alpha));
         el
     }
-    pub(crate) fn begin_input(&mut self) {
-        if self.editor.selection.is_none()
-            && self.editor.block_selection.is_empty()
-            && let Some(root) = self.page_snapshot().and_then(|s| s.root.as_ref())
-        {
-            self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(&root.id, 0)));
-        }
-    }
     pub(super) fn replacement_selection(
         &self,
         range: Option<Range<usize>>,
@@ -570,6 +563,9 @@ impl PlaygroundView {
         let layout = self
             .flow_layout()
             .ok_or_else(|| DocError::InvalidState("missing layout".into()))?;
+        if self.try_wrap_selection(&sel, text, &layout, w, cx)? {
+            return Ok(());
+        }
         if sel.ordered(&layout).is_none()
             && sel.anchor.block_id == sel.focus.block_id
             && let Some(row_plain) = self

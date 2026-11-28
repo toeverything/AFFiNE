@@ -198,6 +198,8 @@ impl PlaygroundView {
         }
         self.editor.selection = None;
         self.editor.block_selection = vec![adjacent.block_id.clone()];
+        self.editor.block_selection_anchor = Some(adjacent.block_id.clone());
+        self.editor.block_selection_focus = Some(adjacent.block_id.clone());
         self.keep_keyboard_on_block_selection = had_selection;
         self.block_selection_return_caret = return_caret;
         self.editor.pending_marks.clear();

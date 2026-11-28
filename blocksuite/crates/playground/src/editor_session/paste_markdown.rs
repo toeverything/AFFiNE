@@ -108,7 +108,6 @@ impl PlaygroundView {
         w: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        self.begin_input();
         match self.try_paste_url_as_link(item, w, cx) {
             Ok(true) => return,
             Ok(false) => {}

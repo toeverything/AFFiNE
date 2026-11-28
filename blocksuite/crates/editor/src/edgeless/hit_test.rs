@@ -5,10 +5,13 @@ use std::{
     rc::Rc,
 };
 
+use blocksuite_playground_doc::read::ConnectorMode;
 use ui::{Pixels, Point, point, px};
 
 use super::{
     EdgelessCamera, EdgelessInlineEdit, EdgelessLabelEditor, EdgelessTool, ShapePreset, WorldRect,
+    constrain_shift_drag, distance_to_polyline, point_in_rotated_rect, resized_rect_constrained,
+    rotate_point_around, snap_connector_port_on_items,
 };
 
 /// Interactive handle on the current Edgeless selection box.
@@ -24,6 +27,8 @@ pub enum HandleKind {
     W,
     Rotate,
     DragHandle,
+    ConnectorStart,
+    ConnectorEnd,
 }
 
 impl HandleKind {
@@ -50,6 +55,8 @@ impl HandleKind {
             Self::W => "edgeless.handle.w",
             Self::Rotate => "edgeless.handle.rotate",
             Self::DragHandle => "edgeless.drag_handle",
+            Self::ConnectorStart => "edgeless.handle.connector_start",
+            Self::ConnectorEnd => "edgeless.handle.connector_end",
         }
     }
 }
@@ -96,6 +103,8 @@ pub struct SpatialItemInfo {
     pub stroke_width: f32,
     pub polyline: Vec<(f32, f32)>,
     pub frame_children: Vec<String>,
+    pub group_children: Vec<String>,
+    pub parent_group_id: Option<String>,
     pub title_pill_rect: Option<WorldRect>,
 }
 
@@ -107,6 +116,7 @@ pub struct DragItemInitial {
     pub kind: SpatialItemKind,
     pub surface_id: Option<String>,
     pub rect: WorldRect,
+    pub rotate_deg: f32,
     pub points: Option<Vec<Vec<f64>>>,
     pub connector_source: Option<(Option<String>, Option<[f64; 2]>)>,
     pub connector_target: Option<(Option<String>, Option<[f64; 2]>)>,
@@ -129,6 +139,9 @@ pub enum EdgelessGesture {
         start_world: (f32, f32),
         current_world: (f32, f32),
         initial: Vec<DragItemInitial>,
+        shift: bool,
+        alt_clone: bool,
+        pending_dblclick: Option<(String, (f32, f32))>,
     },
     ResizeSelection {
         handle: HandleKind,
@@ -136,6 +149,8 @@ pub enum EdgelessGesture {
         current_world: (f32, f32),
         initial_box: WorldRect,
         initial: Vec<DragItemInitial>,
+        shift: bool,
+        rotate_deg: f32,
     },
     RotateSelection {
         id: String,
@@ -150,6 +165,7 @@ pub enum EdgelessGesture {
         shape_type: ShapePreset,
         start_world: (f32, f32),
         current_world: (f32, f32),
+        shift: bool,
     },
     CreateFrame {
         start_world: (f32, f32),
@@ -160,6 +176,7 @@ pub enum EdgelessGesture {
         current_world: (f32, f32),
     },
     CreateConnector {
+        mode: ConnectorMode,
         source_id: Option<String>,
         source_port: Option<[f64; 2]>,
         source_world: (f32, f32),
@@ -168,9 +185,25 @@ pub enum EdgelessGesture {
         target_port: Option<[f64; 2]>,
         target_world: Option<(f32, f32)>,
     },
+    DragConnectorEndpoint {
+        id: String,
+        surface_id: String,
+        is_start: bool,
+        mode: ConnectorMode,
+        fixed_id: Option<String>,
+        fixed_port: Option<[f64; 2]>,
+        fixed_world: (f32, f32),
+        current_world: (f32, f32),
+        snap_id: Option<String>,
+        snap_port: Option<[f64; 2]>,
+        snap_world: Option<(f32, f32)>,
+    },
     DrawStroke {
         highlighter: bool,
         points_world: Vec<(f64, f64)>,
+    },
+    SelectLabelText {
+        anchor_utf16: usize,
     },
 }
 
@@ -183,10 +216,10 @@ pub struct LiveGeomOverride {
 }
 
 /// Interactive authoring state owned by `EdgelessCanvasState`.
-#[derive(Default)]
 pub struct EdgelessAuthoringState {
     pub tool: EdgelessTool,
     pub last_shape_type: Option<ShapePreset>,
+    pub connector_mode: ConnectorMode,
     pub shape_picker_open: bool,
     pub selection: BTreeSet<String>,
     pub gesture: Option<EdgelessGesture>,
@@ -195,6 +228,23 @@ pub struct EdgelessAuthoringState {
     pub next_id_seq: u64,
     /// Items in exact paint order from the most recent rendered frame.
     pub painted_items: Rc<[SpatialItemInfo]>,
+}
+
+impl Default for EdgelessAuthoringState {
+    fn default() -> Self {
+        Self {
+            tool: EdgelessTool::default(),
+            last_shape_type: None,
+            connector_mode: ConnectorMode::Curve,
+            shape_picker_open: false,
+            selection: BTreeSet::new(),
+            gesture: None,
+            inline_edit: None,
+            space_pan: false,
+            next_id_seq: 0,
+            painted_items: Rc::from([]),
+        }
+    }
 }
 
 impl EdgelessAuthoringState {
@@ -246,9 +296,21 @@ impl EdgelessAuthoringState {
                 start_world,
                 current_world,
                 initial,
+                shift,
+                alt_clone,
+                ..
             }) => {
-                let dx = current_world.0 - start_world.0;
-                let dy = current_world.1 - start_world.1;
+                if *alt_clone {
+                    return out;
+                }
+                let (dx, dy) = if *shift {
+                    constrain_shift_drag(*start_world, *current_world)
+                } else {
+                    (
+                        current_world.0 - start_world.0,
+                        current_world.1 - start_world.1,
+                    )
+                };
                 for item in initial {
                     out.insert(
                         item.id.clone(),
@@ -271,19 +333,24 @@ impl EdgelessAuthoringState {
                 current_world,
                 initial_box,
                 initial,
+                shift,
+                rotate_deg,
             }) => {
                 let min_w = if initial.len() == 1 && initial[0].kind == SpatialItemKind::Note {
                     super::NOTE_MIN_WIDTH
                 } else {
                     24.0
                 };
-                let new_box = resized_rect_with_min(
+                let lock_ratio = *shift || initial.len() > 1;
+                let new_box = resized_rect_constrained(
                     *initial_box,
                     *handle,
                     *start_world,
                     *current_world,
                     min_w,
                     24.0,
+                    lock_ratio,
+                    *rotate_deg,
                 );
                 let sx = if initial_box.w > 1e-3 {
                     new_box.w / initial_box.w
@@ -296,15 +363,20 @@ impl EdgelessAuthoringState {
                     1.0
                 };
                 for item in initial {
-                    let nx = new_box.x + (item.rect.x - initial_box.x) * sx;
-                    let ny = new_box.y + (item.rect.y - initial_box.y) * sy;
-                    let item_min_w = if item.kind == SpatialItemKind::Note {
-                        super::NOTE_MIN_WIDTH
+                    let (nx, ny, nw, nh) = if initial.len() == 1 && rotate_deg.abs() > 1e-3 {
+                        (new_box.x, new_box.y, new_box.w, new_box.h)
                     } else {
-                        16.0
+                        let nx = new_box.x + (item.rect.x - initial_box.x) * sx;
+                        let ny = new_box.y + (item.rect.y - initial_box.y) * sy;
+                        let item_min_w = if item.kind == SpatialItemKind::Note {
+                            super::NOTE_MIN_WIDTH
+                        } else {
+                            16.0
+                        };
+                        let nw = (item.rect.w * sx).max(item_min_w);
+                        let nh = (item.rect.h * sy).max(16.0);
+                        (nx, ny, nw, nh)
                     };
-                    let nw = (item.rect.w * sx).max(item_min_w);
-                    let nh = (item.rect.h * sy).max(16.0);
                     out.insert(
                         item.id.clone(),
                         LiveGeomOverride {
@@ -429,6 +501,25 @@ impl EdgelessAuthoringState {
             }
         }
 
+        // Connector start/end endpoint handles for single selected connector.
+        if let Some(single) = single
+            && single.kind == SpatialItemKind::Connector
+            && single.polyline.len() >= 2
+        {
+            let start_s = camera.world_to_screen(
+                point(px(single.polyline[0].0), px(single.polyline[0].1)),
+                vp_origin,
+            );
+            let end_pt = *single.polyline.last().unwrap();
+            let end_s = camera.world_to_screen(point(px(end_pt.0), px(end_pt.1)), vp_origin);
+            if (px_s - f32::from(start_s.x)).hypot(py_s - f32::from(start_s.y)) <= 10.0 {
+                return Some(HandleKind::ConnectorStart);
+            }
+            if (px_s - f32::from(end_s.x)).hypot(py_s - f32::from(end_s.y)) <= 10.0 {
+                return Some(HandleKind::ConnectorEnd);
+            }
+        }
+
         if !self.selection_has_non_connector() {
             return None;
         }
@@ -523,7 +614,7 @@ impl EdgelessAuthoringState {
         None
     }
 
-    /// Snap a world coordinate to the nearest cardinal port on a Shape or Note within `snap_world`.
+    /// Snap a world coordinate to any connectable element (`Shape | Note | EdgelessText | Frame`).
     pub fn snap_connector_port(
         &self,
         world_x: f32,
@@ -531,138 +622,8 @@ impl EdgelessAuthoringState {
         zoom: f32,
         exclude_id: Option<&str>,
     ) -> Option<(String, [f64; 2], (f32, f32))> {
-        let snap_dist = (24.0 / zoom.max(0.1)).max(16.0);
-        let ports: [[f64; 2]; 4] = [[0.5, 0.0], [1.0, 0.5], [0.5, 1.0], [0.0, 0.5]];
-        let mut best: Option<(f32, String, [f64; 2], (f32, f32))> = None;
-        for item in self.painted_items.iter() {
-            if !matches!(item.kind, SpatialItemKind::Shape | SpatialItemKind::Note) {
-                continue;
-            }
-            if exclude_id.is_some_and(|ex| ex == item.id) {
-                continue;
-            }
-            for port in ports {
-                let px_w = item.rect.x + item.rect.w * port[0] as f32;
-                let py_w = item.rect.y + item.rect.h * port[1] as f32;
-                let (wx, wy) = rotate_point_around(
-                    px_w,
-                    py_w,
-                    item.rect.center().0,
-                    item.rect.center().1,
-                    item.rotate_deg,
-                );
-                let d = (world_x - wx).hypot(world_y - wy);
-                if d <= snap_dist && best.as_ref().is_none_or(|b| d < b.0) {
-                    best = Some((d, item.id.clone(), port, (wx, wy)));
-                }
-            }
-        }
-        best.map(|(_, id, port, pt)| (id, port, pt))
+        snap_connector_port_on_items(&self.painted_items, world_x, world_y, zoom, exclude_id)
     }
-}
-
-pub fn rotate_point_around(x: f32, y: f32, cx: f32, cy: f32, deg: f32) -> (f32, f32) {
-    if deg.abs() < 1e-4 {
-        return (x, y);
-    }
-    let (s, c) = deg.to_radians().sin_cos();
-    let dx = x - cx;
-    let dy = y - cy;
-    (cx + dx * c - dy * s, cy + dx * s + dy * c)
-}
-
-pub fn point_in_rotated_rect(wx: f32, wy: f32, rect: WorldRect, rotate_deg: f32) -> bool {
-    let (cx, cy) = rect.center();
-    let (lx, ly) = rotate_point_around(wx, wy, cx, cy, -rotate_deg);
-    lx >= rect.x && lx <= rect.right() && ly >= rect.y && ly <= rect.bottom()
-}
-
-pub fn distance_to_segment(p: (f32, f32), a: (f32, f32), b: (f32, f32)) -> f32 {
-    let vx = b.0 - a.0;
-    let vy = b.1 - a.1;
-    let len_sq = vx * vx + vy * vy;
-    if len_sq < 1e-8 {
-        return (p.0 - a.0).hypot(p.1 - a.1);
-    }
-    let t = (((p.0 - a.0) * vx + (p.1 - a.1) * vy) / len_sq).clamp(0.0, 1.0);
-    let proj_x = a.0 + t * vx;
-    let proj_y = a.1 + t * vy;
-    (p.0 - proj_x).hypot(p.1 - proj_y)
-}
-
-pub fn distance_to_polyline(p: (f32, f32), pts: &[(f32, f32)]) -> f32 {
-    if pts.is_empty() {
-        return f32::INFINITY;
-    }
-    if pts.len() == 1 {
-        return (p.0 - pts[0].0).hypot(p.1 - pts[0].1);
-    }
-    pts.windows(2)
-        .map(|w| distance_to_segment(p, w[0], w[1]))
-        .fold(f32::INFINITY, f32::min)
-}
-
-pub fn normalized_rect(a: (f32, f32), b: (f32, f32)) -> WorldRect {
-    let x = a.0.min(b.0);
-    let y = a.1.min(b.1);
-    WorldRect::new(x, y, (a.0 - b.0).abs(), (a.1 - b.1).abs())
-}
-
-pub fn resized_rect(
-    initial: WorldRect,
-    handle: HandleKind,
-    start: (f32, f32),
-    current: (f32, f32),
-) -> WorldRect {
-    resized_rect_with_min(initial, handle, start, current, 24.0, 24.0)
-}
-
-pub fn resized_rect_with_min(
-    initial: WorldRect,
-    handle: HandleKind,
-    start: (f32, f32),
-    current: (f32, f32),
-    min_w: f32,
-    min_h: f32,
-) -> WorldRect {
-    let dx = current.0 - start.0;
-    let dy = current.1 - start.1;
-    let mut left = initial.x;
-    let mut top = initial.y;
-    let mut right = initial.right();
-    let mut bottom = initial.bottom();
-    match handle {
-        HandleKind::NW => {
-            left = (left + dx).min(right - min_w);
-            top = (top + dy).min(bottom - min_h);
-        }
-        HandleKind::N => {
-            top = (top + dy).min(bottom - min_h);
-        }
-        HandleKind::NE => {
-            right = (right + dx).max(left + min_w);
-            top = (top + dy).min(bottom - min_h);
-        }
-        HandleKind::E => {
-            right = (right + dx).max(left + min_w);
-        }
-        HandleKind::SE => {
-            right = (right + dx).max(left + min_w);
-            bottom = (bottom + dy).max(top + min_h);
-        }
-        HandleKind::S => {
-            bottom = (bottom + dy).max(top + min_h);
-        }
-        HandleKind::SW => {
-            left = (left + dx).min(right - min_w);
-            bottom = (bottom + dy).max(top + min_h);
-        }
-        HandleKind::W => {
-            left = (left + dx).min(right - min_w);
-        }
-        HandleKind::Rotate | HandleKind::DragHandle => {}
-    }
-    WorldRect::new(left, top, right - left, bottom - top)
 }
 
 #[cfg(test)]
@@ -696,6 +657,8 @@ mod tests {
                 stroke_width: 1.0,
                 polyline: vec![],
                 frame_children: vec!["rot_shape".into()],
+                group_children: Vec::new(),
+                parent_group_id: None,
                 title_pill_rect: Some(WorldRect::new(0.0, -28.0, 80.0, 22.0)),
             },
             SpatialItemInfo {
@@ -710,6 +673,8 @@ mod tests {
                 stroke_width: 2.0,
                 polyline: vec![],
                 frame_children: vec![],
+                group_children: Vec::new(),
+                parent_group_id: None,
                 title_pill_rect: None,
             },
             SpatialItemInfo {
@@ -724,6 +689,8 @@ mod tests {
                 stroke_width: 4.0,
                 polyline: vec![(250.0, 55.0), (350.0, 55.0)],
                 frame_children: vec![],
+                group_children: Vec::new(),
+                parent_group_id: None,
                 title_pill_rect: None,
             },
         ]
@@ -866,6 +833,8 @@ mod tests {
                     stroke_width: layout.item_stroke_width(idx),
                     polyline: layout.item_polyline(idx).to_vec(),
                     frame_children: Vec::new(),
+                    group_children: Vec::new(),
+                    parent_group_id: None,
                     title_pill_rect: None,
                 });
             }

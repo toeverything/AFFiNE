@@ -7,7 +7,10 @@ mod view_embed_controls;
 mod view_linked_doc;
 mod view_mobile;
 pub use view_mobile::DatabaseRecordSheetState;
+#[cfg(test)]
+mod tests_b6;
 mod view_scrollbar;
+mod view_slash_blocks;
 mod view_table_cell;
 
 pub use blocksuite_editor::overlays::*;
@@ -659,8 +662,9 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert_eq!(headers, ["Basic", "List"]);
-        // BlockSuite's order: text, the headings, code, quote, divider, new doc, linked doc, then the lists.
+        assert_eq!(headers, ["Basic", "List", "Content & Media"]);
+        // BlockSuite's order: text, the headings, code, quote, divider, new doc, linked doc,
+        // lists, then content & database items.
         assert_eq!(
             ids(""),
             [
@@ -679,11 +683,14 @@ mod tests {
                 "bulleted",
                 "numbered",
                 "todo",
-                "toggle"
+                "toggle",
+                "table",
+                "equation",
+                "database"
             ]
         );
         assert_eq!(rows.first().map(|(_, y, _)| *y), Some(0.0));
-        assert!(matches!(rows.last(), Some((SlashRow::Item(15), _, _))));
+        assert!(matches!(rows.last(), Some((SlashRow::Item(18), _, _))));
         let (_, last_y, last_height) = rows[rows.len() - 1];
         assert_eq!(last_y + last_height, height);
         for pair in rows.windows(2) {
@@ -691,10 +698,10 @@ mod tests {
                 assert!(matches!(pair[1].0, SlashRow::Item(_)));
             }
         }
-        // Without results the list keeps one row.
+        // Without results the list is empty so the popover stays hidden.
         let (rows, height) = slash_rows(&[]);
-        assert_eq!(rows, [(SlashRow::Empty, 0.0, SLASH_ITEM_HEIGHT)]);
-        assert_eq!(height, SLASH_ITEM_HEIGHT);
+        assert!(rows.is_empty());
+        assert_eq!(height, 0.0);
 
         // Filtered queries hide group headers while keeping every matching item.
         let filtered_items = filter_slash_items("tdo");
@@ -824,7 +831,7 @@ mod tests {
         session.key("up");
         let wrapped = session.frame();
         assert_no_violations(&wrapped, "slash menu scrolled");
-        assert!(element(&wrapped, "overlay.slash_menu.item.toggle").focused);
+        assert!(element(&wrapped, "overlay.slash_menu.item.database").focused);
         assert!(
             !wrapped
                 .elements
@@ -832,7 +839,7 @@ mod tests {
         );
         let menu_bounds = element(&wrapped, "overlay.slash_menu").bounds;
         assert!(
-            element(&wrapped, "overlay.slash_menu.item.toggle")
+            element(&wrapped, "overlay.slash_menu.item.database")
                 .bounds
                 .bottom()
                 <= menu_bounds.bottom()
@@ -932,17 +939,15 @@ mod tests {
         assert!(session.node(&converted).is_none());
         assert_eq!(session.text("showcase-quote").plain, quote_text);
 
-        // No results: one quiet row instead of a collapsed menu. `Tab` and the arrows do
-        // nothing, and `Enter` closes the menu without touching the block.
+        // No results: popover stays hidden instead of showing a `No results` card.
+        // `Tab` and the arrows do nothing, and `Enter` closes the menu without touching the block.
         session.settle();
         session.open_slash("showcase-quote");
         session.type_text("zzz");
         let empty = session.frame();
         assert_no_violations(&empty, "slash menu without results");
-        let row = element(&empty, "overlay.slash_menu.empty");
-        assert_eq!(row.text.as_deref(), Some("No results"));
-        assert_eq!(row.bounds.height, SLASH_ITEM_HEIGHT);
-        assert!(element(&empty, "overlay.slash_menu").bounds.height >= SLASH_ITEM_HEIGHT + 28.0);
+        assert!(!empty.elements.contains_key("overlay.slash_menu"));
+        assert!(!empty.elements.contains_key("overlay.slash_menu.empty"));
         let written = session.written();
         session.key("down");
         session.key("tab");
@@ -1101,8 +1106,10 @@ mod tests {
         session.key("escape");
         assert_eq!(session.slash_query(), None);
         assert!(session.text("showcase-quote").plain.starts_with("/coEvery"));
-        session.insert("/x");
-        assert_eq!(session.slash_query().as_deref(), Some("x"));
+        session.insert("/ ");
+        assert_eq!(session.slash_query(), None);
+        session.insert("/zzz");
+        assert_eq!(session.slash_query().as_deref(), Some("zzz"));
         session.insert(" ");
         assert_eq!(session.slash_query(), None);
         session.insert("/");

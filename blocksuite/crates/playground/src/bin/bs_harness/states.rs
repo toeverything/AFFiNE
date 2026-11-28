@@ -106,7 +106,7 @@ impl OverlayState {
             Self::Default => &[],
             Self::SlashMenuOpen => &["overlay.slash_menu", "overlay.slash_menu.item.text"],
             Self::SlashMenuFiltered => &["overlay.slash_menu", "overlay.slash_menu.item.h1"],
-            Self::SlashMenuEmpty => &["overlay.slash_menu", "overlay.slash_menu.empty"],
+            Self::SlashMenuEmpty => &[],
             Self::SlashMenuFlippedBottom => &["overlay.slash_menu"],
             Self::FormatToolbarOpen | Self::FormatToolbarFlippedTop => &[
                 "overlay.format_toolbar",

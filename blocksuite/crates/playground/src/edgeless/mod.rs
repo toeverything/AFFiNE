@@ -2,7 +2,10 @@
 
 mod commands;
 mod commit;
+mod connector_edit;
+mod copy_cut;
 mod gestures;
+mod group_ops;
 mod inline_edit;
 mod paste;
 mod paste_convert;

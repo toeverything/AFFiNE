@@ -345,6 +345,26 @@ impl PlaygroundView {
         if key == "tab" && code && sel.anchor.block_id == sel.focus.block_id {
             return self.indent_code_block(sel, shift, w, cx);
         }
+        if key == "tab" {
+            let block_ids = if sel.anchor.block_id != sel.focus.block_id {
+                self.flow_layout()
+                    .and_then(|layout| {
+                        let (_, _, a, b, _) = sel.ordered(&layout)?;
+                        Some(
+                            layout.blocks[a..=b]
+                                .iter()
+                                .filter(|blk| !matches!(blk.body.kind, block_flow::FlowKind::Title))
+                                .map(|blk| blk.block_id.clone())
+                                .collect::<Vec<_>>(),
+                        )
+                    })
+                    .unwrap_or_default()
+            } else {
+                vec![id.clone()]
+            };
+            self.indent_or_outdent_blocks(&block_ids, shift, Some(sel), w, cx)?;
+            return Ok(());
+        }
         if key == "enter" && !shift && self.apply_markdown(&sel, "\n", w, cx)? {
             return Ok(());
         }
@@ -416,40 +436,24 @@ impl PlaygroundView {
             if node.flavour != "affine:paragraph" {
                 focus = DocPoint::new(&fresh, offset);
             }
-            self.page_mut()?
-                .convert_block_flavour(&id, &fresh, paragraph(), now)?
-        } else if key == "tab" {
-            let Some((parent, pos)) = parent_of(&snapshot, &id) else {
-                return Ok(());
-            };
-            let dest = if shift {
-                if !matches!(
-                    parent.content,
-                    BlockContent::List { .. } | BlockContent::Paragraph { .. }
-                ) {
-                    return Ok(());
+            let reset_following = (key == "enter"
+                && matches!(
+                    node.content,
+                    BlockContent::List {
+                        kind: blocksuite_playground_doc::schema::ListType::Numbered,
+                        ..
+                    }
+                ))
+            .then(|| parent_of(&snapshot, &id).map(|(p, slot)| (p.id.clone(), slot + 1)))
+            .flatten();
+            let page = self.page_mut()?;
+            page.structural_edit(now, |page| {
+                page.convert_block_flavour(&id, &fresh, paragraph(), now)?;
+                if let Some((ref parent_id, next_slot)) = reset_following {
+                    page.correct_numbered_order_from(parent_id, next_slot, 1)?;
                 }
-                parent_of(&snapshot, &parent.id).map(|(p, i)| (&p.id, i + 1))
-            } else {
-                pos.checked_sub(1)
-                    .and_then(|i| parent.children.get(i))
-                    .filter(|b| {
-                        matches!(
-                            b.content,
-                            BlockContent::List { .. } | BlockContent::Paragraph { .. }
-                        )
-                    })
-                    .map(|b| (&b.id, b.children.len()))
-            };
-            let Some((dest, index)) = dest else {
-                return Ok(());
-            };
-            if shift {
-                self.page_mut()?.dedent_block(&id, now)?
-            } else {
-                self.page_mut()?
-                    .reparent_block(&id, &parent.id, dest, index as u64, now)?
-            }
+                Ok(())
+            })?
         } else if key == "enter" {
             if matches!(node.content, BlockContent::Page { .. }) {
                 let split_byte = TextBiIndex::new(text).utf16_to_utf8_clamped(offset);
@@ -458,8 +462,11 @@ impl PlaygroundView {
                 }
             }
             let spec = match &node.content {
-                BlockContent::Paragraph { kind, .. }
-                    if offset < n || *kind == ParagraphType::Quote =>
+                BlockContent::Paragraph {
+                    kind, collapsed, ..
+                } if offset < n
+                    || *kind == ParagraphType::Quote
+                    || (*collapsed && page_ops::heading_level_of(*kind).is_some()) =>
                 {
                     BlockSpec::Paragraph {
                         paragraph_type: *kind,
@@ -691,7 +698,9 @@ impl PlaygroundView {
                 {
                     let block_id = sel.focus.block_id.clone();
                     self.editor.selection = None;
-                    self.editor.block_selection = vec![block_id];
+                    self.editor.block_selection = vec![block_id.clone()];
+                    self.editor.block_selection_anchor = Some(block_id.clone());
+                    self.editor.block_selection_focus = Some(block_id);
                     self.editor.pending_marks.clear();
                     self.announce_selection(cx);
                     w.notify_text_selection_changed(&self.editor_focus);
@@ -713,11 +722,16 @@ impl PlaygroundView {
                 self.navigate(key, m.shift, word, line_edge, doc_edge, w, cx);
                 Ok(())
             }
+            "pageup" | "pagedown" => {
+                self.navigate_page(key == "pageup", m.shift, w, cx);
+                Ok(())
+            }
             "backspace" | "delete" => match self.delete_with_modifiers(key, m, w, cx) {
                 Ok(true) => Ok(()),
                 Ok(false) => self.edit_key(key, m.shift, w, cx),
                 Err(err) => Err(err),
             },
+            "enter" if cmd && !m.alt => self.handle_mod_enter(w, cx),
             "enter" | "tab" => self.edit_key(key, m.shift, w, cx),
             "a" if cmd => {
                 self.run_selection_select_all(None, w, cx);

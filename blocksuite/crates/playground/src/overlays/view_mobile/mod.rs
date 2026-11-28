@@ -764,7 +764,6 @@ impl PlaygroundView {
             Some(cx),
         );
         self.editor = Default::default();
-        self.suppress_unselected_root_input = true;
         self.overlays.reset();
         self.reading_anchor = None;
         self.flow = crate::block_flow::BlockFlow::new();

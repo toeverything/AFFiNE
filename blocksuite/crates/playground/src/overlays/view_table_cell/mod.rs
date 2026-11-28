@@ -1,6 +1,7 @@
 //! In-place live `Y.Text` editing glue for `affine:table` cells on [`PlaygroundView`].
 
 mod paint;
+mod pointer;
 
 use std::rc::Rc;
 
@@ -12,7 +13,7 @@ use crate::{
     PlaygroundView, TOPBAR_HEIGHT,
     block_flow::{FlowLayout, page_geometry},
     edgeless::EdgelessInlineEdit,
-    overlays::InlineTableCell,
+    overlays::{InlineTableCell, TableCellDragMode},
 };
 
 /// How [`PlaygroundView::finish_inline_targets`] handles any in-flight IME preedit.
@@ -88,9 +89,6 @@ impl PlaygroundView {
         if let Ok(page) = self.page_mut() {
             let _ = page.stop_capturing();
         }
-        if self.editor.selection.is_none() {
-            self.suppress_unselected_root_input = true;
-        }
         if let Some(w) = window {
             w.notify_text_input_changed(&self.editor_focus);
             w.notify_text_selection_changed(&self.editor_focus);
@@ -112,11 +110,49 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        self.focus_table_cell_pointer(
+            block_id, row_id, column_id, screen_pos, 1, false, window, cx,
+        );
+    }
+
+    /// Focus an `affine:table` cell from a pointer event (supports single click, double-click
+    /// word selection, triple-click full-cell selection, Shift+click range extension, and drag).
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn focus_table_cell_pointer(
+        &mut self,
+        block_id: String,
+        row_id: String,
+        column_id: String,
+        screen_pos: Option<(f32, f32)>,
+        click_count: usize,
+        shift: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         let same_cell = self.table_cell.as_ref().is_some_and(|c| {
             c.block_id == block_id && c.row_id == row_id && c.column_id == column_id
         });
+        let apply_pointer_sel = |cell: &mut InlineTableCell, off: usize, allow_shift: bool| {
+            if click_count >= 3 {
+                let len = utf16_len(&cell.input.text);
+                cell.input.select(0..len);
+                cell.drag_mode = TableCellDragMode::All;
+            } else if click_count == 2 {
+                let r = crate::editor_session::word_range(&cell.input.text, off as u64);
+                let (s, e) = (r.start as usize, r.end as usize);
+                cell.input.select(s..e);
+                cell.drag_mode = TableCellDragMode::Word(s, e);
+            } else if allow_shift && shift {
+                cell.input.move_caret(off, true);
+                cell.drag_mode = TableCellDragMode::Character;
+            } else {
+                cell.input.select(off..off);
+                cell.drag_mode = TableCellDragMode::Character;
+            }
+            cell.dragging = true;
+            cell.goal_x = None;
+        };
         if same_cell {
-            self.suppress_unselected_root_input = false;
             if self
                 .table_cell
                 .as_ref()
@@ -139,9 +175,10 @@ impl PlaygroundView {
                     let off = hit
                         .hit_text(local_x, local_y, &cell.input.text)
                         .utf16_offset as usize;
-                    cell.input.select(off..off);
-                    cell.goal_x = None;
+                    apply_pointer_sel(cell, off, true);
                 }
+            } else if let Some(cell) = self.table_cell.as_mut() {
+                cell.dragging = false;
             }
         } else {
             self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
@@ -155,7 +192,6 @@ impl PlaygroundView {
             if live.is_none() {
                 return;
             }
-            self.suppress_unselected_root_input = false;
             let now_ms = self.now_ms(cx);
             self.overlays.pointer_pressed(now_ms);
             self.equation_snapshot = None;
@@ -188,10 +224,11 @@ impl PlaygroundView {
                 let local_x = sx - geom.column_x - bx + self.overlays.code_scroll_x(&cell.block_id);
                 let local_y = sy - TOPBAR_HEIGHT + self.scroll_y - by;
                 let off = hit.hit_text(local_x, local_y, &initial).utf16_offset as usize;
-                cell.input.select(off..off);
+                apply_pointer_sel(&mut cell, off, false);
             }
             self.table_cell = Some(cell);
         }
+        self.reveal_table_cell();
         self.table_cell_update_anchors();
         self.reset_caret_blink(cx);
         self.editor_focus.focus(window, cx);
@@ -239,6 +276,7 @@ impl PlaygroundView {
                 self.did_table_cell_commit(&block_id, commit);
             }
         }
+        self.reveal_table_cell();
         self.table_cell_update_anchors();
         self.reset_caret_blink(cx);
         window.notify_text_input_changed(&self.editor_focus);
@@ -511,7 +549,6 @@ impl PlaygroundView {
                 let table_block_id = self.table_cell.as_ref().map(|c| c.block_id.clone());
                 self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
                 if let Some(id) = table_block_id {
-                    self.suppress_unselected_root_input = false;
                     self.editor.block_selection = vec![id];
                     self.announce_selection(cx);
                     window.notify_text_selection_changed(&self.editor_focus);
@@ -563,6 +600,7 @@ impl PlaygroundView {
                 {
                     let _ = self.table_cell_edit(window, cx, |_| Some(splice));
                 } else {
+                    self.reveal_table_cell();
                     self.table_cell_update_anchors();
                     self.reset_caret_blink(cx);
                     window.notify_text_selection_changed(&self.editor_focus);
@@ -609,6 +647,7 @@ impl PlaygroundView {
                 {
                     let _ = self.table_cell_edit(window, cx, |_| Some(splice));
                 } else {
+                    self.reveal_table_cell();
                     self.table_cell_update_anchors();
                     self.reset_caret_blink(cx);
                     window.notify_text_selection_changed(&self.editor_focus);
@@ -711,6 +750,7 @@ impl PlaygroundView {
                         true
                     }
                     Some(None) => {
+                        self.reveal_table_cell();
                         self.table_cell_update_anchors();
                         self.reset_caret_blink(cx);
                         window.notify_text_input_changed(&self.editor_focus);

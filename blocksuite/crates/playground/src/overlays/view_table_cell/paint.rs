@@ -611,6 +611,7 @@ impl PlaygroundView {
             };
             cell.input.select(pos..pos);
         }
+        self.reveal_table_cell();
         self.table_cell_update_anchors();
         window.notify_text_selection_changed(&self.editor_focus);
         cx.notify();
@@ -658,6 +659,7 @@ impl PlaygroundView {
             cell.input.select(pos..pos);
             cell.goal_x = goal_x;
         }
+        self.reveal_table_cell();
         self.table_cell_update_anchors();
         window.notify_text_selection_changed(&self.editor_focus);
         cx.notify();
@@ -703,7 +705,6 @@ impl PlaygroundView {
             Some(window),
             Some(cx),
         );
-        self.suppress_unselected_root_input = false;
         if target_editable {
             let offset = if forward { 0 } else { target_len };
             self.change_selection(

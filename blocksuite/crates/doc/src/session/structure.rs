@@ -76,11 +76,15 @@ impl PageDocSession {
                     .cloned()
             });
         let retained = descendants(&graph, external);
+        let was_numbered = self.numbered_order(block_id)?.is_some();
         self.structural_edit(now_ms, |page| {
             page.session
                 .array_remove(&children_target(parent_id), index, 1)?;
             for id in candidates.difference(&retained) {
                 page.session.map_remove(&page.blocks_target, id)?;
+            }
+            if was_numbered {
+                page.correct_numbered_order_from(parent_id, index as usize, 1)?;
             }
             Ok(())
         })
@@ -91,6 +95,28 @@ impl PageDocSession {
             .into_iter()
             .find_map(|(p, children)| children.iter().position(|c| c == id).map(|i| (p, i as u64)))
             .ok_or_else(|| DocError::InvalidState(format!("block {id} has no parent")))
+    }
+
+    fn heading_level(&self, id: &str) -> DocResult<Option<u8>> {
+        let block = block_target(id);
+        if !matches!(
+            self.session.get_map_value(&block, "sys:flavour")?,
+            Some(SessionReadValue::Any(Any::String(f))) if f == "affine:paragraph"
+        ) {
+            return Ok(None);
+        }
+        Ok(match self.session.get_map_value(&block, "prop:type")? {
+            Some(SessionReadValue::Any(Any::String(t))) => match t.as_str() {
+                "h1" => Some(1),
+                "h2" => Some(2),
+                "h3" => Some(3),
+                "h4" => Some(4),
+                "h5" => Some(5),
+                "h6" => Some(6),
+                _ => None,
+            },
+            _ => None,
+        })
     }
 
     fn numbered_order(&self, id: &str) -> DocResult<Option<i32>> {
@@ -184,6 +210,7 @@ impl PageDocSession {
     pub fn remove_lifting_children(&mut self, id: &str, now_ms: u64) -> DocResult<PageCommit> {
         let (parent, index) = self.parent_slot(id)?;
         let children = self.read_unknown_block(id)?.children;
+        let was_numbered = self.numbered_order(id)?.is_some();
         self.structural_edit(now_ms, |page| {
             page.session
                 .array_remove(&children_target(&parent), index, 1)?;
@@ -195,6 +222,9 @@ impl PageDocSession {
                 )?;
             }
             page.session.map_remove(&page.blocks_target, id)?;
+            if was_numbered {
+                page.correct_numbered_order_from(&parent, index as usize, 1)?;
+            }
             Ok(())
         })
     }
@@ -226,6 +256,19 @@ impl PageDocSession {
                 new_index,
                 vec![SessionValue::Any(Any::String(block_id.into()))],
             )?;
+            if new_parent_id != old_parent_id
+                && matches!(
+                    page.session
+                        .get_map_value(&block_target(new_parent_id), "prop:collapsed")?,
+                    Some(SessionReadValue::Any(Any::True))
+                )
+            {
+                page.session.map_set(
+                    &block_target(new_parent_id),
+                    "prop:collapsed".into(),
+                    SessionValue::Any(Any::False),
+                )?;
+            }
             if page.read_unknown_block(block_id)?.flavour == "affine:list" {
                 page.correct_numbered_order_from(old_parent_id, index as usize, 1)?;
             }
@@ -278,7 +321,7 @@ impl PageDocSession {
         } else if split_utf16 > 0 && !children.is_empty() && !collapsed {
             (block_id, 0)
         } else {
-            graph
+            let (parent, mut index) = graph
                 .iter()
                 .find_map(|(parent, children)| {
                     children
@@ -286,7 +329,22 @@ impl PageDocSession {
                         .position(|id| id == block_id)
                         .map(|i| (parent.as_str(), i + 1))
                 })
-                .ok_or_else(|| DocError::InvalidState("split block has no parent".into()))?
+                .ok_or_else(|| DocError::InvalidState("split block has no parent".into()))?;
+            if collapsed
+                && let Some(level) = self.heading_level(block_id)?
+                && let Some(siblings) = graph.get(parent)
+            {
+                while let Some(sib_id) = siblings.get(index) {
+                    if self
+                        .heading_level(sib_id)?
+                        .is_some_and(|next| next <= level)
+                    {
+                        break;
+                    }
+                    index += 1;
+                }
+            }
+            (parent, index)
         };
         let target = self.editable_text_target(block_id)?;
         let length = self.session.read_text_len(&target)?;

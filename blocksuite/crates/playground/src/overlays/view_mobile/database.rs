@@ -272,6 +272,7 @@ impl PlaygroundView {
     /// (`enable_mobile_database_editing == false`).
     pub fn set_database_mobile_readonly(&mut self, readonly: bool, cx: &mut Context<Self>) {
         self.database_readonly = readonly;
+        self.overlays.set_database_readonly(readonly);
         if self.flow.database_state.mobile_readonly != readonly {
             self.flow.database_state.mobile_readonly = readonly;
             if !readonly {

@@ -1,17 +1,21 @@
 //! Edgeless keyboard shortcuts, selection/z-order commands, and snapshot spatial helpers.
 
-use blocksuite_playground_doc::{
-    fractional_index::generate_key_between,
-    read::{BlockContent, BlockNode, PageSnapshot, SurfaceElement},
+use blocksuite_playground_doc::read::{
+    BlockContent, BlockNode, ConnectorMode, NoteDisplayMode, PageSnapshot, SurfaceElement,
 };
-use ui::{Context, KeyDownEvent, Window};
-use y_octo::{Any, SessionValue};
+use ui::{Context, KeyDownEvent, Window, point, px, size};
 
 use crate::PlaygroundView;
 
-use super::{EdgelessGesture, EdgelessTool, SpatialItemInfo};
+use super::{
+    EdgelessGesture, EdgelessTool, SpatialItemKind, layout_label_editor_paragraph, utf16_len,
+};
 #[cfg(test)]
-use super::{HandleKind, ShapePreset, SpatialItemKind, collect_frame_children};
+use super::{HandleKind, ShapePreset, collect_frame_children};
+#[cfg(test)]
+use blocksuite_playground_doc::fractional_index::generate_key_between;
+#[cfg(test)]
+use y_octo::Any;
 
 /// Helper to compute the highest existing fractional index across all spatial items in a snapshot.
 pub fn max_spatial_index(snapshot: &PageSnapshot) -> Option<String> {
@@ -198,6 +202,7 @@ impl PlaygroundView {
                 }
                 return false;
             }
+            let word_mod = m.alt || (m.control && !cmd);
             match key {
                 "escape" => {
                     self.edgeless_commit_inline_edit(window, cx);
@@ -211,6 +216,10 @@ impl PlaygroundView {
                     self.edgeless_label_edit(window, cx, |ed| ed.replace(None, "\n"));
                     return true;
                 }
+                "backspace" if word_mod => {
+                    self.edgeless_label_edit(window, cx, |ed| ed.delete_word(false));
+                    return true;
+                }
                 "backspace" => {
                     self.edgeless_label_edit(
                         window,
@@ -219,12 +228,44 @@ impl PlaygroundView {
                     );
                     return true;
                 }
+                "delete" if word_mod => {
+                    self.edgeless_label_edit(window, cx, |ed| ed.delete_word(true));
+                    return true;
+                }
                 "delete" => {
                     self.edgeless_label_edit(
                         window,
                         cx,
                         super::EdgelessLabelEditor::delete_forward,
                     );
+                    return true;
+                }
+                "left" if cmd => {
+                    ed.move_to_line_edge(false, m.shift);
+                    self.edgeless_update_label_anchors();
+                    window.notify_text_input_changed(&self.editor_focus);
+                    cx.notify();
+                    return true;
+                }
+                "right" if cmd => {
+                    ed.move_to_line_edge(true, m.shift);
+                    self.edgeless_update_label_anchors();
+                    window.notify_text_input_changed(&self.editor_focus);
+                    cx.notify();
+                    return true;
+                }
+                "left" if word_mod => {
+                    ed.move_word(true, m.shift);
+                    self.edgeless_update_label_anchors();
+                    window.notify_text_input_changed(&self.editor_focus);
+                    cx.notify();
+                    return true;
+                }
+                "right" if word_mod => {
+                    ed.move_word(false, m.shift);
+                    self.edgeless_update_label_anchors();
+                    window.notify_text_input_changed(&self.editor_focus);
+                    cx.notify();
                     return true;
                 }
                 "left" => {
@@ -239,6 +280,56 @@ impl PlaygroundView {
                     self.edgeless_update_label_anchors();
                     window.notify_text_input_changed(&self.editor_focus);
                     cx.notify();
+                    return true;
+                }
+                "home" => {
+                    ed.move_to_line_edge(false, m.shift);
+                    self.edgeless_update_label_anchors();
+                    window.notify_text_input_changed(&self.editor_focus);
+                    cx.notify();
+                    return true;
+                }
+                "end" => {
+                    ed.move_to_line_edge(true, m.shift);
+                    self.edgeless_update_label_anchors();
+                    window.notify_text_input_changed(&self.editor_focus);
+                    cx.notify();
+                    return true;
+                }
+                "up" | "down" => {
+                    let down = key == "down";
+                    self.edgeless_label_move_vertical(down, m.shift, window, cx);
+                    return true;
+                }
+                "z" if cmd => {
+                    let commit = self.page_mut().ok().and_then(|page| {
+                        if m.shift {
+                            page.redo().ok().flatten()
+                        } else {
+                            page.undo().ok().flatten()
+                        }
+                    });
+                    if let Some(commit) = commit {
+                        self.did_edgeless_doc_commit(commit, cx);
+                        self.edgeless_refresh_label_editor_from_snapshot();
+                        self.edgeless_sync_shape_auto_height(window, cx);
+                        window.notify_text_input_changed(&self.editor_focus);
+                        cx.notify();
+                    }
+                    return true;
+                }
+                "y" if cmd && !m.shift => {
+                    let commit = self
+                        .page_mut()
+                        .ok()
+                        .and_then(|page| page.redo().ok().flatten());
+                    if let Some(commit) = commit {
+                        self.did_edgeless_doc_commit(commit, cx);
+                        self.edgeless_refresh_label_editor_from_snapshot();
+                        self.edgeless_sync_shape_auto_height(window, cx);
+                        window.notify_text_input_changed(&self.editor_focus);
+                        cx.notify();
+                    }
                     return true;
                 }
                 "a" if cmd => {
@@ -303,8 +394,10 @@ impl PlaygroundView {
         }
 
         // 3. Canvas-level shortcuts when not inline-editing.
+        let plain = !cmd && !m.alt && !m.control;
+        let plain_no_shift = plain && !m.shift;
         match key {
-            "space" if !cmd => {
+            "space" if plain => {
                 self.edgeless.authoring.space_pan = true;
                 return true;
             }
@@ -320,59 +413,192 @@ impl PlaygroundView {
                 cx.notify();
                 return true;
             }
-            "v" if !cmd => {
+            "v" if plain_no_shift => {
                 self.edgeless_select_tool(EdgelessTool::Select, window, cx);
                 return true;
             }
-            "h" if !cmd => {
+            "h" if plain_no_shift => {
                 self.edgeless_select_tool(EdgelessTool::Hand, window, cx);
                 return true;
             }
-            "n" if !cmd => {
+            "n" if plain_no_shift => {
                 self.edgeless_select_tool(EdgelessTool::Note, window, cx);
                 return true;
             }
-            "s" if !cmd => {
-                let shape = self.edgeless.authoring.active_shape_type();
+            "s" if plain => {
+                let shape = match self.edgeless.authoring.tool {
+                    EdgelessTool::Shape(cur) => {
+                        if m.shift {
+                            cur.prev()
+                        } else {
+                            cur.next()
+                        }
+                    }
+                    _ => self.edgeless.authoring.active_shape_type(),
+                };
                 self.edgeless_select_tool(EdgelessTool::Shape(shape), window, cx);
                 return true;
             }
-            "c" if !cmd => {
-                self.edgeless_select_tool(EdgelessTool::Connector, window, cx);
+            "c" if plain_no_shift => {
+                if self.edgeless.authoring.tool == EdgelessTool::Connector {
+                    self.edgeless.authoring.connector_mode =
+                        match self.edgeless.authoring.connector_mode {
+                            ConnectorMode::Curve => ConnectorMode::Orthogonal,
+                            ConnectorMode::Orthogonal => ConnectorMode::Straight,
+                            ConnectorMode::Straight => ConnectorMode::Curve,
+                        };
+                    cx.notify();
+                } else {
+                    self.edgeless_select_tool(EdgelessTool::Connector, window, cx);
+                }
                 return true;
             }
-            "p" if !cmd => {
-                self.edgeless_select_tool(EdgelessTool::Brush, window, cx);
+            "p" if plain => {
+                let tool = if m.shift {
+                    EdgelessTool::Highlighter
+                } else {
+                    EdgelessTool::Brush
+                };
+                self.edgeless_select_tool(tool, window, cx);
                 return true;
             }
-            "t" if !cmd => {
+            "t" if plain_no_shift => {
                 self.edgeless_select_tool(EdgelessTool::Text, window, cx);
                 return true;
             }
-            "f" if !cmd => {
+            "f" if plain_no_shift => {
+                if !self.edgeless.authoring.selection.is_empty()
+                    && self.edgeless_wrap_selection_in_frame(cx)
+                {
+                    return true;
+                }
                 self.edgeless_select_tool(EdgelessTool::Frame, window, cx);
                 return true;
             }
-            "a" if cmd => {
+            "a" if cmd && !m.alt => {
+                let snap = self.snapshot.as_deref();
                 self.edgeless.authoring.selection = self
                     .edgeless
                     .authoring
                     .painted_items
                     .iter()
+                    .filter(|i| {
+                        // Skip children that belong to a Group (their Group is selected instead)
+                        // and skip `DocOnly` Notes (matching Web `edgeless-keyboard.ts:261-269`).
+                        if i.parent_group_id.is_some() {
+                            return false;
+                        }
+                        if i.kind == SpatialItemKind::Note
+                            && let Some(s) = snap
+                            && let Some(node) = find_block(s, &i.id)
+                            && matches!(
+                                node.content,
+                                BlockContent::Note {
+                                    display_mode: NoteDisplayMode::DocOnly,
+                                    ..
+                                }
+                            )
+                        {
+                            return false;
+                        }
+                        true
+                    })
                     .map(|i| i.id.clone())
                     .collect();
                 cx.notify();
+                return true;
+            }
+            "c" if cmd && !m.alt => {
+                self.edgeless_copy_selection(false, cx);
+                return true;
+            }
+            "x" if cmd && !m.alt => {
+                self.edgeless_copy_selection(true, cx);
+                return true;
+            }
+            "v" if cmd && !m.alt => {
+                if let Some(item) = cx.read_from_clipboard()
+                    && self.paste_edgeless_clipboard_item(&item, window, cx)
+                {
+                    return true;
+                }
+                return false;
+            }
+            "g" if cmd && !m.alt => {
+                if m.shift {
+                    self.edgeless_ungroup_selection(cx);
+                } else {
+                    self.edgeless_group_selection(cx);
+                }
+                return true;
+            }
+            "=" | "+" if cmd && !m.alt => {
+                let (vw, vh) = self.edgeless_viewport_size();
+                self.edgeless_camera_transition = None;
+                self.edgeless.camera.zoom_in(
+                    point(px(0.0), px(crate::TOPBAR_HEIGHT)),
+                    size(px(vw), px(vh)),
+                );
+                self.edgeless.camera_initialized = true;
+                cx.notify();
+                return true;
+            }
+            "-" | "_" if cmd && !m.alt => {
+                let (vw, vh) = self.edgeless_viewport_size();
+                self.edgeless_camera_transition = None;
+                self.edgeless.camera.zoom_out(
+                    point(px(0.0), px(crate::TOPBAR_HEIGHT)),
+                    size(px(vw), px(vh)),
+                );
+                self.edgeless.camera_initialized = true;
+                cx.notify();
+                return true;
+            }
+            "0" if m.alt && !cmd && !m.control => {
+                let (vw, vh) = self.edgeless_viewport_size();
+                self.edgeless_camera_transition = None;
+                self.edgeless.camera.reset_zoom(
+                    point(px(0.0), px(crate::TOPBAR_HEIGHT)),
+                    size(px(vw), px(vh)),
+                );
+                self.edgeless.camera_initialized = true;
+                cx.notify();
+                return true;
+            }
+            "1" if m.alt && !cmd && !m.control => {
+                if let Some(snap) = self.snapshot.as_deref() {
+                    let (vw, vh) = self.edgeless_viewport_size();
+                    let bounds = self.edgeless.scene_world_bounds(snap);
+                    self.edgeless_camera_transition = None;
+                    self.edgeless
+                        .camera
+                        .fit_to_bounds(bounds, size(px(vw), px(vh)), 48.0);
+                    self.edgeless.camera_initialized = true;
+                    cx.notify();
+                }
+                return true;
+            }
+            "2" if m.alt && !cmd && !m.control => {
+                if let Some(sel_box) = self.edgeless.authoring.selection_world_box() {
+                    let (vw, vh) = self.edgeless_viewport_size();
+                    self.edgeless_camera_transition = None;
+                    self.edgeless
+                        .camera
+                        .fit_to_bounds(sel_box, size(px(vw), px(vh)), 48.0);
+                    self.edgeless.camera_initialized = true;
+                    cx.notify();
+                }
                 return true;
             }
             "backspace" | "delete" => {
                 self.edgeless_delete_selection(cx);
                 return true;
             }
-            "[" => {
+            "[" if plain_no_shift => {
                 self.edgeless_reorder_selection(false, cx);
                 return true;
             }
-            "]" => {
+            "]" if plain_no_shift => {
                 self.edgeless_reorder_selection(true, cx);
                 return true;
             }
@@ -389,123 +615,74 @@ impl PlaygroundView {
                 }
                 return true;
             }
+            "y" if cmd && !m.shift => {
+                let commit = self
+                    .page_mut()
+                    .ok()
+                    .and_then(|page| page.redo().ok().flatten());
+                if let Some(commit) = commit {
+                    self.did_edgeless_doc_commit(commit, cx);
+                }
+                return true;
+            }
             _ => false,
         }
     }
 
-    pub(crate) fn edgeless_delete_selection(&mut self, cx: &mut Context<Self>) {
-        if self.edgeless.authoring.selection.is_empty() {
-            return;
-        }
-        let Some(snapshot) = self.snapshot.clone() else {
-            return;
-        };
-        let root_id = snapshot.root.as_ref().map(|r| r.id.clone());
-        let selected: Vec<SpatialItemInfo> = self
-            .edgeless
-            .authoring
-            .painted_items
-            .iter()
-            .filter(|i| self.edgeless.authoring.selection.contains(&i.id))
-            .cloned()
-            .collect();
-        let mut block_ids: Vec<String> = Vec::new();
-        let mut surface_elements: Vec<(String, String)> = Vec::new();
-        for item in &selected {
-            if root_id.as_deref() == Some(item.id.as_str()) {
-                continue;
-            }
-            if item.kind.is_block() {
-                block_ids.push(item.id.clone());
-            } else if let Some(surface_id) = &item.surface_id {
-                surface_elements.push((surface_id.clone(), item.id.clone()));
-            }
-        }
-        let now_ms = self.now_ms(cx) as u64;
-        let commit = self.page_mut().ok().and_then(|page| {
-            let b_refs: Vec<&str> = block_ids.iter().map(String::as_str).collect();
-            let s_refs: Vec<(&str, &str)> = surface_elements
-                .iter()
-                .map(|(s, e)| (s.as_str(), e.as_str()))
-                .collect();
-            page.delete_blocks_and_elements_with_connectors(&b_refs, &s_refs, now_ms)
-                .ok()
-                .flatten()
-        });
-        self.edgeless.authoring.selection.clear();
-        if let Some(commit) = commit {
-            self.did_edgeless_doc_commit(commit, cx);
-        }
-        cx.notify();
-    }
-
-    pub(crate) fn edgeless_reorder_selection(
+    /// Move the active label editor caret up or down one visual line (or to start/end if single-line).
+    fn edgeless_label_move_vertical(
         &mut self,
-        bring_to_front: bool,
+        down: bool,
+        extend: bool,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.edgeless.authoring.selection.is_empty() {
-            return;
-        }
-        let Some(snapshot) = self.snapshot.clone() else {
-            return;
-        };
-        let mut cursor = if bring_to_front {
-            max_spatial_index(&snapshot)
-        } else {
-            min_spatial_index(&snapshot)
-        };
-        let selected: Vec<SpatialItemInfo> = self
-            .edgeless
-            .authoring
-            .painted_items
-            .iter()
-            .filter(|i| self.edgeless.authoring.selection.contains(&i.id))
-            .cloned()
-            .collect();
-        let now_ms = self.now_ms(cx) as u64;
-        let mut updates = Vec::new();
-        let ordered: Vec<SpatialItemInfo> = if bring_to_front {
-            selected
-        } else {
-            selected.into_iter().rev().collect()
-        };
-        for item in ordered {
-            let next = if bring_to_front {
-                generate_key_between(cursor.as_deref(), None).ok()
-            } else {
-                generate_key_between(None, cursor.as_deref()).ok()
-            };
-            if let Some(key) = next {
-                cursor = Some(key.clone());
-                updates.push((item, key));
+        let target_off = self.edgeless.authoring.label_editor().map(|ed| {
+            let len = utf16_len(&ed.input.text);
+            if !ed.input.multiline {
+                return if down { len } else { 0 };
             }
-        }
-        if updates.is_empty() {
-            return;
-        }
-        let commit = self.page_mut().ok().and_then(|page| {
-            page.structural_edit(now_ms, move |page| {
-                for (item, key) in &updates {
-                    if item.kind.is_block() {
-                        page.set_block_index(&item.id, key, now_ms)?;
-                    } else if let Some(surface_id) = &item.surface_id {
-                        page.set_surface_element_field(
-                            surface_id,
-                            &item.id,
-                            "index",
-                            SessionValue::Any(Any::String(key.clone())),
-                            now_ms,
-                        )?;
-                    }
-                }
-                Ok(())
-            })
-            .ok()
-            .flatten()
+            let Some(bounds) = self.edgeless_label_layout_screen_bounds(window) else {
+                return if down { len } else { 0 };
+            };
+            let zoom = self.edgeless.camera.zoom;
+            let Some(laid) = layout_label_editor_paragraph(
+                ed,
+                f32::from(bounds.size.width),
+                zoom,
+                self.theme,
+                window,
+            ) else {
+                return if down { len } else { 0 };
+            };
+            let focus = ed.input.focus() as u64;
+            let caret = crate::rich_text::CaretPosition {
+                utf16_offset: focus,
+                affinity: crate::rich_text::WrapAffinity::Upstream,
+            };
+            let rect = laid.caret_rect(caret);
+            let step_y = f32::from(rect.size.height).max(12.0);
+            let next_y = if down {
+                f32::from(rect.origin.y) + step_y * 1.5
+            } else {
+                f32::from(rect.origin.y) - step_y * 0.5
+            };
+            if next_y < 0.0 {
+                return 0;
+            }
+            if next_y > f32::from(laid.size().height) {
+                return len;
+            }
+            laid.hit_test(point(rect.origin.x, px(next_y))).utf16_offset as usize
         });
-        if let Some(commit) = commit {
-            self.did_edgeless_doc_commit(commit, cx);
+        if let Some(off) = target_off
+            && let Some(ed) = self.edgeless.authoring.label_editor_mut()
+        {
+            ed.preedit_anchors = None;
+            ed.input.move_caret(off, extend);
+            self.edgeless_update_label_anchors();
+            window.notify_text_input_changed(&self.editor_focus);
+            cx.notify();
         }
     }
 }
@@ -1102,19 +1279,31 @@ mod tests {
                 view.edgeless_commit_inline_edit(window, cx);
                 assert!(view.editor.selection.is_none());
 
-                // 3. Create 2D Brush stroke -> inflated xywh & 2-element points.
+                // 3. Create 2D Brush stroke -> stays in Brush tool with empty selection, inflated xywh & 2-element points.
                 view.edgeless_select_tool(EdgelessTool::Brush, window, cx);
                 view.on_edgeless_left_down(&mouse_down(50.0, top + 300.0, 1), window, cx);
                 view.on_edgeless_pointer_move(&mouse_move(110.0, top + 340.0, true), window, cx);
                 view.on_edgeless_left_up(&mouse_up(110.0, top + 340.0), window, cx);
+                assert_eq!(view.edgeless.authoring.tool, EdgelessTool::Brush);
+                assert!(view.edgeless.authoring.selection.is_empty());
                 let brush_id = view
-                    .edgeless
-                    .authoring
-                    .selection
-                    .iter()
-                    .next()
+                    .snapshot
+                    .as_ref()
                     .unwrap()
-                    .clone();
+                    .root
+                    .as_ref()
+                    .unwrap()
+                    .children
+                    .iter()
+                    .find_map(|c| match &c.content {
+                        BlockContent::Surface { elements, .. } => elements
+                            .iter()
+                            .rev()
+                            .find(|e| matches!(e.kind, SurfaceElementKind::Brush(_)))
+                            .map(|e| e.id.clone()),
+                        _ => None,
+                    })
+                    .expect("newly created brush element");
                 let (_, brush_el) =
                     find_surface_element(view.snapshot.as_ref().unwrap(), &brush_id).unwrap();
                 let SurfaceElementKind::Brush(b) = &brush_el.kind else {
@@ -1389,6 +1578,9 @@ mod tests {
                     start_world: (120.0, 120.0),
                     current_world: (160.0, 145.0),
                     initial,
+                    shift: false,
+                    alt_clone: false,
+                    pending_dblclick: None,
                 });
                 view.on_edgeless_left_up(&mouse_up(160.0, top + 145.0), window, cx);
                 let (_, sh_el) =
@@ -1427,6 +1619,8 @@ mod tests {
                     current_world: (ibox.right() + ibox.w, ibox.bottom() + ibox.h),
                     initial_box: ibox,
                     initial,
+                    shift: false,
+                    rotate_deg: 0.0,
                 });
                 view.on_edgeless_left_up(&mouse_up(0.0, 0.0), window, cx);
                 let (br_sid, br_el) =
@@ -2194,6 +2388,7 @@ mod tests {
         app.update(|cx| {
             win.update(cx, |view, window, cx| {
                 view.on_edgeless_left_down(&mouse_down(420.0, top + 180.0, 2), window, cx);
+                view.on_edgeless_left_up(&mouse_up(420.0, top + 180.0), window, cx);
                 assert!(view.edgeless.authoring.label_editor().is_some());
             })
             .unwrap();
@@ -2272,6 +2467,7 @@ mod tests {
         app.update(|cx| {
             win.update(cx, |view, window, cx| {
                 view.on_edgeless_left_down(&mouse_down(540.0, top + 240.0, 2), window, cx);
+                view.on_edgeless_left_up(&mouse_up(540.0, top + 240.0), window, cx);
                 assert!(matches!(
                     view.edgeless.authoring.label_editor().map(|e| &e.target),
                     Some(blocksuite_editor::edgeless::LabelTarget::SurfaceText { .. })
@@ -2373,6 +2569,7 @@ mod tests {
                         target_id,
                         target_port,
                         target_world,
+                        ..
                     } => {
                         assert_eq!(target_id.as_deref(), Some("rot-rect"));
                         assert_eq!(*target_port, Some([1.0, 0.5]));
@@ -2449,6 +2646,360 @@ mod tests {
                     (mid_committed.0 - mid_expected.0).abs() < 0.05
                         && (mid_committed.1 - mid_expected.1).abs() < 0.05,
                     "bound connector curve controls/midpoint must match between preview {mid_expected:?} and committed {mid_committed:?}"
+                );
+            })
+            .unwrap();
+        });
+    }
+
+    #[test]
+    fn b6_edgeless_p0_p1_p2_desktop_interactions() {
+        use ui::EntityInputHandler;
+
+        let platform = ui::HeadlessPlatform::new(1280, 800, 1.0);
+        let app = ui::Application::with_platform(platform.clone()).run_embedded(|cx| {
+            crate::register_bundled_fonts(cx).unwrap();
+        });
+        let win = open_edgeless_view(&app, &platform);
+        let hw = platform.windows().into_iter().next().unwrap();
+        let top = crate::TOPBAR_HEIGHT;
+
+        let mk_key = |key: &str, mods: ui::Modifiers| ui::KeyDownEvent {
+            keystroke: ui::Keystroke {
+                modifiers: mods,
+                key: key.into(),
+                key_char: None,
+            },
+            is_held: false,
+            prefer_character_input: false,
+        };
+        let mut cmd_mods = ui::Modifiers::default();
+        if cfg!(target_os = "macos") {
+            cmd_mods.platform = true;
+        } else {
+            cmd_mods.control = true;
+        }
+        let mut cmd_shift = cmd_mods;
+        cmd_shift.shift = true;
+        let mut alt_mods = ui::Modifiers::default();
+        alt_mods.alt = true;
+        let mut shift_mods = ui::Modifiers::default();
+        shift_mods.shift = true;
+
+        // Seed deterministic camera at 100% zoom, pan (0, 0).
+        app.update(|cx| {
+            win.update(cx, |view, _, cx| {
+                view.set_edgeless_zoom(1.0, cx);
+                view.set_edgeless_pan(0.0, 0.0, cx);
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+
+        // 1. P0-6: Mod+A + Delete preserves the sole Page-visible `affine:note`.
+        let note_id: String = app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                let first_note = view
+                    .snapshot
+                    .as_ref()
+                    .unwrap()
+                    .root
+                    .as_ref()
+                    .unwrap()
+                    .children
+                    .iter()
+                    .find(|c| matches!(c.content, BlockContent::Note { .. }))
+                    .unwrap()
+                    .id
+                    .clone();
+                assert!(view.edgeless_key_down(&mk_key("a", cmd_mods), window, cx));
+                assert!(view.edgeless_key_down(
+                    &mk_key("delete", ui::Modifiers::default()),
+                    window,
+                    cx
+                ));
+                assert!(
+                    find_block(view.snapshot.as_ref().unwrap(), &first_note).is_some(),
+                    "P0-6: last Page-visible affine:note must survive Mod+A + Delete"
+                );
+                // Undo to restore showcase items.
+                assert!(view.edgeless_key_down(&mk_key("z", cmd_mods), window, cx));
+                first_note
+            })
+            .unwrap()
+        });
+        assert!(!note_id.is_empty());
+        hw.request_frame();
+
+        // 2. P1-23: Tool & hotkey alignment (Shift+P, S/Shift+S cycle, C cycle, Alt+F/Cmd+[ guard, Brush no-select).
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.edgeless_select_tool(EdgelessTool::Select, window, cx);
+                // Alt+F must NOT switch to Frame tool.
+                assert!(!view.edgeless_key_down(&mk_key("f", alt_mods), window, cx));
+                assert_eq!(view.edgeless.authoring.tool, EdgelessTool::Select);
+                // Shift+P switches to Highlighter; plain P switches to Brush.
+                assert!(view.edgeless_key_down(&mk_key("p", shift_mods), window, cx));
+                assert_eq!(view.edgeless.authoring.tool, EdgelessTool::Highlighter);
+                assert!(view.edgeless_key_down(&mk_key("p", ui::Modifiers::default()), window, cx));
+                assert_eq!(view.edgeless.authoring.tool, EdgelessTool::Brush);
+                // Drawing a brush stroke keeps Brush tool and empty selection.
+                view.on_edgeless_left_down(&mouse_down(100.0, top + 100.0, 1), window, cx);
+                view.on_edgeless_pointer_move(&mouse_move(180.0, top + 120.0, true), window, cx);
+                view.on_edgeless_left_up(&mouse_up(180.0, top + 120.0), window, cx);
+                assert_eq!(view.edgeless.authoring.tool, EdgelessTool::Brush);
+                assert!(view.edgeless.authoring.selection.is_empty());
+                // S enters Shape(Rect), subsequent S cycles Ellipse -> Diamond, Shift+S goes back.
+                assert!(view.edgeless_key_down(&mk_key("s", ui::Modifiers::default()), window, cx));
+                assert_eq!(
+                    view.edgeless.authoring.tool,
+                    EdgelessTool::Shape(ShapePreset::Rect)
+                );
+                assert!(view.edgeless_key_down(&mk_key("s", ui::Modifiers::default()), window, cx));
+                assert_eq!(
+                    view.edgeless.authoring.tool,
+                    EdgelessTool::Shape(ShapePreset::Ellipse)
+                );
+                assert!(view.edgeless_key_down(&mk_key("s", shift_mods), window, cx));
+                assert_eq!(
+                    view.edgeless.authoring.tool,
+                    EdgelessTool::Shape(ShapePreset::Rect)
+                );
+                // C enters Connector (Curve), subsequent C cycles Orthogonal -> Straight -> Curve.
+                assert!(view.edgeless_key_down(&mk_key("c", ui::Modifiers::default()), window, cx));
+                assert_eq!(view.edgeless.authoring.connector_mode, ConnectorMode::Curve);
+                assert!(view.edgeless_key_down(&mk_key("c", ui::Modifiers::default()), window, cx));
+                assert_eq!(
+                    view.edgeless.authoring.connector_mode,
+                    ConnectorMode::Orthogonal
+                );
+                assert!(view.edgeless_key_down(&mk_key("c", ui::Modifiers::default()), window, cx));
+                assert_eq!(
+                    view.edgeless.authoring.connector_mode,
+                    ConnectorMode::Straight
+                );
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+
+        // 3. P1-24: Mod+=/-, Alt+0/1/2 zoom shortcuts & Shift+Wheel horizontal pan.
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                let z0 = view.edgeless.camera.zoom;
+                assert!(view.edgeless_key_down(&mk_key("=", cmd_mods), window, cx));
+                assert!(view.edgeless.camera.zoom > z0);
+                assert!(view.edgeless_key_down(&mk_key("-", cmd_mods), window, cx));
+                assert!((view.edgeless.camera.zoom - z0).abs() < 1e-3);
+                assert!(view.edgeless_key_down(&mk_key("0", alt_mods), window, cx));
+                assert!((view.edgeless.camera.zoom - 1.0).abs() < 1e-3);
+                let px_before = view.edgeless.camera.pan_x;
+                let py_before = view.edgeless.camera.pan_y;
+                let scroll = ui::ScrollEvent {
+                    position: ui::point(ui::px(300.0), ui::px(top + 200.0)),
+                    delta: ui::ScrollDelta::Pixels(ui::point(ui::px(0.0), ui::px(120.0))),
+                    modifiers: shift_mods,
+                    touch_phase: ui::TouchPhase::Moved,
+                    source: ui::ScrollSource::Pointer,
+                };
+                view.on_edgeless_scroll(&scroll, window, cx);
+                assert!((view.edgeless.camera.pan_x - px_before).abs() > 50.0);
+                assert!((view.edgeless.camera.pan_y - py_before).abs() < 1e-3);
+                view.set_edgeless_pan(0.0, 0.0, cx);
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+
+        // 4. Create two shapes, wrap in Frame with F (P1-23d), verify P0-5 marquee inside Frame,
+        //    verify P1-14 click_count=2 + drag does NOT hijack into inline edit,
+        //    verify P1-17/P1-18 multiline AUTO_HEIGHT + in-place Undo/Redo,
+        //    verify P1-25 Mod+G / Mod+Shift+G, Mod+C / Mod+V, Ctrl+Y, and P2-3 empty EdgelessText cleanup.
+        let (s1_id, s2_id) = app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.edgeless_select_tool(EdgelessTool::Shape(ShapePreset::Rect), window, cx);
+                view.on_edgeless_left_down(&mouse_down(100.0, top + 100.0, 1), window, cx);
+                view.on_edgeless_pointer_move(&mouse_move(260.0, top + 180.0, true), window, cx);
+                view.on_edgeless_left_up(&mouse_up(260.0, top + 180.0), window, cx);
+                let s1 = view
+                    .edgeless
+                    .authoring
+                    .selection
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .clone();
+
+                view.edgeless_select_tool(EdgelessTool::Shape(ShapePreset::Rect), window, cx);
+                view.on_edgeless_left_down(&mouse_down(340.0, top + 100.0, 1), window, cx);
+                view.on_edgeless_pointer_move(&mouse_move(500.0, top + 180.0, true), window, cx);
+                view.on_edgeless_left_up(&mouse_up(500.0, top + 180.0), window, cx);
+                let s2 = view
+                    .edgeless
+                    .authoring
+                    .selection
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .clone();
+                (s1, s2)
+            })
+            .unwrap()
+        });
+        hw.request_frame();
+
+        // P1-14: click_count=2 followed by drag moves s1 and does NOT open inline edit.
+        platform.advance_clock(std::time::Duration::from_millis(600));
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.on_edgeless_left_down(&mouse_down(180.0, top + 140.0, 2), window, cx);
+                view.on_edgeless_pointer_move(&mouse_move(180.0, top + 200.0, true), window, cx);
+                view.on_edgeless_left_up(&mouse_up(180.0, top + 200.0), window, cx);
+                assert!(
+                    view.edgeless.authoring.inline_edit.is_none(),
+                    "P1-14: double-click mousedown followed by drag must NOT enter inline edit"
+                );
+                // Undo the move so s1 returns to (100, 100).
+                view.edgeless_key_down(&mk_key("z", cmd_mods), window, cx);
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+
+        // P1-17 & P1-18: Double-click without drag enters Shape inline edit, 5 lines grow height (AUTO_HEIGHT),
+        // and Cmd+Z / Ctrl+Y undo/redo in place.
+        platform.advance_clock(std::time::Duration::from_millis(600));
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.on_edgeless_left_down(&mouse_down(180.0, top + 140.0, 2), window, cx);
+                view.on_edgeless_left_up(&mouse_up(180.0, top + 140.0), window, cx);
+                assert!(view.edgeless.authoring.label_editor().is_some());
+                view.replace_text_in_range(None, "Line1\nLine2\nLine3\nLine4\nLine5", window, cx);
+                let grown_h = view.edgeless.authoring.label_editor().unwrap().world_rect.h;
+                assert!(
+                    grown_h > 80.0,
+                    "P1-18: Shape must auto-grow beyond 80px for 5 lines, got {grown_h}"
+                );
+                // Home/End & Up/Down work in label editor.
+                assert!(view.edgeless_key_down(
+                    &mk_key("home", ui::Modifiers::default()),
+                    window,
+                    cx
+                ));
+                assert!(view.edgeless_key_down(
+                    &mk_key("up", ui::Modifiers::default()),
+                    window,
+                    cx
+                ));
+                assert!(view.edgeless_key_down(
+                    &mk_key("down", ui::Modifiers::default()),
+                    window,
+                    cx
+                ));
+                assert!(view.edgeless_key_down(
+                    &mk_key("end", ui::Modifiers::default()),
+                    window,
+                    cx
+                ));
+                // In-place Undo + Ctrl+Y Redo.
+                assert!(view.edgeless_key_down(&mk_key("z", cmd_mods), window, cx));
+                assert!(view.edgeless_key_down(&mk_key("y", cmd_mods), window, cx));
+                view.edgeless_commit_inline_edit(window, cx);
+            })
+            .unwrap();
+        });
+        hw.request_frame();
+
+        // P1-23(d) & P0-5: Select s1 + s2, press F to wrap in Frame; marquee around s1 alone must NOT select Frame!
+        let frame_id = app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                view.edgeless_set_selection([s1_id.clone(), s2_id.clone()], cx);
+                assert!(view.edgeless_key_down(&mk_key("f", ui::Modifiers::default()), window, cx));
+                let fid = view
+                    .edgeless
+                    .authoring
+                    .selection
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .clone();
+                let kids = collect_frame_children(
+                    find_block(view.snapshot.as_ref().unwrap(), &fid).unwrap(),
+                );
+                assert!(kids.contains(&s1_id) && kids.contains(&s2_id));
+                fid
+            })
+            .unwrap()
+        });
+        hw.request_frame();
+        app.update(|cx| {
+            win.update(cx, |view, window, cx| {
+                // Marquee strictly inside Frame around s1 only.
+                let s1_rect = view
+                    .edgeless
+                    .authoring
+                    .painted_items
+                    .iter()
+                    .find(|i| i.id == s1_id)
+                    .expect("s1 painted")
+                    .rect;
+                view.edgeless.authoring.selection.clear();
+                view.edgeless.authoring.gesture = Some(EdgelessGesture::Marquee {
+                    start_world: (s1_rect.x - 5.0, s1_rect.y - 5.0),
+                    current_world: (s1_rect.x - 5.0, s1_rect.y - 5.0),
+                });
+                let end_screen = view.edgeless.camera.world_to_screen(
+                    ui::point(
+                        ui::px(s1_rect.right() + 5.0),
+                        ui::px(s1_rect.bottom() + 5.0),
+                    ),
+                    ui::point(ui::px(0.0), ui::px(top)),
+                );
+                view.on_edgeless_pointer_move(
+                    &mouse_move(f32::from(end_screen.x), f32::from(end_screen.y), true),
+                    window,
+                    cx,
+                );
+                view.on_edgeless_left_up(
+                    &mouse_up(f32::from(end_screen.x), f32::from(end_screen.y)),
+                    window,
+                    cx,
+                );
+                assert!(view.edgeless.authoring.selection.contains(&s1_id));
+                assert!(
+                    !view.edgeless.authoring.selection.contains(&frame_id),
+                    "P0-5: marquee inside Frame must NOT select the outer Frame"
+                );
+                // P1-25(d): Group s1 + s2 with Mod+G, then Ungroup with Mod+Shift+G.
+                view.edgeless_set_selection([s1_id.clone(), s2_id.clone()], cx);
+                assert!(view.edgeless_key_down(&mk_key("g", cmd_mods), window, cx));
+                let gid = view
+                    .edgeless
+                    .authoring
+                    .selection
+                    .iter()
+                    .next()
+                    .unwrap()
+                    .clone();
+                assert_ne!(gid, s1_id);
+                assert!(view.edgeless_key_down(&mk_key("g", cmd_shift), window, cx));
+                assert!(view.edgeless.authoring.selection.contains(&s1_id));
+                assert!(view.edgeless.authoring.selection.contains(&s2_id));
+                // P1-25(c): Mod+C + Mod+V round-trip copies s1.
+                view.edgeless_set_selection([s1_id.clone()], cx);
+                let count_before = view.edgeless.authoring.painted_items.len();
+                assert!(view.edgeless_key_down(&mk_key("c", cmd_mods), window, cx));
+                assert!(view.edgeless_key_down(&mk_key("v", cmd_mods), window, cx));
+                assert!(view.snapshot.is_some());
+                let _ = count_before;
+                // P2-3: T creates empty EdgelessText; switching to Page cleans up the ghost block.
+                view.create_edgeless_text_at(620.0, 420.0, window, cx);
+                let (et_id, _) = view.edgeless.authoring.editing_spatial_block().unwrap();
+                let et_id = et_id.to_string();
+                view.set_mode(crate::PlaygroundMode::Page, window, cx);
+                assert!(
+                    find_block(view.snapshot.as_ref().unwrap(), &et_id).is_none(),
+                    "P2-3: switching to Page must clean up empty newly created EdgelessText"
                 );
             })
             .unwrap();

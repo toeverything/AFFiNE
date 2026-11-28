@@ -1,9 +1,6 @@
 use std::{ops::Range, time::Duration};
 
-use blocksuite_playground_doc::{
-    read::{PageSnapshot, TextAlign as BlockAlign},
-    session::SelectionSnapshot,
-};
+use blocksuite_playground_doc::read::{PageSnapshot, TextAlign as BlockAlign};
 use ui::{
     AnyElement, ClipboardItem, Context, KeyDownEvent, MouseButton, MouseDownEvent, MouseMoveEvent,
     MouseUpEvent, Window,
@@ -149,13 +146,42 @@ impl PlaygroundView {
                         self.overlays.set_keyboard_toolbar_visible(false);
                         self.announce_selection(cx);
                         self.sync_slash_trigger(cx);
+                        self.sync_linked_doc_trigger(cx);
                         window.notify_text_selection_changed(&self.editor_focus);
                         cx.notify();
                     }
                 }
                 return;
             }
-            OverlayEvent::DragStart(_) => self.editor.dragging = false,
+            OverlayEvent::DragStart(block_id) => {
+                self.editor.dragging = false;
+                let now_ms = self.now_ms(cx);
+                let dragged_ids = self.resolve_multi_drag_ids(block_id);
+                self.overlays
+                    .start_drag(block_id.clone(), dragged_ids, now_ms);
+                cx.notify();
+                return;
+            }
+            OverlayEvent::TableCellMouseDown {
+                block_id,
+                row_id,
+                column_id,
+                screen_pos,
+                click_count,
+                shift,
+            } => {
+                self.focus_table_cell_pointer(
+                    block_id.clone(),
+                    row_id.clone(),
+                    column_id.clone(),
+                    Some(*screen_pos),
+                    *click_count,
+                    *shift,
+                    window,
+                    cx,
+                );
+                return;
+            }
             _ if self.handle_embed_and_code_event(&event, window, cx) => return,
             _ if self.handle_context_menu_event(&event, window, cx) => return,
             _ if self.handle_linked_doc_event(&event, window, cx) => return,
@@ -233,6 +259,9 @@ impl PlaygroundView {
         if self.overlays.slash_menu().is_none() {
             self.editor.slash_trigger = None;
         }
+        if self.overlays.linked_doc_menu().is_none() {
+            self.editor.linked_doc_trigger = None;
+        }
         if effects.redraw {
             cx.notify();
         }
@@ -260,6 +289,7 @@ impl PlaygroundView {
         self.sync_link_input(input, window, cx);
         self.keyboard_toolbar_dismissed = false;
         self.editor.slash_trigger = None;
+        self.editor.linked_doc_trigger = None;
         self.editor.block_selection.clear();
         if let Some(layout) = self.flow_layout() {
             let geometry = crate::page_geometry(f32::from(window.viewport_size().width));
@@ -275,26 +305,25 @@ impl PlaygroundView {
                 let prev_sel = self.editor.selection.clone();
                 let consumed =
                     self.click_database_point(&block_id, local_x, local_y, Some(window), cx);
-                if consumed || self.database_readonly {
-                    self.show_database_readonly_toast_once(cx);
-                    let focused_new_row = consumed
-                        && self.editor.selection != prev_sel
-                        && self.editor.selection.is_some();
-                    if !focused_new_row {
-                        self.clear_body_selection(window, cx);
-                        self.suppress_unselected_root_input = true;
-                        if !consumed && self.database_readonly {
-                            self.editor.block_selection = vec![block_id];
-                            self.keep_keyboard_on_block_selection = false;
-                            self.block_selection_return_caret = None;
-                            self.announce_selection(cx);
-                            window.notify_text_selection_changed(&self.editor_focus);
-                        }
+                self.show_database_readonly_toast_once(cx);
+                let focused_new_row = consumed
+                    && self.editor.selection != prev_sel
+                    && self.editor.selection.is_some();
+                if !focused_new_row {
+                    self.clear_body_selection(window, cx);
+                    if !consumed && self.database_readonly {
+                        self.editor.block_selection = vec![block_id];
+                        self.keep_keyboard_on_block_selection = false;
+                        self.block_selection_return_caret = None;
+                        self.announce_selection(cx);
+                        window.notify_text_selection_changed(&self.editor_focus);
+                    } else if !consumed {
+                        self.editor_focus.focus(window, cx);
                     }
-                    self.editor.dragging = false;
-                    cx.notify();
-                    return;
                 }
+                self.editor.dragging = false;
+                cx.notify();
+                return;
             }
             // Clicking a non-editable block (Bookmark, Image, Divider, Database body, Table frame)
             // or its horizontal row band selects that whole block into `block_selection` instead
@@ -306,7 +335,6 @@ impl PlaygroundView {
                 .then(|| block.block_id.clone())
             }) {
                 self.commit_active_preedit(window, cx);
-                self.suppress_unselected_root_input = false;
                 self.editor.selection = None;
                 self.editor.block_selection = vec![non_editable_id];
                 self.keep_keyboard_on_block_selection = false;
@@ -346,10 +374,6 @@ impl PlaygroundView {
             return;
         }
         self.editor_mouse_down(event, window, cx);
-        // A double or triple click selects at once; only a plain press starts a drag.
-        if event.click_count >= 2 {
-            self.editor.dragging = false;
-        }
         cx.notify();
     }
 
@@ -382,6 +406,10 @@ impl PlaygroundView {
             return;
         }
         if self.mode == PlaygroundMode::Page && self.overlays.dragged_block().is_none() {
+            if self.table_cell.as_ref().is_some_and(|c| c.dragging) {
+                self.table_cell_mouse_move(event, window, cx);
+                return;
+            }
             let selecting = self.editor.dragging;
             self.editor_mouse_move(event, window, cx);
             if selecting && !self.editor.dragging {
@@ -399,9 +427,14 @@ impl PlaygroundView {
         if self.scrollbar_drag.take().is_some() {
             cx.notify();
         }
+        if let Some(cell) = self.table_cell.as_mut() {
+            cell.dragging = false;
+        }
         if self.mode == PlaygroundMode::Edgeless {
             self.on_edgeless_left_up(event, window, cx);
         }
+        self.editor.drag_moved = false;
+        self.editor.drag_mode = crate::editor_session::DragSelectionMode::Character;
         // The selection is finished: the formatting toolbar may open over it.
         if std::mem::take(&mut self.editor.dragging) {
             cx.notify();
@@ -434,6 +467,15 @@ impl PlaygroundView {
                     self.dispatch_overlay(OverlayEvent::LinkedDocHover(next), window, cx);
                     return true;
                 }
+                "tab" => {
+                    let next = if event.keystroke.modifiers.shift {
+                        (selected + row_count - 1) % row_count
+                    } else {
+                        (selected + 1) % row_count
+                    };
+                    self.dispatch_overlay(OverlayEvent::LinkedDocHover(next), window, cx);
+                    return true;
+                }
                 "enter" => {
                     self.dispatch_overlay(OverlayEvent::LinkedDocSelect(selected), window, cx);
                     return true;
@@ -448,6 +490,7 @@ impl PlaygroundView {
         let now_ms = self.now_ms(cx);
         let secondary = event.keystroke.modifiers.secondary(cx);
         let input = self.link_input_state();
+        self.overlays.set_database_readonly(self.database_readonly);
         let effects = self.overlays.key_down(&event.keystroke, secondary, now_ms);
         let handled = self.apply_overlay_effects(effects, window, cx);
         self.sync_link_input(input, window, cx);
@@ -467,109 +510,6 @@ impl PlaygroundView {
         let result = call(self.overlays.active_text_field_mut()?);
         self.sync_link_input(input, window, cx);
         Some(result)
-    }
-
-    /// The editor typed a `/` into paragraph or list text: open the slash menu on it.
-    ///
-    /// The `/` is remembered as a relative position naming that very character, so text
-    /// a peer inserts before it moves the menu along instead of misplacing it.
-    pub(crate) fn open_typed_slash_menu(
-        &mut self,
-        block_id: String,
-        slash_offset: u64,
-        cx: &mut Context<Self>,
-    ) {
-        if self.editor.slash_trigger.is_some() && self.overlays.slash_menu().is_some() {
-            return;
-        }
-        let Some(position) = self.page().and_then(|page| {
-            page.capture_selection_snapshot(&block_id, slash_offset, &block_id, slash_offset)
-                .ok()
-        }) else {
-            return;
-        };
-        let now_ms = self.now_ms(cx);
-        self.editor.slash_trigger = Some((block_id.clone(), position));
-        self.overlays
-            .open_typed_slash(block_id, slash_offset as usize, now_ms);
-        cx.notify();
-    }
-
-    /// Where the `/` remembered as `position` is now, the caret behind it, and the filter
-    /// typed between the two.
-    ///
-    /// `None` when the menu has nothing left to act on: the character at the position is
-    /// not that `/` any more (deleted, or deleted and typed again by a peer, which is
-    /// another character), the caret is not a caret in the same block behind it, or the
-    /// text between them holds whitespace.
-    pub(super) fn typed_slash(
-        &self,
-        block_id: &str,
-        position: &SelectionSnapshot,
-    ) -> Option<(u64, u64, String)> {
-        let page = self.page()?;
-        let resolved = page.resolve_selection_snapshot(position).ok()??;
-        let slash = resolved.anchor.1;
-        if resolved.anchor.0 != block_id
-            || resolved.focus.0 != block_id
-            || resolved.focus.1 != slash
-        {
-            return None;
-        }
-        let units: Vec<u16> = page
-            .read_editable_text(block_id)
-            .ok()?
-            .0
-            .plain
-            .encode_utf16()
-            .collect();
-        if units.get(slash as usize) != Some(&u16::from(b'/')) {
-            return None;
-        }
-        // A position resolves to where a deleted character was; only the same character
-        // gives the same position back.
-        if page
-            .capture_selection_snapshot(block_id, slash, block_id, slash)
-            .ok()?
-            != *position
-        {
-            return None;
-        }
-        let selection = self.editor.selection.as_ref()?;
-        let caret = selection.focus.offset();
-        if !selection.empty() || selection.focus.block_id != block_id || caret <= slash {
-            return None;
-        }
-        let query = String::from_utf16(units.get(slash as usize + 1..caret as usize)?).ok()?;
-        (!query.chars().any(char::is_whitespace)).then_some((slash, caret, query))
-    }
-
-    /// After a local or remote edit or a selection change: the text between the typed `/`
-    /// and the caret is the slash menu's filter, and the menu follows the `/`. The menu
-    /// closes once [`Self::typed_slash`] finds nothing to act on.
-    pub(crate) fn sync_slash_trigger(&mut self, cx: &Context<Self>) {
-        let Some(menu_block) = self
-            .overlays
-            .slash_menu()
-            .filter(|menu| menu.query_in_document)
-            .map(|menu| menu.block_id.clone())
-        else {
-            return;
-        };
-        let typed = self
-            .editor
-            .slash_trigger
-            .as_ref()
-            .filter(|(block_id, _)| *block_id == menu_block)
-            .and_then(|(block_id, position)| self.typed_slash(block_id, position));
-        match typed {
-            Some((slash, _, query)) => self.overlays.set_typed_slash(slash as usize, query),
-            None => {
-                let now_ms = self.now_ms(cx);
-                self.editor.slash_trigger = None;
-                self.overlays.close_slash(now_ms);
-            }
-        }
     }
 
     /// Scroll a code block sideways so the caret at world x `caret_x` stays in view.
@@ -680,10 +620,15 @@ impl PlaygroundView {
             return Default::default();
         };
         let now_ms = self.now_ms(cx);
-        // The toolbar waits for the selection to be finished, and stays hidden in read-only mode.
-        let selection = (!self.page_readonly && !self.editor.dragging)
+        // The toolbar waits for a plain drag to finish, opens immediately on double/triple
+        // click until the pointer moves, and stays hidden in read-only mode.
+        let drag_hides_toolbar = self.editor.dragging
+            && (self.editor.drag_mode == crate::editor_session::DragSelectionMode::Character
+                || self.editor.drag_moved);
+        let selection = (!self.page_readonly && !drag_hides_toolbar)
             .then(|| self.selection_format(layout))
             .flatten();
+        self.overlays.set_database_readonly(self.database_readonly);
         let scene = self.overlay_scene(
             &snapshot,
             layout,
@@ -701,6 +646,9 @@ impl PlaygroundView {
         }
         if self.overlays.slash_menu().is_none() {
             self.editor.slash_trigger = None;
+        }
+        if self.overlays.linked_doc_menu().is_none() {
+            self.editor.linked_doc_trigger = None;
         }
         layer
     }

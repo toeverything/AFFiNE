@@ -11,8 +11,8 @@ use ui::{Context, Window};
 use y_octo::{Any, SessionValue, TextDeltaOp, TextInsert};
 
 use super::paste_convert::{
-    block_json_to_session_value, offset_xywh_str, remap_database_cells, remap_group_children,
-    remap_surface_element,
+    PASTE_OFFSET, block_json_to_session_value, offset_xywh_by, remap_database_cells,
+    remap_group_children, remap_surface_element,
 };
 use crate::PlaygroundView;
 
@@ -378,13 +378,13 @@ fn push_surface_elements_collection(val: &Value, out: &mut Vec<Map<String, Value
     }
 }
 
-struct PreallocatedBlock<'a> {
+pub(super) struct PreallocatedBlock<'a> {
     new_id: String,
     obj: &'a Map<String, Value>,
     children: Vec<PreallocatedBlock<'a>>,
 }
 
-fn preallocate_block_tree<'a>(
+pub(super) fn preallocate_block_tree<'a>(
     obj: &'a Map<String, Value>,
     id_map: &mut HashMap<String, String>,
     alloc_id: &mut impl FnMut() -> String,
@@ -413,6 +413,16 @@ fn preallocate_block_tree<'a>(
 fn materialize_pasted_block_tree(
     node: &PreallocatedBlock<'_>,
     is_top_note: bool,
+    id_map: &HashMap<String, String>,
+) -> PastedBlockNode {
+    materialize_pasted_block_tree_with_offset(node, is_top_note, PASTE_OFFSET, PASTE_OFFSET, id_map)
+}
+
+pub(super) fn materialize_pasted_block_tree_with_offset(
+    node: &PreallocatedBlock<'_>,
+    is_top_note: bool,
+    dx: f64,
+    dy: f64,
     id_map: &HashMap<String, String>,
 ) -> PastedBlockNode {
     let obj = node.obj;
@@ -457,7 +467,7 @@ fn materialize_pasted_block_tree(
             if is_top_note && prop_key == "prop:xywh" {
                 let shifted = pv
                     .as_str()
-                    .map(offset_xywh_str)
+                    .map(|s| offset_xywh_by(s, dx, dy))
                     .unwrap_or_else(|| "[0,0,448,120]".to_string());
                 entries.push((prop_key, SessionValue::Any(Any::String(shifted))));
             } else if matches!(prop_key.as_str(), "prop:text" | "prop:title") && pv.is_string() {

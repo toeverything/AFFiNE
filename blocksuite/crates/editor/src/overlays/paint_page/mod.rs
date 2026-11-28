@@ -71,20 +71,20 @@ impl Overlays {
         let layout = scene.layout;
         let mut elements = Vec::new();
 
-        // The block being dragged is tinted where it still sits.
-        if let Some(block) = self
-            .drag
-            .as_ref()
-            .and_then(|drag| layout.block(&drag.block_id))
-        {
-            let rect = block.rect();
-            if viewport.intersects(&rect) {
-                elements.push(
-                    place(viewport.to_local(&rect))
-                        .rounded(px(4.0))
-                        .bg(palette.hover)
-                        .into_any_element(),
-                );
+        // The dragged blocks are tinted where they still sit.
+        if let Some(drag) = self.drag.as_ref() {
+            for dragged_id in &drag.dragged_ids {
+                if let Some(block) = layout.block(dragged_id) {
+                    let rect = block.rect();
+                    if viewport.intersects(&rect) {
+                        elements.push(
+                            place(viewport.to_local(&rect))
+                                .rounded(px(4.0))
+                                .bg(palette.hover)
+                                .into_any_element(),
+                        );
+                    }
+                }
             }
         }
 
@@ -344,11 +344,13 @@ impl Overlays {
                                     cx.stop_propagation();
                                     let pos = (f32::from(ev.position.x), f32::from(ev.position.y));
                                     view.dispatch_overlay(
-                                        OverlayEvent::FocusTableCell {
+                                        OverlayEvent::TableCellMouseDown {
                                             block_id: bid.clone(),
                                             row_id: rid.clone(),
                                             column_id: cid.clone(),
-                                            screen_pos: Some(pos),
+                                            screen_pos: pos,
+                                            click_count: ev.click_count,
+                                            shift: ev.modifiers.shift,
                                         },
                                         w,
                                         cx,

@@ -247,9 +247,7 @@ impl PlaygroundView {
                 let offset = block
                     .hit_text(wx + scroll, wy)
                     .map_or(max_u16, |c| c.utf16_offset.min(max_u16));
-                if !self.editor.composing() && self.point_in_painted_selection(&layout, wx, wy) {
-                    self.suppress_unselected_root_input = false;
-                } else {
+                if self.editor.composing() || !self.point_in_painted_selection(&layout, wx, wy) {
                     let block_id = block.block_id.clone();
                     self.change_selection(
                         DocumentSelection::caret(DocPoint::new(&block_id, offset)),

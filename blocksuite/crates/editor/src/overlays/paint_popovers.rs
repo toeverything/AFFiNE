@@ -185,7 +185,10 @@ impl Overlays {
         let anchor = scene.world_to_screen(&anchor_world);
         let viewport = scene.popover_viewport();
 
-        let items = filter_slash_items(&menu.query);
+        let items = filter_slash_items_for(&menu.query, !self.database_readonly);
+        if items.is_empty() {
+            return None;
+        }
         menu.selected = menu.selected.min(items.len().saturating_sub(1));
         let (rows, content_height) = slash_rows_for_query(&items, &menu.query);
         let show_query = !menu.query_in_document;
@@ -284,17 +287,6 @@ impl Overlays {
                             .snapshot_text(group);
                     }
                     list = list.child(header.child(group));
-                }
-                SlashRow::Empty => {
-                    let mut empty = base
-                        .text_size(px(TYPOGRAPHY.font_sm_px))
-                        .text_color(palette.text_secondary);
-                    if fully_visible {
-                        empty = empty
-                            .snapshot("overlay.slash_menu.empty", Some("overlay.slash_menu"))
-                            .snapshot_text("No results");
-                    }
-                    list = list.child(empty.child("No results"));
                 }
                 SlashRow::Item(index) => {
                     let item = items[index];

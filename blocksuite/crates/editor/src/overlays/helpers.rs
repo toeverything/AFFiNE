@@ -80,6 +80,59 @@ impl Overlays {
         }
     }
 
+    /// Scroll a wide table sideways so the active cell `[cell_left, cell_right]` and its
+    /// caret at `caret_x` (all relative to `code.area.x`, unscrolled) stay inside the viewport.
+    pub fn reveal_table_cell_x(
+        &mut self,
+        block_id: &str,
+        cell_left: f32,
+        cell_right: f32,
+        caret_x: f32,
+        code: CodeScroll,
+    ) {
+        let current = self.code_scroll_x_for(block_id, code);
+        let view_w = code.area.w;
+        let mut next = current;
+        if cell_right - cell_left <= view_w {
+            if cell_left < next {
+                next = cell_left;
+            } else if cell_right > next + view_w {
+                next = cell_right - view_w;
+            }
+        } else if caret_x < next + 8.0 {
+            next = (caret_x - 8.0).max(0.0);
+        } else if caret_x > next + view_w - 8.0 {
+            next = caret_x - view_w + 8.0;
+        }
+        let next = next.clamp(0.0, code.max_x).round();
+        if next > 0.0 {
+            self.code_scroll.insert(block_id.to_string(), next);
+        } else {
+            self.code_scroll.remove(block_id);
+        }
+    }
+
+    /// Begin dragging one or more blocks from a gutter drag handle.
+    pub fn start_drag(&mut self, block_id: String, dragged_ids: Vec<String>, now_ms: f64) {
+        self.close_slash(now_ms);
+        self.close_link_field();
+        let ids = if dragged_ids.is_empty() {
+            vec![block_id.clone()]
+        } else {
+            dragged_ids
+        };
+        self.drag = Some(super::BlockDrag {
+            block_id,
+            dragged_ids: ids,
+            slot: None,
+        });
+    }
+
+    /// Whether database creation/editing is restricted (e.g. mobile read-only mode).
+    pub fn set_database_readonly(&mut self, readonly: bool) {
+        self.database_readonly = readonly;
+    }
+
     /// Whether a block's disclosure chevron is turning between its two states.
     pub fn chevron_turning(&self, block_id: &str) -> bool {
         self.chevrons.contains_key(block_id)
