@@ -126,15 +126,7 @@ fn collapsed_heading_drag_packs_section_escape_cancels_drag_and_db_new_record_re
     app.update(|cx| {
         win.update(cx, |view, window, cx| {
             // Collapse Section A (`h2-a`) and verify `resolve_multi_drag_ids("h2-a")` packs `["h2-a", "body-a"]`.
-            view.dispatch_overlay(
-                OverlayEvent::SetProp {
-                    block_id: "h2-a".into(),
-                    key: "prop:collapsed",
-                    value: y_octo::Any::True,
-                },
-                window,
-                cx,
-            );
+            view.dispatch_overlay(OverlayEvent::ToggleCollapsed("h2-a".into()), window, cx);
             assert_eq!(
                 view.resolve_multi_drag_ids("h2-a"),
                 vec!["h2-a".to_string(), "body-a".to_string()],

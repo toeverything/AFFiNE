@@ -3,9 +3,7 @@
 use std::collections::BTreeSet;
 
 use blocksuite_playground_doc::{
-    fractional_index::generate_key_between,
-    read::{BlockContent, NoteDisplayMode},
-    schema::SurfaceElementSpec,
+    fractional_index::generate_key_between, schema::SurfaceElementSpec,
 };
 use ui::Context;
 use y_octo::{Any, SessionValue};

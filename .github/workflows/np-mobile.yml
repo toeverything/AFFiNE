@@ -302,7 +302,28 @@ jobs:
         run: |
           cargo test --locked -p affine-ios-host --lib
           cargo check --locked -p ui -p affine-ios-host --target aarch64-apple-ios
-          cargo build --locked -p affine-ios-host --target aarch64-apple-ios-sim
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_ANALYSIS_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_ASCII_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_CORE_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_EDITOR_CORE_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_ELK_LAYERED_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_LAYOUT_ELK_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_MARKUP_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_MODEL_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_RENDER_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_THEME_CONTRACT_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_TYPST_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_TYPST_EVAL_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_TYPST_HTML_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_TYPST_LAYOUT_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_TYPST_LIBRARY_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_TYPST_REALIZE_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_TYPST_SVG_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_TYPST_SYNTAX_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_TYPST_UTILS_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_COMEMO_OPT_LEVEL=0 \
+            cargo build --locked -p affine-ios-host --target aarch64-apple-ios-sim
           test -s target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a
           IOS_LIB_BYTES=$(stat -f '%z' target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a)
           echo "iOS staticlib libaffine_ios_host.a bytes: ${IOS_LIB_BYTES}"
