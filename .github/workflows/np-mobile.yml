@@ -284,7 +284,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Pre-boot iOS Simulator in background
+      - name: Install Rust toolchain with iOS targets
+        uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: aarch64-apple-ios, aarch64-apple-ios-sim
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/frontend -> target
+          key: np-mobile-ios-host
+          add-rust-environment-hash-key: false
+          cache-on-failure: true
+
+      - name: Build affine-ios-host staticlib and check device targets
+        working-directory: packages/frontend
+        run: |
+          cargo test --locked -p affine-ios-host --lib
+          cargo check --locked -p ui -p affine-ios-host --target aarch64-apple-ios
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_ANALYSIS_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_ASCII_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_CORE_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_EDITOR_CORE_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_ELK_LAYERED_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_LAYOUT_ELK_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_MARKUP_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_MODEL_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_RENDER_OPT_LEVEL=0 \
+          CARGO_PROFILE_DEV_PACKAGE_MERMAN_THEME_CONTRACT_OPT_LEVEL=0 \
+            cargo build --locked -p affine-ios-host --target aarch64-apple-ios-sim
+          test -s target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a
+          IOS_LIB_BYTES=$(stat -f '%z' target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a)
+          echo "iOS staticlib libaffine_ios_host.a bytes: ${IOS_LIB_BYTES}"
+          test "$IOS_LIB_BYTES" -le 650000000
+
+      - name: Link zero-CocoaPods Swift iOS host and run 6/6 Simulator smoke tests
         run: |
           SIM_UDID=$(xcrun simctl list devices available -j | python3 -c '
           import json, sys
@@ -299,34 +334,8 @@ jobs:
           sys.exit(1)
           ')
           echo "SIM_UDID=$SIM_UDID" >> "$GITHUB_ENV"
-          echo "Pre-booting iOS Simulator UDID in background: $SIM_UDID"
+          echo "Booting iOS Simulator UDID concurrently with Swift linking: $SIM_UDID"
           xcrun simctl boot "$SIM_UDID" || true
-
-      - name: Install Rust toolchain with iOS targets
-        uses: dtolnay/rust-toolchain@1.98.1
-        with:
-          targets: aarch64-apple-ios, aarch64-apple-ios-sim
-
-      - name: Cache Cargo artifacts
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: packages/frontend -> target
-          key: np-mobile-ios-host
-          cache-on-failure: true
-
-      - name: Build affine-ios-host staticlib and check device targets
-        working-directory: packages/frontend
-        run: |
-          cargo test --locked -p affine-ios-host
-          cargo check --locked -p ui -p affine-ios-host --target aarch64-apple-ios
-          cargo build --locked -p affine-ios-host --target aarch64-apple-ios-sim
-          test -s target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a
-          IOS_LIB_BYTES=$(stat -f '%z' target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a)
-          echo "iOS staticlib libaffine_ios_host.a bytes: ${IOS_LIB_BYTES}"
-          test "$IOS_LIB_BYTES" -le 650000000
-
-      - name: Link zero-CocoaPods Swift iOS host and run 6/6 Simulator smoke tests
-        run: |
           SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
           SMOKE_SOURCES=()
           for f in packages/frontend/hosts/ios/Sources/*.swift; do
