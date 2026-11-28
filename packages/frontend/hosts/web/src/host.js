@@ -275,7 +275,10 @@ export function focusImeInGesture(imeEl, options = {}) {
  * @returns {string}
  */
 export function sanitizeEmbedSandbox(rawSandbox) {
-  const requested = rawSandbox ? rawSandbox.split(/\s+/) : ['allow-scripts'];
+  const requested =
+    rawSandbox === undefined || rawSandbox === null
+      ? ['allow-scripts']
+      : String(rawSandbox).split(/\s+/);
   const allowed = requested
     .map(token => token.trim().toLowerCase())
     .filter(token => ALLOWED_SANDBOX_TOKENS.has(token));
@@ -337,10 +340,45 @@ export function createSandboxedEmbedIframe(doc, embedLayer, options) {
  * @param {FlushNavigationOptions} options
  * @returns {Promise<{ navigated: boolean, reason?: string }>}
  */
+const DEFAULT_FLUSH_TIMEOUT_MS = 8000;
+
+/**
+ * Navigates via `location.replace` (falling back to `location.assign` when a
+ * test mock omits `replace`) so automatic shell fallbacks do not pollute
+ * browser history and trap Back navigation in a redirect loop.
+ *
+ * @param {{ location?: { replace?: (url: string) => void, assign?: (url: string) => void } } | null | undefined} win
+ * @param {string} url
+ */
+function replaceLocation(win, url) {
+  if (typeof win?.location?.replace === 'function') {
+    win.location.replace(url);
+  } else if (typeof win?.location?.assign === 'function') {
+    win.location.assign(url);
+  }
+}
+
 export async function flushBeforeNavigation(options) {
   options.pauseInput();
+  const timeoutMs =
+    typeof options.flushTimeoutMs === 'number'
+      ? options.flushTimeoutMs
+      : DEFAULT_FLUSH_TIMEOUT_MS;
+  /** @type {ReturnType<typeof setTimeout> | null} */
+  let timeoutHandle = null;
   try {
-    const result = await options.flushPendingWrites();
+    const flushPromise = options.flushPendingWrites();
+    const result =
+      timeoutMs > 0
+        ? await Promise.race([
+            flushPromise,
+            new Promise((_resolve, reject) => {
+              timeoutHandle = setTimeout(() => {
+                reject(new Error('flush-timeout'));
+              }, timeoutMs);
+            }),
+          ])
+        : await flushPromise;
     const ok =
       typeof result === 'boolean'
         ? result
@@ -356,11 +394,23 @@ export async function flushBeforeNavigation(options) {
   } catch (error) {
     options.resumeInput?.();
     const message = error instanceof Error ? error.message : String(error);
+    if (message === 'flush-timeout') {
+      return { navigated: false, reason: 'flush-timeout' };
+    }
     return { navigated: false, reason: `flush-error:${message}` };
+  } finally {
+    if (timeoutHandle !== null) {
+      clearTimeout(timeoutHandle);
+    }
   }
   options.navigate(options.targetUrl);
   return { navigated: true };
 }
+
+/**
+ * Alias for the CRDT IndexedDB flush barrier executed before shell redirect.
+ */
+export const flushPendingBeforeRedirect = flushBeforeNavigation;
 
 /**
  * Removes `#boot` once the first canvas frame is ready and deduplicates any
@@ -409,9 +459,12 @@ export function removeBootSkeleton(doc) {
  * @param {() => void} [options.hideFatal]
  * @param {() => boolean} [options.isDocumentHidden]
  * @param {(canvas: HTMLCanvasElement | null) => boolean | Promise<boolean>} [options.onContextRestored]
+ * @param {(info: unknown) => boolean | Promise<boolean>} [options.tryRebuildWebGpu]
  * @param {(info: unknown) => boolean | Promise<boolean>} [options.tryWebGl2Fallback]
+ * @param {(reason: string, targetUrl: string) => void} [options.onFallbackMarker]
  * @param {number} [options.restoreTimeoutMs=4000]
  * @param {number} [options.maxContextLosses=3]
+ * @param {number} [options.maxWebGpuLosses=2]
  * @param {number} [options.lossWindowMs=30000]
  * @param {() => number} [options.now]
  * @param {(fn: () => void, ms: number) => unknown} [options.setTimer]
@@ -420,6 +473,7 @@ export function removeBootSkeleton(doc) {
 export function createGpuRecoveryController(options) {
   const restoreTimeoutMs = Math.max(1, options.restoreTimeoutMs ?? 4000);
   const maxContextLosses = Math.max(1, options.maxContextLosses ?? 3);
+  const maxWebGpuLosses = Math.max(1, options.maxWebGpuLosses ?? 2);
   const lossWindowMs = Math.max(1, options.lossWindowMs ?? 30_000);
   const now = options.now || (() => Date.now());
   const setTimer = options.setTimer || ((fn, ms) => setTimeout(fn, ms));
@@ -431,10 +485,13 @@ export function createGpuRecoveryController(options) {
   let inputPaused = false;
   let frameLoopFrozen = false;
   let totalLossCount = 0;
+  let webGpuLossCount = 0;
   let restoreCount = 0;
   let recoveryEpoch = 0;
   /** @type {number[]} */
   let lossTimestamps = [];
+  /** @type {number[]} */
+  let webGpuLossTimestamps = [];
   /** @type {unknown} */
   let restoreTimer = null;
   let restoreTimerPausedByVisibility = false;
@@ -448,6 +505,8 @@ export function createGpuRecoveryController(options) {
   let pendingFallbackUrl = null;
   /** @type {((canvas: HTMLCanvasElement | null) => boolean | Promise<boolean>) | null} */
   let onContextRestoredHook = options.onContextRestored || null;
+  /** @type {((info: unknown) => boolean | Promise<boolean>) | null} */
+  let tryRebuildWebGpuHook = options.tryRebuildWebGpu || null;
   /** @type {((info: unknown) => boolean | Promise<boolean>) | null} */
   let tryWebGl2FallbackHook = options.tryWebGl2Fallback || null;
 
@@ -538,10 +597,13 @@ export function createGpuRecoveryController(options) {
 
     const run = (async () => {
       try {
-        const result = await flushBeforeNavigation({
+        const result = await flushPendingBeforeRedirect({
           pauseInput: () => pauseAll(),
           flushPendingWrites: options.flushPendingWrites,
-          navigate: options.navigate,
+          navigate: url => {
+            options.onFallbackMarker?.(reason, url);
+            options.navigate(url);
+          },
           targetUrl: fallback.url,
         });
 
@@ -690,11 +752,13 @@ export function createGpuRecoveryController(options) {
   }
 
   /**
-   * Handles WebGPU `device.lost`. Tries WebGL2 downgrade when a fallback hook
-   * is provided; triggers the IDB-flushed legacy circuit breaker otherwise.
+   * Handles WebGPU `device.lost` and `uncapturederror`. Attempts in-place
+   * WebGPU rebuild (or WebGL2 downgrade) on the first failure; trips the
+   * IDB-flushed legacy circuit breaker once `maxWebGpuLosses` (default 2)
+   * consecutive failures occur inside `lossWindowMs`.
    *
    * @param {unknown} info
-   * @param {{ tryWebGl2Fallback?: (info: unknown) => boolean | Promise<boolean> }} [override]
+   * @param {{ tryRebuildWebGpu?: (info: unknown) => boolean | Promise<boolean>, tryWebGl2Fallback?: (info: unknown) => boolean | Promise<boolean> }} [override]
    * @returns {Promise<{ recovered: boolean, mode?: string, navigated?: boolean, retryable?: boolean, reason?: string }>}
    */
   async function handleWebGpuDeviceLost(info, override = {}) {
@@ -714,6 +778,55 @@ export function createGpuRecoveryController(options) {
     pauseAll();
     recoveryEpoch += 1;
     const epoch = recoveryEpoch;
+    const t = now();
+    totalLossCount += 1;
+    webGpuLossCount += 1;
+    webGpuLossTimestamps = webGpuLossTimestamps.filter(
+      ts => t - ts <= lossWindowMs
+    );
+    webGpuLossTimestamps.push(t);
+
+    if (webGpuLossTimestamps.length >= maxWebGpuLosses) {
+      const res = await triggerFallback('webgpu-crash-threshold');
+      return { recovered: false, ...res };
+    }
+
+    const rebuildFn = override.tryRebuildWebGpu || tryRebuildWebGpuHook;
+    if (typeof rebuildFn === 'function') {
+      try {
+        const ok = await rebuildFn(info);
+        if (
+          epoch !== recoveryEpoch ||
+          fallbackInFlight !== null ||
+          status === 'fallback-pending' ||
+          status === 'fallback-navigated' ||
+          status === 'fatal'
+        ) {
+          return { recovered: false, navigated: false, reason: status };
+        }
+        if (ok) {
+          restoreCount += 1;
+          status = 'ready';
+          lastError = null;
+          pendingFallbackUrl = null;
+          options.hideFatal?.();
+          resumeAll();
+          return { recovered: true, mode: 'webgpu' };
+        }
+      } catch {
+        if (
+          epoch !== recoveryEpoch ||
+          fallbackInFlight !== null ||
+          status === 'fallback-pending' ||
+          status === 'fallback-navigated' ||
+          status === 'fatal'
+        ) {
+          return { recovered: false, navigated: false, reason: status };
+        }
+        // Fall through to WebGL2 downgrade or legacy circuit breaker.
+      }
+    }
+
     const fallbackFn = override.tryWebGl2Fallback || tryWebGl2FallbackHook;
     if (typeof fallbackFn === 'function') {
       try {
@@ -780,6 +893,9 @@ export function createGpuRecoveryController(options) {
     if (hooks.onContextRestored !== undefined) {
       onContextRestoredHook = hooks.onContextRestored;
     }
+    if (hooks.tryRebuildWebGpu !== undefined) {
+      tryRebuildWebGpuHook = hooks.tryRebuildWebGpu;
+    }
     if (hooks.tryWebGl2Fallback !== undefined) {
       tryWebGl2FallbackHook = hooks.tryWebGl2Fallback;
     }
@@ -803,8 +919,10 @@ export function createGpuRecoveryController(options) {
       inputPaused,
       frameLoopFrozen,
       totalLossCount,
+      webGpuLossCount,
       restoreCount,
       lossCountInWindow: lossTimestamps.length,
+      webGpuLossCountInWindow: webGpuLossTimestamps.length,
       retryable: status === 'fallback-blocked',
       lastError,
       lastFallbackReason,
@@ -1041,22 +1159,42 @@ export async function bootWebHost(env = {}) {
       codeConsumed: false,
     });
     showBootFatal(doc, 'WebGPU and WebGL2 are unavailable. Switching shell...');
-    await flushBeforeNavigation({
-      pauseInput() {
-        if (ime) {
-          ime.readOnly = true;
-        }
-      },
-      flushPendingWrites: resolveFlush,
-      navigate: url => win.location.assign(url),
-      targetUrl: fallback.url,
-      resumeInput() {
-        if (ime) {
-          ime.readOnly = false;
-        }
-      },
-    });
-    return { fallback: true, fatal: false, graphics };
+    const runBootFallback = async () => {
+      const res = await flushBeforeNavigation({
+        pauseInput() {
+          if (ime) {
+            ime.readOnly = true;
+          }
+        },
+        flushPendingWrites: resolveFlush,
+        flushTimeoutMs: env.flushTimeoutMs,
+        navigate: url => replaceLocation(win, url),
+        targetUrl: fallback.url,
+        resumeInput() {
+          if (ime) {
+            ime.readOnly = false;
+          }
+        },
+      });
+      if (!res.navigated) {
+        showBootFatal(
+          doc,
+          'Unable to save pending edits. Tap Retry to try again.',
+          {
+            retryable: true,
+            onRetry: () => runBootFallback(),
+          }
+        );
+      }
+      return res;
+    };
+    const fallbackResult = await runBootFallback();
+    return {
+      fallback: fallbackResult.navigated,
+      fatal: !fallbackResult.navigated,
+      retryable: !fallbackResult.navigated,
+      graphics,
+    };
   }
 
   const manifest = readEmbeddedManifest(doc);
@@ -1151,7 +1289,7 @@ export async function bootWebHost(env = {}) {
 
   /** @param {string} targetUrl */
   async function navigateWithFlush(targetUrl) {
-    return flushBeforeNavigation({
+    const res = await flushBeforeNavigation({
       pauseInput() {
         inputPaused = true;
         if (ime) {
@@ -1159,6 +1297,7 @@ export async function bootWebHost(env = {}) {
         }
       },
       flushPendingWrites: resolveFlush,
+      flushTimeoutMs: env.flushTimeoutMs,
       navigate: url => win.location.assign(url),
       targetUrl,
       resumeInput() {
@@ -1168,6 +1307,19 @@ export async function bootWebHost(env = {}) {
         }
       },
     });
+    if (!res.navigated) {
+      showBootFatal(
+        doc,
+        'Unable to save pending edits. Tap Retry to try again.',
+        {
+          retryable: true,
+          onRetry: () => navigateWithFlush(targetUrl),
+        }
+      );
+    } else {
+      hideRuntimeFatal(doc);
+    }
+    return res;
   }
 
   const gpuRecovery = createGpuRecoveryController({
@@ -1190,7 +1342,7 @@ export async function bootWebHost(env = {}) {
     freezeFrameLoop: env.onFreezeFrameLoop,
     unfreezeFrameLoop: env.onUnfreezeFrameLoop,
     flushPendingWrites: resolveFlush,
-    navigate: url => win.location.assign(url),
+    navigate: url => replaceLocation(win, url),
     showFatal: (message, opts) =>
       showBootFatal(doc, message, {
         retryable: Boolean(opts?.retryable),
@@ -1200,9 +1352,23 @@ export async function bootWebHost(env = {}) {
       }),
     hideFatal: () => hideRuntimeFatal(doc),
     onContextRestored: env.onContextRestored,
+    tryRebuildWebGpu: env.tryRebuildWebGpu,
     tryWebGl2Fallback: env.tryWebGl2Fallback,
+    onFallbackMarker: (reason, targetUrl) => {
+      const storage = safeGetLocalStorage(win);
+      if (!storage || typeof storage.setItem !== 'function') {
+        return;
+      }
+      try {
+        setWebPreference('shellFallbackReason', reason, storage);
+        setWebPreference('shellFallbackTarget', targetUrl, storage);
+      } catch {
+        // Never block legacy fallback navigation on storage quota errors.
+      }
+    },
     restoreTimeoutMs: env.restoreTimeoutMs,
     maxContextLosses: env.maxContextLosses,
+    maxWebGpuLosses: env.maxWebGpuLosses,
     lossWindowMs: env.lossWindowMs,
     now: env.now,
     setTimer: env.setTimer,
@@ -1265,13 +1431,32 @@ export async function bootWebHost(env = {}) {
   }
 
   /**
-   * @param {{ lost?: Promise<unknown> } | null | undefined} device
-   * @param {{ tryWebGl2Fallback?: (info: unknown) => boolean | Promise<boolean> }} [deviceOpts]
+   * @param {{ lost?: Promise<unknown>, addEventListener?: Function } | null | undefined} device
+   * @param {{ tryRebuildWebGpu?: (info: unknown) => boolean | Promise<boolean>, tryWebGl2Fallback?: (info: unknown) => boolean | Promise<boolean> }} [deviceOpts]
    */
   function bindWebGpuDevice(device, deviceOpts = {}) {
-    if (device && device.lost && typeof device.lost.then === 'function') {
+    if (!device) {
+      return;
+    }
+    let reportedForDevice = false;
+    const reportOnce = info => {
+      if (reportedForDevice) {
+        return;
+      }
+      reportedForDevice = true;
+      void gpuRecovery.handleWebGpuDeviceLost(info, deviceOpts);
+    };
+    if (device.lost && typeof device.lost.then === 'function') {
       void device.lost.then(info => {
-        void gpuRecovery.handleWebGpuDeviceLost(info, deviceOpts);
+        reportOnce(info);
+      });
+    }
+    if (typeof device.addEventListener === 'function') {
+      device.addEventListener('uncapturederror', event => {
+        reportOnce({
+          reason: 'uncapturederror',
+          error: event?.error ?? event,
+        });
       });
     }
   }
@@ -1383,6 +1568,7 @@ export async function bootWebHost(env = {}) {
     gpuRecovery,
     safeAreaObserver,
     navigateWithFlush,
+    flushPendingBeforeRedirect: navigateWithFlush,
     handleRuntimeGpuLoss,
     retryGpuFallback: () => gpuRecovery.retryFallback(),
     setGraphicsRecoveryHooks: hooks => gpuRecovery.setHooks(hooks),
@@ -1491,13 +1677,62 @@ export async function bootWebHost(env = {}) {
     /** @type {unknown} */ (win)
   ).__AFFINE_WEB_HOST__ = hostHandle;
 
-  if (manifest.appEntryJs) {
-    const entryUrl = new URL(
-      manifest.appEntryJs,
-      new URL('/', win.location.href)
-    ).toString();
+  const entryUrl = workerLoader.resolveAppEntryUrl();
+  if (entryUrl) {
     const importer = env.importModule || (spec => import(spec));
-    await importer(entryUrl);
+    try {
+      await importer(entryUrl);
+    } catch {
+      const fb = await gpuRecovery.triggerFallback('wasm-boot-failed');
+      const isRetryableFlush = Boolean(
+        fb.retryable || gpuRecovery.getState().retryable
+      );
+      if (!fb.navigated && !isRetryableFlush) {
+        const retryReloadWithFlush = async () => {
+          const res = await flushBeforeNavigation({
+            pauseInput() {
+              if (ime) {
+                ime.readOnly = true;
+              }
+            },
+            flushPendingWrites: resolveFlush,
+            flushTimeoutMs: env.flushTimeoutMs,
+            navigate: url => replaceLocation(win, url),
+            targetUrl: win.location.href,
+            resumeInput() {
+              if (ime) {
+                ime.readOnly = false;
+              }
+            },
+          });
+          if (!res.navigated) {
+            showBootFatal(
+              doc,
+              'Unable to save pending edits. Tap Retry to try again.',
+              {
+                retryable: true,
+                onRetry: () => retryReloadWithFlush(),
+              }
+            );
+          }
+          return res;
+        };
+        showBootFatal(
+          doc,
+          'Failed to initialize AFFiNE. Tap Retry to try again.',
+          {
+            retryable: true,
+            onRetry: () => retryReloadWithFlush(),
+          }
+        );
+      }
+      return {
+        ...hostHandle,
+        fallback: Boolean(fb.navigated),
+        fatal: !fb.navigated,
+        retryable: isRetryableFlush,
+      };
+    }
   }
 
   return hostHandle;
@@ -1590,5 +1825,15 @@ if (
   globalThis.document !== undefined &&
   !globalThis.__AFFINE_WEB_HOST_TEST__
 ) {
-  void bootWebHost();
+  void bootWebHost().catch(() => {
+    showBootFatal(
+      globalThis.document,
+      'Failed to initialize AFFiNE. Tap Retry to try again.',
+      {
+        retryable: true,
+        onRetry: () =>
+          replaceLocation(globalThis.window, globalThis.window.location.href),
+      }
+    );
+  });
 }

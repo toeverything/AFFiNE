@@ -6,7 +6,7 @@ use std::sync::{Mutex, OnceLock};
 
 use axum::Router;
 use axum::extract::{Path as AxumPath, State};
-use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::http::{HeaderMap, HeaderValue, StatusCode, Uri, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use chrono::Utc;
@@ -157,6 +157,7 @@ pub fn render_doc_markdown_from_binary(bin: &[u8]) -> Option<(String, String, St
 async fn handle_render_workspace_path(
   State(state): State<RouterState>,
   AxumPath(path): AxumPath<String>,
+  uri: Uri,
   headers: HeaderMap,
 ) -> Response {
   let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
@@ -289,42 +290,60 @@ async fn handle_render_workspace_path(
     }
   }
   let selfhosted = cfg.deployment_mode == DeploymentMode::Selfhosted;
-  let is_mobile = cfg.channel == "canary" && crate::rest::static_files::is_mobile_request(&headers);
-  let mut assets: AssetsManifest = (Vec::new(), Vec::new(), "/".into(), String::new(), String::new());
-  if let Some(dir) = cfg.static_dir.as_deref() {
-    type AssetsCache = Mutex<HashMap<(PathBuf, bool, bool), AssetsManifest>>;
-    static CACHE: OnceLock<AssetsCache> = OnceLock::new();
-    let (key, cache) = (
-      (dir.to_path_buf(), is_mobile, selfhosted),
-      CACHE.get_or_init(Default::default),
-    );
-    if let Some(c) = cache.lock().ok().and_then(|g| g.get(&key).cloned()) {
-      assets = c;
-    } else {
-      let base = if is_mobile {
-        dir.join("mobile")
-      } else {
-        dir.to_path_buf()
-      };
-      if let Ok(raw) = tokio::fs::read_to_string(base.join("assets-manifest.json")).await
-        && let Ok(v) = serde_json::from_str::<Value>(&raw)
+  let (shell, explicit_shell) = crate::rest::static_files::resolve_canary_shell(&uri, &headers, &cfg.channel);
+  let mut shell_dir = cfg.static_dir.as_deref().map(PathBuf::from);
+  if let Some(dir) = cfg.static_dir.as_deref()
+    && cfg.channel == "canary"
+  {
+    for (cond, sub) in [
+      (shell == "legacy", "mobile-legacy"),
+      (matches!(shell, "legacy" | "native"), "mobile"),
+    ] {
+      let candidate = dir.join(sub);
+      if cond
+        && tokio::fs::metadata(candidate.join("index.html"))
+          .await
+          .is_ok_and(|m| m.is_file())
       {
-        let pp_raw = v.get("publicPath").and_then(Value::as_str).unwrap_or("/");
-        let pp = if selfhosted || pp_raw.is_empty() { "/" } else { pp_raw }.to_owned();
-        let list = |k: &str| {
-          v.get(k)
-            .and_then(Value::as_array)
-            .map(|a| a.iter().filter_map(Value::as_str).map(|p| format!("{pp}{p}")).collect())
-            .unwrap_or_default()
-        };
-        let gs = |k: &str| v.get(k).and_then(Value::as_str).unwrap_or("").to_owned();
-        assets = (list("css"), list("js"), pp, gs("gitHash"), gs("description"));
+        shell_dir = Some(candidate);
+        break;
       }
-      if let Ok(mut g) = cache.lock() {
-        if g.len() >= 64 {
-          g.clear();
+    }
+  }
+  let mut assets: AssetsManifest = (Vec::new(), Vec::new(), "/".into(), String::new(), String::new());
+  let mut native_shell_template: Option<String> = None;
+  if let Some(base) = shell_dir.as_deref() {
+    let manifest_path = base.join("assets-manifest.json");
+    let has_manifest = tokio::fs::metadata(&manifest_path).await.is_ok_and(|m| m.is_file());
+    if !has_manifest && let Ok(tpl) = tokio::fs::read_to_string(base.join("index.html")).await {
+      native_shell_template = Some(tpl);
+    } else {
+      type AssetsCache = Mutex<HashMap<(PathBuf, bool), AssetsManifest>>;
+      static CACHE: OnceLock<AssetsCache> = OnceLock::new();
+      let (key, cache) = ((base.to_path_buf(), selfhosted), CACHE.get_or_init(Default::default));
+      if let Some(c) = cache.lock().ok().and_then(|g| g.get(&key).cloned()) {
+        assets = c;
+      } else {
+        if let Ok(raw) = tokio::fs::read_to_string(&manifest_path).await
+          && let Ok(v) = serde_json::from_str::<Value>(&raw)
+        {
+          let pp_raw = v.get("publicPath").and_then(Value::as_str).unwrap_or("/");
+          let pp = if selfhosted || pp_raw.is_empty() { "/" } else { pp_raw }.to_owned();
+          let list = |k: &str| {
+            v.get(k)
+              .and_then(Value::as_array)
+              .map(|a| a.iter().filter_map(Value::as_str).map(|p| format!("{pp}{p}")).collect())
+              .unwrap_or_default()
+          };
+          let gs = |k: &str| v.get(k).and_then(Value::as_str).unwrap_or("").to_owned();
+          assets = (list("css"), list("js"), pp, gs("gitHash"), gs("description"));
         }
-        g.insert(key, assets.clone());
+        if let Ok(mut g) = cache.lock() {
+          if g.len() >= 64 {
+            g.clear();
+          }
+          g.insert(key, assets.clone());
+        }
       }
     }
   }
@@ -358,19 +377,26 @@ async fn handle_render_workspace_path(
   } else {
     r#"<meta name="robots" content="noindex, nofollow" />"#
   };
-  let css: String = assets
-    .0
-    .iter()
-    .map(|u| format!(r#"<link rel="stylesheet" href="{}" crossorigin />"#, esc(u)))
-    .collect();
-  let js: String = assets
-    .1
-    .iter()
-    .map(|u| format!(r#"<script src="{}" crossorigin></script>"#, esc(u)))
-    .collect();
-  let html = format!(
-    r##"<!DOCTYPE html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" /><meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />{itunes}<title>{title}</title><meta name="theme-color" content="#fafafa" />{preconnect}<link rel="manifest" href="/manifest.json" /><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" /><link rel="icon" sizes="192x192" href="/favicon-192.png" /><link rel="shortcut icon" href="/favicon.ico?v=2" /><meta name="emotion-insertion-point" content="" />{robots}<meta name="twitter:title" content="{title}" /><meta name="twitter:description" content="{summary}" /><meta name="twitter:site" content="@AffineOfficial" /><meta name="twitter:image" content="{image}" /><meta property="og:title" content="{title}" /><meta property="og:description" content="{summary}" /><meta property="og:image" content="{image}" /><meta name="env:publicPath" content="{pp}" /><meta name="env:subPath" content="{sp}" /><meta name="env:renderer" content="ssr" />{sh_meta}{css}</head><body><div id="app" data-version="{hash}"></div>{js}</body></html>"##
-  );
+  let html = if let Some(template) = native_shell_template {
+    let og_meta = format!(
+      r#"{robots}<meta name="twitter:title" content="{title}" /><meta name="twitter:description" content="{summary}" /><meta name="twitter:site" content="@AffineOfficial" /><meta name="twitter:image" content="{image}" /><meta property="og:title" content="{title}" /><meta property="og:description" content="{summary}" /><meta property="og:image" content="{image}" /><meta name="env:renderer" content="ssr" />"#
+    );
+    inject_ssr_meta_into_shell_html(&template, &title, &og_meta)
+  } else {
+    let css: String = assets
+      .0
+      .iter()
+      .map(|u| format!(r#"<link rel="stylesheet" href="{}" crossorigin />"#, esc(u)))
+      .collect();
+    let js: String = assets
+      .1
+      .iter()
+      .map(|u| format!(r#"<script src="{}" crossorigin></script>"#, esc(u)))
+      .collect();
+    format!(
+      r##"<!DOCTYPE html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" /><meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />{itunes}<title>{title}</title><meta name="theme-color" content="#fafafa" />{preconnect}<link rel="manifest" href="/manifest.json" /><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" /><link rel="icon" sizes="192x192" href="/favicon-192.png" /><link rel="shortcut icon" href="/favicon.ico?v=2" /><meta name="emotion-insertion-point" content="" />{robots}<meta name="twitter:title" content="{title}" /><meta name="twitter:description" content="{summary}" /><meta name="twitter:site" content="@AffineOfficial" /><meta name="twitter:image" content="{image}" /><meta property="og:title" content="{title}" /><meta property="og:description" content="{summary}" /><meta property="og:image" content="{image}" /><meta name="env:publicPath" content="{pp}" /><meta name="env:subPath" content="{sp}" /><meta name="env:renderer" content="ssr" />{sh_meta}{css}</head><body><div id="app" data-version="{hash}"></div>{js}</body></html>"##
+    )
+  };
   let mut resp = (
     StatusCode::OK,
     [(header::CONTENT_TYPE, "text/html; charset=utf-8")],
@@ -384,6 +410,31 @@ async fn handle_render_workspace_path(
       HeaderValue::from_static("noindex"),
     );
   }
+  if cfg.channel == "canary" || explicit_shell.is_some() {
+    h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    h.insert(header::VARY, HeaderValue::from_static("User-Agent, Cookie"));
+  }
+  if let Some(sh) = explicit_shell {
+    crate::rest::static_files::append_shell_cookie(h, sh, https);
+  }
   resolved.cookie_action.apply_to(h, https);
   resp
+}
+
+fn inject_ssr_meta_into_shell_html(template: &str, title: &str, meta_tags: &str) -> String {
+  let lower = template.to_ascii_lowercase();
+  let with_title = if let (Some(t_start), Some(t_end_rel)) = (lower.find("<title>"), lower.find("</title>"))
+    && t_end_rel > t_start
+  {
+    let t_end = t_end_rel + "</title>".len();
+    format!("{}<title>{title}</title>{}", &template[..t_start], &template[t_end..])
+  } else {
+    template.to_owned()
+  };
+  let lower_wt = with_title.to_ascii_lowercase();
+  if let Some(head_close) = lower_wt.find("</head>") {
+    format!("{}{meta_tags}{}", &with_title[..head_close], &with_title[head_close..])
+  } else {
+    format!("{meta_tags}{with_title}")
+  }
 }

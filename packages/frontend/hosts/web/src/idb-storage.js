@@ -414,14 +414,16 @@ export function openWorkspaceIdb(space, env = {}) {
  * @param {Date | number | string | null | undefined} value
  * @returns {Date}
  */
-function toDate(value) {
+function toDate(value, fallbackMs = 0) {
+  let d;
   if (value instanceof Date) {
-    return value;
+    d = value;
+  } else if (typeof value === 'number' || typeof value === 'string') {
+    d = new Date(value);
+  } else {
+    return new Date(fallbackMs);
   }
-  if (typeof value === 'number' || typeof value === 'string') {
-    return new Date(value);
-  }
-  return new Date(0);
+  return Number.isFinite(d.getTime()) ? d : new Date(fallbackMs);
 }
 
 /**
@@ -601,8 +603,11 @@ export function createIdbWorkspaceStorage(options) {
     try {
       for (const item of batch) {
         const prev = await requestToPromise(clocksStore.get(item.docId));
-        const prevMs = prev ? toDate(prev.timestamp).getTime() : 0;
-        const timestamp = new Date(Math.max(now(), prevMs + 1));
+        const rawPrevMs = prev ? toDate(prev.timestamp, 0).getTime() : 0;
+        const prevMs = Number.isFinite(rawPrevMs) ? rawPrevMs : 0;
+        const rawNow = now();
+        const safeNow = Number.isFinite(rawNow) ? rawNow : Date.now();
+        const timestamp = new Date(Math.max(safeNow, prevMs + 1));
 
         /** @type {Record<string, unknown>} */
         const updateRecord = {

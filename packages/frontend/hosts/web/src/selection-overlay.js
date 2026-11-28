@@ -557,12 +557,20 @@ export function computeSelectionOverlayLayout(input) {
     loupeAnchor.y - LOUPE_RADIUS_PX - 14
   );
 
+  const hasCaretAnchor =
+    Boolean(start && end) &&
+    Number.isFinite(start.x) &&
+    Number.isFinite(start.y) &&
+    Number.isFinite(end.x) &&
+    Number.isFinite(end.y);
+
   return {
     rects,
     startHandle,
     endHandle,
     menu: {
-      visible: !dragging && items.length > 0 && rects.length > 0,
+      visible:
+        !dragging && items.length > 0 && (rects.length > 0 || hasCaretAnchor),
       placement,
       dir,
       locale,

@@ -15,6 +15,7 @@
  * @property {string} shellVersion
  * @property {string} buildHash
  * @property {string} [buildId]
+ * @property {string} [shell_build_id]
  * @property {string | null} [assetBaseUrl]
  * @property {string | null} [appEntryJs]
  * @property {string | null} [mainWasmJs]
@@ -34,6 +35,7 @@ export function freezeBuildManifest(raw) {
     throw new TypeError('Build manifest must be an object');
   }
   const effectiveBuildId =
+    (typeof raw.shell_build_id === 'string' && raw.shell_build_id) ||
     (typeof raw.buildId === 'string' && raw.buildId) ||
     (typeof raw.buildHash === 'string' && raw.buildHash) ||
     '';
@@ -71,6 +73,7 @@ export function freezeBuildManifest(raw) {
     shellVersion: String(raw.shellVersion || 'mobile-v1'),
     buildHash: effectiveBuildId,
     buildId: effectiveBuildId,
+    shell_build_id: effectiveBuildId,
     assetBaseUrl,
     appEntryJs: typeof raw.appEntryJs === 'string' ? raw.appEntryJs : null,
     mainWasmJs,
@@ -106,7 +109,7 @@ export function readEmbeddedManifest(doc, elementId = 'affine-build-manifest') {
  * @param {string | null} [assetBaseUrl]
  * @returns {string}
  */
-function pinUrl(assetUrl, baseUrl, buildId, assetBaseUrl = null) {
+export function pinUrl(assetUrl, baseUrl, buildId, assetBaseUrl = null) {
   const siteRoot = new URL('/', baseUrl);
   let resolved;
   if (assetBaseUrl) {
@@ -114,11 +117,18 @@ function pinUrl(assetUrl, baseUrl, buildId, assetBaseUrl = null) {
       ? assetBaseUrl
       : `${assetBaseUrl}/`;
     const lockedRoot = new URL(normalizedRoot, siteRoot);
-    const trimmed =
-      assetUrl.startsWith('/') && !assetUrl.startsWith('//')
-        ? assetUrl.slice(1)
-        : assetUrl;
-    resolved = new URL(trimmed, lockedRoot);
+    const alreadyPrefixed =
+      assetUrl.startsWith(lockedRoot.pathname) ||
+      assetUrl.startsWith(lockedRoot.href);
+    if (alreadyPrefixed) {
+      resolved = new URL(assetUrl, siteRoot);
+    } else {
+      const trimmed =
+        assetUrl.startsWith('/') && !assetUrl.startsWith('//')
+          ? assetUrl.slice(1)
+          : assetUrl;
+      resolved = new URL(trimmed, lockedRoot);
+    }
   } else {
     resolved = new URL(assetUrl, siteRoot);
   }
@@ -230,6 +240,23 @@ export function createWorkerLoader(rawManifest, options = {}) {
   }
 
   /**
+   * Resolves the pinned app entry JS URL (`default-app-entry.js`) when declared in the manifest.
+   *
+   * @returns {string | null}
+   */
+  function resolveAppEntryUrl() {
+    if (!manifest.appEntryJs) {
+      return null;
+    }
+    return pinUrl(
+      manifest.appEntryJs,
+      baseUrl,
+      lockedBuildId,
+      lockedAssetBaseUrl
+    );
+  }
+
+  /**
    * Resolves the pinned main Wasm JS glue URL (`playground.js`) when declared in the manifest.
    *
    * @returns {string | null}
@@ -332,6 +359,7 @@ export function createWorkerLoader(rawManifest, options = {}) {
     assetBaseUrl: lockedAssetBaseUrl,
     resolveWorkerAssets,
     resolveFontUrl,
+    resolveAppEntryUrl,
     resolveMainWasmJsUrl,
     loadWorker,
     hasLoadedWorker,

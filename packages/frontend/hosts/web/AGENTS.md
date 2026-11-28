@@ -28,7 +28,9 @@ After building the four `blocksuite-preview` `wasm32-unknown-unknown` workers (`
 
 ```sh
 node hosts/web/scripts/stage-preview-workers.mjs /tmp/preview-wasm dev-local
+node hosts/web/scripts/stage-canary-dual-shell.mjs --out /tmp/canary-static-root --wasm-dir /tmp/preview-wasm
 node hosts/web/scripts/verify-preview-workers-e2e.mjs
 node hosts/web/scripts/verify-idb-real-browser.mjs
 node hosts/web/scripts/verify-s3-web-real-browser.mjs
+node hosts/web/scripts/verify-s5-canary-dual-shell-e2e.mjs --out-dir /tmp/s5-e2e
 ```

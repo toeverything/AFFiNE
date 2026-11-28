@@ -23,6 +23,44 @@ fn parse_shell(raw: &str) -> Option<&'static str> {
     .into_iter()
     .find(|&s| raw.trim().eq_ignore_ascii_case(s))
 }
+pub(crate) fn resolve_canary_shell(
+  uri: &Uri,
+  headers: &HeaderMap,
+  channel: &str,
+) -> (&'static str, Option<&'static str>) {
+  if channel != "canary" {
+    return ("desktop", None);
+  }
+  let q_shell = uri.query().and_then(|q| {
+    q.split('&').find_map(|p| {
+      p.split_once('=')
+        .and_then(|(k, v)| (k == "shell").then(|| parse_shell(v)).flatten())
+    })
+  });
+  if let Some(ex) = q_shell {
+    (ex, Some(ex))
+  } else {
+    let def = if is_mobile_request(headers) {
+      "native"
+    } else {
+      "desktop"
+    };
+    (
+      extract_cookie(&parse_cookies(headers), SHELL_COOKIE_NAME)
+        .and_then(parse_shell)
+        .unwrap_or(def),
+      None,
+    )
+  }
+}
+pub(crate) fn append_shell_cookie(headers: &mut HeaderMap, shell: &str, https: bool) {
+  if let Ok(v) = HeaderValue::from_str(&format!(
+    "{SHELL_COOKIE_NAME}={shell}; Path=/; SameSite=Lax{}",
+    if https { "; Secure" } else { "" }
+  )) {
+    headers.append(header::SET_COOKIE, v);
+  }
+}
 fn found_redirect(state: &RouterState, target: &str) -> Response {
   let cfg = state.app.config.load();
   let base = cfg.app_config_baseline.server.path.trim().trim_end_matches('/');
@@ -157,13 +195,8 @@ async fn serve_file(
   if ns {
     rh.insert(header::CACHE_CONTROL, HeaderValue::from_static(CACHE_CONTROL_NO_STORE));
   }
-  if let Some(sh) = sh
-    && let Ok(v) = HeaderValue::from_str(&format!(
-      "{SHELL_COOKIE_NAME}={sh}; Path=/; SameSite=Lax{}",
-      if https { "; Secure" } else { "" }
-    ))
-  {
-    rh.append(header::SET_COOKIE, v);
+  if let Some(sh) = sh {
+    append_shell_cookie(rh, sh, https);
   }
   Some(resp)
 }
@@ -213,31 +246,14 @@ async fn handle_static(state: RouterState, method: Method, uri: Uri, headers: He
   for (prefix, sub) in [
     ("/wasm/", "mobile/wasm"),
     ("/pkg/", "mobile/pkg"),
+    ("/mobile/", "mobile"),
     ("/mobile-legacy/", "mobile-legacy"),
   ] {
     if let Some(rel) = path.strip_prefix(prefix) {
       return or_404(serve_file(&static_root.join(sub), rel, m, h, false, None, https).await);
     }
   }
-  let q_shell = uri.query().and_then(|q| {
-    q.split('&').find_map(|p| {
-      p.split_once('=')
-        .and_then(|(k, v)| (k == "shell").then(|| parse_shell(v)).flatten())
-    })
-  });
-  let (shell, explicit) = if cfg.channel != "canary" {
-    ("desktop", None)
-  } else if let Some(ex) = q_shell {
-    (ex, Some(ex))
-  } else {
-    let def = if is_mobile_request(h) { "native" } else { "desktop" };
-    (
-      extract_cookie(&parse_cookies(h), SHELL_COOKIE_NAME)
-        .and_then(parse_shell)
-        .unwrap_or(def),
-      None,
-    )
-  };
+  let (shell, explicit) = resolve_canary_shell(&uri, h, &cfg.channel);
   let (mut shell_root, mut is_mobile_shell) = (static_root.to_path_buf(), false);
   for (cond, sub) in [
     (shell == "legacy", "mobile-legacy"),

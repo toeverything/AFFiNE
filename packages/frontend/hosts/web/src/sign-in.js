@@ -246,14 +246,10 @@ export function isAllowedRedirectTarget(rawTarget, currentOrigin) {
   if (parsed.origin === originUrl.origin) {
     return true;
   }
-  const host = parsed.hostname.toLowerCase().replace(/\.$/, '');
-  const currentHost = originUrl.hostname.toLowerCase().replace(/\.$/, '');
-  if (host === currentHost) {
-    return true;
-  }
   if (parsed.protocol !== 'https:') {
     return false;
   }
+  const host = parsed.hostname.toLowerCase().replace(/\.$/, '');
   return TRUSTED_REDIRECT_DOMAINS.some(
     domain => host === domain || host.endsWith(`.${domain}`)
   );
@@ -317,16 +313,48 @@ export function isAllowedNativeAppUrl(rawUrl) {
  *
  * @param {Pick<Storage, 'getItem' | 'setItem'> | null | undefined} [storage]
  */
-export function createSingleUseCodeGuard(storage = globalThis.sessionStorage) {
+/**
+ * Safely accesses `sessionStorage` without throwing `SecurityError` in
+ * restricted privacy contexts.
+ *
+ * @param {{ sessionStorage?: Storage } | null | undefined} win
+ * @returns {Storage | null}
+ */
+function safeGetSessionStorage(win) {
+  try {
+    return win?.sessionStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Safely accesses `localStorage` without throwing `SecurityError` in
+ * restricted privacy contexts.
+ *
+ * @param {{ localStorage?: Storage } | null | undefined} win
+ * @returns {Storage | null}
+ */
+function safeGetLocalStorage(win) {
+  try {
+    return win?.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function createSingleUseCodeGuard(storage) {
+  const effectiveStorage =
+    storage !== undefined ? storage : safeGetSessionStorage(globalThis);
   /** @type {Set<string>} */
   const consumed = new Set();
   /** @type {Set<string>} */
   const inFlight = new Set();
 
-  if (storage && typeof storage.getItem === 'function') {
+  if (effectiveStorage && typeof effectiveStorage.getItem === 'function') {
     try {
       const saved = JSON.parse(
-        storage.getItem(CONSUMED_CODES_STORAGE_KEY) || '[]'
+        effectiveStorage.getItem(CONSUMED_CODES_STORAGE_KEY) || '[]'
       );
       if (Array.isArray(saved)) {
         for (const item of saved) {
@@ -382,9 +410,9 @@ export function createSingleUseCodeGuard(storage = globalThis.sessionStorage) {
     }
     inFlight.delete(key);
     consumed.add(key);
-    if (storage && typeof storage.setItem === 'function') {
+    if (effectiveStorage && typeof effectiveStorage.setItem === 'function') {
       try {
-        storage.setItem(
+        effectiveStorage.setItem(
           CONSUMED_CODES_STORAGE_KEY,
           JSON.stringify([...consumed])
         );
@@ -711,18 +739,30 @@ export async function maybeLoadTurnstile(options) {
   const endpoint = options.captchaEndpoint || '/api/auth/captcha';
   const scriptUrl = options.scriptUrl || TURNSTILE_SCRIPT_URL;
   const winRef = options.windowRef || globalThis.window;
+  const loadTimeoutMs =
+    typeof options.loadTimeoutMs === 'number' ? options.loadTimeoutMs : 10_000;
 
-  const response = await fetchImpl(endpoint, {
-    method: 'GET',
-    credentials: 'same-origin',
-    headers: buildWebAuthHeaders(),
-  });
-  if (!response.ok) {
+  let response;
+  try {
+    response = await fetchImpl(endpoint, {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: buildWebAuthHeaders(),
+    });
+  } catch {
+    return { loaded: false, provider: null, siteKey: null, action: null };
+  }
+  if (!response || !response.ok) {
     return { loaded: false, provider: null, siteKey: null, action: null };
   }
 
   /** @type {{ provider?: string, siteKey?: string, action?: string, challenge?: string } | null} */
-  const payload = await response.json();
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    return { loaded: false, provider: null, siteKey: null, action: null };
+  }
   const provider = payload?.provider ? String(payload.provider) : 'turnstile';
   const siteKey =
     payload && typeof payload.siteKey === 'string' && payload.siteKey.trim()
@@ -775,8 +815,30 @@ export async function maybeLoadTurnstile(options) {
   }
 
   let rendered = false;
+  let failed = false;
+  /** @type {ReturnType<typeof setTimeout> | null} */
+  let loadTimer = null;
   /** @type {string | number | undefined} */
   let widgetId;
+
+  function clearLoadTimer() {
+    if (loadTimer !== null) {
+      clearTimeout(loadTimer);
+      loadTimer = null;
+    }
+  }
+
+  /** @param {string} reason */
+  function reportError(reason) {
+    if (failed) {
+      return;
+    }
+    failed = true;
+    clearLoadTimer();
+    options.onToken?.(null);
+    options.onError?.(reason);
+  }
+
   function renderWidget() {
     if (rendered || !options.container) {
       return;
@@ -787,6 +849,8 @@ export async function maybeLoadTurnstile(options) {
       ).turnstile;
     if (turnstileApi && typeof turnstileApi.render === 'function') {
       rendered = true;
+      failed = false;
+      clearLoadTimer();
       widgetId = turnstileApi.render(options.container, {
         sitekey: siteKey,
         ...(action ? { action } : {}),
@@ -799,7 +863,7 @@ export async function maybeLoadTurnstile(options) {
           options.onToken?.(null);
         },
         'error-callback': () => {
-          options.onToken?.(null);
+          reportError('turnstile-widget-error');
         },
       });
       if (typeof options.onResetReady === 'function') {
@@ -824,6 +888,22 @@ export async function maybeLoadTurnstile(options) {
     typeof scriptEl.addEventListener === 'function'
   ) {
     scriptEl.addEventListener('load', renderWidget, { once: true });
+    scriptEl.addEventListener(
+      'error',
+      () => {
+        scriptEl.remove?.();
+        reportError('turnstile-script-error');
+      },
+      { once: true }
+    );
+    if (loadTimeoutMs > 0) {
+      loadTimer = setTimeout(() => {
+        if (!rendered) {
+          scriptEl.remove?.();
+          reportError('turnstile-script-timeout');
+        }
+      }, loadTimeoutMs);
+    }
   }
 
   return {
@@ -852,6 +932,63 @@ export async function maybeLoadTurnstile(options) {
  * @param {string | null} [options.captchaChallenge]
  * @returns {Promise<{ ok: boolean, status: number, method: 'password' | 'magic-link-otp' | 'magic-link-send' }>}
  */
+/**
+ * Reads structured backend error `{ name, code, message }` from a failed JSON
+ * response without throwing on non-JSON or missing `.json()`.
+ *
+ * @param {Response | { json?: () => Promise<any> }} response
+ * @returns {Promise<{ errorCode?: string, errorMessage?: string }>}
+ */
+async function readAuthErrorPayload(response) {
+  if (!response || typeof response.json !== 'function') {
+    return {};
+  }
+  try {
+    const data = await response.json();
+    const errorCode =
+      (typeof data?.name === 'string' && data.name.trim()) ||
+      (typeof data?.type === 'string' && data.type.trim()) ||
+      (typeof data?.code === 'string' && data.code.trim()) ||
+      undefined;
+    const errorMessage =
+      typeof data?.message === 'string' && data.message.trim()
+        ? data.message.trim()
+        : undefined;
+    return {
+      ...(errorCode ? { errorCode } : {}),
+      ...(errorMessage ? { errorMessage } : {}),
+    };
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Formats a human-readable authentication error message from a backend error
+ * code, falling back to a clear status message.
+ *
+ * @param {string | undefined} errorCode
+ * @param {string | undefined} errorMessage
+ * @param {string} fallback
+ * @returns {string}
+ */
+function formatAuthErrorMessage(errorCode, errorMessage, fallback) {
+  switch (errorCode) {
+    case 'WRONG_SIGN_IN_CREDENTIALS':
+      return 'Incorrect email or password.';
+    case 'INVALID_EMAIL':
+      return 'Please enter a valid email address.';
+    case 'EMAIL_TOKEN_NOT_FOUND':
+      return INVALID_OTP_MESSAGE;
+    case 'CAPTCHA_VERIFICATION_FAILED':
+      return 'Verification failed. Please try again.';
+    case 'PASSWORD_REQUIRED':
+      return 'Please enter your password.';
+    default:
+      return errorMessage || fallback;
+  }
+}
+
 export async function submitSignInForm(options) {
   const fetchImpl = options.fetchImpl || globalThis.fetch;
   const email = String(options.email || '').trim();
@@ -873,10 +1010,12 @@ export async function submitSignInForm(options) {
       }),
       body: JSON.stringify(otpBody),
     });
+    const errInfo = response.ok ? {} : await readAuthErrorPayload(response);
     return {
       ok: Boolean(response.ok),
       status: response.status,
       method: 'magic-link-otp',
+      ...errInfo,
     };
   }
 
@@ -907,7 +1046,13 @@ export async function submitSignInForm(options) {
     }),
     body: JSON.stringify(body),
   });
-  return { ok: Boolean(response.ok), status: response.status, method };
+  const errInfo = response.ok ? {} : await readAuthErrorPayload(response);
+  return {
+    ok: Boolean(response.ok),
+    status: response.status,
+    method,
+    ...errInfo,
+  };
 }
 
 /**
@@ -1021,7 +1166,7 @@ export async function completeOAuthCallback(options) {
 
   const guard =
     options.codeGuard ||
-    createSingleUseCodeGuard(options.windowRef?.sessionStorage);
+    createSingleUseCodeGuard(safeGetSessionStorage(options.windowRef));
   const guardKey = `oauth:${code}`;
   if (!guard.acquire(guardKey)) {
     return { ok: false, status: 409, duplicate: true };
@@ -1045,8 +1190,8 @@ export async function completeOAuthCallback(options) {
   const clientNonce =
     options.clientNonce ??
     readClientNonce(
-      options.windowRef?.sessionStorage,
-      options.windowRef?.localStorage
+      safeGetSessionStorage(options.windowRef),
+      safeGetLocalStorage(options.windowRef)
     );
   let response;
   try {
@@ -1103,7 +1248,7 @@ export async function completeMagicLink(options) {
   }
   const guard =
     options.codeGuard ||
-    createSingleUseCodeGuard(options.windowRef?.sessionStorage);
+    createSingleUseCodeGuard(safeGetSessionStorage(options.windowRef));
   const guardKey = `magic:${token}`;
   if (!guard.acquire(guardKey)) {
     return { ok: false, status: 409, duplicate: true };
@@ -1147,7 +1292,7 @@ export async function completeOpenAppSignIn(options) {
   }
   const guard =
     options.codeGuard ||
-    createSingleUseCodeGuard(options.windowRef?.sessionStorage);
+    createSingleUseCodeGuard(safeGetSessionStorage(options.windowRef));
   const guardKey = `open-app:${code}`;
   if (!guard.acquire(guardKey)) {
     return { ok: false, status: 409, duplicate: true };
@@ -1198,8 +1343,11 @@ export async function bootSignInPage(env = {}) {
   const currentUrl = new URL(href);
   const route = classifyAuthRoute(currentUrl.pathname);
   const statusEl = doc.getElementById('auth-status');
-  const codeGuard =
-    env.codeGuard || createSingleUseCodeGuard(win.sessionStorage);
+  const form = doc.getElementById('sign-in-form');
+  const returnToSignInEl = doc.getElementById('return-to-sign-in');
+  const sessionStore = safeGetSessionStorage(win);
+  const localStore = safeGetLocalStorage(win);
+  const codeGuard = env.codeGuard || createSingleUseCodeGuard(sessionStore);
 
   /** @param {string} target */
   function navigateTo(target) {
@@ -1212,18 +1360,40 @@ export async function bootSignInPage(env = {}) {
     }
   }
 
+  /** @param {string} text @param {'info' | 'error'} [tone='info'] */
+  function setStatus(text, tone = 'info') {
+    if (!statusEl) {
+      return;
+    }
+    statusEl.textContent = text;
+    if (statusEl.dataset) {
+      statusEl.dataset.tone = tone;
+    }
+  }
+
+  /** @param {string} text */
+  function showSubRouteError(text) {
+    if (form) {
+      form.hidden = true;
+    }
+    setStatus(text, 'error');
+    if (returnToSignInEl) {
+      returnToSignInEl.hidden = false;
+    }
+  }
+
+  if (route !== 'sign-in' && form) {
+    form.hidden = true;
+  }
+
   if (route === 'redirect-proxy') {
     const target = currentUrl.searchParams.get('redirect_uri');
     if (isAllowedRedirectTarget(target, currentUrl.origin)) {
-      if (statusEl) {
-        statusEl.textContent = 'Redirecting...';
-      }
+      setStatus('Redirecting...', 'info');
       navigateTo(/** @type {string} */ (target));
       return { route, redirected: true, target };
     }
-    if (statusEl) {
-      statusEl.textContent = 'Blocked untrusted redirect target.';
-    }
+    showSubRouteError('Blocked untrusted redirect target.');
     return { route, redirected: false, target: null };
   }
 
@@ -1232,15 +1402,11 @@ export async function bootSignInPage(env = {}) {
     const code = currentUrl.searchParams.get('code');
     if (appUrl) {
       if (isAllowedNativeAppUrl(appUrl)) {
-        if (statusEl) {
-          statusEl.textContent = 'Opening AFFiNE app...';
-        }
+        setStatus('Opening AFFiNE app...', 'info');
         navigateTo(appUrl);
         return { route, handedOff: true, target: appUrl };
       }
-      if (statusEl) {
-        statusEl.textContent = 'Blocked invalid app URL.';
-      }
+      showSubRouteError('Blocked invalid app URL.');
       return { route, handedOff: false, target: null };
     }
     if (code) {
@@ -1255,22 +1421,18 @@ export async function bootSignInPage(env = {}) {
           currentUrl.searchParams.get('redirect_uri'),
           currentUrl.origin
         );
-        if (statusEl) {
-          statusEl.textContent = 'Signed in.';
-        }
+        setStatus('Signed in.', 'info');
         navigateTo(nextUrl);
         return { route, result, target: nextUrl };
       }
-      if (statusEl) {
-        statusEl.textContent = result.duplicate
+      showSubRouteError(
+        result.duplicate
           ? 'Sign-in code already used.'
-          : `Open-app sign-in failed (${result.status}).`;
-      }
+          : `Open-app sign-in failed (${result.status}).`
+      );
       return { route, result };
     }
-    if (statusEl) {
-      statusEl.textContent = 'Handling open-app...';
-    }
+    setStatus('Handling open-app...', 'info');
     return { route };
   }
 
@@ -1281,16 +1443,12 @@ export async function bootSignInPage(env = {}) {
     const redirectUri = currentUrl.searchParams.get('redirect_uri');
 
     if (!email || !token) {
-      if (statusEl) {
-        statusEl.textContent = 'Invalid magic link.';
-      }
+      showSubRouteError('Invalid magic link.');
       return { route, ok: false, status: 400 };
     }
     if (client && client !== WEB_CLIENT_KIND) {
       if (!NATIVE_CLIENT_SCHEMES.has(client)) {
-        if (statusEl) {
-          statusEl.textContent = 'Invalid magic link client.';
-        }
+        showSubRouteError('Invalid magic link client.');
         return { route, ok: false, status: 400 };
       }
       const deepLink = new URL(`${client}://authentication`);
@@ -1314,17 +1472,15 @@ export async function bootSignInPage(env = {}) {
     });
     if (result.ok) {
       const nextUrl = resolveSafeAuthRedirect(redirectUri, currentUrl.origin);
-      if (statusEl) {
-        statusEl.textContent = 'Signed in.';
-      }
+      setStatus('Signed in.', 'info');
       navigateTo(nextUrl);
       return { route, result, target: nextUrl };
     }
-    if (statusEl) {
-      statusEl.textContent = result.duplicate
+    showSubRouteError(
+      result.duplicate
         ? 'Magic link already used.'
-        : `Magic link sign-in failed (${result.status}).`;
-    }
+        : `Magic link sign-in failed (${result.status}).`
+    );
     return { route, result };
   }
 
@@ -1342,20 +1498,27 @@ export async function bootSignInPage(env = {}) {
         redirectUri,
         flow,
         documentRef: doc,
-        sessionStorage: win.sessionStorage,
-        localStorage: win.localStorage,
+        sessionStorage: sessionStore,
+        localStorage: localStore,
       });
       if (result.ok && result.url) {
-        if (statusEl) {
-          statusEl.textContent = `Continuing with ${provider}...`;
-        }
+        setStatus(`Continuing with ${provider}...`, 'info');
         navigateTo(result.url);
         return { route, result };
       }
-      if (statusEl) {
-        statusEl.textContent = `OAuth start failed (${result.status}).`;
-      }
+      showSubRouteError(`OAuth start failed (${result.status}).`);
       return { route, result };
+    }
+
+    const oauthError = currentUrl.searchParams.get('error');
+    if (oauthError && oauthError.trim()) {
+      const oauthDesc = currentUrl.searchParams.get('error_description');
+      const msg =
+        oauthDesc && oauthDesc.trim()
+          ? oauthDesc.trim()
+          : `OAuth sign-in failed: ${oauthError.trim()}.`;
+      showSubRouteError(msg);
+      return { route, ok: false, status: 400, error: oauthError.trim() };
     }
 
     const code = currentUrl.searchParams.get('code') || '';
@@ -1380,9 +1543,7 @@ export async function bootSignInPage(env = {}) {
           !parsedState.state ||
           !parsedState.provider
         ) {
-          if (statusEl) {
-            statusEl.textContent = 'Invalid OAuth callback parameters.';
-          }
+          showSubRouteError('Invalid OAuth callback parameters.');
           return { route, ok: false, status: 400 };
         }
         const flow = parsedState.flow === 'popup' ? 'popup' : 'redirect';
@@ -1420,28 +1581,24 @@ export async function bootSignInPage(env = {}) {
           result.redirectUri,
           currentUrl.origin
         );
-        if (statusEl) {
-          statusEl.textContent = 'Signed in.';
-        }
+        setStatus('Signed in.', 'info');
         navigateTo(nextUrl);
         return { route, result, target: nextUrl };
       }
-      if (statusEl) {
-        statusEl.textContent = result.duplicate
+      showSubRouteError(
+        result.duplicate
           ? 'OAuth code already consumed.'
-          : `OAuth sign-in failed (${result.status}).`;
-      }
+          : `OAuth sign-in failed (${result.status}).`
+      );
       return { route, result };
     }
 
-    if (statusEl) {
-      statusEl.textContent = 'Missing OAuth callback parameters.';
-    }
+    showSubRouteError('Missing OAuth callback parameters.');
     return { route, ok: false, status: 400 };
   }
 
   if (statusEl && route !== 'sign-in') {
-    statusEl.textContent = `Handling ${route}...`;
+    setStatus(`Handling ${route}...`, 'info');
   }
 
   const clientVersion = env.clientVersion || resolveClientVersion(doc);
@@ -1481,17 +1638,6 @@ export async function bootSignInPage(env = {}) {
     navigateTo('/');
   });
 
-  /** @param {string} text @param {'info' | 'error'} [tone='info'] */
-  function setStatus(text, tone = 'info') {
-    if (!statusEl) {
-      return;
-    }
-    statusEl.textContent = text;
-    if (statusEl.dataset) {
-      statusEl.dataset.tone = tone;
-    }
-  }
-
   const initialError = currentUrl.searchParams.get('error');
   if (initialError && initialError.trim()) {
     setStatus(initialError.trim(), 'error');
@@ -1500,11 +1646,16 @@ export async function bootSignInPage(env = {}) {
   /** @type {string | null} */
   let captchaToken = null;
   let captchaRequired = false;
+  /** @type {{ loaded: boolean, provider: string | null, siteKey: string | null, action: string | null, challenge?: string }} */
+  let captcha = { loaded: false, provider: null, siteKey: null, action: null };
+  /** @type {string | null} */
+  let captchaChallenge = null;
   /** @type {(() => void) | null} */
   let resetTurnstile = null;
   /** @type {'email' | 'password' | 'otp'} */
   let currentStep = 'email';
   let passwordAvailable = false;
+  let submitInFlight = false;
   let preflightSeq = 0;
   let stepEpoch = 0;
   let stepBoundEmail = '';
@@ -1523,11 +1674,17 @@ export async function bootSignInPage(env = {}) {
   const passwordSubmitButtonEl = /** @type {HTMLButtonElement | null} */ (
     doc.getElementById('password-submit-button')
   );
+  const otpSubmitButtonEl = /** @type {HTMLButtonElement | null} */ (
+    doc.getElementById('otp-submit-button')
+  );
   const switchToOtpBtn = /** @type {HTMLButtonElement | null} */ (
     doc.getElementById('switch-to-otp-btn')
   );
   const resendOtpBtn = /** @type {HTMLButtonElement | null} */ (
     doc.getElementById('resend-otp-btn')
+  );
+  const togglePasswordBtn = /** @type {HTMLButtonElement | null} */ (
+    doc.getElementById('toggle-password-btn')
   );
 
   function normalizeEmailKey(emailVal) {
@@ -1561,17 +1718,24 @@ export async function bootSignInPage(env = {}) {
       (currentStep === 'otp' || currentStep === 'password') &&
       isOtpSendInFlightFor(stepBoundEmail);
     if (submitButtonEl) {
-      submitButtonEl.disabled = waitingForCaptcha;
+      submitButtonEl.disabled = waitingForCaptcha || submitInFlight;
     }
     if (passwordSubmitButtonEl) {
-      passwordSubmitButtonEl.disabled = waitingForCaptcha;
+      passwordSubmitButtonEl.disabled = waitingForCaptcha || submitInFlight;
+    }
+    if (otpSubmitButtonEl) {
+      otpSubmitButtonEl.disabled = submitInFlight;
     }
     if (switchToOtpBtn) {
-      switchToOtpBtn.disabled = waitingForCaptcha || stepOtpInFlight;
+      switchToOtpBtn.disabled =
+        waitingForCaptcha || stepOtpInFlight || submitInFlight;
     }
     if (resendOtpBtn) {
       resendOtpBtn.disabled =
-        waitingForCaptcha || stepOtpInFlight || resendCooldown > 0;
+        waitingForCaptcha ||
+        stepOtpInFlight ||
+        resendCooldown > 0 ||
+        submitInFlight;
     }
   }
 
@@ -1639,29 +1803,6 @@ export async function bootSignInPage(env = {}) {
   }
 
   const container = doc.getElementById('turnstile-container');
-  const captcha = await maybeLoadTurnstile({
-    fetchImpl,
-    documentRef: doc,
-    windowRef: win,
-    container,
-    onToken: token => {
-      captchaToken = token;
-      syncSubmitButtonsDisabled();
-    },
-    onResetReady: resetFn => {
-      resetTurnstile = () => {
-        resetFn();
-        syncSubmitButtonsDisabled();
-      };
-    },
-  });
-  captchaRequired = Boolean(captcha.loaded);
-  syncSubmitButtonsDisabled();
-  const captchaChallenge =
-    'challenge' in captcha && typeof captcha.challenge === 'string'
-      ? captcha.challenge
-      : null;
-
   const authCard = doc.getElementById('auth-card');
   const stepEmailEl = doc.getElementById('step-email');
   const stepPasswordEl = doc.getElementById('step-password');
@@ -1673,6 +1814,8 @@ export async function bootSignInPage(env = {}) {
   const switchToPasswordBtn = doc.getElementById('switch-to-password-btn');
   const backFromPasswordBtn = doc.getElementById('back-from-password-btn');
   const backFromOtpBtn = doc.getElementById('back-from-otp-btn');
+  const sessionContinueEl = doc.getElementById('session-continue');
+  const continueSessionBtn = doc.getElementById('continue-session-btn');
 
   const redirectUriParam = currentUrl.searchParams.get('redirect_uri');
   const clientParam = currentUrl.searchParams.get('client');
@@ -1724,28 +1867,16 @@ export async function bootSignInPage(env = {}) {
       switchToPasswordBtn.hidden = !passwordAvailable;
     }
     syncSubmitButtonsDisabled();
+    const focusTargetId =
+      nextStep === 'password'
+        ? 'password'
+        : nextStep === 'otp'
+          ? 'otp'
+          : 'email';
+    doc.getElementById(focusTargetId)?.focus?.();
   }
 
   let crossOriginProxy = false;
-  if (oauthContainer || legalNoticeEl) {
-    const serverOAuth = await fetchOAuthProviders({
-      fetchImpl,
-      clientVersion,
-      currentOrigin: currentUrl.origin,
-    });
-    crossOriginProxy = Boolean(serverOAuth.crossOriginProxy);
-    syncLegalNoticeVisibility(serverOAuth.deploymentType);
-    if (oauthContainer) {
-      renderOAuthProviders({
-        doc,
-        container: oauthContainer,
-        divider: oauthDivider,
-        providers: serverOAuth.providers,
-        redirectUri: redirectUriParam,
-        onNavigate: navigateTo,
-      });
-    }
-  }
 
   const clearStepSecrets = () => {
     const pwdEl = /** @type {HTMLInputElement | null} */ (
@@ -1756,34 +1887,79 @@ export async function bootSignInPage(env = {}) {
     );
     if (pwdEl) {
       pwdEl.value = '';
+      pwdEl.type = 'password';
+    }
+    if (togglePasswordBtn) {
+      togglePasswordBtn.textContent = 'Show';
+      togglePasswordBtn.setAttribute?.('aria-label', 'Show password');
+      togglePasswordBtn.setAttribute?.('aria-pressed', 'false');
     }
     if (codeEl) {
       codeEl.value = '';
     }
   };
 
-  backFromPasswordBtn?.addEventListener?.('click', () => {
+  function returnToEmailStep() {
     preflightSeq += 1;
+    submitInFlight = false;
     clearResendTimer();
     clearStepSecrets();
     setStep('email');
     setStatus('');
     resetTurnstile?.();
+  }
+
+  backFromPasswordBtn?.addEventListener?.('click', returnToEmailStep);
+  backFromOtpBtn?.addEventListener?.('click', returnToEmailStep);
+
+  togglePasswordBtn?.addEventListener?.('click', () => {
+    const pwdEl = /** @type {HTMLInputElement | null} */ (
+      doc.getElementById('password')
+    );
+    if (!pwdEl) {
+      return;
+    }
+    const reveal = pwdEl.type !== 'text';
+    pwdEl.type = reveal ? 'text' : 'password';
+    togglePasswordBtn.textContent = reveal ? 'Hide' : 'Show';
+    togglePasswordBtn.setAttribute?.(
+      'aria-label',
+      reveal ? 'Hide password' : 'Show password'
+    );
+    togglePasswordBtn.setAttribute?.('aria-pressed', String(reveal));
   });
-  backFromOtpBtn?.addEventListener?.('click', () => {
-    preflightSeq += 1;
-    clearResendTimer();
-    clearStepSecrets();
-    setStep('email');
-    setStatus('');
-    resetTurnstile?.();
-  });
+
+  /** @param {KeyboardEvent} event */
+  function handleEscapeBack(event) {
+    if (
+      event?.key === 'Escape' &&
+      (currentStep === 'password' || currentStep === 'otp')
+    ) {
+      event.preventDefault?.();
+      returnToEmailStep();
+    }
+  }
+  doc.addEventListener?.('keydown', handleEscapeBack);
+
+  const clearErrorOnInput = () => {
+    if (statusEl?.dataset?.tone === 'error') {
+      setStatus('', 'info');
+    }
+  };
   doc.getElementById('email')?.addEventListener?.('input', () => {
+    clearErrorOnInput();
     if (currentStep === 'email') {
       preflightSeq += 1;
+      submitInFlight = false;
       clearStepSecrets();
+      syncSubmitButtonsDisabled();
     }
   });
+  doc
+    .getElementById('password')
+    ?.addEventListener?.('input', clearErrorOnInput);
+  doc.getElementById('otp')?.addEventListener?.('input', clearErrorOnInput);
+
   switchToPasswordBtn?.addEventListener?.('click', () => {
     preflightSeq += 1;
     clearResendTimer();
@@ -1838,7 +2014,7 @@ export async function bootSignInPage(env = {}) {
         captchaToken,
         captchaChallenge,
         clientVersion,
-        clientNonce: readClientNonce(win.sessionStorage, win.localStorage),
+        clientNonce: readClientNonce(sessionStore, localStore),
       });
       if (sendRes.ok) {
         recordCooldownDeadline(emailKey);
@@ -1855,7 +2031,14 @@ export async function bootSignInPage(env = {}) {
         };
       }
       if (!sendRes.ok) {
-        setStatus(`Failed to send code (${sendRes.status}).`, 'error');
+        setStatus(
+          formatAuthErrorMessage(
+            sendRes.errorCode,
+            sendRes.errorMessage,
+            `Failed to send code (${sendRes.status}).`
+          ),
+          'error'
+        );
       } else {
         runResendCountdown(emailKey);
         setStatus(
@@ -1905,10 +2088,20 @@ export async function bootSignInPage(env = {}) {
     }
   });
 
-  const form = doc.getElementById('sign-in-form');
+  // Bind `<form id="sign-in-form">` submit listener SYNCHRONOUSLY before any
+  // async network calls so slow networks or captcha failures never trigger a
+  // native HTML POST navigation.
   if (form && typeof form.addEventListener === 'function') {
     form.addEventListener('submit', async event => {
       event.preventDefault();
+      if (submitInFlight) {
+        return;
+      }
+      if (currentStep !== 'otp' && captchaRequired && !captchaToken) {
+        setStatus('Please complete verification first.', 'error');
+        return;
+      }
+
       const emailEl = /** @type {HTMLInputElement | null} */ (
         doc.getElementById('email')
       );
@@ -1922,6 +2115,8 @@ export async function bootSignInPage(env = {}) {
       const passwordVal = passwordEl?.value || '';
       const otpVal = (otpEl?.value || '').trim();
 
+      setStatus('', 'info');
+
       if (authCard && currentStep === 'email') {
         const seq = ++preflightSeq;
         const reqEmail = emailVal;
@@ -1930,6 +2125,8 @@ export async function bootSignInPage(env = {}) {
           currentStep !== 'email' ||
           (emailEl?.value || '').trim() !== reqEmail;
         clearStepSecrets();
+        submitInFlight = true;
+        syncSubmitButtonsDisabled();
         try {
           const preRes = await fetchImpl('/api/auth/preflight', {
             method: 'POST',
@@ -1941,7 +2138,15 @@ export async function bootSignInPage(env = {}) {
             return;
           }
           if (!preRes.ok) {
-            setStatus(`Unable to verify account (${preRes.status}).`, 'error');
+            const errInfo = await readAuthErrorPayload(preRes);
+            setStatus(
+              formatAuthErrorMessage(
+                errInfo.errorCode,
+                errInfo.errorMessage,
+                `Unable to verify account (${preRes.status}).`
+              ),
+              'error'
+            );
             return;
           }
           const preData = await preRes.json();
@@ -1972,6 +2177,8 @@ export async function bootSignInPage(env = {}) {
             return;
           }
           setStep('otp', reqEmail);
+          submitInFlight = false;
+          syncSubmitButtonsDisabled();
           await triggerMagicLinkSend(reqEmail);
           return;
         } catch {
@@ -1980,6 +2187,11 @@ export async function bootSignInPage(env = {}) {
           }
           setStatus('Network error while checking account.', 'error');
           return;
+        } finally {
+          if (seq === preflightSeq) {
+            submitInFlight = false;
+            syncSubmitButtonsDisabled();
+          }
         }
       }
 
@@ -1998,44 +2210,173 @@ export async function bootSignInPage(env = {}) {
           ? stepBoundEmail || emailVal
           : emailVal;
 
-      const result = await submitSignInForm({
-        fetchImpl,
-        endpoint: form.getAttribute?.('action') || '/api/auth/sign-in',
-        email: submitEmail,
-        password: currentStep === 'otp' ? '' : passwordVal,
-        otp: currentStep === 'password' ? '' : otpVal,
-        callbackUrl: magicLinkCallbackUrl,
-        captchaProvider: captcha.provider,
-        captchaToken,
-        captchaChallenge,
-        clientVersion,
-        clientNonce: readClientNonce(win.sessionStorage, win.localStorage),
-      });
-      if (result.method !== 'magic-link-otp') {
-        resetTurnstile?.();
-      }
-      const errorText =
-        result.method === 'magic-link-otp' &&
-        (result.status === 400 || result.status === 401)
-          ? INVALID_OTP_MESSAGE
-          : `Sign-in failed (${result.status}).`;
-      setStatus(
-        result.ok
-          ? result.method === 'magic-link-send'
-            ? crossOriginProxy
-              ? 'Enter the 6-digit verification code sent to your email.'
-              : 'Check your email for the sign-in link.'
-            : 'Signed in.'
-          : errorText,
-        result.ok ? 'info' : 'error'
-      );
-      if (result.ok && result.method !== 'magic-link-send') {
-        clearResendTimer();
-        navigateTo(
-          resolveSafeAuthRedirect(redirectUriParam, currentUrl.origin)
+      submitInFlight = true;
+      syncSubmitButtonsDisabled();
+      try {
+        const result = await submitSignInForm({
+          fetchImpl,
+          endpoint: form.getAttribute?.('action') || '/api/auth/sign-in',
+          email: submitEmail,
+          password: currentStep === 'otp' ? '' : passwordVal,
+          otp: currentStep === 'password' ? '' : otpVal,
+          callbackUrl: magicLinkCallbackUrl,
+          captchaProvider: captcha.provider,
+          captchaToken,
+          captchaChallenge,
+          clientVersion,
+          clientNonce: readClientNonce(sessionStore, localStore),
+        });
+        if (result.method !== 'magic-link-otp') {
+          resetTurnstile?.();
+        }
+        const errorText =
+          result.method === 'magic-link-otp' &&
+          (result.status === 400 || result.status === 401)
+            ? INVALID_OTP_MESSAGE
+            : formatAuthErrorMessage(
+                result.errorCode,
+                result.errorMessage,
+                `Sign-in failed (${result.status}).`
+              );
+        setStatus(
+          result.ok
+            ? result.method === 'magic-link-send'
+              ? crossOriginProxy
+                ? 'Enter the 6-digit verification code sent to your email.'
+                : 'Check your email for the sign-in link.'
+              : 'Signed in.'
+            : errorText,
+          result.ok ? 'info' : 'error'
         );
+        if (result.ok && result.method !== 'magic-link-send') {
+          clearResendTimer();
+          navigateTo(
+            resolveSafeAuthRedirect(redirectUriParam, currentUrl.origin)
+          );
+        }
+      } catch {
+        setStatus('Network error. Please try again.', 'error');
+      } finally {
+        submitInFlight = false;
+        syncSubmitButtonsDisabled();
       }
     });
+  }
+
+  function renderCaptchaRetryButton() {
+    if (!container || typeof doc.createElement !== 'function') {
+      return;
+    }
+    if (doc.getElementById('retry-captcha-btn')) {
+      return;
+    }
+    const btn = doc.createElement('button');
+    btn.id = 'retry-captcha-btn';
+    btn.type = 'button';
+    btn.className = 'btn-secondary';
+    btn.textContent = 'Retry verification';
+    btn.addEventListener?.('click', () => {
+      btn.remove?.();
+      setStatus('', 'info');
+      void loadCaptcha();
+    });
+    container.append?.(btn);
+  }
+
+  async function loadCaptcha() {
+    captcha = await maybeLoadTurnstile({
+      fetchImpl,
+      documentRef: doc,
+      windowRef: win,
+      container,
+      loadTimeoutMs: env.captchaLoadTimeoutMs,
+      onToken: token => {
+        captchaToken = token;
+        if (token) {
+          doc.getElementById('retry-captcha-btn')?.remove?.();
+        }
+        syncSubmitButtonsDisabled();
+      },
+      onError: () => {
+        captchaToken = null;
+        setStatus('Verification unavailable. Please retry.', 'error');
+        renderCaptchaRetryButton();
+        syncSubmitButtonsDisabled();
+      },
+      onResetReady: resetFn => {
+        resetTurnstile = () => {
+          resetFn();
+          syncSubmitButtonsDisabled();
+        };
+      },
+    });
+    captchaRequired = Boolean(captcha.loaded);
+    captchaChallenge =
+      'challenge' in captcha && typeof captcha.challenge === 'string'
+        ? captcha.challenge
+        : null;
+    syncSubmitButtonsDisabled();
+  }
+
+  await loadCaptcha();
+
+  if (oauthContainer || legalNoticeEl) {
+    const serverOAuth = await fetchOAuthProviders({
+      fetchImpl,
+      clientVersion,
+      currentOrigin: currentUrl.origin,
+    });
+    crossOriginProxy = Boolean(serverOAuth.crossOriginProxy);
+    syncLegalNoticeVisibility(serverOAuth.deploymentType);
+    if (oauthContainer) {
+      renderOAuthProviders({
+        doc,
+        container: oauthContainer,
+        divider: oauthDivider,
+        providers: serverOAuth.providers,
+        redirectUri: redirectUriParam,
+        onNavigate: navigateTo,
+      });
+    }
+  }
+
+  // P-01: Non-blocking session probe on `/sign-in`. Redirects immediately when
+  // an explicit `redirect_uri` is present, or shows a lightweight "Continue as
+  // <email>" action above the account-switch form.
+  if (route === 'sign-in' && (sessionContinueEl || redirectUriParam)) {
+    void (async () => {
+      try {
+        const res = await fetchImpl('/api/auth/session', {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: buildWebAuthHeaders({ clientVersion }),
+        });
+        if (!res || !res.ok || typeof res.json !== 'function') {
+          return;
+        }
+        const data = await res.json();
+        const userEmail =
+          typeof data?.user?.email === 'string' ? data.user.email.trim() : '';
+        if (!userEmail) {
+          return;
+        }
+        if (redirectUriParam) {
+          navigateTo(
+            resolveSafeAuthRedirect(redirectUriParam, currentUrl.origin)
+          );
+          return;
+        }
+        if (sessionContinueEl && continueSessionBtn) {
+          continueSessionBtn.textContent = `Continue as ${userEmail}`;
+          continueSessionBtn.addEventListener?.('click', () => {
+            navigateTo('/');
+          });
+          sessionContinueEl.hidden = false;
+        }
+      } catch {
+        // Silently ignore session probe failures; sign-in form stays usable.
+      }
+    })();
   }
 
   return {
@@ -2045,7 +2386,10 @@ export async function bootSignInPage(env = {}) {
     getCaptchaToken: () => captchaToken,
     getResendCooldown: () => resendCooldown,
     resetTurnstile: () => resetTurnstile?.(),
-    dispose: () => clearResendTimer(),
+    dispose: () => {
+      clearResendTimer();
+      doc.removeEventListener?.('keydown', handleEscapeBack);
+    },
   };
 }
 

@@ -116,7 +116,10 @@ export function createA11yTree(options) {
       typeof next.tabIndex === 'number' ? next.tabIndex : undefined;
     const prevTabIndex =
       typeof prev.tabIndex === 'number' ? prev.tabIndex : undefined;
-    if (prevTabIndex !== nextTabIndex) {
+    const a11yActive = focusOwner === 'a11y' || focusOwner === 'none';
+    if (!a11yActive) {
+      setOrRemoveAttr(el, 'tabindex', '-1');
+    } else if (prevTabIndex !== nextTabIndex) {
       setOrRemoveAttr(
         el,
         'tabindex',
@@ -168,7 +171,10 @@ export function createA11yTree(options) {
         String(Boolean(descriptor.disabled))
       );
     }
-    if (typeof descriptor.tabIndex === 'number') {
+    const a11yActive = focusOwner === 'a11y' || focusOwner === 'none';
+    if (!a11yActive) {
+      setOrRemoveAttr(el, 'tabindex', '-1');
+    } else if (typeof descriptor.tabIndex === 'number') {
       setOrRemoveAttr(el, 'tabindex', String(descriptor.tabIndex));
     }
 
@@ -190,9 +196,26 @@ export function createA11yTree(options) {
       return false;
     }
     entry.el.remove?.();
-    nodes.delete(id);
-    if (activeNodeId === id) {
-      activeNodeId = null;
+    const toRemove = new Set([id]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const [childId, childEntry] of nodes.entries()) {
+        if (
+          !toRemove.has(childId) &&
+          childEntry.state.parentId &&
+          toRemove.has(childEntry.state.parentId)
+        ) {
+          toRemove.add(childId);
+          grew = true;
+        }
+      }
+    }
+    for (const removedId of toRemove) {
+      nodes.delete(removedId);
+      if (activeNodeId === removedId) {
+        activeNodeId = null;
+      }
     }
     return true;
   }
@@ -318,6 +341,7 @@ export function createA11yTree(options) {
     setOrRemoveAttr(embedLayer, 'aria-hidden', null);
     syncEmbedInteractivity(true);
     if (ime) {
+      ime.tabIndex = 0;
       ime.readOnly = false;
     }
   }

@@ -314,6 +314,141 @@ fn static_files_front_canary_mobile_shell_contract_and_strict_404() {
       .unwrap();
     assert_eq!(asset_miss.status(), StatusCode::NOT_FOUND);
 
+    // 7. `/mobile/` cookie-immune prefix serves native shell assets even when `affine_shell=legacy`.
+    let mobile_cookie_immune = app
+      .clone()
+      .oneshot(
+        Request::builder()
+          .uri("/mobile/assets/app.js")
+          .header(header::COOKIE, "affine_shell=legacy")
+          .body(Body::empty())
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+    assert_eq!(mobile_cookie_immune.status(), StatusCode::OK);
+    assert_eq!(
+      axum::body::to_bytes(mobile_cookie_immune.into_body(), 1024)
+        .await
+        .unwrap(),
+      "mobile-native-js"
+    );
+
+    // 8. DocRenderer injects SSR OpenGraph into native `mobile/index.html` and respects `?shell=legacy`.
+    std::fs::write(
+      fixture.join("mobile/index.html"),
+      "<!doctype html><html><head><title>AFFiNE</title></head><body><canvas id=\"app-canvas\"></canvas></body></html>",
+    )
+    .unwrap();
+    std::fs::write(
+      fixture.join("mobile-legacy/assets-manifest.json"),
+      r#"{"publicPath":"/mobile-legacy/","css":[],"js":["bundle.js"],"gitHash":"abc","description":"Legacy"}"#,
+    )
+    .unwrap();
+    sqlx::query("INSERT INTO workspaces (id, name) VALUES ('ws-og', 'OG WS')")
+      .execute(db.pool())
+      .await
+      .unwrap();
+    let og_bin = build_sample_yjs_doc("Canary Share Title", "Public OG summary text");
+    sqlx::query("INSERT INTO snapshots (workspace_id, guid, blob, updated_at) VALUES ('ws-og', 'doc-og', $1, now())")
+      .bind(&og_bin)
+      .execute(db.pool())
+      .await
+      .unwrap();
+    sqlx::query("INSERT INTO workspace_pages (workspace_id, page_id, published_at) VALUES ('ws-og', 'doc-og', now())")
+      .execute(db.pool())
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO doc_access_policies (workspace_id, doc_id, visibility, public_role, published_at) \
+       VALUES ('ws-og', 'doc-og', 'public', 'external', now())",
+    )
+    .execute(db.pool())
+    .await
+    .unwrap();
+
+    let native_og = app
+      .clone()
+      .oneshot(
+        Request::builder()
+          .uri("/workspace/ws-og/doc-og")
+          .header(header::USER_AGENT, mobile_ua)
+          .header(header::ACCEPT, "text/html")
+          .body(Body::empty())
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+    assert_eq!(native_og.status(), StatusCode::OK);
+    assert!(native_og.headers().get("x-robots-tag").is_none());
+    assert_eq!(
+      native_og
+        .headers()
+        .get(header::CACHE_CONTROL)
+        .and_then(|v| v.to_str().ok()),
+      Some("no-store")
+    );
+    assert_eq!(
+      native_og.headers().get(header::VARY).and_then(|v| v.to_str().ok()),
+      Some("User-Agent, Cookie")
+    );
+    let native_og_html = String::from_utf8(
+      axum::body::to_bytes(native_og.into_body(), 16 * 1024)
+        .await
+        .unwrap()
+        .to_vec(),
+    )
+    .unwrap();
+    assert!(native_og_html.contains("Canary Share Title"), "{native_og_html}");
+    assert!(native_og_html.contains("property=\"og:title\""), "{native_og_html}");
+    assert!(native_og_html.contains("id=\"app-canvas\""), "{native_og_html}");
+
+    let legacy_og = app
+      .clone()
+      .oneshot(
+        Request::builder()
+          .uri("/workspace/ws-og/doc-og?shell=legacy")
+          .header(header::USER_AGENT, mobile_ua)
+          .header(header::ACCEPT, "text/html")
+          .body(Body::empty())
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+    assert_eq!(legacy_og.status(), StatusCode::OK);
+    assert_eq!(
+      legacy_og
+        .headers()
+        .get(header::CACHE_CONTROL)
+        .and_then(|v| v.to_str().ok()),
+      Some("no-store")
+    );
+    assert_eq!(
+      legacy_og.headers().get(header::VARY).and_then(|v| v.to_str().ok()),
+      Some("User-Agent, Cookie")
+    );
+    assert!(
+      legacy_og
+        .headers()
+        .get(header::SET_COOKIE)
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .contains("affine_shell=legacy")
+    );
+    let legacy_og_html = String::from_utf8(
+      axum::body::to_bytes(legacy_og.into_body(), 16 * 1024)
+        .await
+        .unwrap()
+        .to_vec(),
+    )
+    .unwrap();
+    assert!(legacy_og_html.contains("Canary Share Title"), "{legacy_og_html}");
+    assert!(
+      legacy_og_html.contains("mobile-legacy&#x2f;bundle.js") || legacy_og_html.contains("/mobile-legacy/bundle.js"),
+      "{legacy_og_html}"
+    );
+
     let _ = std::fs::remove_dir_all(&fixture);
     db.pool().close().await;
   });

@@ -13,7 +13,9 @@ import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { stageCanaryDualShell } from '../scripts/stage-canary-dual-shell.mjs';
 import { verifyZeroThirdPartyJs } from '../scripts/verify-zero-third-party-js.mjs';
+import { createA11yTree } from '../src/a11y.js';
 import {
   bootWebHost,
   buildLegacyFallbackUrl,
@@ -22,6 +24,7 @@ import {
   createSandboxedEmbedIframe,
   detectGraphicsSupport,
   flushBeforeNavigation,
+  flushPendingBeforeRedirect,
   focusImeInGesture,
   hideRuntimeFatal,
   isLegacyShellUrl,
@@ -31,6 +34,7 @@ import {
   showBootFatal,
   validateEmbedSrc,
 } from '../src/host.js';
+import { createIdbWorkspaceStorage } from '../src/idb-storage.js';
 import {
   buildPdfPageCacheKey,
   createPdfPreviewClient,
@@ -47,6 +51,7 @@ import {
 import {
   bootSignInPage,
   classifyAuthRoute,
+  isAllowedRedirectTarget,
   maybeLoadTurnstile,
   submitSignInForm,
   TURNSTILE_SCRIPT_URL,
@@ -800,7 +805,7 @@ void test('index.html default-app-entry paints first frame on #app-canvas before
     importModule: async specifier => {
       assert.equal(
         specifier,
-        'https://app.affine.pro/src/default-app-entry.js'
+        'https://app.affine.pro/src/default-app-entry.js?v=dev-local'
       );
       globalThis.__AFFINE_WEB_HOST__ = fakeWin.__AFFINE_WEB_HOST__;
       try {
@@ -1146,6 +1151,7 @@ void test('gpu recovery controller restores WebGL2 context and trips IDB-flushed
   timerEntry.fn();
   await Promise.resolve();
   await Promise.resolve();
+  await Promise.resolve();
 
   assert.equal(navigated.length, 0);
   assert.equal(pendingCount, 2);
@@ -1186,6 +1192,7 @@ void test('gpu recovery controller restores WebGL2 context and trips IDB-flushed
     thresholdCtrl.handleWebGlContextLost({ preventDefault() {} }).tripped,
     true
   );
+  await Promise.resolve();
   await Promise.resolve();
   assert.equal(thresholdNavs.length, 1);
   assert.equal(new URL(thresholdNavs[0]).searchParams.get('shell'), 'legacy');
@@ -3195,4 +3202,1025 @@ void test('selection overlay localizes BCP-47 tags, preserves 44px button floors
     await up.actionPromise;
   }
   assert.deepEqual(fired, ['copy', 'cut', 'paste', 'select-all']);
+});
+
+void test('stage-canary-dual-shell assembles hash-locked dual shells and passes zero-third-party gate', () => {
+  const tmpOut = mkdtempSync(join(tmpdir(), 'affine-stage-s5-'));
+  const tmpWasm = mkdtempSync(join(tmpdir(), 'affine-wasm-s5-'));
+  const tmpLegacy = mkdtempSync(join(tmpdir(), 'affine-legacy-s5-'));
+  const encodeUleb = n => {
+    const out = [];
+    let v = n >>> 0;
+    do {
+      let b = v & 0x7f;
+      v >>>= 7;
+      if (v !== 0) b |= 0x80;
+      out.push(b);
+    } while (v !== 0);
+    return out;
+  };
+  const section = (id, body) => [id, ...encodeUleb(body.length), ...body];
+  const makeValidTestWasm = exportNames => {
+    const typeSec = section(1, [1, 0x60, 0, 0]);
+    const funcSec = section(3, [
+      ...encodeUleb(exportNames.length),
+      ...exportNames.map(() => 0),
+    ]);
+    const expEntries = [];
+    for (const [idx, name] of exportNames.entries()) {
+      const nb = Buffer.from(name, 'utf8');
+      expEntries.push(
+        ...encodeUleb(nb.length),
+        ...nb,
+        0x00,
+        ...encodeUleb(idx)
+      );
+    }
+    const exportSec = section(7, [
+      ...encodeUleb(exportNames.length),
+      ...expEntries,
+    ]);
+    const codeBodies = [];
+    for (const _ of exportNames) {
+      codeBodies.push(2, 0, 0x0b);
+    }
+    const codeSec = section(10, [
+      ...encodeUleb(exportNames.length),
+      ...codeBodies,
+    ]);
+    const padName = Buffer.from('pad', 'utf8');
+    const customSec = section(0, [
+      ...encodeUleb(padName.length),
+      ...padName,
+      ...new Uint8Array(11 * 1024),
+    ]);
+    return Buffer.from([
+      0x00,
+      0x61,
+      0x73,
+      0x6d,
+      0x01,
+      0x00,
+      0x00,
+      0x00,
+      ...typeSec,
+      ...funcSec,
+      ...exportSec,
+      ...codeSec,
+      ...customSec,
+    ]);
+  };
+  try {
+    // Missing real compiled Wasm MUST fail loudly.
+    assert.throws(
+      () => stageCanaryDualShell({ outDir: tmpOut }),
+      /Missing real compiled/
+    );
+
+    const workerExports = [
+      'affine_worker_reset_input',
+      'affine_worker_push_input_u32',
+      'affine_worker_invoke',
+      'affine_worker_output_u32',
+    ];
+    for (const kind of ['mermaid', 'math', 'typst', 'pdf']) {
+      writeFileSync(
+        join(tmpWasm, `${kind}.wasm`),
+        makeValidTestWasm(workerExports)
+      );
+    }
+    mkdirSync(join(tmpWasm, 'pkg'), { recursive: true });
+    writeFileSync(
+      join(tmpWasm, 'pkg/playground.js'),
+      'export default async function init() {}\nexport function merge_updates_v1(u) { return u[0]; }\nexport function extract_subdoc_ids() { return []; }\n'
+    );
+    writeFileSync(
+      join(tmpWasm, 'pkg/playground_bg.wasm'),
+      makeValidTestWasm(['merge_updates_v1', 'extract_subdoc_ids'])
+    );
+    writeFileSync(
+      join(tmpLegacy, 'index.html'),
+      '<!doctype html><html></html>'
+    );
+    writeFileSync(join(tmpLegacy, 'app.js'), 'export {};\n');
+    writeFileSync(
+      join(tmpLegacy, 'assets-manifest.json'),
+      '{"publicPath":"/mobile-legacy/","css":[],"js":["app.js"]}\n'
+    );
+
+    const first = stageCanaryDualShell({
+      outDir: tmpOut,
+      wasmDir: tmpWasm,
+      legacyDir: tmpLegacy,
+    });
+    const second = stageCanaryDualShell({
+      outDir: tmpOut,
+      wasmDir: tmpWasm,
+      legacyDir: tmpLegacy,
+    });
+    assert.equal(first.shellBuildId, second.shellBuildId);
+    assert.match(first.shellBuildId, /^[0-9a-f]{12}$/);
+
+    const mobileHtml = readFileSync(
+      join(first.mobileDir, 'index.html'),
+      'utf8'
+    );
+    assert.ok(
+      mobileHtml.includes('<script type="module" src="/mobile/src/host.js">')
+    );
+    const manifestMatch = mobileHtml.match(
+      /<script id="affine-build-manifest" type="application\/json">([\s\S]*?)<\/script>/
+    );
+    assert.ok(manifestMatch);
+    const manifest = JSON.parse(manifestMatch[1]);
+    assert.equal(manifest.shell_build_id, first.shellBuildId);
+    assert.equal(manifest.assetBaseUrl, '/mobile/');
+    assert.equal(manifest.appEntryJs, '/src/default-app-entry.js');
+    const loader = createWorkerLoader(manifest, {
+      baseUrl: 'https://app.affine.pro/workspace/ws-1/doc-1',
+    });
+    assert.equal(
+      loader.resolveAppEntryUrl(),
+      `https://app.affine.pro/mobile/src/default-app-entry.js?v=${first.shellBuildId}`
+    );
+    // Idempotent prefix guard: an already-prefixed path must never double-prefix /mobile/mobile/.
+    const doublePrefixLoader = createWorkerLoader(
+      { ...manifest, appEntryJs: '/mobile/src/default-app-entry.js' },
+      { baseUrl: 'https://app.affine.pro/' }
+    );
+    assert.equal(
+      doublePrefixLoader.resolveAppEntryUrl(),
+      `https://app.affine.pro/mobile/src/default-app-entry.js?v=${first.shellBuildId}`
+    );
+    for (const kind of ['mermaid', 'math', 'typst', 'pdf']) {
+      assert.ok(
+        existsSync(
+          join(
+            first.mobileDir,
+            'wasm',
+            `${kind}-worker.${first.shellBuildId}.wasm`
+          )
+        )
+      );
+      assert.equal(
+        manifest.workers[kind].wasm,
+        `/wasm/${kind}-worker.${first.shellBuildId}.wasm`
+      );
+    }
+    assert.ok(existsSync(join(first.mobileDir, 'pkg/playground.js')));
+    assert.ok(existsSync(join(first.mobileDir, 'pkg/playground_bg.wasm')));
+    assert.ok(existsSync(join(first.mobileLegacyDir, 'index.html')));
+    assert.ok(existsSync(join(first.mobileLegacyDir, 'app.js')));
+    assert.ok(existsSync(join(first.mobileLegacyDir, 'assets-manifest.json')));
+
+    const gate = verifyZeroThirdPartyJs({ stageDir: first.mobileDir });
+    assert.equal(gate.ok, true, gate.violations.join('; '));
+  } finally {
+    rmSync(tmpOut, { recursive: true, force: true });
+    rmSync(tmpWasm, { recursive: true, force: true });
+    rmSync(tmpLegacy, { recursive: true, force: true });
+  }
+});
+
+void test('double WebGPU crash circuit breaker rebuilds on crash 1 and flushes before legacy redirect on crash 2', async () => {
+  let nowMs = 1000;
+  let flushShouldFail = true;
+  const events = [];
+  const markers = [];
+  const navUrls = [];
+
+  const ctrl = createGpuRecoveryController({
+    getHref: () => 'https://app.affine.pro/workspace/ws-1/doc-1?shell=native',
+    isOAuthCodeConsumed: () => false,
+    pauseInput: () => events.push('pause'),
+    resumeInput: () => events.push('resume'),
+    tryRebuildWebGpu: async () => {
+      events.push('rebuild-webgpu');
+      return true;
+    },
+    flushPendingWrites: async () => {
+      events.push(flushShouldFail ? 'flush-fail' : 'flush-ok');
+      if (flushShouldFail) {
+        throw new Error('idb-busy');
+      }
+      return { ok: true, pendingCount: 0 };
+    },
+    onFallbackMarker: (reason, url) => {
+      markers.push({ reason, url });
+    },
+    navigate: url => {
+      navUrls.push(url);
+    },
+    now: () => nowMs,
+  });
+
+  // Crash #1 recovers in-place via WebGPU rebuild without navigating.
+  const first = await ctrl.handleWebGpuDeviceLost({ reason: 'destroyed' });
+  assert.deepEqual(first, { recovered: true, mode: 'webgpu' });
+  assert.equal(ctrl.getState().status, 'ready');
+  assert.equal(ctrl.getState().webGpuLossCount, 1);
+  assert.equal(navUrls.length, 0);
+  assert.equal(markers.length, 0);
+
+  // Crash #2 trips circuit breaker; flush failure aborts redirect and writes no marker.
+  nowMs += 500;
+  const secondBlocked = await ctrl.handleWebGpuDeviceLost({
+    reason: 'uncapturederror',
+  });
+  assert.equal(secondBlocked.recovered, false);
+  assert.equal(secondBlocked.navigated, false);
+  assert.equal(secondBlocked.retryable, true);
+  assert.equal(ctrl.getState().status, 'fallback-blocked');
+  assert.equal(navUrls.length, 0);
+  assert.equal(markers.length, 0);
+
+  // Retrying after IDB recovers flushes, writes marker, and redirects to ?shell=legacy.
+  flushShouldFail = false;
+  const retried = await ctrl.retryFallback();
+  assert.deepEqual(retried, { navigated: true });
+  assert.equal(navUrls.length, 1);
+  assert.equal(new URL(navUrls[0]).searchParams.get('shell'), 'legacy');
+  assert.equal(markers.length, 1);
+  assert.equal(markers[0].reason, 'webgpu-crash-threshold');
+
+  // Verify flushPendingBeforeRedirect export matches flushBeforeNavigation contract.
+  assert.equal(flushPendingBeforeRedirect, flushBeforeNavigation);
+});
+
+void test('R7-B regressions: B-01/B-03/B-04/B-06/P-01/P-02 sign-in safety, single-flight, Turnstile error, focus, session probe, password toggle', async () => {
+  // B-01: Synchronous submit preventDefault BEFORE slow/throwing captcha + safe storage getter.
+  const makeEl = (id, extra = {}) => {
+    const listeners = new Map();
+    const attrs = new Map();
+    const children = [];
+    return {
+      id,
+      value: '',
+      type: 'text',
+      hidden: false,
+      disabled: false,
+      textContent: '',
+      dataset: {},
+      focused: 0,
+      children,
+      focus() {
+        this.focused += 1;
+      },
+      append(node) {
+        children.push(node);
+      },
+      remove() {
+        this.removed = true;
+      },
+      getAttribute: k => attrs.get(k) ?? null,
+      setAttribute: (k, v) => attrs.set(k, v),
+      addEventListener(type, fn) {
+        if (!listeners.has(type)) listeners.set(type, []);
+        listeners.get(type).push(fn);
+      },
+      dispatch(type, ev = {}) {
+        for (const fn of listeners.get(type) || []) {
+          fn(ev);
+        }
+      },
+      ...extra,
+    };
+  };
+
+  // B-01 sub-route: /oauth/callback?error=access_denied hides form, sets tone=error, reveals return link.
+  const oauthEls = new Map([
+    ['auth-status', makeEl('auth-status')],
+    ['sign-in-form', makeEl('sign-in-form')],
+    ['return-to-sign-in', makeEl('return-to-sign-in', { hidden: true })],
+  ]);
+  const blockedStorageWin = {
+    location: {
+      href: 'https://app.affine.pro/oauth/callback?error=access_denied&error_description=User+cancelled+login',
+      pathname: '/oauth/callback',
+      search: '?error=access_denied&error_description=User+cancelled+login',
+      origin: 'https://app.affine.pro',
+      replace() {},
+    },
+    get sessionStorage() {
+      throw new DOMException('Denied', 'SecurityError');
+    },
+    get localStorage() {
+      throw new DOMException('Denied', 'SecurityError');
+    },
+    fetch: async () => ({ ok: false, status: 404 }),
+  };
+  const oauthErrRes = await bootSignInPage({
+    win: blockedStorageWin,
+    doc: { getElementById: id => oauthEls.get(id) ?? null },
+  });
+  assert.equal(oauthErrRes?.ok, false);
+  assert.equal(oauthErrRes?.error, 'access_denied');
+  assert.equal(oauthEls.get('sign-in-form').hidden, true);
+  assert.equal(oauthEls.get('return-to-sign-in').hidden, false);
+  assert.equal(oauthEls.get('auth-status').dataset.tone, 'error');
+  assert.equal(oauthEls.get('auth-status').textContent, 'User cancelled login');
+
+  // B-01 + B-03 + B-04 + B-06 + P-01 + P-02 on /sign-in:
+  let releaseCaptcha;
+  const captchaPending = new Promise(r => {
+    releaseCaptcha = r;
+  });
+  let releaseOtpSubmit;
+  const otpPending = new Promise(r => {
+    releaseOtpSubmit = r;
+  });
+  let otpPostCount = 0;
+  let preflightCount = 0;
+  const docListeners = new Map();
+  const createdButtons = [];
+  const signInEls = new Map([
+    ['auth-card', makeEl('auth-card')],
+    ['auth-status', makeEl('auth-status')],
+    ['sign-in-form', makeEl('sign-in-form')],
+    ['step-email', makeEl('step-email')],
+    ['step-password', makeEl('step-password', { hidden: true })],
+    ['step-otp', makeEl('step-otp', { hidden: true })],
+    ['email', makeEl('email', { value: 'alice@affine.pro' })],
+    ['password', makeEl('password', { type: 'password' })],
+    ['otp', makeEl('otp')],
+    ['submit-button', makeEl('submit-button')],
+    ['password-submit-button', makeEl('password-submit-button')],
+    ['otp-submit-button', makeEl('otp-submit-button')],
+    ['toggle-password-btn', makeEl('toggle-password-btn')],
+    ['turnstile-container', makeEl('turnstile-container')],
+    ['session-continue', makeEl('session-continue', { hidden: true })],
+    ['continue-session-btn', makeEl('continue-session-btn')],
+  ]);
+  const signInDoc = {
+    head: { append() {} },
+    querySelectorAll: () => [],
+    createElement: tag => {
+      const el = makeEl(`created-${tag}-${createdButtons.length}`);
+      createdButtons.push(el);
+      return el;
+    },
+    getElementById: id =>
+      signInEls.get(id) ?? createdButtons.find(b => b.id === id) ?? null,
+    addEventListener: (type, fn) => docListeners.set(type, fn),
+    removeEventListener: type => docListeners.delete(type),
+  };
+
+  const bootPromise = bootSignInPage({
+    win: {
+      location: {
+        href: 'https://app.affine.pro/sign-in',
+        pathname: '/sign-in',
+        search: '',
+        origin: 'https://app.affine.pro',
+        replace() {},
+      },
+      fetch: async () => ({ ok: false, status: 404 }),
+    },
+    doc: signInDoc,
+    fetchImpl: async url => {
+      if (url === '/api/auth/captcha') {
+        await captchaPending;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ provider: 'turnstile', siteKey: '0xTest' }),
+        };
+      }
+      if (url === '/api/auth/session') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ user: { email: 'signed@affine.pro' } }),
+        };
+      }
+      if (url === '/api/auth/preflight') {
+        preflightCount += 1;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            methods: {
+              password: { available: true },
+              magicLink: { available: true },
+            },
+          }),
+        };
+      }
+      if (url === '/api/auth/sign-in') {
+        return {
+          ok: false,
+          status: 400,
+          json: async () => ({ name: 'WRONG_SIGN_IN_CREDENTIALS' }),
+        };
+      }
+      if (url === '/api/auth/magic-link') {
+        otpPostCount += 1;
+        await otpPending;
+        return { ok: true, status: 201 };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    },
+  });
+
+  // B-01: Submit listener MUST already be bound synchronously before captcha resolves!
+  let preventedEarly = false;
+  signInEls.get('sign-in-form').dispatch('submit', {
+    preventDefault() {
+      preventedEarly = true;
+    },
+  });
+  assert.equal(preventedEarly, true);
+  assert.equal(preflightCount, 1);
+
+  // Release captcha -> Turnstile script injected -> simulate script error (B-04).
+  releaseCaptcha();
+  const page = await bootPromise;
+  await new Promise(r => setTimeout(r, 10));
+
+  // P-01: Existing session banner rendered with "Continue as signed@affine.pro".
+  assert.equal(signInEls.get('session-continue').hidden, false);
+  assert.equal(
+    signInEls.get('continue-session-btn').textContent,
+    'Continue as signed@affine.pro'
+  );
+
+  // B-04: Script error shows readable error and mounts #retry-captcha-btn.
+  const injectedScript = createdButtons.find(
+    b => b.src === TURNSTILE_SCRIPT_URL
+  );
+  assert.ok(injectedScript);
+  injectedScript.dispatch('error');
+  assert.ok(
+    signInEls
+      .get('auth-status')
+      .textContent.includes('Verification unavailable')
+  );
+  assert.ok(signInDoc.getElementById('retry-captcha-btn'));
+
+  // B-06: Password step auto-focused #password, P-02 toggles Show/Hide, Escape returns to email.
+  assert.equal(page.getStep(), 'password');
+  assert.ok(signInEls.get('password').focused >= 1);
+  signInEls.get('toggle-password-btn').dispatch('click');
+  assert.equal(signInEls.get('password').type, 'text');
+  assert.equal(signInEls.get('toggle-password-btn').textContent, 'Hide');
+  docListeners.get('keydown')?.({ key: 'Escape', preventDefault() {} });
+  assert.equal(page.getStep(), 'email');
+  assert.equal(signInEls.get('password').type, 'password');
+
+  // B-06: 400 WRONG_SIGN_IN_CREDENTIALS maps to human-readable message.
+  const badPwd = await submitSignInForm({
+    fetchImpl: async () => ({
+      ok: false,
+      status: 400,
+      json: async () => ({ name: 'WRONG_SIGN_IN_CREDENTIALS' }),
+    }),
+    email: 'a@b.com',
+    password: 'wrong',
+  });
+  assert.equal(badPwd.ok, false);
+  assert.equal(badPwd.errorCode, 'WRONG_SIGN_IN_CREDENTIALS');
+
+  // B-03: Double-submit on OTP step is blocked by single-flight lock (only 1 POST).
+  const otpPageEls = new Map([
+    ['auth-card', makeEl('auth-card')],
+    ['auth-status', makeEl('auth-status')],
+    ['sign-in-form', makeEl('sign-in-form')],
+    ['email', makeEl('email', { value: 'otp@affine.pro' })],
+    ['otp', makeEl('otp', { value: '654321' })],
+    ['otp-submit-button', makeEl('otp-submit-button')],
+  ]);
+  const otpPage = await bootSignInPage({
+    win: {
+      location: {
+        href: 'https://app.affine.pro/sign-in',
+        pathname: '/sign-in',
+        search: '',
+        origin: 'https://app.affine.pro',
+        replace() {},
+      },
+      fetch: async () => ({ ok: false, status: 404 }),
+    },
+    doc: {
+      getElementById: id => otpPageEls.get(id) ?? null,
+      addEventListener() {},
+      removeEventListener() {},
+    },
+    fetchImpl: async url => {
+      if (url === '/api/auth/captcha') return { ok: false, status: 404 };
+      if (url === '/api/auth/preflight') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ methods: { magicLink: { available: true } } }),
+        };
+      }
+      if (url === '/api/auth/sign-in') return { ok: true, status: 200 };
+      if (url === '/api/auth/magic-link') {
+        otpPostCount += 1;
+        await otpPending;
+        return { ok: true, status: 201 };
+      }
+      return { ok: false, status: 404 };
+    },
+  });
+  // Step 1 -> transitions to otp step
+  otpPageEls.get('sign-in-form').dispatch('submit', { preventDefault() {} });
+  await new Promise(r => setTimeout(r, 10));
+  otpPageEls.get('otp').value = '654321';
+  // Double-click OTP submit while first is in-flight
+  otpPageEls.get('sign-in-form').dispatch('submit', { preventDefault() {} });
+  otpPageEls.get('sign-in-form').dispatch('submit', { preventDefault() {} });
+  assert.equal(otpPageEls.get('otp-submit-button').disabled, true);
+  assert.equal(otpPostCount, 1);
+  releaseOtpSubmit();
+  await new Promise(r => setTimeout(r, 10));
+  otpPage.dispose();
+  page.dispose();
+});
+
+void test('R7-B regressions: B-02 boot fallback, B-05 flush timeout & location.replace, B-07 collapsed caret menu, B-08 NaN clock self-heal, B-09 sandbox/redirect/CSP/a11y', async () => {
+  // B-02: Dynamic import failure triggers fallback via location.replace instead of hanging on #boot.
+  const replacedUrls = [];
+  const manifestJson = JSON.stringify({
+    shellVersion: 'mobile-v1',
+    shell_build_id: 'b02hash12345',
+    assetBaseUrl: '/mobile/',
+    appEntryJs: '/src/default-app-entry.js',
+    workers: {},
+    fonts: {},
+  });
+  const b02Doc = {
+    createElement: () => ({
+      getContext: () => ({ getExtension: () => ({ loseContext() {} }) }),
+    }),
+    getElementById: id => {
+      if (id === 'affine-build-manifest') return { textContent: manifestJson };
+      if (id === 'app-canvas')
+        return { addEventListener() {}, removeEventListener() {} };
+      if (id === 'ime') return { readOnly: false };
+      if (id === 'boot') return { dataset: {}, remove() {} };
+      if (id === 'boot-message') return { textContent: '' };
+      return null;
+    },
+    querySelectorAll: () => [],
+  };
+  const b02Res = await bootWebHost({
+    win: {
+      navigator: {},
+      location: {
+        href: 'https://app.affine.pro/workspace/ws-1/doc-1',
+        replace: url => replacedUrls.push(url),
+        assign: () => {
+          throw new Error('automatic fallback must use replace, not assign');
+        },
+      },
+    },
+    doc: b02Doc,
+    importModule: async specifier => {
+      assert.equal(
+        specifier,
+        'https://app.affine.pro/mobile/src/default-app-entry.js?v=b02hash12345'
+      );
+      throw new TypeError('404 module');
+    },
+  });
+  assert.equal(b02Res?.fallback, true);
+  assert.equal(replacedUrls.length, 1);
+  assert.equal(new URL(replacedUrls[0]).searchParams.get('shell'), 'legacy');
+
+  // B-05: flushBeforeNavigation times out cleanly without navigating.
+  const timeoutRes = await flushBeforeNavigation({
+    pauseInput() {},
+    flushPendingWrites: () => new Promise(() => {}),
+    flushTimeoutMs: 25,
+    navigate() {
+      throw new Error('must not navigate on flush timeout');
+    },
+    resumeInput() {},
+    targetUrl: '/?shell=legacy',
+  });
+  assert.deepEqual(timeoutRes, { navigated: false, reason: 'flush-timeout' });
+
+  // B-07: Collapsed caret (rects: []) still shows Paste / Select All menu.
+  const collapsed = computeSelectionOverlayLayout({
+    viewport: { width: 390, height: 844 },
+    rects: [],
+    caretStart: { x: 120, y: 240, height: 22, dir: 'ltr' },
+    caretEnd: { x: 120, y: 240, height: 22, dir: 'ltr' },
+    actions: ['paste', 'select-all'],
+    canPaste: true,
+  });
+  assert.equal(collapsed.menu.visible, true);
+  assert.deepEqual(
+    collapsed.menu.items.map(i => i.id),
+    ['paste', 'select-all']
+  );
+
+  // B-09: sanitizeEmbedSandbox("") returns "" (zero-permission sandbox); only undefined/null default to allow-scripts.
+  assert.equal(sanitizeEmbedSandbox(''), '');
+  assert.equal(sanitizeEmbedSandbox('   '), '');
+  assert.equal(sanitizeEmbedSandbox(null), 'allow-scripts');
+  assert.equal(sanitizeEmbedSandbox(undefined), 'allow-scripts');
+
+  // B-09: isAllowedRedirectTarget blocks same-hostname http: downgrade and different port from https:.
+  assert.equal(
+    isAllowedRedirectTarget(
+      'http://app.affine.pro:8080/downgrade',
+      'https://app.affine.pro'
+    ),
+    false
+  );
+  assert.equal(
+    isAllowedRedirectTarget(
+      'http://app.affine.pro/downgrade',
+      'https://app.affine.pro'
+    ),
+    false
+  );
+  assert.equal(
+    isAllowedRedirectTarget(
+      'https://app.affine.pro/workspace/ws-1',
+      'https://app.affine.pro'
+    ),
+    true
+  );
+
+  // B-09: index.html and sign-in.html CSP include form-action 'self'.
+  assert.ok(
+    readFileSync(join(WEB_ROOT, 'index.html'), 'utf8').includes(
+      "form-action 'self'"
+    )
+  );
+  assert.ok(
+    readFileSync(join(WEB_ROOT, 'sign-in.html'), 'utf8').includes(
+      "form-action 'self'"
+    )
+  );
+
+  // B-09: a11y.js keeps tabindex="-1" while inactive, cleans descendants on parent remove, restores ime.tabIndex on 'none'.
+  const makeA11yEl = () => {
+    const attrs = new Map();
+    return {
+      inert: false,
+      attrs,
+      children: [],
+      setAttribute: (k, v) => attrs.set(k, v),
+      removeAttribute: k => attrs.delete(k),
+      append(c) {
+        this.children.push(c);
+      },
+      remove() {},
+    };
+  };
+  const fakeIme = { tabIndex: 0, readOnly: false, blur() {} };
+  const a11y = createA11yTree({
+    doc: { createElement: () => makeA11yEl() },
+    root: makeA11yEl(),
+    ime: fakeIme,
+    embedLayer: makeA11yEl(),
+  });
+  a11y.setFocusOwner('ime');
+  const inserted = a11y.upsertNode({
+    id: 'parent-n',
+    role: 'group',
+    label: 'Parent',
+    tabIndex: 0,
+  });
+  assert.equal(inserted.attrs.get('tabindex'), '-1');
+  a11y.upsertNode({
+    id: 'child-n',
+    parentId: 'parent-n',
+    role: 'button',
+    label: 'Child',
+    tabIndex: 0,
+  });
+  assert.ok(a11y.getNode('child-n'));
+  a11y.removeNode('parent-n');
+  assert.equal(a11y.getNode('parent-n'), null);
+  assert.equal(a11y.getNode('child-n'), null);
+  a11y.setFocusOwner('a11y');
+  assert.equal(fakeIme.tabIndex, -1);
+  a11y.setFocusOwner('none');
+  assert.equal(fakeIme.tabIndex, 0);
+
+  // B-08: Corrupt NaN clock timestamp in IDB self-heals instead of producing Invalid Date DataError.
+  const storeRows = {
+    clocks: new Map([
+      ['doc-nan', { docId: 'doc-nan', timestamp: 'not-a-date' }],
+    ]),
+    updates: [],
+    peerClocks: new Map(),
+  };
+  const fakeReq = value => {
+    const req = { result: value, onsuccess: null, onerror: null };
+    queueMicrotask(() => req.onsuccess?.());
+    return req;
+  };
+  const fakeDb = {
+    close() {},
+    transaction() {
+      const tx = {
+        oncomplete: null,
+        onerror: null,
+        onabort: null,
+        objectStore(name) {
+          if (name === 'clocks') {
+            return {
+              get: k => fakeReq(storeRows.clocks.get(k)),
+              put: v => {
+                storeRows.clocks.set(v.docId, v);
+                return fakeReq(undefined);
+              },
+            };
+          }
+          if (name === 'updates') {
+            return {
+              add: row => {
+                if (
+                  !(row.createdAt instanceof Date) ||
+                  Number.isNaN(row.createdAt.getTime())
+                ) {
+                  throw new DOMException('Invalid key', 'DataError');
+                }
+                storeRows.updates.push(row);
+                return fakeReq(undefined);
+              },
+            };
+          }
+          return {
+            get: () => fakeReq(undefined),
+            put: () => fakeReq(undefined),
+          };
+        },
+      };
+      queueMicrotask(() => queueMicrotask(() => tx.oncomplete?.()));
+      return tx;
+    },
+  };
+  const storage = createIdbWorkspaceStorage({
+    flavour: 'local',
+    type: 'workspace',
+    id: 'b08-nan-clock',
+    indexedDB: {
+      open() {
+        const req = {
+          result: fakeDb,
+          onsuccess: null,
+          onerror: null,
+          onupgradeneeded: null,
+        };
+        queueMicrotask(() => req.onsuccess?.());
+        return req;
+      },
+    },
+    now: () => 1_700_000_000_000,
+  });
+  await storage.pushDocUpdate({
+    docId: 'doc-nan',
+    bin: new Uint8Array([1, 2, 3]),
+  });
+  storage.close();
+  assert.equal(storeRows.updates.length, 1);
+  assert.equal(storeRows.updates[0].createdAt.getTime(), 1_700_000_000_000);
+});
+
+void test('R3 Astra P1-1: bootWebHost import failure preserves flush-guarded retryFallback instead of bare reload', async () => {
+  const replacedUrls = [];
+  let flushAttempts = 0;
+  let flushShouldFail = true;
+  let retryHandler = null;
+  const bootEl = {
+    dataset: {},
+    children: [],
+    append(node) {
+      this.children.push(node);
+    },
+    remove() {},
+  };
+  const retryBtn = {
+    id: 'gpu-fallback-retry',
+    type: 'button',
+    textContent: '',
+    hidden: false,
+    onclick: null,
+    setAttribute() {},
+    addEventListener(type, fn) {
+      if (type === 'click') retryHandler = fn;
+    },
+    click() {
+      return (this.onclick || retryHandler)?.();
+    },
+  };
+  const doc = {
+    createElement: tag =>
+      tag === 'canvas'
+        ? { getContext: type => (type === 'webgl2' ? {} : null) }
+        : retryBtn,
+    getElementById: id => {
+      if (id === 'app-canvas') {
+        return {
+          getContext: type => (type === 'webgl2' ? {} : null),
+          addEventListener() {},
+          removeEventListener() {},
+        };
+      }
+      if (id === 'affine-build-manifest') {
+        return {
+          textContent: JSON.stringify({
+            shell_build_id: 'r3astra12345',
+            assetBaseUrl: '/mobile/',
+            appEntryJs: '/src/default-app-entry.js',
+          }),
+        };
+      }
+      if (id === 'boot') return bootEl;
+      if (id === 'boot-message') return { textContent: '' };
+      if (id === 'gpu-fallback-retry') {
+        return bootEl.children.includes(retryBtn) ? retryBtn : null;
+      }
+      return null;
+    },
+    querySelectorAll: () => [],
+  };
+
+  const res = await bootWebHost({
+    win: {
+      navigator: {},
+      location: {
+        href: 'https://app.affine.pro/workspace/ws-1/doc-1',
+        replace: url => replacedUrls.push(url),
+        assign: () => {
+          throw new Error('must use replace, not assign');
+        },
+      },
+    },
+    doc,
+    flushPendingWrites: async () => {
+      flushAttempts += 1;
+      if (flushShouldFail) {
+        throw new Error('idb-locked');
+      }
+      return { ok: true, pendingCount: 0 };
+    },
+    importModule: async () => {
+      throw new TypeError('entry module 503');
+    },
+  });
+
+  assert.equal(res.fallback, false);
+  assert.equal(res.fatal, true);
+  assert.equal(res.retryable, true);
+  assert.equal(res.gpuRecovery.getState().status, 'fallback-blocked');
+  assert.equal(flushAttempts, 1);
+  assert.equal(replacedUrls.length, 0);
+  assert.ok(
+    retryBtn.onclick || retryHandler,
+    'must mount retry button wired to retryFallback'
+  );
+
+  // Clicking Retry while flush still fails MUST NOT navigate or drop unsaved edits.
+  await retryBtn.click();
+  await new Promise(r => setTimeout(r, 0));
+  assert.equal(flushAttempts, 2);
+  assert.equal(replacedUrls.length, 0);
+  assert.equal(res.gpuRecovery.getState().status, 'fallback-blocked');
+
+  // Once flush recovers, clicking Retry flushes and navigates to ?shell=legacy.
+  flushShouldFail = false;
+  await retryBtn.click();
+  await new Promise(r => setTimeout(r, 0));
+  assert.equal(flushAttempts, 3);
+  assert.equal(replacedUrls.length, 1);
+  assert.equal(new URL(replacedUrls[0]).searchParams.get('shell'), 'legacy');
+});
+
+void test('R3 Neon P1-1: Turnstile-enabled sign-in allows step-otp 6-digit code submit after token reset', async () => {
+  const makeEl = (id, extra = {}) => {
+    const listeners = new Map();
+    return {
+      id,
+      value: '',
+      type: 'text',
+      hidden: false,
+      disabled: false,
+      textContent: '',
+      dataset: {},
+      children: [],
+      focus() {},
+      append(node) {
+        this.children.push(node);
+      },
+      remove() {},
+      getAttribute: () => null,
+      setAttribute() {},
+      addEventListener(type, fn) {
+        if (!listeners.has(type)) listeners.set(type, []);
+        listeners.get(type).push(fn);
+      },
+      dispatch(type, ev = {}) {
+        const handlers = listeners.get(type) || [];
+        return Promise.all(handlers.map(fn => fn(ev)));
+      },
+      ...extra,
+    };
+  };
+
+  let resetCalls = 0;
+  let magicLinkPostCalls = 0;
+  let sendCodeCalls = 0;
+  const redirected = [];
+  const els = new Map([
+    ['auth-card', makeEl('auth-card')],
+    ['auth-status', makeEl('auth-status')],
+    ['sign-in-form', makeEl('sign-in-form')],
+    ['step-email', makeEl('step-email')],
+    ['step-password', makeEl('step-password', { hidden: true })],
+    ['step-otp', makeEl('step-otp', { hidden: true })],
+    ['email', makeEl('email', { value: 'otp-turnstile@affine.pro' })],
+    ['password', makeEl('password', { type: 'password' })],
+    ['otp', makeEl('otp', { value: '123456' })],
+    ['submit-button', makeEl('submit-button')],
+    ['password-submit-button', makeEl('password-submit-button')],
+    ['otp-submit-button', makeEl('otp-submit-button')],
+    ['turnstile-container', makeEl('turnstile-container')],
+  ]);
+
+  let turnstileCallback = null;
+  const page = await bootSignInPage({
+    win: {
+      location: {
+        href: 'https://app.affine.pro/sign-in',
+        pathname: '/sign-in',
+        search: '',
+        origin: 'https://app.affine.pro',
+        replace: url => redirected.push(url),
+      },
+      turnstile: {
+        render: (_container, opts) => {
+          turnstileCallback = opts.callback;
+          return 'widget-1';
+        },
+        reset: () => {
+          resetCalls += 1;
+        },
+      },
+      fetch: async () => ({ ok: false, status: 404 }),
+    },
+    doc: {
+      head: { append() {} },
+      querySelectorAll: () => [],
+      createElement: tag => makeEl(`el-${tag}`),
+      getElementById: id => els.get(id) ?? null,
+      addEventListener() {},
+      removeEventListener() {},
+    },
+    fetchImpl: async url => {
+      if (url === '/api/auth/captcha') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ provider: 'turnstile', siteKey: '0xSiteKey' }),
+        };
+      }
+      if (url === '/api/auth/session') {
+        return { ok: true, status: 200, json: async () => ({}) };
+      }
+      if (url === '/api/auth/preflight') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            methods: {
+              password: { available: false },
+              magicLink: { available: true },
+            },
+          }),
+        };
+      }
+      if (url === '/api/auth/sign-in') {
+        sendCodeCalls += 1;
+        return { ok: true, status: 201, json: async () => ({}) };
+      }
+      if (url === '/api/auth/magic-link') {
+        magicLinkPostCalls += 1;
+        return { ok: true, status: 201, json: async () => ({}) };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    },
+  });
+
+  // Step 1: Turnstile solves -> submit email -> preflight -> magic-link send resets Turnstile -> enters step-otp.
+  assert.ok(turnstileCallback, 'Turnstile widget must render');
+  turnstileCallback('tok-123');
+  await els.get('sign-in-form').dispatch('submit', { preventDefault() {} });
+  assert.equal(sendCodeCalls, 1);
+  assert.equal(resetCalls, 1);
+  assert.equal(page.getStep(), 'otp');
+
+  // Step 2: With captchaToken now null on step-otp, submitting 6-digit OTP MUST succeed!
+  els.get('otp').value = '123456';
+  await els.get('sign-in-form').dispatch('submit', { preventDefault() {} });
+  assert.equal(magicLinkPostCalls, 1);
+  assert.equal(redirected.length, 1);
+  assert.equal(els.get('auth-status').textContent, 'Signed in.');
 });

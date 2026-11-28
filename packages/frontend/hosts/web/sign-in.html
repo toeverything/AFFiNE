@@ -9,7 +9,7 @@
     <meta name="affine-version" content="0.27.5" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src https://challenges.cloudflare.com; base-uri 'none'; object-src 'none'"
+      content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src https://challenges.cloudflare.com; base-uri 'none'; object-src 'none'; form-action 'self'"
     />
     <title>Sign in to AFFiNE</title>
     <style>
@@ -236,6 +236,51 @@
         display: none;
       }
 
+      .session-continue {
+        margin: 0 0 14px;
+      }
+
+      .return-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 44px;
+        margin-top: 8px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--surface-subtle);
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .password-input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      .password-input-wrap input {
+        padding-right: 68px;
+      }
+
+      button.password-toggle {
+        position: absolute;
+        right: 6px;
+        width: auto;
+        min-height: 34px;
+        padding: 4px 10px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 8px;
+        border-color: transparent;
+        background: transparent;
+        color: var(--link);
+      }
+
       button {
         width: 100%;
         min-height: 46px;
@@ -346,6 +391,14 @@
       </div>
 
       <p id="auth-status" role="status" aria-live="polite"></p>
+      <a id="return-to-sign-in" class="return-link" href="/sign-in" hidden
+        >Return to sign in</a
+      >
+      <div id="session-continue" class="session-continue" hidden>
+        <button id="continue-session-btn" class="btn-primary" type="button">
+          Continue
+        </button>
+      </div>
 
       <form id="sign-in-form" method="post" action="/api/auth/sign-in">
         <div id="turnstile-container"></div>
@@ -395,13 +448,24 @@
           <div id="step-email-display" class="email-pill"></div>
           <label for="password">
             Password
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autocomplete="current-password"
-              placeholder="Enter your password"
-            />
+            <div class="password-input-wrap">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Enter your password"
+              />
+              <button
+                id="toggle-password-btn"
+                class="password-toggle"
+                type="button"
+                aria-label="Show password"
+                aria-pressed="false"
+              >
+                Show
+              </button>
+            </div>
           </label>
           <button id="password-submit-button" class="btn-primary" type="submit">
             Sign in

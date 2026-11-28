@@ -288,36 +288,51 @@ async function presentFirstFrameClear(
     /** @type {{ requestAdapter?: () => Promise<any>, getPreferredCanvasFormat?: () => string } | undefined} */ (
       globalThis.navigator?.gpu
     );
+  async function attachWebGpu(targetCanvas) {
+    if (!gpu || typeof gpu.requestAdapter !== 'function') {
+      return false;
+    }
+    const adapter = await gpu.requestAdapter();
+    const device = adapter ? await adapter.requestDevice() : null;
+    const context = device ? targetCanvas.getContext('webgpu') : null;
+    if (!device || !context || typeof context.configure !== 'function') {
+      return false;
+    }
+    host.bindWebGpuDevice?.(device, {
+      tryRebuildWebGpu: async () => {
+        setWebGpuState(null);
+        return attachWebGpu(host.canvas || targetCanvas);
+      },
+      tryWebGl2Fallback: () => {
+        setWebGpuState(null);
+        const nextCanvas = replaceCanvasForWebGl2Fallback(
+          host.canvas || targetCanvas,
+          host
+        );
+        onCanvasReplaced(nextCanvas);
+        return paintWebGl2Or2d(nextCanvas, getSourceCanvas());
+      },
+    });
+    const renderAttachment =
+      globalThis.GPUTextureUsage?.RENDER_ATTACHMENT ?? 0x10;
+    const copyDst = globalThis.GPUTextureUsage?.COPY_DST ?? 0x02;
+    context.configure({
+      device,
+      format: gpu.getPreferredCanvasFormat?.() || 'bgra8unorm',
+      usage: renderAttachment | copyDst,
+    });
+    const gpuState = { device, context, canvas: targetCanvas };
+    if (presentWebGpuFrame(gpuState, getSourceCanvas())) {
+      setWebGpuState(gpuState);
+      return true;
+    }
+    return false;
+  }
+
   if (gpu && typeof gpu.requestAdapter === 'function') {
     try {
-      const adapter = await gpu.requestAdapter();
-      const device = adapter ? await adapter.requestDevice() : null;
-      const context = device ? canvas.getContext('webgpu') : null;
-      if (device && context && typeof context.configure === 'function') {
-        host.bindWebGpuDevice?.(device, {
-          tryWebGl2Fallback: () => {
-            setWebGpuState(null);
-            const nextCanvas = replaceCanvasForWebGl2Fallback(
-              host.canvas || canvas,
-              host
-            );
-            onCanvasReplaced(nextCanvas);
-            return paintWebGl2Or2d(nextCanvas, getSourceCanvas());
-          },
-        });
-        const renderAttachment =
-          globalThis.GPUTextureUsage?.RENDER_ATTACHMENT ?? 0x10;
-        const copyDst = globalThis.GPUTextureUsage?.COPY_DST ?? 0x02;
-        context.configure({
-          device,
-          format: gpu.getPreferredCanvasFormat?.() || 'bgra8unorm',
-          usage: renderAttachment | copyDst,
-        });
-        const gpuState = { device, context, canvas };
-        if (presentWebGpuFrame(gpuState, getSourceCanvas())) {
-          setWebGpuState(gpuState);
-          return true;
-        }
+      if (await attachWebGpu(canvas)) {
+        return true;
       }
     } catch {
       setWebGpuState(null);
@@ -548,6 +563,16 @@ function attachSelectionOverlayRuntime(host) {
     const { x, y } = toCanvasCoords(event);
     const res = selectionController.onPointerDown(x, y);
     if (res.handled) {
+      if (
+        selectionController.isDragging?.() &&
+        typeof event.pointerId === 'number'
+      ) {
+        try {
+          pointerCanvas?.setPointerCapture?.(event.pointerId);
+        } catch {
+          // Ignore synthetic events without active pointer id.
+        }
+      }
       event.preventDefault?.();
     }
   }
@@ -562,6 +587,13 @@ function attachSelectionOverlayRuntime(host) {
 
   /** @param {PointerEvent} event */
   function handlePointerUp(event) {
+    if (typeof event.pointerId === 'number') {
+      try {
+        pointerCanvas?.releasePointerCapture?.(event.pointerId);
+      } catch {
+        // Ignore when pointer was not captured.
+      }
+    }
     const { x, y } = toCanvasCoords(event);
     const res = selectionController.onPointerUp(x, y);
     if (res.handled) {
@@ -572,6 +604,20 @@ function attachSelectionOverlayRuntime(host) {
   function handlePointerCancel() {
     selectionController.onPointerCancel();
   }
+
+  function handleViewportResize() {
+    renderCompositeFrame();
+  }
+
+  globalThis.window?.addEventListener?.('resize', handleViewportResize);
+  globalThis.window?.addEventListener?.(
+    'orientationchange',
+    handleViewportResize
+  );
+  globalThis.window?.visualViewport?.addEventListener?.(
+    'resize',
+    handleViewportResize
+  );
 
   /** @param {HTMLCanvasElement | null} nextCanvas */
   function bindPointerCanvas(nextCanvas) {
@@ -586,6 +632,10 @@ function attachSelectionOverlayRuntime(host) {
       pointerCanvas.removeEventListener('pointermove', handlePointerMove);
       pointerCanvas.removeEventListener('pointerup', handlePointerUp);
       pointerCanvas.removeEventListener('pointercancel', handlePointerCancel);
+      pointerCanvas.removeEventListener(
+        'lostpointercapture',
+        handlePointerCancel
+      );
     }
     pointerCanvas = nextCanvas;
     if (pointerCanvas && typeof pointerCanvas.addEventListener === 'function') {
@@ -593,6 +643,7 @@ function attachSelectionOverlayRuntime(host) {
       pointerCanvas.addEventListener('pointermove', handlePointerMove);
       pointerCanvas.addEventListener('pointerup', handlePointerUp);
       pointerCanvas.addEventListener('pointercancel', handlePointerCancel);
+      pointerCanvas.addEventListener('lostpointercapture', handlePointerCancel);
     }
   }
 

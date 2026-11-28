@@ -121,7 +121,8 @@ export function verifyZeroThirdPartyJs(options = {}) {
     const raw = readFileSync(file, 'utf8');
     const code = stripComments(raw);
     const rel = relative(webRoot, file);
-    const isSignIn = rel === 'src/sign-in.js';
+    const stageRel = stageDir ? relative(stageDir, file) : '';
+    const isSignIn = rel === 'src/sign-in.js' || stageRel === 'src/sign-in.js';
 
     for (const match of code.matchAll(staticImportRe)) {
       const specifier = match[1];
