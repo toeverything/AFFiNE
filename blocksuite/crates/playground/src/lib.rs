@@ -256,6 +256,7 @@ pub struct PlaygroundView {
     pub(crate) last_touch_scroll_ms: Option<f64>,
     pub(crate) keep_keyboard_on_block_selection: bool,
     pub(crate) block_selection_return_caret: Option<String>,
+    pub(crate) saved_page_selection: Option<editor_session::DocumentSelection>,
     pub(crate) touch_long_press_anchor:
         Option<(editor_session::DocPoint, editor_session::DocPoint)>,
     pub(crate) touch_selection_menu_open: bool,
@@ -424,6 +425,7 @@ impl PlaygroundView {
             native_selection_drag_anchor: None,
             native_selection_drag_cell_anchor: None,
             native_selection_drag_active: false,
+            saved_page_selection: None,
             edgeless_readonly_selection_target: None,
             caret_active_since_ms: 0.0,
             caret_blink_task: None,

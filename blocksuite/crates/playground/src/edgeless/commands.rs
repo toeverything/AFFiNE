@@ -63,7 +63,7 @@ pub fn min_spatial_index(snapshot: &PageSnapshot) -> Option<String> {
     min_idx
 }
 
-pub(super) fn find_surface_element<'a>(
+pub(crate) fn find_surface_element<'a>(
     snapshot: &'a PageSnapshot,
     id: &str,
 ) -> Option<(&'a str, &'a SurfaceElement)> {

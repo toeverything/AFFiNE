@@ -3,7 +3,7 @@
 //! `@ Edgeless notes` linked page + `< Back`, and Edgeless multi-kind copy/paste + Linux word-delete.
 
 use blocksuite_playground_doc::schema::{BlockSpec, ParagraphType};
-use ui::{KeyDownEvent, Keystroke, Modifiers, Render};
+use ui::{KeyDownEvent, Keystroke, Modifiers};
 
 use super::{
     OverlayEvent,
@@ -57,8 +57,8 @@ fn mode_scoped_selection_invariant_blocks_hidden_edgeless_text_and_restores_clea
                 .unwrap()
                 .to_string();
             let layout = view.flow_layout().unwrap();
-            let last = layout.blocks.last().unwrap().clone();
-            view.handle_click_below_last_block(&last, window, cx);
+            let last = layout.blocks.last().unwrap();
+            view.handle_click_below_last_block(last, window, cx);
             let cmd = Modifiers {
                 platform: cfg!(target_os = "macos"),
                 control: !cfg!(target_os = "macos"),
@@ -167,7 +167,7 @@ fn collapsed_heading_drag_packs_section_escape_cancels_drag_and_db_new_record_re
     // + Database `+ New record` typing invalidates `Database` layout cache immediately!
     let showcase = seed_showcase_doc().unwrap();
     let (_p2, app2, win2, hw2) = open_doc(showcase);
-    app2.update(|cx| {
+    let (db_id, body_before, row_id) = app2.update(|cx| {
         win2.update(cx, |view, window, cx| {
             let layout0 = view.flow_layout().unwrap();
             let db_block0 = layout0
@@ -184,6 +184,13 @@ fn collapsed_heading_drag_packs_section_escape_cancels_drag_and_db_new_record_re
                 .add_database_row(&db_id, &row_id, 5_000)
                 .unwrap();
             view.apply_database_commit(commit, Some(window), cx);
+            (db_id, body_before, row_id)
+        })
+        .unwrap()
+    });
+    hw2.request_frame();
+    let body_after_add = app2.update(|cx| {
+        win2.update(cx, |view, window, cx| {
             let body_after_add = view
                 .flow_layout()
                 .unwrap()
@@ -204,6 +211,13 @@ fn collapsed_heading_drag_packs_section_escape_cancels_drag_and_db_new_record_re
             type_chars(view, "Live row title", window, cx);
             assert!(view.doc_rev > rev_before);
             assert_eq!(view.block_text(&row_id).unwrap(), "Live row title");
+            body_after_add
+        })
+        .unwrap()
+    });
+    hw2.request_frame();
+    app2.update(|cx| {
+        win2.update(cx, |view, window, cx| {
             let layout1 = view.flow_layout().unwrap();
             let db_after = layout1.block(&db_id).unwrap();
             assert!(
@@ -233,8 +247,13 @@ fn edgeless_copy_cut_paste_note_shape_frame_edgeless_text_and_atomic_delete_sole
     app.update(|cx| {
         win.update(cx, |view, window, cx| {
             view.set_mode(crate::PlaygroundMode::Edgeless, window, cx);
-            let _ = view.render(window, cx);
+        })
+        .unwrap();
+    });
+    hw.request_frame();
 
+    let shape_id = app.update(|cx| {
+        win.update(cx, |view, window, cx| {
             let shape_id = view
                 .edgeless
                 .authoring
@@ -274,8 +293,14 @@ fn edgeless_copy_cut_paste_note_shape_frame_edgeless_text_and_atomic_delete_sole
                 count_after > count_before + 2,
                 "pasting Note+Shape+Frame+EdgelessText must materialize spatial blocks as well as surface elements"
             );
+            shape_id
+        })
+        .unwrap()
+    });
+    hw.request_frame();
 
-            let _ = view.render(window, cx);
+    app.update(|cx| {
+        win.update(cx, |view, window, cx| {
             assert!(view.edgeless_begin_inline_edit(&shape_id, window, cx));
             view.edgeless
                 .authoring
@@ -311,6 +336,110 @@ fn edgeless_copy_cut_paste_note_shape_frame_edgeless_text_and_atomic_delete_sole
                 "Ctrl+Backspace on Linux/Windows must delete full word, got {label_after:?}"
             );
             view.edgeless_commit_inline_edit(window, cx);
+
+            // Astra R2 regression: Frame `prop:childElementIds` with `unselected-original: false`
+            // must NOT flip to `true` or retain uncloned canvas IDs on copy/paste, and deleting
+            // the pasted Frame must leave `unselected-original` intact on the canvas.
+            let mut unit_map = std::collections::HashMap::new();
+            unit_map.insert("selected-child".to_string(), "cloned-child".to_string());
+            let remapped = crate::edgeless::paste_convert::remap_group_children(
+                &serde_json::json!({
+                    "selected-child": true,
+                    "unselected-original": false,
+                    "uncloned-true": true
+                }),
+                &unit_map,
+            );
+            assert_eq!(
+                remapped,
+                y_octo::SessionValue::Map(vec![(
+                    "cloned-child".to_string(),
+                    y_octo::SessionValue::Any(y_octo::Any::True),
+                )]),
+                "remap_group_children must drop false entries and uncloned IDs"
+            );
+
+            let page_id = view.page_id.clone().unwrap();
+            {
+                let page = view.state.workspace.page_mut(&page_id).unwrap();
+                page.structural_edit(5_000, |page| {
+                    let block = y_octo::TypeTarget::Path(
+                        y_octo::TypePath::root("blocks").key("showcase-frame"),
+                    );
+                    match page
+                        .inner()
+                        .get_map_value(&block, "prop:childElementIds")
+                        .unwrap()
+                    {
+                        Some(y_octo::SessionReadValue::Map(map_id)) => {
+                            let target = y_octo::TypeTarget::Identity(map_id);
+                            page.inner_mut()
+                                .map_set(
+                                    &target,
+                                    shape_id.clone(),
+                                    y_octo::SessionValue::Any(y_octo::Any::False),
+                                )
+                                .unwrap();
+                        }
+                        _ => {
+                            page.inner_mut()
+                                .map_set(
+                                    &block,
+                                    "prop:childElementIds".into(),
+                                    y_octo::SessionValue::Map(vec![(
+                                        shape_id.clone(),
+                                        y_octo::SessionValue::Any(y_octo::Any::False),
+                                    )]),
+                                )
+                                .unwrap();
+                        }
+                    }
+                    Ok(())
+                })
+                .unwrap();
+            }
+            view.refresh_document();
+        })
+        .unwrap();
+    });
+    hw.request_frame();
+
+    app.update(|cx| {
+        win.update(cx, |view, window, cx| {
+            let frames_before: std::collections::BTreeSet<String> = view
+                .page_snapshot()
+                .unwrap()
+                .root
+                .as_ref()
+                .unwrap()
+                .walk()
+                .filter(|b| b.flavour == "affine:frame")
+                .map(|b| b.id.clone())
+                .collect();
+            view.edgeless.authoring.selection =
+                ["showcase-frame".to_string()].into_iter().collect();
+            assert!(view.edgeless_copy_selection(false, cx));
+            let frame_clip = cx.read_from_clipboard().expect("frame clipboard");
+            assert!(view.paste_edgeless_clipboard_item(&frame_clip, window, cx));
+            let pasted_frame_id = view
+                .page_snapshot()
+                .unwrap()
+                .root
+                .as_ref()
+                .unwrap()
+                .walk()
+                .find(|b| b.flavour == "affine:frame" && !frames_before.contains(&b.id))
+                .expect("pasted frame")
+                .id
+                .clone();
+            let to_delete: std::collections::BTreeSet<String> =
+                [pasted_frame_id.clone()].into_iter().collect();
+            view.edgeless_delete_ids(&to_delete, cx);
+            let snap_post_del = view.page_snapshot().unwrap();
+            assert!(
+                crate::edgeless::find_surface_element(&snap_post_del, &shape_id).is_some(),
+                "deleting pasted Frame must NOT cascade-delete unselected-original ({shape_id})"
+            );
         })
         .unwrap();
     });

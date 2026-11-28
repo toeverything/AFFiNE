@@ -1,5 +1,4 @@
-//! Mobile `KeyboardToolbar`, long-press ICU word selection, embedded PDF paging,
-//! table cell editing, and embedded doc navigation handlers for `PlaygroundView`.
+//! Mobile `KeyboardToolbar`, touch word selection, PDF paging, table cell & link navigation.
 
 mod actions;
 mod database;
@@ -706,8 +705,7 @@ impl PlaygroundView {
         self.navigate_back(Some(window), cx)
     }
 
-    /// Navigate to a linked document inside the current workspace when present, or show a
-    /// gentle toast if the target page does not exist locally. Always records `last_opened_embed_doc`.
+    /// Navigate to a linked document in the current workspace (or show a toast if absent).
     pub fn open_linked_doc(
         &mut self,
         page_id: &str,
@@ -768,6 +766,7 @@ impl PlaygroundView {
             Some(cx),
         );
         self.editor = Default::default();
+        self.saved_page_selection = None;
         self.overlays.reset();
         self.reading_anchor = None;
         self.flow = crate::block_flow::BlockFlow::new();

@@ -154,7 +154,7 @@ pub(super) fn remap_mindmap_children(
     SessionValue::Map(remapped)
 }
 
-pub(super) fn remap_group_children(val: &Value, id_map: &HashMap<String, String>) -> SessionValue {
+pub(crate) fn remap_group_children(val: &Value, id_map: &HashMap<String, String>) -> SessionValue {
     let inner = val
         .as_object()
         .and_then(|o| o.get("value").and_then(Value::as_object).or(Some(o)));
@@ -162,12 +162,20 @@ pub(super) fn remap_group_children(val: &Value, id_map: &HashMap<String, String>
         return surface_json_to_session_value(val);
     };
     let mut remapped: Vec<(String, SessionValue)> = Vec::new();
-    for (old_id, _v) in map {
-        let new_id = id_map
-            .get(old_id)
-            .cloned()
-            .unwrap_or_else(|| old_id.clone());
-        remapped.push((new_id, SessionValue::Any(Any::True)));
+    for (old_id, v) in map {
+        let is_active = match v {
+            Value::Bool(b) => *b,
+            Value::Null => false,
+            Value::Object(o) => o.get("value").and_then(Value::as_bool).unwrap_or(true),
+            _ => true,
+        };
+        if !is_active {
+            continue;
+        }
+        let Some(new_id) = id_map.get(old_id) else {
+            continue;
+        };
+        remapped.push((new_id.clone(), SessionValue::Any(Any::True)));
     }
     SessionValue::Map(remapped)
 }

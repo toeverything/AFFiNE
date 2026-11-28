@@ -8,12 +8,13 @@ mod gestures;
 mod group_ops;
 mod inline_edit;
 mod paste;
-mod paste_convert;
+pub(crate) mod paste_convert;
 mod shape_picker;
 
 pub use blocksuite_editor::edgeless::*;
 
-use commands::{find_block, find_surface_element, max_spatial_index};
+pub(crate) use commands::find_surface_element;
+use commands::{find_block, max_spatial_index};
 
 impl EdgelessToolbarHost for crate::PlaygroundView {
     fn edgeless_active_tool(&self) -> EdgelessTool {

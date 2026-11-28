@@ -369,10 +369,14 @@ impl PlaygroundView {
         }
         let now_ms = self.now_ms(cx);
         let current_x = self.indicator_x(now_ms);
+        let prev_mode = self.mode;
         // Commit any pending inline edit (table cell or Edgeless label) cleanly before switching modes.
         self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
         if self.edgeless.authoring.editing_spatial_block().is_some() {
             self.edgeless_commit_inline_edit(window, cx);
+        }
+        if prev_mode == PlaygroundMode::Page && target == PlaygroundMode::Edgeless {
+            self.saved_page_selection = self.editor.selection.take();
         }
         self.edgeless.authoring.reset_transient();
         self.page_scroll_fling = None;
@@ -386,6 +390,9 @@ impl PlaygroundView {
         self.context_paste_task = None;
         self.context_menu_target = None;
         self.overlays.reset();
+        if target == PlaygroundMode::Page && self.editor.selection.is_none() {
+            self.editor.selection = self.saved_page_selection.take();
+        }
         self.prune_dangling_selection(Some(window), cx);
         self.pill_motion = Some(Motion::new(
             current_x,

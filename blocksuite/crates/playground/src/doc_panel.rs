@@ -499,6 +499,7 @@ impl PlaygroundView {
     pub fn set_document(&mut self, state: crate::DocState, cx: &mut ui::Context<Self>) {
         self.finish_inline_targets(crate::overlays::InlineTargetEnd::DiscardPreedit, None, None);
         self.editor = Default::default();
+        self.saved_page_selection = None;
         self.overlays.reset();
         self.reading_anchor = None;
         self.flow = crate::block_flow::BlockFlow::new();
