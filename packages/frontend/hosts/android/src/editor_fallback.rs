@@ -6,7 +6,9 @@
 
 use std::borrow::Cow;
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex, mpsc};
+use std::thread::{self, ThreadId};
 use std::time::Duration;
 
 use anyhow::Result;
@@ -25,27 +27,80 @@ struct ScheduledTimer {
     runnable: RunnableVariant,
 }
 
-/// Deterministic foreground/background dispatcher for the Android UI thread.
+/// Foreground/background dispatcher for the Android thin host.
 ///
-/// Main-thread tasks run inline on the next frame tick; delayed timers (`dispatch_after`)
-/// are stamped against [`ui::clock_now()`] and drained by `drain_ready()` on each
-/// `Choreographer` frame tick so caret blink, selection menus, and deferred editor tasks
-/// execute deterministically without spawning background threads or reading wall clocks.
+/// Background tasks (`dispatch`) execute on a dedicated worker thread pool while
+/// main-thread tasks (`dispatch_on_main_thread`) and delayed timers (`dispatch_after`,
+/// stamped against [`ui::clock_now()`]) are drained on the UI thread by `drain_ready()`.
 pub(crate) struct AndroidDispatcher {
+    main_thread_id: ThreadId,
     main_queue: Mutex<VecDeque<RunnableVariant>>,
     timers: Mutex<Vec<ScheduledTimer>>,
+    bg_tx: Mutex<Option<mpsc::Sender<RunnableVariant>>>,
+    waker: Mutex<Option<Arc<dyn Fn() + Send + Sync>>>,
+    wake_notified: AtomicBool,
     #[cfg(test)]
     test_clock_offset: Mutex<Duration>,
 }
 
 impl AndroidDispatcher {
     pub(crate) fn new() -> Self {
+        let (tx, rx) = mpsc::channel::<RunnableVariant>();
+        let rx = Arc::new(Mutex::new(rx));
+        for idx in 0..2 {
+            let rx_worker = Arc::clone(&rx);
+            let _ = thread::Builder::new()
+                .name(format!("affine-android-bg-{idx}"))
+                .spawn(move || {
+                    loop {
+                        let next = {
+                            let guard = rx_worker.lock().unwrap_or_else(|e| e.into_inner());
+                            guard.recv()
+                        };
+                        match next {
+                            Ok(runnable) => {
+                                let _ = runnable.run();
+                            }
+                            Err(_) => break,
+                        }
+                    }
+                });
+        }
         Self {
+            main_thread_id: thread::current().id(),
             main_queue: Mutex::new(VecDeque::new()),
             timers: Mutex::new(Vec::new()),
+            bg_tx: Mutex::new(Some(tx)),
+            waker: Mutex::new(None),
+            wake_notified: AtomicBool::new(false),
             #[cfg(test)]
             test_clock_offset: Mutex::new(Duration::ZERO),
         }
+    }
+
+    pub(crate) fn set_waker(&self, waker: Option<Arc<dyn Fn() + Send + Sync>>) {
+        *self.waker.lock().unwrap_or_else(|e| e.into_inner()) = waker;
+    }
+
+    fn notify_waker(&self) {
+        if self
+            .wake_notified
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_ok()
+        {
+            let cb = self.waker.lock().unwrap_or_else(|e| e.into_inner()).clone();
+            if let Some(waker) = cb {
+                waker();
+            }
+        }
+    }
+
+    pub(crate) fn has_pending_main_tasks(&self) -> bool {
+        !self
+            .main_queue
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_empty()
     }
 
     fn current_instant(&self) -> ui::scheduler::Instant {
@@ -75,6 +130,7 @@ impl AndroidDispatcher {
     /// Runs all queued tasks and timers due at `current_instant()`, returning the
     /// remaining duration until the earliest still-pending timer, if any.
     pub(crate) fn drain_ready(&self) -> Option<Duration> {
+        self.wake_notified.store(false, Ordering::SeqCst);
         let now = self.current_instant();
         loop {
             let due_timers: Vec<RunnableVariant> = {
@@ -101,6 +157,9 @@ impl AndroidDispatcher {
                 runnable.run();
             }
         }
+        if self.has_pending_main_tasks() {
+            return Some(Duration::ZERO);
+        }
         let timers = self.timers.lock().unwrap_or_else(|e| e.into_inner());
         timers
             .iter()
@@ -111,7 +170,7 @@ impl AndroidDispatcher {
 
 impl PlatformDispatcher for AndroidDispatcher {
     fn is_main_thread(&self) -> bool {
-        true
+        thread::current().id() == self.main_thread_id
     }
 
     fn now(&self) -> ui::scheduler::Instant {
@@ -119,25 +178,41 @@ impl PlatformDispatcher for AndroidDispatcher {
     }
 
     fn dispatch(&self, runnable: RunnableVariant, _priority: Priority) {
-        self.main_queue
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .push_back(runnable);
+        let tx = self.bg_tx.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        if let Some(sender) = tx
+            && let Err(mpsc::SendError(fallback)) = sender.send(runnable)
+        {
+            self.main_queue
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .push_back(fallback);
+            self.notify_waker();
+        }
     }
 
     fn dispatch_on_main_thread(&self, runnable: RunnableVariant, _priority: Priority) {
-        self.main_queue
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .push_back(runnable);
+        let became_non_empty = {
+            let mut q = self.main_queue.lock().unwrap_or_else(|e| e.into_inner());
+            let was_empty = q.is_empty();
+            q.push_back(runnable);
+            was_empty
+        };
+        if became_non_empty {
+            self.notify_waker();
+        }
     }
 
     fn dispatch_after(&self, duration: Duration, runnable: RunnableVariant) {
         let due = self.current_instant() + duration;
-        self.timers
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .push(ScheduledTimer { due, runnable });
+        let earlier_from_bg = {
+            let mut timers = self.timers.lock().unwrap_or_else(|e| e.into_inner());
+            let prev_min = timers.iter().map(|t| t.due).min();
+            timers.push(ScheduledTimer { due, runnable });
+            !self.is_main_thread() && prev_min.is_none_or(|m| due < m)
+        };
+        if earlier_from_bg {
+            self.notify_waker();
+        }
     }
 
     fn spawn_realtime(&self, f: Box<dyn FnOnce() + Send>) {
@@ -308,5 +383,77 @@ impl PlatformTextSystem for FallbackTextSystem {
         _font_size: Pixels,
     ) -> TextRenderingMode {
         TextRenderingMode::Grayscale
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::mpsc;
+
+    #[test]
+    fn android_dispatcher_runs_background_tasks_off_main_thread() {
+        let dispatcher = Arc::new(AndroidDispatcher::new());
+        assert!(dispatcher.is_main_thread());
+        let main_id = thread::current().id();
+        let (tx, rx) = mpsc::channel();
+        let executor = ui::BackgroundExecutor::new(dispatcher);
+        executor
+            .spawn(async move {
+                let _ = tx.send(thread::current().id());
+            })
+            .detach();
+        let worker_id = rx
+            .recv_timeout(Duration::from_secs(2))
+            .expect("background task must run on worker thread");
+        assert_ne!(
+            worker_id, main_id,
+            "AndroidDispatcher::dispatch must execute off the main thread"
+        );
+    }
+
+    #[test]
+    fn android_dispatcher_wakes_main_looper_from_background_thread() {
+        use std::sync::atomic::{AtomicUsize, Ordering as AtomOrd};
+
+        let dispatcher = Arc::new(AndroidDispatcher::new());
+        assert_eq!(dispatcher.drain_ready(), None);
+
+        let (wake_tx, wake_rx) = mpsc::channel();
+        dispatcher.set_waker(Some(Arc::new(move || {
+            let _ = wake_tx.send(());
+        })));
+
+        let fg = ui::ForegroundExecutor::new(dispatcher.clone());
+        let bg = ui::BackgroundExecutor::new(dispatcher.clone());
+        let main_hits = Arc::new(AtomicUsize::new(0));
+        let main_hits_clone = Arc::clone(&main_hits);
+        let (done_tx, done_rx) = futures::channel::oneshot::channel::<()>();
+
+        // Park a foreground task on a oneshot resolved by a background worker thread;
+        // resolving the oneshot off-thread wakes the foreground task via `dispatch_on_main_thread`.
+        fg.spawn(async move {
+            let _ = done_rx.await;
+            main_hits_clone.fetch_add(1, AtomOrd::SeqCst);
+        })
+        .detach();
+        // Drain the initial poll so the foreground task is parked waiting on `done_rx`,
+        // and discard any wakeup already emitted by the initial `fg.spawn` on the main thread.
+        assert_eq!(dispatcher.drain_ready(), None);
+        assert_eq!(main_hits.load(AtomOrd::SeqCst), 0);
+        while wake_rx.try_recv().is_ok() {}
+
+        bg.spawn(async move {
+            let _ = done_tx.send(());
+        })
+        .detach();
+
+        wake_rx
+            .recv_timeout(Duration::from_secs(2))
+            .expect("background thread dispatch_on_main_thread must invoke waker without polling");
+        assert!(dispatcher.has_pending_main_tasks());
+        let next = dispatcher.drain_ready();
+        assert_eq!(main_hits.load(AtomOrd::SeqCst), 1);
+        assert_eq!(next, None);
     }
 }

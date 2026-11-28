@@ -540,6 +540,69 @@ impl PlaygroundView {
         self.did_edit(commit, Some(block_id), window, cx);
         Ok(())
     }
+
+    /// Record a CRDT relative snapshot for an open inline equation target so remote
+    /// insertions/deletions before it keep the popover anchored and write-safe.
+    pub(crate) fn capture_equation_snapshot(&mut self) {
+        self.equation_snapshot = match self.overlays.equation_editor().map(|e| &e.target) {
+            Some(EquationTarget::Inline {
+                block_id,
+                utf16_offset,
+            }) => self.page().and_then(|page| {
+                page.capture_selection_snapshot(block_id, *utf16_offset, block_id, *utf16_offset)
+                    .ok()
+            }),
+            _ => None,
+        };
+    }
+
+    /// Re-resolve the active equation editor target after a remote document update.
+    /// Closes the editor cleanly if the target block or inline equation was deleted.
+    pub(crate) fn sync_equation_target(&mut self) {
+        let Some(target) = self.overlays.equation_editor().map(|e| e.target.clone()) else {
+            self.equation_snapshot = None;
+            return;
+        };
+        match target {
+            EquationTarget::Block { block_id } => {
+                let alive = self
+                    .page_snapshot()
+                    .and_then(|s| s.block(&block_id))
+                    .is_some_and(|b| b.flavour == "affine:latex");
+                if !alive {
+                    self.overlays.close_equation_editor();
+                    self.equation_snapshot = None;
+                }
+            }
+            EquationTarget::Inline { block_id, .. } => {
+                let resolved = self.equation_snapshot.as_ref().and_then(|snap| {
+                    let page = self.page()?;
+                    let r = page.resolve_selection_snapshot(snap).ok().flatten()?;
+                    (r.anchor.0 == block_id
+                        && r.focus == r.anchor
+                        && is_inline_latex_at(page, &block_id, r.anchor.1)
+                        && page
+                            .capture_selection_snapshot(
+                                &block_id, r.anchor.1, &block_id, r.anchor.1,
+                            )
+                            .ok()
+                            .as_ref()
+                            == Some(snap))
+                    .then_some(r.anchor.1)
+                });
+                if let Some(new_offset) = resolved {
+                    if let Some(editor) = self.overlays.equation_editor_mut()
+                        && let EquationTarget::Inline { utf16_offset, .. } = &mut editor.target
+                    {
+                        *utf16_offset = new_offset;
+                    }
+                } else {
+                    self.overlays.close_equation_editor();
+                    self.equation_snapshot = None;
+                }
+            }
+        }
+    }
 }
 
 /// What a slash command does to the document, and where it leaves the caret.

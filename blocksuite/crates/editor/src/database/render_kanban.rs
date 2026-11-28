@@ -324,7 +324,9 @@ pub(super) fn render_kanban_view(
             if ctx.mobile_readonly {
                 hits.push(DatabaseHitTarget {
                     rect: card_rect,
-                    kind: DatabaseHitKind::CellReadOnly,
+                    kind: DatabaseHitKind::OpenRecord {
+                        row_id: row.row_id.clone(),
+                    },
                     scrolls_x: true,
                 });
             }

@@ -11,9 +11,15 @@ use ui::{
     ShapedGlyph, ShapedRun, Size, TextRenderingMode, TileId, point, px, size,
 };
 
+struct ScheduledTimer {
+    due: ui::scheduler::Instant,
+    runnable: RunnableVariant,
+}
+
 pub(crate) struct SyncHostDispatcher {
     clock: TestClock,
     queue: Mutex<VecDeque<RunnableVariant>>,
+    timers: Mutex<Vec<ScheduledTimer>>,
 }
 
 impl SyncHostDispatcher {
@@ -21,7 +27,47 @@ impl SyncHostDispatcher {
         Self {
             clock: TestClock::new(),
             queue: Mutex::new(VecDeque::new()),
+            timers: Mutex::new(Vec::new()),
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn advance_test_clock(&self, delta: Duration) {
+        self.clock.advance(delta);
+    }
+
+    pub(crate) fn drain_ready(&self) -> Option<Duration> {
+        let now = self.clock.now();
+        loop {
+            let due_timers: Vec<RunnableVariant> = {
+                let mut timers = self.timers.lock().unwrap_or_else(|e| e.into_inner());
+                let mut ready = Vec::new();
+                let mut i = 0;
+                while i < timers.len() {
+                    if timers[i].due <= now {
+                        ready.push(timers.swap_remove(i).runnable);
+                    } else {
+                        i += 1;
+                    }
+                }
+                ready
+            };
+            let queued: Vec<RunnableVariant> = {
+                let mut q = self.queue.lock().unwrap_or_else(|e| e.into_inner());
+                q.drain(..).collect()
+            };
+            if due_timers.is_empty() && queued.is_empty() {
+                break;
+            }
+            for runnable in due_timers.into_iter().chain(queued) {
+                runnable.run();
+            }
+        }
+        let timers = self.timers.lock().unwrap_or_else(|e| e.into_inner());
+        timers
+            .iter()
+            .map(|t| t.due.saturating_duration_since(now))
+            .min()
     }
 }
 
@@ -47,7 +93,12 @@ impl PlatformDispatcher for SyncHostDispatcher {
         }
     }
 
-    fn dispatch_after(&self, _duration: Duration, _runnable: RunnableVariant) {}
+    fn dispatch_after(&self, duration: Duration, runnable: RunnableVariant) {
+        let due = self.clock.now() + duration;
+        if let Ok(mut timers) = self.timers.lock() {
+            timers.push(ScheduledTimer { due, runnable });
+        }
+    }
 
     fn spawn_realtime(&self, f: Box<dyn FnOnce() + Send>) {
         f();
@@ -180,5 +231,36 @@ impl PlatformTextSystem for FallbackTextSystem {
         _font_size: Pixels,
     ) -> TextRenderingMode {
         TextRenderingMode::Grayscale
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use super::*;
+
+    #[test]
+    fn sync_host_dispatcher_drains_delayed_timers() {
+        let dispatcher = Arc::new(SyncHostDispatcher::new());
+        let bg = ui::BackgroundExecutor::new(dispatcher.clone());
+        let fg = ui::ForegroundExecutor::new(dispatcher.clone());
+        let hits = Arc::new(AtomicUsize::new(0));
+        let hits_clone = Arc::clone(&hits);
+        let bg_clone = bg.clone();
+        let _task = fg.spawn(async move {
+            bg_clone.timer(Duration::from_millis(80)).await;
+            hits_clone.fetch_add(1, Ordering::SeqCst);
+        });
+
+        let pending = dispatcher.drain_ready();
+        assert_eq!(hits.load(Ordering::SeqCst), 0);
+        assert!(pending.is_some(), "timer must report remaining delay");
+
+        dispatcher.clock.advance(Duration::from_millis(100));
+        let after = dispatcher.drain_ready();
+        assert_eq!(hits.load(Ordering::SeqCst), 1);
+        assert_eq!(after, None);
     }
 }

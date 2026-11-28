@@ -185,9 +185,7 @@ pub unsafe extern "C" fn affine_ios_host_render_frame(
             editor.request_frame();
         }
         let color = editor.render_frame(frame_timestamp_sec);
-        if color != 0 {
-            let _ = host.state.render_frame(frame_timestamp_sec);
-        }
+        let _ = host.state.render_frame(frame_timestamp_sec);
         Some(color)
     } else {
         None
@@ -212,6 +210,22 @@ pub unsafe extern "C" fn affine_ios_host_is_dirty(host: *const AffineIosHost) ->
     host.state.is_dirty()
 }
 
+/// Drains due timers (on non-iOS fallback hosts) and returns milliseconds until the next pending
+/// timer (`-1` when idle with no pending timer).
+///
+/// # Safety
+/// `host` must be null or a live pointer returned by `affine_ios_host_create`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn affine_ios_host_next_timer_delay_ms(host: *mut AffineIosHost) -> i64 {
+    let Some(host) = (unsafe { host.as_ref() }) else {
+        return -1;
+    };
+    host.editor
+        .borrow()
+        .as_ref()
+        .map_or(-1, |editor| editor.next_timer_delay_ms())
+}
+
 /// # Safety
 /// `host` must be null or a live pointer returned by `affine_ios_host_create`.
 #[unsafe(no_mangle)]
@@ -222,6 +236,33 @@ pub unsafe extern "C" fn affine_ios_host_request_frame(host: *mut AffineIosHost)
     host.state.request_frame();
     if let Some(editor) = host.editor.borrow_mut().as_mut() {
         editor.request_frame();
+    }
+}
+
+/// Callback invoked when Rust marks a previously clean frame dirty (e.g., from a timer or async task)
+/// so the iOS host can unpause `CADisplayLink` immediately.
+pub type AffineFrameWakeCallback = Option<unsafe extern "C" fn(*mut core::ffi::c_void)>;
+
+/// # Safety
+/// `host` must be null or a live pointer returned by `affine_ios_host_create`.
+/// `user_data` must remain valid until unregistered with `callback = NULL` or host destruction.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn affine_ios_host_set_frame_wake_callback(
+    host: *mut AffineIosHost,
+    callback: AffineFrameWakeCallback,
+    user_data: *mut core::ffi::c_void,
+) {
+    let Some(host) = (unsafe { host.as_mut() }) else {
+        return;
+    };
+    if let Some(editor) = host.editor.borrow_mut().as_mut() {
+        let observer = callback.map(|cb| {
+            let raw = user_data as usize;
+            std::rc::Rc::new(move || unsafe {
+                cb(raw as *mut core::ffi::c_void);
+            }) as std::rc::Rc<dyn Fn()>
+        });
+        editor.set_frame_wake_observer(observer);
     }
 }
 
@@ -865,5 +906,31 @@ mod tests {
         assert!(unsafe { affine_ios_workspace_checkpoint(ws) });
         unsafe { affine_ios_workspace_close(ws) };
         let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn keyboard_transition_keeps_c_abi_host_dirty_across_intermediate_frames() {
+        let host = affine_ios_host_create(core::ptr::null_mut(), 390.0, 844.0, 3.0);
+        assert!(!host.is_null());
+        unsafe {
+            let _ = affine_ios_host_render_frame(host, 1.0);
+            crate::ffi_s3::affine_ios_host_begin_keyboard_transition(host, 302.0, 10.0, 0.25);
+            assert!(affine_ios_host_is_dirty(host));
+            let f1 = crate::ffi_s3::affine_ios_host_sample_keyboard_frame(
+                host, 59.0, 0.0, 34.0, 0.0, 10.016,
+            );
+            assert!(f1.ime_bottom > 0.0 && f1.ime_bottom < 302.0);
+            let _ = affine_ios_host_render_frame(host, 10.016);
+            assert!(
+                affine_ios_host_is_dirty(host),
+                "C-ABI host must remain dirty after Frame 1 while keyboard transition is active"
+            );
+            let f_end = crate::ffi_s3::affine_ios_host_sample_keyboard_frame(
+                host, 59.0, 0.0, 34.0, 0.0, 10.30,
+            );
+            assert!((f_end.ime_bottom - 302.0).abs() < 1e-3);
+            let _ = affine_ios_host_render_frame(host, 10.30);
+            affine_ios_host_destroy(host);
+        }
     }
 }

@@ -25,6 +25,13 @@ const FLING_FRICTION: f64 = 3.25;
 const FLING_MIN_VELOCITY: f32 = 20.0;
 const TOUCH_CONTROL_HIT_SIZE: f32 = 44.0;
 
+/// Axis lock for a single touch scroll gesture.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum TouchScrollAxis {
+    Horizontal,
+    Vertical,
+}
+
 impl PlaygroundView {
     pub(crate) fn cancel_flings(&mut self) {
         self.page_scroll_fling = None;
@@ -35,17 +42,106 @@ impl PlaygroundView {
     pub(crate) fn handle_touch_gestures(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if window.active_touch_count() > 0 {
             self.cancel_flings();
+        } else {
+            self.touch_scroll_axis_lock = None;
         }
         let now_ms = self.now_ms(cx);
+        if self.database_record_sheet.is_some() {
+            self.cancel_flings();
+            let geom = self.record_sheet_geometry(window);
+            for gesture in window.take_touch_gestures() {
+                let Some((sheet_left, sheet_top, sheet_w, _, max_scroll)) = geom else {
+                    continue;
+                };
+                match gesture {
+                    TouchGesture::Tap { position, count: 1 } => {
+                        let (x, y) = (f32::from(position.x), f32::from(position.y));
+                        let outside = y < sheet_top || x < sheet_left || x > sheet_left + sheet_w;
+                        if outside {
+                            self.close_database_record_sheet(cx);
+                        }
+                    }
+                    TouchGesture::PanStart { origin, .. } => {
+                        let (x, y) = (f32::from(origin.x), f32::from(origin.y));
+                        if let Some(s) = self.database_record_sheet.as_mut() {
+                            s.scroll_fling = None;
+                            let in_sheet_x = x >= sheet_left && x <= sheet_left + sheet_w;
+                            if in_sheet_x && y >= sheet_top && y <= sheet_top + 56.0 {
+                                s.grabber_drag_start_y = Some(y);
+                                s.touch_body_drag = false;
+                            } else if in_sheet_x && y > sheet_top + 56.0 {
+                                s.grabber_drag_start_y = None;
+                                s.touch_body_drag = true;
+                            } else {
+                                s.grabber_drag_start_y = None;
+                                s.touch_body_drag = false;
+                            }
+                        }
+                    }
+                    TouchGesture::PanUpdate { position, .. } => {
+                        let y = f32::from(position.y);
+                        let start_y = self
+                            .database_record_sheet
+                            .as_ref()
+                            .and_then(|s| s.grabber_drag_start_y);
+                        if let Some(y0) = start_y
+                            && y - y0 >= 56.0
+                        {
+                            self.close_database_record_sheet(cx);
+                        }
+                    }
+                    TouchGesture::PanEnd {
+                        position,
+                        velocity,
+                        cancelled,
+                        ..
+                    } => {
+                        self.touch_scroll_axis_lock = None;
+                        let y = f32::from(position.y);
+                        let vy = f32::from(velocity.y);
+                        let header_start = self
+                            .database_record_sheet
+                            .as_mut()
+                            .and_then(|s| s.grabber_drag_start_y.take());
+                        let was_body = self
+                            .database_record_sheet
+                            .as_mut()
+                            .is_some_and(|s| std::mem::take(&mut s.touch_body_drag));
+                        if let Some(y0) = header_start {
+                            if !cancelled && y - y0 >= 56.0 {
+                                self.close_database_record_sheet(cx);
+                            }
+                        } else if was_body
+                            && !cancelled
+                            && vy.abs() >= FLING_MIN_VELOCITY
+                            && max_scroll > 0.0
+                            && let Some(s) = self.database_record_sheet.as_mut()
+                        {
+                            s.scroll_fling = Some(InertialDecay::new(
+                                f64::from(s.scroll_y),
+                                -f64::from(vy),
+                                FLING_FRICTION,
+                                now_ms,
+                            ));
+                            window.request_animation_frame();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            return;
+        }
         for gesture in window.take_touch_gestures() {
             match (self.mode, gesture) {
                 (_, TouchGesture::PanStart { .. } | TouchGesture::PinchStart { .. }) => {
                     self.cancel_flings();
+                    self.touch_scroll_axis_lock = None;
                     self.touch_selection_menu_open = false;
                     self.edgeless_readonly_selection_target = None;
                 }
                 (PlaygroundMode::Page, TouchGesture::Tap { position, count: 1 }) => {
                     self.cancel_flings();
+                    self.touch_scroll_axis_lock = None;
                     self.touch_selection_menu_open = false;
                     self.edgeless_readonly_selection_target = None;
                     let (x, y) = (f32::from(position.x), f32::from(position.y));
@@ -63,6 +159,7 @@ impl PlaygroundView {
                 }
                 (PlaygroundMode::Edgeless, TouchGesture::Tap { .. }) => {
                     self.cancel_flings();
+                    self.touch_scroll_axis_lock = None;
                     self.touch_selection_menu_open = false;
                     self.edgeless_readonly_selection_target = None;
                 }
@@ -123,10 +220,14 @@ impl PlaygroundView {
                     TouchGesture::PanEnd {
                         position,
                         velocity,
-                        cancelled: false,
+                        cancelled,
                         ..
                     },
                 ) => {
+                    self.touch_scroll_axis_lock = None;
+                    if cancelled {
+                        continue;
+                    }
                     let (vx, vy) = (f32::from(velocity.x), f32::from(velocity.y));
                     if vx.abs() > vy.abs()
                         && vx.abs() >= FLING_MIN_VELOCITY
@@ -152,10 +253,14 @@ impl PlaygroundView {
                     PlaygroundMode::Edgeless,
                     TouchGesture::PanEnd {
                         velocity,
-                        cancelled: false,
+                        cancelled,
                         ..
                     },
                 ) => {
+                    self.touch_scroll_axis_lock = None;
+                    if cancelled {
+                        continue;
+                    }
                     let (vx, vy) = (f32::from(velocity.x), f32::from(velocity.y));
                     if vx.hypot(vy) >= FLING_MIN_VELOCITY {
                         let z = f64::from(self.edgeless.camera.zoom.max(0.1));
@@ -207,6 +312,29 @@ impl PlaygroundView {
     }
 
     pub(crate) fn step_page_flings(&mut self, now_ms: f64, window: &mut Window) {
+        if self.database_record_sheet.is_some() {
+            self.page_scroll_fling = None;
+            self.code_scroll_fling = None;
+            let max_scroll = self
+                .record_sheet_geometry(window)
+                .map_or(0.0, |(_, _, _, _, m)| m);
+            if let Some(s) = self.database_record_sheet.as_mut()
+                && let Some(fling) = s.scroll_fling
+            {
+                let next = fling.value_at(now_ms) as f32;
+                let clamped = next.clamp(0.0, max_scroll).round();
+                s.scroll_y = clamped;
+                if fling.velocity_at(now_ms).abs() <= fling.stop_velocity
+                    || next <= 0.0
+                    || next >= max_scroll
+                {
+                    s.scroll_fling = None;
+                } else {
+                    window.request_animation_frame();
+                }
+            }
+            return;
+        }
         if let Some(fling) = self.page_scroll_fling {
             let next = fling.value_at(now_ms) as f32;
             let clamped = next.clamp(0.0, self.max_scroll).round();

@@ -203,6 +203,7 @@ impl AndroidEditorWindow {
     }
 
     pub(crate) fn request_frame_now(&self) {
+        self.state.borrow_mut().dirty = false;
         let cb = self.state.borrow_mut().request_frame.take();
         if let Some(mut f) = cb {
             f(RequestFrameOptions {
@@ -211,7 +212,6 @@ impl AndroidEditorWindow {
             });
             self.state.borrow_mut().request_frame = Some(f);
         }
-        self.state.borrow_mut().dirty = false;
     }
 
     pub(crate) fn dispatch_input(&self, event: PlatformInput) -> DispatchEventResult {
@@ -383,6 +383,19 @@ impl PlatformWindow for AndroidEditorWindow {
         true
     }
 
+    fn frame_waker(&self) -> Option<Rc<dyn Fn()>> {
+        let weak = Rc::downgrade(&self.state);
+        Some(Rc::new(move || {
+            if let Some(state) = weak.upgrade() {
+                state.borrow_mut().dirty = true;
+            }
+        }))
+    }
+
+    fn schedule_frame(&self) {
+        self.state.borrow_mut().dirty = true;
+    }
+
     fn on_request_frame(&self, callback: Box<dyn FnMut(RequestFrameOptions)>) {
         self.state.borrow_mut().request_frame = Some(callback);
     }
@@ -429,7 +442,14 @@ impl PlatformWindow for AndroidEditorWindow {
     }
 
     fn draw(&self, scene: &Scene) {
-        self.state.borrow_mut().last_scene_quads = scene.quads.len();
+        // Clear dirty at present time so pre-draw `App::flush_effects()` calls (e.g. power_state
+        // query before `window.draw`) cannot leave `dirty` permanently stuck true, while post-draw
+        // `schedule_frame()` / `frame_waker()` for active animations still re-arm `dirty = true`.
+        {
+            let mut st = self.state.borrow_mut();
+            st.dirty = false;
+            st.last_scene_quads = scene.quads.len();
+        }
         #[cfg(target_os = "android")]
         if let Some(renderer) = self.renderer.borrow_mut().as_mut() {
             renderer.draw(scene);
@@ -460,7 +480,6 @@ impl PlatformWindow for AndroidEditorWindow {
         let mut st = self.state.borrow_mut();
         st.text_input_change_seq = st.text_input_change_seq.saturating_add(1);
         st.last_text_input_change = Some(change);
-        st.dirty = true;
     }
 }
 
@@ -724,13 +743,24 @@ mod tests {
             del_clone.fetch_add(1, Ordering::SeqCst);
         });
 
+        let (wake_tx, wake_rx) = std::sync::mpsc::channel();
+        dispatcher.set_waker(Some(Arc::new(move || {
+            let _ = wake_tx.send(());
+        })));
         let pending = dispatcher.drain_ready();
         assert_eq!(immediate_hits.load(Ordering::SeqCst), 1);
         assert_eq!(delayed_hits.load(Ordering::SeqCst), 0);
         assert!(pending.is_some(), "timer must report remaining delay");
+        while wake_rx.try_recv().is_ok() {}
 
         dispatcher.advance_test_clock(Duration::from_millis(501));
-        let remaining = dispatcher.drain_ready();
+        let mut remaining = dispatcher.drain_ready();
+        if delayed_hits.load(Ordering::SeqCst) == 0 {
+            wake_rx
+                .recv_timeout(Duration::from_secs(2))
+                .expect("delayed timer must invoke dispatcher waker without sleep polling");
+            remaining = dispatcher.drain_ready();
+        }
         assert_eq!(delayed_hits.load(Ordering::SeqCst), 1);
         assert!(remaining.is_none());
         drop((imm_task, del_task));

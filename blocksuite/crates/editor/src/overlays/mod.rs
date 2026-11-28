@@ -80,8 +80,8 @@ use crate::{
 
 /// Duration of every overlay transition.
 pub const OVERLAY_MOTION_MS: f64 = 150.0;
-/// Duration of the to-do checkbox radial pulse feedback in milliseconds.
-pub const TODO_PULSE_MS: f64 = 240.0;
+/// Duration of the to-do checkbox 6-dot radial pulse feedback in milliseconds.
+pub const TODO_PULSE_MS: f64 = 600.0;
 /// How long a code block's copy button reads `Copied`.
 pub const COPIED_MS: u64 = 1_500;
 
@@ -472,6 +472,8 @@ pub struct OverlayEffects {
     pub copied_timer: Option<u64>,
     /// Read the clipboard into the link field.
     pub paste: bool,
+    /// Desktop context-menu command triggered via keyboard (`Enter`).
+    pub context_menu_action: Option<ContextMenuAction>,
     pub redraw: bool,
     /// Whether a key was consumed.
     pub handled: bool,
@@ -485,6 +487,8 @@ pub struct OverlayScene<'a> {
     pub geometry: PageGeometry,
     /// Window size in logical pixels.
     pub window: (f32, f32),
+    /// Bottom window inset (effective soft-keyboard / safe-area occlusion in logical px).
+    pub bottom_inset: f32,
     pub scroll_y: f32,
     /// Explicit layout direction supplied by the host shell.
     pub direction: ui::Direction,
@@ -508,13 +512,13 @@ impl OverlayScene<'_> {
         }
     }
 
-    /// Screen-space area popovers may cover: the window below the top bar.
+    /// Screen-space area popovers may cover: the window below the top bar and above any bottom inset.
     pub fn popover_viewport(&self) -> FlowRect {
         FlowRect::new(
             0.0,
             TOPBAR_HEIGHT,
             self.window.0,
-            (self.window.1 - TOPBAR_HEIGHT).max(0.0),
+            (self.window.1 - TOPBAR_HEIGHT - self.bottom_inset.max(0.0)).max(0.0),
         )
     }
 

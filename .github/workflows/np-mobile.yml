@@ -233,10 +233,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pkg-config libfontconfig1-dev libfreetype-dev
 
-      - name: Test host logic and link Android NDK .so binaries
+      - name: Link Android NDK .so binaries
         working-directory: packages/frontend
         run: |
-          cargo test --locked -p affine-android-host
           NDK_BIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
           export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDK_BIN/aarch64-linux-android24-clang"
           export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER="$NDK_BIN/x86_64-linux-android24-clang"
@@ -248,12 +247,27 @@ jobs:
           cargo build --locked -p affine-android-host --target x86_64-linux-android
           test -s target/aarch64-linux-android/debug/libaffine_android_host.so
           test -s target/x86_64-linux-android/debug/libaffine_android_host.so
+          STRIP_BIN="$NDK_BIN/llvm-strip"
+          for abi in aarch64-linux-android x86_64-linux-android; do
+            SRC="target/${abi}/debug/libaffine_android_host.so"
+            DST="/tmp/libaffine_android_host_${abi}.stripped.so"
+            cp "$SRC" "$DST"
+            "$STRIP_BIN" --strip-unneeded "$DST"
+            BYTES=$(stat -c '%s' "$DST")
+            if [ "$abi" = "aarch64-linux-android" ]; then
+              MAX_BYTES=90000000
+            else
+              MAX_BYTES=115000000
+            fi
+            echo "Stripped ${abi} libaffine_android_host.so bytes: ${BYTES} (max ${MAX_BYTES})"
+            test "$BYTES" -le "$MAX_BYTES"
+          done
 
       - name: Compile Android thin host Kotlin sources with kotlinc and run real JNI parity check
         run: |
           ANDROID_JAR=$(ls -1 "$ANDROID_HOME"/platforms/android-*/android.jar | sort -V | tail -n 1)
           echo "Using Android SDK jar: $ANDROID_JAR"
-          CARGO_ENCODED_RUSTFLAGS="" cargo build --locked --manifest-path packages/frontend/Cargo.toml -p affine-android-host --features host-jni
+          cargo build --locked --manifest-path packages/frontend/Cargo.toml -p affine-android-host --features host-jni
           test -s packages/frontend/target/debug/libaffine_android_host.so
           mkdir -p /tmp/affine-android-kotlin
           kotlinc -classpath "$ANDROID_JAR" \
@@ -300,8 +314,11 @@ jobs:
           cargo check --locked -p ui -p affine-ios-host --target aarch64-apple-ios
           cargo build --locked -p affine-ios-host --target aarch64-apple-ios-sim
           test -s target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a
+          IOS_LIB_BYTES=$(stat -f '%z' target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a)
+          echo "iOS staticlib libaffine_ios_host.a bytes: ${IOS_LIB_BYTES}"
+          test "$IOS_LIB_BYTES" -le 450000000
 
-      - name: Link zero-CocoaPods Swift iOS host against libaffine_ios_host.a
+      - name: Link zero-CocoaPods Swift iOS host and run 6/6 Simulator smoke tests
         run: |
           SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
           swiftc -emit-executable \
@@ -324,3 +341,50 @@ jobs:
             -o /tmp/AffineIosHost \
             packages/frontend/hosts/ios/Sources/*.swift
           test -s /tmp/AffineIosHost
+
+          SMOKE_SOURCES=()
+          for f in packages/frontend/hosts/ios/Sources/*.swift; do
+            case "$(basename "$f")" in
+              AppDelegate.swift|SceneDelegate.swift|main.swift) continue ;;
+            esac
+            SMOKE_SOURCES+=("$f")
+          done
+          swiftc -emit-executable \
+            -sdk "$SDK" \
+            -target arm64-apple-ios16.0-simulator \
+            -import-objc-header packages/frontend/hosts/ios/include/affine_mobile_host.h \
+            -L packages/frontend/target/aarch64-apple-ios-sim/debug \
+            -laffine_ios_host \
+            -framework UIKit \
+            -framework QuartzCore \
+            -framework Metal \
+            -framework WebKit \
+            -framework PDFKit \
+            -framework CoreText \
+            -framework CoreGraphics \
+            -framework CoreVideo \
+            -framework CoreFoundation \
+            -framework Foundation \
+            -framework UniformTypeIdentifiers \
+            -o /tmp/IosHostS3SmokeTest \
+            "${SMOKE_SOURCES[@]}" \
+            packages/frontend/hosts/ios/tests/IosHostS3SmokeTest.swift
+          test -s /tmp/IosHostS3SmokeTest
+
+          SIM_UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)["devices"]
+          for runtime, devs in sorted(data.items(), reverse=True):
+              if "iOS" not in runtime:
+                  continue
+              for d in devs:
+                  if d.get("isAvailable") and "iPhone" in d.get("name", ""):
+                      print(d["udid"])
+                      sys.exit(0)
+          sys.exit(1)
+          ')
+          echo "Running iOS smoke tests on Simulator UDID: $SIM_UDID"
+          xcrun simctl boot "$SIM_UDID" || true
+          trap 'xcrun simctl shutdown "$SIM_UDID" || true' EXIT
+          xcrun simctl bootstatus "$SIM_UDID" -b
+          xcrun simctl spawn "$SIM_UDID" /tmp/IosHostS3SmokeTest

@@ -13,7 +13,6 @@ use std::{
     path::{Path, PathBuf},
     rc::Rc,
     sync::Arc,
-    time::Duration,
 };
 
 use anyhow::Result;
@@ -34,54 +33,18 @@ use ui::apple::{
 };
 use ui::{
     Action, ActivityGuard, AnyWindowHandle, BackgroundExecutor, Bounds, Capslock, ClipboardItem,
-    CursorStyle, DispatchEventResult, DisplayId, DummyKeyboardMapper, ForegroundExecutor, GpuSpecs,
-    Keymap, Menu, MenuItem, Modifiers, OperatingSystem, PathPromptOptions, Pixels, Platform,
-    PlatformAtlas, PlatformDisplay, PlatformInfo, PlatformInput, PlatformInputHandler,
-    PlatformKeyboardLayout, PlatformKeyboardMapper, PlatformTarget, PlatformTextSystem,
-    PlatformWindow, Point, PromptButton, PromptLevel, RequestFrameOptions, Scene, Size, Task,
-    TextInputConfiguration, TextInputStateChange, ThermalState, WindowAppearance,
-    WindowBackgroundAppearance, WindowBounds, WindowControlArea, WindowInsets, WindowParams,
-    WindowVisibility, point, px, size,
+    CursorStyle, DispatchEventResult, DummyKeyboardMapper, ForegroundExecutor, GpuSpecs, Keymap,
+    Menu, MenuItem, Modifiers, OperatingSystem, PathPromptOptions, Pixels, Platform, PlatformAtlas,
+    PlatformDisplay, PlatformInfo, PlatformInput, PlatformInputHandler, PlatformKeyboardLayout,
+    PlatformKeyboardMapper, PlatformTarget, PlatformTextSystem, PlatformWindow, Point,
+    PromptButton, PromptLevel, RequestFrameOptions, Scene, Size, Task, TextInputConfiguration,
+    TextInputStateChange, ThermalState, WindowAppearance, WindowBackgroundAppearance, WindowBounds,
+    WindowControlArea, WindowInsets, WindowParams, WindowVisibility, point, px, size,
 };
-use uuid::Uuid;
 
 #[cfg(not(target_os = "ios"))]
 use super::editor_fallback as fallback;
-
-struct IosEditorKeyboardLayout;
-
-impl PlatformKeyboardLayout for IosEditorKeyboardLayout {
-    fn id(&self) -> &str {
-        "ios.editor"
-    }
-
-    fn name(&self) -> &str {
-        "iOS"
-    }
-}
-
-#[derive(Debug)]
-struct IosEditorDisplay {
-    bounds: Bounds<Pixels>,
-}
-
-impl PlatformDisplay for IosEditorDisplay {
-    fn id(&self) -> DisplayId {
-        DisplayId::new(0)
-    }
-
-    fn uuid(&self) -> Result<Uuid> {
-        Ok(Uuid::nil())
-    }
-
-    fn bounds(&self) -> Bounds<Pixels> {
-        self.bounds
-    }
-
-    fn refresh_interval(&self) -> Option<Duration> {
-        Some(Duration::from_secs(1) / 120)
-    }
-}
+use super::editor_runtime::{IosEditorDisplay, IosEditorKeyboardLayout};
 
 pub(crate) type TextInputObserver = Box<dyn Fn(TextInputStateChange)>;
 
@@ -106,6 +69,7 @@ pub(crate) struct IosEditorWindowState {
     pub(crate) last_text_input_change: Option<TextInputStateChange>,
     pub(crate) pending_text_input_changes: Vec<TextInputStateChange>,
     pub(crate) text_input_observer: Option<TextInputObserver>,
+    pub(crate) frame_wake_observer: Option<Rc<dyn Fn()>>,
 }
 
 /// Shared handle to the live GPUI `PlatformWindow` owned by `affine-ios-host`.
@@ -168,6 +132,7 @@ impl IosEditorWindow {
                 last_text_input_change: None,
                 pending_text_input_changes: Vec::new(),
                 text_input_observer: None,
+                frame_wake_observer: None,
             })),
         })
     }
@@ -184,7 +149,22 @@ impl IosEditorWindow {
         }
     }
 
+    fn mark_dirty_and_wake(state: &Rc<RefCell<IosEditorWindowState>>) {
+        let observer = {
+            let mut st = state.borrow_mut();
+            let was_dirty = st.dirty;
+            st.dirty = true;
+            (!was_dirty)
+                .then(|| st.frame_wake_observer.clone())
+                .flatten()
+        };
+        if let Some(cb) = observer {
+            cb();
+        }
+    }
+
     pub(crate) fn request_frame_now(&self) {
+        self.state.borrow_mut().dirty = false;
         let callback = self.state.borrow_mut().request_frame.take();
         if let Some(mut cb) = callback {
             cb(RequestFrameOptions {
@@ -193,7 +173,6 @@ impl IosEditorWindow {
             });
             self.state.borrow_mut().request_frame = Some(cb);
         }
-        self.state.borrow_mut().dirty = false;
     }
 
     /// Delivers queued `TextInputStateChange` notifications after any active GPUI `App`
@@ -420,6 +399,19 @@ impl PlatformWindow for IosEditorWindow {
         true
     }
 
+    fn frame_waker(&self) -> Option<Rc<dyn Fn()>> {
+        let weak = Rc::downgrade(&self.state);
+        Some(Rc::new(move || {
+            if let Some(state) = weak.upgrade() {
+                Self::mark_dirty_and_wake(&state);
+            }
+        }))
+    }
+
+    fn schedule_frame(&self) {
+        Self::mark_dirty_and_wake(&self.state);
+    }
+
     fn on_request_frame(&self, callback: Box<dyn FnMut(RequestFrameOptions)>) {
         self.state.borrow_mut().request_frame = Some(callback);
     }
@@ -468,6 +460,10 @@ impl PlatformWindow for IosEditorWindow {
     }
 
     fn draw(&self, scene: &Scene) {
+        // Clear dirty at present time so pre-draw `App::flush_effects()` calls (e.g. power_state
+        // query before `window.draw`) cannot leave `dirty` permanently stuck true, while post-draw
+        // `schedule_frame()` / `frame_waker()` for active animations still re-arm `dirty = true`.
+        self.state.borrow_mut().dirty = false;
         #[cfg(target_os = "ios")]
         {
             self.renderer.borrow_mut().draw(scene);
@@ -506,13 +502,14 @@ impl PlatformWindow for IosEditorWindow {
         st.text_input_change_seq = st.text_input_change_seq.saturating_add(1);
         st.last_text_input_change = Some(change);
         st.pending_text_input_changes.push(change);
-        st.dirty = true;
     }
 }
 
 pub(crate) struct IosEditorPlatform {
     background_executor: BackgroundExecutor,
     foreground_executor: ForegroundExecutor,
+    #[cfg(not(target_os = "ios"))]
+    fallback_dispatcher: Arc<fallback::SyncHostDispatcher>,
     text_system: Arc<dyn PlatformTextSystem>,
     #[cfg(target_os = "ios")]
     instance_buffer_pool: Arc<Mutex<InstanceBufferPool>>,
@@ -537,11 +534,13 @@ impl IosEditorPlatform {
             Arc::new(AppleTextSystem::new()),
         );
         #[cfg(not(target_os = "ios"))]
+        let fallback_dispatcher = Arc::new(fallback::SyncHostDispatcher::new());
+        #[cfg(not(target_os = "ios"))]
         let (dispatcher, text_system): (
             Arc<dyn ui::PlatformDispatcher>,
             Arc<dyn PlatformTextSystem>,
         ) = (
-            Arc::new(fallback::SyncHostDispatcher::new()),
+            Arc::clone(&fallback_dispatcher) as Arc<dyn ui::PlatformDispatcher>,
             Arc::new(fallback::FallbackTextSystem),
         );
         let background_executor = BackgroundExecutor::new(dispatcher.clone());
@@ -549,6 +548,8 @@ impl IosEditorPlatform {
         Self {
             background_executor,
             foreground_executor,
+            #[cfg(not(target_os = "ios"))]
+            fallback_dispatcher,
             text_system,
             #[cfg(target_os = "ios")]
             instance_buffer_pool: Arc::new(Mutex::new(InstanceBufferPool::default())),
@@ -561,6 +562,11 @@ impl IosEditorPlatform {
             opened_window: RefCell::new(None),
             clipboard: RefCell::new(None),
         }
+    }
+
+    #[cfg(not(target_os = "ios"))]
+    pub(crate) fn fallback_dispatcher(&self) -> Arc<fallback::SyncHostDispatcher> {
+        Arc::clone(&self.fallback_dispatcher)
     }
 
     pub(crate) fn opened_window(&self) -> Option<IosEditorWindow> {

@@ -79,6 +79,7 @@ impl Overlays {
             can_cut,
             can_paste,
             link_url,
+            selected: None,
             presence,
             rect: None,
         });
@@ -471,7 +472,15 @@ impl Overlays {
         let key = keystroke.key.as_str();
         let shift = keystroke.modifiers.shift;
 
-        if key == "escape" && self.close_context_menu(now_ms) {
+        if let Some((close, action)) = self
+            .context_menu
+            .as_mut()
+            .and_then(|menu| menu.handle_key(key))
+        {
+            if close {
+                self.close_context_menu(now_ms);
+            }
+            effects.context_menu_action = action;
             effects.handled = true;
             effects.redraw = true;
             return effects;

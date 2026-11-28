@@ -504,7 +504,9 @@ impl Overlays {
             return false;
         }
         let width = scene.window.0.max(0.0).floor();
-        let win_h = scene.window.1.max(0.0).floor();
+        let win_h = (scene.window.1 - scene.bottom_inset.max(0.0))
+            .max(crate::TOPBAR_HEIGHT)
+            .floor();
         let panel_height = if !self.keyboard_toolbar.marks_disabled
             && self.keyboard_toolbar.active_panel.is_some()
         {
@@ -599,7 +601,9 @@ impl Overlays {
             return true;
         }
         let width = scene.window.0.max(0.0).floor();
-        let win_h = scene.window.1.max(0.0).floor();
+        let win_h = (scene.window.1 - scene.bottom_inset.max(0.0))
+            .max(crate::TOPBAR_HEIGHT)
+            .floor();
         let max_panel = (win_h - crate::TOPBAR_HEIGHT - KEYBOARD_TOOLBAR_HEIGHT - 16.0).max(120.0);
         let panel_height = KEYBOARD_TOOL_PANEL_HEIGHT.min(max_panel).floor();
         let pad_x = if width <= 340.0 { 8.0 } else { 12.0 };
@@ -675,7 +679,9 @@ impl Overlays {
             return false;
         }
         let width = scene.window.0.max(0.0).floor();
-        let win_h = scene.window.1.max(0.0).floor();
+        let win_h = (scene.window.1 - scene.bottom_inset.max(0.0))
+            .max(crate::TOPBAR_HEIGHT)
+            .floor();
         let max_panel = (win_h - crate::TOPBAR_HEIGHT - KEYBOARD_TOOLBAR_HEIGHT - 16.0).max(120.0);
         let panel_height = KEYBOARD_TOOL_PANEL_HEIGHT.min(max_panel).floor();
         let top = (win_h - (KEYBOARD_TOOLBAR_HEIGHT + panel_height))

@@ -11,7 +11,27 @@ use crate::{
 
 use super::*;
 
+/// Cached per-frame software-keyboard and bottom safe-area insets (logical px).
+#[derive(Debug, Default, Clone, Copy)]
+pub(crate) struct ImeInsetsState {
+    pub(crate) last_keyboard: f32,
+    pub(crate) last_bottom: f32,
+    pub(crate) host_override: f32,
+}
+
 impl PlaygroundView {
+    /// Applies an explicit host-reported software keyboard height (logical px) in
+    /// addition to `window.insets().ime.bottom`.
+    pub fn set_host_ime_bottom(&mut self, height_px: f32) {
+        self.ime_insets.host_override = height_px.max(0.0);
+    }
+
+    pub(crate) fn effective_ime_bottom(&self, window: &Window) -> f32 {
+        f32::from(window.insets().ime.bottom)
+            .max(self.ime_insets.host_override)
+            .max(0.0)
+    }
+
     fn render_mode_switcher(
         &mut self,
         palette: &Palette,
@@ -344,10 +364,26 @@ impl PlaygroundView {
                 .child(self.render_status(palette, &geometry))
                 .into_any_element();
         };
-        let bottom_occlusion = f32::from(window.insets().effective().bottom)
-            + self
-                .overlays
-                .keyboard_toolbar_reserved_height(self.window_size.1);
+        let was_toolbar_visible = self.overlays.keyboard_toolbar_visible();
+        let live_kb_inset = self.effective_ime_bottom(window);
+        // Auto-show the mobile soft-keyboard toolbar on touch hosts, narrow viewports, or when
+        // a software keyboard is active whenever an editable target holds focus, unless dismissed.
+        if (self.is_touch_host()
+            || f32::from(window.viewport_size().width) < 600.0
+            || live_kb_inset > 0.0)
+            && (self.editor.selection.is_some()
+                || (live_kb_inset > 0.0 && self.table_cell.is_some()))
+            && !self.keyboard_toolbar_dismissed
+        {
+            self.overlays.set_keyboard_toolbar_visible(true);
+        }
+        if !was_toolbar_visible && self.overlays.keyboard_toolbar_visible() {
+            self.editor.reveal = true;
+        }
+        let bottom_inset = self.ime_insets.last_bottom;
+        let avail_win_h = (self.window_size.1 - bottom_inset).max(TOPBAR_HEIGHT);
+        let toolbar_reserved = self.overlays.keyboard_toolbar_reserved_height(avail_win_h);
+        let bottom_occlusion = bottom_inset + toolbar_reserved;
         let effective_viewport_height = (viewport_height - bottom_occlusion).max(40.0);
         self.max_scroll = (layout.height + bottom_occlusion - viewport_height)
             .max(0.0)
@@ -359,8 +395,20 @@ impl PlaygroundView {
         {
             self.scroll_y = (block.y - screen_y).round();
         }
-        self.reveal_caret(effective_viewport_height);
+        let reveal_margin = if bottom_occlusion > 0.0 { 10.0 } else { 0.0 };
+        self.reveal_caret(effective_viewport_height, reveal_margin);
         self.scroll_y = self.scroll_y.clamp(0.0, self.max_scroll);
+        if self.database_readonly && !self.database_readonly_toast_shown {
+            let vis_top = self.scroll_y;
+            let vis_bot = self.scroll_y + effective_viewport_height;
+            if layout.blocks.iter().any(|b| {
+                b.body.kind == crate::block_flow::FlowKind::Database
+                    && b.y + b.body.height > vis_top
+                    && b.y < vis_bot
+            }) {
+                self.show_database_readonly_toast_once(cx);
+            }
+        }
         let viewport = PageViewport {
             column_x: geometry.column_x,
             height: viewport_height,
@@ -371,14 +419,6 @@ impl PlaygroundView {
         let focus = self.editor_focus.clone();
         let entity = cx.entity();
         let marks = layout.presence_marks(presences, palette, window);
-        // Auto-show the mobile soft-keyboard toolbar on narrow viewports whenever an editable
-        // text block holds focus/selection, unless explicitly dismissed by the user.
-        if f32::from(window.viewport_size().width) < 600.0
-            && self.editor.selection.is_some()
-            && !self.keyboard_toolbar_dismissed
-        {
-            self.overlays.set_keyboard_toolbar_visible(true);
-        }
         let (paint, controls) = self.overlay_page_layer(&layout, palette, window, cx);
         let scrollbar = overlays::ScrollbarMetrics::compute(
             viewport_width,
@@ -386,7 +426,7 @@ impl PlaygroundView {
             self.scroll_y,
             self.max_scroll,
             window.layout_direction(),
-            self.is_touch_host() || self.edgeless_readonly,
+            self.form_factor.is_touch_form_factor() || self.edgeless_readonly,
         )
         .map(|metrics| {
             overlays::build_page_scrollbar(
@@ -620,17 +660,23 @@ impl ui::Render for PlaygroundView {
         self.sync_keyboard_toolbar_state();
         window.set_touch_gestures_enabled(true);
         self.handle_touch_gestures(window, cx);
-        let kb_inset = f32::from(window.insets().ime.bottom);
-        if self.last_keyboard_inset > 0.0 && kb_inset == 0.0 {
+        let kb_inset = self.effective_ime_bottom(window);
+        let eff_bottom = f32::from(window.insets().effective().bottom)
+            .max(kb_inset)
+            .max(0.0);
+        if self.ime_insets.last_keyboard > 0.0 && kb_inset == 0.0 {
             self.keyboard_toolbar_dismissed = true;
             self.overlays.set_keyboard_toolbar_visible(false);
-        } else if kb_inset > 0.0 && self.last_keyboard_inset == 0.0 {
+        } else if kb_inset > 0.0 && self.ime_insets.last_keyboard == 0.0 {
             self.keyboard_toolbar_dismissed = false;
             self.editor.reveal = true;
-        } else if kb_inset > self.last_keyboard_inset {
+        } else if kb_inset > self.ime_insets.last_keyboard
+            || eff_bottom > self.ime_insets.last_bottom
+        {
             self.editor.reveal = true;
         }
-        self.last_keyboard_inset = kb_inset;
+        self.ime_insets.last_keyboard = kb_inset;
+        self.ime_insets.last_bottom = eff_bottom;
 
         let palette = self.theme.palette();
         let viewport = window.viewport_size();
@@ -673,6 +719,9 @@ impl ui::Render for PlaygroundView {
         let mut popovers = self.overlay_popovers(&palette, window, cx);
         if let Some(touch_menu) = self.render_touch_selection_menu(&palette, window, cx) {
             popovers.push(touch_menu);
+        }
+        if let Some(sheet) = self.render_database_record_sheet(&palette, window, cx) {
+            popovers.push(sheet);
         }
 
         div()

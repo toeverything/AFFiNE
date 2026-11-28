@@ -17,6 +17,7 @@ import android.graphics.pdf.PdfRenderer
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.text.InputType
 import android.text.Layout
@@ -35,8 +36,10 @@ import android.view.View
 import android.view.ViewStructure
 import android.view.WindowInsets
 import android.view.WindowInsetsAnimation
+import android.view.WindowInsetsController
 import android.view.autofill.AutofillManager
 import android.view.autofill.AutofillValue
+import android.view.inputmethod.BaseInputConnection
 import android.view.inputmethod.CompletionInfo
 import android.view.inputmethod.CorrectionInfo
 import android.view.inputmethod.CursorAnchorInfo
@@ -56,6 +59,25 @@ import android.window.OnBackInvokedDispatcher
 object NativeBridge {
   init {
     System.loadLibrary("affine_android_host")
+  }
+
+  private val wakeupListeners = java.util.concurrent.ConcurrentHashMap<Long, () -> Unit>()
+
+  fun registerWakeupListener(handle: Long, listener: () -> Unit) {
+    if (handle != 0L) {
+      wakeupListeners[handle] = listener
+    }
+  }
+
+  fun unregisterWakeupListener(handle: Long) {
+    if (handle != 0L) {
+      wakeupListeners.remove(handle)
+    }
+  }
+
+  @JvmStatic
+  fun onNativeWakeup(handle: Long) {
+    wakeupListeners[handle]?.invoke()
   }
 
   external fun nativeShouldExposeAutofill(sdkInt: Int): Boolean
@@ -107,6 +129,8 @@ object NativeBridge {
   external fun nativeGetUtf16Length(handle: Long): Int
   external fun nativeGetUtf16Text(handle: Long): String
   external fun nativeHasPendingTimer(handle: Long): Boolean
+  external fun nativeNextTimerDelayMs(handle: Long): Long
+  external fun nativeIsDarkTheme(handle: Long): Boolean
   external fun nativeGetUtf16Unit(handle: Long, index: Int): Int
   external fun nativeGetSelectionStart(handle: Long): Int
   external fun nativeGetSelectionEnd(handle: Long): Int
@@ -295,6 +319,16 @@ object NativeBridge {
     xDp: Float,
     yDp: Float,
   )
+
+  external fun nativeOnScrollWheel(
+    handle: Long,
+    xDp: Float,
+    yDp: Float,
+    deltaX: Float,
+    deltaY: Float,
+  )
+
+  external fun nativeHandleBack(handle: Long): Boolean
   external fun nativeOnKeyEvent(
     handle: Long,
     keyCode: Int,
@@ -524,6 +558,7 @@ class AffineInputConnection(
   private val ime: AffineImeController,
   private val onContextMenuAction: (Int) -> Boolean = { false },
   private val onCursorUpdatesRequested: (Int) -> Unit = {},
+  private val isActiveSession: () -> Boolean = { true },
 ) : InputConnection {
   private var batchEditDepth: Int = 0
   private var cursorUpdateMonitor: Boolean = false
@@ -547,36 +582,37 @@ class AffineInputConnection(
   }
 
   override fun deleteSurroundingText(beforeLength: Int, afterLength: Int): Boolean =
-    ime.deleteSurroundingText(beforeLength, afterLength)
+    if (isActiveSession()) ime.deleteSurroundingText(beforeLength, afterLength) else false
 
   override fun deleteSurroundingTextInCodePoints(beforeLength: Int, afterLength: Int): Boolean =
-    ime.deleteSurroundingTextInCodePoints(beforeLength, afterLength)
+    if (isActiveSession()) ime.deleteSurroundingTextInCodePoints(beforeLength, afterLength) else false
 
   override fun setComposingText(text: CharSequence?, newCursorPosition: Int): Boolean =
-    ime.setComposingText(text?.toString() ?: "", newCursorPosition)
+    if (isActiveSession()) ime.setComposingText(text?.toString() ?: "", newCursorPosition) else false
 
   override fun setComposingText(
     text: CharSequence,
     newCursorPosition: Int,
     textAttribute: TextAttribute?,
-  ): Boolean = ime.setComposingText(text.toString(), newCursorPosition)
+  ): Boolean = if (isActiveSession()) ime.setComposingText(text.toString(), newCursorPosition) else false
 
   override fun setComposingRegion(start: Int, end: Int): Boolean =
-    ime.setComposingRegion(start, end)
+    if (isActiveSession()) ime.setComposingRegion(start, end) else false
 
   override fun setComposingRegion(start: Int, end: Int, textAttribute: TextAttribute?): Boolean =
-    ime.setComposingRegion(start, end)
+    if (isActiveSession()) ime.setComposingRegion(start, end) else false
 
-  override fun finishComposingText(): Boolean = ime.finishComposingText()
+  override fun finishComposingText(): Boolean =
+    if (isActiveSession()) ime.finishComposingText() else false
 
   override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean =
-    ime.commitText(text?.toString() ?: "", newCursorPosition)
+    if (isActiveSession()) ime.commitText(text?.toString() ?: "", newCursorPosition) else false
 
   override fun commitText(
     text: CharSequence,
     newCursorPosition: Int,
     textAttribute: TextAttribute?,
-  ): Boolean = ime.commitText(text.toString(), newCursorPosition)
+  ): Boolean = if (isActiveSession()) ime.commitText(text.toString(), newCursorPosition) else false
 
   override fun replaceText(
     start: Int,
@@ -584,9 +620,10 @@ class AffineInputConnection(
     text: CharSequence,
     newCursorPosition: Int,
     textAttribute: TextAttribute?,
-  ): Boolean = ime.replaceText(start, end, text.toString(), newCursorPosition)
+  ): Boolean = if (isActiveSession()) ime.replaceText(start, end, text.toString(), newCursorPosition) else false
 
-  override fun setSelection(start: Int, end: Int): Boolean = ime.setSelection(start, end)
+  override fun setSelection(start: Int, end: Int): Boolean =
+    if (isActiveSession()) ime.setSelection(start, end) else false
 
   override fun beginBatchEdit(): Boolean {
     batchEditDepth += 1
@@ -619,17 +656,21 @@ class AffineInputConnection(
 
   override fun performEditorAction(editorAction: Int): Boolean = false
 
-  override fun performContextMenuAction(id: Int): Boolean = when (id) {
-    android.R.id.copy,
-    android.R.id.cut,
-    android.R.id.paste,
-    android.R.id.selectAll -> onContextMenuAction(id)
-    else -> false
+  override fun performContextMenuAction(id: Int): Boolean {
+    if (!isActiveSession()) return false
+    return when (id) {
+      android.R.id.copy,
+      android.R.id.cut,
+      android.R.id.paste,
+      android.R.id.selectAll -> onContextMenuAction(id)
+      else -> false
+    }
   }
 
   override fun performPrivateCommand(action: String?, data: Bundle?): Boolean = false
 
   override fun sendKeyEvent(event: KeyEvent?): Boolean {
+    if (!isActiveSession()) return false
     if (event == null || event.action != KeyEvent.ACTION_DOWN) return false
     if (ime.composingStart() >= 0) return false
     val handled = ime.sendKeyEvent(
@@ -1039,20 +1080,10 @@ class HostDocumentBufferController(
 
   fun currentDocumentText(): String = imeProvider().currentText()
 
-  fun recordDocumentSelection(selStart: Int, selEnd: Int) {
-    val _unused = selStart + selEnd
-  }
-
   fun onImeTextEdited(text: String) {
     if (isAutofillFocused()) {
       autofillProvider()?.onFocusedTextEdited(text)
     }
-  }
-
-  fun applyAutofillTextToIme(text: String) {
-    // H-S1: Autofill values stay strictly isolated in AndroidAutofillController
-    // and must NEVER be written into the authoritative BlockSuite editor IME.
-    val _isolated = text
   }
 
   fun restoreDocumentBufferToIme() {
@@ -1733,6 +1764,16 @@ class AndroidAutofillController(
     return out
   }
 
+  private var inputFocusGeneration: Long = 0L
+  var onFocusGenerationChanged: () -> Unit = {}
+
+  fun currentFocusGeneration(): Long = inputFocusGeneration
+
+  private fun bumpFocusGeneration() {
+    inputFocusGeneration += 1L
+    onFocusGenerationChanged()
+  }
+
   fun onFocusedTextEdited(text: String): Boolean {
     val active = focusedId ?: return false
     return updateFieldText(active, text)
@@ -1825,6 +1866,7 @@ class AndroidAutofillController(
     if (focusedId == validNext) return
     val prev = focusedId
     focusedId = validNext
+    bumpFocusGeneration()
     NativeBridge.nativeFocusAutofillField(handle, validNext ?: 0)
     if (prev != null) {
       backend?.notifyViewExited(prev)
@@ -1917,6 +1959,7 @@ class AndroidAutofillController(
     val handle = handleProvider()
     if (handle == 0L) return false
     focusedId = null
+    bumpFocusGeneration()
     val ok = NativeBridge.nativeCommitAutofill(handle)
     if (ok) backend?.commit()
     return ok
@@ -1927,6 +1970,7 @@ class AndroidAutofillController(
     val handle = handleProvider()
     if (handle == 0L) return false
     focusedId = null
+    bumpFocusGeneration()
     val ok = NativeBridge.nativeCancelAutofill(handle)
     if (ok) backend?.cancel()
     return ok
@@ -1935,6 +1979,7 @@ class AndroidAutofillController(
   fun clearFields() {
     nodes.clear()
     focusedId = null
+    bumpFocusGeneration()
     val handle = handleProvider()
     if (handle != 0L) {
       NativeBridge.nativeClearAutofillFields(handle)
@@ -2284,14 +2329,12 @@ internal class AffineSurfaceView(
     val handle = handleProvider()
     if (handle != 0L && event.actionMasked == MotionEvent.ACTION_SCROLL) {
       val vScroll = event.getAxisValue(MotionEvent.AXIS_VSCROLL)
+      val hScroll = event.getAxisValue(MotionEvent.AXIS_HSCROLL)
       val density = resources.displayMetrics.density.coerceAtLeast(1f)
-      if (vScroll != 0f) {
+      if (vScroll != 0f || hScroll != 0f) {
         val xDp = event.x / density
         val yDp = event.y / density
-        val deltaDp = vScroll * 48f
-        NativeBridge.nativeOnTouchEvent(handle, 9999L, 0, xDp, yDp)
-        NativeBridge.nativeOnTouchEvent(handle, 9999L, 1, xDp, yDp + deltaDp)
-        NativeBridge.nativeOnTouchEvent(handle, 9999L, 2, xDp, yDp + deltaDp)
+        NativeBridge.nativeOnScrollWheel(handle, xDp, yDp, -hScroll * 48f, vScroll * 48f)
         onTouchDispatched()
         return true
       }
@@ -2299,15 +2342,34 @@ internal class AffineSurfaceView(
     return super.onGenericMotionEvent(event)
   }
 
-  override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection =
-    createInputConnection(
+  override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection {
+    val af = autofillProvider()
+    if (af != null && af.focusedFieldId() != null) {
+      outAttrs.inputType = if (af.isFocusedFieldMasked()) {
+        InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+      } else {
+        InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+      }
+      outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI
+      val current = af.focusedFieldId()?.let { af.resolveVirtualFieldValueForStructure(it) } ?: ""
+      outAttrs.initialSelStart = current.length
+      outAttrs.initialSelEnd = current.length
+      return AutofillVirtualInputConnection(af, onMutated)
+    }
+    val boundGen = af?.currentFocusGeneration() ?: 0L
+    return createInputConnection(
       handleProvider,
       outAttrs,
       onMutated,
       onTextEdited,
       onContextMenuAction,
       onCursorUpdatesRequested,
+      isActiveSession = {
+        val currentAf = autofillProvider()
+        currentAf == null || (currentAf.focusedFieldId() == null && currentAf.currentFocusGeneration() == boundGen)
+      },
     )
+  }
 
   @TargetApi(Build.VERSION_CODES.O)
   override fun onProvideAutofillVirtualStructure(structure: ViewStructure, flags: Int) {
@@ -2333,17 +2395,163 @@ internal class AffineSurfaceView(
       onTextEdited: (String) -> Unit = {},
       onContextMenuAction: (Int) -> Boolean = { false },
       onCursorUpdatesRequested: (Int) -> Unit = {},
+      isActiveSession: () -> Boolean = { true },
     ): InputConnection {
       val ime = AffineImeController(handleProvider, onMutated, onTextEdited)
       if (outAttrs != null) {
-        outAttrs.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        outAttrs.inputType = InputType.TYPE_CLASS_TEXT or
+          InputType.TYPE_TEXT_FLAG_MULTI_LINE or
+          InputType.TYPE_TEXT_FLAG_AUTO_CORRECT or
+          InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
         outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI
         outAttrs.initialSelStart = ime.selectionStart()
         outAttrs.initialSelEnd = ime.selectionEnd()
       }
-      return AffineInputConnection(ime, onContextMenuAction, onCursorUpdatesRequested)
+      return AffineInputConnection(ime, onContextMenuAction, onCursorUpdatesRequested, isActiveSession)
     }
   }
+}
+
+/**
+ * Isolated virtual-form `InputConnection` used while an Autofill credential field holds focus.
+ * Reads and writes solely through `AndroidAutofillController` and never invokes
+ * `NativeBridge.nativeOnCommitText` or mutates the BlockSuite document buffer.
+ */
+class AutofillVirtualInputConnection(
+  private val autofillController: AndroidAutofillController,
+  private val onMutated: () -> Unit = {},
+) : InputConnection {
+  private val boundFieldId: Int = autofillController.focusedFieldId() ?: 0
+  private val boundGeneration: Long = autofillController.currentFocusGeneration()
+  private var composingRange: IntRange? = null
+
+  private fun isBoundActive(): Boolean =
+    boundFieldId != 0 &&
+      autofillController.focusedFieldId() == boundFieldId &&
+      autofillController.currentFocusGeneration() == boundGeneration
+
+  private fun currentValue(): String =
+    if (isBoundActive()) autofillController.resolveVirtualFieldValueForStructure(boundFieldId) ?: "" else ""
+
+  private fun writeValue(next: String): Boolean {
+    if (!isBoundActive()) {
+      composingRange = null
+      return false
+    }
+    val ok = autofillController.onFocusedTextEdited(next)
+    if (ok) onMutated()
+    return ok
+  }
+
+  private fun replaceComposingOrAppend(incoming: String, keepComposing: Boolean): Boolean {
+    if (!isBoundActive()) {
+      composingRange = null
+      return false
+    }
+    val cur = currentValue()
+    val range = composingRange
+    val start: Int
+    val next = if (range != null && range.first >= 0 && range.last + 1 <= cur.length && range.first <= range.last + 1) {
+      start = range.first
+      cur.substring(0, range.first) + incoming + cur.substring(range.last + 1)
+    } else {
+      start = cur.length
+      cur + incoming
+    }
+    composingRange = if (keepComposing && incoming.isNotEmpty()) {
+      start until (start + incoming.length)
+    } else {
+      null
+    }
+    return writeValue(next)
+  }
+
+  override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean =
+    replaceComposingOrAppend(text?.toString() ?: "", keepComposing = false)
+
+  override fun setComposingText(text: CharSequence?, newCursorPosition: Int): Boolean =
+    replaceComposingOrAppend(text?.toString() ?: "", keepComposing = true)
+
+  override fun finishComposingText(): Boolean {
+    composingRange = null
+    return isBoundActive()
+  }
+
+  override fun deleteSurroundingText(beforeLength: Int, afterLength: Int): Boolean {
+    composingRange = null
+    if (!isBoundActive()) return false
+    val cur = currentValue()
+    val keep = (cur.length - beforeLength.coerceAtLeast(0)).coerceAtLeast(0)
+    return writeValue(cur.substring(0, keep))
+  }
+
+  override fun getTextBeforeCursor(n: Int, flags: Int): CharSequence {
+    val cur = currentValue()
+    val start = (cur.length - n.coerceAtLeast(0)).coerceAtLeast(0)
+    return cur.substring(start)
+  }
+
+  override fun getTextAfterCursor(n: Int, flags: Int): CharSequence = ""
+
+  override fun getSelectedText(flags: Int): CharSequence? = null
+
+  override fun getCursorCapsMode(reqModes: Int): Int = 0
+
+  override fun getExtractedText(request: ExtractedTextRequest?, flags: Int): ExtractedText? = null
+
+  override fun deleteSurroundingTextInCodePoints(beforeLength: Int, afterLength: Int): Boolean =
+    deleteSurroundingText(beforeLength, afterLength)
+
+  override fun setComposingRegion(start: Int, end: Int): Boolean {
+    if (!isBoundActive()) {
+      composingRange = null
+      return false
+    }
+    val cur = currentValue()
+    val lo = start.coerceIn(0, cur.length)
+    val hi = end.coerceIn(lo, cur.length)
+    composingRange = if (hi > lo) lo until hi else null
+    return true
+  }
+
+  override fun commitCompletion(text: CompletionInfo?): Boolean = false
+
+  override fun commitCorrection(correctionInfo: CorrectionInfo?): Boolean = false
+
+  override fun setSelection(start: Int, end: Int): Boolean {
+    composingRange = null
+    return isBoundActive()
+  }
+
+  override fun performEditorAction(editorAction: Int): Boolean = false
+
+  override fun performContextMenuAction(id: Int): Boolean = false
+
+  override fun beginBatchEdit(): Boolean = true
+
+  override fun endBatchEdit(): Boolean = true
+
+  override fun sendKeyEvent(event: KeyEvent?): Boolean = false
+
+  override fun clearMetaKeyStates(states: Int): Boolean = true
+
+  override fun reportFullscreenMode(enabled: Boolean): Boolean = false
+
+  override fun performPrivateCommand(action: String?, data: Bundle?): Boolean = false
+
+  override fun requestCursorUpdates(cursorUpdateMode: Int): Boolean = false
+
+  override fun getHandler(): Handler? = null
+
+  override fun closeConnection() {
+    composingRange = null
+  }
+
+  override fun commitContent(
+    inputContentInfo: InputContentInfo,
+    flags: Int,
+    opts: Bundle?,
+  ): Boolean = false
 }
 
 class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCallback {
@@ -2374,6 +2582,18 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
   private var frameCallbackPosted: Boolean = false
   private var surfaceReady: Boolean = false
   private var backCallback: OnBackInvokedCallback? = null
+  private val mainHandler = Handler(Looper.getMainLooper())
+  private var lastWantsKeyboard: Boolean = false
+  private var lastDarkTheme: Boolean? = null
+  private val timerWakeRunnable: Runnable = Runnable {
+    if (!frameLoopActive || !surfaceReady || nativeHandle == 0L) return@Runnable
+    val nextDelayMs = NativeBridge.nativeNextTimerDelayMs(nativeHandle)
+    if (NativeBridge.nativeHasPendingFrame(nativeHandle)) {
+      scheduleFrameIfNeeded()
+    } else if (nextDelayMs >= 0L) {
+      mainHandler.postDelayed(timerWakeRunnable, nextDelayMs.coerceAtLeast(16L))
+    }
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
@@ -2384,6 +2604,18 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     }
 
     nativeHandle = NativeBridge.nativeCreateHost()
+    NativeBridge.registerWakeupListener(nativeHandle) {
+      mainHandler.post {
+        if (!frameLoopActive || !surfaceReady || nativeHandle == 0L) return@post
+        val nextDelayMs = NativeBridge.nativeNextTimerDelayMs(nativeHandle)
+        if (NativeBridge.nativeHasPendingFrame(nativeHandle)) {
+          scheduleFrameIfNeeded()
+        } else if (nextDelayMs >= 0L) {
+          mainHandler.removeCallbacks(timerWakeRunnable)
+          mainHandler.postDelayed(timerWakeRunnable, nextDelayMs.coerceAtLeast(16L))
+        }
+      }
+    }
     NativeBridge.nativeSetFormFactor(
       nativeHandle,
       resources.configuration.smallestScreenWidthDp,
@@ -2412,10 +2644,6 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
             selectionCoordinator.clear()
           }
         } else {
-          documentBufferController.recordDocumentSelection(
-            imeController.selectionStart(),
-            imeController.selectionEnd(),
-          )
           syncShapedLayoutAndOverlay(imeController.currentText())
         }
       }
@@ -2444,15 +2672,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     )
     val onContextMenuAction: (Int) -> Boolean = { actionId ->
       if (documentBufferController.isAutofillFocused()) {
-        if ((actionId == android.R.id.copy || actionId == android.R.id.cut) &&
-          documentBufferController.isFocusedAutofillFieldMasked()
-        ) {
-          false
-        } else {
-          val handled = selectionCoordinator.handleContextMenuAction(actionId, imeController, clipboardAdapter)
-          selectionCoordinator.clear()
-          handled
-        }
+        false
       } else {
         val handled = selectionCoordinator.handleContextMenuAction(actionId, imeController, clipboardAdapter)
         if (handled) {
@@ -2544,6 +2764,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     setContentView(rootContainer)
 
     installInsetsBridge(rootContainer)
+    syncStatusBarAppearance()
     installPredictiveBackBridge()
     configureAutofillIfSupported()
 
@@ -2586,6 +2807,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
 
   override fun onStop() {
     frameLoopActive = false
+    mainHandler.removeCallbacks(timerWakeRunnable)
     if (frameCallbackPosted) {
       Choreographer.getInstance().removeFrameCallback(this)
       frameCallbackPosted = false
@@ -2602,6 +2824,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
       backCallback = null
     }
     if (nativeHandle != 0L) {
+      NativeBridge.unregisterWakeupListener(nativeHandle)
       NativeBridge.nativeDestroyHost(nativeHandle)
       nativeHandle = 0L
     }
@@ -2612,6 +2835,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     frameCallbackPosted = false
     if (!frameLoopActive || !surfaceReady || nativeHandle == 0L) return
     NativeBridge.nativeOnFrameTick(nativeHandle, frameTimeNanos)
+    syncStatusBarAppearance()
     syncSystemImeFromEditor()
     scheduleFrameIfNeeded()
   }
@@ -2685,15 +2909,20 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     if (nativeHandle == 0L || !::surfaceView.isInitialized) return
     val nextSeq = NativeBridge.nativeGetTextInputChangeSeq(nativeHandle)
     val nextBlockHash = NativeBridge.nativeGetFocusedBlockHash(nativeHandle)
-    if (nextSeq == lastImeChangeSeq && nextBlockHash == lastFocusedBlockHash) return
+    val wantsKeyboard = NativeBridge.nativeWantsSoftwareKeyboard(nativeHandle)
+    val keyboardActivated = !lastWantsKeyboard && wantsKeyboard
+    if (nextSeq == lastImeChangeSeq && nextBlockHash == lastFocusedBlockHash && !keyboardActivated && wantsKeyboard == lastWantsKeyboard) {
+      return
+    }
     val blockChanged = nextBlockHash != lastFocusedBlockHash
     lastImeChangeSeq = nextSeq
     lastFocusedBlockHash = nextBlockHash
+    lastWantsKeyboard = wantsKeyboard
     val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager ?: return
-    if (!NativeBridge.nativeWantsSoftwareKeyboard(nativeHandle)) {
+    if (!wantsKeyboard) {
       imm.hideSoftInputFromWindow(surfaceView.windowToken, 0)
     }
-    if (blockChanged) {
+    if (blockChanged || keyboardActivated) {
       imm.restartInput(surfaceView)
     } else {
       imm.updateSelection(
@@ -2731,6 +2960,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
 
   override fun surfaceDestroyed(holder: SurfaceHolder) {
     surfaceReady = false
+    mainHandler.removeCallbacks(timerWakeRunnable)
     if (frameCallbackPosted) {
       Choreographer.getInstance().removeFrameCallback(this)
       frameCallbackPosted = false
@@ -2748,16 +2978,49 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
 
   private fun scheduleFrameIfNeeded() {
     if (!frameLoopActive || !surfaceReady || frameCallbackPosted || nativeHandle == 0L) return
-    if (NativeBridge.nativeHasPendingFrame(nativeHandle) ||
-      NativeBridge.nativeHasPendingTimer(nativeHandle)
-    ) {
+    mainHandler.removeCallbacks(timerWakeRunnable)
+    if (NativeBridge.nativeHasPendingFrame(nativeHandle)) {
       frameCallbackPosted = true
       Choreographer.getInstance().postFrameCallback(this)
+      return
+    }
+    val nextDelayMs = NativeBridge.nativeNextTimerDelayMs(nativeHandle)
+    if (NativeBridge.nativeHasPendingFrame(nativeHandle)) {
+      frameCallbackPosted = true
+      Choreographer.getInstance().postFrameCallback(this)
+    } else if (nextDelayMs >= 0L) {
+      mainHandler.postDelayed(timerWakeRunnable, nextDelayMs.coerceAtLeast(16L))
+    }
+  }
+
+  @Suppress("DEPRECATION")
+  private fun syncStatusBarAppearance() {
+    if (nativeHandle == 0L) return
+    val isDark = NativeBridge.nativeIsDarkTheme(nativeHandle)
+    if (lastDarkTheme == isDark) return
+    lastDarkTheme = isDark
+    val isLight = !isDark
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      val mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+      val appearance = if (isLight) mask else 0
+      window.insetsController?.setSystemBarsAppearance(appearance, mask)
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      val decor = window.decorView
+      val flags = decor.systemUiVisibility
+      decor.systemUiVisibility = if (isLight) {
+        flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+      } else {
+        flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+      }
     }
   }
 
   @Suppress("DEPRECATION")
   override fun onBackPressed() {
+    if (nativeHandle != 0L && NativeBridge.nativeHandleBack(nativeHandle)) {
+      requestFrameAndSchedule()
+      return
+    }
     val consumed = backDispatcher.onLegacyBackPressed(invokeSystemExit = false)
     if (!consumed) {
       super.onBackPressed()
@@ -2850,6 +3113,10 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
         }
 
         override fun onBackInvoked() {
+          if (nativeHandle != 0L && NativeBridge.nativeHandleBack(nativeHandle)) {
+            requestFrameAndSchedule()
+            return
+          }
           backDispatcher.onBackInvoked()
         }
       }
@@ -2860,6 +3127,10 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
       )
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       val callback = OnBackInvokedCallback {
+        if (nativeHandle != 0L && NativeBridge.nativeHandleBack(nativeHandle)) {
+          requestFrameAndSchedule()
+          return@OnBackInvokedCallback
+        }
         backDispatcher.onLegacyBackPressed()
       }
       backCallback = callback
@@ -2885,13 +3156,14 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
       handleProvider = { nativeHandle },
       backend = platformBackend,
       onMutated = { requestFrameAndSchedule() },
-      onValueCommitted = { id, text ->
-        if (autofillController?.focusedFieldId() == id) {
-          applyAutofillTextToIme(text)
+    ).apply {
+      onFocusGenerationChanged = {
+        if (::surfaceView.isInitialized) {
+          val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+          imm?.restartInput(surfaceView)
         }
-      },
-      onFocusedFieldTextSync = { _, text -> applyAutofillTextToIme(text) },
-    )
+      }
+    }
   }
 
   fun navigateTo(destination: String): Boolean = backDispatcher.navigateTo(destination)
@@ -2900,11 +3172,6 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
 
   fun readAutofillFormValues(): Map<String, String> =
     autofillController?.readFormValues() ?: emptyMap()
-
-  private fun applyAutofillTextToIme(text: String) {
-    if (nativeHandle == 0L) return
-    documentBufferController.applyAutofillTextToIme(text)
-  }
 
   fun registerAutofillField(
     autofillId: Int,

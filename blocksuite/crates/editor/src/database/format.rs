@@ -153,6 +153,38 @@ pub fn resolve_tag_color(raw: &str, theme: PlaygroundTheme) -> (Hsla, Hsla) {
     (bg, palette.text_primary)
 }
 
+/// Vivid accent color for a `select`/`multi-select` option (used for Phone calendar dots and
+/// agenda left accent bars where pill background is too faint and light-mode text ink is black).
+pub fn resolve_tag_accent(raw: &str, theme: PlaygroundTheme) -> Hsla {
+    let lower = raw.trim().to_ascii_lowercase();
+    let hex = if lower.contains("red") {
+        "#E5484D"
+    } else if lower.contains("pink") || lower.contains("magenta") {
+        "#D6409F"
+    } else if lower.contains("orange") {
+        "#F76B15"
+    } else if lower.contains("yellow") {
+        "#E5A000"
+    } else if lower.contains("green") {
+        "#30A46C"
+    } else if lower.contains("teal") {
+        "#12A594"
+    } else if lower.contains("blue") {
+        "#1E96EB"
+    } else if lower.contains("purple") {
+        "#8E4EC6"
+    } else if lower.contains("gray") || lower.contains("grey") {
+        "#8E8D91"
+    } else {
+        return theme
+            .css_color(raw.trim())
+            .unwrap_or_else(|| theme.palette().brand);
+    };
+    theme
+        .css_color(hex)
+        .unwrap_or_else(|| theme.palette().brand)
+}
+
 /// Map a database column type to an `ui-tokens` icon name.
 pub fn column_icon_name(col_type: &str) -> &'static str {
     match col_type {

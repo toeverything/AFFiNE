@@ -3,6 +3,8 @@
 
 mod actions;
 mod database;
+mod record_sheet;
+pub use record_sheet::DatabaseRecordSheetState;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
@@ -27,6 +29,10 @@ mod tests_mindmap_and_embed;
 mod tests_parity;
 #[cfg(test)]
 mod tests_sync;
+#[cfg(test)]
+mod tests_touch_gestures;
+#[cfg(test)]
+mod tests_touch_ux;
 
 use ui::{Context, Window, point, px};
 
@@ -275,6 +281,8 @@ impl PlaygroundView {
             crate::PlaygroundMode::Page => {
                 !self.page_readonly
                     && (self.editor.selection.is_some()
+                        || (!self.editor.block_selection.is_empty()
+                            && self.keep_keyboard_on_block_selection)
                         || self.table_cell.is_some()
                         || self.overlays.active_text_field().is_some())
             }
@@ -412,7 +420,7 @@ impl PlaygroundView {
     pub fn set_software_keyboard_visible(&mut self, visible: bool, cx: &mut Context<Self>) {
         if !visible {
             self.keyboard_toolbar_dismissed = true;
-            self.last_keyboard_inset = 0.0;
+            self.ime_insets.last_keyboard = 0.0;
             self.overlays.set_keyboard_toolbar_visible(false);
         } else {
             self.keyboard_toolbar_dismissed = false;
@@ -462,6 +470,8 @@ impl PlaygroundView {
                 self.commit_active_preedit(window, cx);
                 self.editor.selection = None;
                 self.editor.block_selection = vec![block.block_id.clone()];
+                self.keep_keyboard_on_block_selection = false;
+                self.block_selection_return_caret = None;
                 self.editor.dragging = false;
                 self.editor_focus.focus(window, cx);
                 self.announce_selection(cx);
@@ -635,5 +645,56 @@ impl PlaygroundView {
             self.set_document(state, cx);
             self.focus_first_text_block(window, cx);
         }
+    }
+
+    /// Handle a platform Back button / predictive-back commit by closing the topmost
+    /// sheet, modal, or transient overlay first. Returns `true` when consumed.
+    pub fn handle_back(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
+        if self.close_database_record_sheet(cx) {
+            return true;
+        }
+        let now_ms = self.now_ms(cx);
+        if self.overlays.bookmark_prompt().is_some() {
+            self.overlays.close_bookmark_prompt_at(now_ms);
+            window.notify_text_input_changed(&self.editor_focus);
+            cx.notify();
+            return true;
+        }
+        if self.overlays.equation_editor().is_some() {
+            self.overlays.close_equation_editor_at(now_ms);
+            self.equation_snapshot = None;
+            window.notify_text_input_changed(&self.editor_focus);
+            cx.notify();
+            return true;
+        }
+        if self.overlays.link_field().is_some() {
+            self.overlays.close_link_field();
+            window.notify_text_input_changed(&self.editor_focus);
+            cx.notify();
+            return true;
+        }
+        if self.overlays.keyboard_toolbar_active_panel().is_some() {
+            self.overlays.close_keyboard_toolbar_panel();
+            cx.notify();
+            return true;
+        }
+        let mut closed = false;
+        if self.overlays.slash_menu().is_some() {
+            closed |= self.overlays.close_slash(now_ms);
+        }
+        if self.overlays.close_linked_doc(now_ms) {
+            closed = true;
+        }
+        if self.overlays.context_menu().is_some() {
+            closed |= self.overlays.close_context_menu(now_ms);
+        }
+        if self.touch_selection_menu_open {
+            self.touch_selection_menu_open = false;
+            closed = true;
+        }
+        if closed {
+            cx.notify();
+        }
+        closed
     }
 }

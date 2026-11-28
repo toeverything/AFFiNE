@@ -21,11 +21,48 @@ use super::{
     text_layout::{AffineSelectionRect, detect_paragraph_writing_direction},
 };
 
+pub(crate) struct IosEditorKeyboardLayout;
+
+impl ui::PlatformKeyboardLayout for IosEditorKeyboardLayout {
+    fn id(&self) -> &str {
+        "ios.editor"
+    }
+
+    fn name(&self) -> &str {
+        "iOS"
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct IosEditorDisplay {
+    pub(crate) bounds: Bounds<ui::Pixels>,
+}
+
+impl ui::PlatformDisplay for IosEditorDisplay {
+    fn id(&self) -> ui::DisplayId {
+        ui::DisplayId::new(0)
+    }
+
+    fn uuid(&self) -> anyhow::Result<uuid::Uuid> {
+        Ok(uuid::Uuid::nil())
+    }
+
+    fn bounds(&self) -> Bounds<ui::Pixels> {
+        self.bounds
+    }
+
+    fn refresh_interval(&self) -> Option<std::time::Duration> {
+        Some(std::time::Duration::from_secs(1) / 120)
+    }
+}
+
 /// Live GPU editor runtime embedded in `AffineIosHost`.
 pub(crate) struct IosEditorRuntime {
     app: ApplicationHandle,
     window: IosEditorWindow,
     view: ui::WindowHandle<PlaygroundView>,
+    #[cfg(not(target_os = "ios"))]
+    dispatcher: std::sync::Arc<super::editor_fallback::SyncHostDispatcher>,
     form_factor: FormFactor,
     frame_count: u64,
     last_frame_timestamp_sec: f64,
@@ -91,10 +128,14 @@ impl IosEditorRuntime {
 
         let window = platform_ref.opened_window()?;
         let view = view_slot.borrow_mut().take()?;
+        #[cfg(not(target_os = "ios"))]
+        let dispatcher = platform_ref.fallback_dispatcher();
         let runtime = Self {
             app,
             window,
             view,
+            #[cfg(not(target_os = "ios"))]
+            dispatcher,
             form_factor,
             frame_count: 0,
             last_frame_timestamp_sec: 0.0,
@@ -133,18 +174,47 @@ impl IosEditorRuntime {
             },
             ..WindowInsets::default()
         };
-        self.window.set_insets(ui_insets);
+        let prev = self.window.state.borrow().insets.clone();
+        if prev != ui_insets {
+            self.window.set_insets(ui_insets);
+            self.window.request_frame_now();
+        }
     }
 
     pub(crate) fn request_frame(&mut self) {
         self.window.state.borrow_mut().dirty = true;
     }
 
+    pub(crate) fn set_frame_wake_observer(&mut self, observer: Option<Rc<dyn Fn()>>) {
+        self.window.state.borrow_mut().frame_wake_observer = observer;
+    }
+
     pub(crate) fn is_dirty(&self) -> bool {
         self.window.state.borrow().dirty
     }
 
+    pub(crate) fn next_timer_delay_ms(&self) -> i64 {
+        #[cfg(not(target_os = "ios"))]
+        {
+            self.dispatcher
+                .drain_ready()
+                .map(|d| d.as_millis().min(i64::MAX as u128) as i64)
+                .unwrap_or(-1)
+        }
+        #[cfg(target_os = "ios")]
+        {
+            -1
+        }
+    }
+
+    #[cfg(all(test, not(target_os = "ios")))]
+    pub(crate) fn drain_tasks(&self) -> Option<std::time::Duration> {
+        self.dispatcher.drain_ready()
+    }
+
     pub(crate) fn render_frame(&mut self, timestamp_sec: f64) -> u32 {
+        #[cfg(not(target_os = "ios"))]
+        let _ = self.dispatcher.drain_ready();
         if !self.is_dirty() {
             return 0;
         }
@@ -529,5 +599,124 @@ mod tests {
             after_ro, before_ro,
             "page_readonly=true must suppress text insertion, Enter, and Backspace"
         );
+    }
+
+    #[cfg(not(target_os = "ios"))]
+    #[test]
+    fn ios_editor_runtime_timer_drain_idle_caret_blink_and_toast_dismiss() {
+        let mut rt =
+            IosEditorRuntime::new(390.0, 844.0, 3.0, FormFactor::Phone, false).expect("runtime");
+        // Clear selection so editor is completely idle (no blinking caret).
+        let _ = rt.app.update(|cx| {
+            let _ = rt.view.update(cx, |view, window, cx| {
+                view.dispatch_overlay(
+                    playground::overlays::OverlayEvent::SetSelection(None),
+                    window,
+                    cx,
+                );
+            });
+        });
+        let _ = rt.render_frame(1.0);
+        assert!(
+            !rt.is_dirty(),
+            "idle iOS frame must leave is_dirty == false"
+        );
+        // Advance 5 seconds while idle: 0 dirty frames.
+        rt.dispatcher
+            .advance_test_clock(std::time::Duration::from_secs(5));
+        let _ = rt.drain_tasks();
+        assert!(
+            !rt.is_dirty(),
+            "5s idle with no focused caret must produce 0 dirty frames"
+        );
+
+        // Focus caret: caret blink timer (530ms) must wake and mark dirty when clock advances.
+        let _ = rt.app.update(|cx| {
+            let _ = rt.view.update(cx, |view, window, cx| {
+                view.focus_first_text_block(window, cx);
+            });
+        });
+        let _ = rt.render_frame(2.0);
+        assert!(!rt.is_dirty());
+        let next_ms = rt.next_timer_delay_ms();
+        assert!(
+            next_ms > 0 && next_ms <= 600,
+            "focused caret must schedule blink timer within 600ms, got {next_ms}"
+        );
+        rt.dispatcher
+            .advance_test_clock(std::time::Duration::from_millis(550));
+        let _ = rt.drain_tasks();
+        assert!(
+            rt.is_dirty(),
+            "advancing clock past caret blink interval must mark frame dirty"
+        );
+        assert_ne!(rt.render_frame(2.55), 0);
+        assert!(!rt.is_dirty());
+
+        // Mobile read-only database toast must auto-dismiss after 2500ms and mark dirty.
+        rt.load_showcase_document();
+        let _ = rt.render_frame(3.0);
+        let _ = rt.app.update(|cx| {
+            let _ = rt.view.update(cx, |view, window, cx| {
+                view.dispatch_overlay(
+                    playground::overlays::OverlayEvent::SetSelection(None),
+                    window,
+                    cx,
+                );
+                let _ =
+                    view.click_database_point("showcase-database", 10.0, 10.0, Some(window), cx);
+                // Explicitly open a record sheet / readonly tap to guarantee toast is shown.
+                view.open_database_record_sheet("showcase-database", "showcase-db-row-1", cx);
+            });
+        });
+        let _ = rt.render_frame(3.1);
+        // Trigger a read-only database cell click to raise the auto-dismissing toast.
+        let _ = rt.app.update(|cx| {
+            let _ = rt.view.update(cx, |view, window, cx| {
+                view.close_database_record_sheet(cx);
+                let hits = view.database_hits("showcase-database").to_vec();
+                if let Some(hit) = hits.iter().find(|h| {
+                    matches!(
+                        h.kind,
+                        playground::database::DatabaseHitKind::OpenRecord { .. }
+                            | playground::database::DatabaseHitKind::CellReadOnly
+                    )
+                }) {
+                    let _ = view.click_database_point(
+                        "showcase-database",
+                        hit.rect.x + 2.0,
+                        hit.rect.y + 2.0,
+                        Some(window),
+                        cx,
+                    );
+                }
+            });
+        });
+        let _ = rt.render_frame(3.2);
+        let has_toast_before = rt
+            .app
+            .update(|cx| {
+                rt.view.read_with(cx, |view, _| {
+                    view.overlays().context_toast_message().is_some()
+                })
+            })
+            .unwrap_or(false);
+        assert!(has_toast_before, "readonly database tap must show toast");
+        rt.dispatcher
+            .advance_test_clock(std::time::Duration::from_millis(2500));
+        let _ = rt.drain_tasks();
+        assert!(
+            rt.is_dirty(),
+            "toast auto-dismiss timer must mark frame dirty via frame_waker"
+        );
+        let has_toast_after = rt
+            .app
+            .update(|cx| {
+                rt.view.read_with(cx, |view, _| {
+                    view.overlays().context_toast_message().is_some()
+                })
+            })
+            .unwrap_or(true);
+        assert!(!has_toast_after, "toast must auto-dismiss after 2500ms");
     }
 }

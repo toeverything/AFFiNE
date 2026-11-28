@@ -85,6 +85,20 @@ private func affineIosTextInputChangedTrampoline(_ changeKind: UInt8, _ userData
   view.handleEditorTextInputStateChanged(kind: changeKind)
 }
 
+private func affineIosFrameWakeTrampoline(_ userData: UnsafeMutableRawPointer?) {
+  guard let userData else {
+    return
+  }
+  let controller = Unmanaged<MetalHostViewController>.fromOpaque(userData).takeUnretainedValue()
+  if Thread.isMainThread {
+    controller.wakeDisplayLink()
+  } else {
+    DispatchQueue.main.async { [weak controller] in
+      controller?.wakeDisplayLink()
+    }
+  }
+}
+
 final class MetalHostView: UIView, UITextInput {
   override class var layerClass: AnyClass {
     CAMetalLayer.self
@@ -102,6 +116,7 @@ final class MetalHostView: UIView, UITextInput {
 
   var hostHandle: OpaquePointer?
   var onSelectedRangeChanged: ((NSRange) -> Void)?
+  var onInteractionWake: (() -> Void)?
   private(set) var lastCopiedText: String?
   private(set) var editorInputNotificationCount: Int = 0
 
@@ -260,6 +275,7 @@ final class MetalHostView: UIView, UITextInput {
     } else {
       onSelectedRangeChanged?(currentSelectedUtf16Range)
     }
+    onInteractionWake?()
   }
 
   func updateSelectedRangeFromOverlay(_ range: NSRange) {
@@ -718,6 +734,7 @@ final class MetalHostView: UIView, UITextInput {
       touchExceededPanThreshold.remove(id)
       affine_ios_host_touch_event(handle, id, 0, Float(loc.x), Float(loc.y))
     }
+    onInteractionWake?()
   }
 
   override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -734,6 +751,7 @@ final class MetalHostView: UIView, UITextInput {
       }
       affine_ios_host_touch_event(handle, id, 1, Float(loc.x), Float(loc.y))
     }
+    onInteractionWake?()
   }
 
   override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -757,6 +775,7 @@ final class MetalHostView: UIView, UITextInput {
     } else if isFirstResponder {
       _ = resignFirstResponder()
     }
+    onInteractionWake?()
   }
 
   override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -768,6 +787,7 @@ final class MetalHostView: UIView, UITextInput {
       touchExceededPanThreshold.remove(id)
       affine_ios_host_touch_event(handle, id, 3, Float(loc.x), Float(loc.y))
     }
+    onInteractionWake?()
   }
 
   override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
@@ -810,7 +830,9 @@ final class MetalHostView: UIView, UITextInput {
         handled = true
       }
     }
-    if !handled {
+    if handled {
+      onInteractionWake?()
+    } else {
       super.pressesBegan(presses, with: event)
     }
   }
@@ -846,6 +868,7 @@ final class MetalHostViewController: UIViewController, UIEditMenuInteractionDele
   private var hostHandle: OpaquePointer?
   private var displayLink: CADisplayLink?
   private var displayLinkProxy: DisplayLinkProxy?
+  private var timerWakeWorkItem: DispatchWorkItem?
 
   var textHostView: MetalHostView {
     hostView
@@ -905,6 +928,8 @@ final class MetalHostViewController: UIViewController, UIEditMenuInteractionDele
     hostView.attachTextInputObserver()
 
     if let handle {
+      let rawSelf = Unmanaged.passUnretained(self).toOpaque()
+      affine_ios_host_set_frame_wake_callback(handle, affineIosFrameWakeTrampoline, rawSelf)
       let isPad = UIDevice.current.userInterfaceIdiom == .pad
       affine_ios_host_set_form_factor(handle, isPad ? 1 : 0)
       if let rawEditorLayer = affine_ios_host_metal_layer(handle) {
@@ -928,6 +953,9 @@ final class MetalHostViewController: UIViewController, UIEditMenuInteractionDele
 
     hostView.onSelectedRangeChanged = { [weak self] range in
       self?.syncSelectionOverlay(for: range)
+    }
+    hostView.onInteractionWake = { [weak self] in
+      self?.wakeDisplayLink()
     }
     selectionOverlayView.onSelectionDragResolved = { [weak self] probePoint in
       guard let self else {
@@ -1013,6 +1041,7 @@ final class MetalHostViewController: UIViewController, UIEditMenuInteractionDele
     super.viewSafeAreaInsetsDidChange()
     updateEditorMetalLayout()
     sampleInsets(timestamp: CACurrentMediaTime())
+    wakeDisplayLink()
   }
 
   private func updateEditorMetalLayout() {
@@ -1054,6 +1083,7 @@ final class MetalHostViewController: UIViewController, UIEditMenuInteractionDele
     super.viewDidLayoutSubviews()
     updateEditorMetalLayout()
     sampleInsets(timestamp: CACurrentMediaTime())
+    wakeDisplayLink()
     let currentRange = hostView.currentSelectedUtf16Range
     if currentRange.length > 0 {
       syncSelectionOverlay(for: currentRange)
@@ -1063,6 +1093,8 @@ final class MetalHostViewController: UIViewController, UIEditMenuInteractionDele
   }
 
   deinit {
+    timerWakeWorkItem?.cancel()
+    timerWakeWorkItem = nil
     displayLink?.invalidate()
     keyboardAvoidanceCoordinator.stopObserving()
     keyboardAvoidanceCoordinator.hostHandle = nil
@@ -1073,6 +1105,7 @@ final class MetalHostViewController: UIViewController, UIEditMenuInteractionDele
     editorMetalLayer?.removeFromSuperlayer()
     editorMetalLayer = nil
     if let handle = hostHandle {
+      affine_ios_host_set_frame_wake_callback(handle, nil, nil)
       textRenderingBridge.detach()
       pdfRendererBridge.detach(from: handle)
       hapticsBridge.detach(from: handle)
@@ -1259,14 +1292,51 @@ final class MetalHostViewController: UIViewController, UIEditMenuInteractionDele
     displayLink = link
   }
 
-  func handleDisplayLinkTick(_ link: CADisplayLink) {
-    sampleInsets(timestamp: link.timestamp)
-    guard let handle = hostHandle, affine_ios_host_is_dirty(handle) else {
+  func wakeDisplayLink() {
+    timerWakeWorkItem?.cancel()
+    timerWakeWorkItem = nil
+    displayLink?.isPaused = false
+  }
+
+  private func pauseDisplayLinkUntilNextTimer(handle: OpaquePointer) {
+    let nextDelayMs = affine_ios_host_next_timer_delay_ms(handle)
+    if affine_ios_host_is_dirty(handle) {
+      displayLink?.isPaused = false
       return
     }
-    let clearRgba = affine_ios_host_render_frame(handle, link.timestamp)
-    if clearRgba != 0 {
-      applyClearColor(clearRgba)
+    displayLink?.isPaused = true
+    timerWakeWorkItem?.cancel()
+    timerWakeWorkItem = nil
+    if nextDelayMs >= 0 {
+      let delayMs = max(16, Int(min(nextDelayMs, Int64(Int.max))))
+      let work = DispatchWorkItem { [weak self] in
+        guard let self, let h = self.hostHandle else { return }
+        _ = affine_ios_host_next_timer_delay_ms(h)
+        if affine_ios_host_is_dirty(h) {
+          self.displayLink?.isPaused = false
+        } else {
+          self.pauseDisplayLinkUntilNextTimer(handle: h)
+        }
+      }
+      timerWakeWorkItem = work
+      DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(delayMs), execute: work)
+    }
+  }
+
+  func handleDisplayLinkTick(_ link: CADisplayLink) {
+    sampleInsets(timestamp: link.timestamp)
+    guard let handle = hostHandle else {
+      displayLink?.isPaused = true
+      return
+    }
+    if affine_ios_host_is_dirty(handle) {
+      let clearRgba = affine_ios_host_render_frame(handle, link.timestamp)
+      if clearRgba != 0 {
+        applyClearColor(clearRgba)
+      }
+    }
+    if !affine_ios_host_is_dirty(handle) {
+      pauseDisplayLinkUntilNextTimer(handle: handle)
     }
   }
 
@@ -1284,9 +1354,28 @@ final class MetalHostViewController: UIViewController, UIEditMenuInteractionDele
       name: UIApplication.willEnterForegroundNotification,
       object: nil
     )
+    center.addObserver(
+      self,
+      selector: #selector(handleKeyboardNotification),
+      name: UIResponder.keyboardWillChangeFrameNotification,
+      object: nil
+    )
+    center.addObserver(
+      self,
+      selector: #selector(handleKeyboardNotification),
+      name: UIResponder.keyboardWillHideNotification,
+      object: nil
+    )
+  }
+
+  @objc private func handleKeyboardNotification() {
+    sampleInsets(timestamp: CACurrentMediaTime())
+    wakeDisplayLink()
   }
 
   @objc private func handleDidEnterBackground() {
+    timerWakeWorkItem?.cancel()
+    timerWakeWorkItem = nil
     displayLink?.isPaused = true
     bootstrapCoordinator.checkpointAllPassive()
   }
@@ -1295,7 +1384,7 @@ final class MetalHostViewController: UIViewController, UIEditMenuInteractionDele
     if let handle = hostHandle {
       affine_ios_host_request_frame(handle)
     }
-    displayLink?.isPaused = false
+    wakeDisplayLink()
   }
 
   func sampleInsets(timestamp: Double) {
@@ -1310,7 +1399,11 @@ final class MetalHostViewController: UIViewController, UIEditMenuInteractionDele
       || next.ime_bottom != lastSyncedInsets.ime_bottom
     if changed {
       lastSyncedInsets = next
-      if let handle = hostHandle,
+      wakeDisplayLink()
+      let currentRange = hostView.currentSelectedUtf16Range
+      if currentRange.length > 0 {
+        syncSelectionOverlay(for: currentRange)
+      } else if let handle = hostHandle,
         selectionOverlayView.currentState.has_selection
           || selectionOverlayView.lastMenuAnchorRect != nil
       {

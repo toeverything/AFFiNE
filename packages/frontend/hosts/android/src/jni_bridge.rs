@@ -155,8 +155,8 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeShouldExposeAutofi
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeCreateHost(
-    _env: JniEnvPtr,
-    _class: JClass,
+    env: JniEnvPtr,
+    class: JClass,
 ) -> JLong {
     let mut map = registry()
         .lock()
@@ -166,7 +166,7 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeCreateHost(
         if candidate != 0 && !map.contains_key(&candidate) {
             map.insert(candidate, AndroidHostState::new());
             drop(map);
-            crate::jni_editor::attach_for_host(candidate);
+            crate::jni_editor::attach_for_host(env, class, candidate);
             return candidate;
         }
     }
@@ -174,14 +174,14 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeCreateHost(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeDestroyHost(
-    _env: JniEnvPtr,
+    env: JniEnvPtr,
     _class: JClass,
     handle: JLong,
 ) {
     if handle == 0 {
         return;
     }
-    crate::jni_editor::detach_for_host(handle);
+    crate::jni_editor::detach_for_host(env, handle);
     #[cfg(target_os = "android")]
     android_window::release(handle);
     let mut map = registry()
@@ -287,6 +287,9 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeRequestFrame(
     _class: JClass,
     handle: JLong,
 ) {
+    let _ = crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.mark_dirty();
+    });
     let _ = with_host_mut(handle, |host| {
         host.surface.request_frame();
     });
@@ -316,7 +319,12 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeHasPendingFrame(
     _class: JClass,
     handle: JLong,
 ) -> JBoolean {
-    with_host_ref(handle, |host| u8::from(host.surface.pending_frame)).unwrap_or(0)
+    let surface_pending = with_host_ref(handle, |host| host.surface.pending_frame).unwrap_or(false);
+    let editor_pending = crate::editor_runtime::with_editor_mut(handle, |ed| {
+        ed.is_dirty() || ed.has_pending_main_tasks()
+    })
+    .unwrap_or(false);
+    u8::from(surface_pending || editor_pending)
 }
 
 #[unsafe(no_mangle)]
@@ -389,27 +397,27 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnFrameTick(
     .flatten() else {
         return 0;
     };
-    let (has_gpu_renderer, has_pending_timer) =
+    let (has_gpu_renderer, rendered_gpu, still_dirty) =
         crate::editor_runtime::with_editor_mut(handle, |ed| {
             let has_gpu = ed.has_gpu_renderer();
-            ed.render_frame();
-            let next_due = ed.drain_tasks();
-            (has_gpu, next_due.is_some())
+            let rendered = ed.render_frame();
+            let more = ed.is_dirty() || ed.has_pending_main_tasks();
+            (has_gpu, rendered, more)
         })
-        .unwrap_or((false, false));
+        .unwrap_or((false, false, false));
 
     #[cfg(target_os = "android")]
     let present_result = if has_gpu_renderer {
-        // `WgpuRenderer::draw(scene)` already presented to `ANativeWindow`; never
-        // invoke legacy EGL/CPU clear on the same Surface producer.
-        let _ = backend;
+        // `WgpuRenderer::draw(scene)` already presented to `ANativeWindow` when `rendered_gpu`
+        // is true; when idle (`!rendered_gpu`), skip GPU presentation completely for 0-fps idle.
+        let _ = (backend, rendered_gpu);
         Ok(())
     } else {
         android_window::present_frame(handle, backend, argb)
     };
     #[cfg(not(target_os = "android"))]
     let present_result: Result<(), crate::SurfacePresentError> = {
-        let _ = (backend, has_gpu_renderer);
+        let _ = (backend, has_gpu_renderer, rendered_gpu);
         Ok(())
     };
 
@@ -417,7 +425,7 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeOnFrameTick(
         let ok = host
             .surface
             .complete_frame(frame_time_nanos, present_result);
-        if has_pending_timer {
+        if still_dirty {
             host.surface.request_frame();
         }
         ok

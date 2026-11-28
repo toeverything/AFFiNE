@@ -615,6 +615,15 @@ fn render_table_row(
         }
         cell_x += col.width;
     }
+    if ctx.mobile_readonly {
+        hits.push(DatabaseHitTarget {
+            rect: FlowRect::new(start_x, y, (cell_x - start_x).max(1.0), ROW_HEIGHT),
+            kind: DatabaseHitKind::OpenRecord {
+                row_id: row.row_id.clone(),
+            },
+            scrolls_x: true,
+        });
+    }
 }
 
 fn resolve_visible_columns<'a>(

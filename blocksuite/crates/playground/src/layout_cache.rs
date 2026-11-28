@@ -311,7 +311,94 @@ impl PlaygroundView {
     ) {
         self.page_scroll_fling = None;
         self.code_scroll_fling = None;
-        let delta = event.delta.pixel_delta(px(SCROLL_LINE));
+        if self.database_record_sheet.is_some() {
+            let drag_in_header = self
+                .database_record_sheet
+                .as_ref()
+                .is_some_and(|s| s.grabber_drag_start_y.is_some());
+            if !drag_in_header
+                && let Some((_, _, _, _, max_scroll)) = self.record_sheet_geometry(window)
+            {
+                let dy = f32::from(event.delta.pixel_delta(px(SCROLL_LINE)).y);
+                if let Some(s) = self.database_record_sheet.as_mut() {
+                    s.scroll_fling = None;
+                    let next = (s.scroll_y - dy).clamp(0.0, max_scroll).round();
+                    if (next - s.scroll_y).abs() > 0.5 {
+                        s.scroll_y = next;
+                        cx.notify();
+                    }
+                }
+            }
+            return;
+        }
+        let raw_delta = event.delta.pixel_delta(px(SCROLL_LINE));
+        let (mut dx, mut dy) = (f32::from(raw_delta.x), f32::from(raw_delta.y));
+        // Touch scroll axis lock — once a touch drag establishes a dominant axis,
+        // suppress orthogonal jitter until the gesture ends, restarts, or pauses >160ms.
+        if event.source == ui::ScrollSource::Touch {
+            let now_ms = self.now_ms(cx);
+            if self
+                .last_touch_scroll_ms
+                .is_some_and(|prev| now_ms - prev > 160.0)
+            {
+                self.touch_scroll_axis_lock = None;
+            }
+            match event.touch_phase {
+                ui::TouchPhase::Started => {
+                    self.touch_scroll_axis_lock = None;
+                    self.last_touch_scroll_ms = Some(now_ms);
+                }
+                ui::TouchPhase::Ended | ui::TouchPhase::Cancelled => {
+                    self.touch_scroll_axis_lock = None;
+                    self.last_touch_scroll_ms = None;
+                }
+                ui::TouchPhase::Moved => {
+                    self.last_touch_scroll_ms = Some(now_ms);
+                }
+            }
+            if self.touch_scroll_axis_lock.is_none() && (dx.abs() >= 4.0 || dy.abs() >= 4.0) {
+                self.touch_scroll_axis_lock = Some(if dx.abs() > dy.abs() * 1.2 {
+                    crate::TouchScrollAxis::Horizontal
+                } else {
+                    crate::TouchScrollAxis::Vertical
+                });
+            }
+            match self.touch_scroll_axis_lock {
+                Some(crate::TouchScrollAxis::Horizontal) => dy = 0.0,
+                Some(crate::TouchScrollAxis::Vertical) => dx = 0.0,
+                None => {}
+            }
+        }
+        // Horizontal scroll over a touch database view tab strip scrolls the tab strip.
+        if dx.abs() > dy.abs()
+            && self.form_factor.is_touch_form_factor()
+            && let Some(layout) = self.flow_layout()
+        {
+            let geom = crate::block_flow::page_geometry(self.window_size.0);
+            let wx = f32::from(event.position.x) - geom.column_x;
+            let wy = f32::from(event.position.y) - crate::TOPBAR_HEIGHT + self.scroll_y;
+            if let Some(block) = layout.blocks.iter().find(|b| {
+                b.body.kind == crate::block_flow::FlowKind::Database
+                    && b.rect().contains(wx, wy)
+                    && (wy - b.y) >= 34.0
+                    && (wy - b.y) <= 82.0
+            }) {
+                let block_id = block.block_id.clone();
+                let (cur_px, max_px) = self.flow.database_view_tabs_metrics(&block_id);
+                if max_px > 0
+                    && self.flow.database_state.scroll_view_tabs_from(
+                        &block_id,
+                        cur_px,
+                        dx.round() as i32,
+                        max_px,
+                    )
+                {
+                    self.env_rev += 1;
+                    cx.notify();
+                    return;
+                }
+            }
+        }
         // A sideways scroll over an unwrapped code block or wide table scrolls it, not the page.
         if let Some((snapshot, layout)) = self.snapshot.clone().zip(self.flow_layout()) {
             let scene = self.overlay_scene(&snapshot, &layout, window.layout_direction(), None);
@@ -319,15 +406,14 @@ impl PlaygroundView {
                 &scene,
                 f32::from(event.position.x),
                 f32::from(event.position.y),
-                f32::from(delta.x),
-                f32::from(delta.y),
+                dx,
+                dy,
             ) {
                 cx.notify();
                 return;
             }
         }
-        let delta = f32::from(delta.y);
-        let target = (self.scroll_y - delta).clamp(0.0, self.max_scroll).round();
+        let target = (self.scroll_y - dy).clamp(0.0, self.max_scroll).round();
         if target != self.scroll_y {
             self.scroll_y = target;
             cx.notify();
@@ -367,11 +453,14 @@ impl PlaygroundView {
             equation_draft.hash(&mut h);
             h.finish()
         };
+        let effective_env_rev = self
+            .env_rev
+            .wrapping_add(self.flow.database_state.revision());
         let key = (
             self.doc_rev,
             width.to_bits(),
             self.theme,
-            self.env_rev,
+            effective_env_rev,
             preview_rev,
             draft_hash,
             is_rtl,
@@ -434,7 +523,7 @@ impl PlaygroundView {
                 pdf_previews: Some(&self.pdf_previews),
                 doc_directory: Some(doc_dir),
                 equation_draft: equation_draft.as_ref(),
-                env_rev: self.env_rev,
+                env_rev: effective_env_rev,
                 direction: window.layout_direction(),
                 form_factor: self.form_factor,
                 utc_offset_minutes,
@@ -446,5 +535,60 @@ impl PlaygroundView {
         self.dirty_text = Some(BTreeSet::new());
         self.layout = Some((key, layout.clone()));
         Some(layout)
+    }
+}
+
+impl crate::PlaygroundOptions {
+    /// Parse command-line flags: `--theme light|dark`, `--mode page|edgeless`,
+    /// `--edgeless-readonly`, `--room <room>` and `--relay <ws_url>` (a relay without a room is an error).
+    pub fn from_args(args: impl IntoIterator<Item = String>) -> anyhow::Result<Self> {
+        let mut options = Self::default();
+        let mut room = None;
+        let mut relay = None;
+        let mut args = args.into_iter();
+        while let Some(flag) = args.next() {
+            let mut value = || {
+                args.next()
+                    .ok_or_else(|| anyhow::anyhow!("{flag} requires a value"))
+            };
+            match flag.as_str() {
+                "--theme" => {
+                    let value = value()?;
+                    options.theme = crate::PlaygroundTheme::parse(&value)
+                        .ok_or_else(|| anyhow::anyhow!("unknown theme {value:?} (light|dark)"))?;
+                }
+                "--mode" => {
+                    let value = value()?;
+                    options.mode = PlaygroundMode::parse(&value)
+                        .ok_or_else(|| anyhow::anyhow!("unknown mode {value:?} (page|edgeless)"))?;
+                }
+                "--edgeless-readonly" => options.edgeless_readonly = true,
+                "--page-readonly" => options.page_readonly = true,
+                "--database-readonly" => options.database_readonly = true,
+                "--form-factor" => {
+                    let value = value()?;
+                    options.form_factor = match value.as_str() {
+                        "desktop" => crate::FormFactor::Desktop,
+                        "tablet" => crate::FormFactor::Tablet,
+                        "phone" => crate::FormFactor::Phone,
+                        _ => anyhow::bail!("unknown form factor {value:?} (desktop|tablet|phone)"),
+                    };
+                }
+                "--room" => room = Some(value()?),
+                "--relay" => relay = Some(value()?),
+                other => anyhow::bail!("unknown flag: {other}"),
+            }
+        }
+        match (room, relay) {
+            (Some(room), relay) => {
+                let config = crate::room_client::RoomConfig::new(&room, relay.as_deref());
+                #[cfg(not(target_family = "wasm"))]
+                config.validate_native()?;
+                options.room = Some(config);
+            }
+            (None, Some(_)) => anyhow::bail!("--relay requires --room <room>"),
+            (None, None) => {}
+        }
+        Ok(options)
     }
 }

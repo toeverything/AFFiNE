@@ -121,13 +121,17 @@ pub unsafe extern "C" fn affine_ios_host_sample_keyboard_frame(
     let Some(host) = (unsafe { host.as_mut() }) else {
         return AffineWindowInsets::default();
     };
-    host.state.sample_keyboard_frame(
+    let insets = host.state.sample_keyboard_frame(
         safe_top,
         safe_right,
         safe_bottom,
         safe_left,
         frame_timestamp_sec,
-    )
+    );
+    if let Some(editor) = host.editor.borrow_mut().as_mut() {
+        editor.set_insets(insets);
+    }
+    insets
 }
 
 /// Update selection caret geometry, UTF-16 range, and writing direction on `host`.

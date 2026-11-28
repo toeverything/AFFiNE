@@ -1658,12 +1658,6 @@ fun main() {
     afCtrl = AndroidAutofillController(
       sdkInt = 26,
       handleProvider = { layoutParityHandle },
-      onValueCommitted = { id, text ->
-        if (afCtrl.focusedFieldId() == id) {
-          bufCtrl.applyAutofillTextToIme(text)
-        }
-      },
-      onFocusedFieldTextSync = { _, text -> bufCtrl.applyAutofillTextToIme(text) },
     )
     bufCtrl = HostDocumentBufferController(
       documentStore = docStore,
@@ -1730,7 +1724,6 @@ fun main() {
     checkEq(docIme.replaceText(0, docIme.currentText().length, "Hello document", 1), true, "seq22 masked seed doc")
     bufCtrl.onAutofillFocusChanged(202)
     checkEq(bufCtrl.isFocusedAutofillFieldMasked(), true, "seq22 focused password field is masked")
-    bufCtrl.applyAutofillTextToIme("s3cr3t-pass")
     checkEq(docIme.setSelection(0, 6), true, "seq22 select [0, 6) inside masked password")
     // Mirror MainActivity.onImeMutated suppression when Autofill is focused.
     if (bufCtrl.isAutofillFocused()) {
@@ -1988,5 +1981,75 @@ fun main() {
     NativeBridge.nativeDestroyHost(seq24Handle)
   }
 
-  println("Kotlin JNI Android host parity check passed (24/24 sequences)")
+  // 25. AutofillVirtualInputConnection tracks composingRange across Gboard composing updates
+  // without exponential text duplication and never writes into the Rust document buffer.
+  val seq25Handle = NativeBridge.nativeCreateHost()
+  try {
+    val ime25 = AffineImeController({ seq25Handle })
+    checkEq(ime25.commitText("doc-safe", 1), true, "seq25 seed document text")
+    val mockBackend25 = object : AutofillPlatformBackend {
+      override fun notifyViewEntered(autofillId: Int, left: Int, top: Int, right: Int, bottom: Int) {}
+      override fun notifyViewExited(autofillId: Int) {}
+      override fun notifyValueChanged(autofillId: Int, text: String) {}
+      override fun commit() {}
+      override fun cancel() {}
+    }
+    val af25 = AndroidAutofillController(28, { seq25Handle }, mockBackend25)
+    checkEq(af25.registerField(1, 0, 10, 20, 300, 48, false, 0), true, "seq25 register field")
+    af25.onFieldFocusChanged(1)
+    val afIc = app.affine.pro.host.AutofillVirtualInputConnection(af25)
+    checkEq(afIc.setComposingText("a", 1), true, "seq25 setComposingText('a')")
+    checkEq(af25.resolveVirtualFieldValueForStructure(1), "a", "seq25 composing 'a'")
+    checkEq(afIc.setComposingText("al", 1), true, "seq25 setComposingText('al')")
+    checkEq(af25.resolveVirtualFieldValueForStructure(1), "al", "seq25 composing 'al' replaces 'a'")
+    checkEq(afIc.setComposingText("ali", 1), true, "seq25 setComposingText('ali')")
+    checkEq(af25.resolveVirtualFieldValueForStructure(1), "ali", "seq25 composing 'ali' replaces 'al'")
+    checkEq(afIc.commitText("alice", 1), true, "seq25 commitText('alice')")
+    checkEq(af25.resolveVirtualFieldValueForStructure(1), "alice", "seq25 committed value is exactly 'alice'")
+    checkEq(afIc.finishComposingText(), true, "seq25 finishComposingText")
+    checkEq(afIc.deleteSurroundingText(1, 0), true, "seq25 deleteSurroundingText(1, 0)")
+    checkEq(af25.resolveVirtualFieldValueForStructure(1), "alic", "seq25 delete trims last char")
+    checkEq(ime25.readText(), "doc-safe", "seq25 autofill IC never mutates document buffer")
+
+    // Cross-focus generation isolation: switching to field 2 invalidates field 1's IC,
+    // and focusing an autofill field invalidates a previously bound document IC.
+    checkEq(af25.registerField(2, 2, 10, 80, 300, 48, true, 0), true, "seq25 register field 2")
+    var restarts = 0
+    af25.onFocusGenerationChanged = { restarts += 1 }
+    val staleDocGen = af25.currentFocusGeneration()
+    var contextMenuCalls = 0
+    val staleDocIc = app.affine.pro.host.AffineInputConnection(
+      ime25,
+      onContextMenuAction = {
+        contextMenuCalls += 1
+        true
+      },
+      isActiveSession = { af25.focusedFieldId() == null && af25.currentFocusGeneration() == staleDocGen },
+    )
+    af25.onFieldFocusChanged(2)
+    checkEq(restarts >= 1, true, "seq25 focus switch bumps generation and requests restartInput")
+    checkEq(afIc.commitText("STALE", 1), false, "seq25 stale field 1 IC rejected after focus switch to field 2")
+    checkEq(afIc.setSelection(0, 1), false, "seq25 stale field 1 IC setSelection rejected")
+    checkEq(afIc.setComposingRegion(0, 1), false, "seq25 stale field 1 IC setComposingRegion rejected")
+    checkEq(af25.resolveVirtualFieldValueForStructure(1), "alic", "seq25 field 1 value untouched by stale IC")
+    checkEq(af25.resolveVirtualFieldValueForStructure(2), null, "seq25 field 2 value untouched by stale field 1 IC")
+    checkEq(staleDocIc.commitText("LEAK", 1), false, "seq25 stale doc IC rejected while autofill focused")
+    checkEq(staleDocIc.setSelection(0, 3), false, "seq25 stale doc IC setSelection rejected while autofill focused")
+    checkEq(
+      staleDocIc.performContextMenuAction(android.R.id.cut),
+      false,
+      "seq25 stale doc IC performContextMenuAction rejected while autofill focused",
+    )
+    checkEq(contextMenuCalls, 0, "seq25 stale doc IC never invokes context menu callback")
+    checkEq(
+      staleDocIc.sendKeyEvent(null),
+      false,
+      "seq25 stale doc IC sendKeyEvent rejected while autofill focused",
+    )
+    checkEq(ime25.readText(), "doc-safe", "seq25 document buffer untouched by stale doc IC")
+  } finally {
+    NativeBridge.nativeDestroyHost(seq25Handle)
+  }
+
+  println("Kotlin JNI Android host parity check passed (25/25 sequences)")
 }

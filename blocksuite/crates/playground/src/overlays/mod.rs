@@ -5,6 +5,7 @@ mod view_context_menu;
 mod view_edits;
 mod view_linked_doc;
 mod view_mobile;
+pub use view_mobile::DatabaseRecordSheetState;
 mod view_scrollbar;
 mod view_table_cell;
 

@@ -52,8 +52,85 @@ pub struct ContextMenuState {
     pub can_paste: bool,
     /// Optional URL hit at the right-click position (inline link mark or Bookmark block).
     pub link_url: Option<String>,
+    /// Currently highlighted menu row index for keyboard navigation (`Up`/`Down`/`Enter`).
+    pub selected: Option<usize>,
     pub presence: Presence,
     pub rect: Option<FlowRect>,
+}
+
+impl ContextMenuState {
+    pub fn entries(&self) -> Vec<(bool, ContextMenuAction)> {
+        let mut items = vec![
+            (self.can_copy, ContextMenuAction::Copy),
+            (self.can_cut, ContextMenuAction::Cut),
+            (self.can_paste, ContextMenuAction::Paste),
+        ];
+        if let Some(url) = &self.link_url {
+            items.push((true, ContextMenuAction::OpenLink(url.clone())));
+            items.push((true, ContextMenuAction::CopyLink(url.clone())));
+        }
+        items
+    }
+
+    /// Move keyboard focus to the next (`forward = true`) or previous enabled row, wrapping around.
+    pub fn step_selection(&mut self, forward: bool) -> bool {
+        let entries = self.entries();
+        let enabled: Vec<usize> = entries
+            .iter()
+            .enumerate()
+            .filter_map(|(i, (ok, _))| ok.then_some(i))
+            .collect();
+        if enabled.is_empty() {
+            self.selected = None;
+            return false;
+        }
+        let next = match self
+            .selected
+            .and_then(|s| enabled.iter().position(|&i| i == s))
+        {
+            Some(pos) => {
+                if forward {
+                    enabled[(pos + 1) % enabled.len()]
+                } else {
+                    enabled[(pos + enabled.len() - 1) % enabled.len()]
+                }
+            }
+            None => {
+                if forward {
+                    enabled[0]
+                } else {
+                    *enabled.last().unwrap()
+                }
+            }
+        };
+        self.selected = Some(next);
+        true
+    }
+
+    /// Action of the currently keyboard-selected enabled row, if any.
+    pub fn selected_action(&self) -> Option<ContextMenuAction> {
+        let idx = self.selected?;
+        let entries = self.entries();
+        let (enabled, action) = entries.get(idx)?;
+        enabled.then(|| action.clone())
+    }
+
+    /// Handle `Escape`/`Up`/`Down`/`Enter` for an open context menu.
+    /// Returns `Some((close_menu, action))` when consumed.
+    pub fn handle_key(&mut self, key: &str) -> Option<(bool, Option<ContextMenuAction>)> {
+        if self.presence.closing {
+            return None;
+        }
+        match key {
+            "escape" => Some((true, None)),
+            "down" | "up" => {
+                self.step_selection(key == "down");
+                Some((false, None))
+            }
+            "enter" => Some((true, self.selected_action())),
+            _ => None,
+        }
+    }
 }
 
 /// Transient non-blocking toast shown when Paste cannot read the platform clipboard directly.
@@ -135,7 +212,9 @@ pub(super) fn render_context_menu<V: OverlayHost>(
 
     let row_radius = CONTEXT_MENU_RADIUS - CONTEXT_MENU_PADDING;
     let hover_bg = palette.hover;
-    let make_row = |id: &'static str,
+    let selected_idx = menu.selected;
+    let make_row = |idx: usize,
+                    id: &'static str,
                     snap_id: &'static str,
                     label: &'static str,
                     shortcut: Option<&'static str>,
@@ -143,6 +222,7 @@ pub(super) fn render_context_menu<V: OverlayHost>(
                     enabled: bool,
                     action: ContextMenuAction,
                     cx: &mut Context<V>| {
+        let is_selected = interactive && enabled && selected_idx == Some(idx);
         let fg = if enabled {
             palette.text_primary
         } else {
@@ -164,7 +244,9 @@ pub(super) fn render_context_menu<V: OverlayHost>(
             .gap(px(8.0))
             .text_size(px(TYPOGRAPHY.font_sm_px))
             .text_color(fg)
+            .when(is_selected, |el| el.bg(hover_bg))
             .snapshot(snap_id, Some("overlay.context_menu"))
+            .snapshot_focused(is_selected)
             .snapshot_text(label);
         if interactive && enabled {
             row = row
@@ -229,6 +311,7 @@ pub(super) fn render_context_menu<V: OverlayHost>(
 
     root = root
         .child(make_row(
+            0,
             "ctx-copy",
             "overlay.context_menu.copy",
             "Copy",
@@ -239,6 +322,7 @@ pub(super) fn render_context_menu<V: OverlayHost>(
             cx,
         ))
         .child(make_row(
+            1,
             "ctx-cut",
             "overlay.context_menu.cut",
             "Cut",
@@ -249,6 +333,7 @@ pub(super) fn render_context_menu<V: OverlayHost>(
             cx,
         ))
         .child(make_row(
+            2,
             "ctx-paste",
             "overlay.context_menu.paste",
             "Paste",
@@ -263,6 +348,7 @@ pub(super) fn render_context_menu<V: OverlayHost>(
         root = root
             .child(div().w_full().h(px(1.0)).my(px(4.0)).bg(palette.border))
             .child(make_row(
+                3,
                 "ctx-open-link",
                 "overlay.context_menu.open_link",
                 "Open Link",
@@ -273,6 +359,7 @@ pub(super) fn render_context_menu<V: OverlayHost>(
                 cx,
             ))
             .child(make_row(
+                4,
                 "ctx-copy-link",
                 "overlay.context_menu.copy_link",
                 "Copy Link",
@@ -293,7 +380,8 @@ pub(super) fn render_context_toast(
     viewport: FlowRect,
     palette: &Palette,
 ) -> AnyElement {
-    let width = 228.0_f32.min((viewport.w - 2.0 * POPOVER_EDGE_MARGIN).max(120.0));
+    let est_w = (toast.message.chars().count() as f32 * 7.2 + 32.0).max(228.0);
+    let width = est_w.min((viewport.w - 2.0 * POPOVER_EDGE_MARGIN).max(120.0));
     let height = 34.0;
     let x = (viewport.x + (viewport.w - width) * 0.5)
         .clamp(

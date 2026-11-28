@@ -1,21 +1,12 @@
 //! Live pure-Rust BlockSuite editor runtime for the Android thin host.
-//!
-//! Backed by `PlaygroundView` + `PlatformInputHandler` on the UI thread via a
-//! `thread_local!` registry keyed by JNI host handle, enforcing:
-//! - `H-S1`: zero host text copy (all `InputConnection` reads come straight from `PlatformInputHandler`)
-//! - `H-S2`: editor mutations increment `text_input_change_seq` and track `focused_block_hash`
-//! - `H-A1`: `setComposingRegion(start, end)` preserves exact range via
-//!   `replace_and_mark_text_in_range(Some(lo..hi), existing, ...)`
-//! - `T1` Stage 1: Phone/Tablet `FormFactor` defaults to `edgeless_readonly = true`,
-//!   `database_readonly = true`.
 
 use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc, time::Duration};
 
 use playground::{FormFactor, PlaygroundMode, PlaygroundOptions, PlaygroundView};
 use ui::{
     AppContext, Application, ApplicationHandle, Bounds, Edges, KeyDownEvent, Keystroke, Modifiers,
-    PlatformInput, TouchEvent, TouchId, TouchPhase, WindowBounds, WindowInsets, WindowOptions,
-    point, px, size,
+    PlatformInput, ScrollDelta, ScrollEvent, ScrollSource, TouchEvent, TouchId, TouchPhase,
+    WindowBounds, WindowInsets, WindowOptions, point, px, size,
 };
 
 use crate::{
@@ -23,7 +14,6 @@ use crate::{
     editor_platform::{AndroidDispatcher, AndroidEditorPlatform, AndroidEditorWindow},
 };
 
-/// Android `KeyEvent` keycodes handled by `AffineInputConnection.sendKeyEvent`.
 pub const KEYCODE_DPAD_UP: i32 = 19;
 pub const KEYCODE_DPAD_DOWN: i32 = 20;
 pub const KEYCODE_DPAD_LEFT: i32 = 21;
@@ -208,9 +198,39 @@ impl AndroidEditorRuntime {
         self.window.set_insets(ui_insets);
     }
 
-    pub(crate) fn render_frame(&mut self) {
+    pub(crate) fn is_dirty(&self) -> bool {
+        self.window.state.borrow().dirty
+    }
+
+    pub(crate) fn mark_dirty(&mut self) {
+        self.window.state.borrow_mut().dirty = true;
+    }
+
+    pub(crate) fn set_waker(&self, waker: Option<Arc<dyn Fn() + Send + Sync>>) {
+        self.dispatcher.set_waker(waker);
+    }
+
+    pub(crate) fn has_pending_main_tasks(&self) -> bool {
+        self.dispatcher.has_pending_main_tasks()
+    }
+
+    pub(crate) fn is_dark_theme(&self) -> bool {
+        self.app
+            .update(|cx| {
+                self.view.read_with(cx, |view, _| {
+                    view.theme() == playground::PlaygroundTheme::Dark
+                })
+            })
+            .unwrap_or(false)
+    }
+
+    pub(crate) fn render_frame(&mut self) -> bool {
         let _ = self.dispatcher.drain_ready();
+        if !self.is_dirty() {
+            return false;
+        }
         self.window.request_frame_now();
+        true
     }
 
     pub(crate) fn set_form_factor_from_smallest_width_dp(&mut self, smallest_width_dp: i32) {
@@ -251,9 +271,7 @@ impl AndroidEditorRuntime {
 
     pub(crate) fn set_mode(&mut self, mode: PlaygroundMode) {
         let _ = self.app.update(|cx| {
-            let _ = self.view.update(cx, |view, window, cx| {
-                view.set_mode(mode, window, cx);
-            });
+            let _ = self.view.update(cx, |v, w, cx| v.set_mode(mode, w, cx));
         });
         self.window.request_frame_now();
     }
@@ -261,9 +279,9 @@ impl AndroidEditorRuntime {
     pub(crate) fn load_showcase_document(&mut self) {
         self.preserved_selection_during_composing_region = None;
         let _ = self.app.update(|cx| {
-            let _ = self.view.update(cx, |view, window, cx| {
-                view.load_showcase_document(window, cx);
-            });
+            let _ = self
+                .view
+                .update(cx, |v, w, cx| v.load_showcase_document(w, cx));
         });
         self.window.request_frame_now();
     }
@@ -271,9 +289,9 @@ impl AndroidEditorRuntime {
     pub(crate) fn reset_empty_document(&mut self) {
         self.preserved_selection_during_composing_region = None;
         let _ = self.app.update(|cx| {
-            let _ = self.view.update(cx, |view, window, cx| {
-                view.load_empty_page_document(window, cx);
-            });
+            let _ = self
+                .view
+                .update(cx, |v, w, cx| v.load_empty_page_document(w, cx));
         });
         self.window.request_frame_now();
     }
@@ -295,6 +313,31 @@ impl AndroidEditorRuntime {
         };
         let _ = self.window.dispatch_input(PlatformInput::Touch(event));
         self.window.request_frame_now();
+    }
+
+    pub(crate) fn dispatch_scroll_wheel(&mut self, x: f32, y: f32, dx: f32, dy: f32) {
+        let _ = self
+            .window
+            .dispatch_input(PlatformInput::Scroll(ScrollEvent {
+                position: point(px(x), px(y)),
+                delta: ScrollDelta::Pixels(point(px(dx), px(dy))),
+                modifiers: Modifiers::default(),
+                touch_phase: TouchPhase::Moved,
+                source: ScrollSource::Pointer,
+            }));
+        self.window.request_frame_now();
+    }
+
+    pub(crate) fn handle_back(&mut self) -> bool {
+        let handled = self.app.update(|cx| {
+            self.view
+                .update(cx, |v, w, cx| v.handle_back(w, cx))
+                .unwrap_or(false)
+        });
+        if handled {
+            self.window.request_frame_now();
+        }
+        handled
     }
 
     pub(crate) fn dispatch_key_code(
@@ -629,6 +672,18 @@ impl AndroidEditorRuntime {
         let removed_before = anchor_before - del_before_start;
         let removed_after = del_after_end - anchor_after;
         if removed_before == 0 && removed_after == 0 {
+            // When Gboard issues `deleteSurroundingText(1, 0)` at the very start of a block
+            // (collapsed caret at offset 0 with no active composing span), bridge it to a
+            // structural Backspace so adjacent non-mergeable block selection and cross-block
+            // merging behave identically to hardware/software KEYCODE_DEL.
+            if composing.is_none()
+                && sel_start == 0
+                && sel_end == 0
+                && before_len >= 1
+                && after_len == 0
+            {
+                let _ = self.dispatch_key_code(KEYCODE_DEL, false, false, false);
+            }
             return;
         }
 
@@ -796,5 +851,86 @@ mod tests {
         rt.set_form_factor(FormFactor::Desktop);
         assert!(!rt.edgeless_readonly());
         assert!(!rt.database_readonly());
+    }
+
+    #[test]
+    fn android_editor_runtime_frame_dirty_lifecycle_and_block_start_delete_surrounding() {
+        let mut rt =
+            AndroidEditorRuntime::new(412.0, 915.0, 2.625, FormFactor::Phone, false).expect("rt");
+        // Initial frame clears dirty to false when idle.
+        let _ = rt.render_frame();
+        assert!(
+            !rt.is_dirty(),
+            "idle frame must leave is_dirty() == false for 0-fps idle"
+        );
+        assert!(
+            !rt.render_frame(),
+            "second idle render_frame() must skip GPU draw"
+        );
+
+        // 1. Delayed timer triggering cx.notify() must mark dirty == true and render on next tick.
+        let (wake_tx, wake_rx) = std::sync::mpsc::channel();
+        rt.set_waker(Some(Arc::new(move || {
+            let _ = wake_tx.send(());
+        })));
+        let view = rt.view;
+        rt.app.update(|cx| {
+            let bg = cx.background_executor().clone();
+            cx.spawn(async move |cx| {
+                bg.timer(Duration::from_millis(50)).await;
+                let _ = cx.update(|cx| {
+                    let _ = view.update(cx, |_, _, cx| cx.notify());
+                });
+            })
+            .detach();
+        });
+        let _ = rt.drain_tasks();
+        assert!(!rt.is_dirty());
+        while wake_rx.try_recv().is_ok() {}
+        rt.dispatcher.advance_test_clock(Duration::from_millis(60));
+        let _ = rt.drain_tasks();
+        while !rt.is_dirty() {
+            wake_rx
+                .recv_timeout(Duration::from_secs(1))
+                .expect("timer wakeup");
+            let _ = rt.drain_tasks();
+        }
+        rt.set_waker(None);
+        assert!(
+            rt.is_dirty(),
+            "timer-driven cx.notify() must set is_dirty() == true via frame_waker"
+        );
+        assert!(rt.render_frame(), "dirty frame must execute render_frame()");
+        assert!(
+            !rt.is_dirty(),
+            "after idle draw, is_dirty() returns to false"
+        );
+
+        // 2. Requesting an animation frame *during* render_frame() must keep is_dirty() == true
+        // immediately after render_frame() returns (continuous animation liveness).
+        rt.set_mode(PlaygroundMode::Edgeless);
+        assert!(rt.is_dirty(), "mode switch must mark dirty");
+        assert!(
+            rt.render_frame(),
+            "first animation frame after mode switch must execute"
+        );
+        assert!(
+            rt.is_dirty(),
+            "request_animation_frame() called inside render_frame() must preserve is_dirty() == true"
+        );
+        rt.set_mode(PlaygroundMode::Page);
+        let _ = rt.render_frame();
+
+        // 3. Block-start deleteSurroundingText(1, 0) bridges to structural Backspace (merges blocks).
+        let first: Vec<u16> = "Alpha".encode_utf16().collect();
+        rt.commit_text_utf16(&first, 1);
+        assert!(rt.dispatch_key_code(KEYCODE_ENTER, false, false, false));
+        assert_eq!(String::from_utf16_lossy(&rt.utf16_text()), "");
+        rt.delete_surrounding_text(1, 0);
+        assert_eq!(
+            String::from_utf16_lossy(&rt.utf16_text()),
+            "Alpha",
+            "deleteSurroundingText(1, 0) at block start must bridge to structural Backspace"
+        );
     }
 }

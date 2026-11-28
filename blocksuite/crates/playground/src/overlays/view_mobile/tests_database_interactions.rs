@@ -232,17 +232,21 @@ fn database_pointer_mouse_down_drives_tabs_calendar_readonly_and_desktop_edits()
     simulate_click_database_hit(&m, "showcase-database", |k| {
         matches!(k, DatabaseHitKind::CellReadOnly)
     });
-    let (notice, has_sel) = m.app.update(|cx| {
+    let (sheet_open, toast_visible, has_sel) = m.app.update(|cx| {
         m.window
             .update(cx, |v, _, _| {
                 (
-                    v.database_mobile_readonly_notice("showcase-database"),
+                    v.database_record_sheet().is_some(),
+                    v.overlays().context_toast_message().is_some(),
                     v.document_selection().is_some(),
                 )
             })
             .unwrap()
     });
-    assert!(notice, "mobile pointer click must show readonly banner");
+    assert!(
+        sheet_open && toast_visible,
+        "mobile pointer click must open Record sheet and show one-time readonly toast"
+    );
     assert!(
         !has_sel,
         "mobile readonly database click must not place editor caret in adjacent block"

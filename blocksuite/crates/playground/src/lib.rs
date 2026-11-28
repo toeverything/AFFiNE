@@ -134,59 +134,6 @@ impl PlaygroundOptions {
             ..Self::default()
         }
     }
-
-    /// Parse command-line flags: `--theme light|dark`, `--mode page|edgeless`,
-    /// `--edgeless-readonly`, `--room <room>` and `--relay <ws_url>` (a relay without a room is an error).
-    pub fn from_args(args: impl IntoIterator<Item = String>) -> anyhow::Result<Self> {
-        let mut options = Self::default();
-        let mut room = None;
-        let mut relay = None;
-        let mut args = args.into_iter();
-        while let Some(flag) = args.next() {
-            let mut value = || {
-                args.next()
-                    .ok_or_else(|| anyhow::anyhow!("{flag} requires a value"))
-            };
-            match flag.as_str() {
-                "--theme" => {
-                    let value = value()?;
-                    options.theme = PlaygroundTheme::parse(&value)
-                        .ok_or_else(|| anyhow::anyhow!("unknown theme {value:?} (light|dark)"))?;
-                }
-                "--mode" => {
-                    let value = value()?;
-                    options.mode = PlaygroundMode::parse(&value)
-                        .ok_or_else(|| anyhow::anyhow!("unknown mode {value:?} (page|edgeless)"))?;
-                }
-                "--edgeless-readonly" => options.edgeless_readonly = true,
-                "--page-readonly" => options.page_readonly = true,
-                "--database-readonly" => options.database_readonly = true,
-                "--form-factor" => {
-                    let value = value()?;
-                    options.form_factor = match value.as_str() {
-                        "desktop" => FormFactor::Desktop,
-                        "tablet" => FormFactor::Tablet,
-                        "phone" => FormFactor::Phone,
-                        _ => anyhow::bail!("unknown form factor {value:?} (desktop|tablet|phone)"),
-                    };
-                }
-                "--room" => room = Some(value()?),
-                "--relay" => relay = Some(value()?),
-                other => anyhow::bail!("unknown flag: {other}"),
-            }
-        }
-        match (room, relay) {
-            (Some(room), relay) => {
-                let config = RoomConfig::new(&room, relay.as_deref());
-                #[cfg(not(target_family = "wasm"))]
-                config.validate_native()?;
-                options.room = Some(config);
-            }
-            (None, Some(_)) => anyhow::bail!("--relay requires --room <room>"),
-            (None, None) => {}
-        }
-        Ok(options)
-    }
 }
 
 pub(crate) const PILL_WIDTH: f32 = 186.0;
@@ -217,6 +164,8 @@ pub(crate) static GLOBAL_PREVIEW_PROVIDER_TEST_LOCK: std::sync::Mutex<()> =
 pub(crate) type CalendarClockFn = Rc<dyn Fn() -> (i64, i32)>;
 pub(crate) type CalendarOffsetAtFn = Rc<dyn Fn(i64) -> i32>;
 pub(crate) type ImagePickerFn = Rc<dyn Fn()>;
+
+pub(crate) use touch_interaction::TouchScrollAxis;
 
 /// Interactive GPUI root view for desktop, Web canvas, and headless verification sessions.
 pub struct PlaygroundView {
@@ -250,8 +199,8 @@ pub struct PlaygroundView {
     pub(crate) pdf_page_indices: HashMap<String, usize>,
     /// Whether the user explicitly dismissed the mobile keyboard toolbar for the current focus.
     pub(crate) keyboard_toolbar_dismissed: bool,
-    /// Bottom software-keyboard inset height from the latest frame (logical px).
-    pub(crate) last_keyboard_inset: f32,
+    /// Cached per-frame software-keyboard and bottom safe-area insets (logical px).
+    pub(crate) ime_insets: chrome::ImeInsetsState,
     /// Focused in-place `affine:table` cell editor, if active.
     pub(crate) table_cell: Option<overlays::InlineTableCell>,
     pub(crate) suppress_unselected_root_input: bool,
@@ -277,9 +226,15 @@ pub struct PlaygroundView {
     pub(crate) page_readonly: bool,
     pub(crate) edgeless_readonly: bool,
     pub(crate) database_readonly: bool,
+    pub(crate) database_readonly_toast_shown: bool,
+    pub(crate) database_record_sheet: Option<overlays::DatabaseRecordSheetState>,
     pub(crate) page_scroll_fling: Option<ui::InertialDecay>,
     pub(crate) code_scroll_fling: Option<(String, ui::InertialDecay)>,
     pub(crate) edgeless_pan_fling: Option<(ui::InertialDecay, ui::InertialDecay)>,
+    pub(crate) touch_scroll_axis_lock: Option<TouchScrollAxis>,
+    pub(crate) last_touch_scroll_ms: Option<f64>,
+    pub(crate) keep_keyboard_on_block_selection: bool,
+    pub(crate) block_selection_return_caret: Option<String>,
     pub(crate) touch_long_press_anchor:
         Option<(editor_session::DocPoint, editor_session::DocPoint)>,
     pub(crate) touch_selection_menu_open: bool,
@@ -390,7 +345,7 @@ impl PlaygroundView {
             failed_pdf_blobs: BTreeSet::new(),
             pdf_page_indices: HashMap::new(),
             keyboard_toolbar_dismissed: false,
-            last_keyboard_inset: 0.0,
+            ime_insets: chrome::ImeInsetsState::default(),
             table_cell: None,
             suppress_unselected_root_input: false,
             last_opened_embed_doc: None,
@@ -413,9 +368,15 @@ impl PlaygroundView {
             page_readonly: options.page_readonly,
             edgeless_readonly: options.edgeless_readonly,
             database_readonly,
+            database_readonly_toast_shown: false,
+            database_record_sheet: None,
             page_scroll_fling: None,
             code_scroll_fling: None,
             edgeless_pan_fling: None,
+            touch_scroll_axis_lock: None,
+            last_touch_scroll_ms: None,
+            keep_keyboard_on_block_selection: false,
+            block_selection_return_caret: None,
             touch_long_press_anchor: None,
             touch_selection_menu_open: false,
             edgeless_readonly_selection_target: None,
@@ -708,6 +669,7 @@ impl PlaygroundView {
         self.page_scroll_fling = None;
         self.code_scroll_fling = None;
         self.edgeless_pan_fling = None;
+        self.touch_scroll_axis_lock = None;
         self.touch_long_press_anchor = None;
         self.touch_selection_menu_open = false;
         self.edgeless_readonly_selection_target = None;
@@ -717,6 +679,8 @@ impl PlaygroundView {
         self.context_paste_task = None;
         self.context_menu_target = None;
         self.last_opened_link_url = None;
+        self.database_readonly_toast_shown = false;
+        self.database_record_sheet = None;
         self.doc_epoch = self.doc_epoch.wrapping_add(1);
         self.state = state;
         self.default_doc_directory = directory::InMemoryDocDirectory::with_namespace(format!(
@@ -732,7 +696,7 @@ impl PlaygroundView {
         self.failed_pdf_blobs.clear();
         self.pdf_page_indices.clear();
         self.keyboard_toolbar_dismissed = false;
-        self.last_keyboard_inset = 0.0;
+        self.ime_insets = chrome::ImeInsetsState::default();
         self.suppress_unselected_root_input = had_composing;
         self.last_opened_embed_doc = None;
         self.blob_fetches.clear();

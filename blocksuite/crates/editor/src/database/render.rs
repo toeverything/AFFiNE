@@ -7,8 +7,7 @@ use ui::{Hsla, Window};
 
 use crate::{
     block_flow::{
-        CodeScroll, FlowRect, InlineAlign, InlineBaseline, InlineLayout, InlineStyle,
-        civil_from_days, layout_inline,
+        CodeScroll, FlowRect, InlineAlign, InlineBaseline, InlineLayout, InlineStyle, layout_inline,
     },
     theme::{FONT_SANS, IconPaint, Palette, PlaygroundTheme, TYPOGRAPHY},
 };
@@ -54,6 +53,8 @@ pub struct DatabaseLayoutOutput {
     pub prims: Vec<DatabasePrim>,
     pub code_scroll: Option<CodeScroll>,
     pub hits: Vec<DatabaseHitTarget>,
+    pub view_tabs_scroll_px: i32,
+    pub view_tabs_max_scroll_px: i32,
 }
 
 /// Shared rendering context passed into Table / Kanban / Calendar view painters.
@@ -65,6 +66,7 @@ pub(super) struct DbRenderCtx<'a> {
     pub theme: PlaygroundTheme,
     pub palette: Palette,
     pub direction: ui::Direction,
+    pub form_factor: crate::block_flow::FormFactor,
     pub width: f32,
     pub mobile_readonly: bool,
     pub now_ms: i64,
@@ -198,6 +200,7 @@ pub fn layout_database_block(
     width: f32,
     theme: PlaygroundTheme,
     direction: ui::Direction,
+    form_factor: crate::block_flow::FormFactor,
     mobile_readonly: bool,
     now_ms: i64,
     offset_at_ms: &dyn Fn(i64) -> i32,
@@ -266,18 +269,23 @@ pub fn layout_database_block(
     });
     y += 32.0;
 
-    // 2. View switcher tabs (`Table` / `Kanban` / `Calendar`, zero CRDT writeback).
+    // 2. View switcher tabs (single-row horizontal scroll on Phone/Tablet with fade hint;
+    //    inline + `"N More"` overflow dropdown on Desktop). Zero CRDT writeback.
     let views_to_show: Vec<&DatabaseView> = if data.views.is_empty() {
         vec![active_view]
     } else {
         data.views.iter().collect()
     };
-    let tab_h = 28.0_f32;
-    let mut tab_cursor = 8.0_f32;
+    let is_touch = form_factor.is_touch_form_factor();
+    let tab_h = if is_touch { 34.0_f32 } else { 28.0_f32 };
     let tab_gap = 6.0_f32;
-    for view in &views_to_show {
-        let is_active = view.id == active_view.id;
-        let tab_label = if view.name.is_empty() {
+    let strip_left = 8.0_f32;
+    let strip_right = (width - 8.0).max(strip_left + 1.0);
+    let strip_w = (strip_right - strip_left).max(1.0);
+    let max_tab_w = (width - 16.0).clamp(64.0, 180.0);
+
+    fn tab_label_for(view: &DatabaseView) -> &str {
+        if view.name.is_empty() {
             match view.mode {
                 DatabaseViewMode::Table => "Table View",
                 DatabaseViewMode::Kanban => "Kanban View",
@@ -286,7 +294,27 @@ pub fn layout_database_block(
             }
         } else {
             view.name.as_str()
-        };
+        }
+    }
+    let icon_for = |mode: &DatabaseViewMode| match mode {
+        DatabaseViewMode::Table => "SquareIcon",
+        DatabaseViewMode::Kanban => "FrameIcon",
+        DatabaseViewMode::Calendar => "PageIcon",
+        DatabaseViewMode::Unknown(_) => "SquareIcon",
+    };
+
+    struct MeasuredTab<'a> {
+        view: &'a DatabaseView,
+        label: &'a str,
+        is_active: bool,
+        w: f32,
+        layout: Rc<InlineLayout>,
+    }
+
+    let mut measured_tabs = Vec::with_capacity(views_to_show.len());
+    for view in &views_to_show {
+        let is_active = view.id == active_view.id;
+        let label = tab_label_for(view);
         let tab_ink = if is_active {
             palette.text_primary
         } else {
@@ -299,7 +327,7 @@ pub fn layout_database_block(
             tab_ink,
         );
         let measured = layout_inline(
-            tab_label,
+            label,
             &tab_style,
             f32::MAX,
             tab_h,
@@ -307,57 +335,9 @@ pub fn layout_database_block(
             InlineAlign::Left,
             window,
         );
-        let max_tab_w = (width - 16.0).clamp(64.0, 180.0);
         let tab_w = (measured.content_width().ceil() + 34.0).clamp(64.0, max_tab_w);
-        if tab_cursor + tab_w > width - 8.0 && tab_cursor > 8.0 {
-            // Wrap tabs cleanly on narrow mobile viewports instead of overflowing.
-            tab_cursor = 8.0;
-            y += tab_h + 4.0;
-        }
-        let logical_rect = FlowRect::new(tab_cursor, y, tab_w, tab_h);
-        let visual_rect = axis.map_rect(logical_rect);
-        prims.push(DatabasePrim::Quad {
-            rect: visual_rect,
-            fill: Some(if is_active {
-                palette.hover
-            } else {
-                palette.background_secondary
-            }),
-            border: Some(if is_active {
-                palette.brand.opacity(0.6)
-            } else {
-                palette.border
-            }),
-            radius: 6.0,
-            dashed: false,
-        });
-        let icon_name = match view.mode {
-            DatabaseViewMode::Table => "SquareIcon",
-            DatabaseViewMode::Kanban => "FrameIcon",
-            DatabaseViewMode::Calendar => "PageIcon",
-            DatabaseViewMode::Unknown(_) => "SquareIcon",
-        };
-        let icon_x = if direction.is_rtl() {
-            visual_rect.right() - 22.0
-        } else {
-            visual_rect.x + 8.0
-        };
-        prims.push(DatabasePrim::Icon {
-            rect: FlowRect::new(icon_x, visual_rect.y + 7.0, 14.0, 14.0),
-            icon: IconPaint::named(icon_name),
-            color: if is_active {
-                palette.brand
-            } else {
-                palette.icon
-            },
-        });
-        let text_x = if direction.is_rtl() {
-            visual_rect.x + 8.0
-        } else {
-            visual_rect.x + 26.0
-        };
-        let text_w = (visual_rect.w - 34.0).max(1.0);
-        let tab_layout = if measured.content_width() <= text_w + 0.25 {
+        let text_w = (tab_w - 34.0).max(1.0);
+        let layout = if measured.content_width() <= text_w + 0.25 {
             Rc::new(measured)
         } else {
             let dummy_ctx = DbRenderCtx {
@@ -368,32 +348,273 @@ pub fn layout_database_block(
                 theme,
                 palette,
                 direction,
+                form_factor,
                 width,
                 mobile_readonly,
                 now_ms,
                 offset_at_ms,
                 window,
             };
-            dummy_ctx
-                .truncate_text(tab_label, tab_style, text_w, tab_h)
-                .1
+            dummy_ctx.truncate_text(label, tab_style, text_w, tab_h).1
         };
-        prims.push(DatabasePrim::Text {
-            x: text_x,
-            y: visual_rect.y,
-            layout: tab_layout,
-            clip: Some(FlowRect::new(text_x, visual_rect.y, text_w, tab_h)),
+        measured_tabs.push(MeasuredTab {
+            view,
+            label,
+            is_active,
+            w: tab_w,
+            layout,
         });
-        hits.push(DatabaseHitTarget {
-            rect: visual_rect,
-            kind: DatabaseHitKind::SwitchView {
-                view_id: view.id.clone(),
-            },
-            scrolls_x: false,
-        });
-        tab_cursor += tab_w + tab_gap;
+    }
+
+    let mut emit_tab =
+        |tab: &MeasuredTab<'_>, logical_x: f32, row_y: f32, clip_strip: Option<FlowRect>| {
+            let logical_rect = FlowRect::new(logical_x, row_y, tab.w, tab_h);
+            let visual_rect = axis.map_rect(logical_rect);
+            if let Some(clip) = clip_strip {
+                if visual_rect.right() <= clip.x || visual_rect.x >= clip.right() {
+                    return;
+                }
+            }
+            let draw_rect = if let Some(clip) = clip_strip {
+                let x0 = visual_rect.x.max(clip.x);
+                let x1 = visual_rect.right().min(clip.right());
+                FlowRect::new(x0, visual_rect.y, (x1 - x0).max(0.0), visual_rect.h)
+            } else {
+                visual_rect
+            };
+            prims.push(DatabasePrim::Quad {
+                rect: draw_rect,
+                fill: Some(if tab.is_active {
+                    palette.hover
+                } else {
+                    palette.background_secondary
+                }),
+                border: Some(if tab.is_active {
+                    palette.brand.opacity(0.6)
+                } else {
+                    palette.border
+                }),
+                radius: 6.0,
+                dashed: false,
+            });
+            let icon_x = if direction.is_rtl() {
+                visual_rect.right() - 22.0
+            } else {
+                visual_rect.x + 8.0
+            };
+            let icon_visible =
+                clip_strip.is_none_or(|c| icon_x >= c.x && icon_x + 14.0 <= c.right());
+            if icon_visible {
+                prims.push(DatabasePrim::Icon {
+                    rect: FlowRect::new(icon_x, visual_rect.y + (tab_h - 14.0) * 0.5, 14.0, 14.0),
+                    icon: IconPaint::named(icon_for(&tab.view.mode)),
+                    color: if tab.is_active {
+                        palette.brand
+                    } else {
+                        palette.icon
+                    },
+                });
+            }
+            let text_x = if direction.is_rtl() {
+                visual_rect.x + 8.0
+            } else {
+                visual_rect.x + 26.0
+            };
+            let text_w = (visual_rect.w - 34.0).max(1.0);
+            let raw_clip = FlowRect::new(text_x, visual_rect.y, text_w, tab_h);
+            let text_clip = if let Some(clip) = clip_strip {
+                let cx0 = raw_clip.x.max(clip.x);
+                let cx1 = raw_clip.right().min(clip.right());
+                FlowRect::new(cx0, raw_clip.y, (cx1 - cx0).max(0.0), raw_clip.h)
+            } else {
+                raw_clip
+            };
+            if text_clip.w > 1.0 {
+                prims.push(DatabasePrim::Text {
+                    x: text_x,
+                    y: visual_rect.y,
+                    layout: tab.layout.clone(),
+                    clip: Some(text_clip),
+                });
+            }
+            hits.push(DatabaseHitTarget {
+                rect: draw_rect,
+                kind: DatabaseHitKind::SwitchView {
+                    view_id: tab.view.id.clone(),
+                },
+                scrolls_x: false,
+            });
+        };
+
+    let mut overflow_tabs: Vec<usize> = Vec::new();
+    let mut view_tabs_scroll_px = 0_i32;
+    let mut view_tabs_max_scroll_px = 0_i32;
+    if is_touch {
+        // Phone / Tablet: single-row horizontal scroll strip with clean clipping;
+        // auto-scroll into view runs only when `reveal_active_tab` is set by a view switch
+        // so manual horizontal scrolling can freely browse distant inactive tabs.
+        let total_w: f32 = measured_tabs.iter().map(|t| t.w).sum::<f32>()
+            + measured_tabs.len().saturating_sub(1) as f32 * tab_gap;
+        let max_scroll = (total_w - strip_w).max(0.0);
+        view_tabs_max_scroll_px = max_scroll.ceil() as i32;
+        let mut scroll_x = (ui_state.view_tabs_scroll_px as f32).clamp(0.0, max_scroll);
+        if ui_state.reveal_active_tab {
+            let mut tab_offset = 0.0_f32;
+            for tab in &measured_tabs {
+                if tab.is_active {
+                    let tab_end = tab_offset + tab.w;
+                    if tab_end > scroll_x + strip_w {
+                        scroll_x = (tab_end - strip_w).clamp(0.0, max_scroll);
+                    } else if tab_offset < scroll_x {
+                        scroll_x = tab_offset.clamp(0.0, max_scroll);
+                    }
+                    break;
+                }
+                tab_offset += tab.w + tab_gap;
+            }
+        }
+        view_tabs_scroll_px = scroll_x.round() as i32;
+        let clip_rect = FlowRect::new(strip_left, y, strip_w, tab_h);
+        let mut cursor = strip_left - scroll_x;
+        for tab in &measured_tabs {
+            let tab_right = cursor + tab.w;
+            if tab_right > strip_left + 1.0 && cursor < strip_right - 1.0 {
+                emit_tab(tab, cursor, y, Some(clip_rect));
+            }
+            cursor += tab.w + tab_gap;
+        }
+    } else {
+        // Desktop: inline tabs that fit; overflow collapses into `"N More"` button + dropdown.
+        let more_reserve = 78.0_f32;
+        let mut cursor = strip_left;
+        for (idx, tab) in measured_tabs.iter().enumerate() {
+            let remaining = measured_tabs.len() - idx - 1;
+            let limit = if remaining > 0 {
+                strip_right - more_reserve - tab_gap
+            } else {
+                strip_right
+            };
+            if cursor + tab.w <= limit || idx == 0 {
+                emit_tab(tab, cursor, y, None);
+                cursor += tab.w + tab_gap;
+            } else {
+                overflow_tabs.push(idx);
+            }
+        }
+        if !overflow_tabs.is_empty() {
+            let more_label = format!("{} More", overflow_tabs.len());
+            let more_w = 72.0_f32.min((strip_right - cursor).max(52.0));
+            let more_rect = axis.map_rect(FlowRect::new(cursor, y, more_w, tab_h));
+            prims.push(DatabasePrim::Quad {
+                rect: more_rect,
+                fill: Some(if ui_state.more_views_open {
+                    palette.hover
+                } else {
+                    palette.background_secondary
+                }),
+                border: Some(palette.border),
+                radius: 6.0,
+                dashed: false,
+            });
+            let more_style = InlineStyle::new(
+                FONT_SANS,
+                TYPOGRAPHY.font_xs_px + 1.0,
+                500.0,
+                palette.text_secondary,
+            );
+            let more_layout = Rc::new(layout_inline(
+                &more_label,
+                &more_style,
+                (more_w - 12.0).max(1.0),
+                tab_h,
+                InlineBaseline::Of(&more_style),
+                InlineAlign::Center,
+                window,
+            ));
+            prims.push(DatabasePrim::Text {
+                x: more_rect.x + 6.0,
+                y: more_rect.y,
+                layout: more_layout,
+                clip: Some(more_rect),
+            });
+            hits.push(DatabaseHitTarget {
+                rect: more_rect,
+                kind: DatabaseHitKind::ToggleMoreViews,
+                scrolls_x: false,
+            });
+        }
     }
     y += tab_h + 10.0;
+
+    if !is_touch && ui_state.more_views_open && !overflow_tabs.is_empty() {
+        let menu_w = 180.0_f32.min(strip_w);
+        let item_h = 30.0_f32;
+        let menu_h = overflow_tabs.len() as f32 * item_h + 8.0;
+        let menu_rect = axis.map_rect(FlowRect::new(
+            (strip_right - menu_w).max(strip_left),
+            y - 4.0,
+            menu_w,
+            menu_h,
+        ));
+        prims.push(DatabasePrim::Quad {
+            rect: menu_rect,
+            fill: Some(palette.panel),
+            border: Some(palette.border),
+            radius: 8.0,
+            dashed: false,
+        });
+        for (row_idx, &tab_idx) in overflow_tabs.iter().enumerate() {
+            let tab = &measured_tabs[tab_idx];
+            let item_rect = FlowRect::new(
+                menu_rect.x + 4.0,
+                menu_rect.y + 4.0 + row_idx as f32 * item_h,
+                (menu_rect.w - 8.0).max(1.0),
+                item_h,
+            );
+            if tab.is_active {
+                prims.push(DatabasePrim::Quad {
+                    rect: item_rect,
+                    fill: Some(palette.hover),
+                    border: None,
+                    radius: 4.0,
+                    dashed: false,
+                });
+            }
+            let row_style = InlineStyle::new(
+                FONT_SANS,
+                TYPOGRAPHY.font_xs_px + 1.0,
+                if tab.is_active { 500.0 } else { 400.0 },
+                if tab.is_active {
+                    palette.text_primary
+                } else {
+                    palette.text_secondary
+                },
+            );
+            let row_layout = Rc::new(layout_inline(
+                tab.label,
+                &row_style,
+                (item_rect.w - 16.0).max(1.0),
+                item_h,
+                InlineBaseline::Of(&row_style),
+                InlineAlign::Left,
+                window,
+            ));
+            prims.push(DatabasePrim::Text {
+                x: item_rect.x + 8.0,
+                y: item_rect.y,
+                layout: row_layout,
+                clip: Some(item_rect),
+            });
+            hits.push(DatabaseHitTarget {
+                rect: item_rect,
+                kind: DatabaseHitKind::SwitchView {
+                    view_id: tab.view.id.clone(),
+                },
+                scrolls_x: false,
+            });
+        }
+        y += menu_h + 6.0;
+    }
 
     // 3. Optional mobile read-only notice banner.
     if mobile_readonly && ui_state.mobile_readonly_notice {
@@ -465,6 +686,7 @@ pub fn layout_database_block(
         theme,
         palette,
         direction,
+        form_factor,
         width,
         mobile_readonly,
         now_ms,
@@ -508,34 +730,15 @@ pub fn layout_database_block(
     });
 
     let active_mode_label = active_view.mode.as_str();
-    let (now_y, now_m, _) = civil_from_days(
-        (now_ms.saturating_add(i64::from(offset_at_ms(now_ms)) * 60_000)).div_euclid(86_400_000),
+    let (cal_y, cal_m) = render_calendar::resolve_calendar_display_month(
+        active_view,
+        data,
+        &ordered_rows,
+        ui_state,
+        form_factor,
+        now_ms,
+        offset_at_ms,
     );
-    let (cal_y, cal_m) = ui_state.calendar_month.unwrap_or_else(|| {
-        let start_col_id = active_view
-            .date
-            .as_ref()
-            .and_then(|d| d.start_column_id.as_deref())
-            .filter(|id| {
-                data.columns
-                    .iter()
-                    .any(|c| c.id == *id && c.column_type == "date")
-            });
-        if let Some(col_id) = start_col_id
-            && let Some(first_ts) = ordered_rows.iter().find_map(|row| {
-                data.cells
-                    .get(&(row.row_id.clone(), col_id.to_string()))
-                    .and_then(blocksuite_playground_doc::read::DatabaseCellValue::as_i64)
-            })
-        {
-            let day = (first_ts.saturating_add(i64::from(offset_at_ms(first_ts)) * 60_000))
-                .div_euclid(86_400_000);
-            let (ey, em, _) = civil_from_days(day);
-            (ey as i32, em)
-        } else {
-            (now_y as i32, now_m)
-        }
-    });
     let mut plain_parts = vec![format!(
         "{title_text} [{active_mode_label}: {}]",
         active_view.name
@@ -558,5 +761,7 @@ pub fn layout_database_block(
         prims,
         code_scroll,
         hits,
+        view_tabs_scroll_px,
+        view_tabs_max_scroll_px,
     }
 }

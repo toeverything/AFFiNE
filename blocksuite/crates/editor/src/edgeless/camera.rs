@@ -6,8 +6,8 @@ use ui::{Motion, MotionCurve, Pixels, Point, Size, TransformationMatrix, point, 
 pub const MIN_ZOOM: f32 = 0.1;
 /// Maximum allowed Edgeless zoom factor (600%).
 pub const MAX_ZOOM: f32 = 6.0;
-/// Multiplicative step applied by zoom-in / zoom-out controls.
-const ZOOM_STEP: f32 = 1.25;
+/// Additive step applied by zoom-in / zoom-out controls (`±0.25`).
+const ZOOM_STEP: f32 = 0.25;
 /// Duration of smooth Edgeless camera zoom/fit transitions in milliseconds.
 pub const CAMERA_TRANSITION_MS: f64 = 170.0;
 /// Duration of the Edgeless Shape tool subpanel slide-out transition in milliseconds.
@@ -202,22 +202,22 @@ impl EdgelessCamera {
             - (f32::from(anchor_screen.y) - f32::from(viewport_origin.y)) / self.zoom;
     }
 
-    /// Zoom in one step anchored at the viewport center.
+    /// Zoom in one `+0.25` step anchored at the viewport center.
     pub fn zoom_in(&mut self, viewport_origin: Point<Pixels>, viewport_size: Size<Pixels>) {
         let center = point(
             px(f32::from(viewport_origin.x) + f32::from(viewport_size.width) * 0.5),
             px(f32::from(viewport_origin.y) + f32::from(viewport_size.height) * 0.5),
         );
-        self.zoom_at(self.zoom * ZOOM_STEP, center, viewport_origin);
+        self.zoom_at(self.zoom + ZOOM_STEP, center, viewport_origin);
     }
 
-    /// Zoom out one step anchored at the viewport center.
+    /// Zoom out one `-0.25` step anchored at the viewport center.
     pub fn zoom_out(&mut self, viewport_origin: Point<Pixels>, viewport_size: Size<Pixels>) {
         let center = point(
             px(f32::from(viewport_origin.x) + f32::from(viewport_size.width) * 0.5),
             px(f32::from(viewport_origin.y) + f32::from(viewport_size.height) * 0.5),
         );
-        self.zoom_at(self.zoom / ZOOM_STEP, center, viewport_origin);
+        self.zoom_at(self.zoom - ZOOM_STEP, center, viewport_origin);
     }
 
     /// Reset zoom to `1.0` anchored at the viewport center.

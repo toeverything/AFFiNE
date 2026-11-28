@@ -63,6 +63,7 @@ impl PlaygroundView {
             layout,
             geometry: crate::block_flow::page_geometry(self.window_size.0),
             window: self.window_size,
+            bottom_inset: self.ime_insets.last_bottom,
             scroll_y: self.scroll_y,
             direction,
             form_factor: self.form_factor,
@@ -195,69 +196,6 @@ impl PlaygroundView {
         self.apply_overlay_effects(effects, window, cx);
     }
 
-    /// Record a CRDT relative snapshot for an open inline equation target so remote
-    /// insertions/deletions before it keep the popover anchored and write-safe.
-    pub(crate) fn capture_equation_snapshot(&mut self) {
-        self.equation_snapshot = match self.overlays.equation_editor().map(|e| &e.target) {
-            Some(EquationTarget::Inline {
-                block_id,
-                utf16_offset,
-            }) => self.page().and_then(|page| {
-                page.capture_selection_snapshot(block_id, *utf16_offset, block_id, *utf16_offset)
-                    .ok()
-            }),
-            _ => None,
-        };
-    }
-
-    /// Re-resolve the active equation editor target after a remote document update.
-    /// Closes the editor cleanly if the target block or inline equation was deleted.
-    pub(crate) fn sync_equation_target(&mut self) {
-        let Some(target) = self.overlays.equation_editor().map(|e| e.target.clone()) else {
-            self.equation_snapshot = None;
-            return;
-        };
-        match target {
-            EquationTarget::Block { block_id } => {
-                let alive = self
-                    .page_snapshot()
-                    .and_then(|s| s.block(&block_id))
-                    .is_some_and(|b| b.flavour == "affine:latex");
-                if !alive {
-                    self.overlays.close_equation_editor();
-                    self.equation_snapshot = None;
-                }
-            }
-            EquationTarget::Inline { block_id, .. } => {
-                let resolved = self.equation_snapshot.as_ref().and_then(|snap| {
-                    let page = self.page()?;
-                    let r = page.resolve_selection_snapshot(snap).ok().flatten()?;
-                    (r.anchor.0 == block_id
-                        && r.focus == r.anchor
-                        && super::view_edits::is_inline_latex_at(page, &block_id, r.anchor.1)
-                        && page
-                            .capture_selection_snapshot(
-                                &block_id, r.anchor.1, &block_id, r.anchor.1,
-                            )
-                            .ok()
-                            .as_ref()
-                            == Some(snap))
-                    .then_some(r.anchor.1)
-                });
-                if let Some(new_offset) = resolved {
-                    if let Some(editor) = self.overlays.equation_editor_mut()
-                        && let EquationTarget::Inline { utf16_offset, .. } = &mut editor.target
-                    {
-                        *utf16_offset = new_offset;
-                    }
-                } else {
-                    self.overlays.close_equation_editor();
-                    self.equation_snapshot = None;
-                }
-            }
-        }
-    }
-
     /// Carry out the effects of an event or key. Returns whether a key was consumed.
     pub(super) fn apply_overlay_effects(
         &mut self,
@@ -299,6 +237,10 @@ impl PlaygroundView {
                 None => handled = false,
             }
         }
+        if let Some(action) = effects.context_menu_action {
+            let menu_target = self.context_menu_target.take();
+            self.execute_context_menu_action(action, menu_target, window, cx);
+        }
         if self.overlays.slash_menu().is_none() {
             self.editor.slash_trigger = None;
         }
@@ -334,24 +276,23 @@ impl PlaygroundView {
             let geometry = crate::page_geometry(f32::from(window.viewport_size().width));
             let world_x = f32::from(event.position.x) - geometry.column_x;
             let world_y = f32::from(event.position.y) - crate::TOPBAR_HEIGHT + self.scroll_y;
-            if let Some((block_id, local_x, local_y)) = layout
-                .blocks
-                .iter()
-                .find(|block| {
-                    block.body.kind == FlowKind::Database && block.rect().contains(world_x, world_y)
-                })
-                .map(|block| {
-                    let rect = block.rect();
-                    (block.block_id.clone(), world_x - rect.x, world_y - rect.y)
-                })
-            {
+            if let Some((block_id, local_x, local_y)) = layout.blocks.iter().find_map(|block| {
+                (block.body.kind == FlowKind::Database && block.rect().contains(world_x, world_y))
+                    .then(|| {
+                        let r = block.rect();
+                        (block.block_id.clone(), world_x - r.x, world_y - r.y)
+                    })
+            }) {
                 let consumed =
                     self.click_database_point(&block_id, local_x, local_y, Some(window), cx);
                 if consumed || self.database_readonly {
+                    self.show_database_readonly_toast_once(cx);
                     self.clear_body_selection(window, cx);
                     self.suppress_unselected_root_input = true;
                     if !consumed && self.database_readonly {
                         self.editor.block_selection = vec![block_id];
+                        self.keep_keyboard_on_block_selection = false;
+                        self.block_selection_return_caret = None;
                         self.announce_selection(cx);
                         window.notify_text_selection_changed(&self.editor_focus);
                     }
@@ -363,16 +304,16 @@ impl PlaygroundView {
             // Clicking a non-editable block (Bookmark, Image, Divider, Database body, Table frame)
             // selects that whole block into `block_selection` instead of snapping caret to a
             // neighbouring text block (`L3`).
-            if let Some(non_editable_id) = layout
-                .blocks
-                .iter()
-                .find(|block| !block.editable() && block.rect().contains(world_x, world_y))
-                .map(|block| block.block_id.clone())
-            {
+            if let Some(non_editable_id) = layout.blocks.iter().find_map(|block| {
+                (!block.editable() && block.rect().contains(world_x, world_y))
+                    .then(|| block.block_id.clone())
+            }) {
                 self.commit_active_preedit(window, cx);
                 self.suppress_unselected_root_input = false;
                 self.editor.selection = None;
                 self.editor.block_selection = vec![non_editable_id];
+                self.keep_keyboard_on_block_selection = false;
+                self.block_selection_return_caret = None;
                 self.editor.pending_marks.clear();
                 self.editor.last_typing = None;
                 self.editor.goal_x = None;
@@ -450,13 +391,17 @@ impl PlaygroundView {
         self.dispatch_overlay(OverlayEvent::PointerUp, window, cx);
     }
 
-    /// Offer a key to the open link field, linked-doc menu, or slash menu before the document gets it.
+    /// Offer a key to the open record sheet, link field, linked-doc menu, or slash menu before the document gets it.
     pub(crate) fn overlay_key_down(
         &mut self,
         event: &KeyDownEvent,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
+        if self.database_record_sheet.is_some() && event.keystroke.key.as_str() == "escape" {
+            self.close_database_record_sheet(cx);
+            return true;
+        }
         if let Some(menu) = self.overlays.linked_doc_menu() {
             let row_count = menu.results.items.len().min(6) + 1;
             let selected = menu.selected;

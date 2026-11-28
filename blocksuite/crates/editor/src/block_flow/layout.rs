@@ -23,6 +23,7 @@ use super::*;
 pub struct BlockFlow {
     bodies: HashMap<String, (u64, Rc<BlockBody>)>,
     database_hits: HashMap<String, Vec<crate::database::DatabaseHitTarget>>,
+    database_view_tabs_max_scroll: HashMap<String, (i32, i32)>,
     pub database_state: crate::database::DatabaseFlowState,
 }
 
@@ -36,6 +37,7 @@ pub(super) struct FlowPass<'a> {
     pub(super) next: HashMap<String, (u64, Rc<BlockBody>)>,
     pub(super) database_state: &'a crate::database::DatabaseFlowState,
     pub(super) database_hits: HashMap<String, Vec<crate::database::DatabaseHitTarget>>,
+    pub(super) database_view_tabs_max_scroll: HashMap<String, (i32, i32)>,
     pub(super) blocks: Vec<FlowBlock>,
     pub(super) stats: FlowStats,
     pub(super) y: f32,
@@ -53,6 +55,20 @@ impl BlockFlow {
     /// Clickable regions recorded for `block_id` during the latest layout pass.
     pub fn database_hits(&self, block_id: &str) -> &[crate::database::DatabaseHitTarget] {
         self.database_hits.get(block_id).map_or(&[], Vec::as_slice)
+    }
+
+    /// Measured `(scroll_px, max_scroll_px)` of `block_id`'s touch view-tab strip.
+    pub fn database_view_tabs_metrics(&self, block_id: &str) -> (i32, i32) {
+        self.database_view_tabs_max_scroll
+            .get(block_id)
+            .copied()
+            .unwrap_or((0, 0))
+    }
+
+    /// Measured horizontal overflow (whole px, `0` when not overflowing) of `block_id`'s
+    /// touch view-tab strip from the latest layout pass.
+    pub fn database_view_tabs_max_scroll(&self, block_id: &str) -> i32 {
+        self.database_view_tabs_metrics(block_id).1
     }
 
     /// Lay the snapshot out in world space, reusing the body of every block whose content,
@@ -84,6 +100,7 @@ impl BlockFlow {
             next: HashMap::new(),
             database_state: &self.database_state,
             database_hits: std::mem::take(&mut self.database_hits),
+            database_view_tabs_max_scroll: std::mem::take(&mut self.database_view_tabs_max_scroll),
             blocks: Vec::new(),
             stats: FlowStats::default(),
             y: 0.0,
@@ -137,6 +154,7 @@ impl BlockFlow {
 
         self.bodies = pass.next;
         self.database_hits = pass.database_hits;
+        self.database_view_tabs_max_scroll = pass.database_view_tabs_max_scroll;
         FlowLayout {
             blocks: pass.blocks,
             width: input.width,
@@ -180,6 +198,7 @@ impl BlockFlow {
             next: HashMap::new(),
             database_state: &self.database_state,
             database_hits: std::mem::take(&mut self.database_hits),
+            database_view_tabs_max_scroll: std::mem::take(&mut self.database_view_tabs_max_scroll),
             blocks: Vec::new(),
             stats: FlowStats::default(),
             y: 0.0,
@@ -191,6 +210,7 @@ impl BlockFlow {
         pass.y += pass.pending_margin.take().unwrap_or(0.0);
         self.bodies = pass.next;
         self.database_hits = pass.database_hits;
+        self.database_view_tabs_max_scroll = pass.database_view_tabs_max_scroll;
         FlowLayout {
             blocks: pass.blocks,
             width: input.width,

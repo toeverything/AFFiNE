@@ -292,6 +292,28 @@ impl PlaygroundView {
             .mobile_readonly_notice
     }
 
+    /// Show the one-time read-only mobile database toast (once per session, auto-dismisses).
+    pub(crate) fn show_database_readonly_toast_once(&mut self, cx: &mut Context<Self>) {
+        if !self.database_readonly || self.database_readonly_toast_shown {
+            return;
+        }
+        self.database_readonly_toast_shown = true;
+        let generation = self
+            .overlays
+            .show_context_toast("Read-only on mobile. Tap a record to view.");
+        self.context_toast_timer = Some(cx.spawn(async move |this, cx| {
+            cx.background_executor()
+                .timer(std::time::Duration::from_millis(super::CONTEXT_TOAST_MS))
+                .await;
+            let _ = this.update(cx, |this, cx| {
+                if this.overlays.context_toast_expired(generation) {
+                    cx.notify();
+                }
+            });
+        }));
+        cx.notify();
+    }
+
     /// Clickable regions of a laid-out `affine:database` block from the latest layout pass.
     pub fn database_hits(&self, block_id: &str) -> &[database::DatabaseHitTarget] {
         self.flow.database_hits(block_id)
@@ -359,6 +381,12 @@ impl PlaygroundView {
                 self.set_database_active_view(block_id, view_id, cx);
                 true
             }
+            database::DatabaseHitKind::ToggleMoreViews => {
+                self.flow.database_state.toggle_more_views(block_id);
+                self.env_rev += 1;
+                cx.notify();
+                true
+            }
             database::DatabaseHitKind::CalendarPrevMonth => {
                 self.step_database_calendar_month(block_id, -1, cx);
                 true
@@ -371,6 +399,19 @@ impl PlaygroundView {
                 self.step_database_calendar_month(block_id, 1, cx);
                 true
             }
+            database::DatabaseHitKind::CalendarSelectDay { day_index } => {
+                self.flow
+                    .database_state
+                    .set_calendar_selected_day(block_id, Some(*day_index));
+                self.env_rev += 1;
+                cx.notify();
+                true
+            }
+            database::DatabaseHitKind::OpenRecord { row_id } => {
+                self.show_database_readonly_toast_once(cx);
+                self.open_database_record_sheet(block_id, row_id, cx);
+                true
+            }
             database::DatabaseHitKind::ToggleGroup { group_key } => {
                 self.flow.database_state.toggle_group(block_id, group_key);
                 self.env_rev += 1;
@@ -378,6 +419,7 @@ impl PlaygroundView {
                 true
             }
             database::DatabaseHitKind::CellReadOnly => {
+                self.show_database_readonly_toast_once(cx);
                 self.flow
                     .database_state
                     .set_mobile_readonly_notice(block_id, true);
@@ -431,10 +473,8 @@ impl PlaygroundView {
 
     fn resolve_database_calendar_month(&self, block_id: &str, cx: &Context<Self>) -> (i32, u32) {
         let ui_state = self.flow.database_state.state_for(block_id);
-        if let Some(month) = ui_state.calendar_month {
-            return month;
-        }
         let offset_at = self.utc_offset_resolver();
+        let (now_ms, _) = self.local_calendar_now(cx);
         if let Some(blocksuite_playground_doc::read::BlockContent::Database(db)) = self
             .snapshot
             .as_ref()
@@ -445,15 +485,6 @@ impl PlaygroundView {
                 .as_deref()
                 .and_then(|id| db.views.iter().find(|v| v.id == id))
                 .or_else(|| db.views.first())
-            && let Some(start_col_id) = active_view
-                .date
-                .as_ref()
-                .and_then(|d| d.start_column_id.as_deref())
-                .filter(|id| {
-                    db.columns
-                        .iter()
-                        .any(|c| c.id == *id && c.column_type == "date")
-                })
         {
             let filtered: Vec<_> = db
                 .rows
@@ -467,17 +498,19 @@ impl PlaygroundView {
                 .cloned()
                 .collect();
             let ordered = database::sort_database_rows(&filtered, active_view.sort.as_ref(), db);
-            if let Some(first_ts) = ordered.iter().find_map(|row| {
-                db.cells
-                    .get(&(row.row_id.clone(), start_col_id.to_string()))
-                    .and_then(blocksuite_playground_doc::read::DatabaseCellValue::as_i64)
-            }) {
-                let day = database::local_day_index(first_ts, &offset_at);
-                let (ey, em, _) = block_flow::civil_from_days(day);
-                return (ey as i32, em);
-            }
+            return database::resolve_calendar_display_month(
+                active_view,
+                db,
+                &ordered,
+                &ui_state,
+                self.form_factor,
+                now_ms,
+                &offset_at,
+            );
         }
-        let (now_ms, _) = self.local_calendar_now(cx);
+        if let Some(month) = ui_state.calendar_month {
+            return month;
+        }
         let day = database::local_day_index(now_ms, &offset_at);
         let (y, m, _) = block_flow::civil_from_days(day);
         (y as i32, m)

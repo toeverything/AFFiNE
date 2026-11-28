@@ -207,6 +207,8 @@ impl PlaygroundView {
         self.suppress_unselected_root_input = false;
         self.editor.selection = Some(sel);
         self.editor.block_selection.clear();
+        self.keep_keyboard_on_block_selection = false;
+        self.block_selection_return_caret = None;
         self.editor.pending_marks.clear();
         self.editor.last_typing = None;
         self.editor.goal_x = None;
@@ -227,6 +229,8 @@ impl PlaygroundView {
         self.commit_active_preedit(w, cx);
         self.editor.selection = None;
         self.editor.block_selection.clear();
+        self.keep_keyboard_on_block_selection = false;
+        self.block_selection_return_caret = None;
         self.editor.pending_marks.clear();
         self.editor.last_typing = None;
         self.editor.goal_x = None;

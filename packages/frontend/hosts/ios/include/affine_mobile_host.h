@@ -236,6 +236,15 @@ uint32_t affine_ios_host_render_frame(
 
 bool affine_ios_host_is_dirty(const AffineIosHost *host);
 
+int64_t affine_ios_host_next_timer_delay_ms(AffineIosHost *host);
+
+typedef void (*AffineFrameWakeCallback)(void *user_data);
+
+void affine_ios_host_set_frame_wake_callback(
+    AffineIosHost *host,
+    AffineFrameWakeCallback callback,
+    void *user_data);
+
 void affine_ios_host_request_frame(AffineIosHost *host);
 
 void affine_ios_host_insert_text(

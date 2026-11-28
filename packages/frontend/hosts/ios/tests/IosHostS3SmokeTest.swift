@@ -892,13 +892,18 @@ struct IosHostS3SmokeTest {
       timestampSec: 1.0
     )
     vcKb.sampleInsets(timestamp: 1.0)
-    let kbOccluded = vcKb.selectionOverlay.currentState
+    let kbRevealed = vcKb.selectionOverlay.currentState
     requireS3(
-      !kbOccluded.start_handle.visible && !kbOccluded.end_handle.visible && vcKb.presentedMenuAnchorRect == nil,
-      "keyboard covering selection must hide handles and presentedMenuAnchorRect"
+      kbRevealed.start_handle.visible && kbRevealed.end_handle.visible,
+      "auto-scrolling above keyboard must keep selection handles visible"
+    )
+    requireS3(
+      kbRevealed.start_handle.stem_top_y < kbBefore.start_handle.stem_top_y
+        && kbRevealed.end_handle.stem_bottom_y <= 542.0 - 52.0,
+      "page must auto-scroll caret/selection above keyboard + toolbar (before=\(kbBefore.start_handle.stem_top_y), after_top=\(kbRevealed.start_handle.stem_top_y), after_bottom=\(kbRevealed.end_handle.stem_bottom_y))"
     )
     vcKb.textHostView.copy(nil)
-    requireS3(vcKb.textHostView.lastCopiedText == bottomWord, "selection and copy must stay intact while keyboard occludes")
+    requireS3(vcKb.textHostView.lastCopiedText == bottomWord, "selection and copy must stay intact while keyboard is open")
 
     _ = vcKb.keyboardCoordinator.applyKeyboardFrame(
       windowBounds: CGRect(x: 0, y: 0, width: 390, height: 844),
@@ -912,7 +917,7 @@ struct IosHostS3SmokeTest {
     let kbRestored = vcKb.selectionOverlay.currentState
     requireS3(
       kbRestored.start_handle.visible && kbRestored.end_handle.visible && vcKb.presentedMenuAnchorRect != nil,
-      "dismissing keyboard must restore handles and presentedMenuAnchorRect"
+      "dismissing keyboard must keep handles and presentedMenuAnchorRect visible"
     )
 
     // 5f. Optional offscreen visual evidence capture directly from real production host views

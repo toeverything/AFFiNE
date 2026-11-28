@@ -462,6 +462,7 @@ pub fn icon_svg(icon: &IconDef) -> String {
 pub struct IconPaint {
     key: SharedString,
     svg: Arc<str>,
+    turn: f32,
 }
 
 impl IconPaint {
@@ -469,7 +470,14 @@ impl IconPaint {
         Self {
             key: SharedString::from(format!("playground-icon:{}", icon.name)),
             svg: Arc::from(icon_svg(icon)),
+            turn: 0.0,
         }
+    }
+
+    /// Return a copy of this icon rotated clockwise by `turn` radians around its center.
+    pub fn rotated(mut self, turn: f32) -> Self {
+        self.turn = turn;
+        self
     }
 
     /// Look a generated icon up by name from `ui-tokens`.
@@ -493,11 +501,16 @@ impl IconPaint {
         Self {
             key: SharedString::from(format!("playground-icon:missing:{name}")),
             svg: Arc::from(""),
+            turn: 0.0,
         }
     }
 
     /// Paint the icon into `bounds`, tinted with `color`.
     pub fn paint(&self, bounds: Bounds<Pixels>, color: Hsla, window: &mut Window, cx: &mut App) {
+        if self.turn.abs() > 1e-5 {
+            self.paint_rotated(bounds, color, self.turn, window, cx);
+            return;
+        }
         if self.svg.is_empty() {
             return;
         }

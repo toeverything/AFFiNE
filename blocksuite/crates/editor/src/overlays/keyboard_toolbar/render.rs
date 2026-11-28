@@ -83,7 +83,9 @@ impl Overlays {
             return None;
         }
         let width = scene.window.0.max(0.0).floor();
-        let win_h = scene.window.1.max(0.0).floor();
+        let win_h = (scene.window.1 - scene.bottom_inset.max(0.0))
+            .max(TOPBAR_HEIGHT)
+            .floor();
         let active_panel = if self.keyboard_toolbar.marks_disabled {
             None
         } else {
@@ -107,6 +109,16 @@ impl Overlays {
         let bar_rect = FlowRect::new(0.0, top, width, KEYBOARD_TOOLBAR_HEIGHT);
         let bar = self.render_toolbar_strip(bar_rect, &marks, palette, cx);
 
+        let skirt = (scene.bottom_inset > 0.0).then(|| {
+            div()
+                .absolute()
+                .left(px(0.0))
+                .top(px(total_height))
+                .w(px(width))
+                .h(px(4.0))
+                .bg(palette.panel)
+        });
+
         if let Some(panel_kind) = active_panel {
             let panel_rect = FlowRect::new(0.0, top + KEYBOARD_TOOLBAR_HEIGHT, width, panel_height);
             let panel = self.render_tool_panel(panel_kind, panel_rect, palette, cx);
@@ -115,10 +127,16 @@ impl Overlays {
                 .flex()
                 .flex_col()
                 .child(bar)
-                .child(panel);
+                .child(panel)
+                .children(skirt);
             Some(container.into_any_element())
         } else {
-            Some(place(bar_rect).child(bar).into_any_element())
+            Some(
+                place(bar_rect)
+                    .child(bar)
+                    .children(skirt)
+                    .into_any_element(),
+            )
         }
     }
 

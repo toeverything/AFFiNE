@@ -13,14 +13,7 @@ pub(crate) use blocksuite_editor::editor_session::{next_word_end_utf16, prev_wor
 /// True for non-mergeable blocks that Backspace (at block start) or Delete (at block end)
 /// should select into `block_selection` on first press before deleting on second press.
 pub(crate) fn is_selectable_non_mergeable_block(kind: FlowKind) -> bool {
-    matches!(
-        kind,
-        FlowKind::Divider
-            | FlowKind::Code
-            | FlowKind::Image
-            | FlowKind::Bookmark
-            | FlowKind::Database
-    )
+    !matches!(kind, FlowKind::Paragraph(_) | FlowKind::List(_))
 }
 
 impl PlaygroundView {
@@ -175,10 +168,11 @@ impl PlaygroundView {
         Ok(true)
     }
 
-    /// Select an adjacent non-mergeable block (`Divider`, `Code`, `Image`, `Bookmark`, `Database`)
-    /// into `block_selection` on the first Backspace/Delete press (desktop only so mobile does not
-    /// dismiss the software keyboard). When `remove_empty_block` is provided (empty paragraph on
-    /// backward Backspace), removes the empty block first.
+    /// Select an adjacent non-mergeable block (`Table`, `Divider`, `Code`, `Image`, `Bookmark`,
+    /// `Database`, `Latex`, `Attachment`, embeds, etc.) into `block_selection` on the first
+    /// Backspace/Delete press so backward deletion never skips across the block and eats text from
+    /// an earlier paragraph. When `remove_empty_block` is provided (empty paragraph on backward
+    /// Backspace), removes the empty block first.
     pub(crate) fn try_select_adjacent_block(
         &mut self,
         adjacent: &FlowBlock,
@@ -186,10 +180,7 @@ impl PlaygroundView {
         w: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
-        if f32::from(w.viewport_size().width) < crate::overlays::SCROLLBAR_DESKTOP_MIN_WIDTH
-            || self.last_keyboard_inset > 0.0
-            || !is_selectable_non_mergeable_block(adjacent.body.kind)
-        {
+        if !is_selectable_non_mergeable_block(adjacent.body.kind) {
             return false;
         }
         if let Some(empty_id) = remove_empty_block {
@@ -200,8 +191,15 @@ impl PlaygroundView {
                 self.did_edit(commit, None, w, cx);
             }
         }
+        let return_caret = self.editor.selection.as_ref().and_then(|s| {
+            (remove_empty_block != Some(s.focus.block_id.as_str()))
+                .then(|| s.focus.block_id.clone())
+        });
+        let had_selection = self.editor.selection.is_some();
         self.editor.selection = None;
         self.editor.block_selection = vec![adjacent.block_id.clone()];
+        self.keep_keyboard_on_block_selection = had_selection;
+        self.block_selection_return_caret = return_caret;
         self.editor.pending_marks.clear();
         self.announce_selection(cx);
         w.notify_text_selection_changed(&self.editor_focus);

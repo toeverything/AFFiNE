@@ -113,10 +113,7 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.is_touch_host()
-            || self.edgeless_readonly
-            || f32::from(window.viewport_size().width) < super::SCROLLBAR_DESKTOP_MIN_WIDTH
-        {
+        if self.form_factor.is_touch_form_factor() || self.edgeless_readonly {
             return;
         }
         let now_ms = self.now_ms(cx);
@@ -598,7 +595,7 @@ impl PlaygroundView {
         cx.notify();
     }
 
-    fn execute_context_menu_action(
+    pub(crate) fn execute_context_menu_action(
         &mut self,
         action: ContextMenuAction,
         menu_target: Option<ContextTargetSnapshot>,
@@ -827,17 +824,17 @@ mod tests {
         platform.run_until_parked();
         hw.request_frame();
 
-        // Mid-transition at 85ms: strictly between start and target.
+        // Mid-transition at 85ms: strictly between start and additive +0.25 target.
         platform.advance_clock(Duration::from_millis(85));
         hw.request_frame();
         let mid_zoom = app.update(|cx| win.update(cx, |v, _, _| v.edgeless_camera().zoom).unwrap());
-        let expected_target = initial_zoom * 1.25;
+        let expected_target = initial_zoom + 0.25;
         assert!(
             mid_zoom > initial_zoom && mid_zoom < expected_target,
             "mid_zoom={mid_zoom} should be between {initial_zoom} and {expected_target}"
         );
 
-        // Rapid second click mid-flight retargets to 1.25^2 without jumping backward.
+        // Rapid second click mid-flight retargets to +0.50 without jumping backward.
         hw.simulate_click(point(
             px(in_btn.x + in_btn.width * 0.5),
             px(in_btn.y + in_btn.height * 0.5),
@@ -848,9 +845,9 @@ mod tests {
         let final_zoom =
             app.update(|cx| win.update(cx, |v, _, _| v.edgeless_camera().zoom).unwrap());
         assert!(
-            (final_zoom - initial_zoom * 1.25 * 1.25).abs() < 1e-2,
+            (final_zoom - (initial_zoom + 0.50)).abs() < 1e-2,
             "retargeted final_zoom={final_zoom}, expected {}",
-            initial_zoom * 1.25 * 1.25
+            initial_zoom + 0.50
         );
 
         // Reset button transitions smoothly to 100%, and direct zoom/pan cancels transition.
@@ -950,6 +947,14 @@ mod tests {
         }));
         platform.advance_clock(Duration::from_millis(250));
         hw.request_frame();
+        assert!(app.update(|cx| {
+            win.update(cx, |v, _, _| {
+                v.overlays().todo_pulse_active("showcase-todo-open")
+            })
+            .unwrap()
+        }));
+        platform.advance_clock(Duration::from_millis(400));
+        hw.request_frame();
         assert!(!app.update(|cx| {
             win.update(cx, |v, _, _| {
                 v.overlays().todo_pulse_active("showcase-todo-open")
@@ -1040,8 +1045,15 @@ mod tests {
 
     #[test]
     fn desktop_scrollbar_visibility_drag_and_context_menu_actions() {
-        // Mobile width (320px) hides desktop scrollbar and suppresses desktop context menu.
-        let (_mp, m_app, m_win, mhw) = open_view(320, 800, PlaygroundOptions::default());
+        // Phone FormFactor hides desktop scrollbar and suppresses desktop context menu.
+        let (_mp, m_app, m_win, mhw) = open_view(
+            320,
+            800,
+            PlaygroundOptions {
+                form_factor: crate::FormFactor::Phone,
+                ..Default::default()
+            },
+        );
         m_app.update(|cx| {
             m_win
                 .update(cx, |v, w, cx| {

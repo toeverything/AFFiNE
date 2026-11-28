@@ -22,11 +22,13 @@ pub use calendar::{
 };
 pub use format::{
     BidiIsolation, column_icon_name, format_database_created_time, format_database_date,
-    format_database_number, format_database_progress, isolate_bidi, isolate_ltr, resolve_tag_color,
+    format_database_number, format_database_progress, isolate_bidi, isolate_ltr,
+    resolve_tag_accent, resolve_tag_color,
 };
 pub use group::{DatabaseGroupBucket, group_database_rows};
 pub use query::{eval_database_filter, sort_database_rows};
 pub use render::{DatabaseLayoutOutput, DatabasePrim, layout_database_block};
+pub use render_calendar::resolve_calendar_display_month;
 
 /// Unified logical-to-physical horizontal coordinate mapper shared by `affine:table`
 /// and `affine:database` (`Table`, `Kanban`, and `Calendar` views).
@@ -100,6 +102,15 @@ pub struct DatabaseUiState {
     pub active_view_id: Option<String>,
     /// Currently displayed Calendar `(year, month 1..=12)`.
     pub calendar_month: Option<(i32, u32)>,
+    /// Selected local day index in Phone Calendar agenda view.
+    pub calendar_selected_day: Option<i64>,
+    /// Horizontal scroll offset (whole px) for the touch database view tab strip.
+    pub view_tabs_scroll_px: i32,
+    /// One-shot hint set when switching `active_view_id` so the next layout pass brings the newly
+    /// activated tab into view without overriding subsequent manual horizontal scrolling.
+    pub reveal_active_tab: bool,
+    /// Whether the Desktop `"N More"` overflow view dropdown is open.
+    pub more_views_open: bool,
     /// Whether the mobile read-only notice banner is currently displayed for this block.
     pub mobile_readonly_notice: bool,
     /// Group keys collapsed in Table view.
@@ -112,18 +123,79 @@ pub struct DatabaseFlowState {
     pub ui_states: HashMap<String, DatabaseUiState>,
     pub clock_ms: i64,
     pub mobile_readonly: bool,
+    revision: u64,
 }
 
 impl DatabaseFlowState {
+    pub fn revision(&self) -> u64 {
+        self.revision
+    }
+
     pub fn state_for(&self, block_id: &str) -> DatabaseUiState {
         self.ui_states.get(block_id).cloned().unwrap_or_default()
     }
 
     pub fn set_active_view(&mut self, block_id: &str, view_id: impl Into<String>) {
+        let entry = self.ui_states.entry(block_id.to_string()).or_default();
+        let next_id = view_id.into();
+        if entry.active_view_id.as_deref() != Some(next_id.as_str()) {
+            entry.active_view_id = Some(next_id);
+            entry.reveal_active_tab = true;
+        }
+        entry.more_views_open = false;
+        self.revision = self.revision.wrapping_add(1);
+    }
+
+    pub fn set_calendar_selected_day(&mut self, block_id: &str, day_index: Option<i64>) {
         self.ui_states
             .entry(block_id.to_string())
             .or_default()
-            .active_view_id = Some(view_id.into());
+            .calendar_selected_day = day_index;
+        self.revision = self.revision.wrapping_add(1);
+    }
+
+    pub fn toggle_more_views(&mut self, block_id: &str) {
+        let entry = self.ui_states.entry(block_id.to_string()).or_default();
+        entry.more_views_open = !entry.more_views_open;
+        self.revision = self.revision.wrapping_add(1);
+    }
+
+    pub fn scroll_view_tabs(&mut self, block_id: &str, delta_px: i32, max_px: i32) -> bool {
+        let entry = self.ui_states.entry(block_id.to_string()).or_default();
+        entry.reveal_active_tab = false;
+        let next = (entry.view_tabs_scroll_px - delta_px).clamp(0, max_px.max(0));
+        if next != entry.view_tabs_scroll_px {
+            entry.view_tabs_scroll_px = next;
+            self.revision = self.revision.wrapping_add(1);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn scroll_view_tabs_from(
+        &mut self,
+        block_id: &str,
+        base_scroll_px: i32,
+        delta_px: i32,
+        max_px: i32,
+    ) -> bool {
+        let entry = self.ui_states.entry(block_id.to_string()).or_default();
+        let start = if entry.reveal_active_tab {
+            base_scroll_px
+        } else {
+            entry.view_tabs_scroll_px
+        };
+        let was_revealing = entry.reveal_active_tab;
+        entry.reveal_active_tab = false;
+        let next = (start - delta_px).clamp(0, max_px.max(0));
+        if next != start || was_revealing {
+            entry.view_tabs_scroll_px = next;
+            self.revision = self.revision.wrapping_add(1);
+            true
+        } else {
+            false
+        }
     }
 
     pub fn set_calendar_month(&mut self, block_id: &str, month: Option<(i32, u32)>) {
@@ -131,6 +203,7 @@ impl DatabaseFlowState {
             .entry(block_id.to_string())
             .or_default()
             .calendar_month = month;
+        self.revision = self.revision.wrapping_add(1);
     }
 
     pub fn step_calendar_month(&mut self, block_id: &str, current: (i32, u32), delta_months: i32) {
@@ -145,6 +218,7 @@ impl DatabaseFlowState {
             .entry(block_id.to_string())
             .or_default()
             .mobile_readonly_notice = visible;
+        self.revision = self.revision.wrapping_add(1);
     }
 
     pub fn toggle_group(&mut self, block_id: &str, group_key: &str) {
@@ -152,6 +226,7 @@ impl DatabaseFlowState {
         if !entry.collapsed_groups.remove(group_key) {
             entry.collapsed_groups.insert(group_key.to_string());
         }
+        self.revision = self.revision.wrapping_add(1);
     }
 }
 
@@ -161,9 +236,16 @@ pub enum DatabaseHitKind {
     SwitchView {
         view_id: String,
     },
+    ToggleMoreViews,
     CalendarPrevMonth,
     CalendarToday,
     CalendarNextMonth,
+    CalendarSelectDay {
+        day_index: i64,
+    },
+    OpenRecord {
+        row_id: String,
+    },
     ToggleCheckbox {
         row_id: String,
         column_id: String,

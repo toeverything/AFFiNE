@@ -181,7 +181,9 @@ impl IosHostState {
             start_timestamp_sec,
             duration_sec,
         );
-        if !self.keyboard_transition.active {
+        if self.keyboard_transition.active {
+            self.dirty = true;
+        } else {
             let mut next = self.insets;
             next.ime_bottom = self.keyboard_transition.target_ime_bottom_pt;
             self.set_insets(next);
@@ -229,7 +231,7 @@ impl IosHostState {
     }
 
     pub fn is_dirty(&self) -> bool {
-        self.dirty
+        self.dirty || self.keyboard_transition.active
     }
 
     pub fn render_frame(&mut self, timestamp_sec: f64) -> u32 {
@@ -603,5 +605,22 @@ mod tests {
                 length: 3
             }
         );
+
+        let mut kb = IosHostState::new(390.0, 844.0, 3.0);
+        let _ = kb.render_frame(1.0);
+        assert!(!kb.is_dirty());
+        kb.begin_keyboard_transition(302.0, 10.0, 0.25);
+        assert!(kb.is_dirty());
+        let f1 = kb.sample_keyboard_frame(59.0, 0.0, 34.0, 0.0, 10.016);
+        assert!(f1.ime_bottom > 0.0 && f1.ime_bottom < 302.0);
+        let _ = kb.render_frame(10.016);
+        assert!(
+            kb.is_dirty(),
+            "in-progress keyboard transition must keep IosHostState::is_dirty() true after Frame 1"
+        );
+        let f_end = kb.sample_keyboard_frame(59.0, 0.0, 34.0, 0.0, 10.30);
+        assert!((f_end.ime_bottom - 302.0).abs() < 1e-3);
+        let _ = kb.render_frame(10.30);
+        assert!(!kb.is_dirty());
     }
 }

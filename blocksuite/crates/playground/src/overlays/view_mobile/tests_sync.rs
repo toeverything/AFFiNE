@@ -288,14 +288,18 @@ fn transient_503_blob_upload_retries_and_delivers_original_bytes_to_peer() {
 
     // Fault-injecting TCP proxy: fails the FIRST `PUT` with `503 Service Unavailable`,
     // and forwards all WebSocket upgrades + subsequent `PUT`/`GET` requests to `hub_addr`.
+    // Signals each completed PUT attempt over `put_tx` so the test advances deterministically
+    // without polling `thread::sleep`.
     let put_attempts = Arc::new(AtomicUsize::new(0));
     let put_attempts_proxy = put_attempts.clone();
+    let (put_tx, put_rx) = std::sync::mpsc::channel::<usize>();
     let proxy_addr = runtime.block_on(async move {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         tokio::spawn(async move {
             while let Ok((mut client, _)) = listener.accept().await {
                 let attempts = put_attempts_proxy.clone();
+                let tx = put_tx.clone();
                 tokio::spawn(async move {
                     let mut prefix = Vec::with_capacity(1024);
                     let mut tmp = [0_u8; 1024];
@@ -311,13 +315,28 @@ fn transient_503_blob_upload_retries_and_delivers_original_bytes_to_peer() {
                             break;
                         }
                     }
-                    if prefix.starts_with(b"PUT ") && attempts.fetch_add(1, Ordering::SeqCst) == 0 {
-                        let _ = client
-                            .write_all(
-                                b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
-                            )
-                            .await;
-                        let _ = client.shutdown().await;
+                    let is_put = prefix.starts_with(b"PUT ");
+                    if is_put {
+                        let n = attempts.fetch_add(1, Ordering::SeqCst) + 1;
+                        if n == 1 {
+                            let _ = client
+                                .write_all(
+                                    b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                                )
+                                .await;
+                            let _ = client.shutdown().await;
+                            let _ = tx.send(n);
+                            return;
+                        }
+                        let Ok(mut upstream) = tokio::net::TcpStream::connect(hub_addr).await
+                        else {
+                            return;
+                        };
+                        if upstream.write_all(&prefix).await.is_err() {
+                            return;
+                        }
+                        let _ = tokio::io::copy_bidirectional(&mut client, &mut upstream).await;
+                        let _ = tx.send(n);
                         return;
                     }
                     let Ok(mut upstream) = tokio::net::TcpStream::connect(hub_addr).await else {
@@ -381,9 +400,10 @@ fn transient_503_blob_upload_retries_and_delivers_original_bytes_to_peer() {
         }
     };
 
-    for _ in 0..300 {
+    let mut both_ready = false;
+    for _ in 0..1500 {
         pump_both();
-        let ready = [(&app_a, &win_a), (&app_b, &win_b)]
+        both_ready = [(&app_a, &win_a), (&app_b, &win_b)]
             .into_iter()
             .all(|(app, win)| {
                 app.update(|cx| {
@@ -394,11 +414,12 @@ fn transient_503_blob_upload_retries_and_delivers_original_bytes_to_peer() {
                     .unwrap()
                 })
             });
-        if ready {
+        if both_ready {
             break;
         }
-        std::thread::sleep(std::time::Duration::from_millis(20));
+        let _ = put_rx.recv_timeout(std::time::Duration::from_millis(10));
     }
+    assert!(both_ready, "both peers must reach Live room status");
 
     let png = super::tests::encode_test_png(10, 6);
     app_a.update(|cx| {
@@ -421,11 +442,25 @@ fn transient_503_blob_upload_retries_and_delivers_original_bytes_to_peer() {
             .unwrap();
     });
 
+    // Wait deterministically for the initial 503 attempt via channel, then step the
+    // scheduler clock past the 4 s retry cap while parking on channel timeouts so async
+    // Tokio PUT/GET tasks complete without busy-spinning CPU cores.
+    let first_attempt = put_rx
+        .recv_timeout(std::time::Duration::from_secs(10))
+        .expect("initial PUT attempt must reach fault-injecting proxy");
+    assert_eq!(first_attempt, 1);
+
     let mut recovered_on_b = false;
     let mut upload_queue_empty = false;
-    for _ in 0..250 {
+    for _ in 0..1500 {
         for (plat, app, win) in [(&plat_a, &app_a, &win_a), (&plat_b, &app_b, &win_b)] {
-            plat.advance_clock(std::time::Duration::from_millis(600));
+            app.update(|cx| {
+                win.update(cx, |v, _, cx| {
+                    v.pump_room(cx);
+                })
+                .unwrap();
+            });
+            plat.advance_clock(std::time::Duration::from_millis(4_100));
             app.update(|cx| {
                 win.update(cx, |v, _, cx| {
                     v.tick_room(cx);
@@ -470,7 +505,7 @@ fn transient_503_blob_upload_retries_and_delivers_original_bytes_to_peer() {
         if recovered_on_b && upload_queue_empty && put_attempts.load(Ordering::SeqCst) >= 2 {
             break;
         }
-        std::thread::sleep(std::time::Duration::from_millis(25));
+        let _ = put_rx.recv_timeout(std::time::Duration::from_millis(10));
     }
 
     assert!(

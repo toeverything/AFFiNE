@@ -9,6 +9,7 @@ use ui::{AnyElement, Bounds, Pixels, div, size};
 use y_octo::{Any, TextDeltaOp, TextInsert};
 
 use super::*;
+use crate::PlaygroundMode;
 use crate::block_flow::{FlowBlock, FlowRect, PAGE_SURFACE_ID, PageViewport, ScrolledCode};
 use crate::rich_text::TextBiIndex;
 use crate::theme::Palette;
@@ -50,7 +51,8 @@ impl PlaygroundView {
     /// Whether a visible collapsed caret is currently mounted in the page body or a table cell
     /// (and not superseded by the link bar or an Edgeless label editor).
     fn has_blinking_collapsed_caret(&self) -> bool {
-        if self.overlays.active_text_field().is_some()
+        if self.mode != PlaygroundMode::Page
+            || self.overlays.active_text_field().is_some()
             || self.edgeless.authoring.label_editor().is_some()
         {
             return false;
@@ -242,17 +244,18 @@ impl PlaygroundView {
         }
         Some(self.editor.selection.as_ref()?.focus.clone())
     }
-    pub(crate) fn reveal_caret(&mut self, height: f32) {
+    pub(crate) fn reveal_caret(&mut self, height: f32, bottom_margin: f32) {
         if !std::mem::take(&mut self.editor.reveal) {
             return;
         }
+        let margin = bottom_margin.max(0.0);
         if let Some(focus) = self.visual_focus()
             && let Some(rect) = self.geometry(&focus)
         {
             if rect.y < self.scroll_y {
                 self.scroll_y = rect.y.round();
-            } else if rect.bottom() > self.scroll_y + height {
-                self.scroll_y = (rect.bottom() - height).round();
+            } else if rect.bottom() + margin > self.scroll_y + height {
+                self.scroll_y = (rect.bottom() + margin - height).round();
             }
             self.reveal_code_caret(&focus.block_id, rect.x);
         } else if let Some(cell) = self.table_cell.as_ref()
@@ -267,8 +270,8 @@ impl PlaygroundView {
             let rect = hit.rect.translated(block.x, block.y);
             if rect.y < self.scroll_y {
                 self.scroll_y = rect.y.round();
-            } else if rect.bottom() > self.scroll_y + height {
-                self.scroll_y = (rect.bottom() - height).round();
+            } else if rect.bottom() + margin > self.scroll_y + height {
+                self.scroll_y = (rect.bottom() + margin - height).round();
             }
         }
     }

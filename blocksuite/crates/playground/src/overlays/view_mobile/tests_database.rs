@@ -196,21 +196,21 @@ fn database_mobile_readonly_gates_edits_and_desktop_checkbox_toggles_with_undo()
             .unwrap()
     });
     assert!(handled);
-    let snap_ro = s.frame();
-    let notice_visible = s.app.update(|cx| {
+    let _snap_ro = s.frame();
+    let (sheet_open, toast_visible) = s.app.update(|cx| {
         s.window
             .update(cx, |v, _, _| {
-                v.database_mobile_readonly_notice("showcase-database")
+                (
+                    v.database_record_sheet().is_some(),
+                    v.overlays().context_toast_message().is_some(),
+                )
             })
             .unwrap()
     });
-    assert!(notice_visible);
+    assert!(sheet_open, "mobile readonly row tap must open Record sheet");
     assert!(
-        snap_ro.elements["page.block.showcase-database"]
-            .text
-            .as_deref()
-            .unwrap_or("")
-            .contains("Mobile database editing is not supported yet")
+        toast_visible,
+        "mobile readonly tap must show one-time toast"
     );
     assert_eq!(
         encode_page_bytes(&s),

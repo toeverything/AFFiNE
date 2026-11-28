@@ -139,6 +139,28 @@ impl PlaygroundView {
                 deleted_subtree_ids.insert(id.clone());
             }
         }
+        let return_caret_id = self.block_selection_return_caret.take();
+        let keep_kb = std::mem::take(&mut self.keep_keyboard_on_block_selection);
+        let prev_editable_before_deleted = self.flow_layout().and_then(|layout| {
+            let first_deleted_idx = layout
+                .blocks
+                .iter()
+                .position(|b| deleted_subtree_ids.contains(&b.block_id))?;
+            layout.blocks[..first_deleted_idx]
+                .iter()
+                .rev()
+                .find(|b| {
+                    b.editable()
+                        && !matches!(b.body.kind, block_flow::FlowKind::Title)
+                        && !deleted_subtree_ids.contains(&b.block_id)
+                })
+                .map(|b| {
+                    (
+                        b.block_id.clone(),
+                        b.body.plain.encode_utf16().count() as u64,
+                    )
+                })
+        });
         let remaining_editable = self.flow_layout().and_then(|layout| {
             layout
                 .blocks
@@ -168,11 +190,23 @@ impl PlaygroundView {
         self.editor.block_selection.clear();
         self.editor.selection = if remaining_editable.is_none() && first_parent_id.is_some() {
             Some(DocumentSelection::caret(DocPoint::new(fallback_id, 0)))
+        } else if keep_kb {
+            if let Some(ret_id) = return_caret_id
+                .filter(|id| !deleted_subtree_ids.contains(id) && snapshot.block(id).is_some())
+            {
+                Some(DocumentSelection::caret(DocPoint::new(ret_id, 0)))
+            } else {
+                prev_editable_before_deleted
+                    .map(|(id, offset)| DocumentSelection::caret(DocPoint::new(id, offset)))
+            }
         } else {
             None
         };
         self.editor.last_typing = None;
         self.did_edit(commit, None, w, cx);
+        if self.editor.selection.is_some() {
+            self.reset_caret_blink(cx);
+        }
         Ok(())
     }
 

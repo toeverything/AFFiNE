@@ -52,22 +52,19 @@ impl PlaygroundView {
             self.edgeless.camera.zoom,
             viewport_width,
             toolbar_visible,
+            self.form_factor.is_touch_form_factor(),
             palette,
             self.theme,
             move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
                 this.animate_edgeless_camera(vp_size, |cam| cam.zoom_out(vp_origin, vp_size), cx);
             },
             move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
                 this.animate_edgeless_camera(vp_size, |cam| cam.reset_zoom(vp_origin, vp_size), cx);
             },
             move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
                 this.animate_edgeless_camera(vp_size, |cam| cam.zoom_in(vp_origin, vp_size), cx);
             },
             move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
                 if let Some(snap) = this.snapshot.clone() {
                     let bounds = this.edgeless.scene_world_bounds(&snap);
                     this.animate_edgeless_camera(

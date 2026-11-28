@@ -34,16 +34,23 @@ pub(super) struct MobileSession {
 
 impl MobileSession {
     pub(super) fn open(width: u32, height: u32, theme: PlaygroundTheme) -> Self {
+        Self::open_with_options(
+            width,
+            height,
+            PlaygroundOptions {
+                theme,
+                ..PlaygroundOptions::default()
+            },
+        )
+    }
+
+    pub(super) fn open_with_options(width: u32, height: u32, options: PlaygroundOptions) -> Self {
         let platform = HeadlessPlatform::new(width, height, 1.0);
         let handle_cell: Rc<RefCell<Option<WindowHandle<PlaygroundView>>>> =
             Rc::new(RefCell::new(None));
         let handle_out = handle_cell.clone();
         let app = Application::with_platform(platform.clone()).run_embedded(move |cx| {
             register_bundled_fonts(cx).expect("bundled fonts");
-            let options = PlaygroundOptions {
-                theme,
-                ..PlaygroundOptions::default()
-            };
             let window = cx
                 .open_window(
                     WindowOptions {

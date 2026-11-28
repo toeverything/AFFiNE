@@ -397,31 +397,39 @@ pub fn build_zoom_controls<V: 'static>(
     zoom: f32,
     viewport_width: f32,
     toolbar_visible: bool,
+    touch_mode: bool,
     palette: &Palette,
     theme: PlaygroundTheme,
-    on_out: impl Fn(&mut V, &ui::MouseDownEvent, &mut Window, &mut ui::Context<V>) + 'static,
-    on_reset: impl Fn(&mut V, &ui::MouseDownEvent, &mut Window, &mut ui::Context<V>) + 'static,
-    on_in: impl Fn(&mut V, &ui::MouseDownEvent, &mut Window, &mut ui::Context<V>) + 'static,
-    on_fit: impl Fn(&mut V, &ui::MouseDownEvent, &mut Window, &mut ui::Context<V>) + 'static,
+    on_out: impl Fn(&mut V, &ui::ClickEvent, &mut Window, &mut ui::Context<V>) + 'static,
+    on_reset: impl Fn(&mut V, &ui::ClickEvent, &mut Window, &mut ui::Context<V>) + 'static,
+    on_in: impl Fn(&mut V, &ui::ClickEvent, &mut Window, &mut ui::Context<V>) + 'static,
+    on_fit: impl Fn(&mut V, &ui::ClickEvent, &mut Window, &mut ui::Context<V>) + 'static,
     cx: &mut ui::Context<V>,
 ) -> AnyElement {
     let pct_label = format!("{}%", (zoom * 100.0).round() as i32);
     let shadows = theme.shadows("--affine-toolbar-shadow");
+    let btn_h = if touch_mode { 44.0 } else { ZOOM_BTN_HEIGHT };
+    let (w_step, w_reset, w_fit) = if touch_mode {
+        (44.0, 56.0, 44.0)
+    } else {
+        (28.0, 48.0, 36.0)
+    };
 
     let button = |id: &'static str, snap_id: &'static str, label: String, width: f32| {
         div()
             .id(id)
             .w(px(width))
-            .h(px(ZOOM_BTN_HEIGHT))
+            .h(px(btn_h))
             .rounded(px(ZOOM_BTN_RADIUS))
             .flex()
             .items_center()
             .justify_center()
-            .text_size(px(12.0))
+            .text_size(px(if touch_mode { 14.0 } else { 12.0 }))
             .font_weight(ui::FontWeight::MEDIUM)
             .text_color(palette.text_primary)
             .cursor_pointer()
             .hover(|s| s.bg(palette.hover))
+            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             .snapshot(snap_id, Some("chrome.edgeless_zoom"))
             .snapshot_text(label.clone())
             .child(label)
@@ -451,36 +459,36 @@ pub fn build_zoom_controls<V: 'static>(
                 "edgeless-zoom-out",
                 "chrome.edgeless_zoom.out",
                 "-".into(),
-                28.0,
+                w_step,
             )
-            .on_mouse_down(MouseButton::Left, cx.listener(on_out)),
+            .on_click(cx.listener(on_out)),
         )
         .child(
             button(
                 "edgeless-zoom-reset",
                 "chrome.edgeless_zoom.reset",
                 pct_label,
-                48.0,
+                w_reset,
             )
-            .on_mouse_down(MouseButton::Left, cx.listener(on_reset)),
+            .on_click(cx.listener(on_reset)),
         )
         .child(
             button(
                 "edgeless-zoom-in",
                 "chrome.edgeless_zoom.in",
                 "+".into(),
-                28.0,
+                w_step,
             )
-            .on_mouse_down(MouseButton::Left, cx.listener(on_in)),
+            .on_click(cx.listener(on_in)),
         )
         .child(
             button(
                 "edgeless-zoom-fit",
                 "chrome.edgeless_zoom.fit",
                 "Fit".into(),
-                36.0,
+                w_fit,
             )
-            .on_mouse_down(MouseButton::Left, cx.listener(on_fit)),
+            .on_click(cx.listener(on_fit)),
         );
 
     if !shadows.is_empty() {

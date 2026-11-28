@@ -230,6 +230,14 @@ impl EntityInputHandler for PlaygroundView {
         {
             return;
         }
+        if self.editor.selection.is_none()
+            && !self.editor.block_selection.is_empty()
+            && let Some(ret_id) = self.block_selection_return_caret.take()
+        {
+            self.editor.block_selection.clear();
+            self.keep_keyboard_on_block_selection = false;
+            self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(ret_id, 0)));
+        }
         if self.suppress_unselected_root_input && self.editor.selection.is_none() {
             return;
         }
@@ -282,6 +290,14 @@ impl EntityInputHandler for PlaygroundView {
             && self.edgeless.authoring.editing_spatial_block().is_none()
         {
             return;
+        }
+        if self.editor.selection.is_none()
+            && !self.editor.block_selection.is_empty()
+            && let Some(ret_id) = self.block_selection_return_caret.take()
+        {
+            self.editor.block_selection.clear();
+            self.keep_keyboard_on_block_selection = false;
+            self.editor.selection = Some(DocumentSelection::caret(DocPoint::new(ret_id, 0)));
         }
         if self.suppress_unselected_root_input && self.editor.selection.is_none() {
             return;

@@ -25,7 +25,7 @@ impl PlaygroundView {
             self.scroll_y,
             self.max_scroll,
             window.layout_direction(),
-            self.is_touch_host() || self.edgeless_readonly,
+            self.form_factor.is_touch_form_factor() || self.edgeless_readonly,
         ) else {
             return;
         };
@@ -60,7 +60,7 @@ impl PlaygroundView {
             self.scroll_y,
             self.max_scroll,
             window.layout_direction(),
-            self.is_touch_host() || self.edgeless_readonly,
+            self.form_factor.is_touch_form_factor() || self.edgeless_readonly,
         ) else {
             self.scrollbar_drag = None;
             return false;

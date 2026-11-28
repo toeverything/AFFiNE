@@ -230,24 +230,25 @@ impl Overlays {
                                                     brand.opacity(alpha),
                                                     ui::BorderStyle::Solid,
                                                 ));
-                                                let mut pb = ui::PathBuilder::stroke(px(1.5));
-                                                let r0 = 9.0 + 3.5 * p;
-                                                let r1 = 11.5 + 6.0 * p;
+                                                let dot_r = (2.1 * (1.0 - p * 0.55)).max(0.8);
+                                                let orbit = 9.0 + 7.5 * p;
                                                 for idx in 0..6 {
                                                     let angle =
                                                         (idx as f32) * std::f32::consts::TAU / 6.0;
                                                     let (sin_a, cos_a) = angle.sin_cos();
-                                                    pb.move_to(point(
-                                                        px(cx + cos_a * r0),
-                                                        px(cy + sin_a * r0),
+                                                    let dx = cx + cos_a * orbit;
+                                                    let dy = cy + sin_a * orbit;
+                                                    window.paint_quad(ui::quad(
+                                                        ui::Bounds::new(
+                                                            point(px(dx - dot_r), px(dy - dot_r)),
+                                                            size(px(dot_r * 2.0), px(dot_r * 2.0)),
+                                                        ),
+                                                        ui::Corners::all(px(dot_r)),
+                                                        brand.opacity(alpha),
+                                                        ui::Edges::all(px(0.0)),
+                                                        ui::transparent_black(),
+                                                        ui::BorderStyle::Solid,
                                                     ));
-                                                    pb.line_to(point(
-                                                        px(cx + cos_a * r1),
-                                                        px(cy + sin_a * r1),
-                                                    ));
-                                                }
-                                                if let Ok(path) = pb.build() {
-                                                    window.paint_path(path, brand.opacity(alpha));
                                                 }
                                             },
                                         )

@@ -695,12 +695,17 @@ impl FlowPass<'_> {
             width,
             self.input.theme,
             self.direction,
+            self.input.form_factor,
             self.database_state.mobile_readonly,
             self.database_state.clock_ms,
             &offset_at,
             self.window,
         );
         self.database_hits.insert(block_id.to_string(), output.hits);
+        self.database_view_tabs_max_scroll.insert(
+            block_id.to_string(),
+            (output.view_tabs_scroll_px, output.view_tabs_max_scroll_px),
+        );
         let prims = output
             .prims
             .into_iter()
