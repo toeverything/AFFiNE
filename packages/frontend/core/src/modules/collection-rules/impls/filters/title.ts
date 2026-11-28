@@ -11,11 +11,11 @@ export class TitleFilterProvider extends Service implements FilterProvider {
   }
 
   filter$(params: FilterParams): Observable<Set<string>> {
-    const method = params.method as 'match';
+    const { method, value } = params;
 
-    if (method === 'match') {
+    if (method === 'match' || method === 'contains') {
       return this.docsSearchService
-        .searchTitle$(params.value ?? '')
+        .searchTitle$(value ?? '', method)
         .pipe(map(list => new Set(list)));
     }
 

@@ -11,6 +11,44 @@ import { describe, expect, it, vi } from 'vitest';
 import { DocsSearchService } from './docs-search';
 
 describe('DocsSearchService', () => {
+  it('matches partial file names without depending on the indexer', async () => {
+    const indexer = {
+      state$: of({ indexing: 0, errorMessage: null }),
+      search$: vi.fn(),
+    };
+    const framework = new Framework();
+    framework.service(
+      DocsSearchService,
+      () =>
+        new DocsSearchService(
+          { workspace: { engine: { indexer } } } as never,
+          {
+            allDocTitle$: () =>
+              of([
+                { id: 'header', title: 'WeaponActor.h' },
+                { id: 'source', title: 'WeaponActor.cpp' },
+                { id: 'generated-source', title: 'WeaponActor.gen.cpp' },
+                { id: 'generated-header', title: 'WeaponActor.generated.h' },
+                { id: 'other', title: 'UHTStudy.init.gen.cpp' },
+              ]),
+          } as never
+        )
+    );
+    const service = framework.provider().get(DocsSearchService);
+
+    for (const query of ['W', 'weapon', 'WeaponActor.']) {
+      await expect(
+        firstValueFrom(service.searchTitle$(query, 'contains'))
+      ).resolves.toEqual([
+        'header',
+        'source',
+        'generated-source',
+        'generated-header',
+      ]);
+    }
+    expect(indexer.search$).not.toHaveBeenCalled();
+  });
+
   it('skips malformed reference items without poisoning the result', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const indexer = {

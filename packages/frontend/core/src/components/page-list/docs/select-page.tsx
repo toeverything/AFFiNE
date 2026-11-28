@@ -95,17 +95,18 @@ export const SelectPage = memo(function SelectPage({
   const [filters, setFilters] = useState<FilterParams[]>([]);
 
   useEffect(() => {
-    const searchFilter = searchText
+    const query = searchText.trim();
+    const searchFilter = query
       ? {
           type: 'system',
           key: 'title',
-          method: 'match',
-          value: searchText,
+          method: 'contains',
+          value: query,
         }
       : null;
     const watchFilters: FilterParams[] =
       filters.length > 0
-        ? filters
+        ? [...filters]
         : [
             // if no filters are present, match all non-trash documents
             {

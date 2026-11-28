@@ -96,7 +96,20 @@ export class DocsSearchService extends Service {
     errorMessage: null,
   } as IndexerSyncState);
 
-  searchTitle$(query: string) {
+  searchTitle$(query: string, method: 'match' | 'contains' = 'match') {
+    if (method === 'contains') {
+      const needle = query.toLowerCase();
+      return this.docsService
+        .allDocTitle$()
+        .pipe(
+          map(docs =>
+            docs
+              .filter(({ title }) => title.toLowerCase().includes(needle))
+              .map(({ id }) => id)
+          )
+        );
+    }
+
     return this.indexer
       .search$(
         'doc',
