@@ -230,6 +230,7 @@
     "appdmg/image-size": "^2.0.4",
     "appdmg@npm:^0.6.4": "patch:appdmg@npm%3A0.6.6#~/.yarn/patches/appdmg-npm-0.6.6-4054c7e0c9.patch",
     "@graphql-tools/utils@npm:^11.0.0": "^12.0.3",
-    "@graphql-tools/utils@npm:12.0.0": "^12.0.3"
+    "@graphql-tools/utils@npm:12.0.0": "^12.0.3",
+    "@opentelemetry/instrumentation-http": "0.222.0"
   }
 }
