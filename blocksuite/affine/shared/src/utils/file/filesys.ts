@@ -147,6 +147,7 @@ const FileTypes: NonNullable<OpenFilePickerOptions['types']> = [
     description: 'MindMap',
     accept: {
       'text/xml': ['.mm', '.opml', '.xml'],
+      'application/vnd.xmind.workbook': ['.xmind'],
     },
   },
 ];
@@ -272,9 +273,13 @@ export async function openFilesWith(
 
     if (acceptType !== 'Any') {
       // For example, `accept="image/*"` or `accept="video/*,audio/*"`.
-      input.accept = Object.keys(
-        FileTypes.find(i => i.description === acceptType)?.accept ?? ''
-      ).join(',');
+      // Extensions are listed too, for files the OS has no MIME type for.
+      const accept =
+        FileTypes.find(i => i.description === acceptType)?.accept ?? {};
+      input.accept = [
+        ...Object.keys(accept),
+        ...Object.values(accept).flat(),
+      ].join(',');
     }
     document.body.append(input);
     // The `change` event fires when the user interacts with the dialog.

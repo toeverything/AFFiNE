@@ -2551,9 +2551,11 @@ __metadata:
     "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
     "@types/lodash-es": "npm:^4.17.12"
+    fflate: "npm:^0.8.3"
     lit: "npm:^3.2.0"
     lodash-es: "npm:^4.17.23"
     simple-xml-to-json: "npm:^1.2.2"
+    vitest: "npm:^4.1.11"
     yjs: "npm:^13.6.27"
   languageName: unknown
   linkType: soft
