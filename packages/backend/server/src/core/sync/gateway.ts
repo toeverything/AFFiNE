@@ -35,6 +35,7 @@ import {
   OnEvent,
   SpaceAccessDenied,
   SyncPermissionGenerationChanged,
+  UnsupportedClientVersion,
 } from '../../base';
 import { Models } from '../../models';
 import { canonicalizeDocumentIdentity } from '../../native';
@@ -1423,6 +1424,33 @@ export class SpaceSyncGateway
     }
 
     return { data: { clientId: client.id, success: true } };
+  }
+
+  /**
+   * Clients older than 0.27.5 still join with `space:join`, which this server
+   * no longer handles. Without a reply they wait for the ack and stay on
+   * "Syncing" forever. Answer with the version error instead, so the client
+   * can tell the user to update, and disconnect like `space:join-batch` does
+   * for unsupported versions.
+   */
+  @SubscribeMessage('space:join')
+  async onLegacyJoinSpace(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() message: unknown
+  ): Promise<never> {
+    const clientVersion =
+      message &&
+      typeof message === 'object' &&
+      'clientVersion' in message &&
+      typeof message.clientVersion === 'string' &&
+      message.clientVersion.length > 0
+        ? message.clientVersion
+        : 'unknown';
+    this.rejectJoin(client);
+    throw new UnsupportedClientVersion({
+      clientVersion,
+      requiredVersion: MIN_BATCH_WS_CLIENT_VERSION.raw,
+    });
   }
 
   @SubscribeMessage('space:leave')

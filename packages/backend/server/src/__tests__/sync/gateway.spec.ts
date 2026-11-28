@@ -676,6 +676,27 @@ test('space:join-batch rejects old clients and accepts the current web build', a
   }
 });
 
+test('legacy space:join gets an unsupported client version error and is disconnected', async t => {
+  const { user, cookieHeader } = await login(app);
+  const socket = createClient(url, cookieHeader);
+  try {
+    await waitForConnect(socket);
+    const error = getErrorResponse(
+      t,
+      await emitWithAck(socket, 'space:join', {
+        spaceType: 'userspace',
+        spaceId: user.id,
+        clientVersion: '0.27.4',
+      })
+    );
+    t.is(error.name, 'UNSUPPORTED_CLIENT_VERSION');
+    t.true(error.message.includes('0.27.4'));
+    await waitForDisconnect(socket);
+  } finally {
+    socket.disconnect();
+  }
+});
+
 test('space:join-batch joins rooms and initializes workspace documents', async t => {
   const models = app.get(Models);
   const { user: owner, cookieHeader: ownerCookieHeader } = await login(app);
