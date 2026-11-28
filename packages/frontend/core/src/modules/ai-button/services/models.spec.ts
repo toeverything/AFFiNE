@@ -64,4 +64,78 @@ describe('AIModelService', () => {
       currentUser: { copilot: { routeOptions: { choices: [] } } },
     });
   });
+
+  test('splits brand category and version across space and hyphen delimiters', async () => {
+    const cases = [
+      { displayName: 'GPT-6 Luna', category: 'GPT', version: '6 Luna' },
+      { displayName: 'GPT-6.1 Terra', category: 'GPT', version: '6.1 Terra' },
+      { displayName: 'GPT-5', category: 'GPT', version: '5' },
+      {
+        displayName: 'Claude Haiku 5.5',
+        category: 'Claude',
+        version: 'Haiku 5.5',
+      },
+      {
+        displayName: 'Claude Sonnet 5.5',
+        category: 'Claude',
+        version: 'Sonnet 5.5',
+      },
+      {
+        displayName: 'Gemini 4 Hydrogen',
+        category: 'Gemini',
+        version: '4 Hydrogen',
+      },
+      { displayName: 'Auto', category: 'Auto', version: '' },
+    ];
+    const gql = vi.fn().mockResolvedValueOnce({
+      currentUser: {
+        copilot: {
+          routeOptions: {
+            choices: cases.map((item, idx) => ({
+              id: `model-${idx}`,
+              displayName: item.displayName,
+              available: true,
+            })),
+          },
+        },
+      },
+    });
+    const framework = new Framework();
+    framework.service(
+      AIModelService,
+      () =>
+        new AIModelService(
+          {
+            globalState: {
+              get: () => undefined,
+              set: () => {},
+            },
+          } as never,
+          { gql } as never,
+          {
+            subscription: { ai$: EMPTY },
+          } as never
+        )
+    );
+    const service = framework.provider().get(AIModelService);
+
+    service.setScope('workspace-a', 'route-a');
+    await vi.waitFor(() =>
+      expect(service.models.value).toHaveLength(cases.length)
+    );
+
+    expect(
+      service.models.value.map(({ name, category, version }) => ({
+        name,
+        category,
+        version,
+      }))
+    ).toEqual(
+      cases.map(({ displayName, category, version }) => ({
+        name: displayName,
+        category,
+        version,
+      }))
+    );
+  });
 });

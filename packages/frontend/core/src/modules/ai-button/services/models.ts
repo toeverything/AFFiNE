@@ -79,12 +79,15 @@ export class AIModelService extends Service {
       return;
     }
     this.models.value = options.choices.map(choice => {
-      const [category] = choice.displayName.split(' ');
+      const displayName = choice.displayName.trim();
+      const match = displayName.match(/^([^\s-]+)[\s-]+(.*)$/);
+      const category = match ? match[1] : displayName;
+      const version = match ? match[2].trim() : '';
       return {
         id: choice.id,
         name: choice.displayName,
         category,
-        version: choice.displayName.slice(category.length + 1),
+        version,
         available: choice.available,
       };
     });

@@ -640,6 +640,51 @@ test('space:join-batch should validate entries before joining', async t => {
   }
 });
 
+test('space:join rejects legacy clients with UNSUPPORTED_CLIENT_VERSION and disconnects', async t => {
+  const { user, cookieHeader } = await login(app);
+
+  for (const [label, payload, expectedVersion] of [
+    [
+      '0.27.4 desktop client',
+      {
+        spaceType: 'userspace',
+        spaceId: user.id,
+        clientVersion: '0.27.4',
+      },
+      '0.27.4',
+    ],
+    [
+      'missing clientVersion',
+      {
+        spaceType: 'userspace',
+        spaceId: user.id,
+      },
+      'unset_or_invalid',
+    ],
+  ] as const) {
+    const socket = createClient(url, cookieHeader);
+    try {
+      await waitForConnect(socket);
+      const error = getErrorResponse(
+        t,
+        await emitWithAck(socket, 'space:join', payload)
+      );
+      t.is(error.name, 'UNSUPPORTED_CLIENT_VERSION', label);
+      t.deepEqual(
+        error.data,
+        {
+          clientVersion: expectedVersion,
+          requiredVersion: '>=0.27.5-0',
+        },
+        label
+      );
+      await waitForDisconnect(socket);
+    } finally {
+      socket.disconnect();
+    }
+  }
+});
+
 test('space:join-batch rejects old clients and accepts the current web build', async t => {
   const { user, cookieHeader } = await login(app);
   const webPackage = JSON.parse(

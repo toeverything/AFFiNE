@@ -161,9 +161,9 @@ dependencies = [
 
 [[package]]
 name = "affine_merge"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be1bb3908a9805e3fd71aaa154c9568b53d1eddb87dc9ae5cbc223d8d03402ab"
+checksum = "1fca7f8101aea5267b06811532934855020b36c83179ecf05703e73ea3f37095"
 dependencies = [
  "serde",
  "thiserror 2.0.18",
