@@ -9,6 +9,7 @@ export const NumberFormatSchema = zod.enum([
   'currencyUSD',
   'currencyEUR',
   'currencyGBP',
+  'currencyILS',
 ]);
 export type NumberFormat = zod.infer<typeof NumberFormatSchema>;
 
@@ -31,6 +32,7 @@ const numberFormatDefaultConfig: Record<
   currencyUSD: currency('USD'),
   currencyEUR: currency('EUR'),
   currencyGBP: currency('GBP'),
+  currencyILS: currency('ILS'),
 };
 
 export function formatNumber(
