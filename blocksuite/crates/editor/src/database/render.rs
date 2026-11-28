@@ -1,6 +1,6 @@
 //! Shared database block header (title, view tabs, mobile read-only notice) and view dispatcher.
 
-use std::rc::Rc;
+use std::{collections::BTreeMap, rc::Rc, sync::Arc};
 
 use blocksuite_playground_doc::read::{DatabaseData, DatabaseRow, DatabaseView, DatabaseViewMode};
 use ui::{Hsla, Window};
@@ -9,6 +9,7 @@ use crate::{
     block_flow::{
         CodeScroll, FlowRect, InlineAlign, InlineBaseline, InlineLayout, InlineStyle, layout_inline,
     },
+    rich_text::LaidOutRichParagraph,
     theme::{FONT_SANS, IconPaint, Palette, PlaygroundTheme, TYPOGRAPHY},
 };
 
@@ -32,6 +33,12 @@ pub enum DatabasePrim {
         x: f32,
         y: f32,
         layout: Rc<InlineLayout>,
+        clip: Option<FlowRect>,
+    },
+    Rich {
+        x: f32,
+        y: f32,
+        layout: Arc<LaidOutRichParagraph>,
         clip: Option<FlowRect>,
     },
     Icon {
@@ -72,6 +79,7 @@ pub(super) struct DbRenderCtx<'a> {
     pub mobile_readonly: bool,
     pub now_ms: i64,
     pub offset_at_ms: &'a dyn Fn(i64) -> i32,
+    pub page_titles: &'a BTreeMap<String, String>,
     pub window: &'a Window,
 }
 
@@ -205,6 +213,7 @@ pub fn layout_database_block(
     mobile_readonly: bool,
     now_ms: i64,
     offset_at_ms: &dyn Fn(i64) -> i32,
+    page_titles: &BTreeMap<String, String>,
     window: &Window,
 ) -> DatabaseLayoutOutput {
     let palette = theme.palette();
@@ -354,6 +363,7 @@ pub fn layout_database_block(
                 mobile_readonly,
                 now_ms,
                 offset_at_ms,
+                page_titles,
                 window,
             };
             dummy_ctx.truncate_text(label, tab_style, text_w, tab_h).1
@@ -692,6 +702,7 @@ pub fn layout_database_block(
         mobile_readonly,
         now_ms,
         offset_at_ms,
+        page_titles,
         window,
     };
 

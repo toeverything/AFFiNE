@@ -699,6 +699,7 @@ impl FlowPass<'_> {
             self.database_state.mobile_readonly,
             self.database_state.clock_ms,
             &offset_at,
+            self.input.page_titles,
             self.window,
         );
         self.database_hits.insert(block_id.to_string(), output.hits);
@@ -727,6 +728,9 @@ impl FlowPass<'_> {
                 },
                 crate::database::DatabasePrim::Text { x, y, layout, clip } => {
                     Prim::Text { x, y, layout, clip }
+                }
+                crate::database::DatabasePrim::Rich { x, y, layout, clip } => {
+                    Prim::Rich { x, y, layout, clip }
                 }
                 crate::database::DatabasePrim::Icon { rect, icon, color } => {
                     Prim::Icon { rect, icon, color }

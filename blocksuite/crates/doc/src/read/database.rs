@@ -64,12 +64,25 @@ pub enum DatabaseCellValue {
     Json(JsonValue),
 }
 
+fn parse_finite_number_str(s: &str) -> Option<f64> {
+    let trimmed = s.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    trimmed.parse::<f64>().ok().filter(|n| n.is_finite())
+}
+
 impl DatabaseCellValue {
     pub fn as_f64(&self) -> Option<f64> {
         match self {
             Self::Number(n) if n.is_finite() => Some(*n),
             Self::Integer(n) => Some(*n as f64),
-            Self::Json(v) => v.as_f64().filter(|n| n.is_finite()),
+            Self::Text(s) => parse_finite_number_str(s),
+            Self::RichText(rt) => parse_finite_number_str(&rt.plain),
+            Self::Json(v) => v
+                .as_f64()
+                .filter(|n| n.is_finite())
+                .or_else(|| v.as_str().and_then(parse_finite_number_str)),
             _ => None,
         }
     }
@@ -78,9 +91,28 @@ impl DatabaseCellValue {
         match self {
             Self::Integer(n) => Some(*n),
             Self::Number(n) if n.is_finite() => Some(*n as i64),
+            Self::Text(s) => {
+                let trimmed = s.trim();
+                trimmed
+                    .parse::<i64>()
+                    .ok()
+                    .or_else(|| parse_finite_number_str(trimmed).map(|n| n as i64))
+            }
+            Self::RichText(rt) => {
+                let trimmed = rt.plain.trim();
+                trimmed
+                    .parse::<i64>()
+                    .ok()
+                    .or_else(|| parse_finite_number_str(trimmed).map(|n| n as i64))
+            }
             Self::Json(v) => v
                 .as_i64()
-                .or_else(|| v.as_f64().filter(|n| n.is_finite()).map(|n| n as i64)),
+                .or_else(|| v.as_f64().filter(|n| n.is_finite()).map(|n| n as i64))
+                .or_else(|| {
+                    v.as_str()
+                        .and_then(parse_finite_number_str)
+                        .map(|n| n as i64)
+                }),
             _ => None,
         }
     }

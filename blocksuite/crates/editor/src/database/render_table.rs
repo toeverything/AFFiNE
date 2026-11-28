@@ -249,7 +249,7 @@ pub(super) fn render_table_view(
 
             if !collapsed {
                 for row in &bucket.rows {
-                    render_table_row(
+                    y += render_table_row(
                         ctx,
                         &cols,
                         &ordered_col_indices,
@@ -261,7 +261,6 @@ pub(super) fn render_table_view(
                         &mut authoring_hits,
                         &mut popover_anchor,
                     );
-                    y += ROW_HEIGHT;
                 }
             }
         }
@@ -291,7 +290,7 @@ pub(super) fn render_table_view(
         y += ROW_HEIGHT;
     } else {
         for row in ctx.rows {
-            render_table_row(
+            y += render_table_row(
                 ctx,
                 &cols,
                 &ordered_col_indices,
@@ -303,7 +302,6 @@ pub(super) fn render_table_view(
                 &mut authoring_hits,
                 &mut popover_anchor,
             );
-            y += ROW_HEIGHT;
         }
     }
 
@@ -367,16 +365,26 @@ fn render_table_row(
     hits: &mut Vec<DatabaseHitTarget>,
     authoring_hits: &mut Vec<DatabaseAuthoringHit>,
     popover_anchor: &mut Option<(f32, f32)>,
-) {
+) -> f32 {
     let align = if ctx.direction.is_rtl() {
         InlineAlign::Right
     } else {
         InlineAlign::Left
     };
+    // Pre-lay out rich-text & title cells so multi-line rich cells expand the row height cleanly.
+    let (rich_layouts, row_h) = super::cell_editor::prelayout_table_row_rich_cells(
+        ctx,
+        cols,
+        ordered_col_indices,
+        row,
+        ROW_HEIGHT,
+        align,
+    );
+
     let mut cell_x = start_x;
-    for &c_idx in ordered_col_indices {
+    for (slot_idx, &c_idx) in ordered_col_indices.iter().enumerate() {
         let col = &cols[c_idx];
-        let cell_rect = FlowRect::new(cell_x, y, col.width, ROW_HEIGHT);
+        let cell_rect = FlowRect::new(cell_x, y, col.width, row_h);
         let active_ed = ctx
             .ui_state
             .authoring
@@ -445,25 +453,31 @@ fn render_table_row(
 
         match col.col_type.as_str() {
             "title" => {
-                let text = if row.title.plain.is_empty() {
-                    "Untitled"
+                if let Some(laid) = rich_layouts[slot_idx].clone() {
+                    prims.push(super::cell_editor::rich_cell_prim(
+                        laid, inner_x, inner_w, cell_rect,
+                    ));
                 } else {
-                    row.title.plain.as_str()
-                };
-                let ink = if row.title.plain.is_empty() {
-                    ctx.palette.placeholder
-                } else {
-                    ctx.palette.text_primary
-                };
-                prims.push(ctx.single_line_clipped(
-                    text,
-                    InlineStyle::new(FONT_SANS, TYPOGRAPHY.font_sm_px, 500.0, ink),
-                    inner_x,
-                    cell_rect.y,
-                    inner_w,
-                    ROW_HEIGHT,
-                    align,
-                ));
+                    let text = if row.title.plain.is_empty() {
+                        "Untitled"
+                    } else {
+                        row.title.plain.as_str()
+                    };
+                    let ink = if row.title.plain.is_empty() {
+                        ctx.palette.placeholder
+                    } else {
+                        ctx.palette.text_primary
+                    };
+                    prims.push(ctx.single_line_clipped(
+                        text,
+                        InlineStyle::new(FONT_SANS, TYPOGRAPHY.font_sm_px, 500.0, ink),
+                        inner_x,
+                        cell_rect.y,
+                        inner_w,
+                        row_h,
+                        align,
+                    ));
+                }
             }
             "select" | "multi-select" => {
                 let ids = cell_val
@@ -687,31 +701,37 @@ fn render_table_row(
                 }
             }
             _ => {
-                let text = match cell_val {
-                    Some(DatabaseCellValue::RichText(rt)) => rt.plain.clone(),
-                    Some(DatabaseCellValue::Text(s)) => s.clone(),
-                    Some(DatabaseCellValue::Integer(n)) => isolate_ltr(&n.to_string()),
-                    Some(DatabaseCellValue::Number(n)) => isolate_ltr(&n.to_string()),
-                    Some(DatabaseCellValue::Bool(b)) => b.to_string(),
-                    Some(DatabaseCellValue::MultiSelect(v)) => v.join(", "),
-                    Some(DatabaseCellValue::Json(v)) if !v.is_null() => v.to_string(),
-                    _ => String::new(),
-                };
-                if !text.is_empty() {
-                    prims.push(ctx.single_line_clipped(
-                        &text,
-                        InlineStyle::new(
-                            FONT_SANS,
-                            TYPOGRAPHY.font_sm_px,
-                            400.0,
-                            ctx.palette.text_primary,
-                        ),
-                        inner_x,
-                        cell_rect.y,
-                        inner_w,
-                        ROW_HEIGHT,
-                        align,
+                if let Some(laid) = rich_layouts[slot_idx].clone() {
+                    prims.push(super::cell_editor::rich_cell_prim(
+                        laid, inner_x, inner_w, cell_rect,
                     ));
+                } else {
+                    let text = match cell_val {
+                        Some(DatabaseCellValue::RichText(rt)) => rt.plain.clone(),
+                        Some(DatabaseCellValue::Text(s)) => s.clone(),
+                        Some(DatabaseCellValue::Integer(n)) => isolate_ltr(&n.to_string()),
+                        Some(DatabaseCellValue::Number(n)) => isolate_ltr(&n.to_string()),
+                        Some(DatabaseCellValue::Bool(b)) => b.to_string(),
+                        Some(DatabaseCellValue::MultiSelect(v)) => v.join(", "),
+                        Some(DatabaseCellValue::Json(v)) if !v.is_null() => v.to_string(),
+                        _ => String::new(),
+                    };
+                    if !text.is_empty() {
+                        prims.push(ctx.single_line_clipped(
+                            &text,
+                            InlineStyle::new(
+                                FONT_SANS,
+                                TYPOGRAPHY.font_sm_px,
+                                400.0,
+                                ctx.palette.text_primary,
+                            ),
+                            inner_x,
+                            cell_rect.y,
+                            inner_w,
+                            row_h,
+                            align,
+                        ));
+                    }
                 }
             }
         }
@@ -726,13 +746,14 @@ fn render_table_row(
     }
     if ctx.mobile_readonly {
         hits.push(DatabaseHitTarget {
-            rect: FlowRect::new(start_x, y, (cell_x - start_x).max(1.0), ROW_HEIGHT),
+            rect: FlowRect::new(start_x, y, (cell_x - start_x).max(1.0), row_h),
             kind: DatabaseHitKind::OpenRecord {
                 row_id: row.row_id.clone(),
             },
             scrolls_x: true,
         });
     }
+    row_h
 }
 
 #[cfg(test)]
@@ -824,5 +845,63 @@ mod tests {
             !ids.iter().any(|id| id == "col-hidden"),
             "hidden view column must not reappear via schema fallback"
         );
+    }
+
+    #[test]
+    fn resolve_visible_columns_omits_fake_title_when_schema_has_no_title_column() {
+        let legacy_no_title = DatabaseData {
+            title: RichText::default(),
+            columns: vec![
+                DatabaseColumn {
+                    id: "c-rich".into(),
+                    column_type: "rich-text".into(),
+                    name: "Notes".into(),
+                    data: json!({}),
+                },
+                DatabaseColumn {
+                    id: "c-num".into(),
+                    column_type: "number".into(),
+                    name: "Amount".into(),
+                    data: json!({}),
+                },
+            ],
+            views: vec![],
+            cells: BTreeMap::new(),
+            rows: vec![],
+        };
+        let empty_view = DatabaseView {
+            id: "v-table".into(),
+            name: "Table".into(),
+            mode: DatabaseViewMode::Table,
+            columns: vec![],
+            filter: None,
+            sort: None,
+            group_by: None,
+            group_properties: vec![],
+            header: None,
+            date: None,
+            card: None,
+            ui: None,
+            extra: BTreeMap::new(),
+        };
+        let ids: Vec<String> = resolve_visible_columns(&empty_view, &legacy_no_title)
+            .into_iter()
+            .map(|c| c.id)
+            .collect();
+        assert_eq!(ids, vec!["c-rich", "c-num"]);
+
+        // Degenerate empty-schema database still synthesizes fallback "title" column.
+        let degenerate = DatabaseData {
+            title: RichText::default(),
+            columns: vec![],
+            views: vec![],
+            cells: BTreeMap::new(),
+            rows: vec![],
+        };
+        let fallback_ids: Vec<String> = resolve_visible_columns(&empty_view, &degenerate)
+            .into_iter()
+            .map(|c| c.id)
+            .collect();
+        assert_eq!(fallback_ids, vec!["title"]);
     }
 }

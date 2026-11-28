@@ -755,3 +755,37 @@ fn select_create_option_and_set_cell_undoes_atomically_in_one_step() -> DocResul
     );
     Ok(())
 }
+
+#[test]
+fn legacy_string_encoded_number_cells_parse_finite_decimals_and_ignore_blank_or_invalid() {
+    use blocksuite_playground_doc::read::{DatabaseCellValue, RichText};
+
+    assert_eq!(DatabaseCellValue::Text("42".into()).as_f64(), Some(42.0));
+    assert_eq!(
+        DatabaseCellValue::Text("-19.75".into()).as_f64(),
+        Some(-19.75)
+    );
+    assert_eq!(
+        DatabaseCellValue::Text(" 12.5 ".into()).as_f64(),
+        Some(12.5)
+    );
+    assert_eq!(DatabaseCellValue::Text(String::new()).as_f64(), None);
+    assert_eq!(DatabaseCellValue::Text("   ".into()).as_f64(), None);
+    assert_eq!(DatabaseCellValue::Text("NaN".into()).as_f64(), None);
+    assert_eq!(DatabaseCellValue::Text("inf".into()).as_f64(), None);
+    assert_eq!(DatabaseCellValue::Text("not-a-num".into()).as_f64(), None);
+    assert_eq!(
+        DatabaseCellValue::RichText(RichText {
+            plain: "99.5".into(),
+            delta: Vec::new(),
+        })
+        .as_f64(),
+        Some(99.5)
+    );
+    assert_eq!(
+        DatabaseCellValue::Json(json!("108.25")).as_f64(),
+        Some(108.25)
+    );
+    assert_eq!(DatabaseCellValue::Text("42".into()).as_i64(), Some(42));
+    assert_eq!(DatabaseCellValue::Text(String::new()).as_i64(), None);
+}

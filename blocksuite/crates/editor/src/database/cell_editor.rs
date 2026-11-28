@@ -509,3 +509,123 @@ pub(super) fn render_select_popover(
 
     pop_rect.bottom()
 }
+
+/// Lay out a database `title` or `rich-text` cell preserving inline styles (bold, italic,
+/// underline, strikethrough, inline code, foreground/background colors, links, `@reference`
+/// document title chips) and multiline wrapping.
+pub(super) fn layout_rich_cell(
+    ctx: &DbRenderCtx<'_>,
+    rt: &blocksuite_playground_doc::read::RichText,
+    weight: f32,
+    ink: ui::Hsla,
+    max_width: f32,
+    align: InlineAlign,
+) -> Option<std::sync::Arc<crate::rich_text::LaidOutRichParagraph>> {
+    if rt.delta.is_empty() && rt.plain.is_empty() {
+        return None;
+    }
+    let paragraph =
+        crate::rich_text::RichParagraph::from_delta_with_resolver(rt.delta.clone(), |page_id| {
+            ctx.page_titles.get(page_id).cloned()
+        })
+        .ok()?;
+    let mut style = crate::rich_text::RichParagraphStyle::from_theme(ctx.theme.mode());
+    let code_font_size = (TYPOGRAPHY.font_sm_px - 2.0).max(9.0);
+    let code_scale = code_font_size / style.code_font_size;
+    style.code_font_size = code_font_size;
+    style.code_baseline *= code_scale;
+    style.code_descent *= code_scale;
+    style.font_size = TYPOGRAPHY.font_sm_px;
+    style.base_weight = ui::FontWeight(weight);
+    style.line_height = 20.0;
+    style.align = match align {
+        InlineAlign::Left => ui::TextAlign::Left,
+        InlineAlign::Center => ui::TextAlign::Center,
+        InlineAlign::Right => ui::TextAlign::Right,
+    };
+    style.text_color = ink;
+    style.dpr = ctx.window.scale_factor();
+    Some(std::sync::Arc::new(paragraph.layout(
+        ctx.window.text_system(),
+        &style,
+        max_width.max(1.0),
+    )))
+}
+
+/// Pre-lay out rich-text and title cells for one Table row and compute the expanded row height
+/// (clamped to `[min_row_h, 120.0]`).
+pub(super) fn prelayout_table_row_rich_cells(
+    ctx: &DbRenderCtx<'_>,
+    cols: &[super::column_ops::ResolvedTableCol<'_>],
+    ordered_col_indices: &[usize],
+    row: &blocksuite_playground_doc::read::DatabaseRow,
+    min_row_h: f32,
+    align: InlineAlign,
+) -> (
+    Vec<Option<std::sync::Arc<crate::rich_text::LaidOutRichParagraph>>>,
+    f32,
+) {
+    let mut layouts = Vec::with_capacity(ordered_col_indices.len());
+    let mut row_h = min_row_h;
+    for &c_idx in ordered_col_indices {
+        let col = &cols[c_idx];
+        let inner_w = (col.width - 16.0).max(1.0);
+        let is_editing = ctx
+            .ui_state
+            .authoring
+            .active_cell
+            .as_ref()
+            .is_some_and(|e| e.row_id == row.row_id && e.column_id == col.id);
+        let laid = if is_editing {
+            None
+        } else if col.col_type == "title" {
+            layout_rich_cell(
+                ctx,
+                &row.title,
+                500.0,
+                ctx.palette.text_primary,
+                inner_w,
+                align,
+            )
+        } else if let Some(blocksuite_playground_doc::read::DatabaseCellValue::RichText(rt)) =
+            ctx.data.cells.get(&(row.row_id.clone(), col.id.clone()))
+        {
+            layout_rich_cell(ctx, rt, 400.0, ctx.palette.text_primary, inner_w, align)
+        } else {
+            None
+        };
+        if let Some(ref l) = laid {
+            let h = l.lines().len().max(1) as f32 * f32::from(l.line_height());
+            row_h = row_h.max((h + 12.0).ceil()).min(120.0);
+        }
+        layouts.push(laid);
+    }
+    (layouts, row_h)
+}
+
+/// Build a clipped [`DatabasePrim::Rich`] vertically centered (single-line) or top-padded
+/// (multi-line) inside `cell_rect`.
+pub(super) fn rich_cell_prim(
+    laid: std::sync::Arc<crate::rich_text::LaidOutRichParagraph>,
+    inner_x: f32,
+    inner_w: f32,
+    cell_rect: FlowRect,
+) -> DatabasePrim {
+    let h = laid.lines().len().max(1) as f32 * f32::from(laid.line_height());
+    let text_y = if h <= cell_rect.h - 8.0 {
+        cell_rect.y + ((cell_rect.h - h) * 0.5).floor()
+    } else {
+        cell_rect.y + 6.0
+    };
+    DatabasePrim::Rich {
+        x: inner_x,
+        y: text_y,
+        layout: laid,
+        clip: Some(FlowRect::new(
+            inner_x,
+            cell_rect.y + 2.0,
+            inner_w,
+            (cell_rect.h - 4.0).max(1.0),
+        )),
+    }
+}

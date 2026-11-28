@@ -461,7 +461,242 @@ pub(super) fn render_db_authoring_evidence(out_dir: &Path) -> Result<()> {
                 &format!("db-calendar-edit-{suffix}"),
             )?;
         }
+
+        // 6. Synthetic corpus-fidelity fixture: legacy title-less table + string-encoded numbers
+        //    + formatted rich-text cells (bold/italic/color/highlight/link/@reference/multiline).
+        {
+            let (state, _db_id) = build_corpus_fidelity_doc()?;
+            let session = start_headless_session(
+                1280,
+                680,
+                PlaygroundOptions {
+                    theme,
+                    ..Default::default()
+                },
+            )?;
+            session.view(|v, cx| {
+                v.set_document(state, cx);
+            })?;
+            session.settle(120);
+            save_session_png(
+                &session,
+                &out_dir.join(format!("db-corpus-fidelity-{suffix}.png")),
+                &format!("db-corpus-fidelity-{suffix}"),
+            )?;
+        }
     }
 
     Ok(())
+}
+
+/// Build a 100% synthetic anonymized document exercising legacy title-less columns, string-encoded
+/// numbers (`"42"`, `"-3.14"`, `""`), and rich-text cells with inline formatting + `@reference`.
+fn build_corpus_fidelity_doc() -> Result<(DocState, String)> {
+    let mut state = DocState::new("db-corpus-fidelity", 19)?;
+    state.workspace.initialize_meta()?;
+    state
+        .workspace
+        .create_page(HOME_PAGE_ID, "Database Corpus Fidelity", 1_773_000_000_000)?;
+    state
+        .workspace
+        .create_page("ref-arch-spec", "Architecture Spec", 1_773_000_000_000)?;
+    let page = state.workspace.ensure_page(HOME_PAGE_ID)?;
+    page.add_block(
+        "p-root",
+        BlockSpec::Page {
+            title: "Database Corpus Fidelity".into(),
+        },
+        None,
+        None,
+        1,
+    )?;
+    page.add_block(
+        "p-note",
+        BlockSpec::Note { xywh: None },
+        Some("p-root"),
+        None,
+        2,
+    )?;
+    let db_id = "db-fidelity".to_string();
+    let mut cells = BTreeMap::new();
+    cells.insert(
+        "f-row-1".into(),
+        BTreeMap::from([
+            ("c-amt".into(), DatabaseCellSpec::Text("42".into())),
+            ("c-stage".into(), DatabaseCellSpec::Text("opt-ready".into())),
+        ]),
+    );
+    cells.insert(
+        "f-row-2".into(),
+        BTreeMap::from([
+            ("c-amt".into(), DatabaseCellSpec::Text("-3.14".into())),
+            ("c-stage".into(), DatabaseCellSpec::Text("opt-draft".into())),
+        ]),
+    );
+    cells.insert(
+        "f-row-3".into(),
+        BTreeMap::from([
+            ("c-amt".into(), DatabaseCellSpec::Text(String::new())),
+            ("c-stage".into(), DatabaseCellSpec::Text("opt-ready".into())),
+        ]),
+    );
+    page.add_block(
+        &db_id,
+        BlockSpec::Database(DatabaseSpec {
+            title: "Legacy Metrics (No Title Column)".into(),
+            columns: vec![
+                DatabaseColumnSpec {
+                    id: "c-rich".into(),
+                    column_type: "rich-text".into(),
+                    name: "Formatted Notes".into(),
+                    data: json!({}),
+                },
+                DatabaseColumnSpec {
+                    id: "c-amt".into(),
+                    column_type: "number".into(),
+                    name: "Amount".into(),
+                    data: json!({ "format": "number" }),
+                },
+                DatabaseColumnSpec {
+                    id: "c-stage".into(),
+                    column_type: "select".into(),
+                    name: "Stage".into(),
+                    data: json!({
+                        "options": [
+                            { "id": "opt-ready", "value": "Ready", "color": "var(--affine-tag-green)" },
+                            { "id": "opt-draft", "value": "Draft", "color": "var(--affine-tag-blue)" }
+                        ]
+                    }),
+                },
+            ],
+            views: vec![DatabaseViewSpec {
+                id: "v-table".into(),
+                name: "Table".into(),
+                mode: "table".into(),
+                raw: json!({
+                    "columns": [
+                        { "id": "c-rich", "width": 360 },
+                        { "id": "c-amt", "width": 120 },
+                        { "id": "c-stage", "width": 140 }
+                    ]
+                }),
+            }],
+            cells,
+        }),
+        Some("p-note"),
+        None,
+        3,
+    )?;
+    for id in ["f-row-1", "f-row-2", "f-row-3"] {
+        page.add_block(
+            id,
+            BlockSpec::Paragraph {
+                paragraph_type: ParagraphType::Text,
+                text: String::new(),
+            },
+            Some(&db_id),
+            None,
+            4,
+        )?;
+    }
+    // Populate Y.Text rich-text cells with bold/italic/color/highlight/link/@reference & multiline.
+    let write_rich_cell = |page: &mut blocksuite_playground_doc::session::PageDocSession,
+                           row_id: &str,
+                           ops: Vec<y_octo::TextDeltaOp>|
+     -> Result<()> {
+        let row_path = y_octo::TypePath::root("blocks")
+            .key(&db_id)
+            .key("prop:cells")
+            .key(row_id);
+        page.inner_mut()
+            .begin_tx(y_octo::SessionTxOrigin::Untracked)?;
+        page.inner_mut().map_set(
+            &y_octo::TypeTarget::Path(row_path),
+            "c-rich".into(),
+            y_octo::SessionValue::Map(vec![
+                (
+                    "columnId".into(),
+                    y_octo::SessionValue::Any(y_octo::Any::String("c-rich".into())),
+                ),
+                ("value".into(), y_octo::SessionValue::Text(ops)),
+            ]),
+        )?;
+        page.inner_mut().commit_tx()?;
+        Ok(())
+    };
+
+    let attrs = |pairs: &[(&str, y_octo::Any)]| -> Option<y_octo::TextAttributes> {
+        let mut m = y_octo::TextAttributes::default();
+        for (k, v) in pairs {
+            m.insert((*k).to_string(), v.clone());
+        }
+        Some(m)
+    };
+    write_rich_cell(
+        page,
+        "f-row-1",
+        vec![
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text("Bold".into()),
+                format: attrs(&[("bold", y_octo::Any::True)]),
+            },
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text(" + ".into()),
+                format: None,
+            },
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text("Highlighted".into()),
+                format: attrs(&[
+                    (
+                        "color",
+                        y_octo::Any::String("var(--affine-text-highlight-foreground-blue)".into()),
+                    ),
+                    (
+                        "background",
+                        y_octo::Any::String("var(--affine-text-highlight-blue)".into()),
+                    ),
+                ]),
+            },
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text(" + ".into()),
+                format: None,
+            },
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text("Docs".into()),
+                format: attrs(&[("link", y_octo::Any::String("https://affine.pro".into()))]),
+            },
+        ],
+    )?;
+    let ref_obj: y_octo::Any = serde_json::from_value(json!({
+        "type": "LinkedPage",
+        "pageId": "ref-arch-spec"
+    }))?;
+    write_rich_cell(
+        page,
+        "f-row-2",
+        vec![
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text("See ".into()),
+                format: attrs(&[("italic", y_octo::Any::True)]),
+            },
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text(" ".into()),
+                format: attrs(&[("reference", ref_obj)]),
+            },
+            y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text("\nSecond line preserved in cell".into()),
+                format: None,
+            },
+        ],
+    )?;
+    write_rich_cell(
+        page,
+        "f-row-3",
+        vec![y_octo::TextDeltaOp::Insert {
+            insert: y_octo::TextInsert::Text("Blank numeric cell next door ->".into()),
+            format: None,
+        }],
+    )?;
+    page.stop_capturing()?;
+    Ok((state, db_id))
 }

@@ -628,10 +628,11 @@ fn translate_prim(prim: &Prim, dx: f32, dy: f32) -> Prim {
             layout: layout.clone(),
             clip: clip.translated(dx, dy),
         },
-        Prim::Rich { x, y, layout } => Prim::Rich {
+        Prim::Rich { x, y, layout, clip } => Prim::Rich {
             x: x + dx,
             y: y + dy,
             layout: layout.clone(),
+            clip: clip.map(|r| r.translated(dx, dy)),
         },
         Prim::Icon { rect, icon, color } => Prim::Icon {
             rect: rect.translated(dx, dy),

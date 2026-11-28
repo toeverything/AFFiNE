@@ -606,6 +606,7 @@ pub(super) enum Prim {
         x: f32,
         y: f32,
         layout: Arc<LaidOutRichParagraph>,
+        clip: Option<FlowRect>,
     },
     /// One line of an unwrapped code block: clipped to the code area and shifted left by
     /// the block's horizontal scroll.

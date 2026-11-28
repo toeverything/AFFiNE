@@ -148,6 +148,7 @@ impl FlowTextLayout {
                 x,
                 y,
                 layout: layout.clone(),
+                clip: None,
             },
             Self::Plain(layout) => Prim::Text {
                 x,
@@ -485,14 +486,18 @@ impl BlockBody {
                     None => layout.paint(text_origin, window, cx),
                 }
             }
-            Prim::Rich { x, y, layout } => layout.paint_at(
-                point(origin.x + px(*x), origin.y + px(*y)),
-                &[],
-                &[],
-                None,
-                window,
-                cx,
-            ),
+            Prim::Rich { x, y, layout, clip } => {
+                let text_origin = point(origin.x + px(*x), origin.y + px(*y));
+                match clip {
+                    Some(clip) => window.with_local_paint_mask(
+                        ui::ContentMask {
+                            bounds: clip.bounds(origin),
+                        },
+                        |window| layout.paint_at(text_origin, &[], &[], None, window, cx),
+                    ),
+                    None => layout.paint_at(text_origin, &[], &[], None, window, cx),
+                }
+            }
             Prim::Icon { rect, icon, color } => {
                 icon.paint(rect.bounds(origin), *color, window, cx);
             }

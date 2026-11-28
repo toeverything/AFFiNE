@@ -40,7 +40,7 @@ pub(super) fn resolve_visible_columns<'a>(
     data: &'a DatabaseData,
 ) -> Vec<ResolvedTableCol<'a>> {
     let mut result = Vec::new();
-    let title_col_id = view
+    let explicit_title_col_id = view
         .header
         .as_ref()
         .and_then(|h| h.title_column.as_deref())
@@ -49,25 +49,28 @@ pub(super) fn resolve_visible_columns<'a>(
                 .iter()
                 .find(|c| c.column_type == "title")
                 .map(|c| c.id.as_str())
-        })
-        .unwrap_or("title");
-
-    let title_view_col = view.columns.iter().find(|c| c.id == title_col_id);
-    if !title_view_col.is_some_and(|c| c.hide == Some(true)) {
-        let title_schema = data.columns.iter().find(|c| c.id == title_col_id);
-        let title_w = title_view_col
-            .and_then(|c| c.width)
-            .map_or(TITLE_DEFAULT_WIDTH, |w| (w as f32).max(MIN_COLUMN_WIDTH));
-        result.push(ResolvedTableCol {
-            id: title_col_id.to_string(),
-            name: title_schema
-                .map(|c| c.name.clone())
-                .filter(|n| !n.is_empty())
-                .unwrap_or_else(|| "Title".to_string()),
-            col_type: "title".to_string(),
-            width: title_w.round(),
-            schema: title_schema,
         });
+    // Only synthesize a fallback `"title"` column when `data.columns` is completely empty.
+    let title_col_id = explicit_title_col_id.or_else(|| data.columns.is_empty().then_some("title"));
+
+    if let Some(title_col_id) = title_col_id {
+        let title_view_col = view.columns.iter().find(|c| c.id == title_col_id);
+        if !title_view_col.is_some_and(|c| c.hide == Some(true)) {
+            let title_schema = data.columns.iter().find(|c| c.id == title_col_id);
+            let title_w = title_view_col
+                .and_then(|c| c.width)
+                .map_or(TITLE_DEFAULT_WIDTH, |w| (w as f32).max(MIN_COLUMN_WIDTH));
+            result.push(ResolvedTableCol {
+                id: title_col_id.to_string(),
+                name: title_schema
+                    .map(|c| c.name.clone())
+                    .filter(|n| !n.is_empty())
+                    .unwrap_or_else(|| "Title".to_string()),
+                col_type: "title".to_string(),
+                width: title_w.round(),
+                schema: title_schema,
+            });
+        }
     }
 
     let mut seen: Vec<String> = result.iter().map(|c| c.id.clone()).collect();
