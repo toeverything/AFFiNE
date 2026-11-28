@@ -494,6 +494,7 @@ pub(crate) struct AndroidEditorPlatform {
     initial_scale: f32,
     opened_window: RefCell<Option<AndroidEditorWindow>>,
     clipboard: RefCell<Option<ClipboardItem>>,
+    pending_clipboard_write: RefCell<Option<String>>,
 }
 
 impl AndroidEditorPlatform {
@@ -526,7 +527,46 @@ impl AndroidEditorPlatform {
             },
             opened_window: RefCell::new(None),
             clipboard: RefCell::new(None),
+            pending_clipboard_write: RefCell::new(None),
         }
+    }
+
+    pub(crate) fn set_clipboard_from_host(
+        &self,
+        plain: Option<String>,
+        html: Option<String>,
+        markdown: Option<String>,
+        snapshot: Option<String>,
+    ) {
+        let mut meta = serde_json::Map::new();
+        if let Some(s) = snapshot.filter(|v| !v.is_empty()) {
+            meta.insert(
+                "application/x-blocksuite-snapshot".to_string(),
+                serde_json::Value::String(s),
+            );
+        }
+        if let Some(h) = html.filter(|v| !v.is_empty()) {
+            meta.insert("text/html".to_string(), serde_json::Value::String(h));
+        }
+        if let Some(m) = markdown.filter(|v| !v.is_empty()) {
+            meta.insert("text/markdown".to_string(), serde_json::Value::String(m));
+        }
+        let plain_str = plain.unwrap_or_default();
+        let item = if !meta.is_empty() {
+            Some(ClipboardItem::new_string_with_json_metadata(
+                plain_str,
+                serde_json::Value::Object(meta),
+            ))
+        } else if !plain_str.is_empty() {
+            Some(ClipboardItem::new_string(plain_str))
+        } else {
+            None
+        };
+        *self.clipboard.borrow_mut() = item;
+    }
+
+    pub(crate) fn take_pending_clipboard_json(&self) -> Option<String> {
+        self.pending_clipboard_write.borrow_mut().take()
     }
 
     pub(crate) fn dispatcher(&self) -> Arc<AndroidDispatcher> {
@@ -676,6 +716,28 @@ impl Platform for AndroidEditorPlatform {
     }
 
     fn write_to_clipboard(&self, item: ClipboardItem) {
+        let mut map = serde_json::Map::new();
+        if let Some(text) = item.text() {
+            map.insert("text/plain".to_string(), serde_json::Value::String(text));
+        }
+        if let Some(meta_str) = item.metadata()
+            && let Ok(serde_json::Value::Object(meta)) =
+                serde_json::from_str::<serde_json::Value>(meta_str)
+        {
+            for (k, v) in meta {
+                if k == "application/x-blocksuite-snapshot" {
+                    let s = match v {
+                        serde_json::Value::String(s) => s,
+                        other => other.to_string(),
+                    };
+                    map.insert(k, serde_json::Value::String(s));
+                } else if let serde_json::Value::String(s) = v {
+                    map.insert(k, serde_json::Value::String(s));
+                }
+            }
+        }
+        *self.pending_clipboard_write.borrow_mut() =
+            Some(serde_json::Value::Object(map).to_string());
         *self.clipboard.borrow_mut() = Some(item);
     }
 

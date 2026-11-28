@@ -450,13 +450,14 @@ impl Overlays {
         window: &mut Window,
         cx: &mut Context<V>,
     ) -> Option<AnyElement> {
-        let mobile_kb_visible = self.keyboard_toolbar.visible;
+        let suppress_buttons =
+            self.keyboard_toolbar.visible || scene.suppress_floating_format_buttons;
         let toolbar = self.toolbar.as_mut()?;
         toolbar.rect = None;
-        if mobile_kb_visible && toolbar.link.is_none() {
+        if suppress_buttons && toolbar.link.is_none() {
             return None;
         }
-        let link_only = mobile_kb_visible && toolbar.link.is_some();
+        let link_only = suppress_buttons && toolbar.link.is_some();
         let progress = toolbar.presence.progress(now_ms);
         if toolbar.presence.closing && progress <= 0.0 {
             return None;

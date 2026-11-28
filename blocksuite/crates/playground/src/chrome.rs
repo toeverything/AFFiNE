@@ -368,9 +368,10 @@ impl PlaygroundView {
         let live_kb_inset = self.effective_ime_bottom(window);
         // Auto-show the mobile soft-keyboard toolbar on touch hosts, narrow viewports, or when
         // a software keyboard is active whenever an editable target holds focus, unless dismissed.
-        if (self.is_touch_host()
-            || f32::from(window.viewport_size().width) < 600.0
-            || live_kb_inset > 0.0)
+        if !self.page_readonly
+            && (self.is_touch_host()
+                || f32::from(window.viewport_size().width) < 600.0
+                || live_kb_inset > 0.0)
             && (self.editor.selection.is_some()
                 || (live_kb_inset > 0.0 && self.table_cell.is_some()))
             && !self.keyboard_toolbar_dismissed
@@ -568,6 +569,9 @@ impl PlaygroundView {
             .map(|(id, is_note)| (id.to_string(), is_note))
             .or_else(|| self.edgeless_readonly_selection_target.clone())
             .and_then(|(editing_id, is_note)| {
+                if self.native_suppresses_gpu_caret_and_selection {
+                    return None;
+                }
                 let sel = self.editor.selection.clone()?;
                 let focus = self.visual_focus()?;
                 Some((editing_id, is_note, sel, focus))

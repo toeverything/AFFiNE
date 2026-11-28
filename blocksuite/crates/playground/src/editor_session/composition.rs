@@ -292,12 +292,12 @@ impl PlaygroundView {
             })
             .collect()
     }
-    /// Selected glyph runs and the paragraph breaks between them, in page coordinates.
-    pub fn selection_rects(&self, layout: &FlowLayout) -> Vec<FlowRect> {
+    /// Selected glyph runs and the paragraph breaks between them for an arbitrary `sel`.
+    pub(crate) fn selection_rects_for(
+        sel: &DocumentSelection,
+        layout: &FlowLayout,
+    ) -> Vec<FlowRect> {
         let mut out = Vec::new();
-        let Some(sel) = &self.editor.selection else {
-            return out;
-        };
         if sel.empty() {
             return out;
         }
@@ -330,17 +330,38 @@ impl PlaygroundView {
         }
         out
     }
-    /// Selection highlight rectangles in page coordinates after horizontal code-block
-    /// scroll translation and clipping — shared by selection painting and hit-testing.
-    pub(crate) fn painted_selection_rects(&self, layout: &FlowLayout) -> Vec<FlowRect> {
+
+    /// Selected glyph runs and the paragraph breaks between them, in page coordinates.
+    pub fn selection_rects(&self, layout: &FlowLayout) -> Vec<FlowRect> {
+        let Some(sel) = &self.editor.selection else {
+            return Vec::new();
+        };
+        Self::selection_rects_for(sel, layout)
+    }
+
+    /// Selection highlight rectangles for `sel` after horizontal code-block scroll clipping.
+    pub(crate) fn painted_selection_rects_for(
+        &self,
+        sel: &DocumentSelection,
+        layout: &FlowLayout,
+    ) -> Vec<FlowRect> {
         let scrolled = self.overlays.scrolled_code(layout);
-        self.selection_rects(layout)
+        Self::selection_rects_for(sel, layout)
             .into_iter()
             .filter_map(|r| match ScrolledCode::containing(&scrolled, &r) {
                 Some(code) => code.span(r),
                 None => Some(r),
             })
             .collect()
+    }
+
+    /// Selection highlight rectangles in page coordinates after horizontal code-block
+    /// scroll translation and clipping — shared by selection painting and hit-testing.
+    pub(crate) fn painted_selection_rects(&self, layout: &FlowLayout) -> Vec<FlowRect> {
+        let Some(sel) = &self.editor.selection else {
+            return Vec::new();
+        };
+        self.painted_selection_rects_for(sel, layout)
     }
 
     pub(crate) fn local_selection_elements(
@@ -430,14 +451,23 @@ impl PlaygroundView {
                     draw(thick, palette.brand, false, true);
                 }
             }
-        } else {
+        } else if !self.native_suppresses_gpu_caret_and_selection {
             for r in self.painted_selection_rects(layout) {
                 draw(r, palette.brand.opacity(0.22), false, false);
             }
         }
         // While an overlay text field (link bar or equation editor) or in-place table cell
-        // takes keys, its caret is the only one shown.
-        if self.overlays.active_text_field().is_none()
+        // takes keys, its caret is the only one shown. When native mobile selection handles
+        // own a non-collapsed range selection (or UIKit owns the cursor on iOS), suppress GPU caret.
+        let suppress_caret = self.native_suppresses_gpu_caret_and_selection
+            || (self.native_selection_ui
+                && self
+                    .editor
+                    .selection
+                    .as_ref()
+                    .is_some_and(|sel| !sel.empty()));
+        if !suppress_caret
+            && self.overlays.active_text_field().is_none()
             && self.table_cell.is_none()
             && let Some(p) = self.visual_focus()
             && let Some(rect) = layout

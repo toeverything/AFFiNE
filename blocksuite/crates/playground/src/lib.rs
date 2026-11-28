@@ -17,6 +17,7 @@ pub mod room_client;
 
 mod showcase;
 mod touch_interaction;
+mod touch_selection;
 mod view_room;
 #[cfg(target_family = "wasm")]
 pub mod wasm_crdt;
@@ -24,6 +25,10 @@ pub mod wasm_crdt;
 mod wasm_preview;
 
 pub use showcase::seed_showcase_doc;
+pub use touch_selection::{
+    DocumentSelectionGeometry, SELECTION_ACTION_COPY, SELECTION_ACTION_CUT, SELECTION_ACTION_PASTE,
+    SELECTION_ACTION_SELECT_ALL, SelectionEndpointAnchor, SelectionRectGeometry,
+};
 #[cfg(target_arch = "wasm32")]
 pub use view_room::wasm_main;
 
@@ -118,6 +123,12 @@ pub struct PlaygroundOptions {
     pub edgeless_readonly: bool,
     /// When `true`, Database-block mutations are suppressed.
     pub database_readonly: bool,
+    /// When `true`, the native host provides system selection handles, magnifier, and edit menu,
+    /// so the GPU editor never opens its fallback `touch_selection_menu`.
+    pub native_selection_ui: bool,
+    /// When `true` (iOS `UITextInteraction`), UIKit renders the authoritative cursor and selection
+    /// highlight views, so GPU suppresses local caret and selection highlight painting.
+    pub native_suppresses_gpu_caret_and_selection: bool,
 }
 
 impl PlaygroundOptions {
@@ -238,6 +249,12 @@ pub struct PlaygroundView {
     pub(crate) touch_long_press_anchor:
         Option<(editor_session::DocPoint, editor_session::DocPoint)>,
     pub(crate) touch_selection_menu_open: bool,
+    pub(crate) native_selection_ui: bool,
+    pub(crate) native_suppresses_gpu_caret_and_selection: bool,
+    pub(crate) selection_menu_request_seq: u64,
+    pub(crate) native_selection_drag_anchor: Option<editor_session::DocPoint>,
+    pub(crate) native_selection_drag_cell_anchor: Option<usize>,
+    pub(crate) native_selection_drag_active: bool,
     pub(crate) edgeless_readonly_selection_target: Option<(String, bool)>,
     pub(crate) caret_active_since_ms: f64,
     pub(crate) caret_blink_task: Option<Task<()>>,
@@ -379,6 +396,13 @@ impl PlaygroundView {
             block_selection_return_caret: None,
             touch_long_press_anchor: None,
             touch_selection_menu_open: false,
+            native_selection_ui: options.native_selection_ui,
+            native_suppresses_gpu_caret_and_selection: options
+                .native_suppresses_gpu_caret_and_selection,
+            selection_menu_request_seq: 0,
+            native_selection_drag_anchor: None,
+            native_selection_drag_cell_anchor: None,
+            native_selection_drag_active: false,
             edgeless_readonly_selection_target: None,
             caret_active_since_ms: 0.0,
             caret_blink_task: None,
@@ -574,6 +598,10 @@ impl PlaygroundView {
     pub fn set_page_readonly(&mut self, readonly: bool, cx: &mut Context<Self>) {
         if self.page_readonly != readonly {
             self.page_readonly = readonly;
+            if readonly {
+                self.overlays.set_keyboard_toolbar_visible(false);
+                self.overlays.close_keyboard_toolbar_panel();
+            }
             cx.notify();
         }
     }

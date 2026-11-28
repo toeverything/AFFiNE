@@ -78,7 +78,7 @@ unsafe fn new_jfloat_array(env: JniEnvPtr, values: &[f32]) -> JFloatArray {
     arr
 }
 
-unsafe fn fill_jfloat_array(env: JniEnvPtr, arr: JFloatArray, values: &[f32]) -> bool {
+pub(crate) unsafe fn fill_jfloat_array(env: JniEnvPtr, arr: JFloatArray, values: &[f32]) -> bool {
     if env.is_null() || arr.is_null() {
         return false;
     }

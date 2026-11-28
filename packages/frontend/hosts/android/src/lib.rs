@@ -18,6 +18,8 @@ mod editor_fallback;
 pub(crate) mod editor_platform;
 #[cfg(any(target_os = "android", test, feature = "host-jni"))]
 pub(crate) mod editor_runtime;
+#[cfg(any(target_os = "android", test, feature = "host-jni"))]
+pub(crate) mod editor_selection;
 mod ime;
 pub mod pdf;
 pub mod selection;

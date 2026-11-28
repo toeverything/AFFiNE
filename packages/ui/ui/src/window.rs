@@ -5673,11 +5673,8 @@ impl Window {
         let now = cx.background_executor().now();
         let epoch = *self.touch_gesture_epoch.get_or_insert(now);
         let now_ms = now.saturating_duration_since(epoch).as_millis() as u64;
-        let direction = self.root_layout_direction;
-        let viewport_width = self.viewport_size.width;
-        let gestures = self
-            .touch_gestures
-            .feed(event, now_ms, direction, viewport_width);
+        let (dir, vw) = (self.root_layout_direction, self.viewport_size.width);
+        let gestures = self.touch_gestures.feed(event, now_ms, dir, vw);
         if !gestures.is_empty() {
             self.last_touch_gestures.extend(gestures.iter().copied());
             for gesture in gestures {
@@ -5702,6 +5699,8 @@ impl Window {
                     _ => {}
                 }
             }
+            self.refresh();
+        } else if event.phase == crate::TouchPhase::Cancelled {
             self.refresh();
         }
         if event.phase == crate::TouchPhase::Started {

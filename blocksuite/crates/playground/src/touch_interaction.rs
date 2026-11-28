@@ -129,6 +129,10 @@ impl PlaygroundView {
                     _ => {}
                 }
             }
+            if window.active_touch_count() == 0 {
+                self.touch_long_press_anchor = None;
+                self.touch_scroll_axis_lock = None;
+            }
             return;
         }
         for gesture in window.take_touch_gestures() {
@@ -154,6 +158,12 @@ impl PlaygroundView {
                     } else if let Some(url) = self.hit_link_url_at(x, y, window) {
                         self.last_opened_link_url = Some(url.clone());
                         cx.open_url(&url);
+                        cx.notify();
+                    } else if self.point_hits_active_selection(x, y, window) {
+                        self.bump_selection_menu_request_seq();
+                        if !self.native_selection_ui {
+                            self.touch_selection_menu_open = true;
+                        }
                         cx.notify();
                     }
                 }
@@ -201,12 +211,12 @@ impl PlaygroundView {
                 }
                 (PlaygroundMode::Page, TouchGesture::LongPressEnd { .. }) => {
                     self.touch_long_press_anchor = None;
+                    let geom = self.document_selection_geometry(window);
+                    if geom.action_mask != 0 {
+                        self.bump_selection_menu_request_seq();
+                    }
                     self.touch_selection_menu_open =
-                        self.editor.selection.as_ref().is_some_and(|s| !s.empty())
-                            || self
-                                .table_cell
-                                .as_ref()
-                                .is_some_and(|c| !c.input.selection.is_empty());
+                        geom.has_selection && !geom.is_collapsed && !self.native_selection_ui;
                     cx.notify();
                 }
                 (PlaygroundMode::Edgeless, TouchGesture::LongPress { position })
@@ -308,6 +318,10 @@ impl PlaygroundView {
                 }
                 _ => {}
             }
+        }
+        if window.active_touch_count() == 0 {
+            self.touch_long_press_anchor = None;
+            self.touch_scroll_axis_lock = None;
         }
     }
 
@@ -627,7 +641,8 @@ impl PlaygroundView {
                     window,
                     cx,
                 );
-                self.touch_selection_menu_open = true;
+                self.bump_selection_menu_request_seq();
+                self.touch_selection_menu_open = !self.native_selection_ui;
                 cx.notify();
                 return;
             }
@@ -704,7 +719,7 @@ impl PlaygroundView {
         window: &Window,
         cx: &mut Context<Self>,
     ) -> Option<AnyElement> {
-        if !self.touch_selection_menu_open {
+        if self.native_selection_ui || !self.touch_selection_menu_open {
             return None;
         }
         let (start_b, end_b) = self.selection_endpoint_rects(window)?;

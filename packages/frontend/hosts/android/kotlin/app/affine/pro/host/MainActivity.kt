@@ -26,8 +26,11 @@ import android.text.TextDirectionHeuristics
 import android.text.TextPaint
 import java.text.BreakIterator
 import android.util.SparseArray
+import android.view.ActionMode
 import android.view.Choreographer
 import android.view.KeyEvent
+import android.view.Menu
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.Surface
 import android.view.SurfaceHolder
@@ -51,6 +54,7 @@ import android.view.inputmethod.InputContentInfo
 import android.view.inputmethod.InputMethodManager
 import android.view.inputmethod.TextAttribute
 import android.widget.FrameLayout
+import android.widget.Magnifier
 import android.window.BackEvent
 import android.window.OnBackAnimationCallback
 import android.window.OnBackInvokedCallback
@@ -342,6 +346,26 @@ object NativeBridge {
   external fun nativeGetCaretRectDpX(handle: Long): Float
   external fun nativeGetCaretRectDpY(handle: Long): Float
   external fun nativeGetCaretRectDpHeight(handle: Long): Float
+
+  // Document-level selection geometry, cross-block drag, authoritative actions, and multi-MIME clipboard.
+  external fun nativeFillDocumentSelectionGeometry(handle: Long, outBuffer: FloatArray): Boolean
+  external fun nativeGetSelectionMenuRequestSeq(handle: Long): Long
+  external fun nativeDocSelectionBeginDrag(handle: Long, handleKind: Int): Boolean
+  external fun nativeDocSelectionUpdateDrag(handle: Long, xDp: Float, yDp: Float): Boolean
+  external fun nativeDocSelectionEndDrag(handle: Long)
+  external fun nativeDocSelectionCancelDrag(handle: Long)
+  external fun nativeSelectionActionCopy(handle: Long)
+  external fun nativeSelectionActionCut(handle: Long)
+  external fun nativeSelectionActionPaste(
+    handle: Long,
+    plain: String?,
+    html: String?,
+    markdown: String?,
+    snapshot: String?,
+  )
+  external fun nativeSelectionActionSelectAll(handle: Long)
+  external fun nativeTakePendingClipboardJson(handle: Long): String?
+  external fun nativeSetPageReadonly(handle: Long, readonly: Boolean)
 }
 
 /**
@@ -352,6 +376,9 @@ interface HostClipboard {
   fun setPlainText(label: String, text: String): Boolean
   fun getPlainText(): String?
   fun hasPlainText(): Boolean = !getPlainText().isNullOrEmpty()
+  fun setRichClip(label: String, plain: String, html: String?): Boolean =
+    setPlainText(label, plain)
+  fun getRichClip(): Pair<String?, String?> = Pair(getPlainText(), null)
 }
 
 class AndroidClipboardAdapter(
@@ -367,6 +394,19 @@ class AndroidClipboardAdapter(
     }
   }
 
+  override fun setRichClip(label: String, plain: String, html: String?): Boolean {
+    val cm = manager ?: return false
+    if (!html.isNullOrEmpty()) {
+      try {
+        cm.setPrimaryClip(ClipData.newHtmlText(label, plain, html))
+        return true
+      } catch (_: Throwable) {
+        // Fall back to plain text if oversized HTML exceeds Binder transaction limits.
+      }
+    }
+    return setPlainText(label, plain)
+  }
+
   override fun getPlainText(): String? {
     val cm = manager ?: return null
     return try {
@@ -375,6 +415,18 @@ class AndroidClipboardAdapter(
       clip.getItemAt(0)?.text?.toString()
     } catch (_: Throwable) {
       null
+    }
+  }
+
+  override fun getRichClip(): Pair<String?, String?> {
+    val cm = manager ?: return Pair(null, null)
+    return try {
+      val clip = cm.primaryClip ?: return Pair(null, null)
+      if (clip.itemCount <= 0) return Pair(null, null)
+      val item = clip.getItemAt(0) ?: return Pair(null, null)
+      Pair(item.text?.toString(), item.htmlText)
+    } catch (_: Throwable) {
+      Pair(null, null)
     }
   }
 
@@ -434,15 +486,24 @@ class AffineImeController(
   fun finishComposingText(): Boolean {
     val handle = handleProvider()
     if (handle == 0L) return false
+    val hadComposing = NativeBridge.nativeGetComposingStart(handle) >= 0
     NativeBridge.nativeOnFinishComposingText(handle)
-    onMutated()
-    onTextEdited(currentText())
+    if (hadComposing) {
+      onMutated()
+      onTextEdited(currentText())
+    }
     return true
   }
 
   fun setSelection(start: Int, end: Int): Boolean {
     val handle = handleProvider()
     if (handle == 0L) return false
+    if (
+      start == NativeBridge.nativeGetSelectionStart(handle) &&
+      end == NativeBridge.nativeGetSelectionEnd(handle)
+    ) {
+      return true
+    }
     NativeBridge.nativeOnSetSelection(handle, start, end)
     onMutated()
     return true
@@ -1681,6 +1742,241 @@ class AndroidSelectionOverlayView(
   }
 }
 
+/**
+ * GPU-document-level selection teardrop handle overlay with system `android.widget.Magnifier`
+ * (API 28+). Draws zero custom action pills (system `ActionMode.TYPE_FLOATING` owns the menu)
+ * and reads 100% of its endpoint coordinates from Rust `DocumentSelectionGeometry`.
+ */
+internal class DocumentSelectionHandleView(
+  context: Context,
+  private val targetSurfaceView: View,
+  private val handleProvider: () -> Long,
+  private val isSuppressed: () -> Boolean,
+  private val onSelectionMutated: () -> Unit,
+  private val onDragStateChanged: (Boolean) -> Unit,
+) : View(context) {
+  private val handlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    color = Color.argb(240, 30, 150, 235)
+    style = Paint.Style.FILL
+  }
+  private val handlePath = Path()
+  private var hasSelection: Boolean = false
+  private var isCollapsed: Boolean = true
+  private var startVisible: Boolean = false
+  private var startTipX: Float = 0f
+  private var startTipY: Float = 0f
+  private var startHeight: Float = 0f
+  private var startCenterX: Float = 0f
+  private var startCenterY: Float = 0f
+  private var startLeanLeft: Boolean = true
+  private var endVisible: Boolean = false
+  private var endTipX: Float = 0f
+  private var endTipY: Float = 0f
+  private var endHeight: Float = 0f
+  private var endCenterX: Float = 0f
+  private var endCenterY: Float = 0f
+  private var endLeanLeft: Boolean = false
+  private var draggingHandle: Int = 0
+  private var grabDx: Float = 0f
+  private var grabDy: Float = 0f
+  private var magnifier: Magnifier? = null
+
+  init {
+    setWillNotDraw(false)
+    isClickable = false
+    isFocusable = false
+  }
+
+  fun updateFromDocumentBuffer(buf: FloatArray, density: Float) {
+    if (isSuppressed() || buf.size < 24 || buf[0] < 0.5f || buf[1] >= 0.5f) {
+      if (hasSelection || startVisible || endVisible) {
+        hasSelection = false
+        isCollapsed = true
+        startVisible = false
+        endVisible = false
+        dismissMagnifier()
+        invalidate()
+      }
+      return
+    }
+    val d = density.coerceAtLeast(1f)
+    val radius = 11f * d
+    val nextStartVis = buf[3] >= 0.5f
+    val nextStartX = buf[4] * d
+    val nextStartH = (buf[6] * d).coerceAtLeast(14f * d)
+    val nextStartTipY = buf[5] * d + nextStartH
+    val nextStartRtl = buf[7] >= 0.5f
+    val nextStartLeanLeft = !nextStartRtl
+    val nextStartCx = if (nextStartLeanLeft) nextStartX - radius else nextStartX + radius
+    val nextStartCy = nextStartTipY + radius
+
+    val nextEndVis = buf[8] >= 0.5f
+    val nextEndX = buf[9] * d
+    val nextEndH = (buf[11] * d).coerceAtLeast(14f * d)
+    val nextEndTipY = buf[10] * d + nextEndH
+    val nextEndRtl = buf[12] >= 0.5f
+    val nextEndLeanLeft = nextEndRtl
+    val nextEndCx = if (nextEndLeanLeft) nextEndX - radius else nextEndX + radius
+    val nextEndCy = nextEndTipY + radius
+
+    val changed = !hasSelection ||
+      isCollapsed ||
+      startVisible != nextStartVis ||
+      endVisible != nextEndVis ||
+      kotlin.math.abs(startTipX - nextStartX) > 0.5f ||
+      kotlin.math.abs(startTipY - nextStartTipY) > 0.5f ||
+      kotlin.math.abs(endTipX - nextEndX) > 0.5f ||
+      kotlin.math.abs(endTipY - nextEndTipY) > 0.5f ||
+      startLeanLeft != nextStartLeanLeft ||
+      endLeanLeft != nextEndLeanLeft
+
+    hasSelection = true
+    isCollapsed = false
+    startVisible = nextStartVis
+    startTipX = nextStartX
+    startTipY = nextStartTipY
+    startHeight = nextStartH
+    startCenterX = nextStartCx
+    startCenterY = nextStartCy
+    startLeanLeft = nextStartLeanLeft
+    endVisible = nextEndVis
+    endTipX = nextEndX
+    endTipY = nextEndTipY
+    endHeight = nextEndH
+    endCenterX = nextEndCx
+    endCenterY = nextEndCy
+    endLeanLeft = nextEndLeanLeft
+
+    if (changed) {
+      invalidate()
+    }
+  }
+
+  fun dismissMagnifier() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      magnifier?.dismiss()
+    }
+  }
+
+  @Suppress("DEPRECATION")
+  private fun showMagnifier(xPx: Float, yPx: Float) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      val mag = magnifier ?: Magnifier.Builder(targetSurfaceView).build().also { magnifier = it }
+      mag.show(xPx, yPx)
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      val mag = magnifier ?: Magnifier(targetSurfaceView).also { magnifier = it }
+      mag.show(xPx, yPx)
+    }
+  }
+
+  override fun onTouchEvent(event: MotionEvent): Boolean {
+    if (isSuppressed()) {
+      dismissMagnifier()
+      return false
+    }
+    val handle = handleProvider()
+    if (handle == 0L) return false
+    val d = resources.displayMetrics.density.coerceAtLeast(1f)
+    when (event.actionMasked) {
+      MotionEvent.ACTION_DOWN -> {
+        if (!hasSelection || isCollapsed) return false
+        val hitR = 28f * d
+        val maxSq = hitR * hitR
+        val dStart = if (startVisible) {
+          val dx = event.x - startCenterX
+          val dy = event.y - startCenterY
+          dx * dx + dy * dy
+        } else Float.POSITIVE_INFINITY
+        val dEnd = if (endVisible) {
+          val dx = event.x - endCenterX
+          val dy = event.y - endCenterY
+          dx * dx + dy * dy
+        } else Float.POSITIVE_INFINITY
+        val hit = when {
+          dStart <= maxSq && dStart <= dEnd -> 1
+          dEnd <= maxSq -> 2
+          else -> 0
+        }
+        if (hit == 0) return false
+        if (!NativeBridge.nativeDocSelectionBeginDrag(handle, hit)) return false
+        draggingHandle = hit
+        if (hit == 1) {
+          grabDx = startTipX - event.x
+          grabDy = (startTipY - startHeight * 0.5f) - event.y
+          showMagnifier(startTipX, startTipY - startHeight * 0.5f)
+        } else {
+          grabDx = endTipX - event.x
+          grabDy = (endTipY - endHeight * 0.5f) - event.y
+          showMagnifier(endTipX, endTipY - endHeight * 0.5f)
+        }
+        onDragStateChanged(true)
+        onSelectionMutated()
+        return true
+      }
+      MotionEvent.ACTION_MOVE -> {
+        if (draggingHandle == 0) return false
+        val probeX = (event.x + grabDx).coerceIn(0f, width.toFloat().coerceAtLeast(1f))
+        val probeY = (event.y + grabDy).coerceIn(0f, height.toFloat().coerceAtLeast(1f))
+        NativeBridge.nativeDocSelectionUpdateDrag(handle, probeX / d, probeY / d)
+        showMagnifier(probeX, probeY)
+        onSelectionMutated()
+        return true
+      }
+      MotionEvent.ACTION_UP -> {
+        if (draggingHandle == 0) return false
+        draggingHandle = 0
+        dismissMagnifier()
+        NativeBridge.nativeDocSelectionEndDrag(handle)
+        onDragStateChanged(false)
+        onSelectionMutated()
+        return true
+      }
+      MotionEvent.ACTION_CANCEL -> {
+        if (draggingHandle == 0) return false
+        draggingHandle = 0
+        dismissMagnifier()
+        NativeBridge.nativeDocSelectionCancelDrag(handle)
+        onDragStateChanged(false)
+        onSelectionMutated()
+        return true
+      }
+      else -> return false
+    }
+  }
+
+  override fun onDraw(canvas: Canvas) {
+    super.onDraw(canvas)
+    if (isSuppressed() || !hasSelection || isCollapsed) return
+    val radius = 11f * resources.displayMetrics.density.coerceAtLeast(1f)
+    if (startVisible) {
+      drawTeardrop(canvas, startTipX, startTipY, startCenterX, startCenterY, radius, startLeanLeft)
+    }
+    if (endVisible) {
+      drawTeardrop(canvas, endTipX, endTipY, endCenterX, endCenterY, radius, endLeanLeft)
+    }
+  }
+
+  private fun drawTeardrop(
+    canvas: Canvas,
+    tipX: Float,
+    tipY: Float,
+    centerX: Float,
+    centerY: Float,
+    radius: Float,
+    leanLeft: Boolean,
+  ) {
+    handlePath.reset()
+    handlePath.moveTo(tipX, tipY)
+    if (leanLeft) {
+      handlePath.quadTo(tipX, centerY - radius * 0.4f, centerX + radius, centerY)
+    } else {
+      handlePath.quadTo(tipX, centerY - radius * 0.4f, centerX - radius, centerY)
+    }
+    handlePath.addCircle(centerX, centerY, radius, Path.Direction.CW)
+    canvas.drawPath(handlePath, handlePaint)
+  }
+}
+
 data class VirtualAutofillNode(
   val autofillId: Int,
   val kindCode: Int,
@@ -2557,21 +2853,31 @@ class AutofillVirtualInputConnection(
 class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCallback {
   private var nativeHandle: Long = 0L
   private lateinit var surfaceView: AffineSurfaceView
-  private lateinit var selectionOverlayView: AndroidSelectionOverlayView
-  private lateinit var shapedLayout: ShapedTextLayout
+  private lateinit var documentHandleView: DocumentSelectionHandleView
   private lateinit var bootstrapCoordinator: AndroidBootstrapCoordinator
-  private lateinit var selectionCoordinator: AndroidSelectionCoordinator
   private lateinit var backDispatcher: AndroidBackDispatcher
   private lateinit var imeController: AffineImeController
   private lateinit var clipboardAdapter: HostClipboard
   private val documentStore = HostDocumentStore()
   private lateinit var documentBufferController: HostDocumentBufferController
   private var autofillController: AndroidAutofillController? = null
-  private var syncingOverlay: Boolean = false
-  private var lastViewportWidthPx: Int = 0
   private var lastImeChangeSeq: Long = 0L
   private var lastFocusedBlockHash: Long = 0L
   private var clearColorArgb: Int = DEFAULT_SURFACE_CLEAR_COLOR_ARGB
+  private val docSelectionBuf = FloatArray(24)
+  private var floatingActionMode: ActionMode? = null
+  private var lastMenuRequestSeq: Long = 0L
+  private var pendingActionModeSeq: Long = 0L
+  private var actionModeRetryScheduled: Boolean = false
+  private var lastMenuWasCollapsed: Boolean = false
+  private var lastCollapsedMenuOffset: Int = -1
+  private var lastCollapsedMenuBlockHash: Long = 0L
+  private var lastActionMask: Int = 0
+  private var lastMenuLeftPx: Int = 0
+  private var lastMenuTopPx: Int = 0
+  private var lastMenuRightPx: Int = 0
+  private var lastMenuBottomPx: Int = 0
+  private var actionModeHiddenForMotion: Boolean = false
   @Volatile
   var lastBootstrapOutcome: BootstrapOutcome? = null
     private set
@@ -2593,6 +2899,114 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     } else if (nextDelayMs >= 0L) {
       mainHandler.postDelayed(timerWakeRunnable, nextDelayMs.coerceAtLeast(16L))
     }
+  }
+
+  private val floatingActionCallback: ActionMode.Callback2 = object : ActionMode.Callback2() {
+    override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
+      populateSelectionMenu(menu)
+      return menu.size() > 0
+    }
+
+    override fun onPrepareActionMode(mode: ActionMode, menu: Menu): Boolean {
+      populateSelectionMenu(menu)
+      return true
+    }
+
+    override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
+      val handled = dispatchEditorSelectionAction(item.itemId)
+      if (item.itemId != android.R.id.selectAll) {
+        pendingActionModeSeq = 0L
+        mode.finish()
+      }
+      return handled
+    }
+
+    override fun onDestroyActionMode(mode: ActionMode) {
+      if (floatingActionMode === mode) {
+        floatingActionMode = null
+        actionModeHiddenForMotion = false
+      }
+    }
+
+    override fun onGetContentRect(mode: ActionMode, view: View, outRect: Rect) {
+      outRect.set(lastMenuLeftPx, lastMenuTopPx, lastMenuRightPx, lastMenuBottomPx)
+    }
+  }
+
+  private fun populateSelectionMenu(menu: Menu) {
+    menu.clear()
+    val mask = lastActionMask
+    if ((mask and 1) != 0) {
+      menu.add(Menu.NONE, android.R.id.copy, 0, android.R.string.copy)
+        .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+    }
+    if ((mask and 2) != 0) {
+      menu.add(Menu.NONE, android.R.id.cut, 1, android.R.string.cut)
+        .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+    }
+    if ((mask and 4) != 0 && clipboardAdapter.hasPlainText()) {
+      menu.add(Menu.NONE, android.R.id.paste, 2, android.R.string.paste)
+        .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+    }
+    if ((mask and 8) != 0) {
+      menu.add(Menu.NONE, android.R.id.selectAll, 3, android.R.string.selectAll)
+        .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+    }
+  }
+
+  private fun dispatchEditorSelectionAction(actionId: Int): Boolean {
+    if (nativeHandle == 0L || documentBufferController.isAutofillFocused()) return false
+    when (actionId) {
+      android.R.id.copy -> {
+        NativeBridge.nativeSelectionActionCopy(nativeHandle)
+        flushPendingClipboardToSystem()
+      }
+      android.R.id.cut -> {
+        NativeBridge.nativeSelectionActionCut(nativeHandle)
+        flushPendingClipboardToSystem()
+      }
+      android.R.id.paste -> {
+        val (plain, html) = clipboardAdapter.getRichClip()
+        NativeBridge.nativeSelectionActionPaste(nativeHandle, plain, html, null, null)
+      }
+      android.R.id.selectAll -> {
+        NativeBridge.nativeSelectionActionSelectAll(nativeHandle)
+      }
+      else -> return false
+    }
+    syncSystemImeFromEditor()
+    syncDocumentSelectionFromEditor()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      floatingActionMode?.invalidateContentRect()
+    }
+    requestFrameAndSchedule()
+    return true
+  }
+
+  private fun flushPendingClipboardToSystem() {
+    if (nativeHandle == 0L) return
+    val json = NativeBridge.nativeTakePendingClipboardJson(nativeHandle) ?: return
+    val plain = NativeBridge.nativeExtractJsonStringField(json, "text/plain") ?: ""
+    val html = NativeBridge.nativeExtractJsonStringField(json, "text/html")
+    if (plain.isNotEmpty() || !html.isNullOrEmpty()) {
+      clipboardAdapter.setRichClip("AFFiNE", plain, html)
+    }
+  }
+
+  private val reshowActionModeRunnable: Runnable = Runnable {
+    actionModeRetryScheduled = false
+    presentFloatingActionModeIfCurrent(pendingActionModeSeq)
+  }
+
+  private fun dismissFloatingActionMode(clearPending: Boolean = true) {
+    mainHandler.removeCallbacks(reshowActionModeRunnable)
+    actionModeRetryScheduled = false
+    if (clearPending) {
+      pendingActionModeSeq = 0L
+    }
+    floatingActionMode?.finish()
+    floatingActionMode = null
+    actionModeHiddenForMotion = false
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -2623,9 +3037,6 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     NativeBridge.nativeLoadShowcaseDocument(nativeHandle)
     lastImeChangeSeq = NativeBridge.nativeGetTextInputChangeSeq(nativeHandle)
     lastFocusedBlockHash = NativeBridge.nativeGetFocusedBlockHash(nativeHandle)
-    shapedLayout = ShapedTextLayout(resources.displayMetrics.density).apply {
-      applyClearColor(clearColorArgb)
-    }
     clipboardAdapter = AndroidClipboardAdapter(
       getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
     )
@@ -2633,27 +3044,19 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
       documentStore = documentStore,
       imeProvider = { imeController },
       autofillProvider = { autofillController },
-      onDocumentPreviewUpdated = { docText ->
-        syncShapedLayoutAndOverlay(docText)
+      onDocumentPreviewUpdated = { _ ->
+        syncDocumentSelectionFromEditor()
       },
     )
     val onImeMutated: () -> Unit = {
-      if (!syncingOverlay) {
-        if (documentBufferController.isAutofillFocused()) {
-          if (::selectionCoordinator.isInitialized) {
-            selectionCoordinator.clear()
-          }
-        } else {
-          syncShapedLayoutAndOverlay(imeController.currentText())
-        }
-      }
-      if (::selectionOverlayView.isInitialized) {
-        selectionOverlayView.invalidate()
-      }
       syncSystemImeFromEditor()
+      syncDocumentSelectionFromEditor()
       requestFrameAndSchedule()
     }
     val onImeTextEdited: (String) -> Unit = { text ->
+      if (imeController.selectionStart() == imeController.selectionEnd()) {
+        dismissFloatingActionMode()
+      }
       documentBufferController.onImeTextEdited(text)
     }
     imeController = AffineImeController(
@@ -2661,31 +3064,15 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
       onMutated = onImeMutated,
       onTextEdited = onImeTextEdited,
     )
-    selectionCoordinator = AndroidSelectionCoordinator(
-      handleProvider = { nativeHandle },
-      onMutated = {
-        if (::selectionOverlayView.isInitialized) {
-          selectionOverlayView.invalidate()
-        }
-        requestFrameAndSchedule()
-      },
-    )
     val onContextMenuAction: (Int) -> Boolean = { actionId ->
-      if (documentBufferController.isAutofillFocused()) {
-        false
-      } else {
-        val handled = selectionCoordinator.handleContextMenuAction(actionId, imeController, clipboardAdapter)
-        if (handled) {
-          syncShapedLayoutAndOverlay(imeController.currentText())
-        }
-        handled
-      }
+      dispatchEditorSelectionAction(actionId)
     }
     backDispatcher = AndroidBackDispatcher(
       sdkInt = Build.VERSION.SDK_INT,
       handleProvider = { nativeHandle },
       onMutated = { requestFrameAndSchedule() },
       onDestinationChanged = { dest ->
+        dismissFloatingActionMode()
         if (dest != null) {
           currentDestination = dest
           documentBufferController.onRouteChanged(dest)
@@ -2703,6 +3090,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
       autofillProvider = { autofillController },
       onTouchDispatched = {
         syncSystemImeFromEditor()
+        syncDocumentSelectionFromEditor()
         requestFrameAndSchedule()
       },
       onCursorUpdatesRequested = {
@@ -2711,38 +3099,23 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     ).apply {
       holder.addCallback(this@MainActivity)
     }
-    selectionOverlayView = AndroidSelectionOverlayView(
+    documentHandleView = DocumentSelectionHandleView(
       context = this,
-      coordinator = selectionCoordinator,
-      shapedLayout = shapedLayout,
-      selectionStartProvider = { imeController.selectionStart() },
-      selectionEndProvider = { imeController.selectionEnd() },
-      onSelectionChanged = { lo, hi ->
-        syncingOverlay = true
-        try {
-          imeController.setSelection(lo, hi)
-        } finally {
-          syncingOverlay = false
-        }
+      targetSurfaceView = surfaceView,
+      handleProvider = { nativeHandle },
+      isSuppressed = { documentBufferController.isAutofillFocused() },
+      onSelectionMutated = {
         syncSystemImeFromEditor()
+        syncDocumentSelectionFromEditor()
+        requestFrameAndSchedule()
       },
-      canPaste = { clipboardAdapter.hasPlainText() },
-      onActionCopy = {
-        if (!documentBufferController.isAutofillFocused()) {
-          selectionCoordinator.performCopy(imeController, clipboardAdapter)
+      onDragStateChanged = { dragging ->
+        if (dragging) {
+          dismissFloatingActionMode(clearPending = false)
+        } else {
+          syncDocumentSelectionFromEditor()
         }
       },
-      onActionCut = {
-        if (!documentBufferController.isAutofillFocused()) {
-          selectionCoordinator.performCut(imeController, clipboardAdapter)
-        }
-      },
-      onActionPaste = {
-        if (!documentBufferController.isAutofillFocused()) {
-          selectionCoordinator.performPaste(imeController, clipboardAdapter)
-        }
-      },
-      isOverlaySuppressed = { documentBufferController.isAutofillFocused() },
     )
     val rootContainer = FrameLayout(this).apply {
       setBackgroundColor(clearColorArgb)
@@ -2754,7 +3127,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
         ),
       )
       addView(
-        selectionOverlayView,
+        documentHandleView,
         FrameLayout.LayoutParams(
           FrameLayout.LayoutParams.MATCH_PARENT,
           FrameLayout.LayoutParams.MATCH_PARENT,
@@ -2808,6 +3181,10 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
   override fun onStop() {
     frameLoopActive = false
     mainHandler.removeCallbacks(timerWakeRunnable)
+    dismissFloatingActionMode()
+    if (::documentHandleView.isInitialized) {
+      documentHandleView.dismissMagnifier()
+    }
     if (frameCallbackPosted) {
       Choreographer.getInstance().removeFrameCallback(this)
       frameCallbackPosted = false
@@ -2837,6 +3214,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     NativeBridge.nativeOnFrameTick(nativeHandle, frameTimeNanos)
     syncStatusBarAppearance()
     syncSystemImeFromEditor()
+    syncDocumentSelectionFromEditor()
     scheduleFrameIfNeeded()
   }
 
@@ -2850,53 +3228,129 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
 
   override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
     if (nativeHandle != 0L) {
-      lastViewportWidthPx = width
       NativeBridge.nativeOnSurfaceChanged(nativeHandle, format, width, height)
-      selectionCoordinator.setViewport(
-        width.toFloat(),
-        height.toFloat(),
-        resources.displayMetrics.density,
-      )
-      val previewText = if (documentBufferController.isAutofillFocused()) {
-        documentBufferController.currentDocumentText()
-      } else {
-        imeController.currentText()
-      }
-      syncShapedLayoutAndOverlay(previewText)
+      syncDocumentSelectionFromEditor()
       if (surfaceReady && width > 0 && height > 0) {
         requestFrameAndSchedule()
       }
     }
   }
 
-  private fun syncShapedLayoutAndOverlay(text: String) {
-    if (syncingOverlay) return
-    syncingOverlay = true
-    try {
-      val viewportW = if (lastViewportWidthPx > 0) {
-        lastViewportWidthPx
-      } else {
-        resources.displayMetrics.widthPixels
+  private fun presentFloatingActionModeIfCurrent(reqSeq: Long) {
+    if (
+      !frameLoopActive ||
+      nativeHandle == 0L ||
+      !::surfaceView.isInitialized ||
+      reqSeq <= 0L ||
+      reqSeq != pendingActionModeSeq
+    ) {
+      return
+    }
+    if (documentBufferController.isAutofillFocused()) {
+      return
+    }
+    if (!NativeBridge.nativeFillDocumentSelectionGeometry(nativeHandle, docSelectionBuf)) {
+      return
+    }
+    val hasSelection = docSelectionBuf[0] >= 0.5f
+    val menuVisible = docSelectionBuf[13] >= 0.5f
+    val actionMask = docSelectionBuf[18].toInt()
+    if (!hasSelection || !menuVisible || actionMask == 0) {
+      return
+    }
+    val density = resources.displayMetrics.density.coerceAtLeast(1f)
+    lastMenuLeftPx = (docSelectionBuf[14] * density).toInt().coerceAtLeast(0)
+    lastMenuTopPx = (docSelectionBuf[15] * density).toInt().coerceAtLeast(0)
+    lastMenuRightPx = ((docSelectionBuf[14] + docSelectionBuf[16]) * density).toInt().coerceAtLeast(lastMenuLeftPx + 2)
+    lastMenuBottomPx = ((docSelectionBuf[15] + docSelectionBuf[17]) * density).toInt().coerceAtLeast(lastMenuTopPx + 2)
+    lastActionMask = actionMask
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      if (!surfaceView.hasFocus()) {
+        surfaceView.requestFocus()
       }
-      val autofillFocused = documentBufferController.isAutofillFocused()
-      val safeText = if (autofillFocused) {
-        documentBufferController.currentDocumentText()
-      } else {
-        text
+      floatingActionMode?.finish()
+      floatingActionMode = null
+      actionModeHiddenForMotion = false
+      floatingActionMode = surfaceView.startActionMode(
+        floatingActionCallback,
+        ActionMode.TYPE_FLOATING,
+      )
+    }
+  }
+
+  private fun syncDocumentSelectionFromEditor() {
+    if (nativeHandle == 0L || !::surfaceView.isInitialized || !::documentHandleView.isInitialized) {
+      return
+    }
+    flushPendingClipboardToSystem()
+    if (documentBufferController.isAutofillFocused()) {
+      documentHandleView.updateFromDocumentBuffer(FloatArray(0), resources.displayMetrics.density)
+      pendingActionModeSeq = 0L
+      dismissFloatingActionMode()
+      return
+    }
+    val density = resources.displayMetrics.density.coerceAtLeast(1f)
+    if (!NativeBridge.nativeFillDocumentSelectionGeometry(nativeHandle, docSelectionBuf)) {
+      return
+    }
+    documentHandleView.updateFromDocumentBuffer(docSelectionBuf, density)
+    val hasSelection = docSelectionBuf[0] >= 0.5f
+    val isCollapsed = docSelectionBuf[1] >= 0.5f
+    val menuVisible = docSelectionBuf[13] >= 0.5f
+    val actionMask = docSelectionBuf[18].toInt()
+    val suppressedForMotion = docSelectionBuf[19] >= 0.5f
+    val menuReqSeq = NativeBridge.nativeGetSelectionMenuRequestSeq(nativeHandle)
+    val seqAdvanced = menuReqSeq != lastMenuRequestSeq && menuReqSeq > 0L
+
+    if (!hasSelection || actionMask == 0 || !menuVisible || suppressedForMotion) {
+      dismissFloatingActionMode(clearPending = !hasSelection || actionMask == 0)
+      return
+    }
+
+    val curCaretOffset = imeController.selectionStart()
+    val curBlockHash = NativeBridge.nativeGetFocusedBlockHash(nativeHandle)
+    if (
+      !seqAdvanced &&
+      isCollapsed &&
+      (!lastMenuWasCollapsed || curCaretOffset != lastCollapsedMenuOffset || curBlockHash != lastCollapsedMenuBlockHash)
+    ) {
+      dismissFloatingActionMode()
+      return
+    }
+
+    val leftPx = (docSelectionBuf[14] * density).toInt().coerceAtLeast(0)
+    val topPx = (docSelectionBuf[15] * density).toInt().coerceAtLeast(0)
+    val rightPx = ((docSelectionBuf[14] + docSelectionBuf[16]) * density).toInt().coerceAtLeast(leftPx + 2)
+    val bottomPx = ((docSelectionBuf[15] + docSelectionBuf[17]) * density).toInt().coerceAtLeast(topPx + 2)
+    val rectChanged = leftPx != lastMenuLeftPx || topPx != lastMenuTopPx ||
+      rightPx != lastMenuRightPx || bottomPx != lastMenuBottomPx
+    val maskChanged = actionMask != lastActionMask
+    lastMenuLeftPx = leftPx
+    lastMenuTopPx = topPx
+    lastMenuRightPx = rightPx
+    lastMenuBottomPx = bottomPx
+    lastActionMask = actionMask
+
+    if (seqAdvanced) {
+      lastMenuRequestSeq = menuReqSeq
+      pendingActionModeSeq = menuReqSeq
+      lastMenuWasCollapsed = isCollapsed
+      lastCollapsedMenuOffset = curCaretOffset
+      lastCollapsedMenuBlockHash = curBlockHash
+      dismissFloatingActionMode(clearPending = false)
+      surfaceView.post { presentFloatingActionModeIfCurrent(menuReqSeq) }
+    } else if (floatingActionMode != null) {
+      if (maskChanged) {
+        floatingActionMode?.invalidate()
       }
-      val selStart = if (autofillFocused) 0 else imeController.selectionStart()
-      val selEnd = if (autofillFocused) 0 else imeController.selectionEnd()
-      if (::selectionOverlayView.isInitialized) {
-        selectionOverlayView.syncFromShapedLayout(
-          text = safeText,
-          selStart = selStart,
-          selEnd = selEnd,
-          viewportWidthPx = viewportW,
-          density = resources.displayMetrics.density,
-        )
+      if (rectChanged && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        floatingActionMode?.invalidateContentRect()
       }
-    } finally {
-      syncingOverlay = false
+    } else if (pendingActionModeSeq > 0L && pendingActionModeSeq == menuReqSeq && !actionModeRetryScheduled) {
+      // State-driven re-present whenever soft-keyboard launch (e.g. cold Gboard ~675ms)
+      // or transient scroll/drag motion finished tearing down the floating ActionMode.
+      actionModeRetryScheduled = true
+      mainHandler.postDelayed(reshowActionModeRunnable, 80L)
     }
   }
 
@@ -3017,7 +3471,12 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
 
   @Suppress("DEPRECATION")
   override fun onBackPressed() {
+    if (floatingActionMode != null) {
+      dismissFloatingActionMode()
+      return
+    }
     if (nativeHandle != 0L && NativeBridge.nativeHandleBack(nativeHandle)) {
+      syncDocumentSelectionFromEditor()
       requestFrameAndSchedule()
       return
     }
@@ -3094,6 +3553,10 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
         density,
       )
     }
+    syncDocumentSelectionFromEditor()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      floatingActionMode?.invalidateContentRect()
+    }
     requestFrameAndSchedule()
   }
 
@@ -3113,7 +3576,12 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
         }
 
         override fun onBackInvoked() {
+          if (floatingActionMode != null) {
+            dismissFloatingActionMode()
+            return
+          }
           if (nativeHandle != 0L && NativeBridge.nativeHandleBack(nativeHandle)) {
+            syncDocumentSelectionFromEditor()
             requestFrameAndSchedule()
             return
           }
@@ -3127,7 +3595,12 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
       )
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       val callback = OnBackInvokedCallback {
+        if (floatingActionMode != null) {
+          dismissFloatingActionMode()
+          return@OnBackInvokedCallback
+        }
         if (nativeHandle != 0L && NativeBridge.nativeHandleBack(nativeHandle)) {
+          syncDocumentSelectionFromEditor()
           requestFrameAndSchedule()
           return@OnBackInvokedCallback
         }

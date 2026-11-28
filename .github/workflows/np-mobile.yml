@@ -216,10 +216,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain with Android targets
+      - name: Install Rust toolchain with Android target
         uses: dtolnay/rust-toolchain@1.98.1
         with:
-          targets: aarch64-linux-android, x86_64-linux-android
+          targets: aarch64-linux-android
 
       - name: Cache Cargo artifacts
         uses: Swatinem/rust-cache@v2
@@ -233,35 +233,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pkg-config libfontconfig1-dev libfreetype-dev
 
-      - name: Link Android NDK .so binaries
+      - name: Link Android NDK arm64-v8a .so binary
         working-directory: packages/frontend
         run: |
           NDK_BIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
           export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDK_BIN/aarch64-linux-android24-clang"
-          export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER="$NDK_BIN/x86_64-linux-android24-clang"
           export CC_aarch64_linux_android="$NDK_BIN/aarch64-linux-android24-clang"
           export AR_aarch64_linux_android="$NDK_BIN/llvm-ar"
-          export CC_x86_64_linux_android="$NDK_BIN/x86_64-linux-android24-clang"
-          export AR_x86_64_linux_android="$NDK_BIN/llvm-ar"
           cargo build --locked -p affine-android-host --target aarch64-linux-android
-          cargo build --locked -p affine-android-host --target x86_64-linux-android
-          test -s target/aarch64-linux-android/debug/libaffine_android_host.so
-          test -s target/x86_64-linux-android/debug/libaffine_android_host.so
-          STRIP_BIN="$NDK_BIN/llvm-strip"
-          for abi in aarch64-linux-android x86_64-linux-android; do
-            SRC="target/${abi}/debug/libaffine_android_host.so"
-            DST="/tmp/libaffine_android_host_${abi}.stripped.so"
-            cp "$SRC" "$DST"
-            "$STRIP_BIN" --strip-unneeded "$DST"
-            BYTES=$(stat -c '%s' "$DST")
-            if [ "$abi" = "aarch64-linux-android" ]; then
-              MAX_BYTES=90000000
-            else
-              MAX_BYTES=115000000
-            fi
-            echo "Stripped ${abi} libaffine_android_host.so bytes: ${BYTES} (max ${MAX_BYTES})"
-            test "$BYTES" -le "$MAX_BYTES"
-          done
+          SRC="target/aarch64-linux-android/debug/libaffine_android_host.so"
+          test -s "$SRC"
+          DST="/tmp/libaffine_android_host_aarch64-linux-android.stripped.so"
+          cp "$SRC" "$DST"
+          "$NDK_BIN/llvm-strip" --strip-unneeded "$DST"
+          BYTES=$(stat -c '%s' "$DST")
+          MAX_BYTES=90000000
+          echo "Stripped aarch64-linux-android libaffine_android_host.so bytes: ${BYTES} (max ${MAX_BYTES})"
+          test "$BYTES" -le "$MAX_BYTES"
 
       - name: Compile Android thin host Kotlin sources with kotlinc and run real JNI parity check
         run: |

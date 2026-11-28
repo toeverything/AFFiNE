@@ -23,30 +23,24 @@ BUILD_TOOLS_DIR="$(ls -1d "$ANDROID_SDK"/build-tools/* | sort -V | tail -n 1)"
 PLATFORM_DIR="$(ls -1d "$ANDROID_SDK"/platforms/android-* | sort -V | tail -n 1)"
 ANDROID_JAR="$PLATFORM_DIR/android.jar"
 NDK_DIR="${ANDROID_NDK_LATEST_HOME:-$(ls -1d "$ANDROID_SDK"/ndk/* | sort -V | tail -n 1)}"
-NDK_BIN="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin"
+NDK_BIN="$(ls -1d "$NDK_DIR"/toolchains/llvm/prebuilt/*/bin | head -n 1)"
 
 echo "==> Using SDK=$ANDROID_SDK build-tools=$(basename "$BUILD_TOOLS_DIR") platform=$(basename "$PLATFORM_DIR") ndk=$(basename "$NDK_DIR")"
 
 export CARGO_ENCODED_RUSTFLAGS=""
 export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDK_BIN/aarch64-linux-android24-clang"
-export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER="$NDK_BIN/x86_64-linux-android24-clang"
 export CC_aarch64_linux_android="$NDK_BIN/aarch64-linux-android24-clang"
 export AR_aarch64_linux_android="$NDK_BIN/llvm-ar"
-export CC_x86_64_linux_android="$NDK_BIN/x86_64-linux-android24-clang"
-export AR_x86_64_linux_android="$NDK_BIN/llvm-ar"
 
-echo "==> Building Android NDK libaffine_android_host.so (arm64-v8a & x86_64)"
+echo "==> Building Android NDK libaffine_android_host.so (arm64-v8a)"
 rustup run 1.98.1 cargo build --locked --manifest-path "$MANIFEST" -p affine-android-host --target aarch64-linux-android
-rustup run 1.98.1 cargo build --locked --manifest-path "$MANIFEST" -p affine-android-host --target x86_64-linux-android
 
 ARM64_SO="$REPO_ROOT/packages/frontend/target/aarch64-linux-android/debug/libaffine_android_host.so"
-X86_64_SO="$REPO_ROOT/packages/frontend/target/x86_64-linux-android/debug/libaffine_android_host.so"
 test -s "$ARM64_SO"
-test -s "$X86_64_SO"
 
 WORK_DIR="$OUT_DIR/work"
 rm -rf "$WORK_DIR"
-mkdir -p "$WORK_DIR/classes" "$WORK_DIR/dex" "$WORK_DIR/apk_root/lib/arm64-v8a" "$WORK_DIR/apk_root/lib/x86_64"
+mkdir -p "$WORK_DIR/classes" "$WORK_DIR/dex" "$WORK_DIR/apk_root/lib/arm64-v8a"
 
 echo "==> Compiling Kotlin host sources with kotlinc"
 kotlinc -classpath "$ANDROID_JAR" \
@@ -74,7 +68,6 @@ echo "==> Linking AndroidManifest.xml with aapt2"
   -o "$WORK_DIR/unaligned.apk"
 
 cp "$ARM64_SO" "$WORK_DIR/apk_root/lib/arm64-v8a/libaffine_android_host.so"
-cp "$X86_64_SO" "$WORK_DIR/apk_root/lib/x86_64/libaffine_android_host.so"
 cp "$WORK_DIR/dex/classes.dex" "$WORK_DIR/apk_root/classes.dex"
 for extra_dex in "$WORK_DIR"/dex/classes*.dex; do
   cp "$extra_dex" "$WORK_DIR/apk_root/"

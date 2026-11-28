@@ -500,6 +500,8 @@ pub struct OverlayScene<'a> {
     pub selection: Option<&'a SelectionFormat>,
     /// Optional camera-mapped transform when editing inside an Edgeless Note / EdgelessText.
     pub screen_transform: Option<OverlayScreenTransform>,
+    /// Suppress the desktop floating format button row when native mobile selection UI owns the menu.
+    pub suppress_floating_format_buttons: bool,
 }
 
 impl OverlayScene<'_> {

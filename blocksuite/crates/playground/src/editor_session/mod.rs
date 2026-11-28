@@ -113,6 +113,9 @@ impl PlaygroundView {
             }
         }
         self.change_selection(sel, w, cx);
+        if e.click_count >= 2 && self.editor.selection.as_ref().is_some_and(|s| !s.empty()) {
+            self.bump_selection_menu_request_seq();
+        }
     }
     pub(crate) fn editor_mouse_move(
         &mut self,

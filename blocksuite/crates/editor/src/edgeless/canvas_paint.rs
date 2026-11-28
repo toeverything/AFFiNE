@@ -142,9 +142,14 @@ pub fn build_edgeless_layer(
         .and_then(|(editing_id, is_note, sel, focus)| {
             let layout = state.cached_block_layout(editing_id, *is_note)?;
             let sel_rects = spatial_selection_rects(sel, &layout);
-            let caret = layout
-                .block(&focus.block_id)
-                .and_then(|b| b.caret_rect(focus.caret));
+            let caret = sel
+                .empty()
+                .then(|| {
+                    layout
+                        .block(&focus.block_id)
+                        .and_then(|b| b.caret_rect(focus.caret))
+                })
+                .flatten();
             Some((editing_id.clone(), *is_note, sel_rects, caret))
         });
     let editing_label_id: Option<String> = match &state.authoring.inline_edit {

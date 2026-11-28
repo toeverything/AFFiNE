@@ -26,10 +26,11 @@ pub const KEYCODE_FORWARD_DEL: i32 = 112;
 pub const KEYCODE_NUMPAD_ENTER: i32 = 160;
 
 pub(crate) struct AndroidEditorRuntime {
-    app: ApplicationHandle,
+    pub(crate) app: ApplicationHandle,
+    pub(crate) platform: Rc<AndroidEditorPlatform>,
     dispatcher: Arc<AndroidDispatcher>,
-    window: AndroidEditorWindow,
-    view: ui::WindowHandle<PlaygroundView>,
+    pub(crate) window: AndroidEditorWindow,
+    pub(crate) view: ui::WindowHandle<PlaygroundView>,
     form_factor: FormFactor,
     /// Preserved selection when `setComposingRegion` marks a span outside the current caret
     /// (matches AOSP `BaseInputConnection.setComposingRegion`, which must not alter selection).
@@ -94,7 +95,8 @@ impl AndroidEditorRuntime {
             Rc::new(RefCell::new(None));
         let view_slot_init = Rc::clone(&view_slot);
 
-        let options = PlaygroundOptions::for_form_factor(form_factor);
+        let mut options = PlaygroundOptions::for_form_factor(form_factor);
+        options.native_selection_ui = true;
         let bounds = Bounds::new(point(px(0.0), px(0.0)), size(px(w), px(h)));
 
         let app = Application::with_platform(platform).run_embedded(move |cx| {
@@ -127,6 +129,7 @@ impl AndroidEditorRuntime {
         let view = view_slot.borrow_mut().take()?;
         let rt = Self {
             app,
+            platform: platform_ref,
             dispatcher,
             window,
             view,
@@ -406,7 +409,7 @@ impl AndroidEditorRuntime {
             .unwrap_or(0)
     }
 
-    fn ensure_input_handler(&mut self) {
+    pub(crate) fn ensure_input_handler(&mut self) {
         if self.window.state.borrow().input_handler.is_none() {
             self.window.request_frame_now();
         }
@@ -779,21 +782,6 @@ impl AndroidEditorRuntime {
         }
         self.delete_surrounding_text(anchor_before - b_idx, a_idx - anchor_after);
         true
-    }
-
-    pub(crate) fn caret_rect_dp(&mut self) -> Option<[f32; 4]> {
-        self.ensure_input_handler();
-        let (_, end) = self.selection_range();
-        let b = self
-            .window
-            .with_input_handler(|h| h.bounds_for_range(end..end))
-            .flatten()?;
-        Some([
-            f32::from(b.origin.x),
-            f32::from(b.origin.y),
-            f32::from(b.size.width).max(2.0),
-            f32::from(b.size.height).max(20.0),
-        ])
     }
 }
 

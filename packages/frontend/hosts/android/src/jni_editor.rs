@@ -9,8 +9,9 @@ use crate::{
     editor_runtime::{self, with_editor_mut},
     jni_bridge::{
         JBoolean, JClass, JFloat, JInt, JLong, JObject, JString, JniEnvPtr, new_jstring,
-        with_host_mut, with_host_ref,
+        read_jstring_utf8, with_host_mut, with_host_ref,
     },
+    jni_interaction::{JFloatArray, fill_jfloat_array},
 };
 
 #[unsafe(no_mangle)]
@@ -265,6 +266,164 @@ pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeIsDarkTheme(
     handle: JLong,
 ) -> JBoolean {
     u8::from(with_editor_mut(handle, |ed| ed.is_dark_theme()).unwrap_or(false))
+}
+
+/// Fills a 24-float JNI buffer with document-level selection geometry (dp), visibility flags,
+/// authoritative `SelectionActionMask`, and motion suppression flag.
+///
+/// # Safety
+/// `env` must be null or a valid `JNIEnv*`; `out_buffer` must be a `float[>=24]`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeFillDocumentSelectionGeometry(
+    env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+    out_buffer: JFloatArray,
+) -> JBoolean {
+    let Some(packed) = with_editor_mut(handle, |ed| ed.pack_document_selection_floats()) else {
+        return 0;
+    };
+    u8::from(unsafe { fill_jfloat_array(env, out_buffer, &packed) })
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeGetSelectionMenuRequestSeq(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) -> JLong {
+    with_editor_mut(handle, |ed| ed.selection_menu_request_seq() as JLong).unwrap_or(0)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeDocSelectionBeginDrag(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+    handle_kind: JInt,
+) -> JBoolean {
+    u8::from(
+        with_editor_mut(handle, |ed| {
+            ed.begin_document_selection_drag(handle_kind.clamp(0, 2) as u8)
+        })
+        .unwrap_or(false),
+    )
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeDocSelectionUpdateDrag(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+    x_dp: JFloat,
+    y_dp: JFloat,
+) -> JBoolean {
+    let ok = with_editor_mut(handle, |ed| ed.update_document_selection_drag(x_dp, y_dp))
+        .unwrap_or(false);
+    if ok {
+        let _ = with_host_mut(handle, |host| host.surface.request_frame());
+    }
+    u8::from(ok)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeDocSelectionEndDrag(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) {
+    let _ = with_editor_mut(handle, |ed| ed.end_document_selection_drag());
+    let _ = with_host_mut(handle, |host| host.surface.request_frame());
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeDocSelectionCancelDrag(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) {
+    let _ = with_editor_mut(handle, |ed| ed.cancel_document_selection_drag());
+    let _ = with_host_mut(handle, |host| host.surface.request_frame());
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSelectionActionCopy(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) {
+    let _ = with_editor_mut(handle, |ed| ed.selection_copy());
+    let _ = with_host_mut(handle, |host| host.surface.request_frame());
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSelectionActionCut(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) {
+    let _ = with_editor_mut(handle, |ed| ed.selection_cut());
+    let _ = with_host_mut(handle, |host| host.surface.request_frame());
+}
+
+/// # Safety
+/// `env` must be null or a valid `JNIEnv*`; string arguments may be null.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSelectionActionPaste(
+    env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+    plain: JString,
+    html: JString,
+    markdown: JString,
+    snapshot: JString,
+) {
+    let plain_s = unsafe { read_jstring_utf8(env, plain) };
+    let html_s = unsafe { read_jstring_utf8(env, html) };
+    let md_s = unsafe { read_jstring_utf8(env, markdown) };
+    let snap_s = unsafe { read_jstring_utf8(env, snapshot) };
+    let _ = with_editor_mut(handle, |ed| {
+        ed.selection_paste(plain_s, html_s, md_s, snap_s)
+    });
+    let _ = with_host_mut(handle, |host| host.surface.request_frame());
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSelectionActionSelectAll(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) {
+    let _ = with_editor_mut(handle, |ed| ed.selection_select_all());
+    let _ = with_host_mut(handle, |host| host.surface.request_frame());
+}
+
+/// Returns and clears any pending multi-MIME JSON clipboard payload written by the editor.
+///
+/// # Safety
+/// `env` must be null or a valid `JNIEnv*`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeTakePendingClipboardJson(
+    env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+) -> JString {
+    let Some(json) = with_editor_mut(handle, |ed| ed.take_pending_clipboard_json()).flatten()
+    else {
+        return core::ptr::null_mut();
+    };
+    unsafe { new_jstring(env, &json) }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeSetPageReadonly(
+    _env: JniEnvPtr,
+    _class: JClass,
+    handle: JLong,
+    readonly: JBoolean,
+) {
+    let _ = with_editor_mut(handle, |ed| ed.set_page_readonly(readonly != 0));
+    let _ = with_host_mut(handle, |host| host.surface.request_frame());
 }
 
 // Standard JNI vtable slots used for cross-thread Looper wakeup (`NativeBridge.onNativeWakeup`).

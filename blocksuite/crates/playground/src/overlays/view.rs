@@ -70,6 +70,7 @@ impl PlaygroundView {
             focused_code_block,
             selection,
             screen_transform,
+            suppress_floating_format_buttons: self.native_selection_ui,
         }
     }
 
@@ -662,10 +663,10 @@ impl PlaygroundView {
             return Default::default();
         };
         let now_ms = self.now_ms(cx);
-        // The toolbar waits for the selection to be finished.
-        let selection = self
-            .selection_format(layout)
-            .filter(|_| !self.editor.dragging);
+        // The toolbar waits for the selection to be finished, and stays hidden in read-only mode.
+        let selection = (!self.page_readonly && !self.editor.dragging)
+            .then(|| self.selection_format(layout))
+            .flatten();
         let scene = self.overlay_scene(
             &snapshot,
             layout,
@@ -699,9 +700,9 @@ impl PlaygroundView {
         let mut elements = if let Some((snapshot, layout, transform)) = self.active_overlay_target()
         {
             if self.mode == PlaygroundMode::Edgeless {
-                let selection = self
-                    .selection_format(&layout)
-                    .filter(|_| !self.editor.dragging);
+                let selection = (!self.edgeless_readonly && !self.editor.dragging)
+                    .then(|| self.selection_format(&layout))
+                    .flatten();
                 let scene = self.overlay_scene_with_transform(
                     &snapshot,
                     &layout,
