@@ -263,12 +263,12 @@ export function parseBlock(
               switch (col.type) {
                 case 'title':
                   return childrenTitleById[cid];
-                case 'select':
-                  return optionToTagHtml(
-                    (col.data['options'] as any).find(
-                      (opt: any) => opt.id === value
-                    )
+                case 'select': {
+                  const option = (col.data['options'] as any).find(
+                    (opt: any) => opt.id === value
                   );
+                  return option ? optionToTagHtml(option) : '';
+                }
                 case 'multi-select':
                   return (col.data['options'] as any)
                     .filter((opt: any) => (value as string[]).includes(opt.id))
