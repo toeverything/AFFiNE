@@ -147,27 +147,68 @@ impl PlaygroundView {
         }
     }
 
-    /// Collect top-level selected blocks in document order when dragging a block that belongs
-    /// to a multi-block `block_selection`; otherwise returns just `[block_id]`.
+    /// Collect top-level blocks in document order when dragging a block: expands any
+    /// multi-block `block_selection` AND packs contiguous collapsed siblings under any
+    /// dragged collapsed Heading (`H1`–`H6` with `collapsed == true`) so dragging a
+    /// collapsed section never orphans its hidden body or swallows target blocks.
     pub(super) fn resolve_multi_drag_ids(&self, block_id: &str) -> Vec<String> {
-        if self.editor.block_selection.len() <= 1
-            || !self.editor.block_selection.iter().any(|id| id == block_id)
-        {
-            return vec![block_id.to_string()];
-        }
-        let selected: HashSet<&str> = self
-            .editor
-            .block_selection
-            .iter()
-            .map(String::as_str)
-            .collect();
         let Some(root) = self.snapshot.as_ref().and_then(|s| s.root.as_ref()) else {
             return vec![block_id.to_string()];
         };
+        let mut selected: HashSet<String> = if self.editor.block_selection.len() > 1
+            && self.editor.block_selection.iter().any(|id| id == block_id)
+        {
+            self.editor.block_selection.iter().cloned().collect()
+        } else {
+            HashSet::from([block_id.to_string()])
+        };
+
+        fn heading_rank(kind: ParagraphType) -> Option<u8> {
+            match kind {
+                ParagraphType::H1 => Some(1),
+                ParagraphType::H2 => Some(2),
+                ParagraphType::H3 => Some(3),
+                ParagraphType::H4 => Some(4),
+                ParagraphType::H5 => Some(5),
+                ParagraphType::H6 => Some(6),
+                _ => None,
+            }
+        }
+
+        fn expand_collapsed_headings(node: &BlockNode, selected: &mut HashSet<String>) {
+            let mut i = 0;
+            while i < node.children.len() {
+                let child = &node.children[i];
+                if selected.contains(&child.id)
+                    && let BlockContent::Paragraph {
+                        kind,
+                        collapsed: true,
+                        ..
+                    } = child.content
+                    && let Some(rank) = heading_rank(kind)
+                {
+                    let mut j = i + 1;
+                    while j < node.children.len() {
+                        let sib = &node.children[j];
+                        if let BlockContent::Paragraph { kind: sk, .. } = sib.content
+                            && heading_rank(sk).is_some_and(|sr| sr <= rank)
+                        {
+                            break;
+                        }
+                        selected.insert(sib.id.clone());
+                        j += 1;
+                    }
+                }
+                expand_collapsed_headings(child, selected);
+                i += 1;
+            }
+        }
+        expand_collapsed_headings(root, &mut selected);
+
         let mut out = Vec::new();
-        fn walk(node: &BlockNode, selected: &HashSet<&str>, out: &mut Vec<String>) {
+        fn walk(node: &BlockNode, selected: &HashSet<String>, out: &mut Vec<String>) {
             for child in &node.children {
-                if selected.contains(child.id.as_str()) {
+                if selected.contains(&child.id) {
                     out.push(child.id.clone());
                 } else {
                     walk(child, selected, out);
@@ -199,6 +240,16 @@ impl PlaygroundView {
             .snapshot
             .clone()
             .ok_or_else(|| DocError::InvalidState("missing page".into()))?;
+        for cid in &child_ids {
+            if cid == parent_id {
+                return Ok(());
+            }
+            if let Some(cnode) = snapshot.block(cid)
+                && cnode.walk().any(|sub| sub.id == parent_id)
+            {
+                return Ok(());
+            }
+        }
         let root = snapshot
             .root
             .as_ref()

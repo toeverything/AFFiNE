@@ -9,6 +9,8 @@ mod view_mobile;
 pub use view_mobile::DatabaseRecordSheetState;
 #[cfg(test)]
 mod tests_b6;
+#[cfg(test)]
+mod tests_b6_r2;
 mod view_scrollbar;
 mod view_slash_blocks;
 mod view_table_cell;

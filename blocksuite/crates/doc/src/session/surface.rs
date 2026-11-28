@@ -99,27 +99,40 @@ impl PageDocSession {
             let blocks_target = TypeTarget::Path(TypePath::root("blocks"));
             let root_children_target =
                 TypeTarget::Path(TypePath::root("blocks").key(&root_id).key("sys:children"));
+            let has_surface_parented_blocks = note_blocks.iter().any(|b| {
+                b.entries.iter().any(|(k, v)| {
+                    k == "sys:flavour"
+                        && matches!(
+                            v,
+                            SessionValue::Any(Any::String(f))
+                                if f == "affine:frame" || f == "affine:edgeless-text"
+                        )
+                })
+            });
 
-            if !surface_elements.is_empty() {
-                let surface_id = match existing_surface_id {
-                    Some(id) => id,
-                    None => {
-                        let sid = new_surface_id.unwrap_or_else(|| format!("surface-{now_ms}"));
-                        let surface_entries = BlockSpec::Surface.into_yblock_entries(&sid);
-                        page.session.map_set(
-                            &blocks_target,
-                            sid.clone(),
-                            SessionValue::Map(surface_entries),
-                        )?;
-                        let len = page.session.read_array(&root_children_target)?.len() as u64;
-                        page.session.array_insert(
-                            &root_children_target,
-                            len,
-                            vec![SessionValue::Any(Any::String(sid.clone()))],
-                        )?;
-                        sid
-                    }
-                };
+            let mut resolved_surface_id = existing_surface_id;
+            if (!surface_elements.is_empty() || has_surface_parented_blocks)
+                && resolved_surface_id.is_none()
+            {
+                let sid = new_surface_id.unwrap_or_else(|| format!("surface-{now_ms}"));
+                let surface_entries = BlockSpec::Surface.into_yblock_entries(&sid);
+                page.session.map_set(
+                    &blocks_target,
+                    sid.clone(),
+                    SessionValue::Map(surface_entries),
+                )?;
+                let len = page.session.read_array(&root_children_target)?.len() as u64;
+                page.session.array_insert(
+                    &root_children_target,
+                    len,
+                    vec![SessionValue::Any(Any::String(sid.clone()))],
+                )?;
+                resolved_surface_id = Some(sid);
+            }
+
+            if !surface_elements.is_empty()
+                && let Some(ref surface_id) = resolved_surface_id
+            {
                 let elements_value_target = TypeTarget::Path(
                     TypePath::root("blocks")
                         .key(surface_id.as_str())
@@ -136,13 +149,35 @@ impl PageDocSession {
             }
 
             for note in note_blocks {
+                let under_surface = note.entries.iter().any(|(k, v)| {
+                    k == "sys:flavour"
+                        && matches!(
+                            v,
+                            SessionValue::Any(Any::String(f))
+                                if f == "affine:frame" || f == "affine:edgeless-text"
+                        )
+                });
                 let note_id = write_pasted_block_subtree(page, &blocks_target, note)?;
-                let len = page.session.read_array(&root_children_target)?.len() as u64;
-                page.session.array_insert(
-                    &root_children_target,
-                    len,
-                    vec![SessionValue::Any(Any::String(note_id))],
-                )?;
+                if under_surface && let Some(ref surface_id) = resolved_surface_id {
+                    let surface_children_target = TypeTarget::Path(
+                        TypePath::root("blocks")
+                            .key(surface_id.as_str())
+                            .key("sys:children"),
+                    );
+                    let len = page.session.read_array(&surface_children_target)?.len() as u64;
+                    page.session.array_insert(
+                        &surface_children_target,
+                        len,
+                        vec![SessionValue::Any(Any::String(note_id))],
+                    )?;
+                } else {
+                    let len = page.session.read_array(&root_children_target)?.len() as u64;
+                    page.session.array_insert(
+                        &root_children_target,
+                        len,
+                        vec![SessionValue::Any(Any::String(note_id))],
+                    )?;
+                }
             }
             Ok(())
         })

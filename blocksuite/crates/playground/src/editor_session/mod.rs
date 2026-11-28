@@ -224,6 +224,13 @@ impl PlaygroundView {
         w: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.snapshot.as_ref().is_some_and(|snap| {
+            !self.is_block_addressable_in_current_mode(snap, &sel.anchor.block_id)
+                || !self.is_block_addressable_in_current_mode(snap, &sel.focus.block_id)
+        }) {
+            self.clear_body_selection(w, cx);
+            return;
+        }
         self.commit_active_preedit(w, cx);
         self.editor.selection = Some(sel);
         self.editor.block_selection.clear();

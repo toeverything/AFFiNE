@@ -973,12 +973,14 @@ mod tests {
                     shift: true,
                     ..Default::default()
                 };
-                let ctrl = Modifiers {
-                    control: true,
+                let cmd = Modifiers {
+                    platform: cfg!(target_os = "macos"),
+                    control: !cfg!(target_os = "macos"),
                     ..Default::default()
                 };
-                let ctrl_alt = Modifiers {
-                    control: true,
+                let cmd_alt = Modifiers {
+                    platform: cfg!(target_os = "macos"),
+                    control: !cfg!(target_os = "macos"),
                     alt: true,
                     ..Default::default()
                 };
@@ -993,7 +995,7 @@ mod tests {
 
                 // P1-6: Mod+Enter exits code block into a new paragraph below.
                 view.change_selection(DocumentSelection::caret(DocPoint::new("code1", 5)), w, cx);
-                view.editor_key_down(&key_event("enter", ctrl), w, cx);
+                view.editor_key_down(&key_event("enter", cmd), w, cx);
                 assert_eq!(view.block_text("code1").unwrap(), "let x = 1;");
                 let after_code = view.document_selection().unwrap().focus.block_id.clone();
                 assert_ne!(after_code, "code1");
@@ -1055,7 +1057,7 @@ mod tests {
                     view.block_selection(),
                     &["p_a".to_string(), "p_b".to_string()]
                 );
-                view.editor_key_down(&key_event("1", ctrl_alt), w, cx);
+                view.editor_key_down(&key_event("1", cmd_alt), w, cx);
                 let snap = view.page_snapshot().unwrap();
                 for id in view.block_selection() {
                     assert!(matches!(

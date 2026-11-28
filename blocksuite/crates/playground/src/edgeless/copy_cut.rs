@@ -4,12 +4,12 @@ use std::collections::{BTreeSet, HashMap};
 
 use blocksuite_playground_doc::{
     fractional_index::generate_key_between,
-    read::{BlockNode, PageSnapshot, SurfaceElement},
+    read::{BlockContent, BlockNode, PageSnapshot, RichText, SurfaceElement},
     session::PastedBlockNode,
 };
 use serde_json::{Map, Value, json};
 use ui::{ClipboardItem, Context};
-use y_octo::SessionValue;
+use y_octo::{Any, SessionValue, TextDeltaOp, TextInsert};
 
 use crate::PlaygroundView;
 
@@ -19,8 +19,9 @@ use super::{
 };
 
 impl PlaygroundView {
-    /// Copy (or cut) selected Edgeless elements and blocks into the clipboard using the
-    /// BlockSuite surface snapshot envelope consumed by `paste_edgeless_clipboard_item`.
+    /// Copy (or cut) selected Edgeless elements and spatial blocks (`affine:note`,
+    /// `affine:frame`, `affine:edgeless-text`) into the clipboard using structured
+    /// snapshot metadata plus a clean plain-text summary.
     pub(crate) fn edgeless_copy_selection(&mut self, cut: bool, cx: &mut Context<Self>) -> bool {
         if self.edgeless.authoring.selection.is_empty() {
             return false;
@@ -29,7 +30,8 @@ impl PlaygroundView {
             return false;
         };
         let ids = self.expand_selection_with_containers(&self.edgeless.authoring.selection);
-        let (surface_vals, block_vals) = serialize_edgeless_ids(&snapshot, &ids);
+        let (surface_vals, block_vals, serialized_ids, plain_lines) =
+            serialize_edgeless_ids(&snapshot, &ids);
         if surface_vals.is_empty() && block_vals.is_empty() {
             return false;
         }
@@ -40,12 +42,18 @@ impl PlaygroundView {
         if !block_vals.is_empty() {
             envelope.insert("blocks".to_string(), Value::Array(block_vals));
         }
-        let Ok(payload_str) = serde_json::to_string(&Value::Object(envelope)) else {
-            return false;
-        };
-        cx.write_to_clipboard(ClipboardItem::new_string(payload_str));
+        let envelope_val = Value::Object(envelope);
+        let meta = json!({
+            crate::clipboard::SNAPSHOT_MIME: envelope_val,
+            "blocksuite/surface": envelope_val,
+        });
+        let plain_summary = plain_lines.join("\n");
+        cx.write_to_clipboard(ClipboardItem::new_string_with_json_metadata(
+            plain_summary,
+            meta,
+        ));
         if cut {
-            self.edgeless_delete_selection(cx);
+            self.edgeless_delete_ids(&serialized_ids, cx);
         }
         true
     }
@@ -67,7 +75,7 @@ impl PlaygroundView {
         };
         let base_ids: BTreeSet<String> = initial.iter().map(|i| i.id.clone()).collect();
         let ids = self.expand_selection_with_containers(&base_ids);
-        let (surface_vals, block_vals) = serialize_edgeless_ids(&snapshot, &ids);
+        let (surface_vals, block_vals, _, _) = serialize_edgeless_ids(&snapshot, &ids);
         let surface_elems: Vec<Map<String, Value>> = surface_vals
             .into_iter()
             .filter_map(|v| match v {
@@ -124,7 +132,8 @@ impl PlaygroundView {
             remapped_elems.push((new_id.clone(), entries));
         }
 
-        let new_surface_id = (!remapped_elems.is_empty()).then(|| self.fresh_block_id());
+        let new_surface_id = (!remapped_elems.is_empty() || !prepared_notes.is_empty())
+            .then(|| self.fresh_block_id());
         let Some(page) = self.state.workspace.page_mut(&page_id) else {
             return false;
         };
@@ -185,19 +194,116 @@ impl PlaygroundView {
 fn serialize_edgeless_ids(
     snapshot: &PageSnapshot,
     ids: &BTreeSet<String>,
-) -> (Vec<Value>, Vec<Value>) {
+) -> (Vec<Value>, Vec<Value>, BTreeSet<String>, Vec<String>) {
     let mut surface_vals = Vec::new();
     let mut block_vals = Vec::new();
+    let mut serialized_ids = BTreeSet::new();
+    let mut plain_lines = Vec::new();
     for id in ids {
         if let Some((_, el)) = find_surface_element(snapshot, id) {
+            serialized_ids.insert(el.id.clone());
+            if let Some(line) = surface_element_plain(el)
+                && !line.is_empty()
+            {
+                plain_lines.push(line);
+            }
             surface_vals.push(surface_element_to_json(el));
         } else if let Some(node) = find_block(snapshot, id)
-            && node.flavour == "affine:note"
+            && matches!(
+                node.flavour.as_str(),
+                "affine:note" | "affine:frame" | "affine:edgeless-text"
+            )
         {
+            serialized_ids.insert(node.id.clone());
+            collect_block_plain_lines(node, &mut plain_lines);
             block_vals.push(block_node_to_json(node));
         }
     }
-    (surface_vals, block_vals)
+    (surface_vals, block_vals, serialized_ids, plain_lines)
+}
+
+fn surface_element_plain(el: &SurfaceElement) -> Option<String> {
+    match &el.kind {
+        blocksuite_playground_doc::read::SurfaceElementKind::Shape(s) => Some(s.text.plain.clone()),
+        blocksuite_playground_doc::read::SurfaceElementKind::Connector(c) => {
+            Some(c.text.plain.clone())
+        }
+        blocksuite_playground_doc::read::SurfaceElementKind::Text(t) => Some(t.text.plain.clone()),
+        _ => None,
+    }
+}
+
+fn collect_block_plain_lines(node: &BlockNode, out: &mut Vec<String>) {
+    match &node.content {
+        BlockContent::Paragraph { text, .. }
+        | BlockContent::List { text, .. }
+        | BlockContent::Callout { text, .. } => {
+            if !text.plain.is_empty() {
+                out.push(text.plain.clone());
+            }
+        }
+        BlockContent::Frame { title, .. } => {
+            if !title.plain.is_empty() {
+                out.push(title.plain.clone());
+            }
+        }
+        BlockContent::Code { text, .. } => {
+            if !text.is_empty() {
+                out.push(text.clone());
+            }
+        }
+        _ => {}
+    }
+    for child in &node.children {
+        collect_block_plain_lines(child, out);
+    }
+}
+
+fn rich_text_to_delta_json(rt: &RichText) -> Value {
+    let mut ops = Vec::with_capacity(rt.delta.len());
+    for op in &rt.delta {
+        if let TextDeltaOp::Insert {
+            insert: TextInsert::Text(s),
+            format,
+        } = op
+        {
+            let mut item = Map::new();
+            item.insert("insert".to_string(), Value::String(s.clone()));
+            if let Some(attrs) = format
+                && !attrs.is_empty()
+            {
+                let mut attr_map = Map::new();
+                for (k, v) in attrs {
+                    attr_map.insert(k.clone(), any_to_json(v));
+                }
+                item.insert("attributes".to_string(), Value::Object(attr_map));
+            }
+            ops.push(Value::Object(item));
+        }
+    }
+    json!({ "delta": ops })
+}
+
+fn any_to_json(v: &Any) -> Value {
+    match v {
+        Any::Null | Any::Undefined => Value::Null,
+        Any::True => Value::Bool(true),
+        Any::False => Value::Bool(false),
+        Any::Integer(i) => json!(*i),
+        Any::BigInt64(i) => json!(*i),
+        Any::Float32(f) => {
+            serde_json::Number::from_f64(f64::from(f.0)).map_or(Value::Null, Value::Number)
+        }
+        Any::Float64(f) => serde_json::Number::from_f64(f.0).map_or(Value::Null, Value::Number),
+        Any::String(s) => Value::String(s.clone()),
+        Any::Binary(b) => Value::Array(b.iter().map(|x| json!(*x)).collect()),
+        Any::Array(arr) => Value::Array(arr.iter().map(any_to_json).collect()),
+        Any::Object(obj) => Value::Object(
+            obj.iter()
+                .map(|(k, val)| (k.clone(), any_to_json(val)))
+                .collect(),
+        ),
+    }
 }
 
 fn surface_element_to_json(el: &SurfaceElement) -> Value {
@@ -208,29 +314,20 @@ fn surface_element_to_json(el: &SurfaceElement) -> Value {
         .collect();
     map.insert("id".to_string(), Value::String(el.id.clone()));
     map.insert("index".to_string(), Value::String(el.index.clone()));
-    // Preserve rich-text delta on shapes/connectors/text when present.
+    // Preserve full rich-text delta (including marks and inline references) on labels.
     match &el.kind {
         blocksuite_playground_doc::read::SurfaceElementKind::Shape(s)
-            if !s.text.plain.is_empty() =>
+            if !s.text.delta.is_empty() =>
         {
-            map.insert(
-                "text".to_string(),
-                json!({ "delta": [{ "insert": s.text.plain }] }),
-            );
+            map.insert("text".to_string(), rich_text_to_delta_json(&s.text));
         }
         blocksuite_playground_doc::read::SurfaceElementKind::Connector(c)
-            if !c.text.plain.is_empty() =>
+            if !c.text.delta.is_empty() =>
         {
-            map.insert(
-                "text".to_string(),
-                json!({ "delta": [{ "insert": c.text.plain }] }),
-            );
+            map.insert("text".to_string(), rich_text_to_delta_json(&c.text));
         }
         blocksuite_playground_doc::read::SurfaceElementKind::Text(t) => {
-            map.insert(
-                "text".to_string(),
-                json!({ "delta": [{ "insert": t.text.plain }] }),
-            );
+            map.insert("text".to_string(), rich_text_to_delta_json(&t.text));
         }
         _ => {}
     }
@@ -242,6 +339,17 @@ fn block_node_to_json(node: &BlockNode) -> Value {
     for (k, v) in &node.props {
         let stripped = k.strip_prefix("prop:").unwrap_or(k);
         props.insert(stripped.to_string(), v.clone());
+    }
+    match &node.content {
+        BlockContent::Paragraph { text, .. }
+        | BlockContent::List { text, .. }
+        | BlockContent::Callout { text, .. } => {
+            props.insert("text".to_string(), rich_text_to_delta_json(text));
+        }
+        BlockContent::Frame { title, .. } => {
+            props.insert("title".to_string(), rich_text_to_delta_json(title));
+        }
+        _ => {}
     }
     let children: Vec<Value> = node.children.iter().map(block_node_to_json).collect();
     json!({

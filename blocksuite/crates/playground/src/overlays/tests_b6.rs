@@ -19,7 +19,7 @@ use crate::{
     showcase::seed_showcase_doc,
 };
 
-fn make_key(key: &str, shift: bool) -> KeyDownEvent {
+pub(super) fn make_key(key: &str, shift: bool) -> KeyDownEvent {
     KeyDownEvent {
         keystroke: Keystroke {
             key: key.to_string(),
@@ -64,7 +64,7 @@ fn make_mouse_up(x: f32, y: f32) -> MouseUpEvent {
     }
 }
 
-fn open_doc(
+pub(super) fn open_doc(
     state: DocState,
 ) -> (
     std::rc::Rc<ui::HeadlessPlatform>,
@@ -91,7 +91,7 @@ fn open_doc(
     (platform, app, win, hw)
 }
 
-fn simple_doc(blocks: Vec<(&str, BlockSpec)>) -> DocState {
+pub(super) fn simple_doc(blocks: Vec<(&str, BlockSpec)>) -> DocState {
     let mut state = DocState::new("b6-test", 77).unwrap();
     state
         .workspace
@@ -161,7 +161,7 @@ fn desktop_database_click_never_selects_whole_block_or_deletes_table() {
     hw.request_frame();
 }
 
-fn type_chars(
+pub(super) fn type_chars(
     view: &mut PlaygroundView,
     text: &str,
     window: &mut ui::Window,

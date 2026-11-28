@@ -202,7 +202,7 @@ impl PlaygroundView {
                 }
                 return false;
             }
-            let word_mod = m.alt || (m.control && !cmd);
+            let word_mod = m.alt || (m.control && !m.platform);
             match key {
                 "escape" => {
                     self.edgeless_commit_inline_edit(window, cx);
@@ -240,14 +240,14 @@ impl PlaygroundView {
                     );
                     return true;
                 }
-                "left" if cmd => {
+                "left" if m.platform => {
                     ed.move_to_line_edge(false, m.shift);
                     self.edgeless_update_label_anchors();
                     window.notify_text_input_changed(&self.editor_focus);
                     cx.notify();
                     return true;
                 }
-                "right" if cmd => {
+                "right" if m.platform => {
                     ed.move_to_line_edge(true, m.shift);
                     self.edgeless_update_label_anchors();
                     window.notify_text_input_changed(&self.editor_focus);

@@ -728,17 +728,9 @@ impl ui::Render for PlaygroundView {
         #[cfg(target_arch = "wasm32")]
         self.reconcile_wasm_html_embeds(viewport_width, viewport_height);
         let mut popovers = self.overlay_popovers(&palette, window, cx);
-        if let Some(touch_menu) = self.render_touch_selection_menu(&palette, window, cx) {
-            popovers.push(touch_menu);
-        }
-        if let Some(sheet) = self.render_database_record_sheet(&palette, window, cx) {
-            popovers.push(sheet);
-        }
-        if let Some(doc_panel) =
-            self.render_doc_panel(&palette, viewport_width, viewport_height, cx)
-        {
-            popovers.push(doc_panel);
-        }
+        popovers.extend(self.render_touch_selection_menu(&palette, window, cx));
+        popovers.extend(self.render_database_record_sheet(&palette, window, cx));
+        popovers.extend(self.render_doc_panel(&palette, viewport_width, viewport_height, cx));
 
         div()
             .relative()
@@ -777,7 +769,9 @@ impl ui::Render for PlaygroundView {
                             .h(px(TOPBAR_HEIGHT - 1.0))
                             .flex()
                             .items_center()
-                            .child(doc_panel_toggle),
+                            .gap(px(6.0))
+                            .child(doc_panel_toggle)
+                            .children(self.render_nav_back(&palette, cx)),
                     )
                     .child(mode_switcher)
                     .child(

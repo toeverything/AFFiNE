@@ -616,7 +616,9 @@ impl PlaygroundView {
             self.editor.block_selection.clear();
             self.editor.last_typing = Some(now);
             self.editor.preedit = None;
-            self.did_edit(commit, Some(&id), w, cx);
+            // Sub-flow blocks (such as `affine:database` row blocks) do not own a standalone
+            // top-level `FlowBlock`, so pass `None` to rebuild the parent container block layout.
+            self.did_edit(commit, None, w, cx);
             return Ok(());
         }
         let (start, end, a, b, _) = sel

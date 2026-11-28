@@ -523,9 +523,13 @@ impl PlaygroundView {
                 }
                 None
             }
-            snap.root
-                .as_ref()
-                .and_then(|root| find_first_text(&root.children).or_else(|| Some(root.id.clone())))
+            snap.root.as_ref().and_then(|root| {
+                root.children
+                    .iter()
+                    .filter(|c| c.is_page_visible_note())
+                    .find_map(|note| find_first_text(&note.children))
+                    .or_else(|| Some(root.id.clone()))
+            })
         });
         self.editor_focus.focus(window, cx);
         if let Some(block_id) = target_id {

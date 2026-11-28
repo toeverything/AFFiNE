@@ -89,7 +89,8 @@ impl PlaygroundView {
             remapped_elems.push((new_id, entries));
         }
 
-        let new_surface_id = (!remapped_elems.is_empty()).then(|| self.fresh_block_id());
+        let new_surface_id = (!remapped_elems.is_empty() || !prepared_notes.is_empty())
+            .then(|| self.fresh_block_id());
         let Some(page) = self.state.workspace.page_mut(&page_id) else {
             return false;
         };
@@ -112,8 +113,8 @@ fn extract_edgeless_payload_from_item(item: &ui::ClipboardItem) -> Option<Value>
         && let Ok(meta) = serde_json::from_str::<Value>(meta_str)
     {
         for mime in [
-            "blocksuite/surface",
             crate::clipboard::SNAPSHOT_MIME,
+            "blocksuite/surface",
             "BLOCKSUITE/SNAPSHOT",
         ] {
             if let Some(v) = meta.get(mime)
@@ -144,9 +145,12 @@ fn is_explicit_blocksuite_envelope(val: &Value) -> bool {
             obj.contains_key("blocksuite/surface")
                 || obj.contains_key("BLOCKSUITE/SNAPSHOT")
                 || obj.contains_key("surfaceElements")
+                || obj.contains_key("blocks")
                 || matches!(
                     obj.get("flavour").and_then(Value::as_str),
-                    Some("affine:surface" | "affine:note")
+                    Some(
+                        "affine:surface" | "affine:note" | "affine:frame" | "affine:edgeless-text"
+                    )
                 )
         }
         Value::Array(items) => {
@@ -183,15 +187,29 @@ fn is_allowed_note_child_flavour(flavour: &str) -> bool {
     )
 }
 
-fn validate_note_block_tree(obj: &Map<String, Value>, is_top_note: bool, depth: usize) -> bool {
+fn validate_note_block_tree(obj: &Map<String, Value>, is_top_spatial: bool, depth: usize) -> bool {
     if depth > 128 {
         return false;
     }
     let Some(flavour) = obj.get("flavour").and_then(Value::as_str) else {
         return false;
     };
-    if is_top_note {
-        if flavour != "affine:note" {
+    if is_top_spatial {
+        if !matches!(
+            flavour,
+            "affine:note" | "affine:frame" | "affine:edgeless-text"
+        ) {
+            return false;
+        }
+        if let Some(xywh) = obj
+            .get("props")
+            .and_then(Value::as_object)
+            .and_then(|p| p.get("xywh").or_else(|| p.get("prop:xywh")))
+            && !xywh.is_null()
+            && !xywh
+                .as_str()
+                .is_some_and(|s| super::parse_xywh(s).is_some())
+        {
             return false;
         }
     } else if !is_allowed_note_child_flavour(flavour) {
@@ -207,8 +225,8 @@ fn validate_note_block_tree(obj: &Map<String, Value>, is_top_note: bool, depth: 
         let Some(arr) = children_val.as_array() else {
             return false;
         };
-        if !is_top_note
-            && blocksuite_playground_doc::schema::is_leaf_flavour(flavour)
+        if (flavour == "affine:frame"
+            || (!is_top_spatial && blocksuite_playground_doc::schema::is_leaf_flavour(flavour)))
             && !arr.is_empty()
         {
             return false;
@@ -291,18 +309,36 @@ fn collect_edgeless_items(
             true
         }
         Value::Object(obj) => {
-            let mut unwrapped_envelope = false;
-            for key in ["blocksuite/surface", "BLOCKSUITE/SNAPSHOT", "snapshot"] {
+            let mut unwrapped_wrapper = false;
+            for key in ["BLOCKSUITE/SNAPSHOT", "snapshot"] {
                 if let Some(inner) = obj.get(key)
                     && let Some(parsed) = parse_json_or_lz_value(inner)
                 {
-                    unwrapped_envelope = true;
+                    unwrapped_wrapper = true;
                     if !collect_edgeless_items(&parsed, surface_out, notes_out) {
                         return false;
                     }
                 }
             }
-            if unwrapped_envelope {
+            if let Some(inner) = obj.get("blocksuite/surface")
+                && let Some(parsed) = parse_json_or_lz_value(inner)
+                && !collect_edgeless_items(&parsed, surface_out, notes_out)
+            {
+                return false;
+            }
+            let has_sibling_lists = [
+                "blocks",
+                "content",
+                "children",
+                "surfaceElements",
+                "elements",
+            ]
+            .iter()
+            .any(|k| obj.contains_key(*k));
+            if unwrapped_wrapper && !has_sibling_lists {
+                return true;
+            }
+            if obj.contains_key("blocksuite/surface") && !has_sibling_lists {
                 return true;
             }
 
@@ -322,7 +358,10 @@ fn collect_edgeless_items(
                     }
                     return true;
                 }
-                if flavour == "affine:note" {
+                if matches!(
+                    flavour,
+                    "affine:note" | "affine:frame" | "affine:edgeless-text"
+                ) {
                     notes_out.push(obj.clone());
                     return true;
                 }
@@ -521,6 +560,37 @@ pub(super) fn materialize_pasted_block_tree_with_offset(
                 entries.push((
                     "prop:xywh".to_string(),
                     SessionValue::Any(Any::String("[24,24,448,120]".to_string())),
+                ));
+            }
+        }
+        "affine:frame" => {
+            if !has_key(&entries, "prop:title") {
+                entries.push(("prop:title".to_string(), SessionValue::Text(Vec::new())));
+            }
+            if !has_key(&entries, "prop:xywh") {
+                entries.push((
+                    "prop:xywh".to_string(),
+                    SessionValue::Any(Any::String("[24,24,480,320]".to_string())),
+                ));
+            }
+            if !has_key(&entries, "prop:background") {
+                entries.push((
+                    "prop:background".to_string(),
+                    SessionValue::Any(Any::String("--affine-palette-transparent".to_string())),
+                ));
+            }
+            if !has_key(&entries, "prop:childElementIds") {
+                entries.push((
+                    "prop:childElementIds".to_string(),
+                    SessionValue::Map(Vec::new()),
+                ));
+            }
+        }
+        "affine:edgeless-text" => {
+            if !has_key(&entries, "prop:xywh") {
+                entries.push((
+                    "prop:xywh".to_string(),
+                    SessionValue::Any(Any::String("[24,24,240,72]".to_string())),
                 ));
             }
         }

@@ -631,6 +631,46 @@ pub fn seed_showcase_doc() -> DocResult<DocState> {
     let history = page.undo_stack_id();
     page.inner_mut().clear_stack_history(history, true, true)?;
 
+    {
+        let ref_page = state.workspace.ensure_page(REFERENCED_PAGE)?;
+        let mut ref_seed = ShowcaseSeed {
+            page: ref_page,
+            now_ms: 2_000,
+        };
+        ref_seed.add(
+            "ref-page",
+            BlockSpec::Page {
+                title: "Edgeless notes".to_string(),
+            },
+            None,
+        )?;
+        ref_seed.add("ref-surface", BlockSpec::Surface, Some("ref-page"))?;
+        ref_seed.add(
+            "ref-note",
+            BlockSpec::Note {
+                xywh: Some("[0,0,760,420]".to_string()),
+            },
+            Some("ref-page"),
+        )?;
+        ref_seed.paragraph(
+            "ref-h2",
+            ParagraphType::H2,
+            "Spatial Canvas Notes",
+            "ref-note",
+        )?;
+        ref_seed.paragraph(
+            "ref-intro",
+            ParagraphType::Text,
+            "Linked workspace page opened from the inline page reference chip.",
+            "ref-note",
+        )?;
+        let ref_history = ref_seed.page.undo_stack_id();
+        ref_seed
+            .page
+            .inner_mut()
+            .clear_stack_history(ref_history, true, true)?;
+    }
+
     // One remote collaborator selecting the first words of the intro paragraph, which
     // stay on its first line at every viewport width.
     let mut peer = RoomAwareness::new(client_id_from_seed(0x0ada))?;

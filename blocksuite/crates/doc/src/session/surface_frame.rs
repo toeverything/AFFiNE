@@ -16,6 +16,20 @@ impl PageDocSession {
         surface_elements: &[(&str, &str)],
         now_ms: u64,
     ) -> DocResult<PageCommit> {
+        self.delete_blocks_and_elements_preserving(block_ids, surface_elements, &[], now_ms)
+    }
+
+    /// Like [`Self::delete_blocks_and_elements_with_connectors`], except blocks listed in
+    /// `protected_block_ids` (and their descendant subtrees) are preserved even when referenced
+    /// by a deleted `Frame` or `Group`, executing the entire deletion and container pruning in a
+    /// single atomic `structural_edit` (`1 PageCommit`, `1` undo step, `0` Yjs clock gap).
+    pub fn delete_blocks_and_elements_preserving(
+        &mut self,
+        block_ids: &[&str],
+        surface_elements: &[(&str, &str)],
+        protected_block_ids: &[&str],
+        now_ms: u64,
+    ) -> DocResult<PageCommit> {
         let snap = self.read_page_snapshot()?;
         let mut all_block_ids: Vec<String> = block_ids.iter().map(|s| (*s).to_string()).collect();
         let mut all_surf: Vec<(String, String)> = surface_elements
@@ -100,6 +114,25 @@ impl PageDocSession {
                     }
                 }
             }
+        }
+
+        if !protected_block_ids.is_empty() {
+            let mut protected_set: std::collections::HashSet<String> =
+                std::collections::HashSet::new();
+            for &pid in protected_block_ids {
+                protected_set.insert(pid.to_string());
+                if let Some(pnode) = snap.block(pid) {
+                    for sub in pnode.walk() {
+                        protected_set.insert(sub.id.clone());
+                    }
+                }
+            }
+            deleted_ids.retain(|id| !protected_set.contains(id));
+            all_block_ids.retain(|id| !protected_set.contains(id));
+        }
+
+        if all_block_ids.is_empty() && all_surf.is_empty() {
+            return Ok(None);
         }
 
         let mut was_live_before = std::collections::HashSet::new();

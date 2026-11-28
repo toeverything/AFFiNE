@@ -550,6 +550,43 @@ impl PlaygroundView {
         self.refresh_document();
         cx.notify();
     }
+
+    pub(crate) fn render_nav_back(
+        &self,
+        palette: &crate::theme::Palette,
+        cx: &mut ui::Context<Self>,
+    ) -> Option<ui::AnyElement> {
+        use ui::{FontWeight, InteractiveElement, IntoElement, ParentElement, Styled, div, px};
+        if self.nav_history.is_empty() {
+            return None;
+        }
+        let hover = palette.hover;
+        Some(
+            div()
+                .id("chrome-nav-back")
+                .h(px(28.0))
+                .px(px(10.0))
+                .rounded(px(6.0))
+                .bg(palette.background)
+                .border_1()
+                .border_color(palette.border)
+                .flex()
+                .items_center()
+                .justify_center()
+                .cursor_pointer()
+                .text_size(px(12.0))
+                .font_weight(FontWeight::MEDIUM)
+                .text_color(palette.text_primary)
+                .hover(move |style| style.bg(hover))
+                .on_click(cx.listener(|this, _, window, cx| {
+                    this.navigate_back(Some(window), cx);
+                }))
+                .snapshot("chrome.nav_back", Some("chrome.topbar"))
+                .snapshot_text("Back")
+                .child("‹ Back")
+                .into_any_element(),
+        )
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]

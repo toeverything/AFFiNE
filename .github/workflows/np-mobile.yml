@@ -294,12 +294,13 @@ jobs:
         with:
           workspaces: packages/frontend -> target
           key: np-mobile-ios-host
+          add-rust-environment-hash-key: false
           cache-on-failure: true
 
       - name: Build affine-ios-host staticlib and check device targets
         working-directory: packages/frontend
         run: |
-          cargo test --locked -p affine-ios-host
+          cargo test --locked -p affine-ios-host --lib
           cargo check --locked -p ui -p affine-ios-host --target aarch64-apple-ios
           cargo build --locked -p affine-ios-host --target aarch64-apple-ios-sim
           test -s target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a
@@ -309,7 +310,34 @@ jobs:
 
       - name: Link zero-CocoaPods Swift iOS host and run 6/6 Simulator smoke tests
         run: |
+          (
+            SIM_UDID=$(xcrun simctl list devices available -j | python3 -c '
+            import json, sys
+            data = json.load(sys.stdin)["devices"]
+            for runtime, devs in sorted(data.items(), reverse=True):
+                if "iOS" not in runtime:
+                    continue
+                for d in devs:
+                    if d.get("isAvailable") and "iPhone" in d.get("name", ""):
+                        print(d["udid"])
+                        sys.exit(0)
+            sys.exit(1)
+            ')
+            echo "$SIM_UDID" > /tmp/sim_udid
+            echo "SIM_UDID=$SIM_UDID" >> "$GITHUB_ENV"
+            xcrun simctl boot "$SIM_UDID" || true
+          ) &
+          PID_SIM=$!
+
           SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
+          SMOKE_SOURCES=()
+          for f in packages/frontend/hosts/ios/Sources/*.swift; do
+            case "$(basename "$f")" in
+              AppDelegate.swift|SceneDelegate.swift|main.swift) continue ;;
+            esac
+            SMOKE_SOURCES+=("$f")
+          done
+
           swiftc -emit-executable \
             -sdk "$SDK" \
             -target arm64-apple-ios16.0-simulator \
@@ -328,16 +356,9 @@ jobs:
             -framework Foundation \
             -framework UniformTypeIdentifiers \
             -o /tmp/AffineIosHost \
-            packages/frontend/hosts/ios/Sources/*.swift
-          test -s /tmp/AffineIosHost
+            packages/frontend/hosts/ios/Sources/*.swift &
+          PID_APP=$!
 
-          SMOKE_SOURCES=()
-          for f in packages/frontend/hosts/ios/Sources/*.swift; do
-            case "$(basename "$f")" in
-              AppDelegate.swift|SceneDelegate.swift|main.swift) continue ;;
-            esac
-            SMOKE_SOURCES+=("$f")
-          done
           swiftc -emit-executable \
             -sdk "$SDK" \
             -target arm64-apple-ios16.0-simulator \
@@ -357,23 +378,20 @@ jobs:
             -framework UniformTypeIdentifiers \
             -o /tmp/IosHostS3SmokeTest \
             "${SMOKE_SOURCES[@]}" \
-            packages/frontend/hosts/ios/tests/IosHostS3SmokeTest.swift
-          test -s /tmp/IosHostS3SmokeTest
+            packages/frontend/hosts/ios/tests/IosHostS3SmokeTest.swift &
+          PID_SMOKE=$!
 
-          SIM_UDID=$(xcrun simctl list devices available -j | python3 -c '
-          import json, sys
-          data = json.load(sys.stdin)["devices"]
-          for runtime, devs in sorted(data.items(), reverse=True):
-              if "iOS" not in runtime:
-                  continue
-              for d in devs:
-                  if d.get("isAvailable") and "iPhone" in d.get("name", ""):
-                      print(d["udid"])
-                      sys.exit(0)
-          sys.exit(1)
-          ')
+          wait "$PID_APP"
+          wait "$PID_SMOKE"
+          wait "$PID_SIM"
+          test -s /tmp/AffineIosHost
+          test -s /tmp/IosHostS3SmokeTest
+          SIM_UDID=$(cat /tmp/sim_udid)
           echo "Running iOS smoke tests on Simulator UDID: $SIM_UDID"
           xcrun simctl boot "$SIM_UDID" || true
-          trap 'xcrun simctl shutdown "$SIM_UDID" || true' EXIT
           xcrun simctl bootstatus "$SIM_UDID" -b
           xcrun simctl spawn "$SIM_UDID" /tmp/IosHostS3SmokeTest
+
+      - name: Shutdown iOS Simulator
+        if: always() && env.SIM_UDID != ''
+        run: xcrun simctl shutdown "$SIM_UDID" || true

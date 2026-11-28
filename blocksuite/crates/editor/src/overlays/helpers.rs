@@ -179,4 +179,32 @@ impl Overlays {
         self.keyboard_toolbar.close_transient();
         self.format_cache = None;
     }
+
+    pub(super) fn in_flight(&self, now_ms: f64) -> bool {
+        !self.chevrons.is_empty()
+            || !self.todo_pulses.is_empty()
+            || self
+                .slash
+                .as_ref()
+                .is_some_and(|menu| menu.presence.in_flight(now_ms) || menu.presence.closing)
+            || self
+                .linked_doc
+                .as_ref()
+                .is_some_and(|menu| menu.presence.in_flight(now_ms) || menu.presence.closing)
+            || self.toolbar.as_ref().is_some_and(|toolbar| {
+                toolbar.presence.in_flight(now_ms) || toolbar.presence.closing
+            })
+            || self
+                .equation
+                .as_ref()
+                .is_some_and(|editor| editor.presence.in_flight(now_ms) || editor.presence.closing)
+            || self
+                .bookmark
+                .as_ref()
+                .is_some_and(|prompt| prompt.presence.in_flight(now_ms) || prompt.presence.closing)
+            || self
+                .context_menu
+                .as_ref()
+                .is_some_and(|menu| menu.presence.in_flight(now_ms) || menu.presence.closing)
+    }
 }

@@ -320,7 +320,7 @@ impl PlaygroundView {
         self.flow.database_hits(block_id)
     }
 
-    fn apply_database_commit(
+    pub(crate) fn apply_database_commit(
         &mut self,
         commit: Option<
             y_octo::SessionCommit<blocksuite_playground_doc::session::SelectionSnapshot>,

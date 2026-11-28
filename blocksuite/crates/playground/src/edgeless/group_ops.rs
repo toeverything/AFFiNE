@@ -179,37 +179,35 @@ impl PlaygroundView {
     }
 
     pub(crate) fn edgeless_delete_selection(&mut self, cx: &mut Context<Self>) {
-        if self.edgeless.authoring.selection.is_empty() {
+        let targets = self.edgeless.authoring.selection.clone();
+        self.edgeless_delete_ids(&targets, cx);
+    }
+
+    pub(crate) fn edgeless_delete_ids(
+        &mut self,
+        targets: &BTreeSet<String>,
+        cx: &mut Context<Self>,
+    ) {
+        if targets.is_empty() {
             return;
         }
         let Some(snapshot) = self.snapshot.clone() else {
             return;
         };
         let root_id = snapshot.root.as_ref().map(|r| r.id.clone());
-        // Protect the last Page-visible (`DocOnly` or `Both`) `affine:note` under root so
-        // Edgeless deletion can never lock Page mode out of body editing (Web `crud.ts:27-33`).
         let page_visible_notes: Vec<String> = snapshot
             .root
             .as_ref()
             .map(|r| {
                 r.children
                     .iter()
-                    .filter(|c| {
-                        matches!(
-                            c.content,
-                            BlockContent::Note {
-                                display_mode: NoteDisplayMode::DocOnly | NoteDisplayMode::Both,
-                                ..
-                            }
-                        )
-                    })
+                    .filter(|c| c.is_page_visible_note())
                     .map(|c| c.id.clone())
                     .collect()
             })
             .unwrap_or_default();
 
-        let expanded_ids =
-            self.expand_selection_with_containers(&self.edgeless.authoring.selection);
+        let expanded_ids = self.expand_selection_with_containers(targets);
         let selected: Vec<SpatialItemInfo> = self
             .edgeless
             .authoring
@@ -244,40 +242,24 @@ impl PlaygroundView {
             }
         }
         let now_ms = self.now_ms(cx) as u64;
-        let protected_detach: Vec<String> = if let Some(ref pnid) = protected_note_id {
-            selected
-                .iter()
-                .filter(|item| {
-                    item.kind == SpatialItemKind::Frame
-                        && item.frame_children.iter().any(|c| c == pnid)
-                })
-                .map(|item| item.id.clone())
-                .collect()
-        } else {
-            Vec::new()
-        };
         let commit = self.page_mut().ok().and_then(|page| {
             let b_refs: Vec<&str> = block_ids.iter().map(String::as_str).collect();
             let s_refs: Vec<(&str, &str)> = surface_elements
                 .iter()
                 .map(|(s, e)| (s.as_str(), e.as_str()))
                 .collect();
-            if !protected_detach.is_empty()
-                && let Some(ref pnid) = protected_note_id
-            {
-                let detach_list = vec![pnid.clone()];
-                for fid in &protected_detach {
-                    let _ = page.update_frame_child_element_ids(fid, &[], &detach_list, now_ms);
-                }
-            }
+            let p_refs: Vec<&str> = protected_note_id.iter().map(String::as_str).collect();
             if b_refs.is_empty() && s_refs.is_empty() {
                 return None;
             }
-            page.delete_blocks_and_elements_with_connectors(&b_refs, &s_refs, now_ms)
+            page.delete_blocks_and_elements_preserving(&b_refs, &s_refs, &p_refs, now_ms)
                 .ok()
                 .flatten()
         });
-        self.edgeless.authoring.selection.clear();
+        self.edgeless
+            .authoring
+            .selection
+            .retain(|id| !targets.contains(id));
         if let Some(commit) = commit {
             self.did_edgeless_doc_commit(commit, cx);
         }

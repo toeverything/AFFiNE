@@ -254,8 +254,44 @@ impl PlaygroundView {
         }
     }
 
-    /// Drop any body caret/range or block selection whose target block was removed by
-    /// undo/redo or a remote CRDT update so subsequent typing never targets a deleted block.
+    /// Authoritative single-entry invariant: returns `true` iff `block_id` exists in `snap`
+    /// AND belongs to an editing surface addressable in the current `PlaygroundMode`:
+    /// - `PlaygroundMode::Page`: `root.id` or a descendant of a root-level `is_page_visible_note()`.
+    /// - `PlaygroundMode::Edgeless`: a block inside the currently active spatial inline-edited
+    ///   `Note` or `EdgelessText` (or read-only touch selection target).
+    pub(crate) fn is_block_addressable_in_current_mode(
+        &self,
+        snap: &blocksuite_playground_doc::read::PageSnapshot,
+        block_id: &str,
+    ) -> bool {
+        let Some(root) = snap.root.as_ref() else {
+            return false;
+        };
+        match self.mode {
+            PlaygroundMode::Page => {
+                root.id == block_id
+                    || root
+                        .children
+                        .iter()
+                        .any(|c| c.is_page_visible_note() && c.walk().any(|n| n.id == block_id))
+            }
+            PlaygroundMode::Edgeless => self
+                .edgeless
+                .authoring
+                .editing_spatial_block()
+                .map(|(id, _)| id)
+                .or_else(|| {
+                    self.edgeless_readonly_selection_target
+                        .as_ref()
+                        .map(|(id, _)| id.as_str())
+                })
+                .and_then(|active_id| snap.block(active_id))
+                .is_some_and(|sub| sub.walk().any(|n| n.id == block_id)),
+        }
+    }
+
+    /// Drop any body caret/range or block selection whose target block was removed or is
+    /// unaddressable in the current mode so subsequent typing never targets a hidden/deleted block.
     pub(crate) fn prune_dangling_selection(
         &mut self,
         w: Option<&mut Window>,
@@ -263,8 +299,8 @@ impl PlaygroundView {
     ) {
         let selection_alive = self.editor.selection.as_ref().is_none_or(|sel| {
             self.snapshot.as_ref().is_some_and(|snap| {
-                snap.block(&sel.anchor.block_id).is_some()
-                    && snap.block(&sel.focus.block_id).is_some()
+                self.is_block_addressable_in_current_mode(snap, &sel.anchor.block_id)
+                    && self.is_block_addressable_in_current_mode(snap, &sel.focus.block_id)
             })
         });
         let mut pruned = false;
@@ -278,11 +314,22 @@ impl PlaygroundView {
             pruned = true;
         }
         if !self.editor.block_selection.is_empty() {
-            let snap_ref = self.snapshot.as_ref();
+            let valid_ids: std::collections::HashSet<String> = self
+                .snapshot
+                .as_ref()
+                .map(|snap| {
+                    self.editor
+                        .block_selection
+                        .iter()
+                        .filter(|id| self.is_block_addressable_in_current_mode(snap, id))
+                        .cloned()
+                        .collect()
+                })
+                .unwrap_or_default();
             let before_len = self.editor.block_selection.len();
             self.editor
                 .block_selection
-                .retain(|id| snap_ref.is_some_and(|s| s.block(id).is_some()));
+                .retain(|id| valid_ids.contains(id));
             if self.editor.block_selection.len() != before_len {
                 pruned = true;
             }
@@ -339,6 +386,7 @@ impl PlaygroundView {
         self.context_paste_task = None;
         self.context_menu_target = None;
         self.overlays.reset();
+        self.prune_dangling_selection(Some(window), cx);
         self.pill_motion = Some(Motion::new(
             current_x,
             Self::target_pill_x(target),
