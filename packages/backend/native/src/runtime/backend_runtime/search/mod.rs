@@ -45,6 +45,12 @@ fn exact_token(value: &str) -> String {
     .collect()
 }
 
+fn parse_offset_cursor(cursor: &str) -> Option<u64> {
+  serde_json::from_str::<serde_json::Value>(cursor)
+    .ok()
+    .and_then(|value| value.get("offset").and_then(serde_json::Value::as_u64))
+}
+
 fn provider_payload(payload: &serde_json::Value) -> serde_json::Value {
   let mut payload = payload.clone();
   if let Some(object) = payload.as_object_mut() {

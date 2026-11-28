@@ -2,18 +2,17 @@ use serde_json::{Map, Value, json};
 
 use crate::runtime::{RuntimeError, RuntimeResult};
 
+const DEFAULT_MAX_MATCHES: u64 = 1000;
+
 pub(super) fn translate_search_request(physical_table: &str, dsl: Value) -> RuntimeResult<Value> {
   let object = dsl
     .as_object()
     .ok_or_else(|| RuntimeError::invalid_input("invalid search request"))?;
   let size = object.get("size").and_then(Value::as_u64).unwrap_or(10);
   let offset = if let Some(cursor) = object.get("cursor") {
-    let cursor = cursor
+    cursor
       .as_str()
-      .ok_or_else(|| RuntimeError::invalid_input("invalid search cursor"))?;
-    serde_json::from_str::<Value>(cursor)
-      .ok()
-      .and_then(|cursor| cursor.get("offset").and_then(Value::as_u64))
+      .and_then(super::super::parse_offset_cursor)
       .ok_or_else(|| RuntimeError::invalid_input("invalid search cursor"))?
   } else {
     object.get("from").and_then(Value::as_u64).unwrap_or_default()
@@ -26,6 +25,10 @@ pub(super) fn translate_search_request(physical_table: &str, dsl: Value) -> Runt
     "limit":size,
     "offset":offset,
   });
+  let required_matches = offset.saturating_add(size);
+  if required_matches > DEFAULT_MAX_MATCHES {
+    request["options"] = json!({"max_matches":required_matches});
+  }
   if let Some(sort) = object.get("sort") {
     request["sort"] = translate_sort(sort)?;
   }

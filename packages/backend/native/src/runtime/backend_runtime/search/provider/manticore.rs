@@ -433,8 +433,11 @@ fn normalize(value: Value, offset: u64) -> RuntimeResult<Value> {
       })
     })
     .collect::<Vec<_>>();
-  let next_cursor = (offset.saturating_add(nodes.len() as u64) < total)
-    .then(|| json!({"offset":offset.saturating_add(nodes.len() as u64)}).to_string());
+  let next_cursor = (!nodes.is_empty())
+    .then(|| offset.checked_add(nodes.len() as u64))
+    .flatten()
+    .filter(|&next_offset| next_offset < total)
+    .map(|next_offset| json!({"offset":next_offset}).to_string());
   Ok(json!({"total":total,"nodes":nodes,"nextCursor":next_cursor}))
 }
 
@@ -454,7 +457,7 @@ mod tests {
   use serde_json::json;
 
   use super::{
-    SearchTable, document_id, manticore_document, translate_query, translate_search_request, translate_sort,
+    SearchTable, document_id, manticore_document, normalize, translate_query, translate_search_request, translate_sort,
     validate_bulk_response,
   };
   use crate::runtime::RuntimeError;
@@ -548,5 +551,41 @@ mod tests {
       json!([{ "updated_at":"desc" }, { "id":"asc" }])
     );
     assert_eq!(SearchTable::Doc.text_field(), "title");
+  }
+
+  #[test]
+  fn sets_max_matches_only_when_page_exceeds_default_window() {
+    for (dsl, expected_max_matches) in [
+      (json!({"from":0,"size":10}), None),
+      (json!({"from":990,"size":10}), None),
+      (json!({"from":990,"size":20}), Some(1010)),
+      (json!({"cursor":"{\"offset\":1000}","size":20}), Some(1020)),
+      (json!({"cursor":"{\"offset\":12000}","size":20}), Some(12020)),
+      (json!({"from":0,"size":1050}), Some(1050)),
+    ] {
+      let request = translate_search_request("blocks", dsl).unwrap();
+      assert_eq!(
+        request.pointer("/options/max_matches"),
+        expected_max_matches.map(|value| json!(value)).as_ref()
+      );
+    }
+  }
+
+  #[test]
+  fn normalizes_next_cursor_only_when_page_advances_before_total() {
+    for (offset, hit_count, total, expected_cursor) in [
+      (0, 2, 5, Some("{\"offset\":2}")),
+      (1000, 20, 1050, Some("{\"offset\":1020}")),
+      (1030, 20, 1050, None),
+      (1000, 0, 1050, None),
+      (0, 0, 10, None),
+      (u64::MAX, 1, u64::MAX, None),
+    ] {
+      let hits = (0..hit_count)
+        .map(|index| json!({"_score":1.0,"_source":{"external_id":format!("row-{index}")}}))
+        .collect::<Vec<_>>();
+      let result = normalize(json!({"hits":{"total":total,"hits":hits}}), offset).unwrap();
+      assert_eq!(result["nextCursor"].as_str(), expected_cursor);
+    }
   }
 }
