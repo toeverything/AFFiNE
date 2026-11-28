@@ -386,6 +386,18 @@ impl Overlays {
                     effects.redraw = true;
                 }
             }
+            OverlayEvent::ToggleCodeWrap(block_id) => {
+                super::helpers::push_toggle_code_wrap(block_id, scene, &mut effects);
+            }
+            OverlayEvent::SetCodeLanguage { block_id, language } => {
+                effects.edits.push(DocEdit::SetProp {
+                    block_id,
+                    key: "prop:language",
+                    value: super::helpers::normalize_code_language(&language),
+                });
+                effects.redraw = true;
+            }
+            OverlayEvent::ToggleCodePreview(_) | OverlayEvent::ExternalEmbedInteract { .. } => {}
             OverlayEvent::DragStart(block_id) => {
                 self.close_slash(now_ms);
                 self.close_link_field();

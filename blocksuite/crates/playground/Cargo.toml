@@ -13,8 +13,9 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = []
+default = ["preview-typst"]
 harness = ["ui/harness", "blocksuite-editor/harness"]
+preview-typst = ["blocksuite-editor/preview-typst"]
 
 [[bin]]
 name = "native-playground"
@@ -28,7 +29,7 @@ required-features = ["harness"]
 [dependencies]
 anyhow.workspace = true
 async-channel.workspace = true
-blocksuite-editor = { path = "../editor" }
+blocksuite-editor = { path = "../editor", default-features = false }
 blocksuite-playground-doc = { path = "../doc", default-features = false }
 image.workspace = true
 serde.workspace = true

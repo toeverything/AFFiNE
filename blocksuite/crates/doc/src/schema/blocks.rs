@@ -83,6 +83,14 @@ pub enum BlockSpec {
         ref_flavour: String,
         caption: String,
     },
+    ExternalEmbed {
+        kind: crate::read::ExternalEmbedKind,
+        url: String,
+        title: Option<String>,
+        description: Option<String>,
+        html: Option<String>,
+        caption: String,
+    },
     Database(DatabaseSpec),
 }
 
@@ -170,6 +178,13 @@ pub fn is_leaf_flavour(flavour: &str) -> bool {
             | "affine:embed-linked-doc"
             | "affine:embed-synced-doc"
             | "affine:surface-ref"
+            | "affine:embed-youtube"
+            | "affine:embed-figma"
+            | "affine:embed-github"
+            | "affine:embed-loom"
+            | "affine:embed-iframe"
+            | "affine:embed-html"
+            | "affine:embed-web"
     )
 }
 
@@ -194,6 +209,7 @@ impl BlockSpec {
             Self::EmbedLinkedDoc { .. } => "affine:embed-linked-doc",
             Self::EmbedSyncedDoc { .. } => "affine:embed-synced-doc",
             Self::SurfaceRef { .. } => "affine:surface-ref",
+            Self::ExternalEmbed { kind, .. } => kind.flavour(),
             Self::Database(_) => "affine:database",
         }
     }
@@ -637,7 +653,11 @@ impl BlockSpec {
                     ),
                     (
                         "prop:size".to_string(),
-                        SessionValue::Any(Any::BigInt64(size)),
+                        SessionValue::Any(if let Ok(v) = i32::try_from(size) {
+                            Any::Integer(v)
+                        } else {
+                            Any::Float64((size as f64).into())
+                        }),
                     ),
                     (
                         "prop:type".to_string(),
@@ -664,87 +684,35 @@ impl BlockSpec {
                         SessionValue::Any(Any::String("horizontalThin".to_string())),
                     ),
                     (
-                        "prop:index".to_string(),
-                        SessionValue::Any(Any::String("a0".to_string())),
-                    ),
-                    (
-                        "prop:xywh".to_string(),
-                        SessionValue::Any(Any::String("[0,0,0,0]".to_string())),
-                    ),
-                    (
-                        "prop:lockedBySelf".to_string(),
-                        SessionValue::Any(Any::False),
-                    ),
-                    (
-                        "prop:rotate".to_string(),
-                        SessionValue::Any(Any::Integer(0)),
-                    ),
-                    (
                         "prop:footnoteIdentifier".to_string(),
                         SessionValue::Any(Any::Null),
                     ),
                 ]);
+                push_edgeless_props(&mut entries);
             }
             Self::EmbedLinkedDoc {
                 page_id,
                 style,
                 caption,
             } => {
-                entries.extend([
-                    (
-                        "prop:pageId".to_string(),
-                        SessionValue::Any(Any::String(page_id)),
-                    ),
-                    (
-                        "prop:style".to_string(),
-                        SessionValue::Any(Any::String(style)),
-                    ),
-                    (
-                        "prop:caption".to_string(),
-                        SessionValue::Any(if caption.is_empty() {
-                            Any::Null
-                        } else {
-                            Any::String(caption)
-                        }),
-                    ),
-                    (
-                        "prop:index".to_string(),
-                        SessionValue::Any(Any::String("a0".to_string())),
-                    ),
-                    (
-                        "prop:xywh".to_string(),
-                        SessionValue::Any(Any::String("[0,0,0,0]".to_string())),
-                    ),
-                    (
-                        "prop:lockedBySelf".to_string(),
-                        SessionValue::Any(Any::False),
-                    ),
-                    (
-                        "prop:rotate".to_string(),
-                        SessionValue::Any(Any::Integer(0)),
-                    ),
-                ]);
+                for (k, v) in [
+                    ("prop:pageId", Any::String(page_id)),
+                    ("prop:style", Any::String(style)),
+                    ("prop:caption", opt_nonempty(caption)),
+                ] {
+                    entries.push((k.to_string(), SessionValue::Any(v)));
+                }
+                push_edgeless_props(&mut entries);
             }
             Self::EmbedSyncedDoc { page_id, caption } => {
-                entries.extend([
-                    (
-                        "prop:pageId".to_string(),
-                        SessionValue::Any(Any::String(page_id)),
-                    ),
-                    (
-                        "prop:style".to_string(),
-                        SessionValue::Any(Any::String("syncedDoc".to_string())),
-                    ),
-                    (
-                        "prop:caption".to_string(),
-                        SessionValue::Any(if caption.is_empty() {
-                            Any::Null
-                        } else {
-                            Any::String(caption)
-                        }),
-                    ),
-                    ("prop:scale".to_string(), SessionValue::Any(Any::Integer(1))),
-                ]);
+                for (k, v) in [
+                    ("prop:pageId", Any::String(page_id)),
+                    ("prop:style", Any::String("syncedDoc".to_string())),
+                    ("prop:caption", opt_nonempty(caption)),
+                    ("prop:scale", Any::Integer(1)),
+                ] {
+                    entries.push((k.to_string(), SessionValue::Any(v)));
+                }
                 push_edgeless_props(&mut entries);
             }
             Self::SurfaceRef {
@@ -752,24 +720,35 @@ impl BlockSpec {
                 ref_flavour,
                 caption,
             } => {
-                entries.extend([
+                for (k, v) in [
+                    ("prop:reference", Any::String(reference)),
+                    ("prop:refFlavour", Any::String(ref_flavour)),
+                    ("prop:caption", opt_nonempty(caption)),
+                ] {
+                    entries.push((k.to_string(), SessionValue::Any(v)));
+                }
+                push_edgeless_props(&mut entries);
+            }
+            Self::ExternalEmbed {
+                url,
+                title,
+                description,
+                html,
+                caption,
+                ..
+            } => {
+                for (k, v) in [
+                    ("prop:url", Any::String(url)),
+                    ("prop:title", title.map_or(Any::Null, Any::String)),
                     (
-                        "prop:reference".to_string(),
-                        SessionValue::Any(Any::String(reference)),
+                        "prop:description",
+                        description.map_or(Any::Null, Any::String),
                     ),
-                    (
-                        "prop:refFlavour".to_string(),
-                        SessionValue::Any(Any::String(ref_flavour)),
-                    ),
-                    (
-                        "prop:caption".to_string(),
-                        SessionValue::Any(if caption.is_empty() {
-                            Any::Null
-                        } else {
-                            Any::String(caption)
-                        }),
-                    ),
-                ]);
+                    ("prop:html", html.map_or(Any::Null, Any::String)),
+                    ("prop:caption", opt_nonempty(caption)),
+                ] {
+                    entries.push((k.to_string(), SessionValue::Any(v)));
+                }
                 push_edgeless_props(&mut entries);
             }
             Self::Database(spec) => {
@@ -778,6 +757,14 @@ impl BlockSpec {
         }
 
         entries
+    }
+}
+
+fn opt_nonempty(s: String) -> Any {
+    if s.is_empty() {
+        Any::Null
+    } else {
+        Any::String(s)
     }
 }
 

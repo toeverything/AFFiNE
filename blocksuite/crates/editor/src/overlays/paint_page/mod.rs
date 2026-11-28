@@ -1,3 +1,4 @@
+mod controls;
 mod geometry;
 
 pub(super) use geometry::{
@@ -8,17 +9,17 @@ pub use geometry::{block_text, bounding_rect, find_parent, shared_alignment};
 
 use blocksuite_playground_doc::{read::BlockContent, schema::ListType};
 use ui::{
-    AnyElement, ClickEvent, Context, FontWeight, MouseButton, MouseDownEvent, SharedString, Window,
-    canvas, div, point, prelude::*, px, size,
+    AnyElement, ClickEvent, Context, MouseButton, MouseDownEvent, SharedString, Window, canvas,
+    div, point, prelude::*, px, size,
 };
 
 use crate::{
     block_flow::{
-        CODE_RADIUS, FlowKind, FlowRect, PAGE_SURFACE_ID, PagePaint,
-        heading_marker_rect_for_direction, paint_chevron, paragraph_spec,
+        FlowKind, FlowRect, PAGE_SURFACE_ID, PagePaint, heading_marker_rect_for_direction,
+        paint_chevron, paragraph_spec,
     },
     rich_text::DecorationKind,
-    theme::{Palette, TYPOGRAPHY},
+    theme::Palette,
 };
 
 use super::*;
@@ -259,75 +260,17 @@ impl Overlays {
                         }
                     }
                 }
-                FlowKind::Code => {
-                    let copied = self.copied_block() == Some(block.block_id.as_str());
-                    let focused = scene.focused_code_block == Some(block.block_id.as_str());
-                    let touch_browse = scene.form_factor != crate::block_flow::FormFactor::Desktop;
-                    if !hovered && !copied && !focused && !touch_browse {
-                        continue;
-                    }
-                    let subtle = touch_browse && !hovered && !focused && !copied;
-                    let width = if copied {
-                        COPIED_LABEL_WIDTH
-                    } else {
-                        COPY_BUTTON_SIZE
-                    };
-                    let target = FlowRect::new(
-                        rect.right() - COPY_BUTTON_INSET - width,
-                        rect.y + COPY_BUTTON_INSET,
-                        width,
-                        COPY_BUTTON_SIZE,
-                    );
-                    let event = OverlayEvent::CopyCode(block.block_id.clone());
-                    let mut element = place(viewport.to_local(&target))
-                        .id(SharedString::from(format!("copy-{}", block.block_id)))
-                        .rounded(px(CODE_RADIUS - COPY_BUTTON_INSET))
-                        .bg(if subtle {
-                            palette.background.opacity(0.6)
-                        } else {
-                            palette.background
-                        })
-                        .border_1()
-                        .border_color(if subtle {
-                            palette.border.opacity(0.6)
-                        } else {
-                            palette.border
-                        })
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .cursor_pointer()
-                        .hover(move |style| style.bg(hover_filled))
-                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                        .on_click(emit(cx, move |_: &ClickEvent| event.clone()));
-                    if viewport.fully_visible(&target) {
-                        element = element
-                            .snapshot(
-                                SharedString::from(format!("{}.copy", block.snapshot_id)),
-                                Some(PAGE_SURFACE_ID),
-                            )
-                            .snapshot_focused(copied || focused)
-                            .snapshot_text(if copied { "Copied" } else { "Copy" });
-                    }
-                    let element = if copied {
-                        element
-                            .text_size(px(TYPOGRAPHY.font_xs_px))
-                            .font_weight(FontWeight::MEDIUM)
-                            .text_color(palette.text_secondary)
-                            .child("Copied")
-                    } else {
-                        element.child(icon(
-                            "CopyIcon",
-                            16.0,
-                            if subtle {
-                                palette.icon.opacity(0.55)
-                            } else {
-                                palette.icon
-                            },
-                        ))
-                    };
-                    elements.push(element.into_any_element());
-                }
+                FlowKind::Code => self.push_code_controls(
+                    block,
+                    rect,
+                    hovered,
+                    scene,
+                    viewport,
+                    palette,
+                    hover_filled,
+                    cx,
+                    &mut elements,
+                ),
                 FlowKind::Latex => {
                     let initial = scene
                         .snapshot
@@ -489,6 +432,16 @@ impl Overlays {
                         }
                         elements.push(element.into_any_element());
                     }
+                }
+                FlowKind::ExternalEmbed => {
+                    self.push_external_embed_controls(
+                        block,
+                        rect,
+                        scene,
+                        viewport,
+                        cx,
+                        &mut elements,
+                    );
                 }
                 _ => {}
             }

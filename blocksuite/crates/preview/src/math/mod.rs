@@ -240,19 +240,25 @@ fn display_list_to_outline_svg(
                     let (paint, opacity_attr) = format_paint(*color, validated_color, "stroke");
                     let x2 = x1 + w;
                     let dash = (fs * 0.25).max(2.0);
+                    let snapped_t = if let Some(dpr) = snap_dpr {
+                        (t * dpr).ceil().max(1.0) / dpr
+                    } else {
+                        t.max(1.0)
+                    };
                     let _ = write!(
                         out,
-                        r#"<line x1="{x1:.3}" y1="{y1:.3}" x2="{x2:.3}" y2="{y1:.3}" stroke="{paint}"{opacity_attr} stroke-width="{t:.3}" stroke-dasharray="{dash:.2} {dash:.2}"/>"#,
+                        r#"<line x1="{x1:.3}" y1="{y1:.3}" x2="{x2:.3}" y2="{y1:.3}" stroke="{paint}"{opacity_attr} stroke-width="{snapped_t:.3}" stroke-dasharray="{dash:.2} {dash:.2}"/>"#,
                     );
                 } else {
                     let (paint, opacity_attr) = format_paint(*color, validated_color, "fill");
                     let (top, snapped_t) = if let Some(dpr) = snap_dpr {
-                        let dev_t = (t * dpr).max(1.0).round();
+                        let dev_t = (t * dpr).ceil().max(1.0);
                         let pt_t = dev_t / dpr;
                         let pt_top = ((y1 - pt_t * 0.5) * dpr).round() / dpr;
                         (pt_top, pt_t)
                     } else {
-                        (y1 - t * 0.5, t)
+                        let pt_t = t.max(1.0);
+                        (y1 - pt_t * 0.5, pt_t)
                     };
                     let _ = write!(
                         out,
@@ -271,16 +277,20 @@ fn display_list_to_outline_svg(
                 let mut ry = pad + y * fs;
                 let rw = width * fs;
                 let mut rh = height * fs;
-                if let Some(dpr) = snap_dpr
-                    && rh > 0.0
-                    && rh * dpr < 2.0
-                    && rw > rh
-                {
-                    let dev_h = (rh * dpr).max(1.0).round();
-                    let pt_h = dev_h / dpr;
-                    let center_y = ry + rh * 0.5;
-                    ry = ((center_y - pt_h * 0.5) * dpr).round() / dpr;
-                    rh = pt_h;
+                if rh > 0.0 && rw > rh {
+                    if let Some(dpr) = snap_dpr {
+                        if rh * dpr < 2.0 {
+                            let dev_h = (rh * dpr).ceil().max(1.0);
+                            let pt_h = dev_h / dpr;
+                            let center_y = ry + rh * 0.5;
+                            ry = ((center_y - pt_h * 0.5) * dpr).round() / dpr;
+                            rh = pt_h;
+                        }
+                    } else if rh < 1.0 {
+                        let center_y = ry + rh * 0.5;
+                        ry = center_y - 0.5;
+                        rh = 1.0;
+                    }
                 }
                 let (paint, opacity_attr) = format_paint(*color, validated_color, "fill");
                 let _ = write!(
@@ -703,11 +713,32 @@ mod tests {
     fn fraction_bar_and_sqrt_vinculum_snap_to_crisp_device_pixel_rows() {
         let pool = FontPool::new();
         let rasterizer = SvgRasterizer::new(&pool);
-        for (dpr, color) in [
-            (1.0_f32, "#121212"),
-            (2.0_f32, "#121212"),
-            (1.0_f32, "#e6e6e6"),
-            (2.0_f32, "#e6e6e6"),
+        let has_crisp_bar = |img: &RgbaImageBuffer,
+                             y_range: std::ops::Range<usize>,
+                             min_run: usize,
+                             min_rgb: u8| {
+            let w = img.width_px as usize;
+            y_range.into_iter().any(|row| {
+                let mut best_run = 0usize;
+                let mut cur_run = 0usize;
+                for col in 0..w {
+                    let px = &img.pixels[(row * w + col) * 4..][..4];
+                    if px[3] >= 250 && px[0] >= min_rgb && px[1] >= min_rgb && px[2] >= min_rgb {
+                        cur_run += 1;
+                        best_run = best_run.max(cur_run);
+                    } else {
+                        cur_run = 0;
+                    }
+                }
+                best_run >= min_run
+            })
+        };
+
+        for (dpr, color, min_rgb) in [
+            (1.0_f32, "#121212", 0u8),
+            (2.0_f32, "#121212", 0u8),
+            (1.0_f32, "#e6e6e6", 220u8),
+            (2.0_f32, "#e6e6e6", 220u8),
         ] {
             let opts = MathRenderOptions {
                 mode: MathDisplayMode::Display,
@@ -720,25 +751,20 @@ mod tests {
             let w = out.image.width_px as usize;
             let h = out.image.height_px as usize;
             let min_run = (w / 2).max(6);
-            // At least one row in the middle third must form a crisp full-alpha horizontal bar
-            // (fraction rule snapped to device-pixel row, alpha >= 250).
-            let has_crisp_fraction_bar = (h / 3..(h * 2) / 3).any(|row| {
-                let mut best_run = 0usize;
-                let mut cur_run = 0usize;
-                for col in 0..w {
-                    let a = out.image.pixels[(row * w + col) * 4 + 3];
-                    if a >= 250 {
-                        cur_run += 1;
-                        best_run = best_run.max(cur_run);
-                    } else {
-                        cur_run = 0;
-                    }
-                }
-                best_run >= min_run
-            });
             assert!(
-                has_crisp_fraction_bar,
+                has_crisp_bar(&out.image, h / 3..(h * 2) / 3, min_run, min_rgb),
                 "expected crisp >=250-alpha fraction bar row at dpr={dpr} color={color} ({w}x{h})"
+            );
+
+            // Standalone radical overbar must also have a crisp >=1px high-contrast bar in top half.
+            let sqrt_out = render_latex_rgba(r"\sqrt{x^2 + y^2}", &opts, &pool, &rasterizer, dpr)
+                .expect("render_latex_rgba sqrt");
+            let sw = sqrt_out.image.width_px as usize;
+            let sh = sqrt_out.image.height_px as usize;
+            let sqrt_min_run = (sw / 3).max(8);
+            assert!(
+                has_crisp_bar(&sqrt_out.image, 0..(sh / 2).max(1), sqrt_min_run, min_rgb),
+                "expected crisp >=250-alpha sqrt overbar row at dpr={dpr} color={color} ({sw}x{sh})"
             );
         }
     }

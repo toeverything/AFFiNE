@@ -222,7 +222,7 @@ impl FlowPass<'_> {
 
         if let Some(pdf) = pdf_preview {
             let header_h = 40.0;
-            let footer_h = 40.0;
+            let footer_h = 52.0;
             let pad = 12.0;
             let max_img_w = (width - 2.0 * pad).max(60.0);
             let aspect = if pdf.width_pt > 0.0 {
@@ -308,8 +308,8 @@ impl FlowPass<'_> {
             });
 
             let footer_y = total_h - footer_h;
-            let btn_w = 64.0;
-            let btn_h = 28.0;
+            let btn_w = 72.0;
+            let btn_h = 44.0;
             let btn_y = footer_y + (footer_h - btn_h) / 2.0;
             let center_x = width / 2.0;
             let label_w = 104.0;
@@ -333,20 +333,21 @@ impl FlowPass<'_> {
                 self.palette.text_primary,
             );
             for (rect, text) in [(prev_rect, "Prev"), (next_rect, "Next")] {
+                let visual = FlowRect::new(rect.x, rect.y + 6.0, rect.w, 32.0);
                 prims.push(Prim::Quad {
-                    rect,
+                    rect: visual,
                     fill: Some(self.palette.background),
                     border: Some(self.palette.border),
-                    radius: 6.0,
+                    radius: 8.0,
                     dashed: false,
                 });
                 prims.push(Prim::Text {
-                    x: rect.x,
-                    y: rect.y + 4.0,
+                    x: visual.x,
+                    y: visual.y + 6.0,
                     layout: self.plain_inline(
                         text,
                         btn_style.clone(),
-                        rect.w,
+                        visual.w,
                         20.0,
                         InlineAlign::Center,
                     ),
@@ -363,7 +364,7 @@ impl FlowPass<'_> {
             );
             prims.push(Prim::Text {
                 x: center_x - label_w / 2.0,
-                y: footer_y + 10.0,
+                y: footer_y + 16.0,
                 layout: self.plain_inline(
                     &page_label,
                     page_style,
@@ -471,5 +472,186 @@ impl FlowPass<'_> {
         };
         self.push_caption(&mut body, caption);
         body
+    }
+
+    pub(super) fn block_body(
+        &mut self,
+        node: &blocksuite_playground_doc::read::BlockNode,
+        width: f32,
+        list_depth: usize,
+        align: blocksuite_playground_doc::read::TextAlign,
+    ) -> BlockBody {
+        use super::{CodePreviewKind, EquationDraft, body};
+        use blocksuite_playground_doc::read::BlockContent;
+        match &node.content {
+            BlockContent::Paragraph {
+                kind,
+                text,
+                collapsed,
+                ..
+            } => {
+                if let Some(EquationDraft::Inline {
+                    block_id,
+                    utf16_offset,
+                    latex,
+                }) = self.input.equation_draft
+                    && block_id == &node.id
+                {
+                    let patched = body::patch_inline_latex_draft(text, *utf16_offset, latex);
+                    return self.paragraph_body(*kind, &patched, *collapsed, width, align);
+                }
+                self.paragraph_body(*kind, text, *collapsed, width, align)
+            }
+            BlockContent::List {
+                kind,
+                checked,
+                collapsed,
+                text,
+                numbered_index,
+                ..
+            } => {
+                if let Some(EquationDraft::Inline {
+                    block_id,
+                    utf16_offset,
+                    latex,
+                }) = self.input.equation_draft
+                    && block_id == &node.id
+                {
+                    let patched = body::patch_inline_latex_draft(text, *utf16_offset, latex);
+                    return self.list_body(
+                        *kind,
+                        *checked,
+                        *collapsed && !node.children.is_empty(),
+                        &patched,
+                        numbered_index.unwrap_or(1),
+                        list_depth,
+                        width,
+                        align,
+                    );
+                }
+                self.list_body(
+                    *kind,
+                    *checked,
+                    *collapsed && !node.children.is_empty(),
+                    text,
+                    numbered_index.unwrap_or(1),
+                    list_depth,
+                    width,
+                    align,
+                )
+            }
+            BlockContent::Divider => self.divider_body(width),
+            BlockContent::Code {
+                language,
+                wrap,
+                text,
+                caption,
+            } => {
+                if self.code_preview_blocks.contains(&node.id)
+                    && let Some(kind) = CodePreviewKind::from_language(language)
+                    && super::code_preview::code_preview_supported(kind)
+                {
+                    return self.code_preview_body(kind, language, text, caption, width);
+                }
+                let explicit_line_number =
+                    node.props.get("prop:lineNumber").and_then(|v| v.as_bool());
+                self.code_body(
+                    &node.id,
+                    language,
+                    *wrap,
+                    explicit_line_number,
+                    text,
+                    caption,
+                    width,
+                )
+            }
+            BlockContent::Image {
+                source_id,
+                width: image_width,
+                height: image_height,
+                caption,
+            } => self.image_body(source_id, *image_width, *image_height, caption, width),
+            BlockContent::Bookmark {
+                url,
+                title,
+                description,
+                caption,
+            } => self.bookmark_body(
+                url,
+                title.as_deref(),
+                description.as_deref(),
+                caption,
+                width,
+            ),
+            BlockContent::Latex { latex } => {
+                let effective = match self.input.equation_draft {
+                    Some(EquationDraft::Block {
+                        block_id,
+                        latex: draft,
+                    }) if block_id == &node.id => draft.as_str(),
+                    _ => latex.as_str(),
+                };
+                self.latex_body(effective, width)
+            }
+            BlockContent::Callout {
+                icon,
+                text,
+                background_color,
+            } => self.callout_body(
+                icon,
+                &text.plain,
+                background_color.as_deref(),
+                !node.children.is_empty(),
+                width,
+            ),
+            BlockContent::Table(table) => self.table_body(
+                table,
+                width,
+                self.focused_table_block == Some(node.id.as_str()),
+            ),
+            BlockContent::Attachment {
+                name,
+                size,
+                mime_type,
+                source_id,
+                caption,
+                embed,
+            } => self.attachment_body(
+                &node.id, name, *size, mime_type, source_id, caption, *embed, width,
+            ),
+            BlockContent::EmbedLinkedDoc {
+                page_id, caption, ..
+            } => self.embed_linked_doc_body(page_id, caption, width),
+            BlockContent::EmbedSyncedDoc { page_id, caption } => {
+                self.embed_synced_doc_body(page_id, caption, width)
+            }
+            BlockContent::SurfaceRef {
+                reference,
+                ref_flavour,
+                caption,
+            } => self.surface_ref_body(&node.id, reference, ref_flavour, caption, width),
+            BlockContent::ExternalEmbed {
+                kind,
+                url,
+                title,
+                description,
+                html,
+                caption,
+            } => {
+                let effective = self.effective_embed_state(&node.id);
+                self.external_embed_body(
+                    *kind,
+                    url,
+                    title.as_deref(),
+                    description.as_deref(),
+                    html.as_deref(),
+                    caption,
+                    effective,
+                    width,
+                )
+            }
+            BlockContent::Database(db) => self.database_body(&node.id, db, width),
+            _ => self.unknown_body(&node.flavour, &node.id, width),
+        }
     }
 }

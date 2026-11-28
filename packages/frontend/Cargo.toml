@@ -230,15 +230,144 @@ debug = 0
 incremental = false
 codegen-units = 16
 
+[profile.dev.package.merman]
+opt-level = "s"
+[profile.dev.package.merman-analysis]
+opt-level = "s"
+[profile.dev.package.merman-ascii]
+opt-level = "s"
+[profile.dev.package.merman-core]
+opt-level = "s"
+[profile.dev.package.merman-editor-core]
+opt-level = "s"
+[profile.dev.package.merman-elk-layered]
+opt-level = "s"
+[profile.dev.package.merman-layout-elk]
+opt-level = "s"
+[profile.dev.package.merman-markup]
+opt-level = "s"
+[profile.dev.package.merman-model]
+opt-level = "s"
+[profile.dev.package.merman-render]
+opt-level = "s"
+[profile.dev.package.merman-theme-contract]
+opt-level = "s"
+[profile.dev.package.typst]
+opt-level = "s"
+[profile.dev.package.typst-eval]
+opt-level = "s"
+[profile.dev.package.typst-html]
+opt-level = "s"
+[profile.dev.package.typst-layout]
+opt-level = "s"
+[profile.dev.package.typst-library]
+opt-level = "s"
+[profile.dev.package.typst-realize]
+opt-level = "s"
+[profile.dev.package.typst-svg]
+opt-level = "s"
+[profile.dev.package.typst-syntax]
+opt-level = "s"
+[profile.dev.package.typst-utils]
+opt-level = "s"
+[profile.dev.package.comemo]
+opt-level = "s"
+
 [profile.test]
 debug = 0
 incremental = false
 codegen-units = 16
 
+[profile.test.package.merman]
+opt-level = 0
+[profile.test.package.merman-analysis]
+opt-level = 0
+[profile.test.package.merman-ascii]
+opt-level = 0
+[profile.test.package.merman-core]
+opt-level = 0
+[profile.test.package.merman-editor-core]
+opt-level = 0
+[profile.test.package.merman-elk-layered]
+opt-level = 0
+[profile.test.package.merman-layout-elk]
+opt-level = 0
+[profile.test.package.merman-markup]
+opt-level = 0
+[profile.test.package.merman-model]
+opt-level = 0
+[profile.test.package.merman-render]
+opt-level = 0
+[profile.test.package.merman-theme-contract]
+opt-level = 0
+[profile.test.package.typst]
+opt-level = 0
+[profile.test.package.typst-eval]
+opt-level = 0
+[profile.test.package.typst-html]
+opt-level = 0
+[profile.test.package.typst-layout]
+opt-level = 0
+[profile.test.package.typst-library]
+opt-level = 0
+[profile.test.package.typst-realize]
+opt-level = 0
+[profile.test.package.typst-svg]
+opt-level = 0
+[profile.test.package.typst-syntax]
+opt-level = 0
+[profile.test.package.typst-utils]
+opt-level = 0
+[profile.test.package.comemo]
+opt-level = 0
+
 [profile.release]
 debug = "limited"
 lto = "thin"
 codegen-units = 1
+
+[profile.release.package.merman]
+opt-level = "z"
+[profile.release.package.merman-analysis]
+opt-level = "z"
+[profile.release.package.merman-ascii]
+opt-level = "z"
+[profile.release.package.merman-core]
+opt-level = "z"
+[profile.release.package.merman-editor-core]
+opt-level = "z"
+[profile.release.package.merman-elk-layered]
+opt-level = "z"
+[profile.release.package.merman-layout-elk]
+opt-level = "z"
+[profile.release.package.merman-markup]
+opt-level = "z"
+[profile.release.package.merman-model]
+opt-level = "z"
+[profile.release.package.merman-render]
+opt-level = "z"
+[profile.release.package.merman-theme-contract]
+opt-level = "z"
+[profile.release.package.typst]
+opt-level = "z"
+[profile.release.package.typst-eval]
+opt-level = "z"
+[profile.release.package.typst-html]
+opt-level = "z"
+[profile.release.package.typst-layout]
+opt-level = "z"
+[profile.release.package.typst-library]
+opt-level = "z"
+[profile.release.package.typst-realize]
+opt-level = "z"
+[profile.release.package.typst-svg]
+opt-level = "z"
+[profile.release.package.typst-syntax]
+opt-level = "z"
+[profile.release.package.typst-utils]
+opt-level = "z"
+[profile.release.package.comemo]
+opt-level = "z"
 
 [profile.wasm-release]
 inherits = "release"

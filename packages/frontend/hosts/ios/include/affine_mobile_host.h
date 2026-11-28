@@ -328,6 +328,13 @@ void affine_ios_host_set_text_input_callback(
     AffineTextInputChangedCallback cb,
     void *user_data);
 
+typedef void (*AffineOpenUrlCallback)(const char *url_utf8, void *user_data);
+
+void affine_ios_host_set_open_url_callback(
+    AffineIosHost *host,
+    AffineOpenUrlCallback cb,
+    void *user_data);
+
 uint64_t affine_ios_host_text_input_change_seq(const AffineIosHost *host);
 
 void affine_ios_host_reset_empty_doc(AffineIosHost *host);

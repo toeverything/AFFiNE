@@ -2,7 +2,7 @@
   {
     "metric": "artifacts_bytes.headless_bin",
     "action": "ceiling",
-    "accepted_value": 156500000,
-    "reason": "Native non-wasm32 targets link blocksuite-preview (RaTeX KaTeX math fonts and Hayro PDF renderer) along with full desktop/mobile editing, edgeless spatial blocks, and touch interaction state machines; wasm32 main bundle remains isolated at 12.38 MB via lazy workers."
+    "accepted_value": 286000000,
+    "reason": "Native non-wasm32 targets link full blocksuite-preview (RaTeX math, Hayro PDF, Merman Mermaid, and Typst compiler with opt-level=s on dev/test deps) alongside desktop/mobile editing, edgeless spatial blocks, and touch interaction state machines (measured 280,311,728 B); wasm32 main bundle remains isolated via lazy workers."
   }
 ]

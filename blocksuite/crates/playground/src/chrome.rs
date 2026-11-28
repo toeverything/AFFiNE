@@ -421,6 +421,7 @@ impl PlaygroundView {
         let entity = cx.entity();
         let marks = layout.presence_marks(presences, palette, window);
         let (paint, controls) = self.overlay_page_layer(&layout, palette, window, cx);
+        let table_toolbar = self.render_table_toolbar(&layout, viewport, palette, cx);
         let scrollbar = overlays::ScrollbarMetrics::compute(
             viewport_width,
             viewport_height,
@@ -465,6 +466,7 @@ impl PlaygroundView {
                 .size_full(),
             )
             .children(controls)
+            .children(table_toolbar)
             .children(scrollbar)
             .into_any_element()
     }
@@ -693,6 +695,7 @@ impl ui::Render for PlaygroundView {
         let presences = self.remote_presences(&palette);
         let switcher_left = ((viewport_width - PILL_WIDTH) / 2.0).floor().max(0.0);
         let mode_switcher = self.render_mode_switcher(&palette, switcher_left, window, cx);
+        let doc_panel_toggle = self.render_doc_panel_toggle(&palette, viewport_width < 440.0, cx);
         let theme_toggle = self.render_theme_toggle(&palette, cx);
         let presence_room = viewport_width
             - TOPBAR_EDGE
@@ -707,6 +710,8 @@ impl ui::Render for PlaygroundView {
             window,
         );
 
+        self.sync_embeds_shielded();
+
         let content = match self.mode {
             PlaygroundMode::Page => self.render_page(
                 &palette,
@@ -720,12 +725,19 @@ impl ui::Render for PlaygroundView {
                 self.render_edgeless(&palette, viewport_width, viewport_height, window, cx)
             }
         };
+        #[cfg(target_arch = "wasm32")]
+        self.reconcile_wasm_html_embeds(viewport_width, viewport_height);
         let mut popovers = self.overlay_popovers(&palette, window, cx);
         if let Some(touch_menu) = self.render_touch_selection_menu(&palette, window, cx) {
             popovers.push(touch_menu);
         }
         if let Some(sheet) = self.render_database_record_sheet(&palette, window, cx) {
             popovers.push(sheet);
+        }
+        if let Some(doc_panel) =
+            self.render_doc_panel(&palette, viewport_width, viewport_height, cx)
+        {
+            popovers.push(doc_panel);
         }
 
         div()
@@ -757,6 +769,16 @@ impl ui::Render for PlaygroundView {
                     .border_b_1()
                     .border_color(palette.border)
                     .snapshot("chrome.topbar", Some("root.canvas"))
+                    .child(
+                        div()
+                            .absolute()
+                            .left(px(TOPBAR_EDGE))
+                            .top(px(0.0))
+                            .h(px(TOPBAR_HEIGHT - 1.0))
+                            .flex()
+                            .items_center()
+                            .child(doc_panel_toggle),
+                    )
                     .child(mode_switcher)
                     .child(
                         div()

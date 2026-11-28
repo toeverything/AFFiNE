@@ -1,7 +1,94 @@
 //! Document-level selection geometry, cross-block handle drag, authoritative
-//! selection actions, and multi-MIME clipboard helpers for `AndroidEditorRuntime`.
+//! selection actions, multi-MIME clipboard helpers, and validated external URL
+//! queueing for `AndroidEditorRuntime`.
+
+use std::{cell::RefCell, collections::VecDeque};
+
+use ui::ClipboardItem;
 
 use crate::editor_runtime::AndroidEditorRuntime;
+
+thread_local! {
+    static ANDROID_PENDING_OPEN_URLS: RefCell<VecDeque<String>> =
+        const { RefCell::new(VecDeque::new()) };
+}
+
+pub(crate) fn enqueue_pending_open_url(url: &str) {
+    if url.chars().any(char::is_control) {
+        return;
+    }
+    let trimmed = url.trim();
+    if !(trimmed.starts_with("https://") || trimmed.starts_with("http://")) {
+        return;
+    }
+    ANDROID_PENDING_OPEN_URLS.with(|q| {
+        let mut g = q.borrow_mut();
+        if g.len() >= 16 {
+            g.pop_front();
+        }
+        g.push_back(trimmed.to_string());
+    });
+}
+
+pub(crate) fn take_pending_open_url_global() -> Option<String> {
+    ANDROID_PENDING_OPEN_URLS.with(|q| q.borrow_mut().pop_front())
+}
+
+pub(crate) fn clipboard_item_from_host(
+    plain: Option<String>,
+    html: Option<String>,
+    markdown: Option<String>,
+    snapshot: Option<String>,
+) -> Option<ClipboardItem> {
+    let mut meta = serde_json::Map::new();
+    if let Some(s) = snapshot.filter(|v| !v.is_empty()) {
+        meta.insert(
+            "application/x-blocksuite-snapshot".to_string(),
+            serde_json::Value::String(s),
+        );
+    }
+    if let Some(h) = html.filter(|v| !v.is_empty()) {
+        meta.insert("text/html".to_string(), serde_json::Value::String(h));
+    }
+    if let Some(m) = markdown.filter(|v| !v.is_empty()) {
+        meta.insert("text/markdown".to_string(), serde_json::Value::String(m));
+    }
+    let plain_str = plain.unwrap_or_default();
+    if !meta.is_empty() {
+        Some(ClipboardItem::new_string_with_json_metadata(
+            plain_str,
+            serde_json::Value::Object(meta),
+        ))
+    } else if !plain_str.is_empty() {
+        Some(ClipboardItem::new_string(plain_str))
+    } else {
+        None
+    }
+}
+
+pub(crate) fn serialize_clipboard_item_json(item: &ClipboardItem) -> String {
+    let mut map = serde_json::Map::new();
+    if let Some(text) = item.text() {
+        map.insert("text/plain".to_string(), serde_json::Value::String(text));
+    }
+    if let Some(meta_str) = item.metadata()
+        && let Ok(serde_json::Value::Object(meta)) =
+            serde_json::from_str::<serde_json::Value>(meta_str)
+    {
+        for (k, v) in meta {
+            if k == "application/x-blocksuite-snapshot" {
+                let s = match v {
+                    serde_json::Value::String(s) => s,
+                    other => other.to_string(),
+                };
+                map.insert(k, serde_json::Value::String(s));
+            } else if let serde_json::Value::String(s) = v {
+                map.insert(k, serde_json::Value::String(s));
+            }
+        }
+    }
+    serde_json::Value::Object(map).to_string()
+}
 
 impl AndroidEditorRuntime {
     pub(crate) fn set_page_readonly(&mut self, readonly: bool) {

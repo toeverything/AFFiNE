@@ -18,6 +18,7 @@ fn main() {
         if let Err(err) = playground::register_bundled_fonts(cx) {
             eprintln!("failed to register bundled fonts: {err:#}");
         }
+        playground::ensure_native_preview_providers_installed();
         let _ = cx.open_window(ui::WindowOptions::default(), |_, cx| {
             cx.new(|cx| playground::PlaygroundView::with_options(options, cx))
         });

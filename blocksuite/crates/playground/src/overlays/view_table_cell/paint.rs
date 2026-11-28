@@ -304,6 +304,280 @@ impl PlaygroundView {
         out
     }
 
+    pub(crate) fn table_is_readonly(&self) -> bool {
+        (self.mode == crate::PlaygroundMode::Page && self.page_readonly)
+            || (self.mode == crate::PlaygroundMode::Edgeless && self.edgeless_readonly)
+    }
+
+    /// Insert a new row immediately after the focused table cell's row (1 atomic undo step).
+    pub fn table_insert_row_after(
+        &mut self,
+        window: &mut Window,
+        cx: &mut ui::Context<Self>,
+    ) -> bool {
+        if self.table_is_readonly() {
+            return false;
+        }
+        let Some((block_id, _, _, _, _)) = self.focused_table_grid() else {
+            return false;
+        };
+        let after_row = self.table_cell.as_ref().map(|c| c.row_id.clone());
+        let new_row_id = format!("row-{}", self.fresh_block_id());
+        let now_ms = self.now_ms(cx) as u64;
+        let commit = self.page_mut().ok().and_then(|page| {
+            page.insert_table_row(&block_id, after_row.as_deref(), &new_row_id, now_ms)
+                .ok()
+                .flatten()
+        });
+        let Some(commit) = commit else {
+            return false;
+        };
+        self.did_table_cell_commit(&block_id, commit);
+        window.notify_text_input_changed(&self.editor_focus);
+        cx.notify();
+        true
+    }
+
+    /// Delete the focused table cell's row (1 atomic undo step, no-op on single-row table).
+    pub fn table_delete_focused_row(
+        &mut self,
+        window: &mut Window,
+        cx: &mut ui::Context<Self>,
+    ) -> bool {
+        if self.table_is_readonly() {
+            return false;
+        }
+        let Some((block_id, rows, cols, r_idx, c_idx)) = self.focused_table_grid() else {
+            return false;
+        };
+        if rows.len() <= 1 {
+            return false;
+        }
+        let target_row = rows[r_idx].clone();
+        let next_row = if r_idx + 1 < rows.len() {
+            rows[r_idx + 1].clone()
+        } else {
+            rows[r_idx - 1].clone()
+        };
+        let keep_col = cols[c_idx].clone();
+        let now_ms = self.now_ms(cx) as u64;
+        let commit = self.page_mut().ok().and_then(|page| {
+            page.delete_table_row(&block_id, &target_row, now_ms)
+                .ok()
+                .flatten()
+        });
+        let Some(commit) = commit else {
+            return false;
+        };
+        self.did_table_cell_commit(&block_id, commit);
+        self.focus_table_cell(block_id, next_row, keep_col, None, window, cx);
+        true
+    }
+
+    /// Insert a new column immediately after the focused table cell's column (1 atomic undo step).
+    pub fn table_insert_column_after(
+        &mut self,
+        window: &mut Window,
+        cx: &mut ui::Context<Self>,
+    ) -> bool {
+        if self.table_is_readonly() {
+            return false;
+        }
+        let Some((block_id, _, _, _, _)) = self.focused_table_grid() else {
+            return false;
+        };
+        let after_col = self.table_cell.as_ref().map(|c| c.column_id.clone());
+        let new_col_id = format!("col-{}", self.fresh_block_id());
+        let now_ms = self.now_ms(cx) as u64;
+        let commit = self.page_mut().ok().and_then(|page| {
+            page.insert_table_column(&block_id, after_col.as_deref(), &new_col_id, now_ms)
+                .ok()
+                .flatten()
+        });
+        let Some(commit) = commit else {
+            return false;
+        };
+        self.did_table_cell_commit(&block_id, commit);
+        window.notify_text_input_changed(&self.editor_focus);
+        cx.notify();
+        true
+    }
+
+    /// Delete the focused table cell's column (1 atomic undo step, no-op on single-column table).
+    pub fn table_delete_focused_column(
+        &mut self,
+        window: &mut Window,
+        cx: &mut ui::Context<Self>,
+    ) -> bool {
+        if self.table_is_readonly() {
+            return false;
+        }
+        let Some((block_id, rows, cols, r_idx, c_idx)) = self.focused_table_grid() else {
+            return false;
+        };
+        if cols.len() <= 1 {
+            return false;
+        }
+        let target_col = cols[c_idx].clone();
+        let next_col = if c_idx + 1 < cols.len() {
+            cols[c_idx + 1].clone()
+        } else {
+            cols[c_idx - 1].clone()
+        };
+        let keep_row = rows[r_idx].clone();
+        let now_ms = self.now_ms(cx) as u64;
+        let commit = self.page_mut().ok().and_then(|page| {
+            page.delete_table_column(&block_id, &target_col, now_ms)
+                .ok()
+                .flatten()
+        });
+        let Some(commit) = commit else {
+            return false;
+        };
+        self.did_table_cell_commit(&block_id, commit);
+        self.focus_table_cell(block_id, keep_row, next_col, None, window, cx);
+        true
+    }
+
+    /// Floating row/column action bar shown beside a focused `affine:table` block.
+    pub(crate) fn render_table_toolbar(
+        &self,
+        layout: &FlowLayout,
+        v: PageViewport,
+        palette: &Palette,
+        cx: &mut ui::Context<Self>,
+    ) -> Option<ui::AnyElement> {
+        if self.table_is_readonly() {
+            return None;
+        }
+        let cell = self.table_cell.as_ref()?;
+        let block = layout.block(&cell.block_id)?;
+        let (_, by, hit) =
+            Self::find_table_cell_hit(layout, &cell.block_id, &cell.row_id, &cell.column_id)?;
+        let cell_top = by + hit.rect.y;
+        let cell_bottom = cell_top + hit.rect.h;
+        if cell_bottom < v.scroll_y || cell_top > v.scroll_y + v.height {
+            return None;
+        }
+        let touch = self.form_factor != crate::FormFactor::Desktop;
+        let btn_h = if touch { 36.0 } else { 24.0 };
+        let btn_min_w = if touch { 44.0 } else { 0.0 };
+        let bar_h = if touch { 44.0 } else { 32.0 };
+        let bar_w = if touch { 236.0 } else { 216.0 };
+        let (table_right, table_bottom) = block
+            .body
+            .table_cells
+            .iter()
+            .fold((0.0_f32, 0.0_f32), |(max_r, max_b), c| {
+                (max_r.max(c.rect.right()), max_b.max(c.rect.bottom()))
+            });
+        let side_x = v.column_x + block.x + table_right + 10.0;
+        let (bar_x, raw_y) =
+            if table_right > 0.0 && side_x + bar_w <= v.column_x + block.body.width + 24.0 {
+                (side_x, block.y)
+            } else {
+                // Sit inside the focused bottom toolbar slot when visible; if a tall table's
+                // bottom scrolls below the viewport, dock inside the visible table span (above
+                // any bottom-strip focused cell) so neither surrounding paragraph is covered.
+                let below_y = if table_bottom > 0.0 {
+                    block.y + table_bottom + 8.0
+                } else {
+                    block.y + block.body.height - bar_h - 6.0
+                };
+                let bar_x = (v.column_x + block.x + block.body.width - bar_w)
+                    .max(v.column_x + block.x + 10.0);
+                let viewport_bottom_slot = v.scroll_y + v.height - bar_h - 8.0;
+                if below_y <= viewport_bottom_slot {
+                    (bar_x, below_y)
+                } else {
+                    let min_in_table = block.y.max(v.scroll_y + 8.0);
+                    let mut docked = viewport_bottom_slot.max(min_in_table);
+                    if cell_bottom > docked - 4.0 && cell_top - bar_h - 6.0 >= min_in_table {
+                        docked = cell_top - bar_h - 6.0;
+                    }
+                    (bar_x, docked)
+                }
+            };
+        // Keep the toolbar pinned at `8px` below the topbar when a tall table's top scrolls
+        // out of view while its focused cell remains visible.
+        let max_y = (v.height - bar_h - 8.0).max(8.0);
+        let screen_y = (raw_y - v.scroll_y).clamp(8.0, max_y).round();
+        let hover = palette.hover;
+        let btn =
+            |id: &'static str,
+             snap_suffix: &'static str,
+             label: &'static str,
+             on_click: fn(&mut Self, &mut Window, &mut ui::Context<Self>) -> bool| {
+                div()
+                    .id(id)
+                    .min_w(px(btn_min_w))
+                    .h(px(btn_h))
+                    .px(px(8.0))
+                    .rounded(px(4.0))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .cursor_pointer()
+                    .hover(move |s| s.bg(hover))
+                    .text_size(px(11.0))
+                    .font_weight(ui::FontWeight::MEDIUM)
+                    .text_color(palette.text_primary)
+                    .on_mouse_down(ui::MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                    .on_click(cx.listener(move |this, _, win, cx| {
+                        let _ = on_click(this, win, cx);
+                    }))
+                    .snapshot(
+                        ui::SharedString::from(format!("overlay.table_toolbar.{snap_suffix}")),
+                        Some("overlay.table_toolbar"),
+                    )
+                    .snapshot_text(label)
+                    .child(label)
+            };
+        Some(
+            div()
+                .id("table-toolbar")
+                .absolute()
+                .left(px(bar_x.round()))
+                .top(px(screen_y))
+                .h(px(bar_h))
+                .px(px(4.0))
+                .rounded(px(8.0))
+                .bg(palette.panel)
+                .border_1()
+                .border_color(palette.border)
+                .flex()
+                .items_center()
+                .gap(px(4.0))
+                .on_mouse_down(ui::MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .snapshot("overlay.table_toolbar", Some("root.canvas"))
+                .child(btn(
+                    "tbl-add-row",
+                    "add_row",
+                    "+ Row",
+                    Self::table_insert_row_after,
+                ))
+                .child(btn(
+                    "tbl-del-row",
+                    "del_row",
+                    "- Row",
+                    Self::table_delete_focused_row,
+                ))
+                .child(btn(
+                    "tbl-add-col",
+                    "add_col",
+                    "+ Col",
+                    Self::table_insert_column_after,
+                ))
+                .child(btn(
+                    "tbl-del-col",
+                    "del_col",
+                    "- Col",
+                    Self::table_delete_focused_column,
+                ))
+                .into_any_element(),
+        )
+    }
+
     pub(super) fn focused_table_grid(
         &self,
     ) -> Option<(String, Vec<String>, Vec<String>, usize, usize)> {

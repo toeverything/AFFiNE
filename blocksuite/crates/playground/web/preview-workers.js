@@ -3,10 +3,14 @@
 export function installPlaygroundPreviewBridge(wasmExports, baseUrl = window.location.href) {
   let mathWorker = null;
   let pdfWorker = null;
+  let mermaidWorker = null;
+  let typstWorker = null;
   let nextId = 1;
   const pendingMath = new Map();
   const pendingPdf = new Map();
+  const pendingCode = new Map();
   const cachedPdfBytes = new Map();
+  const mountedHtmlEmbeds = new Map();
 
   function rememberPdfBytes(pdfKey, bytes) {
     if (cachedPdfBytes.has(pdfKey)) {
@@ -24,7 +28,10 @@ export function installPlaygroundPreviewBridge(wasmExports, baseUrl = window.loc
   function failAllPendingMath() {
     const entries = Array.from(pendingMath.values());
     pendingMath.clear();
-    mathWorker = null;
+    if (mathWorker) {
+      mathWorker.terminate?.();
+      mathWorker = null;
+    }
     for (const req of entries) {
       wasmExports.deliver_math_error(
         req.latex,
@@ -39,7 +46,10 @@ export function installPlaygroundPreviewBridge(wasmExports, baseUrl = window.loc
   function failAllPendingPdf() {
     const entries = Array.from(pendingPdf.values());
     pendingPdf.clear();
-    pdfWorker = null;
+    if (pdfWorker) {
+      pdfWorker.terminate?.();
+      pdfWorker = null;
+    }
     const seenKeys = new Set();
     for (const req of entries) {
       if (!seenKeys.has(req.pdfKey)) {
@@ -153,6 +163,113 @@ export function installPlaygroundPreviewBridge(wasmExports, baseUrl = window.loc
     return pdfWorker;
   }
 
+  async function handleCodeMessage(event) {
+    const msg = event?.data;
+    if (!msg || !pendingCode.has(msg.id)) return;
+    const req = pendingCode.get(msg.id);
+    pendingCode.delete(msg.id);
+    if (!msg.ok || !msg.result?.svg) {
+      wasmExports.deliver_code_preview_error?.(
+        req.kind,
+        req.source,
+        req.dark,
+        req.dpr,
+        msg.error || 'render failed'
+      );
+      return;
+    }
+    try {
+      const blob = new Blob([msg.result.svg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+      URL.revokeObjectURL(url);
+      const scale = Math.max(1, Math.min(4, req.dpr || 2));
+      const wPt = Math.max(1, img.naturalWidth || 320);
+      const hPt = Math.max(1, img.naturalHeight || 160);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(wPt * scale);
+      canvas.height = Math.round(hPt * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0, wPt, hPt);
+      const rgba = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      wasmExports.deliver_code_preview?.(
+        req.kind,
+        req.source,
+        req.dark,
+        req.dpr,
+        wPt,
+        hPt,
+        canvas.width,
+        canvas.height,
+        new Uint8Array(rgba.buffer)
+      );
+    } catch (err) {
+      wasmExports.deliver_code_preview_error?.(
+        req.kind,
+        req.source,
+        req.dark,
+        req.dpr,
+        String(err)
+      );
+    }
+  }
+
+  function failAllPendingCode(kind, reason = 'code preview worker error') {
+    if (kind === 'mermaid' && mermaidWorker) {
+      mermaidWorker.terminate?.();
+      mermaidWorker = null;
+    } else if (kind === 'typst' && typstWorker) {
+      typstWorker.terminate?.();
+      typstWorker = null;
+    }
+    for (const [id, req] of pendingCode.entries()) {
+      if (kind && req.kind !== kind) continue;
+      pendingCode.delete(id);
+      wasmExports.deliver_code_preview_error?.(
+        req.kind,
+        req.source,
+        req.dark,
+        req.dpr,
+        String(reason)
+      );
+    }
+  }
+
+  function ensureDiagramWorker(kind) {
+    if (kind === 'mermaid') {
+      if (!mermaidWorker) {
+        mermaidWorker = spawnWorker(
+          resolveWorkerAsset('mermaidScript', './workers/mermaid-worker.js'),
+          resolveWorkerAsset('mermaidWasm', './workers/mermaid-worker.wasm')
+        );
+        mermaidWorker.addEventListener('message', handleCodeMessage);
+        mermaidWorker.addEventListener('error', () => failAllPendingCode('mermaid', 'mermaid worker error'));
+        mermaidWorker.addEventListener('messageerror', () =>
+          failAllPendingCode('mermaid', 'mermaid worker messageerror')
+        );
+      }
+      return mermaidWorker;
+    }
+    if (!typstWorker) {
+      typstWorker = spawnWorker(
+        resolveWorkerAsset('typstScript', './workers/typst-worker.js'),
+        resolveWorkerAsset('typstWasm', './workers/typst-worker.wasm')
+      );
+      typstWorker.addEventListener('message', handleCodeMessage);
+      typstWorker.addEventListener('error', () => failAllPendingCode('typst', 'typst worker error'));
+      typstWorker.addEventListener('messageerror', () =>
+        failAllPendingCode('typst', 'typst worker messageerror')
+      );
+    }
+    return typstWorker;
+  }
+
   window.__playgroundPreview = {
     requestMath(latex, display, fontSizePt, colorCss, dpr) {
       const id = nextId++;
@@ -235,6 +352,113 @@ export function installPlaygroundPreviewBridge(wasmExports, baseUrl = window.loc
     deliverPdfAttachment(bytes, name = 'document.pdf') {
       if (typeof wasmExports.deliver_picked_pdf === 'function') {
         wasmExports.deliver_picked_pdf(bytes, String(name));
+      }
+    },
+    requestCodePreview(kind, source, dark, dpr) {
+      const id = nextId++;
+      pendingCode.set(id, { kind, source, dark, dpr });
+      try {
+        ensureDiagramWorker(kind).postMessage(
+          kind === 'mermaid'
+            ? { id, source, theme: dark ? 'dark' : 'light' }
+            : { id, source, pageIndex: 0 }
+        );
+      } catch (err) {
+        pendingCode.delete(id);
+        wasmExports.deliver_code_preview_error?.(kind, source, dark, dpr, String(err));
+      }
+    },
+    mountHtmlEmbed(id, html, xOrRect, y, w, h) {
+      const layer = globalThis.document?.getElementById('embed-layer');
+      if (!layer) return;
+      const htmlStr = String(html || '');
+      const rect =
+        xOrRect && typeof xOrRect === 'object'
+          ? xOrRect
+          : typeof xOrRect === 'number'
+            ? { x: xOrRect, y, w, h }
+            : null;
+      let entry = mountedHtmlEmbeds.get(id);
+      if (!entry) {
+        const blobUrl = URL.createObjectURL(
+          new Blob([htmlStr], { type: 'text/html;charset=utf-8' })
+        );
+        const iframe = document.createElement('iframe');
+        // Never include allow-same-origin for user-authored HTML embeds or ```html previews.
+        iframe.setAttribute('sandbox', 'allow-scripts');
+        iframe.setAttribute('referrerpolicy', 'no-referrer');
+        iframe.style.position = 'absolute';
+        iframe.style.border = '0';
+        iframe.style.pointerEvents = 'auto';
+        iframe.src = blobUrl;
+        layer.append(iframe);
+        entry = { iframe, blobUrl, html: htmlStr };
+        mountedHtmlEmbeds.set(id, entry);
+      } else if (entry.html !== htmlStr) {
+        URL.revokeObjectURL(entry.blobUrl);
+        const blobUrl = URL.createObjectURL(
+          new Blob([htmlStr], { type: 'text/html;charset=utf-8' })
+        );
+        entry.blobUrl = blobUrl;
+        entry.html = htmlStr;
+        entry.iframe.src = blobUrl;
+      }
+      entry.iframe.style.display = 'block';
+      if (rect) {
+        entry.iframe.style.left = `${rect.x}px`;
+        entry.iframe.style.top = `${rect.y}px`;
+        entry.iframe.style.width = `${rect.w}px`;
+        entry.iframe.style.height = `${rect.h}px`;
+      }
+    },
+    unmountHtmlEmbed(id) {
+      const entry = mountedHtmlEmbeds.get(id);
+      if (!entry) return;
+      entry.iframe.remove();
+      URL.revokeObjectURL(entry.blobUrl);
+      mountedHtmlEmbeds.delete(id);
+    },
+    reconcileHtmlEmbeds(entriesOrJson) {
+      let list = entriesOrJson;
+      if (typeof entriesOrJson === 'string') {
+        try {
+          list = JSON.parse(entriesOrJson);
+        } catch {
+          return;
+        }
+      }
+      if (!Array.isArray(list)) return;
+      const keep = new Set();
+      for (const item of list) {
+        if (!item || typeof item.id !== 'string') continue;
+        keep.add(item.id);
+        if (item.visible && item.w > 0 && item.h > 0) {
+          this.mountHtmlEmbed(item.id, item.html || '', {
+            x: item.x,
+            y: item.y,
+            w: item.w,
+            h: item.h,
+          });
+        } else {
+          const existing = mountedHtmlEmbeds.get(item.id);
+          if (existing) {
+            existing.iframe.style.display = 'none';
+          }
+        }
+      }
+      for (const mountedId of Array.from(mountedHtmlEmbeds.keys())) {
+        if (!keep.has(mountedId)) {
+          this.unmountHtmlEmbed(mountedId);
+        }
+      }
+    },
+    shieldEmbeds(shielded) {
+      const layer = globalThis.document?.getElementById('embed-layer');
+      if (!layer) return;
+      layer.style.visibility = shielded ? 'hidden' : 'visible';
+      layer.style.pointerEvents = 'none';
+      for (const entry of mountedHtmlEmbeds.values()) {
+        entry.iframe.style.pointerEvents = shielded ? 'none' : 'auto';
       }
     },
   };

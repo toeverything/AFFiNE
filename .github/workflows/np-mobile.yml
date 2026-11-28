@@ -247,7 +247,7 @@ jobs:
           cp "$SRC" "$DST"
           "$NDK_BIN/llvm-strip" --strip-unneeded "$DST"
           BYTES=$(stat -c '%s' "$DST")
-          MAX_BYTES=90000000
+          MAX_BYTES=165000000
           echo "Stripped aarch64-linux-android libaffine_android_host.so bytes: ${BYTES} (max ${MAX_BYTES})"
           test "$BYTES" -le "$MAX_BYTES"
 
@@ -294,6 +294,7 @@ jobs:
         with:
           workspaces: packages/frontend -> target
           key: np-mobile-ios-host
+          cache-on-failure: true
 
       - name: Build affine-ios-host staticlib and check device targets
         working-directory: packages/frontend
@@ -304,7 +305,7 @@ jobs:
           test -s target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a
           IOS_LIB_BYTES=$(stat -f '%z' target/aarch64-apple-ios-sim/debug/libaffine_ios_host.a)
           echo "iOS staticlib libaffine_ios_host.a bytes: ${IOS_LIB_BYTES}"
-          test "$IOS_LIB_BYTES" -le 450000000
+          test "$IOS_LIB_BYTES" -le 650000000
 
       - name: Link zero-CocoaPods Swift iOS host and run 6/6 Simulator smoke tests
         run: |

@@ -10,6 +10,35 @@ use crate::{
 
 use super::{PageCommit, PageDocSession, SelectionSnapshot, block_target};
 
+/// Recursive block subtree prepared for atomic Edgeless paste into `blocks`.
+#[derive(Clone)]
+pub struct PastedBlockNode {
+    pub id: String,
+    pub entries: Vec<(String, SessionValue)>,
+    pub children: Vec<PastedBlockNode>,
+}
+
+fn write_pasted_block_subtree(
+    page: &mut PageDocSession,
+    blocks_target: &TypeTarget,
+    node: PastedBlockNode,
+) -> DocResult<String> {
+    let mut child_ids = Vec::with_capacity(node.children.len());
+    for child in node.children {
+        let cid = write_pasted_block_subtree(page, blocks_target, child)?;
+        child_ids.push(SessionValue::Any(Any::String(cid)));
+    }
+    let mut entries = node.entries;
+    if let Some((_, val)) = entries.iter_mut().find(|(k, _)| k == "sys:children") {
+        *val = SessionValue::Array(child_ids);
+    } else {
+        entries.push(("sys:children".to_string(), SessionValue::Array(child_ids)));
+    }
+    page.session
+        .map_set(blocks_target, node.id.clone(), SessionValue::Map(entries))?;
+    Ok(node.id)
+}
+
 impl PageDocSession {
     /// Add a surface element inside `surface_block_id`'s `prop:elements.value` `Y.Map`.
     pub fn add_surface_element(
@@ -35,6 +64,88 @@ impl PageDocSession {
             SessionValue::Map(entries),
         )?;
         Ok(self.record_commit(commit))
+    }
+
+    /// Paste surface elements and/or standalone `affine:note` blocks (with optional text children)
+    /// into the page inside a **single** atomic `structural_edit` transaction, returning one
+    /// `SessionCommit` (one undo step, one room sync update).
+    ///
+    /// Creates `affine:surface` inside the same transaction only when `surface_elements` is
+    /// non-empty and the page does not already have one.
+    #[allow(clippy::type_complexity)]
+    pub fn paste_edgeless_batch(
+        &mut self,
+        surface_elements: Vec<(String, Vec<(String, SessionValue)>)>,
+        new_surface_id: Option<String>,
+        note_blocks: Vec<PastedBlockNode>,
+        now_ms: u64,
+    ) -> DocResult<Option<SessionCommit<SelectionSnapshot>>> {
+        if surface_elements.is_empty() && note_blocks.is_empty() {
+            return Ok(None);
+        }
+        let snapshot = self.read_page_snapshot()?;
+        let root = snapshot
+            .root
+            .as_ref()
+            .ok_or_else(|| DocError::InvalidState("page has no root block".into()))?;
+        let root_id = root.id.clone();
+        let existing_surface_id = root
+            .children
+            .iter()
+            .find(|c| matches!(c.content, crate::read::BlockContent::Surface { .. }))
+            .map(|c| c.id.clone());
+
+        self.structural_edit(now_ms, move |page| {
+            let blocks_target = TypeTarget::Path(TypePath::root("blocks"));
+            let root_children_target =
+                TypeTarget::Path(TypePath::root("blocks").key(&root_id).key("sys:children"));
+
+            if !surface_elements.is_empty() {
+                let surface_id = match existing_surface_id {
+                    Some(id) => id,
+                    None => {
+                        let sid = new_surface_id.unwrap_or_else(|| format!("surface-{now_ms}"));
+                        let surface_entries = BlockSpec::Surface.into_yblock_entries(&sid);
+                        page.session.map_set(
+                            &blocks_target,
+                            sid.clone(),
+                            SessionValue::Map(surface_entries),
+                        )?;
+                        let len = page.session.read_array(&root_children_target)?.len() as u64;
+                        page.session.array_insert(
+                            &root_children_target,
+                            len,
+                            vec![SessionValue::Any(Any::String(sid.clone()))],
+                        )?;
+                        sid
+                    }
+                };
+                let elements_value_target = TypeTarget::Path(
+                    TypePath::root("blocks")
+                        .key(surface_id.as_str())
+                        .key("prop:elements")
+                        .key("value"),
+                );
+                for (element_id, entries) in surface_elements {
+                    page.session.map_set(
+                        &elements_value_target,
+                        element_id,
+                        SessionValue::Map(entries),
+                    )?;
+                }
+            }
+
+            for note in note_blocks {
+                let note_id = write_pasted_block_subtree(page, &blocks_target, note)?;
+                let len = page.session.read_array(&root_children_target)?.len() as u64;
+                page.session.array_insert(
+                    &root_children_target,
+                    len,
+                    vec![SessionValue::Any(Any::String(note_id))],
+                )?;
+            }
+            Ok(())
+        })
     }
 
     /// Update a field on an existing surface element.

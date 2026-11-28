@@ -460,29 +460,20 @@ impl PlatformWindow for IosEditorWindow {
     }
 
     fn draw(&self, scene: &Scene) {
-        // Clear dirty at present time so pre-draw `App::flush_effects()` calls (e.g. power_state
-        // query before `window.draw`) cannot leave `dirty` permanently stuck true, while post-draw
-        // `schedule_frame()` / `frame_waker()` for active animations still re-arm `dirty = true`.
+        // Clear dirty at present time so pre-draw `App::flush_effects()` calls cannot leave
+        // `dirty` stuck true, while post-draw `schedule_frame()` still re-arms `dirty = true`.
         self.state.borrow_mut().dirty = false;
         #[cfg(target_os = "ios")]
-        {
-            self.renderer.borrow_mut().draw(scene);
-        }
+        self.renderer.borrow_mut().draw(scene);
         #[cfg(not(target_os = "ios"))]
-        {
-            let _ = scene;
-        }
+        let _ = scene;
     }
 
     fn sprite_atlas(&self) -> Arc<dyn PlatformAtlas> {
         #[cfg(target_os = "ios")]
-        {
-            self.renderer.borrow().sprite_atlas().clone()
-        }
+        return self.renderer.borrow().sprite_atlas().clone();
         #[cfg(not(target_os = "ios"))]
-        {
-            Arc::clone(&self.atlas)
-        }
+        Arc::clone(&self.atlas)
     }
 
     fn is_subpixel_rendering_supported(&self) -> bool {
@@ -505,6 +496,8 @@ impl PlatformWindow for IosEditorWindow {
     }
 }
 
+pub(crate) type OpenUrlObserver = Box<dyn FnMut(&str)>;
+
 pub(crate) struct IosEditorPlatform {
     background_executor: BackgroundExecutor,
     foreground_executor: ForegroundExecutor,
@@ -517,6 +510,7 @@ pub(crate) struct IosEditorPlatform {
     initial_scale: f32,
     opened_window: RefCell<Option<IosEditorWindow>>,
     clipboard: RefCell<Option<ClipboardItem>>,
+    open_url_observer: RefCell<Option<OpenUrlObserver>>,
 }
 
 impl IosEditorPlatform {
@@ -561,6 +555,7 @@ impl IosEditorPlatform {
             },
             opened_window: RefCell::new(None),
             clipboard: RefCell::new(None),
+            open_url_observer: RefCell::new(None),
         }
     }
 
@@ -571,6 +566,10 @@ impl IosEditorPlatform {
 
     pub(crate) fn opened_window(&self) -> Option<IosEditorWindow> {
         self.opened_window.borrow().clone()
+    }
+
+    pub(crate) fn set_open_url_observer(&self, observer: Option<OpenUrlObserver>) {
+        *self.open_url_observer.borrow_mut() = observer;
     }
 }
 
@@ -649,7 +648,15 @@ impl Platform for IosEditorPlatform {
         WindowAppearance::Light
     }
 
-    fn open_url(&self, _url: &str) {}
+    fn open_url(&self, url: &str) {
+        let clean = url.trim();
+        if !url.chars().any(char::is_control)
+            && (clean.starts_with("https://") || clean.starts_with("http://"))
+            && let Some(observer) = self.open_url_observer.borrow_mut().as_mut()
+        {
+            observer(clean);
+        }
+    }
     fn on_open_urls(&self, _callback: Box<dyn FnMut(Vec<String>)>) {}
 
     fn register_url_scheme(&self, _url: &str) -> Task<Result<()>> {
@@ -773,5 +780,36 @@ impl Platform for IosEditorPlatform {
 
     fn prevent_idle_sleep(&self, _reason: &str) -> Task<Result<ActivityGuard>> {
         Task::ready(Ok(ActivityGuard::noop()))
+    }
+}
+
+#[cfg(test)]
+mod open_url_tests {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    use ui::Platform;
+
+    use super::*;
+
+    #[test]
+    fn ios_open_url_allows_only_http_and_https_and_invokes_observer() {
+        let platform = IosEditorPlatform::new(390.0, 844.0, 3.0);
+        let seen: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(Vec::new()));
+        let seen_cb = Rc::clone(&seen);
+        platform.set_open_url_observer(Some(Box::new(move |url| {
+            seen_cb.borrow_mut().push(url.to_string());
+        })));
+        for bad in [
+            "javascript:alert(1)",
+            "file:///etc/passwd",
+            "intent://evil",
+            "https://example.com/\nnewline",
+        ] {
+            platform.open_url(bad);
+        }
+        assert!(seen.borrow().is_empty());
+        platform.open_url("  https://affine.pro/docs  ");
+        assert_eq!(seen.borrow().as_slice(), &["https://affine.pro/docs"]);
     }
 }

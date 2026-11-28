@@ -9,6 +9,10 @@ workspace = "../.."
 [lib]
 crate-type = ["staticlib", "rlib"]
 
+[features]
+default = ["preview-typst"]
+preview-typst = ["playground/preview-typst"]
+
 [dependencies]
 affine-legacy-import = { path = "../../legacy-import" }
 affine-mobile = { path = "../../mobile" }
@@ -18,7 +22,7 @@ blocksuite-playground-doc = { path = "../../../../blocksuite/crates/doc", defaul
 chrono.workspace = true
 futures.workspace = true
 parking_lot.workspace = true
-playground = { path = "../../../../blocksuite/crates/playground" }
+playground = { path = "../../../../blocksuite/crates/playground", default-features = false }
 raw-window-handle.workspace = true
 serde.workspace = true
 serde_json.workspace = true

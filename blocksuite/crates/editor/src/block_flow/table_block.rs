@@ -36,7 +36,12 @@ fn resolve_table_bg(raw: Option<&str>, theme: crate::theme::PlaygroundTheme) -> 
 }
 
 impl FlowPass<'_> {
-    pub(super) fn table_body(&mut self, data: &TableData, width: f32) -> BlockBody {
+    pub(super) fn table_body(
+        &mut self,
+        data: &TableData,
+        width: f32,
+        is_focused: bool,
+    ) -> BlockBody {
         let row_count = data.rows.len().max(1);
         let axis = crate::database::InlineAxis::new(self.direction, width);
         let ordered_cols = axis.order_indices(data.columns.len());
@@ -157,11 +162,20 @@ impl FlowPass<'_> {
             y += empty_h;
         }
 
-        let height = (y + TABLE_PAD_BOTTOM).max(TABLE_PAD_TOP + 36.0 + TABLE_PAD_BOTTOM);
+        // Reserve a bottom toolbar slot ONLY while this editable table block is actively focused
+        // and too wide for a side toolbar (`0px` extra gap on unfocused or read-only tables).
+        const TABLE_TOOLBAR_RESERVE_H: f32 = 52.0;
+        let fits_side_toolbar = TABLE_PAD_LEFT + table_content_w + 10.0 + 236.0 <= width + 24.0;
+        let bottom_pad = if !is_focused || fits_side_toolbar {
+            TABLE_PAD_BOTTOM
+        } else {
+            TABLE_PAD_BOTTOM + TABLE_TOOLBAR_RESERVE_H
+        };
+        let height = (y + bottom_pad).max(TABLE_PAD_TOP + 36.0 + bottom_pad);
         let total_needed_w = TABLE_PAD_LEFT + table_content_w + TABLE_PAD_LEFT;
         let max_scroll_x = (total_needed_w - width).max(0.0).ceil();
         let code_scroll = (max_scroll_x > 0.0).then(|| CodeScroll {
-            area: FlowRect::new(0.0, 0.0, width, height),
+            area: FlowRect::new(0.0, 0.0, width, (y + TABLE_PAD_BOTTOM).min(height)),
             max_x: max_scroll_x,
             initial_x: 0.0,
         });

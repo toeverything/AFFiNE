@@ -55,7 +55,9 @@ impl FontPool {
         let mut new_codepoints = Vec::new();
 
         for index in 0..face_count {
-            if let Ok(face) = ttf_parser::Face::parse(&data, index as u32) {
+            if let Ok(face) = ttf_parser::Face::parse(&data, index as u32)
+                && face_has_renderable_glyph_table(&face)
+            {
                 parsed_faces += 1;
                 if let Some(family) = extract_family_name(&face)
                     && !discovered_families.contains(&family)
@@ -227,6 +229,20 @@ impl AsRef<[u8]> for SharedFontBytes {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
+}
+
+fn face_has_renderable_glyph_table(face: &ttf_parser::Face<'_>) -> bool {
+    let t = face.tables();
+    // Exclude Apple `hvgl`-only hyper-variable faces (`PingFangUI.ttc` on macOS 15+ / iOS 18+),
+    // which expose Unicode `cmap` entries with zero standard vector or bitmap glyph tables so
+    // `usvg` and `typst` would otherwise treat CJK codepoints as covered while drawing nothing.
+    t.glyf.is_some()
+        || t.cff.is_some()
+        || t.cff2.is_some()
+        || t.colr.is_some()
+        || t.svg.is_some()
+        || t.sbix.is_some()
+        || t.cbdt.is_some()
 }
 
 fn collect_face_codepoints(face: &ttf_parser::Face<'_>, out: &mut Vec<u32>) {

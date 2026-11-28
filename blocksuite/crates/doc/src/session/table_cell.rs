@@ -347,4 +347,295 @@ impl PageDocSession {
         }
         Ok(false)
     }
+
+    /// Insert a new row after `after_row_id` (or at the end when `None`) in one atomic undo step,
+    /// preserving the table block's existing storage format (nested `Y.Map` vs flat dotted keys).
+    pub fn insert_table_row(
+        &mut self,
+        block_id: &str,
+        after_row_id: Option<&str>,
+        new_row_id: &str,
+        now_ms: u64,
+    ) -> DocResult<PageCommit> {
+        let Some(table) = self.read_table_block(block_id)? else {
+            return Ok(None);
+        };
+        let (prev_order, next_order) =
+            match after_row_id.and_then(|id| table.rows.iter().position(|r| r.row_id == id)) {
+                Some(idx) => (
+                    Some(table.rows[idx].order.as_str()),
+                    table.rows.get(idx + 1).map(|r| r.order.as_str()),
+                ),
+                None => (table.rows.last().map(|r| r.order.as_str()), None),
+            };
+        let order = crate::fractional_index::generate_key_between(prev_order, next_order)
+            .unwrap_or_else(|_| format!("z{new_row_id}"));
+        let col_ids: Vec<String> = table.columns.iter().map(|c| c.column_id.clone()).collect();
+        let (rows_nested, _, cells_nested) = self.table_nested_map_targets(block_id)?;
+        let bid = block_id.to_string();
+        let rid = new_row_id.to_string();
+        self.structural_edit(now_ms, move |page| {
+            let block_target = TypeTarget::Path(TypePath::root("blocks").key(&bid));
+            if let Some(rows_target) = &rows_nested {
+                page.session.map_set(
+                    rows_target,
+                    rid.clone(),
+                    SessionValue::Map(vec![
+                        (
+                            "rowId".to_string(),
+                            SessionValue::Any(Any::String(rid.clone())),
+                        ),
+                        ("order".to_string(), SessionValue::Any(Any::String(order))),
+                    ]),
+                )?;
+            } else {
+                page.session.map_set(
+                    &block_target,
+                    format!("prop:rows.{rid}.rowId"),
+                    SessionValue::Any(Any::String(rid.clone())),
+                )?;
+                page.session.map_set(
+                    &block_target,
+                    format!("prop:rows.{rid}.order"),
+                    SessionValue::Any(Any::String(order)),
+                )?;
+            }
+            for cid in &col_ids {
+                if let Some(cells_target) = &cells_nested {
+                    page.session.map_set(
+                        cells_target,
+                        format!("{rid}:{cid}"),
+                        SessionValue::Map(vec![(
+                            "text".to_string(),
+                            SessionValue::Text(Vec::new()),
+                        )]),
+                    )?;
+                } else {
+                    page.session.map_set(
+                        &block_target,
+                        format!("prop:cells.{rid}:{cid}.text"),
+                        SessionValue::Text(Vec::new()),
+                    )?;
+                }
+            }
+            Ok(())
+        })
+    }
+
+    /// Delete `row_id` and its cells in one atomic undo step. No-op if the table has `<= 1` row.
+    pub fn delete_table_row(
+        &mut self,
+        block_id: &str,
+        row_id: &str,
+        now_ms: u64,
+    ) -> DocResult<PageCommit> {
+        let Some(table) = self.read_table_block(block_id)? else {
+            return Ok(None);
+        };
+        if table.rows.len() <= 1 || !table.rows.iter().any(|r| r.row_id == row_id) {
+            return Ok(None);
+        }
+        let (rows_nested, _, cells_nested) = self.table_nested_map_targets(block_id)?;
+        let block_target = TypeTarget::Path(TypePath::root("blocks").key(block_id));
+        let flat_keys: Vec<String> = self
+            .session
+            .read_map(&block_target)?
+            .into_iter()
+            .map(|(k, _)| k)
+            .filter(|k| {
+                k.starts_with(&format!("prop:rows.{row_id}."))
+                    || k.starts_with(&format!("prop:cells.{row_id}:"))
+            })
+            .collect();
+        let nested_cell_keys: Vec<String> = match &cells_nested {
+            Some(cells_target) => self
+                .session
+                .read_map(cells_target)?
+                .into_iter()
+                .map(|(k, _)| k)
+                .filter(|k| k.starts_with(&format!("{row_id}:")))
+                .collect(),
+            None => Vec::new(),
+        };
+        let bid = block_id.to_string();
+        let rid = row_id.to_string();
+        self.structural_edit(now_ms, move |page| {
+            let target = TypeTarget::Path(TypePath::root("blocks").key(&bid));
+            for key in &flat_keys {
+                page.session.map_remove(&target, key)?;
+            }
+            if let Some(rows_target) = &rows_nested {
+                page.session.map_remove(rows_target, &rid)?;
+            }
+            if let Some(cells_target) = &cells_nested {
+                for key in &nested_cell_keys {
+                    page.session.map_remove(cells_target, key)?;
+                }
+            }
+            Ok(())
+        })
+    }
+
+    /// Insert a new column after `after_col_id` (or at the end when `None`) in one atomic undo
+    /// step, preserving the table block's existing storage format (nested `Y.Map` vs flat keys).
+    pub fn insert_table_column(
+        &mut self,
+        block_id: &str,
+        after_col_id: Option<&str>,
+        new_col_id: &str,
+        now_ms: u64,
+    ) -> DocResult<PageCommit> {
+        let Some(table) = self.read_table_block(block_id)? else {
+            return Ok(None);
+        };
+        let (prev_order, next_order) = match after_col_id
+            .and_then(|id| table.columns.iter().position(|c| c.column_id == id))
+        {
+            Some(idx) => (
+                Some(table.columns[idx].order.as_str()),
+                table.columns.get(idx + 1).map(|c| c.order.as_str()),
+            ),
+            None => (table.columns.last().map(|c| c.order.as_str()), None),
+        };
+        let order = crate::fractional_index::generate_key_between(prev_order, next_order)
+            .unwrap_or_else(|_| format!("z{new_col_id}"));
+        let row_ids: Vec<String> = table.rows.iter().map(|r| r.row_id.clone()).collect();
+        let (_, cols_nested, cells_nested) = self.table_nested_map_targets(block_id)?;
+        let bid = block_id.to_string();
+        let cid = new_col_id.to_string();
+        self.structural_edit(now_ms, move |page| {
+            let block_target = TypeTarget::Path(TypePath::root("blocks").key(&bid));
+            if let Some(cols_target) = &cols_nested {
+                page.session.map_set(
+                    cols_target,
+                    cid.clone(),
+                    SessionValue::Map(vec![
+                        (
+                            "columnId".to_string(),
+                            SessionValue::Any(Any::String(cid.clone())),
+                        ),
+                        ("order".to_string(), SessionValue::Any(Any::String(order))),
+                    ]),
+                )?;
+            } else {
+                page.session.map_set(
+                    &block_target,
+                    format!("prop:columns.{cid}.columnId"),
+                    SessionValue::Any(Any::String(cid.clone())),
+                )?;
+                page.session.map_set(
+                    &block_target,
+                    format!("prop:columns.{cid}.order"),
+                    SessionValue::Any(Any::String(order)),
+                )?;
+            }
+            for rid in &row_ids {
+                if let Some(cells_target) = &cells_nested {
+                    page.session.map_set(
+                        cells_target,
+                        format!("{rid}:{cid}"),
+                        SessionValue::Map(vec![(
+                            "text".to_string(),
+                            SessionValue::Text(Vec::new()),
+                        )]),
+                    )?;
+                } else {
+                    page.session.map_set(
+                        &block_target,
+                        format!("prop:cells.{rid}:{cid}.text"),
+                        SessionValue::Text(Vec::new()),
+                    )?;
+                }
+            }
+            Ok(())
+        })
+    }
+
+    /// Delete `column_id` and its cells in one atomic undo step. No-op if the table has `<= 1` column.
+    pub fn delete_table_column(
+        &mut self,
+        block_id: &str,
+        column_id: &str,
+        now_ms: u64,
+    ) -> DocResult<PageCommit> {
+        let Some(table) = self.read_table_block(block_id)? else {
+            return Ok(None);
+        };
+        if table.columns.len() <= 1 || !table.columns.iter().any(|c| c.column_id == column_id) {
+            return Ok(None);
+        }
+        let (_, cols_nested, cells_nested) = self.table_nested_map_targets(block_id)?;
+        let block_target = TypeTarget::Path(TypePath::root("blocks").key(block_id));
+        let suffix = format!(":{column_id}.text");
+        let flat_keys: Vec<String> = self
+            .session
+            .read_map(&block_target)?
+            .into_iter()
+            .map(|(k, _)| k)
+            .filter(|k| {
+                k.starts_with(&format!("prop:columns.{column_id}."))
+                    || (k.starts_with("prop:cells.") && k.ends_with(&suffix))
+            })
+            .collect();
+        let nested_suffix = format!(":{column_id}");
+        let nested_cell_keys: Vec<String> = match &cells_nested {
+            Some(cells_target) => self
+                .session
+                .read_map(cells_target)?
+                .into_iter()
+                .map(|(k, _)| k)
+                .filter(|k| k.ends_with(&nested_suffix))
+                .collect(),
+            None => Vec::new(),
+        };
+        let bid = block_id.to_string();
+        let cid = column_id.to_string();
+        self.structural_edit(now_ms, move |page| {
+            let target = TypeTarget::Path(TypePath::root("blocks").key(&bid));
+            for key in &flat_keys {
+                page.session.map_remove(&target, key)?;
+            }
+            if let Some(cols_target) = &cols_nested {
+                page.session.map_remove(cols_target, &cid)?;
+            }
+            if let Some(cells_target) = &cells_nested {
+                for key in &nested_cell_keys {
+                    page.session.map_remove(cells_target, key)?;
+                }
+            }
+            Ok(())
+        })
+    }
+
+    /// Detect whether `prop:rows`, `prop:columns`, and `prop:cells` on `block_id` use nested
+    /// `Y.Map` storage (returns `Some(TypeTarget)` when no flat dotted keys exist and a nested
+    /// `Y.Map` is present).
+    fn table_nested_map_targets(
+        &self,
+        block_id: &str,
+    ) -> DocResult<(Option<TypeTarget>, Option<TypeTarget>, Option<TypeTarget>)> {
+        let block_target = TypeTarget::Path(TypePath::root("blocks").key(block_id));
+        let entries: BTreeMap<String, SessionReadValue> =
+            self.session.read_map(&block_target)?.into_iter().collect();
+        let mode = crate::read::detect_table_storage_mode(entries.keys().map(String::as_str));
+        let rows_nested = (!mode.flat_rows)
+            .then(|| match entries.get("prop:rows") {
+                Some(SessionReadValue::Map(id)) => Some(TypeTarget::Identity(id.clone())),
+                _ => None,
+            })
+            .flatten();
+        let cols_nested = (!mode.flat_cols)
+            .then(|| match entries.get("prop:columns") {
+                Some(SessionReadValue::Map(id)) => Some(TypeTarget::Identity(id.clone())),
+                _ => None,
+            })
+            .flatten();
+        let cells_nested = (!mode.flat_cells)
+            .then(|| match entries.get("prop:cells") {
+                Some(SessionReadValue::Map(id)) => Some(TypeTarget::Identity(id.clone())),
+                _ => None,
+            })
+            .flatten();
+        Ok((rows_nested, cols_nested, cells_nested))
+    }
 }

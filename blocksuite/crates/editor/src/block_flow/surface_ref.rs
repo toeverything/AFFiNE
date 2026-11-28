@@ -27,6 +27,89 @@ fn find_frame_node<'a>(root: &'a BlockNode, reference: &str) -> Option<&'a Block
         .find(|node| node.id == reference && matches!(node.content, BlockContent::Frame { .. }))
 }
 
+/// Fallback lookup for `affine:surface-ref` pointing to a surface `Group` or individual
+/// whiteboard element (shape, text, brush, mindmap) rather than an `affine:frame` block.
+fn find_surface_target_bounds(
+    root: &BlockNode,
+    reference: &str,
+    external_bounds: &std::collections::BTreeMap<String, crate::surface::WorldBounds>,
+) -> Option<(
+    String,
+    (f32, f32, f32, f32),
+    Vec<blocksuite_playground_doc::read::SurfaceElement>,
+)> {
+    use blocksuite_playground_doc::read::SurfaceElementKind;
+    for node in root.walk() {
+        let BlockContent::Surface { elements, .. } = &node.content else {
+            continue;
+        };
+        let Some(target) = elements.iter().find(|e| e.id == reference && !e.hidden) else {
+            continue;
+        };
+        let (all_bounds, collapsed_hidden) =
+            crate::surface::resolve_surface_element_bounds(elements, external_bounds);
+        let mut inc = BTreeSet::new();
+        inc.insert(target.id.clone());
+        let title = match &target.kind {
+            SurfaceElementKind::Group { title, children } => {
+                for cid in children {
+                    inc.insert(cid.clone());
+                }
+                if title.plain.trim().is_empty() {
+                    "Canvas Group".to_string()
+                } else {
+                    title.plain.trim().to_string()
+                }
+            }
+            SurfaceElementKind::Mindmap(mm) => {
+                for nid in mm.nodes.keys() {
+                    inc.insert(nid.clone());
+                }
+                "Canvas Mindmap".to_string()
+            }
+            _ => "Canvas Element".to_string(),
+        };
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+        for id in &inc {
+            if collapsed_hidden.contains(id) {
+                continue;
+            }
+            if let Some(wb) = all_bounds.get(id) {
+                let [x, y, w, h] = wb.aabb().xywh;
+                min_x = min_x.min(x);
+                min_y = min_y.min(y);
+                max_x = max_x.max(x + w);
+                max_y = max_y.max(y + h);
+            }
+        }
+        if !min_x.is_finite() || !min_y.is_finite() || max_x <= min_x || max_y <= min_y {
+            return None;
+        }
+        let pad = 12.0;
+        let top_pad = if matches!(target.kind, SurfaceElementKind::Group { .. }) {
+            34.0
+        } else {
+            pad
+        };
+        let rect = (
+            (min_x - pad) as f32,
+            (min_y - top_pad) as f32,
+            (max_x - min_x + pad * 2.0) as f32,
+            (max_y - min_y + top_pad + pad) as f32,
+        );
+        let rel: Vec<_> = elements
+            .iter()
+            .filter(|e| !e.hidden && !collapsed_hidden.contains(&e.id) && inc.contains(&e.id))
+            .cloned()
+            .collect();
+        return Some((title, rect, rel));
+    }
+    None
+}
+
 fn frame_member_ids(frame_node: &BlockNode) -> BTreeSet<String> {
     match frame_node.props.get("prop:childElementIds") {
         Some(serde_json::Value::Object(map)) => map.keys().cloned().collect(),
@@ -224,11 +307,18 @@ pub(super) fn surface_ref_fingerprint(
     surface_ref_block_id: &str,
 ) -> u64 {
     use std::hash::{Hash, Hasher};
-    let Some((root, frame_node)) = snapshot
-        .root
-        .as_ref()
-        .and_then(|r| Some((r, find_frame_node(r, reference)?)))
-    else {
+    let Some(root) = snapshot.root.as_ref() else {
+        return 0;
+    };
+    let Some(frame_node) = find_frame_node(root, reference) else {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        if let Some((title, rect, rel)) =
+            find_surface_target_bounds(root, reference, &std::collections::BTreeMap::new())
+        {
+            title.hash(&mut hasher);
+            format!("{rect:?}{rel:?}").hash(&mut hasher);
+            return hasher.finish();
+        }
         return 0;
     };
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -292,6 +382,14 @@ impl FlowPass<'_> {
             .as_ref()
             .and_then(|root| find_frame_node(root, reference));
 
+        let surface_target = if frame_node.is_none() {
+            self.input.snapshot.root.as_ref().and_then(|root| {
+                find_surface_target_bounds(root, reference, &std::collections::BTreeMap::new())
+            })
+        } else {
+            None
+        };
+
         let frame_title = frame_node.and_then(|node| match &node.content {
             BlockContent::Frame { title, .. } if !title.plain.trim().is_empty() => {
                 Some(title.plain.trim())
@@ -303,6 +401,7 @@ impl FlowPass<'_> {
             _ => None,
         });
         let clean_title = frame_title
+            .or_else(|| surface_target.as_ref().map(|(t, _, _)| t.as_str()))
             .or_else(|| (!caption.trim().is_empty()).then_some(caption.trim()))
             .unwrap_or("Canvas Frame");
 
@@ -456,6 +555,37 @@ impl FlowPass<'_> {
                 radius: 4.0,
                 dashed: false,
             });
+        }
+        if !drew_canvas_items
+            && let (Some((_, (gx, gy, gw, gh), rel)), Some(root)) =
+                (surface_target.as_ref(), &self.input.snapshot.root)
+            && *gw > 1.0
+            && *gh > 1.0
+            && !rel.is_empty()
+        {
+            let inset = 8.0;
+            let avail_w = (thumb_rect.w - 2.0 * inset).max(1.0);
+            let avail_h = (thumb_rect.h - 2.0 * inset).max(1.0);
+            let scale = (avail_w / gw).min(avail_h / gh);
+            let draw_w = gw * scale;
+            let draw_h = gh * scale;
+            let ox = thumb_rect.x + (thumb_rect.w - draw_w) * 0.5;
+            let oy = thumb_rect.y + (thumb_rect.h - draw_h) * 0.5;
+            let draw_rect = FlowRect::new(ox, oy, draw_w, draw_h);
+            let surface_layout = crate::surface::layout_surface_in_doc(
+                Some(root),
+                rel,
+                &std::collections::BTreeMap::new(),
+                self.input.theme,
+                self.window,
+            );
+            prims.push(Prim::Surface {
+                rect: draw_rect,
+                layout: Rc::new(surface_layout),
+                world_origin: (*gx, *gy),
+                scale,
+            });
+            drew_canvas_items = true;
         }
         if !drew_canvas_items {
             let icon_size = 24.0;

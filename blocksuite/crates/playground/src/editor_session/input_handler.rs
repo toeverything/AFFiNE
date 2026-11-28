@@ -35,6 +35,9 @@ impl EntityInputHandler for PlaygroundView {
         if self.mode == crate::PlaygroundMode::Edgeless
             && self.edgeless.authoring.editing_spatial_block().is_none()
         {
+            if !self.edgeless_readonly {
+                let _ = self.paste_edgeless_clipboard_item(&item, w, cx);
+            }
             return;
         }
         if !self.editor.block_selection.is_empty() {

@@ -34,8 +34,23 @@ pub enum FlowKind {
     EmbedLinkedDoc,
     EmbedSyncedDoc,
     SurfaceRef,
+    ExternalEmbed,
     Database,
     Unknown,
+}
+
+/// Four-state interaction contract for external embed cards (`showOverlay` pointer shield).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum EmbedCardState {
+    /// Unselected GPU card with pointer shield; scrolling over it never swallows gestures.
+    #[default]
+    Idle,
+    /// Selected card showing brand outline and interactive activation affordance.
+    Selected,
+    /// Interactive embed view active (Web mounts sandboxed iframe in `#embed-layer`).
+    Active,
+    /// Temporarily shielded because an overlay/drawer/popover is open above the page.
+    Shielded,
 }
 
 /// Laid-out text of a block: rich paragraph text or a plain single-style label.

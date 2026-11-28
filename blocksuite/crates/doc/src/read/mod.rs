@@ -92,6 +92,7 @@ impl TextAlign {
 
 mod database;
 mod rich_blocks;
+pub(crate) use rich_blocks::detect_table_storage_mode;
 mod surface;
 pub use database::{
     DatabaseCalendarCard, DatabaseCalendarDate, DatabaseCellValue, DatabaseColumn, DatabaseData,
@@ -100,6 +101,57 @@ pub use database::{
 };
 pub use rich_blocks::{TableCell, TableColumn, TableData, TableRow};
 pub use surface::*;
+
+/// Kind of external embedded card (`affine:embed-*` flavours).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ExternalEmbedKind {
+    Youtube,
+    Figma,
+    Github,
+    Loom,
+    Iframe,
+    Html,
+    Web,
+}
+
+impl ExternalEmbedKind {
+    pub fn from_flavour(flavour: &str) -> Option<Self> {
+        match flavour {
+            "affine:embed-youtube" => Some(Self::Youtube),
+            "affine:embed-figma" => Some(Self::Figma),
+            "affine:embed-github" => Some(Self::Github),
+            "affine:embed-loom" => Some(Self::Loom),
+            "affine:embed-iframe" => Some(Self::Iframe),
+            "affine:embed-html" => Some(Self::Html),
+            "affine:embed-web" => Some(Self::Web),
+            _ => None,
+        }
+    }
+
+    pub fn flavour(self) -> &'static str {
+        match self {
+            Self::Youtube => "affine:embed-youtube",
+            Self::Figma => "affine:embed-figma",
+            Self::Github => "affine:embed-github",
+            Self::Loom => "affine:embed-loom",
+            Self::Iframe => "affine:embed-iframe",
+            Self::Html => "affine:embed-html",
+            Self::Web => "affine:embed-web",
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Youtube => "YouTube",
+            Self::Figma => "Figma",
+            Self::Github => "GitHub",
+            Self::Loom => "Loom",
+            Self::Iframe => "Embed",
+            Self::Html => "HTML",
+            Self::Web => "Web",
+        }
+    }
+}
 
 /// Typed content of a block, by `sys:flavour`.
 #[derive(Debug, Clone, PartialEq)]
@@ -192,6 +244,14 @@ pub enum BlockContent {
     SurfaceRef {
         reference: String,
         ref_flavour: String,
+        caption: String,
+    },
+    ExternalEmbed {
+        kind: ExternalEmbedKind,
+        url: String,
+        title: Option<String>,
+        description: Option<String>,
+        html: Option<String>,
         caption: String,
     },
     Database(DatabaseData),
@@ -524,6 +584,16 @@ impl SnapshotReader<'_> {
             },
             "affine:database" => {
                 BlockContent::Database(self.read_database(block, props, children)?)
+            }
+            flavour if ExternalEmbedKind::from_flavour(flavour).is_some() => {
+                BlockContent::ExternalEmbed {
+                    kind: ExternalEmbedKind::from_flavour(flavour).unwrap(),
+                    url: string(entries.get("prop:url")).unwrap_or_default(),
+                    title: string(entries.get("prop:title")),
+                    description: string(entries.get("prop:description")),
+                    html: string(entries.get("prop:html")),
+                    caption: string(entries.get("prop:caption")).unwrap_or_default(),
+                }
             }
             _ => BlockContent::Unknown(UnknownBlock {
                 id: id.to_string(),

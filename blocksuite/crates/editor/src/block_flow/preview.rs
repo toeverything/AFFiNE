@@ -228,12 +228,12 @@ pub(super) fn node_preview_fingerprint(
     if touched { hasher.finish() } else { 0 }
 }
 
-fn pdf_provider_slot() -> &'static RwLock<Option<Arc<dyn PdfPageProvider>>> {
+pub(super) fn pdf_provider_slot() -> &'static RwLock<Option<Arc<dyn PdfPageProvider>>> {
     static SLOT: OnceLock<RwLock<Option<Arc<dyn PdfPageProvider>>>> = OnceLock::new();
     SLOT.get_or_init(|| RwLock::new(None))
 }
 
-fn math_provider_slot() -> &'static RwLock<Option<Arc<dyn MathPreviewProvider>>> {
+pub(super) fn math_provider_slot() -> &'static RwLock<Option<Arc<dyn MathPreviewProvider>>> {
     static SLOT: OnceLock<RwLock<Option<Arc<dyn MathPreviewProvider>>>> = OnceLock::new();
     SLOT.get_or_init(|| RwLock::new(None))
 }
@@ -302,7 +302,7 @@ impl EmbeddedPdfDocument {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn shared_font_pool() -> &'static FontPool {
+pub(super) fn shared_font_pool() -> &'static FontPool {
     static POOL: OnceLock<FontPool> = OnceLock::new();
     POOL.get_or_init(|| {
         let mut pool = FontPool::new();
@@ -317,9 +317,14 @@ fn shared_font_pool() -> &'static FontPool {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn shared_rasterizer() -> &'static SvgRasterizer {
+pub(super) fn shared_svg_rasterizer() -> &'static SvgRasterizer {
     static RASTER: OnceLock<SvgRasterizer> = OnceLock::new();
     RASTER.get_or_init(|| SvgRasterizer::new(shared_font_pool()))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn shared_rasterizer() -> &'static SvgRasterizer {
+    shared_svg_rasterizer()
 }
 
 /// Convert raw RGBA8 pixels into a GPUI BGRA8 [`RenderImage`].

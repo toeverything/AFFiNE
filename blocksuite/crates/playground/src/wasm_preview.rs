@@ -15,18 +15,23 @@ use wasm_bindgen::prelude::*;
 use crate::{
     PlaygroundView,
     block_flow::{
+        CodePreviewKind, CodePreviewProvider, CodePreviewResult, CodePreviewSlot,
         MathPreviewProvider, MathRenderResult, MathRenderSlot, PdfPageCount, PdfPageProvider,
         PdfPreviewPage, bump_latex_formula_revision, bump_preview_revision, hsla_to_css_hex,
-        register_math_preview_provider, register_pdf_page_provider, rgba_pixels_to_render_image,
+        register_code_preview_provider, register_math_preview_provider, register_pdf_page_provider,
+        rgba_pixels_to_render_image,
     },
     overlays::OverlayEvent,
+    theme::PlaygroundTheme,
 };
 
 const MAX_MATH_CACHE_ENTRIES: usize = 1024;
 const MAX_PDF_CACHE_ENTRIES: usize = 64;
+const MAX_CODE_PREVIEW_CACHE_ENTRIES: usize = 128;
 
 type MathKey = (String, bool, u32, String, u32);
 type PdfPageKey = (String, usize, u32);
+type CodePreviewKey = (CodePreviewKind, String, PlaygroundTheme, u32);
 type FifoCache<K, V> = (HashMap<K, V>, VecDeque<K>);
 
 #[wasm_bindgen]
@@ -51,13 +56,52 @@ extern "C" {
         scale: f32,
     ) -> Result<(), JsValue>;
 
+    #[wasm_bindgen(js_namespace = ["window", "__playgroundPreview"], js_name = requestCodePreview, catch)]
+    fn js_request_code_preview(
+        kind: &str,
+        source: &str,
+        dark: bool,
+        dpr: f32,
+    ) -> Result<(), JsValue>;
+
     #[wasm_bindgen(js_namespace = ["window", "__playgroundPreview"], js_name = pickImages, catch)]
     fn js_pick_images() -> Result<(), JsValue>;
+
+    #[wasm_bindgen(js_namespace = ["window", "__playgroundPreview"], js_name = reconcileHtmlEmbeds, catch)]
+    fn js_reconcile_html_embeds(entries_json: &str) -> Result<(), JsValue>;
+
+    #[wasm_bindgen(js_namespace = ["window", "__playgroundPreview"], js_name = shieldEmbeds, catch)]
+    fn js_shield_embeds(shielded: bool) -> Result<(), JsValue>;
+}
+
+/// Active HTML embed/preview descriptor reconciled against DOM `#embed-layer` every frame.
+#[derive(serde::Serialize)]
+pub(crate) struct HtmlEmbedMount {
+    pub id: String,
+    pub html: String,
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub visible: bool,
 }
 
 /// Opens the browser `<input type="file" accept="image/*">` picker via `preview-workers.js`.
 pub(crate) fn request_host_image_picker() {
     let _ = js_pick_images();
+}
+
+/// Reconciles active sandboxed HTML embed iframes in `#embed-layer` (mounts new, updates
+/// coordinates/HTML, hides offscreen, and unmounts + revokes removed entries).
+pub(crate) fn reconcile_html_embeds(entries: &[HtmlEmbedMount]) {
+    if let Ok(json) = serde_json::to_string(entries) {
+        let _ = js_reconcile_html_embeds(&json);
+    }
+}
+
+/// Toggles pointer/visibility shielding on `#embed-layer` whenever an overlay or panel opens.
+pub(crate) fn sync_embed_shield(shielded: bool) {
+    let _ = js_shield_embeds(shielded);
 }
 
 fn resolve_pdf_key(cache_key: &str, bytes: &[u8]) -> String {
@@ -117,6 +161,60 @@ fn pdf_pages() -> &'static RwLock<FifoCache<PdfPageKey, PdfPreviewPage>> {
 fn pdf_in_flight() -> &'static RwLock<HashSet<PdfPageKey>> {
     static SET: OnceLock<RwLock<HashSet<PdfPageKey>>> = OnceLock::new();
     SET.get_or_init(|| RwLock::new(HashSet::new()))
+}
+
+fn code_preview_cache() -> &'static RwLock<FifoCache<CodePreviewKey, CodePreviewResult>> {
+    static CACHE: OnceLock<RwLock<FifoCache<CodePreviewKey, CodePreviewResult>>> = OnceLock::new();
+    CACHE.get_or_init(|| RwLock::new((HashMap::new(), VecDeque::new())))
+}
+
+fn code_preview_in_flight() -> &'static RwLock<HashSet<CodePreviewKey>> {
+    static SET: OnceLock<RwLock<HashSet<CodePreviewKey>>> = OnceLock::new();
+    SET.get_or_init(|| RwLock::new(HashSet::new()))
+}
+
+struct WasmCodePreviewProvider;
+
+impl CodePreviewProvider for WasmCodePreviewProvider {
+    fn supports(&self, kind: CodePreviewKind) -> bool {
+        matches!(kind, CodePreviewKind::Mermaid | CodePreviewKind::Typst)
+    }
+
+    fn render_code_preview(
+        &self,
+        kind: CodePreviewKind,
+        source: &str,
+        theme: PlaygroundTheme,
+        dpr: f32,
+    ) -> CodePreviewResult {
+        if kind == CodePreviewKind::Html {
+            return CodePreviewResult::Pending;
+        }
+        let key: CodePreviewKey = (kind, source.to_string(), theme, dpr.to_bits());
+        if let Ok(guard) = code_preview_cache().read()
+            && let Some(hit) = guard.0.get(&key)
+        {
+            return hit.clone();
+        }
+        let should_request = code_preview_in_flight()
+            .write()
+            .map(|mut set| set.insert(key.clone()))
+            .unwrap_or(false);
+        let kind_str = match kind {
+            CodePreviewKind::Mermaid => "mermaid",
+            CodePreviewKind::Typst => "typst",
+            CodePreviewKind::Html => "html",
+        };
+        if should_request
+            && js_request_code_preview(kind_str, source, theme == PlaygroundTheme::Dark, dpr)
+                .is_err()
+        {
+            if let Ok(mut set) = code_preview_in_flight().write() {
+                set.remove(&key);
+            }
+        }
+        CodePreviewResult::Pending
+    }
 }
 
 std::thread_local! {
@@ -237,6 +335,92 @@ pub(crate) fn install_wasm_preview_providers(view: WeakEntity<PlaygroundView>, c
     });
     register_math_preview_provider(Some(Arc::new(WasmMathPreviewProvider)));
     register_pdf_page_provider(Some(Arc::new(WasmPdfPageProvider)));
+    register_code_preview_provider(Some(Arc::new(WasmCodePreviewProvider)));
+}
+
+#[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
+pub fn deliver_code_preview(
+    kind: String,
+    source: String,
+    dark: bool,
+    dpr: f32,
+    width_pt: f32,
+    height_pt: f32,
+    width_px: u32,
+    height_px: u32,
+    rgba: &[u8],
+) {
+    let Some(kind_enum) = (match kind.as_str() {
+        "mermaid" => Some(CodePreviewKind::Mermaid),
+        "typst" => Some(CodePreviewKind::Typst),
+        _ => None,
+    }) else {
+        return;
+    };
+    let theme = if dark {
+        PlaygroundTheme::Dark
+    } else {
+        PlaygroundTheme::Light
+    };
+    let key: CodePreviewKey = (kind_enum, source, theme, dpr.to_bits());
+    if let Ok(mut set) = code_preview_in_flight().write() {
+        set.remove(&key);
+    }
+    let result = match rgba_pixels_to_render_image(width_px, height_px, rgba) {
+        Some(image) => CodePreviewResult::Ready(CodePreviewSlot {
+            image,
+            width_pt,
+            height_pt,
+        }),
+        None => CodePreviewResult::Error("empty preview bitmap".into()),
+    };
+    let source_for_rev = key.1.clone();
+    if let Ok(mut guard) = code_preview_cache().write() {
+        let (map, order) = &mut *guard;
+        fifo_insert(map, order, MAX_CODE_PREVIEW_CACHE_ENTRIES, key, result);
+    }
+    crate::block_flow::bump_code_preview_revision(kind_enum, &source_for_rev);
+    notify_active_view(false);
+}
+
+#[wasm_bindgen]
+pub fn deliver_code_preview_error(
+    kind: String,
+    source: String,
+    dark: bool,
+    dpr: f32,
+    message: String,
+) {
+    let Some(kind_enum) = (match kind.as_str() {
+        "mermaid" => Some(CodePreviewKind::Mermaid),
+        "typst" => Some(CodePreviewKind::Typst),
+        _ => None,
+    }) else {
+        return;
+    };
+    let theme = if dark {
+        PlaygroundTheme::Dark
+    } else {
+        PlaygroundTheme::Light
+    };
+    let key: CodePreviewKey = (kind_enum, source, theme, dpr.to_bits());
+    if let Ok(mut set) = code_preview_in_flight().write() {
+        set.remove(&key);
+    }
+    let source_for_rev = key.1.clone();
+    if let Ok(mut guard) = code_preview_cache().write() {
+        let (map, order) = &mut *guard;
+        fifo_insert(
+            map,
+            order,
+            MAX_CODE_PREVIEW_CACHE_ENTRIES,
+            key,
+            CodePreviewResult::Error(message),
+        );
+    }
+    crate::block_flow::bump_code_preview_revision(kind_enum, &source_for_rev);
+    notify_active_view(false);
 }
 
 /// Callback invoked by `preview-workers.js` when a RaTeX math formula finishes rasterizing.

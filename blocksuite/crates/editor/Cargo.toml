@@ -10,8 +10,9 @@ license.workspace = true
 workspace = true
 
 [features]
-default = []
+default = ["preview-typst"]
 harness = ["ui/harness"]
+preview-typst = ["blocksuite-preview/typst"]
 
 [dependencies]
 anyhow.workspace = true
@@ -30,7 +31,7 @@ unicode-segmentation.workspace = true
 y-octo = { version = "0.4.0", default-features = false, features = ["session"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-blocksuite-preview = { path = "../preview", default-features = false, features = ["math", "pdf"] }
+blocksuite-preview = { path = "../preview", default-features = false, features = ["math", "pdf", "mermaid", "svg-text"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 icu_segmenter.workspace = true

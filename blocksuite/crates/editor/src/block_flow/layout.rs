@@ -5,10 +5,7 @@ use std::{
     sync::Arc,
 };
 
-use blocksuite_playground_doc::{
-    read::{BlockContent, BlockNode, RichText, TextAlign as BlockAlign},
-    schema::ParagraphType,
-};
+use blocksuite_playground_doc::read::{BlockContent, BlockNode, RichText, TextAlign as BlockAlign};
 use ui::{FontWeight, Hsla, SharedString, TextAlign, Window};
 
 use crate::{
@@ -25,6 +22,14 @@ pub struct BlockFlow {
     database_hits: HashMap<String, Vec<crate::database::DatabaseHitTarget>>,
     database_view_tabs_max_scroll: HashMap<String, (i32, i32)>,
     pub database_state: crate::database::DatabaseFlowState,
+    /// `affine:code` block ids currently toggled into visual preview mode (zero CRDT writeback).
+    pub code_preview_blocks: BTreeSet<String>,
+    /// Currently focused editable `affine:table` block id, if any (`None` when unfocused/readonly).
+    pub focused_table_block: Option<String>,
+    /// Transient four-state interaction map for external embed cards (`showOverlay` shield).
+    pub embed_states: HashMap<String, EmbedCardState>,
+    /// True whenever a modal/popover/drawer/panel is open above the page (`embed.no_overlay_punchthrough`).
+    pub embeds_shielded: bool,
 }
 
 pub(super) struct FlowPass<'a> {
@@ -38,6 +43,10 @@ pub(super) struct FlowPass<'a> {
     pub(super) database_state: &'a crate::database::DatabaseFlowState,
     pub(super) database_hits: HashMap<String, Vec<crate::database::DatabaseHitTarget>>,
     pub(super) database_view_tabs_max_scroll: HashMap<String, (i32, i32)>,
+    pub(super) code_preview_blocks: &'a BTreeSet<String>,
+    pub(super) focused_table_block: Option<&'a str>,
+    pub(super) embed_states: &'a HashMap<String, EmbedCardState>,
+    pub(super) embeds_shielded: bool,
     pub(super) blocks: Vec<FlowBlock>,
     pub(super) stats: FlowStats,
     pub(super) y: f32,
@@ -101,6 +110,10 @@ impl BlockFlow {
             database_state: &self.database_state,
             database_hits: std::mem::take(&mut self.database_hits),
             database_view_tabs_max_scroll: std::mem::take(&mut self.database_view_tabs_max_scroll),
+            code_preview_blocks: &self.code_preview_blocks,
+            focused_table_block: self.focused_table_block.as_deref(),
+            embed_states: &self.embed_states,
+            embeds_shielded: self.embeds_shielded,
             blocks: Vec::new(),
             stats: FlowStats::default(),
             y: 0.0,
@@ -199,6 +212,10 @@ impl BlockFlow {
             database_state: &self.database_state,
             database_hits: std::mem::take(&mut self.database_hits),
             database_view_tabs_max_scroll: std::mem::take(&mut self.database_view_tabs_max_scroll),
+            code_preview_blocks: &self.code_preview_blocks,
+            focused_table_block: self.focused_table_block.as_deref(),
+            embed_states: &self.embed_states,
+            embeds_shielded: self.embeds_shielded,
             blocks: Vec::new(),
             stats: FlowStats::default(),
             y: 0.0,
@@ -219,45 +236,6 @@ impl BlockFlow {
             stats: pass.stats,
         }
     }
-}
-
-fn heading_level(node: &BlockNode) -> Option<u8> {
-    match &node.content {
-        BlockContent::Paragraph { kind, .. } => match kind {
-            ParagraphType::H1 => Some(1),
-            ParagraphType::H2 => Some(2),
-            ParagraphType::H3 => Some(3),
-            ParagraphType::H4 => Some(4),
-            ParagraphType::H5 => Some(5),
-            ParagraphType::H6 => Some(6),
-            _ => None,
-        },
-        _ => None,
-    }
-}
-
-fn node_has_gutter_chevron(kind: FlowKind, node: &BlockNode) -> bool {
-    use blocksuite_playground_doc::schema::ListType;
-    if heading_level(node).is_some() {
-        return true;
-    }
-    let supports_fold = matches!(
-        kind,
-        FlowKind::Paragraph(ParagraphType::Text | ParagraphType::Quote)
-            | FlowKind::List(ListType::Bulleted | ListType::Numbered | ListType::Todo)
-    );
-    supports_fold
-        && (!node.children.is_empty()
-            || matches!(
-                node.content,
-                BlockContent::List {
-                    collapsed: true,
-                    ..
-                } | BlockContent::Paragraph {
-                    collapsed: true,
-                    ..
-                }
-            ))
 }
 
 impl<'a> FlowPass<'a> {
@@ -371,18 +349,35 @@ impl<'a> FlowPass<'a> {
                     self.input.utc_offset_for(p.updated_at_ms)
                 });
             let db_sig = matches!(node.content, BlockContent::Database(_)).then(|| {
-                let offset_min = self.input.utc_offset_for(self.database_state.clock_ms);
-                let today_day = (self
+                let off = i64::from(self.input.utc_offset_for(self.database_state.clock_ms));
+                let day = self
                     .database_state
                     .clock_ms
-                    .saturating_add(i64::from(offset_min) * 60_000))
-                .div_euclid(86_400_000);
+                    .saturating_add(off * 60_000)
+                    .div_euclid(86_400_000);
                 (
                     self.database_state.state_for(&node.id),
                     self.database_state.mobile_readonly,
-                    today_day,
+                    day,
                 )
             });
+            let code_preview_sig = match &node.content {
+                BlockContent::Code { language, text, .. }
+                    if self.code_preview_blocks.contains(&node.id) =>
+                {
+                    Some(
+                        CodePreviewKind::from_language(language)
+                            .map_or_else(super::preview_revision, |k| {
+                                super::code_preview::code_preview_revision(k, text)
+                            }),
+                    )
+                }
+                _ => None,
+            };
+            let table_focused = matches!(node.content, BlockContent::Table(_))
+                && self.focused_table_block == Some(node.id.as_str());
+            let embed_card_state = matches!(node.content, BlockContent::ExternalEmbed { .. })
+                .then(|| self.effective_embed_state(&node.id));
             let fingerprint = (
                 &node.content,
                 node.children.is_empty(),
@@ -395,6 +390,7 @@ impl<'a> FlowPass<'a> {
                 block_utc_offset,
                 surface_ref_sig,
                 db_sig,
+                (code_preview_sig, table_focused, embed_card_state),
             );
             let body = self.body(&node.id, &fingerprint, |pass| {
                 pass.block_body(node, width, list_depth, align)
@@ -624,155 +620,6 @@ impl<'a> FlowPass<'a> {
             code_scroll: None,
             pdf_controls: None,
             table_cells: Vec::new(),
-        }
-    }
-
-    fn block_body(
-        &mut self,
-        node: &BlockNode,
-        width: f32,
-        list_depth: usize,
-        align: BlockAlign,
-    ) -> BlockBody {
-        match &node.content {
-            BlockContent::Paragraph {
-                kind,
-                text,
-                collapsed,
-                ..
-            } => {
-                if let Some(EquationDraft::Inline {
-                    block_id,
-                    utf16_offset,
-                    latex,
-                }) = self.input.equation_draft
-                    && block_id == &node.id
-                {
-                    let patched = body::patch_inline_latex_draft(text, *utf16_offset, latex);
-                    return self.paragraph_body(*kind, &patched, *collapsed, width, align);
-                }
-                self.paragraph_body(*kind, text, *collapsed, width, align)
-            }
-            BlockContent::List {
-                kind,
-                checked,
-                collapsed,
-                text,
-                numbered_index,
-                ..
-            } => {
-                if let Some(EquationDraft::Inline {
-                    block_id,
-                    utf16_offset,
-                    latex,
-                }) = self.input.equation_draft
-                    && block_id == &node.id
-                {
-                    let patched = body::patch_inline_latex_draft(text, *utf16_offset, latex);
-                    return self.list_body(
-                        *kind,
-                        *checked,
-                        *collapsed && !node.children.is_empty(),
-                        &patched,
-                        numbered_index.unwrap_or(1),
-                        list_depth,
-                        width,
-                        align,
-                    );
-                }
-                self.list_body(
-                    *kind,
-                    *checked,
-                    *collapsed && !node.children.is_empty(),
-                    text,
-                    numbered_index.unwrap_or(1),
-                    list_depth,
-                    width,
-                    align,
-                )
-            }
-            BlockContent::Divider => self.divider_body(width),
-            BlockContent::Code {
-                language,
-                wrap,
-                text,
-                caption,
-            } => {
-                let explicit_line_number =
-                    node.props.get("prop:lineNumber").and_then(|v| v.as_bool());
-                self.code_body(
-                    &node.id,
-                    language,
-                    *wrap,
-                    explicit_line_number,
-                    text,
-                    caption,
-                    width,
-                )
-            }
-            BlockContent::Image {
-                source_id,
-                width: image_width,
-                height: image_height,
-                caption,
-            } => self.image_body(source_id, *image_width, *image_height, caption, width),
-            BlockContent::Bookmark {
-                url,
-                title,
-                description,
-                caption,
-            } => self.bookmark_body(
-                url,
-                title.as_deref(),
-                description.as_deref(),
-                caption,
-                width,
-            ),
-            BlockContent::Latex { latex } => {
-                let effective = match self.input.equation_draft {
-                    Some(EquationDraft::Block {
-                        block_id,
-                        latex: draft,
-                    }) if block_id == &node.id => draft.as_str(),
-                    _ => latex.as_str(),
-                };
-                self.latex_body(effective, width)
-            }
-            BlockContent::Callout {
-                icon,
-                text,
-                background_color,
-            } => self.callout_body(
-                icon,
-                &text.plain,
-                background_color.as_deref(),
-                !node.children.is_empty(),
-                width,
-            ),
-            BlockContent::Table(table) => self.table_body(table, width),
-            BlockContent::Attachment {
-                name,
-                size,
-                mime_type,
-                source_id,
-                caption,
-                embed,
-            } => self.attachment_body(
-                &node.id, name, *size, mime_type, source_id, caption, *embed, width,
-            ),
-            BlockContent::EmbedLinkedDoc {
-                page_id, caption, ..
-            } => self.embed_linked_doc_body(page_id, caption, width),
-            BlockContent::EmbedSyncedDoc { page_id, caption } => {
-                self.embed_synced_doc_body(page_id, caption, width)
-            }
-            BlockContent::SurfaceRef {
-                reference,
-                ref_flavour,
-                caption,
-            } => self.surface_ref_body(&node.id, reference, ref_flavour, caption, width),
-            BlockContent::Database(db) => self.database_body(&node.id, db, width),
-            _ => self.unknown_body(&node.flavour, &node.id, width),
         }
     }
 }

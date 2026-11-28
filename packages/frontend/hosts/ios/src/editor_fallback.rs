@@ -36,6 +36,14 @@ impl SyncHostDispatcher {
         self.clock.advance(delta);
     }
 
+    pub(crate) fn has_pending_tasks(&self) -> bool {
+        self.queue
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .front()
+            .is_some()
+    }
+
     pub(crate) fn drain_ready(&self) -> Option<Duration> {
         let now = self.clock.now();
         loop {

@@ -108,6 +108,9 @@ impl PlaygroundView {
             {
                 let _ = self.edgeless_label_edit(window, cx, super::EdgelessLabelEditor::unmark);
             }
+            if let Ok(page) = self.page_mut() {
+                let _ = page.stop_capturing();
+            }
             let off = self
                 .hit_label_editor_at(
                     f32::from(event.position.x),

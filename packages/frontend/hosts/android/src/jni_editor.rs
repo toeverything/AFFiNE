@@ -14,6 +14,22 @@ use crate::{
     jni_interaction::{JFloatArray, fill_jfloat_array},
 };
 
+/// Pops the next validated `http(s)://` URL queued by the editor, or returns null.
+///
+/// # Safety
+/// `env` must be a valid JNIEnv pointer passed by the ART runtime.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeTakePendingOpenUrl(
+    env: JniEnvPtr,
+    _class: JClass,
+    _handle: JLong,
+) -> JString {
+    match crate::editor_platform::take_pending_open_url_global() {
+        Some(url) => unsafe { new_jstring(env, &url) },
+        None => std::ptr::null_mut(),
+    }
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_app_affine_pro_host_NativeBridge_nativeLoadShowcaseDocument(
     _env: JniEnvPtr,
@@ -675,5 +691,88 @@ mod tests {
             "detached handle must be removed so subsequent wakeups become no-ops"
         );
         invoke_jni_wakeup(handle);
+    }
+
+    #[test]
+    fn android_editor_runtime_wakes_and_renders_after_async_code_preview() {
+        use std::sync::{Condvar, Mutex};
+
+        use playground::{FormFactor, overlays::OverlayEvent};
+
+        let mut ed = editor_runtime::AndroidEditorRuntime::new(
+            412.0,
+            915.0,
+            2.625,
+            FormFactor::Phone,
+            false,
+        )
+        .expect("android editor runtime");
+        let wake_pair = Arc::new((Mutex::new(0usize), Condvar::new()));
+        let wake_bg = Arc::clone(&wake_pair);
+        ed.set_waker(Some(Arc::new(move || {
+            let (lock, cv) = &*wake_bg;
+            *lock.lock().unwrap() += 1;
+            cv.notify_all();
+        })));
+
+        // Convert the empty paragraph into a fenced code block via Markdown ` ``` ` + Space,
+        // switch its language to `mermaid`, clear caret focus so the host is completely idle,
+        // and toggle Preview.
+        let fence: Vec<u16> = "``` ".encode_utf16().collect();
+        ed.commit_text_utf16(&fence, 1);
+        let src: Vec<u16> = "flowchart LR\n  AndroidHostIdle --> AndroidHostWoken"
+            .encode_utf16()
+            .collect();
+        ed.commit_text_utf16(&src, 1);
+        let view = ed.view;
+        ed.app.update(|cx| {
+            view.update(cx, |v, win, cx| {
+                let code_id = v
+                    .document_selection()
+                    .expect("focused code block")
+                    .anchor
+                    .block_id
+                    .clone();
+                v.dispatch_overlay(
+                    OverlayEvent::SetCodeLanguage {
+                        block_id: code_id.clone(),
+                        language: "mermaid".into(),
+                    },
+                    win,
+                    cx,
+                );
+                v.dispatch_overlay(OverlayEvent::SetSelection(None), win, cx);
+                v.dispatch_overlay(OverlayEvent::ToggleCodePreview(code_id), win, cx);
+            })
+            .unwrap();
+        });
+        ed.mark_dirty();
+        // Render initial Pending frame so the runtime goes idle (`is_dirty == false`).
+        assert!(ed.render_frame());
+        assert!(!ed.is_dirty());
+        *wake_pair.0.lock().unwrap() = 0;
+
+        // Wait on real background preview worker wakeup (strictly NO manual flush or mark_dirty).
+        {
+            let (lock, cv) = &*wake_pair;
+            let mut count = lock.lock().unwrap();
+            while *count == 0 {
+                let (next, timeout) = cv.wait_timeout(count, Duration::from_secs(10)).unwrap();
+                count = next;
+                assert!(
+                    !timeout.timed_out(),
+                    "AndroidEditorRuntime must receive waker callback when async Mermaid preview finishes"
+                );
+            }
+        }
+        ed.set_waker(None);
+        assert!(
+            ed.has_pending_main_tasks() || ed.is_dirty(),
+            "idle Android host must report pending work after preview wakeup"
+        );
+        assert!(
+            ed.render_frame(),
+            "Android render_frame() must drain wakeup task and render Ready preview"
+        );
     }
 }

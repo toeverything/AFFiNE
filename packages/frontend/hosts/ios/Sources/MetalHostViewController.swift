@@ -99,6 +99,21 @@ private func affineIosFrameWakeTrampoline(_ userData: UnsafeMutableRawPointer?) 
   }
 }
 
+private func affineIosOpenUrlTrampoline(_ urlUtf8: UnsafePointer<CChar>?, _ userData: UnsafeMutableRawPointer?) {
+  guard let urlUtf8, let raw = String(validatingUTF8: urlUtf8) else {
+    return
+  }
+  let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+  guard trimmed.hasPrefix("https://") || trimmed.hasPrefix("http://"),
+        let url = URL(string: trimmed)
+  else {
+    return
+  }
+  DispatchQueue.main.async {
+    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+  }
+}
+
 final class MetalHostView: UIView, UITextInput {
   override class var layerClass: AnyClass {
     CAMetalLayer.self
@@ -214,6 +229,7 @@ final class MetalHostView: UIView, UITextInput {
     }
     let rawSelf = Unmanaged.passUnretained(self).toOpaque()
     affine_ios_host_set_text_input_callback(handle, affineIosTextInputChangedTrampoline, rawSelf)
+    affine_ios_host_set_open_url_callback(handle, affineIosOpenUrlTrampoline, rawSelf)
   }
 
   func detachTextInputObserver() {
@@ -221,6 +237,7 @@ final class MetalHostView: UIView, UITextInput {
       return
     }
     affine_ios_host_set_text_input_callback(handle, nil, nil)
+    affine_ios_host_set_open_url_callback(handle, nil, nil)
   }
 
   /// H-S2: Editor-initiated content/selection change notifies `UITextInputDelegate` and overlay.

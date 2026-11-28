@@ -565,6 +565,13 @@ impl PlaygroundView {
             equation_draft.hash(&mut h);
             h.finish()
         };
+        let focused_table_block = (!self.table_is_readonly())
+            .then(|| self.table_cell.as_ref().map(|c| c.block_id.clone()))
+            .flatten();
+        if self.flow.focused_table_block != focused_table_block {
+            self.flow.focused_table_block = focused_table_block;
+            self.env_rev = self.env_rev.wrapping_add(1);
+        }
         let effective_env_rev = self
             .env_rev
             .wrapping_add(self.flow.database_state.revision());

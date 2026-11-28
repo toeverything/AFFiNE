@@ -23,9 +23,15 @@
         width: 100vw;
         height: 100vh;
       }
+      #embed-layer {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
+    <div id="embed-layer"></div>
     <script type="module">
       import init, * as playgroundWasm from './pkg/playground.js';
       import { installPlaygroundPreviewBridge } from './preview-workers.js';

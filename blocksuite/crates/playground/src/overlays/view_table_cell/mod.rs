@@ -124,6 +124,9 @@ impl PlaygroundView {
             {
                 let _ = self.table_cell_edit(window, cx, |cell| cell.input.unmark());
             }
+            if let Ok(page) = self.page_mut() {
+                let _ = page.stop_capturing();
+            }
             if let Some((sx, sy)) = screen_pos {
                 let geom = page_geometry(f32::from(window.viewport_size().width));
                 if let Some(layout) = self.ensure_layout(geom.column_width, window)

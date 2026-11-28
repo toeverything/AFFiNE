@@ -11,6 +11,9 @@ use super::{AffineUtf16Range, editor_runtime::IosEditorRuntime, ffi::AffineIosHo
 /// Callback fired when the editor mutates text or selection (`H-S2`).
 pub type AffineTextInputChangedCallback = extern "C" fn(u8, *mut c_void);
 
+/// Callback fired when the editor opens a validated `http(s)://` external URL.
+pub type AffineOpenUrlCallback = extern "C" fn(*const c_char, *mut c_void);
+
 /// Flushes queued `TextInputStateChange` notifications after `host.editor` borrow has ended
 /// so UIKit `UITextInputDelegate` callbacks can safely re-enter FFI queries without panicking.
 pub(crate) fn flush_text_input_changes(host: &AffineIosHost) {
@@ -240,6 +243,32 @@ pub unsafe extern "C" fn affine_ios_host_set_text_input_callback(
             }) as super::editor_platform::TextInputObserver
         });
         editor.set_text_input_observer(observer);
+    }
+}
+
+/// Registers a host callback invoked when the editor opens a validated `http(s)://` URL.
+///
+/// # Safety
+/// `host` must be null or a live pointer; `user_data` must outlive the registration.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn affine_ios_host_set_open_url_callback(
+    host: *mut AffineIosHost,
+    cb: Option<AffineOpenUrlCallback>,
+    user_data: *mut c_void,
+) {
+    let Some(host) = (unsafe { host.as_mut() }) else {
+        return;
+    };
+    let ud_addr = user_data as usize;
+    if let Some(editor) = host.editor.borrow().as_ref() {
+        let observer = cb.map(|func| {
+            Box::new(move |url: &str| {
+                if let Ok(c_url) = std::ffi::CString::new(url) {
+                    func(c_url.as_ptr(), ud_addr as *mut c_void);
+                }
+            }) as super::editor_platform::OpenUrlObserver
+        });
+        editor.set_open_url_observer(observer);
     }
 }
 

@@ -483,6 +483,8 @@ impl PlatformWindow for AndroidEditorWindow {
     }
 }
 
+pub(crate) use crate::editor_selection::take_pending_open_url_global;
+
 pub(crate) struct AndroidEditorPlatform {
     dispatcher: Arc<AndroidDispatcher>,
     background_executor: BackgroundExecutor,
@@ -538,31 +540,8 @@ impl AndroidEditorPlatform {
         markdown: Option<String>,
         snapshot: Option<String>,
     ) {
-        let mut meta = serde_json::Map::new();
-        if let Some(s) = snapshot.filter(|v| !v.is_empty()) {
-            meta.insert(
-                "application/x-blocksuite-snapshot".to_string(),
-                serde_json::Value::String(s),
-            );
-        }
-        if let Some(h) = html.filter(|v| !v.is_empty()) {
-            meta.insert("text/html".to_string(), serde_json::Value::String(h));
-        }
-        if let Some(m) = markdown.filter(|v| !v.is_empty()) {
-            meta.insert("text/markdown".to_string(), serde_json::Value::String(m));
-        }
-        let plain_str = plain.unwrap_or_default();
-        let item = if !meta.is_empty() {
-            Some(ClipboardItem::new_string_with_json_metadata(
-                plain_str,
-                serde_json::Value::Object(meta),
-            ))
-        } else if !plain_str.is_empty() {
-            Some(ClipboardItem::new_string(plain_str))
-        } else {
-            None
-        };
-        *self.clipboard.borrow_mut() = item;
+        *self.clipboard.borrow_mut() =
+            crate::editor_selection::clipboard_item_from_host(plain, html, markdown, snapshot);
     }
 
     pub(crate) fn take_pending_clipboard_json(&self) -> Option<String> {
@@ -643,7 +622,9 @@ impl Platform for AndroidEditorPlatform {
         WindowAppearance::Light
     }
 
-    fn open_url(&self, _url: &str) {}
+    fn open_url(&self, url: &str) {
+        crate::editor_selection::enqueue_pending_open_url(url);
+    }
     fn on_open_urls(&self, _callback: Box<dyn FnMut(Vec<String>)>) {}
     fn register_url_scheme(&self, _url: &str) -> Task<Result<()>> {
         Task::ready(Ok(()))
@@ -716,28 +697,9 @@ impl Platform for AndroidEditorPlatform {
     }
 
     fn write_to_clipboard(&self, item: ClipboardItem) {
-        let mut map = serde_json::Map::new();
-        if let Some(text) = item.text() {
-            map.insert("text/plain".to_string(), serde_json::Value::String(text));
-        }
-        if let Some(meta_str) = item.metadata()
-            && let Ok(serde_json::Value::Object(meta)) =
-                serde_json::from_str::<serde_json::Value>(meta_str)
-        {
-            for (k, v) in meta {
-                if k == "application/x-blocksuite-snapshot" {
-                    let s = match v {
-                        serde_json::Value::String(s) => s,
-                        other => other.to_string(),
-                    };
-                    map.insert(k, serde_json::Value::String(s));
-                } else if let serde_json::Value::String(s) = v {
-                    map.insert(k, serde_json::Value::String(s));
-                }
-            }
-        }
-        *self.pending_clipboard_write.borrow_mut() =
-            Some(serde_json::Value::Object(map).to_string());
+        *self.pending_clipboard_write.borrow_mut() = Some(
+            crate::editor_selection::serialize_clipboard_item_json(&item),
+        );
         *self.clipboard.borrow_mut() = Some(item);
     }
 
@@ -826,5 +788,26 @@ mod tests {
         assert_eq!(delayed_hits.load(Ordering::SeqCst), 1);
         assert!(remaining.is_none());
         drop((imm_task, del_task));
+    }
+
+    #[test]
+    fn android_open_url_allows_only_http_and_https_and_queues_for_jni() {
+        let platform = AndroidEditorPlatform::new(412.0, 915.0, 2.75);
+        while take_pending_open_url_global().is_some() {}
+        for bad in [
+            "javascript:alert(1)",
+            "file:///data/local/tmp",
+            "intent:#Intent;end",
+            "http://example.com/\r\n",
+        ] {
+            platform.open_url(bad);
+        }
+        assert_eq!(take_pending_open_url_global(), None);
+
+        platform.open_url("  https://affine.pro/mobile  ");
+        assert_eq!(
+            take_pending_open_url_global().as_deref(),
+            Some("https://affine.pro/mobile")
+        );
     }
 }

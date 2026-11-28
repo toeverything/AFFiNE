@@ -16,7 +16,7 @@ use ui::{
 
 use super::{
     AffineUtf16Range, AffineWindowInsets, IosHostState,
-    editor_platform::{IosEditorPlatform, IosEditorWindow, TextInputObserver},
+    editor_platform::{IosEditorPlatform, IosEditorWindow, OpenUrlObserver, TextInputObserver},
     selection::{AffinePoint, AffineRect, AffineWritingDirection},
     text_layout::{AffineSelectionRect, detect_paragraph_writing_direction},
 };
@@ -58,9 +58,10 @@ impl ui::PlatformDisplay for IosEditorDisplay {
 
 /// Live GPU editor runtime embedded in `AffineIosHost`.
 pub(crate) struct IosEditorRuntime {
-    app: ApplicationHandle,
-    window: IosEditorWindow,
-    view: ui::WindowHandle<PlaygroundView>,
+    pub(crate) app: ApplicationHandle,
+    pub(crate) platform: Rc<IosEditorPlatform>,
+    pub(crate) window: IosEditorWindow,
+    pub(crate) view: ui::WindowHandle<PlaygroundView>,
     #[cfg(not(target_os = "ios"))]
     dispatcher: std::sync::Arc<super::editor_fallback::SyncHostDispatcher>,
     form_factor: FormFactor,
@@ -132,6 +133,7 @@ impl IosEditorRuntime {
         let dispatcher = platform_ref.fallback_dispatcher();
         let runtime = Self {
             app,
+            platform: platform_ref,
             window,
             view,
             #[cfg(not(target_os = "ios"))]
@@ -190,6 +192,10 @@ impl IosEditorRuntime {
     }
 
     pub(crate) fn is_dirty(&self) -> bool {
+        #[cfg(not(target_os = "ios"))]
+        if self.dispatcher.has_pending_tasks() {
+            return true;
+        }
         self.window.state.borrow().dirty
     }
 
@@ -346,6 +352,10 @@ impl IosEditorRuntime {
 
     pub(crate) fn set_text_input_observer(&self, observer: Option<TextInputObserver>) {
         self.window.set_text_input_observer(observer);
+    }
+
+    pub(crate) fn set_open_url_observer(&self, observer: Option<OpenUrlObserver>) {
+        self.platform.set_open_url_observer(observer);
     }
 
     pub(crate) fn text_input_change_seq(&self) -> u64 {

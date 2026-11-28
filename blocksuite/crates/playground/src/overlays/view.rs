@@ -44,20 +44,7 @@ impl PlaygroundView {
         selection: Option<&'a SelectionFormat>,
         screen_transform: Option<OverlayScreenTransform>,
     ) -> OverlayScene<'a> {
-        let focused_code_block = self
-            .editor
-            .selection
-            .as_ref()
-            .and_then(|sel| layout.block(&sel.focus.block_id))
-            .filter(|b| matches!(b.body.kind, FlowKind::Code))
-            .or_else(|| {
-                self.editor
-                    .block_selection
-                    .iter()
-                    .find_map(|id| layout.block(id))
-                    .filter(|b| matches!(b.body.kind, FlowKind::Code))
-            })
-            .map(|b| b.block_id.as_str());
+        let focused_code_block = self.focused_code_block_id(layout);
         OverlayScene {
             snapshot,
             layout,
@@ -169,6 +156,7 @@ impl PlaygroundView {
                 return;
             }
             OverlayEvent::DragStart(_) => self.editor.dragging = false,
+            _ if self.handle_embed_and_code_event(&event, window, cx) => return,
             _ if self.handle_context_menu_event(&event, window, cx) => return,
             _ if self.handle_linked_doc_event(&event, window, cx) => return,
             _ if self.handle_mobile_and_rich_event(&event, window, cx) => return,

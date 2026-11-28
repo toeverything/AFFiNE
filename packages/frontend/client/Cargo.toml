@@ -12,7 +12,7 @@ workspace = true
 [dependencies]
 affine-legacy-import = { path = "../legacy-import" }
 affine-store = { path = "../../common/store" }
-blocksuite-editor = { path = "../../../blocksuite/crates/editor" }
+blocksuite-editor = { path = "../../../blocksuite/crates/editor", default-features = false }
 blocksuite-playground-doc = { path = "../../../blocksuite/crates/doc", default-features = false }
 getrandom.workspace = true
 serde.workspace = true

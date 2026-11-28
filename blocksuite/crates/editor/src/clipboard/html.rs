@@ -137,7 +137,7 @@ impl Width {
 
 /// LZ-String's URI component format uses UTF-16 symbols and writes code bits
 /// least-significant first into six-bit, most-significant-first characters.
-pub(super) fn encode_html_snapshot(s: &str) -> String {
+pub fn encode_html_snapshot(s: &str) -> String {
     let mut out = String::new();
     let mut pending = 0u8;
     let mut used = 0;
@@ -198,7 +198,7 @@ pub(super) fn encode_html_snapshot(s: &str) -> String {
     out
 }
 
-pub(super) fn decode_html_snapshot(s: &str) -> Option<String> {
+pub fn decode_html_snapshot(s: &str) -> Option<String> {
     let mut bits = s
         .bytes()
         .map(|b| URI_ALPHABET.iter().position(|v| *v == b))

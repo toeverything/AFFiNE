@@ -3,6 +3,7 @@
 mod view;
 mod view_context_menu;
 mod view_edits;
+mod view_embed_controls;
 mod view_linked_doc;
 mod view_mobile;
 pub use view_mobile::DatabaseRecordSheetState;

@@ -6,6 +6,7 @@ mod surface_frame;
 mod table_cell;
 mod workspace;
 
+pub use surface::PastedBlockNode;
 pub use table_cell::LiveTableCell;
 
 pub use export::any_to_normalized_json;

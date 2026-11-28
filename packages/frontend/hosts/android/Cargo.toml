@@ -10,7 +10,9 @@ workspace = "../.."
 crate-type = ["rlib", "cdylib"]
 
 [features]
+default = ["preview-typst"]
 host-jni = []
+preview-typst = ["playground/preview-typst"]
 
 [dependencies]
 affine-legacy-import = { path = "../../legacy-import" }
@@ -20,7 +22,7 @@ anyhow.workspace = true
 base64.workspace = true
 chrono.workspace = true
 futures.workspace = true
-playground = { path = "../../../../blocksuite/crates/playground" }
+playground = { path = "../../../../blocksuite/crates/playground", default-features = false }
 raw-window-handle.workspace = true
 serde.workspace = true
 serde_json.workspace = true

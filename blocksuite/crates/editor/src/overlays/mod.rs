@@ -7,6 +7,7 @@
 mod bookmark_prompt;
 mod context_menu;
 mod equation;
+mod helpers;
 mod keyboard_toolbar;
 mod paint_linked_doc;
 mod paint_page;
@@ -73,7 +74,7 @@ use y_octo::Any;
 
 use crate::{
     TOPBAR_HEIGHT,
-    block_flow::{CodeScroll, FlowLayout, FlowRect, PageGeometry, PageViewport, ScrolledCode},
+    block_flow::{FlowLayout, FlowRect, PageGeometry, PageViewport},
     editor_session::DocumentSelection,
 };
 
@@ -348,6 +349,20 @@ pub enum OverlayEvent {
     ToggleChecked(String),
     ToggleCollapsed(String),
     CopyCode(String),
+    /// Toggle `prop:wrap` on an `affine:code` block as one undo step.
+    ToggleCodeWrap(String),
+    /// Cycle or update `prop:language` on an `affine:code` block as one undo step.
+    SetCodeLanguage {
+        block_id: String,
+        language: String,
+    },
+    /// Toggle transient visual preview mode on a `mermaid`, `typst`, or `html` code block.
+    ToggleCodePreview(String),
+    /// Click or activate an external embed card (`Idle` -> `Selected` -> `Active`).
+    ExternalEmbedInteract {
+        block_id: String,
+        activate: bool,
+    },
     DragStart(String),
     /// Open the `@` linked-document picker with an initial query.
     OpenLinkedDocMenu {
@@ -697,95 +712,5 @@ impl Overlays {
     /// Where the dragged block would land.
     pub fn drop_slot(&self) -> Option<&DropSlot> {
         self.drag.as_ref()?.slot.as_ref()
-    }
-
-    /// Sideways scroll of a code/table/database block.
-    pub fn code_scroll_x(&self, block_id: &str) -> f32 {
-        self.code_scroll.get(block_id).copied().unwrap_or(0.0)
-    }
-
-    /// Effective sideways scroll of a block, falling back to `code.initial_x` until the user
-    /// scrolls it manually.
-    pub fn code_scroll_x_for(&self, block_id: &str, code: CodeScroll) -> f32 {
-        self.code_scroll
-            .get(block_id)
-            .copied()
-            .unwrap_or(code.initial_x)
-    }
-
-    /// The code blocks of `layout` that are scrolled sideways.
-    pub fn scrolled_code(&self, layout: &FlowLayout) -> Vec<ScrolledCode> {
-        self.code_scroll
-            .iter()
-            .filter_map(|(block_id, scroll)| {
-                ScrolledCode::of_block(layout.block(block_id)?, *scroll)
-            })
-            .collect()
-    }
-
-    /// Scroll a code block sideways so the caret at `caret_x` (relative to its code area,
-    /// unscrolled) is in view.
-    pub fn reveal_code_x(&mut self, block_id: &str, caret_x: f32, code: CodeScroll) {
-        let current = self.code_scroll_x(block_id);
-        let next = if caret_x < current {
-            caret_x
-        } else if caret_x > current + code.area.w - 2.0 {
-            caret_x - code.area.w + 2.0
-        } else {
-            current
-        };
-        let next = next.clamp(0.0, code.max_x).round();
-        if next > 0.0 {
-            self.code_scroll.insert(block_id.to_string(), next);
-        } else {
-            self.code_scroll.remove(block_id);
-        }
-    }
-
-    /// Whether a block's disclosure chevron is turning between its two states.
-    pub fn chevron_turning(&self, block_id: &str) -> bool {
-        self.chevrons.contains_key(block_id)
-    }
-
-    /// Code block whose copy button currently reads `Copied`.
-    pub fn copied_block(&self) -> Option<&str> {
-        self.copied.as_ref().map(|(block_id, _)| block_id.as_str())
-    }
-
-    /// The `Copied` timer of `generation` ran out. Returns whether a label went away.
-    pub fn copied_expired(&mut self, generation: u64) -> bool {
-        if self
-            .copied
-            .as_ref()
-            .is_some_and(|(_, current)| *current == generation)
-        {
-            self.copied = None;
-            return true;
-        }
-        false
-    }
-
-    /// Whether a to-do checkbox radial pulse is currently in flight for `block_id`.
-    pub fn todo_pulse_active(&self, block_id: &str) -> bool {
-        self.todo_pulses.contains_key(block_id)
-    }
-
-    /// Drop every popover, hover and gesture at once, e.g. when the page is hidden or
-    /// replaced.
-    pub fn reset(&mut self) {
-        self.hovered = None;
-        self.handle_hot = false;
-        self.slash = None;
-        self.toolbar = None;
-        self.drag = None;
-        self.chevrons.clear();
-        self.todo_pulses.clear();
-        self.linked_doc = None;
-        self.equation = None;
-        self.bookmark = None;
-        self.context_menu = None;
-        self.context_toast = None;
-        self.keyboard_toolbar.close_transient();
-        self.format_cache = None;
     }
 }

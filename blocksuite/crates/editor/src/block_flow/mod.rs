@@ -13,9 +13,14 @@
 
 mod blocks;
 mod body;
+mod code_preview;
 mod embed_blocks;
 mod inline;
 mod layout;
+#[cfg(not(target_arch = "wasm32"))]
+mod native_fonts;
+#[cfg(not(target_arch = "wasm32"))]
+mod native_providers;
 mod preview;
 mod rich_blocks;
 mod surface_ref;
@@ -23,9 +28,16 @@ mod table_block;
 mod viewport;
 
 pub use body::{
-    AttachmentPdfControls, BlockBody, BlockPaint, CodeScroll, EquationDraft, FlowBlock, FlowInput,
-    FlowKind, FlowLayout, FlowStats, FlowText, FlowTextLayout, FormFactor, PagePaint, ScrolledCode,
-    TableCellHit, paint_chevron,
+    AttachmentPdfControls, BlockBody, BlockPaint, CodeScroll, EmbedCardState, EquationDraft,
+    FlowBlock, FlowInput, FlowKind, FlowLayout, FlowStats, FlowText, FlowTextLayout, FormFactor,
+    PagePaint, ScrolledCode, TableCellHit, paint_chevron,
+};
+pub use code_preview::{
+    CodePreviewKind, CodePreviewProvider, CodePreviewResult, CodePreviewSlot,
+    PreviewWakeupSubscription, bump_code_preview_revision, code_preview_revision,
+    code_preview_supported, has_code_preview_provider, has_math_preview_provider,
+    has_pdf_page_provider, notify_preview_wakeup, query_code_preview_provider,
+    register_code_preview_provider, subscribe_preview_wakeup,
 };
 pub use embed_blocks::civil_from_days;
 pub use inline::{
@@ -33,6 +45,8 @@ pub use inline::{
     decode_image_with_dimensions, layout_inline,
 };
 pub use layout::BlockFlow;
+#[cfg(not(target_arch = "wasm32"))]
+pub use native_providers::{ensure_native_preview_providers_installed, flush_native_code_previews};
 pub use preview::{
     EmbeddedPdfDocument, MathPreviewProvider, MathRenderResult, MathRenderSlot, PdfPageCount,
     PdfPageProvider, PdfParseResult, PdfPreviewPage, bump_latex_formula_revision,
@@ -309,6 +323,52 @@ impl FlowRect {
             size(px(self.w), px(self.h)),
         )
     }
+}
+
+pub(super) fn heading_level(node: &blocksuite_playground_doc::read::BlockNode) -> Option<u8> {
+    use blocksuite_playground_doc::{read::BlockContent, schema::ParagraphType};
+    let BlockContent::Paragraph { kind, .. } = &node.content else {
+        return None;
+    };
+    Some(match kind {
+        ParagraphType::H1 => 1,
+        ParagraphType::H2 => 2,
+        ParagraphType::H3 => 3,
+        ParagraphType::H4 => 4,
+        ParagraphType::H5 => 5,
+        ParagraphType::H6 => 6,
+        _ => return None,
+    })
+}
+
+pub(super) fn node_has_gutter_chevron(
+    kind: FlowKind,
+    node: &blocksuite_playground_doc::read::BlockNode,
+) -> bool {
+    use blocksuite_playground_doc::{
+        read::BlockContent,
+        schema::{ListType, ParagraphType},
+    };
+    if heading_level(node).is_some() {
+        return true;
+    }
+    let supports_fold = matches!(
+        kind,
+        FlowKind::Paragraph(ParagraphType::Text | ParagraphType::Quote)
+            | FlowKind::List(ListType::Bulleted | ListType::Numbered | ListType::Todo)
+    );
+    supports_fold
+        && (!node.children.is_empty()
+            || matches!(
+                node.content,
+                BlockContent::List {
+                    collapsed: true,
+                    ..
+                } | BlockContent::Paragraph {
+                    collapsed: true,
+                    ..
+                }
+            ))
 }
 
 #[cfg(test)]

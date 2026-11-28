@@ -1,6 +1,7 @@
 mod bench;
 mod demo;
 mod edgeless_evidence;
+mod embed_preview_evidence;
 mod fps;
 mod probes;
 mod render;
@@ -476,6 +477,12 @@ fn main() -> Result<()> {
             args.next()
                 .context("render-s3-evidence requires an output directory")?,
         )),
+        "render-embed-preview-evidence" => {
+            embed_preview_evidence::render_embed_preview_evidence(&PathBuf::from(
+                args.next()
+                    .context("render-embed-preview-evidence requires an output directory")?,
+            ))
+        }
         "record-edgeless-demo" => record_edgeless_demo(
             args.next()
                 .context("record-edgeless-demo requires an output directory")?

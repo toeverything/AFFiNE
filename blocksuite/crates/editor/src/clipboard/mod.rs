@@ -14,7 +14,8 @@ use serde_json::{Value, json};
 use ui::ClipboardItem;
 use y_octo::{TextDeltaOp, TextInsert};
 
-use html::{blocks_html, decode_html_snapshot, encode_html_snapshot, parse_html_blocks};
+use html::{blocks_html, parse_html_blocks};
+pub use html::{decode_html_snapshot, encode_html_snapshot};
 
 pub const SNAPSHOT_MIME: &str = "application/x-blocksuite-snapshot";
 

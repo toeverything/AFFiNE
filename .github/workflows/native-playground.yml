@@ -357,11 +357,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Mesa Lavapipe Vulkan driver and headers
+      - name: Install Mesa Lavapipe Vulkan driver, headers, and CJK/Emoji fallback fonts
         run: |
           sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
           sudo apt-get update
-          sudo apt-get install -y mesa-vulkan-drivers libvulkan1 libfontconfig1-dev libfreetype-dev lld
+          sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers libvulkan1 libfontconfig1-dev libfreetype-dev lld fonts-wqy-zenhei fonts-noto-color-emoji
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@1.98.1

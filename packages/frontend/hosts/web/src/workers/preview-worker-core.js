@@ -162,7 +162,10 @@ export function startPreviewWorker(kind) {
           new Error('Missing globalThis.AFFINE_WORKER_WASM_URL')
         );
       }
-      exportsPromise = loadWorkerExports(wasmUrl);
+      exportsPromise = loadWorkerExports(wasmUrl).catch(err => {
+        exportsPromise = null;
+        throw err;
+      });
     }
     return exportsPromise;
   }

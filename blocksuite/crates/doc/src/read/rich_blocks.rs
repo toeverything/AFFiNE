@@ -7,6 +7,49 @@ use crate::DocResult;
 
 use super::{RichText, SnapshotReader, number, string};
 
+/// Shared flat-vs-nested storage detection for `affine:table` so readers (`read_table`) and
+/// writers (`table_cell.rs`) always agree even on hybrid tables with extra flat metadata keys
+/// such as `prop:cells.r0:c0.backgroundColor`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct TableStorageMode {
+    pub(crate) flat_rows: bool,
+    pub(crate) flat_cols: bool,
+    pub(crate) flat_cells: bool,
+}
+
+pub(crate) fn detect_table_storage_mode<'a>(
+    keys: impl IntoIterator<Item = &'a str>,
+) -> TableStorageMode {
+    let mut mode = TableStorageMode {
+        flat_rows: false,
+        flat_cols: false,
+        flat_cells: false,
+    };
+    for key in keys {
+        if let Some(rest) = key.strip_prefix("prop:rows.")
+            && let Some((row_id, field)) = rest.rsplit_once('.')
+            && !row_id.is_empty()
+            && matches!(field, "rowId" | "order" | "backgroundColor")
+        {
+            mode.flat_rows = true;
+        } else if let Some(rest) = key.strip_prefix("prop:columns.")
+            && let Some((col_id, field)) = rest.rsplit_once('.')
+            && !col_id.is_empty()
+            && matches!(field, "columnId" | "order" | "width" | "backgroundColor")
+        {
+            mode.flat_cols = true;
+        } else if let Some(rest) = key.strip_prefix("prop:cells.")
+            && let Some(cell_key) = rest.strip_suffix(".text")
+            && let Some((row_id, col_id)) = cell_key.split_once(':')
+            && !row_id.is_empty()
+            && !col_id.is_empty()
+        {
+            mode.flat_cells = true;
+        }
+    }
+    mode
+}
+
 /// One row descriptor inside an `affine:table` block.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TableRow {

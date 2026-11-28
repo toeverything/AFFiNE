@@ -76,6 +76,15 @@ fn extract_snapshot_snippet(snapshot: &PageSnapshot) -> String {
 }
 
 impl FlowPass<'_> {
+    pub(super) fn effective_embed_state(&self, block_id: &str) -> super::EmbedCardState {
+        let raw = self.embed_states.get(block_id).copied().unwrap_or_default();
+        if self.embeds_shielded && raw == super::EmbedCardState::Active {
+            super::EmbedCardState::Shielded
+        } else {
+            raw
+        }
+    }
+
     pub(super) fn embed_linked_doc_body(
         &mut self,
         page_id: &str,
@@ -244,8 +253,10 @@ impl FlowPass<'_> {
         let mut content_y = pad_y;
         let mut rendered_any = false;
         let mut loaded_empty_doc = false;
-        if self.embed_depth < MAX_SYNCED_RECURSION_DEPTH
-            && !visited.contains(page_id)
+        let is_cycle = visited.contains(page_id);
+        let depth_exceeded = self.embed_depth >= MAX_SYNCED_RECURSION_DEPTH;
+        if !depth_exceeded
+            && !is_cycle
             && let Some(target_snap) = self
                 .input
                 .doc_directory
@@ -308,31 +319,66 @@ impl FlowPass<'_> {
         }
 
         if !rendered_any {
-            let fallback = preview
-                .as_ref()
-                .map(|p| p.snippet.trim())
-                .filter(|s| !s.is_empty())
-                .or(loaded_empty_doc.then_some("Empty document"))
-                .unwrap_or(resolved_title);
-            let empty_style = InlineStyle::new(
-                FONT_SANS,
-                TYPOGRAPHY.font_sm_px,
-                400.0,
-                self.palette.text_secondary,
-            );
-            prims.push(Prim::Text {
-                x: 0.0,
-                y: content_y + 10.0,
-                layout: self.plain_inline(
-                    fallback,
-                    empty_style,
-                    width.max(40.0),
-                    22.0,
-                    InlineAlign::Left,
-                ),
-                clip: None,
-            });
-            content_y += 38.0;
+            if is_cycle || depth_exceeded {
+                let notice = if is_cycle {
+                    "Circular synced document reference"
+                } else {
+                    "Nested synced document depth limit reached"
+                };
+                let box_h = 44.0;
+                prims.push(Prim::Quad {
+                    rect: FlowRect::new(0.0, content_y, width, box_h),
+                    fill: Some(self.palette.background_secondary),
+                    border: Some(self.palette.divider),
+                    radius: 8.0,
+                    dashed: true,
+                });
+                let notice_style = InlineStyle::new(
+                    FONT_SANS,
+                    TYPOGRAPHY.font_xs_px,
+                    500.0,
+                    self.palette.text_secondary,
+                );
+                prims.push(Prim::Text {
+                    x: 12.0,
+                    y: content_y + 12.0,
+                    layout: self.plain_inline(
+                        notice,
+                        notice_style,
+                        (width - 24.0).max(40.0),
+                        20.0,
+                        InlineAlign::Left,
+                    ),
+                    clip: None,
+                });
+                content_y += box_h;
+            } else {
+                let fallback = preview
+                    .as_ref()
+                    .map(|p| p.snippet.trim())
+                    .filter(|s| !s.is_empty())
+                    .or(loaded_empty_doc.then_some("Empty document"))
+                    .unwrap_or(resolved_title);
+                let empty_style = InlineStyle::new(
+                    FONT_SANS,
+                    TYPOGRAPHY.font_sm_px,
+                    400.0,
+                    self.palette.text_secondary,
+                );
+                prims.push(Prim::Text {
+                    x: 0.0,
+                    y: content_y + 10.0,
+                    layout: self.plain_inline(
+                        fallback,
+                        empty_style,
+                        width.max(40.0),
+                        22.0,
+                        InlineAlign::Left,
+                    ),
+                    clip: None,
+                });
+                content_y += 38.0;
+            }
         }
 
         let card_h = (content_y + pad_y).max(44.0);
@@ -344,6 +390,205 @@ impl FlowPass<'_> {
             margin_top: CARD_BLOCK_MARGIN,
             margin_bottom: CARD_BLOCK_MARGIN,
             plain: resolved_title.to_string(),
+            prims,
+            text: None,
+            prefix: None,
+            code_scroll: None,
+            pdf_controls: None,
+            table_cells: Vec::new(),
+        };
+        self.push_caption(&mut body, caption);
+        body
+    }
+
+    /// GPU-drawn external embed card (`embed-youtube`, `embed-figma`, `embed-github`,
+    /// `embed-loom`, `embed-iframe`, `embed-html`, `embed-web`) honoring the four-state
+    /// pointer-shield contract (`Idle` / `Selected` / `Active` / `Shielded`) with zero writeback.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn external_embed_body(
+        &mut self,
+        kind: blocksuite_playground_doc::read::ExternalEmbedKind,
+        url: &str,
+        title: Option<&str>,
+        description: Option<&str>,
+        html: Option<&str>,
+        caption: &str,
+        state: super::EmbedCardState,
+        width: f32,
+    ) -> BlockBody {
+        use blocksuite_playground_doc::read::ExternalEmbedKind;
+
+        let badge_color = match kind {
+            ExternalEmbedKind::Youtube => ui::rgb(0xef4444).into(),
+            ExternalEmbedKind::Figma => ui::rgb(0xa855f7).into(),
+            ExternalEmbedKind::Github => self.palette.text_primary,
+            ExternalEmbedKind::Loom => ui::rgb(0x6366f1).into(),
+            ExternalEmbedKind::Html => ui::rgb(0xf97316).into(),
+            ExternalEmbedKind::Iframe | ExternalEmbedKind::Web => self.palette.brand,
+        };
+        let host = super::blocks::host_name(url);
+        let display_title = title
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .or_else(|| (!host.trim().is_empty()).then_some(host))
+            .unwrap_or(kind.label());
+        let subtitle = if kind == ExternalEmbedKind::Html {
+            html.map(str::trim)
+                .filter(|s| !s.is_empty())
+                .unwrap_or("Sandboxed HTML embed (isolated origin)")
+        } else {
+            description
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .or_else(|| (!url.trim().is_empty()).then_some(url))
+                .unwrap_or("External embed")
+        };
+
+        let pad = 14.0;
+        let inner_w = (width - pad * 2.0).max(60.0);
+        let active_wasm_html = cfg!(target_arch = "wasm32")
+            && kind == ExternalEmbedKind::Html
+            && state == super::EmbedCardState::Active;
+        let card_h = if active_wasm_html { 196.0 } else { 104.0 };
+        let border_color = if active_wasm_html {
+            self.palette.brand
+        } else {
+            self.palette.card_border
+        };
+
+        let mut prims = vec![Prim::Quad {
+            rect: FlowRect::new(0.0, 0.0, width, card_h),
+            fill: Some(self.palette.background),
+            border: Some(border_color),
+            radius: 10.0,
+            dashed: false,
+        }];
+
+        // Provider badge pill
+        let badge_w = (kind.label().len() as f32 * 7.5 + 18.0).clamp(56.0, 96.0);
+        prims.push(Prim::Quad {
+            rect: FlowRect::new(pad, pad, badge_w, 22.0),
+            fill: Some(badge_color.opacity(0.14)),
+            border: Some(badge_color.opacity(0.35)),
+            radius: 6.0,
+            dashed: false,
+        });
+        let badge_style = InlineStyle::new(FONT_SANS, 11.0, 600.0, badge_color);
+        prims.push(Prim::Text {
+            x: pad,
+            y: pad + 3.0,
+            layout: self.plain_inline(
+                kind.label(),
+                badge_style,
+                badge_w,
+                16.0,
+                InlineAlign::Center,
+            ),
+            clip: None,
+        });
+
+        // Clean right-aligned action pill: "Open" for http(s) URLs, or "Preview"/"Close" for
+        // sandboxed Web HTML embeds (zero internal state strings or placeholder viewports).
+        let trimmed_url = url.trim();
+        let has_http_url =
+            trimmed_url.starts_with("https://") || trimmed_url.starts_with("http://");
+        let action_label = if kind == ExternalEmbedKind::Html {
+            if cfg!(target_arch = "wasm32") {
+                Some(if active_wasm_html { "Close" } else { "Preview" })
+            } else {
+                None
+            }
+        } else if has_http_url {
+            Some("Open")
+        } else {
+            None
+        };
+        if let Some(action_label) = action_label {
+            let touch = self.input.form_factor != super::FormFactor::Desktop;
+            let pill_w = 64.0;
+            let pill_h = if touch { 32.0 } else { 22.0 };
+            let pill_x = (width - pad - pill_w).max(pad + badge_w + 8.0);
+            let pill_fill = if active_wasm_html {
+                self.palette.brand
+            } else {
+                self.palette.background_secondary
+            };
+            let pill_fg = if active_wasm_html {
+                self.palette.on_accent
+            } else {
+                self.palette.text_secondary
+            };
+            prims.push(Prim::Quad {
+                rect: FlowRect::new(pill_x, pad, pill_w, pill_h),
+                fill: Some(pill_fill),
+                border: Some(self.palette.border),
+                radius: 6.0,
+                dashed: false,
+            });
+            let pill_style = InlineStyle::new(FONT_SANS, 11.0, 500.0, pill_fg);
+            prims.push(Prim::Text {
+                x: pill_x,
+                y: pad + (pill_h - 16.0) * 0.5,
+                layout: self.plain_inline(
+                    action_label,
+                    pill_style,
+                    pill_w,
+                    16.0,
+                    InlineAlign::Center,
+                ),
+                clip: None,
+            });
+        }
+
+        let title_style = InlineStyle::new(
+            FONT_SANS,
+            TYPOGRAPHY.font_sm_px,
+            600.0,
+            self.palette.text_primary,
+        );
+        let title_str = truncate_to_width(self.window, display_title, &title_style, inner_w)
+            .text
+            .to_string();
+        prims.push(Prim::Text {
+            x: pad,
+            y: pad + 30.0,
+            layout: self.plain_inline(&title_str, title_style, inner_w, 22.0, InlineAlign::Left),
+            clip: None,
+        });
+
+        let sub_style = InlineStyle::new(
+            FONT_SANS,
+            TYPOGRAPHY.font_xs_px,
+            400.0,
+            self.palette.text_secondary,
+        );
+        let sub_str = truncate_to_width(self.window, subtitle, &sub_style, inner_w)
+            .text
+            .to_string();
+        prims.push(Prim::Text {
+            x: pad,
+            y: pad + 56.0,
+            layout: self.plain_inline(&sub_str, sub_style, inner_w, 18.0, InlineAlign::Left),
+            clip: None,
+        });
+
+        if active_wasm_html {
+            prims.push(Prim::Quad {
+                rect: FlowRect::new(pad, 48.0, inner_w, card_h - 48.0 - pad),
+                fill: Some(self.palette.background_secondary),
+                border: Some(self.palette.border),
+                radius: 6.0,
+                dashed: false,
+            });
+        }
+
+        let mut body = BlockBody {
+            kind: FlowKind::ExternalEmbed,
+            width,
+            height: card_h,
+            margin_top: CARD_BLOCK_MARGIN,
+            margin_bottom: CARD_BLOCK_MARGIN,
+            plain: display_title.to_string(),
             prims,
             text: None,
             prefix: None,

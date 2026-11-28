@@ -323,7 +323,6 @@ object NativeBridge {
     xDp: Float,
     yDp: Float,
   )
-
   external fun nativeOnScrollWheel(
     handle: Long,
     xDp: Float,
@@ -333,6 +332,7 @@ object NativeBridge {
   )
 
   external fun nativeHandleBack(handle: Long): Boolean
+  external fun nativeTakePendingOpenUrl(handle: Long): String?
   external fun nativeOnKeyEvent(
     handle: Long,
     keyCode: Int,
@@ -367,6 +367,24 @@ object NativeBridge {
   external fun nativeSelectionActionSelectAll(handle: Long)
   external fun nativeTakePendingClipboardJson(handle: Long): String?
   external fun nativeSetPageReadonly(handle: Long, readonly: Boolean)
+}
+
+private fun drainPendingOpenUrl(context: Context, handle: Long) {
+  if (handle == 0L) return
+  while (true) {
+    val pendingUrl = NativeBridge.nativeTakePendingOpenUrl(handle)?.trim()
+    if (pendingUrl.isNullOrEmpty()) break
+    if (pendingUrl.startsWith("https://") || pendingUrl.startsWith("http://")) {
+      runCatching {
+        context.startActivity(
+          android.content.Intent(
+            android.content.Intent.ACTION_VIEW,
+            android.net.Uri.parse(pendingUrl),
+          ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+      }
+    }
+  }
 }
 
 /**
@@ -2567,6 +2585,7 @@ internal class AffineSurfaceView(
           event.getY(idx) / density,
         )
         if (event.actionMasked == MotionEvent.ACTION_UP) {
+          drainPendingOpenUrl(context, handle)
           val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
           if (NativeBridge.nativeWantsSoftwareKeyboard(handle)) {
             if (!touchMovedBeyondSlop) {
@@ -2608,6 +2627,7 @@ internal class AffineSurfaceView(
       ctrl = event.isCtrlPressed,
       alt = event.isAltPressed,
     )
+    drainPendingOpenUrl(context, handle)
     if (handled) {
       onTouchDispatched()
       return true
@@ -3225,6 +3245,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback, Choreographer.FrameCall
     frameCallbackPosted = false
     if (!frameLoopActive || !surfaceReady || nativeHandle == 0L) return
     NativeBridge.nativeOnFrameTick(nativeHandle, frameTimeNanos)
+    drainPendingOpenUrl(this, nativeHandle)
     syncStatusBarAppearance()
     syncSystemImeFromEditor()
     syncDocumentSelectionFromEditor()

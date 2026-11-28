@@ -9,8 +9,11 @@ pub use blocksuite_editor::{
     directory, rich_text, surface, theme,
 };
 mod chrome;
+mod doc_panel;
 pub mod edgeless;
 pub mod editor_session;
+#[cfg(test)]
+mod embed_preview_tests;
 mod layout_cache;
 pub mod overlays;
 pub mod room_client;
@@ -24,6 +27,9 @@ pub mod wasm_crdt;
 #[cfg(target_family = "wasm")]
 mod wasm_preview;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use block_flow::ensure_native_preview_providers_installed;
+pub use doc_panel::{DocPanelTab, DocStats, TocHeading, compute_doc_stats, extract_toc_headings};
 pub use showcase::seed_showcase_doc;
 pub use touch_selection::{
     DocumentSelectionGeometry, SELECTION_ACTION_COPY, SELECTION_ACTION_CUT, SELECTION_ACTION_PASTE,
@@ -275,6 +281,10 @@ pub struct PlaygroundView {
     pub(crate) image_picker: Option<ImagePickerFn>,
     /// Timer that ends a code block's `Copied` label; a newer copy replaces it.
     pub(crate) copied_timer: Option<Task<()>>,
+    /// Active TOC Outline / DocInfo side panel tab, when open.
+    pub(crate) doc_panel_tab: Option<DocPanelTab>,
+    /// Vertical scroll offset for the TOC Outline heading list.
+    pub(crate) doc_panel_scroll_y: f32,
     pub(crate) _tasks: Vec<Task<()>>,
 }
 
@@ -335,6 +345,9 @@ impl PlaygroundView {
             ),
         };
 
+        #[cfg(not(target_arch = "wasm32"))]
+        doc_panel::install_native_preview_wakeup(&mut tasks, cx);
+
         let default_doc_directory = directory::InMemoryDocDirectory::with_namespace(format!(
             "doc:{:x}",
             state.awareness.local_client_id()
@@ -369,6 +382,8 @@ impl PlaygroundView {
             keyboard_toolbar_dismissed: false,
             ime_insets: chrome::ImeInsetsState::default(),
             table_cell: None,
+            doc_panel_tab: None,
+            doc_panel_scroll_y: 0.0,
             suppress_unselected_root_input: false,
             last_opened_embed_doc: None,
             nav_history: Vec::new(),
@@ -684,76 +699,6 @@ impl PlaygroundView {
     /// Document, presence and blobs currently shown.
     pub fn document(&self) -> &DocState {
         &self.state
-    }
-
-    /// Replace the shown document, e.g. with one prepared by a host or a test.
-    pub fn set_document(&mut self, state: DocState, cx: &mut Context<Self>) {
-        let had_composing = self.editor.composing()
-            || self
-                .overlays
-                .active_text_field()
-                .is_some_and(|f| f.composing())
-            || self
-                .table_cell
-                .as_ref()
-                .is_some_and(|c| c.input.composing())
-            || self
-                .edgeless
-                .authoring
-                .label_editor()
-                .is_some_and(|e| e.composing());
-        self.finish_inline_targets(overlays::InlineTargetEnd::DiscardPreedit, None, None);
-        self.editor = Default::default();
-        self.overlays.reset();
-        self.reading_anchor = None;
-        self.flow = BlockFlow::new();
-        self.flow.database_state.mobile_readonly = self.database_readonly;
-        self.flow.database_state.clock_ms = self.local_calendar_now(cx).0;
-        self.layout = None;
-        self.edgeless = edgeless::EdgelessCanvasState::new();
-        self.edgeless_camera_transition = None;
-        self.edgeless_shape_picker_presence = None;
-        self.page_scroll_fling = None;
-        self.code_scroll_fling = None;
-        self.edgeless_pan_fling = None;
-        self.touch_scroll_axis_lock = None;
-        self.active_touch_owner = TouchStrokeOwner::None;
-        self.touch_long_press_anchor = None;
-        self.touch_selection_menu_open = false;
-        self.edgeless_readonly_selection_target = None;
-        self.caret_blink_task = None;
-        self.scrollbar_drag = None;
-        self.context_toast_timer = None;
-        self.context_paste_task = None;
-        self.context_menu_target = None;
-        self.last_opened_link_url = None;
-        self.database_readonly_toast_shown = false;
-        self.database_record_sheet = None;
-        self.doc_epoch = self.doc_epoch.wrapping_add(1);
-        self.state = state;
-        self.default_doc_directory = directory::InMemoryDocDirectory::with_namespace(format!(
-            "doc:{:x}",
-            self.state.awareness.local_client_id()
-        ));
-        self.preflight_renamed_title = None;
-        self.cached_page_revisions.clear();
-        self.pending_sync_since_sv.clear();
-        self.images.clear();
-        self.pdf_previews.clear();
-        self.pdf_preview_keys.clear();
-        self.failed_pdf_blobs.clear();
-        self.pdf_page_indices.clear();
-        self.keyboard_toolbar_dismissed = false;
-        self.ime_insets = chrome::ImeInsetsState::default();
-        self.suppress_unselected_root_input = had_composing;
-        self.last_opened_embed_doc = None;
-        self.nav_history.clear();
-        self.page_id = None;
-        self.blob_fetches.clear();
-        self.blob_uploads.clear();
-        self.scroll_y = 0.0;
-        self.refresh_document();
-        cx.notify();
     }
 
     /// Mutate the shown document and re-read it.
@@ -8698,6 +8643,9 @@ pub(crate) mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn set_document_reloads_pdf_preview_and_source_id_change_invalidates_stale_texture() {
+        let _global_lock = crate::GLOBAL_PREVIEW_PROVIDER_TEST_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         fn minimal_pdf() -> Vec<u8> {
             let mut out = b"%PDF-1.4\n".to_vec();
             let mut offsets = vec![0usize];
@@ -9019,6 +8967,9 @@ pub(crate) mod tests {
             }
         }
 
+        let _global_lock = crate::GLOBAL_PREVIEW_PROVIDER_TEST_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         let _lock = PDF_PROVIDER_LOCK.lock().unwrap();
         let _guard = ResetGuard;
         block_flow::register_pdf_page_provider(None);
