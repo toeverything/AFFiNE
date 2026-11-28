@@ -1,15 +1,21 @@
 //! L4 mobile shell GPU UI views (`MobileShellView`, 4-TabBar, routes, modal sheets,
 //! `Focusable` + `EntityInputHandler` for Search IME, and live `AccessibilityTree` publication).
 
+mod drawer;
 mod explorer;
 mod explorer_rows;
+mod journals;
 mod page;
+mod page_directory;
+mod page_editor;
 mod search;
 mod settings;
 mod sheet;
+mod sheet_actions;
 mod tabs;
 
-pub(crate) use tabs::week_days_for_date;
+pub(crate) use drawer::drawer_doc_sections;
+pub(crate) use journals::{shift_iso_date, week_days_for_date};
 
 use std::{
     cell::RefCell,
@@ -49,6 +55,7 @@ pub(super) const CHEVRON_DOWN_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/200
 pub(super) const CLOSE_ICON_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none"><path d="M4.5 4.5L11.5 11.5M11.5 4.5L4.5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>"#;
 pub(super) const MORE_ICON_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/></svg>"#;
 pub(super) const STAR_ICON_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2.5L12.3 7.2L17.5 7.9L13.7 11.6L14.6 16.8L10 14.3L5.4 16.8L6.3 11.6L2.5 7.9L7.7 7.2L10 2.5Z"/></svg>"#;
+pub(super) const MENU_ICON_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M4 7H20M4 12H20M4 17H14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>"#;
 
 /// Resolved theme color palette for the mobile shell.
 #[derive(Clone, Copy, Debug)]
@@ -96,11 +103,12 @@ pub(super) trait MobileFlexExt: Styled {
     }
 
     fn align_start_for(self, dir: Direction) -> Self {
-        if dir.is_rtl() {
-            self.text_align(TextAlign::Right)
+        let align = if dir.is_rtl() {
+            TextAlign::Right
         } else {
-            self.text_align(TextAlign::Left)
-        }
+            TextAlign::Left
+        };
+        self.text_align(align)
     }
 }
 
@@ -121,26 +129,19 @@ pub(super) fn palette_for(mode: ThemeMode) -> MobilePalette {
         ThemeMode::Light => &LIGHT_THEME,
         ThemeMode::Dark => &DARK_THEME,
     };
-    let primary_bg = tokens
-        .color("--affine-background-primary-color")
-        .map(rgba_to_hsla)
-        .unwrap_or_else(|| hsla(0.0, 0.0, 1.0, 1.0));
-    let secondary_bg = tokens
-        .color("--affine-background-secondary-color")
-        .map(rgba_to_hsla)
-        .unwrap_or_else(|| hsla(0.0, 0.0, 0.96, 1.0));
-    let primary_text = tokens
-        .color("--affine-text-primary-color")
-        .map(rgba_to_hsla)
-        .unwrap_or_else(|| hsla(0.0, 0.0, 0.1, 1.0));
-    let secondary_text = tokens
-        .color("--affine-text-secondary-color")
-        .map(rgba_to_hsla)
-        .unwrap_or_else(|| hsla(0.0, 0.0, 0.45, 1.0));
-    let border = tokens
-        .color("--affine-border-color")
-        .map(rgba_to_hsla)
-        .unwrap_or_else(|| hsla(0.0, 0.0, 0.88, 1.0));
+    let color =
+        |name: &str, fallback: Hsla| tokens.color(name).map(rgba_to_hsla).unwrap_or(fallback);
+    let primary_bg = color(
+        "--affine-background-primary-color",
+        hsla(0.0, 0.0, 1.0, 1.0),
+    );
+    let secondary_bg = color(
+        "--affine-background-secondary-color",
+        hsla(0.0, 0.0, 0.96, 1.0),
+    );
+    let primary_text = color("--affine-text-primary-color", hsla(0.0, 0.0, 0.1, 1.0));
+    let secondary_text = color("--affine-text-secondary-color", hsla(0.0, 0.0, 0.45, 1.0));
+    let border = color("--affine-border-color", hsla(0.0, 0.0, 0.88, 1.0));
     let accent = hsla(0.58, 0.85, 0.52, 1.0);
     let (bg_canvas, bg_surface, bg_elevated, bg_pill, accent_soft, danger, danger_soft, scrim) =
         match mode {
@@ -198,6 +199,7 @@ pub struct MobileShellView {
     last_viewport: (f32, f32),
     last_safe_area: SafeAreaMetrics,
     last_measured_breadcrumb: Option<(String, Option<u64>, f32, BreadcrumbBarLayout)>,
+    page_editor: page_editor::EmbeddedPageEditor,
 }
 
 impl MobileShellView {
@@ -231,7 +233,23 @@ impl MobileShellView {
             last_viewport: (390.0, 844.0),
             last_safe_area: SafeAreaMetrics::default(),
             last_measured_breadcrumb: None,
+            page_editor: page_editor::EmbeddedPageEditor::default(),
         }
+    }
+
+    pub fn page_editor(&self) -> Option<&ui::Entity<playground::PlaygroundView>> {
+        self.page_editor.entity()
+    }
+
+    pub fn ingest_media_into_active_page(
+        &mut self,
+        input: &affine_client::PickedMediaInput,
+        block_id: &str,
+        now_ms: i64,
+        cx: &mut Context<Self>,
+    ) -> Option<affine_client::InsertedMediaBlock> {
+        self.page_editor
+            .ingest_media(&mut self.state, input, block_id, now_ms, cx)
     }
 
     pub fn set_insets_override(&mut self, insets: Option<WindowInsets>) {
@@ -492,21 +510,35 @@ impl EntityInputHandler for MobileShellView {
 
     fn bounds_for_range(
         &mut self,
-        _range_utf16: Range<usize>,
+        range_utf16: Range<usize>,
         element_bounds: Bounds<Pixels>,
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<Bounds<Pixels>> {
-        Some(Bounds::new(element_bounds.origin, size(px(2.0), px(20.0))))
+        let char_w = 8.0 * self.state.font_scale.max(0.5);
+        let origin_x: f32 = element_bounds.origin.x.into();
+        let origin_y: f32 = element_bounds.origin.y.into();
+        let max_w: f32 = element_bounds.size.width.into();
+        let x = (origin_x + 36.0 + (range_utf16.start as f32) * char_w)
+            .min(origin_x + (max_w - 48.0).max(36.0));
+        let w = ((range_utf16.end.saturating_sub(range_utf16.start) as f32) * char_w).max(2.0);
+        Some(Bounds::new(
+            Point::new(px(x), px(origin_y + 12.0)),
+            size(px(w), px(20.0)),
+        ))
     }
 
     fn character_index_for_point(
         &mut self,
-        _point: Point<Pixels>,
+        point: Point<Pixels>,
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<usize> {
-        Some(self.state.search_query.encode_utf16().count())
+        let total = self.state.search_query.encode_utf16().count();
+        let char_w = 8.0 * self.state.font_scale.max(0.5);
+        let px_x: f32 = point.x.into();
+        let rel = (px_x - 52.0).max(0.0);
+        Some(((rel / char_w).round() as usize).min(total))
     }
 }
 
@@ -515,6 +547,7 @@ impl Render for MobileShellView {
         window.set_touch_gestures_enabled(true);
         let now_ms = self.now_ms(cx);
         self.state.settle_animations(now_ms);
+        self.page_editor.drain_events(&mut self.state, now_ms);
 
         let locale = self.state.locale();
         let dir = locale.direction();
@@ -536,13 +569,15 @@ impl Render for MobileShellView {
             bottom: raw_insets.safe_area.bottom.into(),
         };
         let content_w = (viewport_w - safe_metrics.left - safe_metrics.right).max(44.0);
+        let avail_h = (viewport_h - safe_metrics.top - safe_metrics.bottom).max(160.0);
         let a11y_bounds: A11yBoundsMap = Rc::new(RefCell::new(HashMap::new()));
+        let search_focused = self.search_focus.is_focused(window);
 
         let mut measured_bc_layout = None;
         let body: ui::AnyElement = match self.state.route.clone() {
             MobileRoute::Home => tabs::render_home(
-                &self.state,
-                viewport_h,
+                &mut self.state,
+                avail_h,
                 palette,
                 dir,
                 strings,
@@ -552,7 +587,7 @@ impl Render for MobileShellView {
             .into_any_element(),
             MobileRoute::Explorer => explorer::render_explorer(
                 &mut self.state,
-                (viewport_h - safe_metrics.top - safe_metrics.bottom).max(160.0),
+                avail_h,
                 palette,
                 dir,
                 strings,
@@ -560,10 +595,10 @@ impl Render for MobileShellView {
                 cx,
             )
             .into_any_element(),
-            MobileRoute::Journals => tabs::render_journals(
+            MobileRoute::Journals => journals::render_journals(
                 &self.state,
                 content_w,
-                viewport_h,
+                avail_h,
                 palette,
                 dir,
                 strings,
@@ -572,18 +607,20 @@ impl Render for MobileShellView {
             )
             .into_any_element(),
             MobileRoute::Search => search::render_search(
-                &self.state,
+                &mut self.state,
                 self.search_focus.clone(),
-                viewport_h,
+                search_focused,
+                avail_h,
                 palette,
                 dir,
                 strings,
+                &a11y_bounds,
                 cx,
             )
             .into_any_element(),
             MobileRoute::Settings => settings::render_settings(
-                &self.state,
-                viewport_h,
+                &mut self.state,
+                avail_h,
                 palette,
                 dir,
                 strings,
@@ -592,10 +629,15 @@ impl Render for MobileShellView {
             )
             .into_any_element(),
             MobileRoute::Page(doc_id) => {
+                let editor_entity =
+                    self.page_editor
+                        .sync(&mut self.state, &doc_id, content_w, avail_h, cx);
                 let (el, bc_layout) = page::render_page(
                     &mut self.state,
                     &doc_id,
                     content_w,
+                    avail_h,
+                    editor_entity,
                     palette,
                     dir,
                     strings,
@@ -702,6 +744,7 @@ impl Render for MobileShellView {
             root = root.child(sheet::render_active_sheet(
                 &mut self.state,
                 sheet_kind,
+                viewport_w,
                 viewport_h,
                 sheet_snap.progress as f32,
                 sheet_snap.accepts_input,

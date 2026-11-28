@@ -10,7 +10,7 @@ use ui::{AnyElement, FontWeight, MouseButton, SharedString, div, prelude::*, px}
 use y_octo::{Any, TextDeltaOp};
 
 use crate::{
-    PlaygroundView, TOPBAR_HEIGHT,
+    PlaygroundView,
     theme::{Palette, TYPOGRAPHY},
 };
 
@@ -329,7 +329,8 @@ impl PlaygroundView {
                 } else {
                     let row_stride = 32.0;
                     let content_h = headings.len() as f32 * row_stride;
-                    let max_list_h = (viewport_height - TOPBAR_HEIGHT - 84.0).clamp(120.0, 460.0);
+                    let max_list_h =
+                        (viewport_height - self.topbar_height() - 84.0).clamp(120.0, 460.0);
                     let list_h = content_h.min(max_list_h);
                     let max_scroll = (content_h - list_h).max(0.0);
                     let scroll_y = self.doc_panel_scroll_y.clamp(0.0, max_scroll);
@@ -466,7 +467,7 @@ impl PlaygroundView {
                 .id("doc-panel")
                 .absolute()
                 .left(px(left))
-                .top(px(TOPBAR_HEIGHT + 8.0))
+                .top(px(self.topbar_height() + 8.0))
                 .w(px(panel_w))
                 .overflow_hidden()
                 .rounded(px(10.0))

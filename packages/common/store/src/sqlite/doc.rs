@@ -47,6 +47,17 @@ fn row_to_doc_update(row: &sqlx::sqlite::SqliteRow) -> StoreResult<DocUpdate> {
 }
 
 impl SqliteDocStorage {
+    /// Read the workspace `space_id` from `meta` without mutating the database.
+    pub async fn get_space_id(&self) -> StoreResult<Option<String>> {
+        let existing = sqlx::query("SELECT space_id FROM meta LIMIT 1;")
+            .fetch_optional(&self.pool)
+            .await?;
+        match existing {
+            Some(row) => Ok(Some(row.try_get("space_id")?)),
+            None => Ok(None),
+        }
+    }
+
     /// Set or rename the workspace `space_id` in `meta`, migrating root doc rows if renamed.
     pub async fn set_space_id(&self, space_id: &str) -> StoreResult<()> {
         let existing = sqlx::query("SELECT space_id FROM meta LIMIT 1;")
@@ -221,8 +232,63 @@ impl SqliteDocStorage {
         row.as_ref().map(row_to_doc_record).transpose()
     }
 
+    /// Read and merge `snapshots` + `updates` for `doc_id` purely in memory with zero SQLite writes.
+    pub async fn get_doc_readonly(&self, doc_id: &str) -> StoreResult<Option<DocRecord>> {
+        let snapshot_row = sqlx::query(
+            "SELECT doc_id, data AS bin, updated_at AS timestamp FROM snapshots WHERE doc_id = ?",
+        )
+        .bind(doc_id)
+        .fetch_optional(&self.pool)
+        .await?;
+        let snapshot = snapshot_row.as_ref().map(row_to_doc_record).transpose()?;
+
+        let update_rows = sqlx::query(
+            "SELECT doc_id, created_at AS timestamp, data AS bin \
+             FROM updates WHERE doc_id = ? ORDER BY created_at",
+        )
+        .bind(doc_id)
+        .fetch_all(&self.pool)
+        .await?;
+        let updates: Vec<DocUpdate> = update_rows
+            .iter()
+            .map(row_to_doc_update)
+            .collect::<StoreResult<_>>()?;
+
+        if updates.is_empty() {
+            return Ok(snapshot);
+        }
+
+        let timestamp = updates
+            .last()
+            .map(|u| u.timestamp)
+            .into_iter()
+            .chain(snapshot.as_ref().map(|r| r.timestamp))
+            .max()
+            .ok_or(StoreError::ConcurrentModification)?;
+
+        let mut segments = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
+        if let Some(record) = &snapshot {
+            segments.push(record.bin.as_slice());
+        }
+        for update in &updates {
+            segments.push(update.bin.as_slice());
+        }
+        let bin = merge_updates(&segments)?;
+        Ok(Some(DocRecord {
+            doc_id: doc_id.to_string(),
+            bin,
+            timestamp,
+        }))
+    }
+
     /// Read and atomically compact `snapshots` + `updates` for `doc_id`.
+    ///
+    /// When opened via [`SqliteDocStorage::open_read_only`], delegates to [`Self::get_doc_readonly`]
+    /// so no compaction writeback is ever attempted.
     pub async fn get_doc(&self, doc_id: &str) -> StoreResult<Option<DocRecord>> {
+        if self.read_only {
+            return self.get_doc_readonly(doc_id).await;
+        }
         for _ in 0..8 {
             let mut read_tx = self.pool.begin().await?;
             let snapshot_row = sqlx::query(

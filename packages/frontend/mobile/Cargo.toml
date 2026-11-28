@@ -23,6 +23,7 @@ affine-client = { path = "../client" }
 affine-store = { path = "../../common/store", default-features = false }
 anyhow.workspace = true
 blocksuite-playground-doc = { path = "../../../blocksuite/crates/doc", default-features = false }
+playground = { path = "../../../blocksuite/crates/playground", default-features = false }
 serde.workspace = true
 serde_json.workspace = true
 ui = { path = "../../ui/ui" }
@@ -34,3 +35,6 @@ image.workspace = true
 
 [dev-dependencies]
 ui = { path = "../../ui/ui", features = ["harness"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+tokio.workspace = true

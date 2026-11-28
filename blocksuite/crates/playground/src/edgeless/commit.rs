@@ -34,7 +34,7 @@ impl PlaygroundView {
         match gesture {
             EdgelessGesture::Pan { moved, .. } => {
                 if self.edgeless_readonly && !moved {
-                    let vp_origin = ui::point(ui::px(0.0), ui::px(crate::TOPBAR_HEIGHT));
+                    let (vp_origin, _) = self.canvas_rect(window);
                     let wp = self
                         .edgeless
                         .camera

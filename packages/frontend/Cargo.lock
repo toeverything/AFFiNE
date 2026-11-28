@@ -60,6 +60,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+ "tokio",
  "y-octo",
 ]
 
@@ -105,8 +106,10 @@ dependencies = [
  "anyhow",
  "blocksuite-playground-doc",
  "image",
+ "playground",
  "serde",
  "serde_json",
+ "tokio",
  "ui",
  "ui-kit",
  "ui-tokens",

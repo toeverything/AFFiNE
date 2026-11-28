@@ -8,7 +8,7 @@ use ui::{Bounds, Context, Pixels, Window, point, px, size};
 use y_octo::{Any, SessionValue};
 
 use crate::{
-    PlaygroundView, TOPBAR_HEIGHT,
+    PlaygroundView,
     editor_session::{DocPoint, DocumentSelection},
 };
 
@@ -596,9 +596,9 @@ impl PlaygroundView {
         window: &Window,
     ) -> Option<Bounds<Pixels>> {
         let ed = self.edgeless.authoring.label_editor()?;
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
-        let vp_w = self.window_size.0.max(1.0);
-        let vp_h = (self.window_size.1 - TOPBAR_HEIGHT).max(1.0);
+        let (vp_origin, canvas_size) = self.canvas_rect(window);
+        let vp_w = f32::from(canvas_size.width).max(1.0);
+        let vp_h = f32::from(canvas_size.height).max(1.0);
         let (_, _, _, _, lx, ly, lw, lh) = blocksuite_editor::edgeless::label_editor_screen_box(
             ed,
             self.edgeless.camera,
@@ -609,16 +609,19 @@ impl PlaygroundView {
             window,
         );
         Some(Bounds::new(
-            point(px(lx), px(ly + TOPBAR_HEIGHT)),
+            point(
+                px(lx + f32::from(vp_origin.x)),
+                px(ly + f32::from(vp_origin.y)),
+            ),
             size(px(lw.max(0.5)), px(lh.max(0.5))),
         ))
     }
 
     pub(crate) fn edgeless_label_screen_bounds(&self, window: &Window) -> Option<Bounds<Pixels>> {
         let ed = self.edgeless.authoring.label_editor()?;
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
-        let vp_w = self.window_size.0.max(1.0);
-        let vp_h = (self.window_size.1 - TOPBAR_HEIGHT).max(1.0);
+        let (vp_origin, canvas_size) = self.canvas_rect(window);
+        let vp_w = f32::from(canvas_size.width).max(1.0);
+        let vp_h = f32::from(canvas_size.height).max(1.0);
         let (x, y, w, h, _, _, _, _) = blocksuite_editor::edgeless::label_editor_screen_box(
             ed,
             self.edgeless.camera,
@@ -629,7 +632,10 @@ impl PlaygroundView {
             window,
         );
         Some(Bounds::new(
-            point(px(x), px(y + TOPBAR_HEIGHT)),
+            point(
+                px(x + f32::from(vp_origin.x)),
+                px(y + f32::from(vp_origin.y)),
+            ),
             size(px(w.max(1.0)), px(h.max(1.0))),
         ))
     }
@@ -662,10 +668,11 @@ impl PlaygroundView {
             cy_w,
             info.rotate_deg,
         );
+        let (vp_origin, _) = self.canvas_rect_cached();
         let tl = self
             .edgeless
             .camera
-            .world_to_screen(point(px(rx), px(ry)), point(px(0.0), px(TOPBAR_HEIGHT)));
+            .world_to_screen(point(px(rx), px(ry)), vp_origin);
         let z = self.edgeless.camera.zoom;
         Some(Bounds::new(
             tl,
@@ -696,7 +703,7 @@ impl PlaygroundView {
                     .iter()
                     .find(|i| i.id == editing_id)?;
                 let pad = if is_note { NOTE_CARD_PADDING } else { 0.0 };
-                let topbar = point(px(0.0), px(TOPBAR_HEIGHT));
+                let (topbar, _) = self.canvas_rect_cached();
                 let origin_screen = self.edgeless.camera.world_to_screen(
                     point(
                         px(info.rect.x + pad * info.scale),

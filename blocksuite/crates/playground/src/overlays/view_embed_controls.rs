@@ -137,7 +137,7 @@ impl PlaygroundView {
         use blocksuite_playground_doc::read::{BlockContent, ExternalEmbedKind};
 
         use crate::{
-            PlaygroundMode, TOPBAR_HEIGHT,
+            PlaygroundMode,
             block_flow::{CODE_PADDING, CodePreviewKind, page_geometry},
             wasm_preview::{HtmlEmbedMount, reconcile_html_embeds},
         };
@@ -152,8 +152,10 @@ impl PlaygroundView {
         };
 
         let geom = page_geometry(viewport_width);
-        let vp_top = TOPBAR_HEIGHT;
-        let vp_bottom = TOPBAR_HEIGHT + viewport_height;
+        let (origin, _) = self.canvas_rect_cached();
+        let ox = f32::from(origin.x);
+        let vp_top = f32::from(origin.y);
+        let vp_bottom = vp_top + viewport_height;
         let mut mounts = Vec::new();
 
         for b in &layout.blocks {
@@ -168,8 +170,8 @@ impl PlaygroundView {
                 {
                     let (pad_x, pad_y) = CODE_PADDING;
                     let header_h = 34.0;
-                    let raw_top = TOPBAR_HEIGHT + b.y + header_h - self.scroll_y;
-                    let raw_bottom = TOPBAR_HEIGHT + b.y + b.body.height - pad_y - self.scroll_y;
+                    let raw_top = vp_top + b.y + header_h - self.scroll_y;
+                    let raw_bottom = vp_top + b.y + b.body.height - pad_y - self.scroll_y;
                     let clipped_top = raw_top.max(vp_top);
                     let clipped_bottom = raw_bottom.min(vp_bottom);
                     let w = (b.body.width - pad_x * 2.0).max(0.0);
@@ -177,7 +179,7 @@ impl PlaygroundView {
                     mounts.push(HtmlEmbedMount {
                         id: format!("code-html-{}", b.block_id),
                         html: text.clone(),
-                        x: geom.column_x + b.x + pad_x,
+                        x: ox + geom.column_x + b.x + pad_x,
                         y: clipped_top,
                         w,
                         h,
@@ -191,8 +193,8 @@ impl PlaygroundView {
                 } if self.flow.embed_states.get(&b.block_id) == Some(&EmbedCardState::Active) => {
                     let pad = 14.0;
                     let header_h = 48.0;
-                    let raw_top = TOPBAR_HEIGHT + b.y + header_h - self.scroll_y;
-                    let raw_bottom = TOPBAR_HEIGHT + b.y + b.body.height - pad - self.scroll_y;
+                    let raw_top = vp_top + b.y + header_h - self.scroll_y;
+                    let raw_bottom = vp_top + b.y + b.body.height - pad - self.scroll_y;
                     let clipped_top = raw_top.max(vp_top);
                     let clipped_bottom = raw_bottom.min(vp_bottom);
                     let w = (b.body.width - pad * 2.0).max(0.0);
@@ -200,7 +202,7 @@ impl PlaygroundView {
                     mounts.push(HtmlEmbedMount {
                         id: format!("ext-html-{}", b.block_id),
                         html: html.clone().unwrap_or_default(),
-                        x: geom.column_x + b.x + pad,
+                        x: ox + geom.column_x + b.x + pad,
                         y: clipped_top,
                         w,
                         h,

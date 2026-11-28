@@ -144,6 +144,7 @@ ALLOWED_DEPS = {
         "packages/frontend/legacy-import",
     },
     "packages/frontend/mobile": UI_ALL | BS_LOWER | {
+        "blocksuite/crates/playground",
         "packages/common/store",
         "packages/frontend/legacy-import",
         "packages/frontend/client",

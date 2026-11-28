@@ -7,7 +7,7 @@ use blocksuite_playground_doc::read::BlockContent;
 use ui::{ClipboardItem, ClipboardReadError, Context, MouseDownEvent, Task, Window, point, px};
 
 use crate::{
-    PlaygroundMode, PlaygroundView, TOPBAR_HEIGHT,
+    PlaygroundMode, PlaygroundView,
     block_flow::{FlowBlock, FlowKind, FlowLayout, FlowRect, FlowTextLayout, page_geometry},
     edgeless::LabelTarget,
     editor_session::{DocPoint, DocumentSelection},
@@ -157,9 +157,10 @@ impl PlaygroundView {
 
         match self.mode {
             PlaygroundMode::Page => {
-                let geom = page_geometry(f32::from(window.viewport_size().width));
-                let wx = x - geom.column_x;
-                let wy = y - TOPBAR_HEIGHT + self.scroll_y;
+                let (origin, canvas_size) = self.canvas_rect(window);
+                let geom = page_geometry(f32::from(canvas_size.width));
+                let wx = x - f32::from(origin.x) - geom.column_x;
+                let wy = y - f32::from(origin.y) + self.scroll_y;
                 let link_url = self.hit_link_url_at(x, y, window);
                 if let Some(layout) = self.flow_layout()
                     && let Some((block_id, row_id, col_id, keep_cell_sel)) =
@@ -441,9 +442,10 @@ impl PlaygroundView {
         let snapshot = self.page_snapshot()?;
         if self.mode == PlaygroundMode::Page {
             let layout = self.flow_layout()?;
-            let geom = page_geometry(f32::from(window.viewport_size().width));
-            let wx = x - geom.column_x;
-            let wy = y - TOPBAR_HEIGHT + self.scroll_y;
+            let (origin, canvas_size) = self.canvas_rect(window);
+            let geom = page_geometry(f32::from(canvas_size.width));
+            let wx = x - f32::from(origin.x) - geom.column_x;
+            let wy = y - f32::from(origin.y) + self.scroll_y;
             return self.hit_link_in_layout(&layout, wx, wy, &snapshot);
         }
         // In Edgeless inline Note/EdgelessText editing, resolve strictly at right-click coords.

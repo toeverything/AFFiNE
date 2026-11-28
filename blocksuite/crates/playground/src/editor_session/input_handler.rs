@@ -366,7 +366,7 @@ impl EntityInputHandler for PlaygroundView {
         }
         if self.table_cell.is_some() {
             if let Some(layout) = self.ensure_layout(
-                page_geometry(f32::from(w.viewport_size().width)).column_width,
+                page_geometry(f32::from(self.canvas_rect(w).1.width)).column_width,
                 w,
             ) {
                 return self.table_cell_selection_bounds(r, &layout, w);
@@ -396,7 +396,7 @@ impl EntityInputHandler for PlaygroundView {
             .map(|(id, _)| id)
             .unwrap_or_else(|| sel.focus.block_id.clone());
         let Some(layout) = self.ensure_layout(
-            page_geometry(f32::from(w.viewport_size().width)).column_width,
+            page_geometry(f32::from(self.canvas_rect(w).1.width)).column_width,
             w,
         ) else {
             return vec![];

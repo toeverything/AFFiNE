@@ -273,8 +273,9 @@ fn doc_link_cur_location_pick_preserves_d0_and_return_to_trail_restores_without_
         })
         .unwrap();
 
-    // Open Location & Trail sheet and pick cur (`doc-sync`)'s own folder location.
+    // Open Location & Trail sheet via DocActions and pick cur (`doc-sync`)'s own folder location.
     t.click_id("mobile.page.more_btn");
+    t.click_id("mobile.sheet.doc_action.location_trail");
     t.click_id("mobile.sheet.loc.0");
 
     let (can_return, d0_pick_is_none, len_after_pick) = t
@@ -304,6 +305,7 @@ fn doc_link_cur_location_pick_preserves_d0_and_return_to_trail_restores_without_
 
     // Reopen sheet and click `Return to Trail` -> restores `d0 -> cur` trail with zero history push.
     t.click_id("mobile.page.more_btn");
+    t.click_id("mobile.sheet.doc_action.location_trail");
     t.click_id("mobile.sheet.use_trail_btn");
     let (trail_len, len_after_return) = t
         .app
@@ -465,6 +467,7 @@ fn compact_landscape_location_sheet_keeps_owner_locations_and_use_trail_reachabl
     // Pick cur's own location, reopen sheet, and verify `Return to Trail` is mounted and >= 44x44.
     t.click_id("mobile.sheet.loc.0");
     t.click_id("mobile.page.more_btn");
+    t.click_id("mobile.sheet.doc_action.location_trail");
     let use_trail_bounds = t
         .app
         .update(|cx| {
@@ -714,6 +717,11 @@ fn host_a11y_sink_receives_published_tree_with_contained_dialog_bounds_and_actio
             v.state
                 .open_doc("doc-arch", Origin::Direct(DirectKind::Home));
             assert!(v.perform_a11y_action("mobile.page.more_btn", MobileA11yAction::Activate, cx));
+            assert!(v.perform_a11y_action(
+                "mobile.sheet.doc_action.location_trail",
+                MobileA11yAction::Activate,
+                cx
+            ));
         })
     })
     .unwrap();
@@ -778,7 +786,7 @@ fn single_click_sheet_animation_completes_via_request_animation_frame_without_ex
             })
         })
         .unwrap();
-    assert_eq!(active_sheet, MobileSheet::LocationAndTrail);
+    assert_eq!(active_sheet, MobileSheet::DocActions);
     assert!(open_done);
 
     t.click_id_with_advance("mobile.sheet.done_btn", 0);
@@ -1197,6 +1205,7 @@ fn explorer_scrolls_30_docs_keeps_tabbar_fixed_and_opens_30th_doc() {
                             journal_date: None,
                             clock: 1,
                             outgoing_edges: Vec::new(),
+                            blocks: Vec::new(),
                         });
                 }
                 v.state.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
@@ -1290,6 +1299,7 @@ fn touch_swipe_scrolls_30_docs_without_accidental_click_and_back_restores_scroll
                             journal_date: None,
                             clock: 1,
                             outgoing_edges: Vec::new(),
+                            blocks: Vec::new(),
                         });
                 }
                 v.state.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);
@@ -1443,6 +1453,7 @@ fn mouse_drag_off_list_and_hover_does_not_scroll_or_open_doc() {
                             journal_date: None,
                             clock: 1,
                             outgoing_edges: Vec::new(),
+                            blocks: Vec::new(),
                         });
                 }
                 v.state.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);

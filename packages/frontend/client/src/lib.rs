@@ -6,6 +6,7 @@
 
 pub mod accessibility;
 pub mod auth;
+pub mod blob_ingest;
 pub mod bootstrap;
 pub mod doc_directory;
 pub mod domain;
@@ -16,15 +17,27 @@ pub mod nav;
 pub mod organize;
 pub mod search;
 pub mod server;
+pub mod session;
+#[cfg(not(target_family = "wasm"))]
+pub mod sqlite_session;
 
 use thiserror::Error;
 
 pub use accessibility::{
+    AccessibilityAction, AccessibilityActionHandler, AccessibilityActionRequest,
     AccessibilityBounds, AccessibilityNode, AccessibilityRole, AccessibilityState,
     AccessibilityTree, FirstFrameAccessibilityRoot, PlatformAccessibility,
 };
 pub use auth::{
     AuthController, AuthSessionState, NativeAuthPlatform, NativeTokenPair, StoredAuthTokenPair,
+};
+pub use blob_ingest::{
+    BlobUploadState, IngestedBlobRecord, InsertedMediaBlock, PickedMediaInput, PickedMediaKind,
+    ingest_media_into_doc_session, prepare_ingested_blob,
+};
+pub use blocksuite_editor::{
+    DirectoryError, DocQueryCancelToken, DocQueryPage, DocQueryRequest, EditorDocId, EditorDocMode,
+    EditorDocSummary, WorkspaceDocDirectory,
 };
 pub use bootstrap::{BootstrapDecision, WorkspaceBootstrapGate};
 pub use doc_directory::{CreateIntentEntry, CreateIntentLedger, StoreBackedDocDirectory};
@@ -47,6 +60,9 @@ pub use organize::{
 };
 pub use search::{SearchDocument, SearchHit, SearchWeights, WeightedSearchEngine};
 pub use server::{DEFAULT_CLOUD_SERVER_ID, ServerEntry, ServerRegistry};
+pub use session::{WorkspaceSession, WorkspaceSyncStatus};
+#[cfg(not(target_family = "wasm"))]
+pub use sqlite_session::SqliteWorkspaceStore;
 
 /// Unified error type for the L3 client domain crate.
 #[derive(Debug, Error, Eq, PartialEq)]

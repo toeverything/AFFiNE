@@ -28,6 +28,31 @@ pub enum AccessibilityRole {
     Dialog,
     Alert,
     Status,
+    Image,
+}
+
+/// Semantic action dispatched by a platform screen reader (VoiceOver / TalkBack / ARIA).
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AccessibilityAction {
+    Activate,
+    Dismiss,
+    Focus,
+    ScrollForward,
+    ScrollBackward,
+}
+
+/// Action invocation routed from a native accessibility bridge into the client shell.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccessibilityActionRequest {
+    pub node_id: String,
+    pub action: AccessibilityAction,
+}
+
+/// Callback contract implemented by shells to execute screen-reader focus and action requests.
+pub trait AccessibilityActionHandler {
+    fn handle_accessibility_action(&mut self, request: &AccessibilityActionRequest) -> bool;
 }
 
 /// Logical screen-space bounding rectangle in logical pixels.

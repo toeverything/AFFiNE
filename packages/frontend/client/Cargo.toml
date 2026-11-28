@@ -21,3 +21,6 @@ thiserror.workspace = true
 
 [dev-dependencies]
 y-octo.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+tokio.workspace = true

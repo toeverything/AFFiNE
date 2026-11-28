@@ -3,25 +3,23 @@
 
 mod actions;
 mod explorer;
+mod page;
 mod sheet;
 
 pub(crate) use actions::perform_a11y_action_with_layout;
 pub use actions::{
     A11yBoundsMap, InMemoryPlatformAccessibility, MobileA11yAction, a11y_bounds_probe,
     a11y_bounds_probe_border, apply_measured_bounds, derive_explorer_doc_origin,
-    perform_a11y_action, perform_a11y_action_with_viewport, validate_accessibility_tree,
+    perform_a11y_action, perform_a11y_action_with_viewport,
 };
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 use affine_client::{
     AccessibilityBounds, AccessibilityNode, AccessibilityRole, AccessibilityState,
-    AccessibilityTree, ContextState,
+    AccessibilityTree,
 };
-use ui_kit::{
-    BreadcrumbBarConfig, BreadcrumbBarLayout, BreadcrumbItem, BreadcrumbItemKind,
-    layout_breadcrumb_bar,
-};
+use ui_kit::BreadcrumbBarLayout;
 
 use crate::{
     state::{
@@ -31,7 +29,10 @@ use crate::{
     views::week_days_for_date,
 };
 
-use self::{explorer::insert_explorer_a11y_nodes, sheet::insert_sheet_a11y_nodes};
+use self::{
+    explorer::insert_explorer_a11y_nodes, page::insert_page_a11y_nodes,
+    sheet::insert_sheet_a11y_nodes,
+};
 
 /// Four-edge physical safe-area insets in logical points for accessibility geometry alignment.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -178,10 +179,142 @@ pub fn build_accessibility_tree_with_layout(
             },
         );
         main_children.push(new_doc_id);
+
+        let settings_id = "mobile.home.settings_btn".to_string();
+        nodes.insert(
+            settings_id.clone(),
+            AccessibilityNode {
+                id: settings_id.clone(),
+                role: AccessibilityRole::Button,
+                name: strings.settings_title.to_string(),
+                value: None,
+                state: AccessibilityState::default(),
+                focused: false,
+                bounds: AccessibilityBounds {
+                    x: if is_rtl {
+                        content_left + 12.0
+                    } else {
+                        content_left + (content_w - 56.0).max(0.0)
+                    },
+                    y: safe_top + 6.0,
+                    width: 44.0,
+                    height: 44.0,
+                },
+                children: Vec::new(),
+            },
+        );
+        main_children.push(settings_id);
+
+        for (idx, doc) in state
+            .active_workspace()
+            .docs
+            .iter()
+            .filter(|d| !d.trashed && d.is_favorite)
+            .take(2)
+            .enumerate()
+        {
+            let fav_id = format!("mobile.home.fav.{}", doc.id);
+            let card_w = ((content_w - 42.0) * 0.5).max(80.0);
+            nodes.insert(
+                fav_id.clone(),
+                AccessibilityNode {
+                    id: fav_id.clone(),
+                    role: AccessibilityRole::Button,
+                    name: doc.display_title(locale),
+                    value: None,
+                    state: AccessibilityState::default(),
+                    focused: false,
+                    bounds: AccessibilityBounds {
+                        x: content_left + 16.0 + (idx as f32) * (card_w + 10.0),
+                        y: safe_top + 92.0,
+                        width: card_w,
+                        height: 80.0,
+                    },
+                    children: Vec::new(),
+                },
+            );
+            main_children.push(fav_id);
+        }
+
+        for (idx, doc) in state
+            .active_workspace()
+            .docs
+            .iter()
+            .filter(|d| !d.trashed)
+            .enumerate()
+        {
+            let doc_node_id = format!("mobile.home.doc.{}", doc.id);
+            nodes.insert(
+                doc_node_id.clone(),
+                AccessibilityNode {
+                    id: doc_node_id.clone(),
+                    role: AccessibilityRole::Button,
+                    name: doc.display_title(locale),
+                    value: None,
+                    state: AccessibilityState::default(),
+                    focused: false,
+                    bounds: AccessibilityBounds {
+                        x: content_left + 16.0,
+                        y: safe_top + 206.0 + (idx as f32) * 72.0,
+                        width: (content_w - 32.0).max(44.0),
+                        height: 72.0,
+                    },
+                    children: Vec::new(),
+                },
+            );
+            main_children.push(doc_node_id);
+        }
     }
 
     if let MobileRoute::Journals = state.route {
-        let week = week_days_for_date(&state.today_date);
+        if state.selected_journal_date != state.today_date {
+            let today_id = "mobile.journals.today_btn".to_string();
+            nodes.insert(
+                today_id.clone(),
+                AccessibilityNode {
+                    id: today_id.clone(),
+                    role: AccessibilityRole::Button,
+                    name: strings.today_btn_label.to_string(),
+                    value: None,
+                    state: AccessibilityState::default(),
+                    focused: false,
+                    bounds: AccessibilityBounds {
+                        x: content_left + (content_w - 224.0).max(0.0),
+                        y: safe_top + 6.0,
+                        width: 52.0,
+                        height: 44.0,
+                    },
+                    children: Vec::new(),
+                },
+            );
+            main_children.push(today_id);
+        }
+        for (btn_id, name, offset) in [
+            ("mobile.journals.prev_week_btn", "<", 168.0_f32),
+            ("mobile.journals.next_week_btn", ">", 52.0_f32),
+        ] {
+            nodes.insert(
+                btn_id.to_string(),
+                AccessibilityNode {
+                    id: btn_id.to_string(),
+                    role: AccessibilityRole::Button,
+                    name: name.to_string(),
+                    value: None,
+                    state: AccessibilityState::default(),
+                    focused: false,
+                    bounds: AccessibilityBounds {
+                        x: content_left + (content_w - offset).max(0.0),
+                        y: safe_top + 6.0,
+                        width: 44.0,
+                        height: 44.0,
+                    },
+                    children: Vec::new(),
+                },
+            );
+            main_children.push(btn_id.to_string());
+        }
+
+        let week = week_days_for_date(&state.selected_journal_date);
         let strip_w = (content_w - 32.0).max(44.0);
         let day_w = ((strip_w - 24.0) / 7.0).max(32.0);
         for (idx, (_, _, iso_date)) in week.iter().enumerate() {
@@ -256,40 +389,138 @@ pub fn build_accessibility_tree_with_layout(
         );
     }
 
+    if let MobileRoute::Search = state.route {
+        let input_id = "mobile.search.input".to_string();
+        nodes.insert(
+            input_id.clone(),
+            AccessibilityNode {
+                id: input_id.clone(),
+                role: AccessibilityRole::TextField,
+                name: strings.search_placeholder.to_string(),
+                value: Some(state.search_query.clone()),
+                state: AccessibilityState::default(),
+                focused: false,
+                bounds: AccessibilityBounds {
+                    x: content_left + 16.0,
+                    y: safe_top + 16.0,
+                    width: (content_w - 32.0).max(44.0),
+                    height: 44.0,
+                },
+                children: Vec::new(),
+            },
+        );
+        main_children.push(input_id);
+
+        if !state.search_query.is_empty() {
+            let clear_id = "mobile.search.clear_btn".to_string();
+            nodes.insert(
+                clear_id.clone(),
+                AccessibilityNode {
+                    id: clear_id.clone(),
+                    role: AccessibilityRole::Button,
+                    name: strings.close_label.to_string(),
+                    value: None,
+                    state: AccessibilityState::default(),
+                    focused: false,
+                    bounds: AccessibilityBounds {
+                        x: if is_rtl {
+                            content_left + 20.0
+                        } else {
+                            content_left + (content_w - 64.0).max(0.0)
+                        },
+                        y: safe_top + 16.0,
+                        width: 44.0,
+                        height: 44.0,
+                    },
+                    children: Vec::new(),
+                },
+            );
+            main_children.push(clear_id);
+        }
+
+        for (idx, hit) in state.search_hits().iter().enumerate() {
+            let hit_id = format!("mobile.search.hit.{}", hit.doc_id);
+            nodes.insert(
+                hit_id.clone(),
+                AccessibilityNode {
+                    id: hit_id.clone(),
+                    role: AccessibilityRole::Button,
+                    name: hit.title.clone(),
+                    value: None,
+                    state: AccessibilityState::default(),
+                    focused: false,
+                    bounds: AccessibilityBounds {
+                        x: content_left + 16.0,
+                        y: safe_top + 72.0 + (idx as f32) * 68.0,
+                        width: (content_w - 32.0).max(44.0),
+                        height: 64.0,
+                    },
+                    children: Vec::new(),
+                },
+            );
+            main_children.push(hit_id);
+        }
+    }
+
     if let MobileRoute::Settings = state.route {
         let row_x = content_left + 14.0;
         let row_w = (content_w - 28.0).max(44.0);
         for (idx, group) in SettingsGroupId::ALL.iter().copied().enumerate() {
-            if group.interaction() == SettingRowInteraction::Info {
-                continue;
-            }
-            let row_id = format!("mobile.settings.row.{}", group.a11y_key());
+            let is_info = group.interaction() == SettingRowInteraction::Info;
+            let row_id = if is_info {
+                format!("mobile.settings.group.{idx}")
+            } else {
+                format!("mobile.settings.row.{}", group.a11y_key())
+            };
             let val = match group {
+                SettingsGroupId::Account => {
+                    if state.settings.account_email.trim().is_empty() {
+                        strings.sign_in_label.to_string()
+                    } else {
+                        state.settings.account_email.clone()
+                    }
+                }
+                SettingsGroupId::Workspace => state.active_workspace().summary.name.clone(),
                 SettingsGroupId::Appearance => match state.settings.theme_preference {
                     ThemePreference::Light => strings.theme_light.to_string(),
                     ThemePreference::Dark => strings.theme_dark.to_string(),
                     ThemePreference::System => strings.theme_system.to_string(),
                 },
                 SettingsGroupId::Language => state.settings.locale.display_name().to_string(),
+                SettingsGroupId::Editor => format!("{}%", state.settings.editor_font_scale_pct),
                 SettingsGroupId::SyncOffline => if state.settings.offline_sync_enabled {
                     strings.toggle_on
                 } else {
                     strings.toggle_off
                 }
                 .to_string(),
+                SettingsGroupId::Storage => format!("{} MB", state.settings.cache_size_mb),
                 SettingsGroupId::Notifications => if state.settings.push_notifications {
                     strings.toggle_on
                 } else {
                     strings.toggle_off
                 }
                 .to_string(),
-                _ => String::new(),
+                SettingsGroupId::Experimental => {
+                    strings.flags_count(locale, state.settings.experimental_flags.len())
+                }
+                SettingsGroupId::About => {
+                    format!(
+                        "{} v{}",
+                        strings.about_version_label, state.settings.app_version
+                    )
+                }
+            };
+            let role = if !is_info || group == SettingsGroupId::Workspace {
+                AccessibilityRole::Button
+            } else {
+                AccessibilityRole::Region
             };
             nodes.insert(
                 row_id.clone(),
                 AccessibilityNode {
                     id: row_id.clone(),
-                    role: AccessibilityRole::Button,
+                    role,
                     name: strings.settings_groups[idx].to_string(),
                     value: Some(val),
                     state: AccessibilityState::default(),
@@ -308,266 +539,18 @@ pub fn build_accessibility_tree_with_layout(
     }
 
     if let MobileRoute::Page(doc_id) = state.route.clone() {
-        let derivation = state.derive_breadcrumb();
-        if !derivation.should_hide_bar_on_mobile && !derivation.crumbs.is_empty() {
-            let nav_bc_id = "app.nav.breadcrumb".to_string();
-            let owned_layout;
-            let layout = if let Some(pre) = measured_breadcrumb {
-                pre
-            } else {
-                let items: Vec<BreadcrumbItem> = derivation
-                    .crumbs
-                    .iter()
-                    .map(|c| {
-                        let label = if c.is_switcher {
-                            match &derivation.context {
-                                ContextState::MultiLocation {
-                                    count,
-                                    owner_doc_id,
-                                    owner_doc_title,
-                                    ..
-                                } if *owner_doc_id != doc_id => strings
-                                    .compact_owner_multi_location_label(
-                                        locale,
-                                        owner_doc_title,
-                                        *count,
-                                    ),
-                                ContextState::MultiLocation { count, .. } => {
-                                    strings.multi_location_label(locale, *count)
-                                }
-                                _ => c.label.clone(),
-                            }
-                        } else if c.id == "root:trash" {
-                            strings.trash.to_string()
-                        } else if c.id == "root:journals" {
-                            strings.tab_journals.to_string()
-                        } else {
-                            c.label.clone()
-                        };
-                        BreadcrumbItem {
-                            id: c.id.clone(),
-                            label,
-                            kind: if c.is_current {
-                                BreadcrumbItemKind::Current
-                            } else if c.is_switcher {
-                                BreadcrumbItemKind::Switcher
-                            } else {
-                                BreadcrumbItemKind::Segment
-                            },
-                            clickable: !c.is_current,
-                        }
-                    })
-                    .collect();
-                owned_layout = layout_breadcrumb_bar(
-                    &items,
-                    &BreadcrumbBarConfig::new(content_w, locale.direction())
-                        .with_font_scale(state.font_scale),
-                );
-                &owned_layout
-            };
-
-            let mut bc_children = Vec::new();
-            for slot in &layout.slots {
-                let node_id = format!("breadcrumb.slot.{}", slot.id);
-                let is_ellipsis = slot.kind == ui_kit::BreadcrumbSlotKind::Ellipsis;
-                let a11y_name = if slot.kind == ui_kit::BreadcrumbSlotKind::Switcher {
-                    match &derivation.context {
-                        ContextState::MultiLocation {
-                            count,
-                            owner_doc_id,
-                            owner_doc_title,
-                            ..
-                        } if *owner_doc_id != doc_id => {
-                            strings.owner_multi_location_label(locale, owner_doc_title, *count)
-                        }
-                        _ => slot.full_title.clone(),
-                    }
-                } else {
-                    slot.full_title.clone()
-                };
-                nodes.insert(
-                    node_id.clone(),
-                    AccessibilityNode {
-                        id: node_id.clone(),
-                        role: if is_ellipsis {
-                            AccessibilityRole::Button
-                        } else {
-                            AccessibilityRole::Link
-                        },
-                        name: a11y_name,
-                        value: None,
-                        state: AccessibilityState {
-                            current: slot.is_current,
-                            expanded: if is_ellipsis
-                                || slot.kind == ui_kit::BreadcrumbSlotKind::Switcher
-                            {
-                                Some(state.active_sheet == MobileSheet::LocationAndTrail)
-                            } else {
-                                None
-                            },
-                            ..AccessibilityState::default()
-                        },
-                        focused: false,
-                        bounds: AccessibilityBounds {
-                            x: content_left + slot.x,
-                            y: safe_top + 52.0,
-                            width: slot.width,
-                            height: slot.height,
-                        },
-                        children: Vec::new(),
-                    },
-                );
-                bc_children.push(node_id);
-            }
-
-            nodes.insert(
-                nav_bc_id.clone(),
-                AccessibilityNode {
-                    id: nav_bc_id.clone(),
-                    role: AccessibilityRole::Navigation,
-                    name: "Breadcrumb".to_string(),
-                    value: None,
-                    state: AccessibilityState::default(),
-                    focused: false,
-                    bounds: AccessibilityBounds {
-                        x: content_left,
-                        y: safe_top + 52.0,
-                        width: content_w,
-                        height: layout.height,
-                    },
-                    children: bc_children,
-                },
-            );
-            root_children.push(nav_bc_id);
-        }
-
-        let more_id = "mobile.page.more_btn".to_string();
-        nodes.insert(
-            more_id.clone(),
-            AccessibilityNode {
-                id: more_id.clone(),
-                role: AccessibilityRole::Button,
-                name: strings.location_trail_title.to_string(),
-                value: None,
-                state: AccessibilityState {
-                    expanded: Some(state.active_sheet == MobileSheet::LocationAndTrail),
-                    ..AccessibilityState::default()
-                },
-                focused: false,
-                bounds: AccessibilityBounds {
-                    x: if is_rtl {
-                        content_left + 8.0
-                    } else {
-                        content_left + (content_w - 52.0).max(0.0)
-                    },
-                    y: safe_top + 4.0,
-                    width: 44.0,
-                    height: 44.0,
-                },
-                children: Vec::new(),
-            },
+        insert_page_a11y_nodes(
+            state,
+            &doc_id,
+            content_left,
+            content_w,
+            safe,
+            is_rtl,
+            measured_breadcrumb,
+            &mut nodes,
+            &mut root_children,
+            &mut main_children,
         );
-        main_children.push(more_id);
-
-        let doc_exists = state.doc_by_id(&doc_id).is_some();
-        let ws_id = state.active_workspace_id().to_string();
-
-        if !doc_exists {
-            let nf_id = "mobile.page.not_found_back_btn".to_string();
-            nodes.insert(
-                nf_id.clone(),
-                AccessibilityNode {
-                    id: nf_id.clone(),
-                    role: AccessibilityRole::Button,
-                    name: strings.back_label.to_string(),
-                    value: None,
-                    state: AccessibilityState::default(),
-                    focused: false,
-                    bounds: AccessibilityBounds {
-                        x: content_left + (content_w - 120.0).max(0.0) * 0.5,
-                        y: safe_top + 200.0,
-                        width: 120.0,
-                        height: 44.0,
-                    },
-                    children: Vec::new(),
-                },
-            );
-            main_children.push(nf_id);
-        } else {
-            if derivation.in_trash {
-                let scoped = crate::encode_scoped_doc_target(&ws_id, &doc_id);
-                let restore_id = format!("mobile.page.trash_restore_btn.{scoped}");
-                nodes.insert(
-                    restore_id.clone(),
-                    AccessibilityNode {
-                        id: restore_id.clone(),
-                        role: AccessibilityRole::Button,
-                        name: strings.restore_doc_label.to_string(),
-                        value: None,
-                        state: AccessibilityState::default(),
-                        focused: false,
-                        bounds: AccessibilityBounds {
-                            x: content_left + 16.0,
-                            y: safe_top + 114.0,
-                            width: 72.0,
-                            height: 44.0,
-                        },
-                        children: Vec::new(),
-                    },
-                );
-                main_children.push(restore_id);
-
-                let delete_id = format!("mobile.page.trash_delete_btn.{scoped}");
-                nodes.insert(
-                    delete_id.clone(),
-                    AccessibilityNode {
-                        id: delete_id.clone(),
-                        role: AccessibilityRole::Button,
-                        name: strings.delete_permanently_label.to_string(),
-                        value: None,
-                        state: AccessibilityState::default(),
-                        focused: false,
-                        bounds: AccessibilityBounds {
-                            x: content_left + 96.0,
-                            y: safe_top + 114.0,
-                            width: 120.0,
-                            height: 44.0,
-                        },
-                        children: Vec::new(),
-                    },
-                );
-                main_children.push(delete_id);
-            }
-
-            let backlinks_id = "page.backlinks.pill".to_string();
-            let bl = state.backlinks_for(&doc_id);
-            nodes.insert(
-                backlinks_id.clone(),
-                AccessibilityNode {
-                    id: backlinks_id.clone(),
-                    role: AccessibilityRole::Button,
-                    name: strings.backlinks_pill_label(
-                        locale,
-                        bl.items.len(),
-                        bl.completeness == affine_client::BacklinkCompleteness::Ready,
-                    ),
-                    value: None,
-                    state: AccessibilityState {
-                        expanded: Some(state.active_sheet == MobileSheet::Backlinks),
-                        ..AccessibilityState::default()
-                    },
-                    focused: false,
-                    bounds: AccessibilityBounds {
-                        x: content_left + 16.0,
-                        y: safe_top + 108.0,
-                        width: (content_w - 32.0).max(44.0),
-                        height: 44.0,
-                    },
-                    children: Vec::new(),
-                },
-            );
-            main_children.push(backlinks_id);
-        }
     }
 
     let main_name = match &state.route {
@@ -737,4 +720,46 @@ pub fn build_accessibility_tree_with_layout(
     );
 
     AccessibilityTree { root_id, nodes }
+}
+
+/// Validate that `tree` has no orphaned nodes, no missing children, and at most one `current`
+/// node inside the active navigation landmark.
+pub fn validate_accessibility_tree(tree: &AccessibilityTree) -> Vec<String> {
+    let mut errors = Vec::new();
+    if !tree.nodes.contains_key(&tree.root_id) {
+        errors.push(format!("missing root node {}", tree.root_id));
+        return errors;
+    }
+
+    let mut reachable: HashSet<&str> = HashSet::new();
+    let mut stack = vec![tree.root_id.as_str()];
+    while let Some(id) = stack.pop() {
+        if !reachable.insert(id) {
+            continue;
+        }
+        if let Some(node) = tree.nodes.get(id) {
+            for child in &node.children {
+                if !tree.nodes.contains_key(child) {
+                    errors.push(format!("node {id} references missing child {child}"));
+                } else {
+                    stack.push(child.as_str());
+                }
+            }
+        }
+    }
+
+    for id in tree.nodes.keys() {
+        if !reachable.contains(id.as_str()) {
+            errors.push(format!("orphaned accessibility node {id}"));
+        }
+    }
+
+    let current_count = tree.nodes.values().filter(|n| n.state.current).count();
+    if current_count > 1 {
+        errors.push(format!(
+            "expected at most 1 aria-current node, found {current_count}"
+        ));
+    }
+
+    errors
 }

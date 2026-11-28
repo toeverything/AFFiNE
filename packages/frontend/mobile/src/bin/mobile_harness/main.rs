@@ -3,6 +3,8 @@
 //! - `fps-replay`: 60 / 120 / 24 / 7 fps byte-identical terminal `FrameSnapshot` replay
 //! - `gallery --out <dir>`: 7 offscreen PNGs (`390×844 @ 2x = 780×1688`) in `< 5s`
 
+mod s7_gallery;
+
 use std::{cell::RefCell, path::PathBuf, rc::Rc, time::Duration};
 
 use affine_client::{AccessibilityRole, DirectKind, Origin};
@@ -31,14 +33,14 @@ const VIEWPORTS: [(u32, u32); 6] = [
 ];
 const FPS_RATES: [u32; 4] = [60, 120, 24, 7];
 
-struct MobileSession {
+pub(crate) struct MobileSession {
     platform: Rc<HeadlessPlatform>,
     app: ApplicationHandle,
     window_handle: WindowHandle<MobileShellView>,
     headless_win: HeadlessWindow,
 }
 
-fn start_session(
+pub(crate) fn start_session(
     width: u32,
     height: u32,
     scale_factor: f32,
@@ -91,7 +93,7 @@ fn start_session(
 }
 
 impl MobileSession {
-    fn update_state<R>(&self, f: impl FnOnce(&mut MobileAppState) -> R) -> Result<R> {
+    pub(crate) fn update_state<R>(&self, f: impl FnOnce(&mut MobileAppState) -> R) -> Result<R> {
         let res = self.app.update(|cx| {
             self.window_handle.update(cx, |view, _, cx| {
                 let out = f(view.state_mut());
@@ -118,7 +120,7 @@ impl MobileSession {
         })
     }
 
-    fn render_png(&self, out_path: &PathBuf) -> Result<usize> {
+    pub(crate) fn render_png(&self, out_path: &PathBuf) -> Result<usize> {
         self.headless_win.request_frame();
         let (image, glyph_count) = self.app.update(|cx| {
             self.window_handle.update(cx, |_, window, _| {
@@ -227,7 +229,7 @@ fn check_doclink_switcher(
         ));
     }
     let expected_unit = match locale {
-        MobileLocale::En => "2 places",
+        MobileLocale::En | MobileLocale::RtlFallback => "2 places",
         MobileLocale::ZhHans => "2 处",
         MobileLocale::Ar => "2 مواقع",
     };
@@ -423,7 +425,6 @@ fn run_audit_matrix() -> Result<()> {
         "details": all_violations,
     });
     println!("{}", serde_json::to_string_pretty(&report)?);
-
     if !all_violations.is_empty() {
         bail!(
             "audit-matrix failed with {} violations",
@@ -715,6 +716,7 @@ fn run_gallery(out_dir: PathBuf) -> Result<()> {
                         journal_date: None,
                         clock: 1,
                         outgoing_edges: Vec::new(),
+                        blocks: Vec::new(),
                     });
                 }
                 s.switch_tab(MobileTab::Explorer, 0.0);
@@ -779,20 +781,16 @@ fn run_gallery(out_dir: PathBuf) -> Result<()> {
 fn main() -> Result<()> {
     let mut args = std::env::args().skip(1);
     let Some(cmd) = args.next() else {
-        bail!("usage: mobile-harness <audit-matrix | fps-replay | gallery --out <dir>>");
+        bail!(
+            "usage: mobile-harness <audit-matrix | fps-replay | gallery | s7-gallery --out <dir>>"
+        );
     };
-
     match cmd.as_str() {
         "audit-matrix" => run_audit_matrix(),
         "fps-replay" => run_fps_replay(),
-        "gallery" => {
-            let mut out_dir = PathBuf::from("evidence/s3-shell");
-            while let Some(arg) = args.next() {
-                if arg == "--out" {
-                    out_dir = PathBuf::from(args.next().context("--out requires a directory")?);
-                }
-            }
-            run_gallery(out_dir)
+        "gallery" => run_gallery(s7_gallery::parse_out_dir(&mut args, "evidence/s3-shell")?),
+        "s7-gallery" => {
+            s7_gallery::run_s7_gallery(s7_gallery::parse_out_dir(&mut args, "evidence/s7-shell")?)
         }
         other => bail!("unknown subcommand `{other}`"),
     }

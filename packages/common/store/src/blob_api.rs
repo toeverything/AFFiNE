@@ -1,6 +1,80 @@
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::{error::StoreResult, id_converter::IdConverter};
+
+/// Compute the canonical content-addressed blob key (base64url-no-pad SHA-256) for `bytes`.
+pub fn compute_blob_key(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    URL_SAFE_NO_PAD.encode(digest)
+}
+
+/// Inspect raw image bytes (PNG, GIF, JPEG, or WebP) and return `(width, height)` in pixels.
+///
+/// Pure in-memory header parser with zero external dependencies and full `wasm32` compatibility.
+pub fn detect_image_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
+    // PNG: 8-byte signature + IHDR chunk (width at 16..20, height at 20..24, big-endian).
+    if bytes.len() >= 24 && bytes.starts_with(b"\x89PNG\r\n\x1a\n") && &bytes[12..16] == b"IHDR" {
+        let w = u32::from_be_bytes([bytes[16], bytes[17], bytes[18], bytes[19]]);
+        let h = u32::from_be_bytes([bytes[20], bytes[21], bytes[22], bytes[23]]);
+        if w > 0 && h > 0 {
+            return Some((w, h));
+        }
+    }
+    // GIF87a / GIF89a: width at 6..8, height at 8..10 (little-endian).
+    if bytes.len() >= 10 && (bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a")) {
+        let w = u32::from(u16::from_le_bytes([bytes[6], bytes[7]]));
+        let h = u32::from(u16::from_le_bytes([bytes[8], bytes[9]]));
+        if w > 0 && h > 0 {
+            return Some((w, h));
+        }
+    }
+    // WebP (RIFF....WEBP): VP8X extended header.
+    if bytes.len() >= 30
+        && &bytes[0..4] == b"RIFF"
+        && &bytes[8..12] == b"WEBP"
+        && &bytes[12..16] == b"VP8X"
+    {
+        let w =
+            1 + (u32::from(bytes[24]) | (u32::from(bytes[25]) << 8) | (u32::from(bytes[26]) << 16));
+        let h =
+            1 + (u32::from(bytes[27]) | (u32::from(bytes[28]) << 8) | (u32::from(bytes[29]) << 16));
+        if w > 0 && h > 0 {
+            return Some((w, h));
+        }
+    }
+    // JPEG: scan SOF0..SOF2 markers (`0xFF 0xC0..=0xC2`).
+    if bytes.len() >= 4 && bytes[0] == 0xFF && bytes[1] == 0xD8 {
+        let mut i = 2usize;
+        while i + 4 <= bytes.len() {
+            if bytes[i] != 0xFF {
+                break;
+            }
+            let marker = bytes[i + 1];
+            i += 2;
+            if marker == 0xD9 || marker == 0xDA {
+                break;
+            }
+            if i + 2 > bytes.len() {
+                break;
+            }
+            let seg_len = usize::from(u16::from_be_bytes([bytes[i], bytes[i + 1]]));
+            if seg_len < 2 || i + seg_len > bytes.len() {
+                break;
+            }
+            if matches!(marker, 0xC0..=0xC2) && seg_len >= 7 {
+                let h = u32::from(u16::from_be_bytes([bytes[i + 3], bytes[i + 4]]));
+                let w = u32::from(u16::from_be_bytes([bytes[i + 5], bytes[i + 6]]));
+                if w > 0 && h > 0 {
+                    return Some((w, h));
+                }
+            }
+            i += seg_len;
+        }
+    }
+    None
+}
 
 /// Source context required by source-scoped Blob REST endpoints (`v0.27.5`).
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]

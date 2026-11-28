@@ -54,11 +54,12 @@ impl PlaygroundView {
         ContentScope::Page
     }
     pub(super) fn input_point(&self, pos: Point<Pixels>, window: &Window) -> Option<DocPoint> {
-        let geometry = page_geometry(f32::from(window.viewport_size().width));
+        let (origin, canvas_size) = self.canvas_rect(window);
+        let geometry = page_geometry(f32::from(canvas_size.width));
         let layout = self.flow_layout()?;
         let (x, y) = (
-            f32::from(pos.x) - geometry.column_x,
-            f32::from(pos.y) - TOPBAR_HEIGHT + self.scroll_y,
+            f32::from(pos.x) - f32::from(origin.x) - geometry.column_x,
+            f32::from(pos.y) - f32::from(origin.y) + self.scroll_y,
         );
         let (block_id, mut caret) = layout.hit_document(x, y)?;
         // Lines of a sideways-scrolled code block sit left of where they were laid out.

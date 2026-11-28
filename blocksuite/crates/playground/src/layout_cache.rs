@@ -13,7 +13,6 @@ use crate::{
     SCROLL_LINE,
     block_flow::{FlowInput, FlowLayout, ImageSlot, decode_image},
     directory,
-    overlays::InlineTargetEnd,
     room_client::RoomCommand,
     view_room::BlobFetchState,
 };
@@ -369,31 +368,7 @@ impl PlaygroundView {
         }
         let now_ms = self.now_ms(cx);
         let current_x = self.indicator_x(now_ms);
-        let prev_mode = self.mode;
-        // Commit any pending inline edit (table cell or Edgeless label) cleanly before switching modes.
-        self.finish_inline_targets(InlineTargetEnd::CommitPreedit, Some(window), Some(cx));
-        if self.edgeless.authoring.editing_spatial_block().is_some() {
-            self.edgeless_commit_inline_edit(window, cx);
-        }
-        if prev_mode == PlaygroundMode::Page && target == PlaygroundMode::Edgeless {
-            self.saved_page_selection = self.editor.selection.take();
-        }
-        self.edgeless.authoring.reset_transient();
-        self.page_scroll_fling = None;
-        self.code_scroll_fling = None;
-        self.edgeless_pan_fling = None;
-        self.touch_long_press_anchor = None;
-        self.touch_selection_menu_open = false;
-        self.edgeless_readonly_selection_target = None;
-        self.mode = target;
-        self.dirty_text = None;
-        self.context_paste_task = None;
-        self.context_menu_target = None;
-        self.overlays.reset();
-        if target == PlaygroundMode::Page && self.editor.selection.is_none() {
-            self.editor.selection = self.saved_page_selection.take();
-        }
-        self.prune_dangling_selection(Some(window), cx);
+        self.apply_mode_switch_cleanup(target, Some(window), cx);
         self.pill_motion = Some(Motion::new(
             current_x,
             Self::target_pill_x(target),
@@ -541,9 +516,10 @@ impl PlaygroundView {
             && self.form_factor.is_touch_form_factor()
             && let Some(layout) = self.flow_layout()
         {
-            let geom = crate::block_flow::page_geometry(self.window_size.0);
-            let wx = f32::from(event.position.x) - geom.column_x;
-            let wy = f32::from(event.position.y) - crate::TOPBAR_HEIGHT + self.scroll_y;
+            let (origin, canvas_size) = self.canvas_rect(window);
+            let geom = crate::block_flow::page_geometry(f32::from(canvas_size.width));
+            let wx = f32::from(event.position.x) - f32::from(origin.x) - geom.column_x;
+            let wy = f32::from(event.position.y) - f32::from(origin.y) + self.scroll_y;
             if let Some(block) = layout.blocks.iter().find(|b| {
                 b.body.kind == crate::block_flow::FlowKind::Database
                     && b.rect().contains(wx, wy)

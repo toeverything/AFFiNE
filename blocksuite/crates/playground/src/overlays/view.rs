@@ -292,9 +292,10 @@ impl PlaygroundView {
         self.editor.linked_doc_trigger = None;
         self.editor.block_selection.clear();
         if let Some(layout) = self.flow_layout() {
-            let geometry = crate::page_geometry(f32::from(window.viewport_size().width));
-            let world_x = f32::from(event.position.x) - geometry.column_x;
-            let world_y = f32::from(event.position.y) - crate::TOPBAR_HEIGHT + self.scroll_y;
+            let (origin, canvas_size) = self.canvas_rect(window);
+            let geometry = crate::page_geometry(f32::from(canvas_size.width));
+            let world_x = f32::from(event.position.x) - f32::from(origin.x) - geometry.column_x;
+            let world_y = f32::from(event.position.y) - f32::from(origin.y) + self.scroll_y;
             if let Some((block_id, local_x, local_y)) = layout.blocks.iter().find_map(|block| {
                 (block.body.kind == FlowKind::Database && block.rect().contains(world_x, world_y))
                     .then(|| {

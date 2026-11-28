@@ -7,7 +7,7 @@ use blocksuite_playground_doc::schema::ListType;
 use ui::{Context, InertialDecay, Pixels, TouchGesture, Window, point, px};
 
 use crate::{
-    PlaygroundMode, PlaygroundView, TOPBAR_HEIGHT,
+    PlaygroundMode, PlaygroundView,
     block_flow::{
         FlowKind, FlowLayout, FlowRect, FlowTextLayout, heading_marker_rect_for_direction,
         page_geometry,
@@ -342,7 +342,7 @@ impl PlaygroundView {
                         ..
                     },
                 ) => {
-                    let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+                    let (vp_origin, _) = self.canvas_rect(window);
                     self.edgeless_camera_transition = None;
                     self.edgeless_pan_fling = None;
                     self.edgeless
@@ -416,9 +416,12 @@ impl PlaygroundView {
                         let Some(block) = layout.block(&block_id) else {
                             return false;
                         };
-                        let geom = page_geometry(self.window_size.0);
-                        let sx = geom.column_x + block.x + block.body.width * 0.5;
-                        let sy = TOPBAR_HEIGHT + block.y + block.body.height * 0.5 - self.scroll_y;
+                        let (origin, canvas_size) = self.canvas_rect(window);
+                        let geom = page_geometry(f32::from(canvas_size.width));
+                        let sx =
+                            f32::from(origin.x) + geom.column_x + block.x + block.body.width * 0.5;
+                        let sy =
+                            f32::from(origin.y) + block.y + block.body.height * 0.5 - self.scroll_y;
                         let scene =
                             self.overlay_scene(&snap, &layout, window.layout_direction(), None);
                         self.overlays.scroll_code(&scene, sx, sy, -delta, 0.0)
@@ -452,9 +455,10 @@ impl PlaygroundView {
         window: &Window,
     ) -> Option<String> {
         let layout = self.flow_layout()?;
-        let geom = page_geometry(f32::from(window.viewport_size().width));
-        let wx = f32::from(pos.x) - geom.column_x;
-        let wy = f32::from(pos.y) - TOPBAR_HEIGHT + self.scroll_y;
+        let (origin, canvas_size) = self.canvas_rect(window);
+        let geom = page_geometry(f32::from(canvas_size.width));
+        let wx = f32::from(pos.x) - f32::from(origin.x) - geom.column_x;
+        let wy = f32::from(pos.y) - f32::from(origin.y) + self.scroll_y;
         layout.blocks.iter().find_map(|b| {
             (b.body.code_scroll.is_some() && b.rect().contains(wx, wy)).then(|| b.block_id.clone())
         })
@@ -472,9 +476,10 @@ impl PlaygroundView {
         let Some(layout) = self.flow_layout() else {
             return false;
         };
-        let geom = page_geometry(f32::from(window.viewport_size().width));
-        let wx = x - geom.column_x;
-        let wy = y - TOPBAR_HEIGHT + self.scroll_y;
+        let (origin, canvas_size) = self.canvas_rect(window);
+        let geom = page_geometry(f32::from(canvas_size.width));
+        let wx = x - f32::from(origin.x) - geom.column_x;
+        let wy = y - f32::from(origin.y) + self.scroll_y;
         let dir = window.layout_direction();
         let pad_y = (TOUCH_CONTROL_HIT_SIZE - CONTROL_HIT_SIZE) * 0.5;
         let expand_outer = |inner: FlowRect, text_edge: f32| {
@@ -599,9 +604,10 @@ impl PlaygroundView {
         window: &Window,
     ) -> Option<String> {
         let layout = self.flow_layout()?;
-        let geom = page_geometry(f32::from(window.viewport_size().width));
-        let wx = x - geom.column_x;
-        let wy = y - TOPBAR_HEIGHT + self.scroll_y;
+        let (origin, canvas_size) = self.canvas_rect(window);
+        let geom = page_geometry(f32::from(canvas_size.width));
+        let wx = x - f32::from(origin.x) - geom.column_x;
+        let wy = y - f32::from(origin.y) + self.scroll_y;
         Self::hit_inline_reference_in_layout(&layout, wx, wy)
     }
 
@@ -652,7 +658,7 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let (vp_origin, _) = self.canvas_rect(window);
         let wp = self.edgeless.camera.screen_to_world(pos, vp_origin);
         let (wx, wy) = (f32::from(wp.x), f32::from(wp.y));
         for item in self.edgeless.authoring.painted_items.iter().rev() {

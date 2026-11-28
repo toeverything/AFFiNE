@@ -15,6 +15,7 @@ use crate::error::StoreResult;
 pub struct SqliteDocStorage {
     pub(super) pool: Pool<Sqlite>,
     path: String,
+    pub(super) read_only: bool,
 }
 
 impl SqliteDocStorage {
@@ -35,13 +36,62 @@ impl SqliteDocStorage {
                 .idle_timeout(None)
                 .max_lifetime(None)
                 .connect_lazy_with(base_options);
-            Self { pool, path }
+            Self {
+                pool,
+                path,
+                read_only: false,
+            }
         } else {
             let pool = SqlitePoolOptions::new()
                 .max_connections(4)
                 .connect_lazy_with(base_options.journal_mode(SqliteJournalMode::Wal));
-            Self { pool, path }
+            Self {
+                pool,
+                path,
+                read_only: false,
+            }
         }
+    }
+
+    /// Open an existing SQLite database in strict read-only mode (`read_only(true)`,
+    /// `create_if_missing(false)`): performs zero migrations, zero WAL creation, and zero
+    /// compaction writeback. Uses `immutable(true)` only when no non-empty `-wal` sidecar
+    /// exists on disk, so uncheckpointed WAL commits are never silently skipped (failing
+    /// closed with an error if a read-only directory has a non-empty `-wal` without `-shm`).
+    pub fn open_read_only(path: impl Into<String>) -> Self {
+        let raw_path = path.into();
+        let path = if raw_path == ":memory:" {
+            raw_path
+        } else {
+            std::fs::canonicalize(&raw_path)
+                .map(|p| p.to_string_lossy().into_owned())
+                .unwrap_or(raw_path)
+        };
+        let can_use_immutable = path != ":memory:"
+            && std::fs::metadata(&path).is_ok()
+            && match std::fs::metadata(format!("{path}-wal")) {
+                Ok(m) => m.len() == 0,
+                Err(e) => e.kind() == std::io::ErrorKind::NotFound,
+            };
+        let options = SqliteConnectOptions::new()
+            .filename(&path)
+            .read_only(true)
+            .immutable(can_use_immutable)
+            .create_if_missing(false)
+            .busy_timeout(std::time::Duration::from_millis(5_000));
+        let pool = SqlitePoolOptions::new()
+            .max_connections(4)
+            .connect_lazy_with(options);
+        Self {
+            pool,
+            path,
+            read_only: true,
+        }
+    }
+
+    /// Return whether this storage handle was opened in strict read-only mode.
+    pub fn is_read_only(&self) -> bool {
+        self.read_only
     }
 
     /// Return the underlying database path string.

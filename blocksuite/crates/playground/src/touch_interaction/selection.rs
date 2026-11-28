@@ -6,7 +6,7 @@ use ui::{
 };
 
 use crate::{
-    PlaygroundMode, PlaygroundView, TOPBAR_HEIGHT,
+    PlaygroundMode, PlaygroundView,
     block_flow::{FlowRect, PAGE_SURFACE_ID},
     edgeless::{NOTE_CARD_PADDING, rotate_point_around},
     theme::Palette,
@@ -38,7 +38,7 @@ impl PlaygroundView {
             let sr = layout.block(&start.block_id)?.caret_rect(start.caret)?;
             let er = layout.block(&end.block_id)?.caret_rect(end.caret)?;
             let pad = if is_note { NOTE_CARD_PADDING } else { 0.0 };
-            let vp = point(px(0.0), px(TOPBAR_HEIGHT));
+            let (vp, _) = self.canvas_rect(window);
             let to_screen = |r: FlowRect| {
                 let lx = item.rect.x + (r.x + pad) * item.scale;
                 let ly = item.rect.y + (r.y + pad) * item.scale;
@@ -87,8 +87,9 @@ impl PlaygroundView {
             return None;
         }
         let (start_b, end_b) = self.selection_endpoint_rects(window)?;
+        let (origin, _) = self.canvas_rect(window);
         let mid_x = (f32::from(start_b.origin.x) + f32::from(end_b.origin.x)) * 0.5;
-        let top_y = (f32::from(start_b.origin.y) - 48.0).max(TOPBAR_HEIGHT + 6.0);
+        let top_y = (f32::from(start_b.origin.y) - 48.0).max(f32::from(origin.y) + 6.0);
         let readonly = self.mode == PlaygroundMode::Edgeless && self.edgeless_readonly;
         let menu_w = if readonly { 72.0 } else { 228.0 };
         let left = (mid_x - menu_w * 0.5)

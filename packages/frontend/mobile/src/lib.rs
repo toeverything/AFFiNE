@@ -13,6 +13,7 @@ pub mod state;
 mod state_ops;
 pub mod strings;
 pub mod views;
+pub mod workspace_bridge;
 
 use std::borrow::Cow;
 
@@ -25,13 +26,14 @@ pub use a11y::{
 };
 pub use showcase::seed_showcase_state;
 pub use state::{
-    BackOutcome, MobileAppState, MobileBackCoordinator, MobileCollection, MobileDocRecord,
-    MobileRoute, MobileSheet, MobileTab, SettingRowInteraction, SettingsGroupId, SettingsState,
-    ThemePreference, WorkspaceData, WorkspaceSummary,
+    BackOutcome, MobileAppState, MobileBackCoordinator, MobileCollection, MobileDocBlock,
+    MobileDocRecord, MobileRoute, MobileSheet, MobileTab, SettingRowInteraction, SettingsGroupId,
+    SettingsState, ThemePreference, WorkspaceData, WorkspaceSummary,
 };
 pub use state_ops::{decode_scoped_doc_target, encode_scoped_doc_target};
 pub use strings::{MobileLocale, MobileStrings};
 pub use views::MobileShellView;
+pub use workspace_bridge::{MobileWorkspaceBridge, blocks_from_snapshot};
 
 #[cfg(all(target_os = "linux", not(target_arch = "wasm32")))]
 const LINUX_CJK_FONT_CANDIDATES: [&str; 4] = [

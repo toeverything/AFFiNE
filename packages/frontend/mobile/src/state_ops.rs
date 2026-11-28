@@ -85,6 +85,7 @@ impl MobileAppState {
                     journal_date: None,
                     clock: 1,
                     outgoing_edges: Vec::new(),
+                    blocks: Vec::new(),
                 },
             );
             ws.link_graph.replace_edges(&doc_id, Vec::new(), 1);
@@ -148,6 +149,8 @@ impl MobileAppState {
             self.open_doc(&trashed_id, Origin::Journal);
             return trashed_id;
         }
+        let locale = self.locale();
+        let strings = locale.strings();
         let doc_id = {
             let ws = self.active_workspace_mut();
             let seq = ws.next_doc_seq;
@@ -159,7 +162,7 @@ impl MobileAppState {
                 0,
                 MobileDocRecord {
                     id: doc_id.clone(),
-                    title: format!("Journal {date}"),
+                    title: strings.journal_title(locale, date),
                     body_preview: String::new(),
                     tags: vec!["daily".to_string()],
                     updated_at_ms,
@@ -168,6 +171,7 @@ impl MobileAppState {
                     journal_date: Some(date.to_string()),
                     clock: 1,
                     outgoing_edges: Vec::new(),
+                    blocks: Vec::new(),
                 },
             );
             ws.link_graph.replace_edges(&doc_id, Vec::new(), 1);
@@ -265,6 +269,112 @@ impl MobileAppState {
         true
     }
 
+    /// Toggle `is_favorite` on a non-trashed document scoped to `(ws_id, doc_id)`.
+    pub fn toggle_favorite_scoped(&mut self, ws_id: &str, doc_id: &str) -> bool {
+        let ws = self.active_workspace_mut();
+        if ws.scope.workspace_id != ws_id {
+            return false;
+        }
+        let Some(doc) = ws.docs.iter_mut().find(|d| d.id == doc_id && !d.trashed) else {
+            return false;
+        };
+        doc.is_favorite = !doc.is_favorite;
+        doc.clock += 1;
+        true
+    }
+
+    /// Move an active document into Trash scoped to `(ws_id, doc_id)`, updating `link_graph`,
+    /// closing any open sheet, and navigating back to Home if currently viewing that document.
+    pub fn move_doc_to_trash_scoped(&mut self, ws_id: &str, doc_id: &str, now_ms: f64) -> bool {
+        {
+            let ws = self.active_workspace_mut();
+            if ws.scope.workspace_id != ws_id {
+                return false;
+            }
+            let Some(doc) = ws.docs.iter_mut().find(|d| d.id == doc_id && !d.trashed) else {
+                return false;
+            };
+            doc.trashed = true;
+            doc.is_favorite = false;
+            doc.clock += 1;
+            let clock = doc.clock;
+            ws.link_graph.replace_edges(doc_id, Vec::new(), clock);
+            ws.summary.doc_count = ws.active_doc_count();
+        }
+        self.close_sheet(now_ms);
+        if self.route == crate::state::MobileRoute::Page(doc_id.to_string()) {
+            self.switch_tab(crate::state::MobileTab::Home, now_ms);
+        }
+        true
+    }
+
+    /// Toggle collapse/expand state for a folder in Explorer.
+    pub fn toggle_folder_collapsed(&mut self, folder_id: &str) -> bool {
+        let ws = self.active_workspace_mut();
+        if ws.collapsed_folders.contains(folder_id) {
+            ws.collapsed_folders.remove(folder_id);
+            false
+        } else {
+            ws.collapsed_folders.insert(folder_id.to_string());
+            true
+        }
+    }
+
+    /// Create a new folder under `parent_id` (or root) and bump `folder_revision`.
+    pub fn create_folder(&mut self, parent_id: Option<&str>, name: &str) -> String {
+        let ws = self.active_workspace_mut();
+        let seq = ws.next_doc_seq;
+        ws.next_doc_seq += 1;
+        let fid = format!("f-{}-{seq}", ws.scope.workspace_id);
+        let max_idx = ws
+            .folder_rows
+            .iter()
+            .filter(|r| r.parent_id.as_deref() == parent_id)
+            .map(|r| r.index.as_str())
+            .max();
+        let index = generate_key_between(max_idx, None)
+            .unwrap_or_else(|_| format!("{}V", max_idx.unwrap_or("a0")));
+        ws.folder_rows.push(FolderRow {
+            id: fid.clone(),
+            parent_id: parent_id.map(str::to_string),
+            data: name.trim().to_string(),
+            folder_type: "folder".to_string(),
+            index,
+        });
+        ws.folder_revision += 1;
+        fid
+    }
+
+    /// Rename an existing folder by ID.
+    pub fn rename_folder(&mut self, folder_id: &str, new_name: &str) -> bool {
+        let ws = self.active_workspace_mut();
+        let Some(row) = ws
+            .folder_rows
+            .iter_mut()
+            .find(|r| r.id == folder_id && r.folder_type == "folder")
+        else {
+            return false;
+        };
+        row.data = new_name.trim().to_string();
+        ws.folder_revision += 1;
+        true
+    }
+
+    /// Delete a folder row and any doc links directly under it.
+    pub fn delete_folder(&mut self, folder_id: &str) -> bool {
+        let ws = self.active_workspace_mut();
+        let before = ws.folder_rows.len();
+        ws.folder_rows
+            .retain(|r| r.id != folder_id && r.parent_id.as_deref() != Some(folder_id));
+        if ws.folder_rows.len() != before {
+            ws.collapsed_folders.remove(folder_id);
+            ws.folder_revision += 1;
+            true
+        } else {
+            false
+        }
+    }
+
     /// Apply an in-place toggle or cycle action for an interactive Settings row.
     pub fn activate_setting(&mut self, group: SettingsGroupId) -> bool {
         match group {
@@ -278,14 +388,33 @@ impl MobileAppState {
             }
             SettingsGroupId::Language => {
                 self.settings.locale = match self.settings.locale {
-                    MobileLocale::En => MobileLocale::ZhHans,
+                    MobileLocale::En | MobileLocale::RtlFallback => MobileLocale::ZhHans,
                     MobileLocale::ZhHans => MobileLocale::Ar,
                     MobileLocale::Ar => MobileLocale::En,
                 };
+                self.search_query.clear();
+                self.search_selection = 0..0;
+                self.search_preedit = None;
+                true
+            }
+            SettingsGroupId::Editor => {
+                let next_pct = match self.settings.editor_font_scale_pct {
+                    ..=105 => 115,
+                    106..=122 => 130,
+                    _ => 100,
+                };
+                self.settings.editor_font_scale_pct = next_pct;
+                self.font_scale = f32::from(next_pct) / 100.0;
                 true
             }
             SettingsGroupId::SyncOffline => {
                 self.settings.offline_sync_enabled = !self.settings.offline_sync_enabled;
+                let next_status = if self.settings.offline_sync_enabled {
+                    affine_client::WorkspaceSyncStatus::Synced
+                } else {
+                    affine_client::WorkspaceSyncStatus::Offline
+                };
+                self.set_sync_status(next_status);
                 true
             }
             SettingsGroupId::Notifications => {

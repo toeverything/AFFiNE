@@ -9,7 +9,7 @@ use ui_kit::{LogicalStyled, bidi_isolate};
 
 use crate::{
     state::{
-        MobileAppState, MobileBackCoordinator, SettingRowInteraction, SettingsGroupId,
+        MobileAppState, MobileBackCoordinator, MobileSheet, SettingRowInteraction, SettingsGroupId,
         ThemePreference,
     },
     strings::MobileStrings,
@@ -30,7 +30,7 @@ fn row_dir(dir: Direction) -> ui::Div {
 }
 
 pub(super) fn render_settings(
-    state: &MobileAppState,
+    state: &mut MobileAppState,
     viewport_h: f32,
     palette: MobilePalette,
     dir: Direction,
@@ -38,6 +38,7 @@ pub(super) fn render_settings(
     a11y_bounds: &A11yBoundsMap,
     cx: &mut Context<MobileShellView>,
 ) -> impl IntoElement {
+    let locale = state.locale();
     let landscape = viewport_h < 520.0;
 
     let back_btn = row_dir(dir)
@@ -109,7 +110,13 @@ pub(super) fn render_settings(
         };
         let title = strings.settings_groups[idx];
         let value = match group {
-            SettingsGroupId::Account => state.settings.account_email.clone(),
+            SettingsGroupId::Account => {
+                if state.settings.account_email.trim().is_empty() {
+                    strings.sign_in_label.to_string()
+                } else {
+                    state.settings.account_email.clone()
+                }
+            }
             SettingsGroupId::Workspace => state.active_workspace().summary.name.clone(),
             SettingsGroupId::Appearance => theme_label.to_string(),
             SettingsGroupId::Language => state.settings.locale.display_name().to_string(),
@@ -130,9 +137,14 @@ pub(super) fn render_settings(
                 }
             }
             SettingsGroupId::Experimental => {
-                format!("{} flags", state.settings.experimental_flags.len())
+                strings.flags_count(locale, state.settings.experimental_flags.len())
             }
-            SettingsGroupId::About => format!("v{}", state.settings.app_version),
+            SettingsGroupId::About => {
+                format!(
+                    "{} v{}",
+                    strings.about_version_label, state.settings.app_version
+                )
+            }
         };
         let display_value = if dir.is_rtl() {
             bidi_isolate(&value)
@@ -205,13 +217,20 @@ pub(super) fn render_settings(
                     .child(title),
             )
             .child(trailing);
+        row = row.child(a11y_bounds_probe(row_id.clone(), a11y_bounds.clone()));
         if interaction != SettingRowInteraction::Info {
-            row = row
-                .child(a11y_bounds_probe(row_id, a11y_bounds.clone()))
-                .on_click(cx.listener(move |this, _, _, cx| {
-                    this.state.activate_setting(group);
-                    cx.notify();
-                }));
+            row = row.on_click(cx.listener(move |this, _, _, cx| {
+                this.state.activate_setting(group);
+                cx.notify();
+            }));
+        } else if group == SettingsGroupId::Workspace {
+            let trigger_id = row_id;
+            row = row.on_click(cx.listener(move |this, _, _, cx| {
+                let t = this.now_ms(cx);
+                this.state
+                    .open_sheet_from(MobileSheet::WorkspaceSelector, Some(&trigger_id), t);
+                cx.notify();
+            }));
         }
         if top_border {
             row = row.border_t(px(1.0)).border_color(palette.border);
@@ -270,6 +289,14 @@ pub(super) fn render_settings(
         list.into_any_element()
     };
 
+    let avail_h = (viewport_h - 52.0).max(44.0);
+    let pad = if landscape { 12.0 } else { 14.0 };
+    let rows_per_col = if landscape { 5.0 } else { 10.0 };
+    let content_h = pad * 2.0 + rows_per_col * 44.0 + 4.0;
+    let max_scroll = (content_h - avail_h).max(0.0);
+    state.settings_scroll_y = state.settings_scroll_y.clamp(0.0, max_scroll);
+    let scroll_y = state.settings_scroll_y;
+
     div()
         .size_full()
         .flex()
@@ -278,10 +305,26 @@ pub(super) fn render_settings(
         .child(header)
         .child(
             div()
+                .id("mobile.settings.scroll_viewport")
                 .flex_1()
                 .min_h(px(0.0))
-                .p(px(if landscape { 12.0 } else { 14.0 }))
+                .w_full()
+                .relative()
                 .overflow_hidden()
-                .child(body_content),
+                .on_scroll(cx.listener(move |this, event: &ui::ScrollEvent, _, cx| {
+                    let dy: f32 = event.delta.pixel_delta(px(24.0)).y.into();
+                    if dy.abs() > 0.01 {
+                        this.state.settings_scroll_y =
+                            (this.state.settings_scroll_y - dy).clamp(0.0, max_scroll);
+                        cx.notify();
+                    }
+                }))
+                .child(
+                    div()
+                        .w_full()
+                        .mt(px(-scroll_y))
+                        .p(px(pad))
+                        .child(body_content),
+                ),
         )
 }

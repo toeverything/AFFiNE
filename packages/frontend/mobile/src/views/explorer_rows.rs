@@ -442,7 +442,28 @@ fn render_doc_list_drilldown(
     let scroll_y = state.explorer_scroll_y;
 
     let inner: ui::AnyElement = if docs.is_empty() {
-        div().w_full().p(px(16.0)).into_any_element()
+        let empty_text = if title == env.strings.trash {
+            env.strings.empty_trash_label
+        } else {
+            env.strings.empty_list_label
+        };
+        div()
+            .w_full()
+            .p(px(16.0))
+            .child(
+                div()
+                    .w_full()
+                    .p(px(16.0))
+                    .rounded(px(12.0))
+                    .bg(palette.bg_surface)
+                    .border_1()
+                    .border_color(palette.border)
+                    .text_size(px(13.0))
+                    .text_color(palette.text_secondary)
+                    .align_start_for(env.dir)
+                    .child(empty_text),
+            )
+            .into_any_element()
     } else {
         let mut list = div()
             .w_full()

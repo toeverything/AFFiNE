@@ -5,7 +5,7 @@ use ui::{Bounds, Context, Window, point, px};
 
 use super::{SelectionRectGeometry, endpoint_is_rtl};
 use crate::{
-    PlaygroundMode, PlaygroundView, TOPBAR_HEIGHT,
+    PlaygroundMode, PlaygroundView,
     block_flow::{FlowKind, FlowLayout, FlowRect, page_geometry},
     edgeless::{NOTE_CARD_PADDING, rotate_point_around},
     editor_session::{DocPoint, DocumentSelection, word_range},
@@ -55,9 +55,10 @@ impl PlaygroundView {
         let Some(layout) = self.flow_layout() else {
             return false;
         };
-        let geom = page_geometry(f32::from(window.viewport_size().width));
-        let wx = x - geom.column_x;
-        let wy = y - TOPBAR_HEIGHT + self.scroll_y;
+        let (origin, canvas_size) = self.canvas_rect(window);
+        let geom = page_geometry(f32::from(canvas_size.width));
+        let wx = x - f32::from(origin.x) - geom.column_x;
+        let wy = y - f32::from(origin.y) + self.scroll_y;
         if let Some(last) = layout.blocks.last()
             && wy > last.rect().bottom() + 12.0
         {
@@ -108,7 +109,7 @@ impl PlaygroundView {
                 .editing_spatial_block()
                 .map(|(id, n)| (id.to_string(), n))
                 .or_else(|| self.edgeless_readonly_selection_target.clone())?;
-            let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+            let (vp_origin, _) = self.canvas_rect(window);
             let wp = self
                 .edgeless
                 .camera
@@ -182,7 +183,7 @@ impl PlaygroundView {
                 let ly = item.rect.y + (r.y + pad) * item.scale;
                 let (cx_w, cy_w) = item.rect.center();
                 let (wx, wy) = rotate_point_around(lx, ly, cx_w, cy_w, item.rotate_deg);
-                let vp = point(px(0.0), px(TOPBAR_HEIGHT));
+                let (vp, _) = self.canvas_rect(window);
                 let p = self
                     .edgeless
                     .camera

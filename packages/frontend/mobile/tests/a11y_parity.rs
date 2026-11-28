@@ -1256,6 +1256,7 @@ fn dotted_workspace_and_doc_ids_do_not_collide_in_scoped_actions() {
             journal_date: None,
             clock: 1,
             outgoing_edges: Vec::new(),
+            blocks: Vec::new(),
         });
 
     state.workspace_store[1].summary.id = "team".into();
@@ -1273,6 +1274,7 @@ fn dotted_workspace_and_doc_ids_do_not_collide_in_scoped_actions() {
             journal_date: None,
             clock: 1,
             outgoing_edges: Vec::new(),
+            blocks: Vec::new(),
         });
 
     // Open & restore `(team.eu, notes)` via scoped a11y actions.
@@ -1380,6 +1382,7 @@ fn screen_reader_scroll_actions_reach_34th_doc_and_30th_collection_and_tag() {
                     journal_date: None,
                     clock: 1,
                     outgoing_edges: Vec::new(),
+                    blocks: Vec::new(),
                 });
         }
         init.switch_tab(affine_mobile::MobileTab::Explorer, 0.0);

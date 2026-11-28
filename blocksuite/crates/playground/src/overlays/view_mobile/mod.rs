@@ -434,9 +434,10 @@ impl PlaygroundView {
     /// or selects the word inside a tapped table cell / selects a non-editable block (`L3`).
     pub fn long_press_word(&mut self, x: f32, y: f32, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(layout) = self.flow_layout() {
-            let geom = crate::block_flow::page_geometry(f32::from(window.viewport_size().width));
-            let wx = x - geom.column_x;
-            let wy = y - crate::TOPBAR_HEIGHT + self.scroll_y;
+            let (origin, canvas_size) = self.canvas_rect(window);
+            let geom = crate::block_flow::page_geometry(f32::from(canvas_size.width));
+            let wx = x - f32::from(origin.x) - geom.column_x;
+            let wy = y - f32::from(origin.y) + self.scroll_y;
             if let Some(block) = layout
                 .blocks
                 .iter()
@@ -721,7 +722,7 @@ impl PlaygroundView {
             if let Some(prev) = self.page_id.clone() {
                 self.nav_history.push(prev);
             }
-            self.switch_active_page(page_id, window, cx);
+            self.switch_active_page(page_id, window, true, cx);
             true
         } else {
             let generation = self
@@ -746,54 +747,10 @@ impl PlaygroundView {
     pub fn navigate_back(&mut self, window: Option<&mut Window>, cx: &mut Context<Self>) -> bool {
         while let Some(prev) = self.nav_history.pop() {
             if self.state.workspace.page(&prev).is_some() {
-                self.switch_active_page(&prev, window, cx);
+                self.switch_active_page(&prev, window, true, cx);
                 return true;
             }
         }
         false
-    }
-
-    fn switch_active_page(
-        &mut self,
-        page_id: &str,
-        mut window: Option<&mut Window>,
-        cx: &mut Context<Self>,
-    ) {
-        self.editor.preedit = None;
-        self.finish_inline_targets(
-            InlineTargetEnd::DiscardPreedit,
-            window.as_deref_mut(),
-            Some(cx),
-        );
-        self.editor = Default::default();
-        self.saved_page_selection = None;
-        self.overlays.reset();
-        self.reading_anchor = None;
-        self.flow = crate::block_flow::BlockFlow::new();
-        self.flow.database_state.mobile_readonly = self.database_readonly;
-        self.flow.database_state.clock_ms = self.local_calendar_now(cx).0;
-        self.layout = None;
-        self.edgeless = crate::edgeless::EdgelessCanvasState::new();
-        self.active_touch_owner = crate::TouchStrokeOwner::None;
-        self.touch_long_press_anchor = None;
-        self.touch_scroll_axis_lock = None;
-        self.scrollbar_drag = None;
-        self.edgeless_readonly_selection_target = None;
-        self.page_scroll_fling = None;
-        self.code_scroll_fling = None;
-        self.edgeless_pan_fling = None;
-        self.touch_selection_menu_open = false;
-        self.database_record_sheet = None;
-        self.scroll_y = 0.0;
-        self.page_id = Some(page_id.to_string());
-        self.refresh_document();
-        if let Some(cb) = self.on_active_doc_changed.as_mut() {
-            cb(page_id);
-        }
-        if let Some(w) = window {
-            w.notify_text_input_changed(&self.editor_focus);
-            w.notify_text_selection_changed(&self.editor_focus);
-        }
-        cx.notify();
     }
 }

@@ -28,6 +28,7 @@ fn row_dir(dir: Direction) -> ui::Div {
 pub(super) fn render_active_sheet(
     state: &mut MobileAppState,
     sheet_kind: MobileSheet,
+    viewport_w: f32,
     viewport_h: f32,
     progress: f32,
     accepts_input: bool,
@@ -37,10 +38,27 @@ pub(super) fn render_active_sheet(
     a11y_bounds: &A11yBoundsMap,
     cx: &mut Context<MobileShellView>,
 ) -> impl IntoElement {
+    if sheet_kind == MobileSheet::WorkspaceDrawer {
+        return super::drawer::render_workspace_drawer(
+            state,
+            viewport_w,
+            viewport_h,
+            progress,
+            accepts_input,
+            palette,
+            dir,
+            strings,
+            a11y_bounds,
+            cx,
+        )
+        .into_any_element();
+    }
     let p = progress.clamp(0.0, 1.0);
     let compact = viewport_h < 460.0;
     let title = match sheet_kind {
         MobileSheet::WorkspaceSelector => strings.switch_workspace,
+        MobileSheet::WorkspaceDrawer => strings.drawer_title,
+        MobileSheet::DocActions => strings.doc_actions_title,
         MobileSheet::LocationAndTrail => strings.location_trail_title,
         MobileSheet::Backlinks => strings.backlinks_label,
         MobileSheet::ConfirmDeleteDoc => strings.confirm_delete_title,
@@ -136,57 +154,72 @@ pub(super) fn render_active_sheet(
                 _ => None,
             };
 
-            let mut loc_box = div()
-                .w_full()
-                .rounded(px(10.0))
-                .bg(palette.bg_canvas)
-                .border_1()
-                .border_color(palette.border)
-                .flex()
-                .flex_col()
-                .overflow_hidden();
-            for (idx, opt) in derivation.current_doc_locations.iter().enumerate() {
-                let loc = opt.location.clone();
-                // Current-document location picker ALWAYS targets `cur_seq`, never `d0.seq`.
-                let loc_id = format!("mobile.sheet.loc.{idx}");
-                let mut row = row_dir(dir)
-                    .id(loc_id.clone())
-                    .snapshot(loc_id.clone(), Some("mobile.sheet.panel"))
-                    .relative()
-                    .h(px(46.0))
-                    .flex_shrink(0.0)
-                    .ps(px(12.0), dir)
-                    .pe(px(12.0), dir)
-                    .justify_between()
-                    .child(a11y_bounds_probe(loc_id, a11y_bounds.clone()))
-                    .child(
-                        div()
-                            .text_size(px(13.0))
-                            .text_color(palette.text_primary)
-                            .child(opt.label.clone()),
-                    )
-                    .child(
-                        div()
-                            .text_size(px(13.0))
-                            .text_color(palette.accent)
-                            .child(if opt.selected { "✓" } else { "" }),
-                    );
-                if accepts_input {
-                    row = row.on_click(cx.listener(move |this, _, _, cx| {
-                        let t = this.now_ms(cx);
-                        this.state.pick_location(
-                            cur_seq,
-                            Some(LocationChoice::Location(loc.clone())),
-                            t,
+            let loc_box = if derivation.current_doc_locations.is_empty() {
+                div()
+                    .w_full()
+                    .p(px(12.0))
+                    .rounded(px(10.0))
+                    .bg(palette.bg_canvas)
+                    .border_1()
+                    .border_color(palette.border)
+                    .text_size(px(13.0))
+                    .text_color(palette.text_secondary)
+                    .align_start_for(dir)
+                    .child(strings.no_locations_label)
+            } else {
+                let mut loc_box = div()
+                    .w_full()
+                    .rounded(px(10.0))
+                    .bg(palette.bg_canvas)
+                    .border_1()
+                    .border_color(palette.border)
+                    .flex()
+                    .flex_col()
+                    .overflow_hidden();
+                for (idx, opt) in derivation.current_doc_locations.iter().enumerate() {
+                    let loc = opt.location.clone();
+                    // Current-document location picker ALWAYS targets `cur_seq`, never `d0.seq`.
+                    let loc_id = format!("mobile.sheet.loc.{idx}");
+                    let mut row = row_dir(dir)
+                        .id(loc_id.clone())
+                        .snapshot(loc_id.clone(), Some("mobile.sheet.panel"))
+                        .relative()
+                        .h(px(46.0))
+                        .flex_shrink(0.0)
+                        .ps(px(12.0), dir)
+                        .pe(px(12.0), dir)
+                        .justify_between()
+                        .child(a11y_bounds_probe(loc_id, a11y_bounds.clone()))
+                        .child(
+                            div()
+                                .text_size(px(13.0))
+                                .text_color(palette.text_primary)
+                                .child(opt.label.clone()),
+                        )
+                        .child(
+                            div()
+                                .text_size(px(13.0))
+                                .text_color(palette.accent)
+                                .child(if opt.selected { "✓" } else { "" }),
                         );
-                        cx.notify();
-                    }));
+                    if accepts_input {
+                        row = row.on_click(cx.listener(move |this, _, _, cx| {
+                            let t = this.now_ms(cx);
+                            this.state.pick_location(
+                                cur_seq,
+                                Some(LocationChoice::Location(loc.clone())),
+                                t,
+                            );
+                            cx.notify();
+                        }));
+                    }
+                    if idx > 0 {
+                        row = row.border_t(px(1.0)).border_color(palette.border);
+                    }
+                    loc_box = loc_box.child(row);
                 }
-                if idx > 0 {
-                    row = row.border_t(px(1.0)).border_color(palette.border);
-                }
-                loc_box = loc_box.child(row);
-            }
+                loc_box
+            };
 
             let mut trail_col = div()
                 .flex_1()
@@ -393,173 +426,105 @@ pub(super) fn render_active_sheet(
             }
             content = content.child(ws_box);
         }
+        MobileSheet::DocActions => {
+            content = content.child(super::sheet_actions::render_doc_actions_content(
+                state,
+                accepts_input,
+                palette,
+                dir,
+                strings,
+                a11y_bounds,
+                cx,
+            ));
+        }
         MobileSheet::Backlinks => {
             let doc_id = match &state.route {
                 MobileRoute::Page(id) => id.clone(),
                 _ => String::new(),
             };
             let bl = state.backlinks_for(&doc_id);
-            let mut bl_box = div()
-                .w_full()
-                .rounded(px(10.0))
-                .bg(palette.bg_canvas)
-                .border_1()
-                .border_color(palette.border)
-                .flex()
-                .flex_col()
-                .overflow_hidden();
-            for (idx, item) in bl.items.iter().enumerate() {
-                let src_id = item.source_doc_id.clone();
-                let block_id = item.source_block_id.clone();
-                let src_title = state
-                    .doc_by_id(&src_id)
-                    .map(|d| d.display_title(state.locale()))
-                    .unwrap_or_else(|| src_id.clone());
-                let bl_id = format!("mobile.sheet.backlink.{idx}");
-                let mut row = row_dir(dir)
-                    .id(bl_id.clone())
-                    .snapshot(bl_id.clone(), Some("mobile.sheet.panel"))
-                    .relative()
-                    .h(px(46.0))
-                    .flex_shrink(0.0)
-                    .ps(px(12.0), dir)
-                    .pe(px(12.0), dir)
-                    .child(a11y_bounds_probe(bl_id, a11y_bounds.clone()))
-                    .child(
-                        div()
-                            .text_size(px(13.0))
-                            .text_color(palette.text_primary)
-                            .child(src_title),
-                    );
-                if accepts_input {
-                    row = row.on_click(cx.listener(move |this, _, _, cx| {
-                        let t = this.now_ms(cx);
-                        this.state.close_sheet(t);
-                        this.state.open_doc(
-                            &src_id,
-                            Origin::Backlink {
-                                source_doc_id: src_id.clone(),
-                                block_id: Some(block_id.clone()),
-                            },
-                        );
-                        cx.notify();
-                    }));
-                }
-                if idx > 0 {
-                    row = row.border_t(px(1.0)).border_color(palette.border);
-                }
-                bl_box = bl_box.child(row);
-            }
-            content = content.child(bl_box);
-        }
-        MobileSheet::ConfirmDeleteDoc => {
-            let (ws_id, doc_id) = state
-                .pending_delete_target
-                .clone()
-                .unwrap_or_else(|| (state.active_workspace_id().to_string(), String::new()));
-            let doc_title = state
-                .doc_by_id(&doc_id)
-                .map(|d| d.display_title(state.locale()))
-                .unwrap_or_else(|| doc_id.clone());
-            let scoped = crate::encode_scoped_doc_target(&ws_id, &doc_id);
-            let cancel_id = format!("app.sheet.delete_cancel.{scoped}");
-            let confirm_id = format!("app.sheet.delete_confirm.{scoped}");
-
-            let mut cancel_btn = div()
-                .id(cancel_id.clone())
-                .snapshot(cancel_id.clone(), Some("mobile.sheet.panel"))
-                .relative()
-                .flex_1()
-                .h(px(44.0))
-                .min_w(px(44.0))
-                .rounded(px(10.0))
-                .bg(palette.bg_canvas)
-                .border_1()
-                .border_color(palette.border)
-                .flex()
-                .items_center()
-                .justify_center()
-                .text_size(px(14.0))
-                .text_color(palette.text_primary)
-                .child(crate::a11y::a11y_bounds_probe_border(
-                    cancel_id,
-                    a11y_bounds.clone(),
-                    1.0,
-                ))
-                .child(strings.cancel_label);
-            if accepts_input {
-                cancel_btn = cancel_btn.on_click(cx.listener(|this, _, _, cx| {
-                    let t = this.now_ms(cx);
-                    this.state.close_sheet(t);
-                    cx.notify();
-                }));
-            }
-
-            let confirm_ws = ws_id.clone();
-            let confirm_doc = doc_id.clone();
-            let mut confirm_btn = div()
-                .id(confirm_id.clone())
-                .snapshot(confirm_id.clone(), Some("mobile.sheet.panel"))
-                .relative()
-                .flex_1()
-                .h(px(44.0))
-                .min_w(px(44.0))
-                .rounded(px(10.0))
-                .bg(palette.danger)
-                .flex()
-                .items_center()
-                .justify_center()
-                .text_size(px(14.0))
-                .text_color(ui::hsla(0.0, 0.0, 1.0, 1.0))
-                .child(a11y_bounds_probe(confirm_id, a11y_bounds.clone()))
-                .child(strings.delete_permanently_label);
-            if accepts_input {
-                confirm_btn = confirm_btn.on_click(cx.listener(move |this, _, _, cx| {
-                    let t = this.now_ms(cx);
-                    this.state
-                        .delete_doc_permanently_scoped(&confirm_ws, &confirm_doc, t);
-                    cx.notify();
-                }));
-            }
-
-            content = content
-                .child(
+            if bl.items.is_empty() {
+                content = content.child(
                     div()
                         .w_full()
-                        .p(px(12.0))
+                        .p(px(14.0))
                         .rounded(px(10.0))
                         .bg(palette.bg_canvas)
                         .border_1()
                         .border_color(palette.border)
-                        .flex()
-                        .flex_col()
-                        .gap(px(6.0))
-                        .child(
-                            div()
-                                .w_full()
-                                .text_size(px(14.0))
-                                .text_color(palette.text_primary)
-                                .align_start_for(dir)
-                                .child(doc_title),
-                        )
-                        .child(
-                            div()
-                                .w_full()
-                                .text_size(px(13.0))
-                                .text_color(palette.text_secondary)
-                                .align_start_for(dir)
-                                .child(strings.confirm_delete_body),
-                        ),
-                )
-                .child(
-                    row_dir(dir)
-                        .w_full()
-                        .gap(px(10.0))
-                        .child(cancel_btn)
-                        .child(confirm_btn),
+                        .text_size(px(13.0))
+                        .text_color(palette.text_secondary)
+                        .align_start_for(dir)
+                        .child(strings.empty_list_label),
                 );
+            } else {
+                let mut bl_box = div()
+                    .w_full()
+                    .rounded(px(10.0))
+                    .bg(palette.bg_canvas)
+                    .border_1()
+                    .border_color(palette.border)
+                    .flex()
+                    .flex_col()
+                    .overflow_hidden();
+                for (idx, item) in bl.items.iter().enumerate() {
+                    let src_id = item.source_doc_id.clone();
+                    let origin_doc_id = doc_id.clone();
+                    let block_id = item.source_block_id.clone();
+                    let src_title = state
+                        .doc_by_id(&src_id)
+                        .map(|d| d.display_title(state.locale()))
+                        .unwrap_or_else(|| src_id.clone());
+                    let bl_id = format!("mobile.sheet.backlink.{idx}");
+                    let mut row = row_dir(dir)
+                        .id(bl_id.clone())
+                        .snapshot(bl_id.clone(), Some("mobile.sheet.panel"))
+                        .relative()
+                        .h(px(46.0))
+                        .flex_shrink(0.0)
+                        .ps(px(12.0), dir)
+                        .pe(px(12.0), dir)
+                        .child(a11y_bounds_probe(bl_id, a11y_bounds.clone()))
+                        .child(
+                            div()
+                                .text_size(px(13.0))
+                                .text_color(palette.text_primary)
+                                .child(src_title),
+                        );
+                    if accepts_input {
+                        row = row.on_click(cx.listener(move |this, _, _, cx| {
+                            let t = this.now_ms(cx);
+                            this.state.close_sheet(t);
+                            this.state.open_doc(
+                                &src_id,
+                                Origin::Backlink {
+                                    source_doc_id: origin_doc_id.clone(),
+                                    block_id: Some(block_id.clone()),
+                                },
+                            );
+                            cx.notify();
+                        }));
+                    }
+                    if idx > 0 {
+                        row = row.border_t(px(1.0)).border_color(palette.border);
+                    }
+                    bl_box = bl_box.child(row);
+                }
+                content = content.child(bl_box);
+            }
         }
-        MobileSheet::None => {}
+        MobileSheet::ConfirmDeleteDoc => {
+            content = content.child(super::sheet_actions::render_confirm_delete_content(
+                state,
+                accepts_input,
+                palette,
+                dir,
+                strings,
+                a11y_bounds,
+                cx,
+            ));
+        }
+        MobileSheet::WorkspaceDrawer | MobileSheet::None => {}
     }
 
     let scrim_bg = Hsla {
@@ -602,6 +567,25 @@ pub(super) fn render_active_sheet(
         header_row = header_row.child(done_btn);
     }
 
+    let sheet_max_scroll = 360.0_f32;
+    state.sheet_scroll_y = state.sheet_scroll_y.clamp(0.0, sheet_max_scroll);
+    let sheet_scroll_y = state.sheet_scroll_y;
+    let scroll_content = div()
+        .id("mobile.sheet.scroll_viewport")
+        .w_full()
+        .flex_1()
+        .min_h(px(0.0))
+        .overflow_hidden()
+        .on_scroll(cx.listener(move |this, event: &ui::ScrollEvent, _, cx| {
+            let dy: f32 = event.delta.pixel_delta(px(24.0)).y.into();
+            if dy.abs() > 0.01 {
+                this.state.sheet_scroll_y =
+                    (this.state.sheet_scroll_y - dy).clamp(0.0, sheet_max_scroll);
+                cx.notify();
+            }
+        }))
+        .child(div().w_full().mt(px(-sheet_scroll_y)).child(content));
+
     let mut panel = div()
         .id("mobile.sheet.panel")
         .snapshot("mobile.sheet.panel", Some("mobile.sheet.backdrop"))
@@ -629,9 +613,9 @@ pub(super) fn render_active_sheet(
             ),
         )
         .child(header_row)
-        .child(content);
+        .child(scroll_content);
     if accepts_input {
-        panel = panel.on_click(|_, _, _| {});
+        panel = panel.on_click(cx.listener(|_, _, _, cx| cx.stop_propagation()));
     }
 
     let mut backdrop = div()
@@ -651,5 +635,5 @@ pub(super) fn render_active_sheet(
             cx.notify();
         }));
     }
-    backdrop
+    backdrop.into_any_element()
 }

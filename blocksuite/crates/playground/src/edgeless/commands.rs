@@ -3,7 +3,7 @@
 use blocksuite_playground_doc::read::{
     BlockContent, BlockNode, ConnectorMode, NoteDisplayMode, PageSnapshot, SurfaceElement,
 };
-use ui::{Context, KeyDownEvent, Window, point, px, size};
+use ui::{Context, KeyDownEvent, Window, point, px};
 
 use crate::PlaygroundView;
 
@@ -533,46 +533,35 @@ impl PlaygroundView {
                 return true;
             }
             "=" | "+" if cmd && !m.alt => {
-                let (vw, vh) = self.edgeless_viewport_size();
+                let (origin, vp_size) = self.canvas_rect_cached();
                 self.edgeless_camera_transition = None;
-                self.edgeless.camera.zoom_in(
-                    point(px(0.0), px(crate::TOPBAR_HEIGHT)),
-                    size(px(vw), px(vh)),
-                );
+                self.edgeless.camera.zoom_in(origin, vp_size);
                 self.edgeless.camera_initialized = true;
                 cx.notify();
                 return true;
             }
             "-" | "_" if cmd && !m.alt => {
-                let (vw, vh) = self.edgeless_viewport_size();
+                let (origin, vp_size) = self.canvas_rect_cached();
                 self.edgeless_camera_transition = None;
-                self.edgeless.camera.zoom_out(
-                    point(px(0.0), px(crate::TOPBAR_HEIGHT)),
-                    size(px(vw), px(vh)),
-                );
+                self.edgeless.camera.zoom_out(origin, vp_size);
                 self.edgeless.camera_initialized = true;
                 cx.notify();
                 return true;
             }
             "0" if m.alt && !cmd && !m.control => {
-                let (vw, vh) = self.edgeless_viewport_size();
+                let (origin, vp_size) = self.canvas_rect_cached();
                 self.edgeless_camera_transition = None;
-                self.edgeless.camera.reset_zoom(
-                    point(px(0.0), px(crate::TOPBAR_HEIGHT)),
-                    size(px(vw), px(vh)),
-                );
+                self.edgeless.camera.reset_zoom(origin, vp_size);
                 self.edgeless.camera_initialized = true;
                 cx.notify();
                 return true;
             }
             "1" if m.alt && !cmd && !m.control => {
                 if let Some(snap) = self.snapshot.as_deref() {
-                    let (vw, vh) = self.edgeless_viewport_size();
+                    let (_, vp_size) = self.canvas_rect_cached();
                     let bounds = self.edgeless.scene_world_bounds(snap);
                     self.edgeless_camera_transition = None;
-                    self.edgeless
-                        .camera
-                        .fit_to_bounds(bounds, size(px(vw), px(vh)), 48.0);
+                    self.edgeless.camera.fit_to_bounds(bounds, vp_size, 48.0);
                     self.edgeless.camera_initialized = true;
                     cx.notify();
                 }
@@ -580,11 +569,9 @@ impl PlaygroundView {
             }
             "2" if m.alt && !cmd && !m.control => {
                 if let Some(sel_box) = self.edgeless.authoring.selection_world_box() {
-                    let (vw, vh) = self.edgeless_viewport_size();
+                    let (_, vp_size) = self.canvas_rect_cached();
                     self.edgeless_camera_transition = None;
-                    self.edgeless
-                        .camera
-                        .fit_to_bounds(sel_box, size(px(vw), px(vh)), 48.0);
+                    self.edgeless.camera.fit_to_bounds(sel_box, vp_size, 48.0);
                     self.edgeless.camera_initialized = true;
                     cx.notify();
                 }

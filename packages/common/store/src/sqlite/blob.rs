@@ -128,6 +128,31 @@ impl SqliteDocStorage {
             None => Ok(None),
         }
     }
+
+    /// List all non-deleted blobs that have not yet been uploaded to `peer`.
+    pub async fn list_pending_blob_uploads(&self, peer: &str) -> StoreResult<Vec<ListedBlob>> {
+        let rows = sqlx::query(
+            "SELECT b.key, b.size, b.mime, b.created_at \
+             FROM blobs b \
+             LEFT JOIN peer_blob_sync s ON s.peer = ? AND s.blob_id = b.key \
+             WHERE b.deleted_at IS NULL AND s.uploaded_at IS NULL \
+             ORDER BY b.created_at ASC;",
+        )
+        .bind(peer)
+        .fetch_all(&self.pool)
+        .await?;
+
+        rows.iter()
+            .map(|r| {
+                Ok(ListedBlob {
+                    key: r.try_get("key")?,
+                    size: r.try_get("size")?,
+                    mime: r.try_get("mime")?,
+                    created_at: r.try_get("created_at")?,
+                })
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]

@@ -18,8 +18,9 @@ use crate::{
 };
 
 use super::{
-    A11yBoundsMap, CHEVRON_DOWN_SVG, CHEVRON_LEFT_SVG, CHEVRON_RIGHT_SVG, MORE_ICON_SVG,
-    MobileFlexExt, MobilePalette, MobileShellView, a11y_bounds_probe, a11y_bounds_probe_border,
+    A11yBoundsMap, CHEVRON_DOWN_SVG, CHEVRON_LEFT_SVG, CHEVRON_RIGHT_SVG, MENU_ICON_SVG,
+    MORE_ICON_SVG, MobileFlexExt, MobilePalette, MobileShellView, a11y_bounds_probe,
+    a11y_bounds_probe_border, drawer::sync_status_badge,
 };
 
 fn row_dir(dir: Direction) -> ui::Div {
@@ -36,6 +37,8 @@ pub(super) fn render_page(
     state: &mut MobileAppState,
     doc_id: &str,
     viewport_w: f32,
+    viewport_h: f32,
+    editor_entity: Option<ui::Entity<playground::PlaygroundView>>,
     palette: MobilePalette,
     dir: Direction,
     strings: &'static MobileStrings,
@@ -43,36 +46,13 @@ pub(super) fn render_page(
     window: &mut Window,
     cx: &mut Context<MobileShellView>,
 ) -> (impl IntoElement, Option<BreadcrumbBarLayout>) {
+    let compact_h = viewport_h < 420.0;
     let locale = state.locale();
     let font_scale = state.font_scale.max(0.5);
     let doc_opt = state.doc_by_id(doc_id).cloned();
     let ws_id = state.active_workspace_id().to_string();
     let derivation = state.derive_breadcrumb();
     let backlinks = state.backlinks_for(doc_id);
-    let is_title_blank = doc_opt.as_ref().is_some_and(|d| d.title.trim().is_empty());
-    let is_body_blank = doc_opt
-        .as_ref()
-        .is_some_and(|d| d.body_preview.trim().is_empty());
-    let (doc_title, title_color) = match &doc_opt {
-        Some(d) if is_title_blank && d.trashed => (d.display_title(locale), palette.text_subtle),
-        Some(_) if is_title_blank => (
-            strings.page_title_placeholder.to_string(),
-            palette.text_subtle,
-        ),
-        Some(d) => (d.title.clone(), palette.text_primary),
-        None => (
-            strings.doc_not_found_title.to_string(),
-            palette.text_primary,
-        ),
-    };
-    let (doc_body, body_color) = match &doc_opt {
-        Some(_) if is_body_blank => (
-            strings.page_body_placeholder.to_string(),
-            palette.text_subtle,
-        ),
-        Some(d) => (d.body_preview.clone(), palette.text_primary),
-        None => (String::new(), palette.text_primary),
-    };
 
     let header = row_dir(dir)
         .id("mobile.page.header")
@@ -120,37 +100,92 @@ pub(super) fn render_page(
                         .child(strings.back_label),
                 ),
         )
-        .child(
-            div()
-                .id("mobile.page.more_btn")
-                .snapshot("mobile.page.more_btn", Some("mobile.shell.root"))
-                .relative()
-                .w(px(44.0))
-                .h(px(44.0))
-                .flex()
-                .items_center()
-                .justify_center()
-                .on_click(cx.listener(|this, _, _, cx| {
-                    let t = this.now_ms(cx);
-                    this.state.open_sheet_from(
-                        MobileSheet::LocationAndTrail,
-                        Some("mobile.page.more_btn"),
-                        t,
-                    );
-                    cx.notify();
-                }))
-                .child(a11y_bounds_probe(
-                    "mobile.page.more_btn",
-                    a11y_bounds.clone(),
-                ))
-                .child(
-                    svg()
-                        .data(MORE_ICON_SVG)
-                        .w(px(18.0))
-                        .h(px(18.0))
-                        .text_color(palette.text_secondary),
-                ),
-        );
+        .child({
+            let (sync_label, sync_fg, sync_bg) =
+                sync_status_badge(state.active_workspace().sync_status, strings, palette);
+            let mut trailing = row_dir(dir).flex_shrink(0.0).gap(px(4.0));
+            if viewport_w >= 360.0 {
+                trailing = trailing.child(
+                    div()
+                        .id("mobile.page.sync_status")
+                        .snapshot("mobile.page.sync_status", Some("mobile.shell.root"))
+                        .relative()
+                        .px(px(8.0))
+                        .py(px(3.0))
+                        .rounded(px(10.0))
+                        .bg(sync_bg)
+                        .text_size(px(11.0))
+                        .text_color(sync_fg)
+                        .child(a11y_bounds_probe(
+                            "mobile.page.sync_status",
+                            a11y_bounds.clone(),
+                        ))
+                        .child(sync_label),
+                );
+            }
+            trailing = trailing.child(
+                div()
+                    .id("mobile.page.drawer_btn")
+                    .snapshot("mobile.page.drawer_btn", Some("mobile.shell.root"))
+                    .relative()
+                    .w(px(44.0))
+                    .h(px(44.0))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .on_click(cx.listener(|this, _, _, cx| {
+                        let t = this.now_ms(cx);
+                        this.state
+                            .open_workspace_drawer(Some("mobile.page.drawer_btn"), t);
+                        cx.notify();
+                    }))
+                    .child(a11y_bounds_probe(
+                        "mobile.page.drawer_btn",
+                        a11y_bounds.clone(),
+                    ))
+                    .child(
+                        svg()
+                            .data(MENU_ICON_SVG)
+                            .w(px(18.0))
+                            .h(px(18.0))
+                            .text_color(palette.text_secondary),
+                    ),
+            );
+            if !derivation.in_trash {
+                trailing = trailing.child(
+                    div()
+                        .id("mobile.page.more_btn")
+                        .snapshot("mobile.page.more_btn", Some("mobile.shell.root"))
+                        .relative()
+                        .w(px(44.0))
+                        .h(px(44.0))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            let t = this.now_ms(cx);
+                            this.state.open_sheet_from(
+                                MobileSheet::DocActions,
+                                Some("mobile.page.more_btn"),
+                                t,
+                            );
+                            cx.notify();
+                        }))
+                        .child(a11y_bounds_probe(
+                            "mobile.page.more_btn",
+                            a11y_bounds.clone(),
+                        ))
+                        .child(
+                            svg()
+                                .data(MORE_ICON_SVG)
+                                .w(px(18.0))
+                                .h(px(18.0))
+                                .text_color(palette.text_secondary),
+                        ),
+                );
+            }
+            trailing
+        });
 
     let mut page_col = div()
         .size_full()
@@ -361,14 +396,15 @@ pub(super) fn render_page(
     let is_ready = backlinks.completeness == BacklinkCompleteness::Ready;
     let bl_label = strings.backlinks_pill_label(locale, backlinks.items.len(), is_ready);
 
-    let mut body = div()
-        .flex_1()
-        .min_h(px(0.0))
-        .p(px(16.0))
+    let mut chrome_strip = div()
+        .w_full()
+        .flex_shrink(0.0)
+        .px(px(if compact_h { 8.0 } else { 16.0 }))
+        .pt(px(if compact_h { 6.0 } else { 10.0 }))
+        .pb(px(if compact_h { 4.0 } else { 8.0 }))
         .flex()
         .flex_col()
-        .gap(px(12.0))
-        .overflow_hidden();
+        .gap(px(if compact_h { 6.0 } else { 8.0 }));
 
     if doc_opt.is_none() {
         let not_found_body = div()
@@ -501,7 +537,7 @@ pub(super) fn render_page(
                 .id("mobile.page.trash_banner")
                 .snapshot("mobile.page.trash_banner", Some("mobile.shell.root"))
                 .w_full()
-                .p(px(10.0))
+                .p(px(if compact_h { 6.0 } else { 10.0 }))
                 .rounded(px(10.0))
                 .bg(palette.danger_soft)
                 .justify_between()
@@ -514,7 +550,7 @@ pub(super) fn render_page(
                 .id("mobile.page.trash_banner")
                 .snapshot("mobile.page.trash_banner", Some("mobile.shell.root"))
                 .w_full()
-                .p(px(10.0))
+                .p(px(if compact_h { 6.0 } else { 10.0 }))
                 .rounded(px(10.0))
                 .bg(palette.danger_soft)
                 .flex()
@@ -524,75 +560,67 @@ pub(super) fn render_page(
                 .child(actions)
                 .into_any_element()
         };
-        body = body.child(banner);
+        chrome_strip = chrome_strip.child(banner);
     }
 
-    body = body
+    let mut bl_pill = row_dir(dir)
+        .id("mobile.page.backlinks_pill")
+        .snapshot("mobile.page.backlinks_pill", Some("mobile.shell.root"))
+        .relative()
+        .w_full()
+        .h(px(44.0))
+        .flex_shrink(0.0)
+        .rounded(px(10.0))
+        .bg(palette.bg_surface)
+        .border_1()
+        .border_color(palette.border)
+        .ps(px(12.0), dir)
+        .pe(px(12.0), dir)
+        .justify_between()
+        .on_click(cx.listener(|this, _, _, cx| {
+            let t = this.now_ms(cx);
+            this.state
+                .open_sheet_from(MobileSheet::Backlinks, Some("page.backlinks.pill"), t);
+            cx.notify();
+        }))
+        .child(a11y_bounds_probe_border(
+            "page.backlinks.pill",
+            a11y_bounds.clone(),
+            1.0,
+        ))
         .child(
             div()
-                .w_full()
-                .text_size(px(22.0 * font_scale))
-                .text_color(title_color)
-                .align_start_for(dir)
-                .child(doc_title),
-        )
-        .child(
-            row_dir(dir)
-                .id("mobile.page.backlinks_pill")
-                .snapshot("mobile.page.backlinks_pill", Some("mobile.shell.root"))
-                .relative()
-                .w_full()
-                .h(px(44.0))
-                .flex_shrink(0.0)
-                .rounded(px(10.0))
-                .bg(palette.bg_surface)
-                .border_1()
-                .border_color(palette.border)
-                .ps(px(12.0), dir)
-                .pe(px(12.0), dir)
-                .justify_between()
-                .on_click(cx.listener(|this, _, _, cx| {
-                    let t = this.now_ms(cx);
-                    this.state.open_sheet_from(
-                        MobileSheet::Backlinks,
-                        Some("page.backlinks.pill"),
-                        t,
-                    );
-                    cx.notify();
-                }))
-                .child(a11y_bounds_probe_border(
-                    "page.backlinks.pill",
-                    a11y_bounds.clone(),
-                    1.0,
-                ))
-                .child(
-                    div()
-                        .text_size(px(13.0 * font_scale))
-                        .text_color(palette.accent)
-                        .child(bl_label),
-                )
-                .child(
-                    svg()
-                        .data(CHEVRON_RIGHT_SVG)
-                        .mirror_in_rtl(true)
-                        .w(px(14.0))
-                        .h(px(14.0))
-                        .text_color(palette.text_muted),
-                ),
-        )
-        .child(
-            div()
-                .w_full()
-                .p(px(14.0))
-                .rounded(px(12.0))
-                .bg(palette.bg_surface)
-                .border_1()
-                .border_color(palette.border)
-                .text_size(px(14.0 * font_scale))
-                .text_color(body_color)
-                .align_start_for(dir)
-                .child(doc_body),
+                .text_size(px(13.0 * font_scale))
+                .text_color(palette.accent)
+                .child(bl_label),
         );
+    if !is_ready || !backlinks.items.is_empty() {
+        bl_pill = bl_pill.child(
+            svg()
+                .data(CHEVRON_RIGHT_SVG)
+                .mirror_in_rtl(true)
+                .w(px(14.0))
+                .h(px(14.0))
+                .text_color(palette.text_muted),
+        );
+    }
 
-    (page_col.child(body), measured_layout)
+    chrome_strip = chrome_strip.child(bl_pill);
+
+    let mut editor_host = div()
+        .id("mobile.page.editor_host")
+        .flex_1()
+        .min_h(px(0.0))
+        .w_full()
+        .flex()
+        .flex_col()
+        .overflow_hidden();
+    if let Some(editor) = editor_entity {
+        editor_host = editor_host.child(editor);
+    }
+
+    (
+        page_col.child(chrome_strip).child(editor_host),
+        measured_layout,
+    )
 }

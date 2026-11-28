@@ -10,7 +10,7 @@ use blocksuite_playground_doc::read::{BlockContent, TableData};
 use ui::{Context, KeyDownEvent, Window};
 
 use crate::{
-    PlaygroundView, TOPBAR_HEIGHT,
+    PlaygroundView,
     block_flow::{FlowLayout, page_geometry},
     edgeless::EdgelessInlineEdit,
     overlays::{InlineTableCell, TableCellDragMode},
@@ -74,6 +74,21 @@ impl PlaygroundView {
             match (end, window.as_deref(), cx.as_deref_mut()) {
                 (InlineTargetEnd::CommitPreedit, Some(w), Some(cx_ref)) => {
                     self.edgeless_flush_label_edit(w, cx_ref);
+                }
+                (InlineTargetEnd::CommitPreedit, None, Some(cx_ref)) => {
+                    if let Some(EdgelessInlineEdit::Label(mut ed)) =
+                        self.edgeless.authoring.inline_edit.take()
+                        && let Some(splice) = ed.unmark()
+                    {
+                        let now_ms = self.now_ms(cx_ref) as u64;
+                        let commit = self
+                            .page_mut()
+                            .ok()
+                            .and_then(|page| ed.target.splice(page, splice, now_ms));
+                        if let Some(commit) = commit {
+                            self.did_edgeless_doc_commit(commit, cx_ref);
+                        }
+                    }
                 }
                 _ => {
                     self.edgeless.authoring.inline_edit = None;
@@ -164,14 +179,16 @@ impl PlaygroundView {
                 let _ = page.stop_capturing();
             }
             if let Some((sx, sy)) = screen_pos {
-                let geom = page_geometry(f32::from(window.viewport_size().width));
+                let (origin, canvas_size) = self.canvas_rect(window);
+                let geom = page_geometry(f32::from(canvas_size.width));
                 if let Some(layout) = self.ensure_layout(geom.column_width, window)
                     && let Some((bx, by, hit)) =
                         Self::find_table_cell_hit(&layout, &block_id, &row_id, &column_id)
                     && let Some(cell) = self.table_cell.as_mut()
                 {
-                    let local_x = sx - geom.column_x - bx + self.overlays.code_scroll_x(&block_id);
-                    let local_y = sy - TOPBAR_HEIGHT + self.scroll_y - by;
+                    let local_x = sx - f32::from(origin.x) - geom.column_x - bx
+                        + self.overlays.code_scroll_x(&block_id);
+                    let local_y = sy - f32::from(origin.y) + self.scroll_y - by;
                     let off = hit
                         .hit_text(local_x, local_y, &cell.input.text)
                         .utf16_offset as usize;
@@ -220,9 +237,11 @@ impl PlaygroundView {
                     &cell.column_id,
                 )
             {
-                let geom = page_geometry(f32::from(window.viewport_size().width));
-                let local_x = sx - geom.column_x - bx + self.overlays.code_scroll_x(&cell.block_id);
-                let local_y = sy - TOPBAR_HEIGHT + self.scroll_y - by;
+                let (origin, canvas_size) = self.canvas_rect(window);
+                let geom = page_geometry(f32::from(canvas_size.width));
+                let local_x = sx - f32::from(origin.x) - geom.column_x - bx
+                    + self.overlays.code_scroll_x(&cell.block_id);
+                let local_y = sy - f32::from(origin.y) + self.scroll_y - by;
                 let off = hit.hit_text(local_x, local_y, &initial).utf16_offset as usize;
                 apply_pointer_sel(&mut cell, off, false);
             }

@@ -2,7 +2,7 @@
 
 use std::{
     cell::RefCell,
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     rc::Rc,
     sync::{Arc, Mutex},
 };
@@ -59,8 +59,21 @@ pub fn a11y_bounds_probe_border(
 pub enum MobileA11yAction {
     Activate,
     Dismiss,
+    Focus,
     ScrollForward,
     ScrollBackward,
+}
+
+impl From<affine_client::AccessibilityAction> for MobileA11yAction {
+    fn from(value: affine_client::AccessibilityAction) -> Self {
+        match value {
+            affine_client::AccessibilityAction::Activate => Self::Activate,
+            affine_client::AccessibilityAction::Dismiss => Self::Dismiss,
+            affine_client::AccessibilityAction::Focus => Self::Focus,
+            affine_client::AccessibilityAction::ScrollForward => Self::ScrollForward,
+            affine_client::AccessibilityAction::ScrollBackward => Self::ScrollBackward,
+        }
+    }
 }
 
 /// Thread-safe in-memory [`PlatformAccessibility`] sink for hosts and integration tests.
@@ -252,6 +265,21 @@ pub(crate) fn perform_a11y_action_with_layout(
         return (state.explorer_scroll_y - prev).abs() > 0.5;
     }
 
+    if action == MobileA11yAction::Focus {
+        let tree = super::build_accessibility_tree_with_layout(
+            state,
+            viewport_width,
+            viewport_height,
+            safe_area,
+            measured_breadcrumb,
+        );
+        if tree.nodes.contains_key(node_id) {
+            state.focused_a11y_id = Some(node_id.to_string());
+            return true;
+        }
+        return false;
+    }
+
     if state.active_sheet != MobileSheet::None {
         return perform_sheet_a11y_action(state, node_id, now_ms);
     }
@@ -299,9 +327,13 @@ pub(crate) fn perform_a11y_action_with_layout(
             state.navigate_back_or_replace(parent_target, now_ms);
             true
         }
+        "mobile.page.drawer_btn" => {
+            state.open_workspace_drawer(Some("mobile.page.drawer_btn"), now_ms);
+            true
+        }
         "mobile.page.more_btn" => {
             state.open_sheet_from(
-                MobileSheet::LocationAndTrail,
+                MobileSheet::DocActions,
                 Some("mobile.page.more_btn"),
                 now_ms,
             );
@@ -317,6 +349,54 @@ pub(crate) fn perform_a11y_action_with_layout(
         }
         "mobile.home.new_doc_btn" => {
             state.create_doc(None, now_ms);
+            true
+        }
+        "mobile.home.settings_btn" => {
+            state.open_settings();
+            true
+        }
+        "mobile.settings.group.1" => {
+            state.open_sheet_from(
+                MobileSheet::WorkspaceSelector,
+                Some("mobile.settings.group.1"),
+                now_ms,
+            );
+            true
+        }
+        "mobile.search.clear_btn" => {
+            state.search_query.clear();
+            state.search_preedit = None;
+            state.search_selection = 0..0;
+            true
+        }
+        "mobile.journals.today_btn" => {
+            let today = state.today_date.clone();
+            state.select_journal_date(&today);
+            true
+        }
+        "mobile.journals.prev_week_btn" => {
+            let prev = crate::views::shift_iso_date(&state.selected_journal_date, -7);
+            state.select_journal_date(&prev);
+            true
+        }
+        "mobile.journals.next_week_btn" => {
+            let next = crate::views::shift_iso_date(&state.selected_journal_date, 7);
+            state.select_journal_date(&next);
+            true
+        }
+        _ if node_id.starts_with("mobile.home.fav.") => {
+            let doc_id = &node_id["mobile.home.fav.".len()..];
+            state.open_doc(doc_id, Origin::Direct(DirectKind::Home));
+            true
+        }
+        _ if node_id.starts_with("mobile.home.doc.") => {
+            let doc_id = &node_id["mobile.home.doc.".len()..];
+            state.open_doc(doc_id, Origin::Direct(DirectKind::Home));
+            true
+        }
+        _ if node_id.starts_with("mobile.search.hit.") => {
+            let doc_id = &node_id["mobile.search.hit.".len()..];
+            state.open_doc(doc_id, Origin::Direct(DirectKind::Search));
             true
         }
         "mobile.explorer.new_doc_btn" => {
@@ -557,11 +637,37 @@ fn perform_sheet_a11y_action(state: &mut MobileAppState, node_id: &str, now_ms: 
             state.open_doc(
                 &src_id,
                 Origin::Backlink {
-                    source_doc_id: src_id.clone(),
+                    source_doc_id: doc_id,
                     block_id: Some(block_id),
                 },
             );
             true
+        }
+        MobileSheet::DocActions => {
+            let ws_id = state.active_workspace_id().to_string();
+            let doc_id = match &state.route {
+                MobileRoute::Page(id) => id.clone(),
+                _ => return false,
+            };
+            match node_id {
+                "mobile.sheet.doc_action.favorite" => {
+                    let ok = state.toggle_favorite_scoped(&ws_id, &doc_id);
+                    state.close_sheet(now_ms);
+                    ok
+                }
+                "mobile.sheet.doc_action.location_trail" => {
+                    state.open_sheet_from(
+                        MobileSheet::LocationAndTrail,
+                        Some("mobile.page.more_btn"),
+                        now_ms,
+                    );
+                    true
+                }
+                "mobile.sheet.doc_action.trash" => {
+                    state.move_doc_to_trash_scoped(&ws_id, &doc_id, now_ms)
+                }
+                _ => false,
+            }
         }
         MobileSheet::ConfirmDeleteDoc => {
             if let Some(rest) = node_id.strip_prefix("app.sheet.delete_cancel.") {
@@ -593,6 +699,39 @@ fn perform_sheet_a11y_action(state: &mut MobileAppState, node_id: &str, now_ms: 
             }
             false
         }
+        MobileSheet::WorkspaceDrawer => match node_id {
+            "mobile.drawer.close_btn" => {
+                state.close_sheet(now_ms);
+                true
+            }
+            "mobile.drawer.switch_ws_btn" => {
+                state.open_sheet_from(
+                    MobileSheet::WorkspaceSelector,
+                    Some("mobile.drawer.switch_ws_btn"),
+                    now_ms,
+                );
+                true
+            }
+            "mobile.drawer.new_doc_btn" => {
+                state.close_sheet(now_ms);
+                state.create_doc(None, now_ms);
+                true
+            }
+            _ => {
+                let doc_id = node_id
+                    .strip_prefix("mobile.drawer.fav.")
+                    .or_else(|| node_id.strip_prefix("mobile.drawer.recent."))
+                    .or_else(|| node_id.strip_prefix("mobile.drawer.doc."));
+                let Some(doc_id) = doc_id else {
+                    return false;
+                };
+                if state.doc_by_id(doc_id).is_none() {
+                    return false;
+                }
+                state.open_document(doc_id, now_ms);
+                true
+            }
+        },
         MobileSheet::None => false,
     }
 }
@@ -639,46 +778,4 @@ fn explorer_back_parent_target(state: &mut MobileAppState) -> Option<NavTarget> 
         NavTarget::Collection(_) | NavTarget::Tag(_) | NavTarget::Trash => Some(NavTarget::AllDocs),
         _ => None,
     }
-}
-
-/// Validate that `tree` has no orphaned nodes, no missing children, and at most one `current`
-/// node inside the active navigation landmark.
-pub fn validate_accessibility_tree(tree: &AccessibilityTree) -> Vec<String> {
-    let mut errors = Vec::new();
-    if !tree.nodes.contains_key(&tree.root_id) {
-        errors.push(format!("missing root node {}", tree.root_id));
-        return errors;
-    }
-
-    let mut reachable: HashSet<&str> = HashSet::new();
-    let mut stack = vec![tree.root_id.as_str()];
-    while let Some(id) = stack.pop() {
-        if !reachable.insert(id) {
-            continue;
-        }
-        if let Some(node) = tree.nodes.get(id) {
-            for child in &node.children {
-                if !tree.nodes.contains_key(child) {
-                    errors.push(format!("node {id} references missing child {child}"));
-                } else {
-                    stack.push(child.as_str());
-                }
-            }
-        }
-    }
-
-    for id in tree.nodes.keys() {
-        if !reachable.contains(id.as_str()) {
-            errors.push(format!("orphaned accessibility node {id}"));
-        }
-    }
-
-    let current_count = tree.nodes.values().filter(|n| n.state.current).count();
-    if current_count > 1 {
-        errors.push(format!(
-            "expected at most 1 aria-current node, found {current_count}"
-        ));
-    }
-
-    errors
 }

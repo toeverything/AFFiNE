@@ -74,7 +74,7 @@ impl PlaygroundView {
 
     pub(super) fn current_flow_layout(&mut self, w: &Window) -> Option<Rc<FlowLayout>> {
         if self.mode == crate::PlaygroundMode::Page {
-            let width = page_geometry(f32::from(w.viewport_size().width)).column_width;
+            let width = page_geometry(f32::from(self.canvas_rect(w).1.width)).column_width;
             self.ensure_layout(width, w)
         } else {
             self.flow_layout()

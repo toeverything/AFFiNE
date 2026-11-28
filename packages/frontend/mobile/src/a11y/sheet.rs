@@ -158,6 +158,80 @@ pub(super) fn insert_sheet_a11y_nodes(
                 ),
             ]);
         }
+        MobileSheet::DocActions => {
+            let doc_id = match &state.route {
+                MobileRoute::Page(id) => id.clone(),
+                _ => String::new(),
+            };
+            let is_fav = state.doc_by_id(&doc_id).is_some_and(|d| d.is_favorite);
+            let fav_label = if is_fav {
+                strings.remove_from_favorites
+            } else {
+                strings.add_to_favorites
+            };
+            cols.push(vec![
+                (
+                    "mobile.sheet.doc_action.favorite".to_string(),
+                    fav_label.to_string(),
+                    is_fav,
+                    48.0,
+                ),
+                (
+                    "mobile.sheet.doc_action.location_trail".to_string(),
+                    strings.location_trail_title.to_string(),
+                    false,
+                    48.0,
+                ),
+                (
+                    "mobile.sheet.doc_action.trash".to_string(),
+                    strings.move_to_trash.to_string(),
+                    false,
+                    48.0,
+                ),
+            ]);
+        }
+        MobileSheet::WorkspaceDrawer => {
+            let is_tablet = viewport_width >= 720.0 && !compact;
+            let (favorites, recent, all_docs) = crate::views::drawer_doc_sections(state);
+            let mut items = vec![
+                (
+                    "mobile.drawer.close_btn".to_string(),
+                    strings.close_label.to_string(),
+                    false,
+                    44.0,
+                ),
+                (
+                    "mobile.drawer.switch_ws_btn".to_string(),
+                    strings.switch_workspace.to_string(),
+                    false,
+                    44.0,
+                ),
+                (
+                    "mobile.drawer.new_doc_btn".to_string(),
+                    strings.new_doc_label.to_string(),
+                    false,
+                    44.0,
+                ),
+            ];
+            if compact {
+                for (id, title) in all_docs.into_iter().take(2) {
+                    items.push((format!("mobile.drawer.doc.{id}"), title, false, 44.0));
+                }
+            } else {
+                for (id, title) in favorites.into_iter().take(2) {
+                    items.push((format!("mobile.drawer.fav.{id}"), title, false, 44.0));
+                }
+                if viewport_height >= 720.0 {
+                    for (id, title) in recent.into_iter().take(2) {
+                        items.push((format!("mobile.drawer.recent.{id}"), title, false, 44.0));
+                    }
+                }
+                for (id, title) in all_docs.into_iter().take(if is_tablet { 6 } else { 3 }) {
+                    items.push((format!("mobile.drawer.doc.{id}"), title, false, 44.0));
+                }
+            }
+            cols.push(items);
+        }
         MobileSheet::None => {}
     }
 
@@ -170,7 +244,10 @@ pub(super) fn insert_sheet_a11y_nodes(
     let panel_y = (viewport_height - safe_bottom - panel_h).max(0.0);
 
     let mut sheet_children = Vec::new();
-    if state.active_sheet != MobileSheet::ConfirmDeleteDoc {
+    if !matches!(
+        state.active_sheet,
+        MobileSheet::ConfirmDeleteDoc | MobileSheet::WorkspaceDrawer
+    ) {
         let done_w = 56.0_f32;
         let done_x = if is_rtl {
             pad
@@ -245,6 +322,8 @@ pub(super) fn insert_sheet_a11y_nodes(
     let sheet_id = "app.sheet.dialog".to_string();
     let sheet_name = match state.active_sheet {
         MobileSheet::WorkspaceSelector => strings.switch_workspace,
+        MobileSheet::WorkspaceDrawer => strings.drawer_title,
+        MobileSheet::DocActions => strings.doc_actions_title,
         MobileSheet::LocationAndTrail => strings.location_trail_title,
         MobileSheet::Backlinks => strings.backlinks_label,
         MobileSheet::ConfirmDeleteDoc => strings.confirm_delete_title,

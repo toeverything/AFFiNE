@@ -1,9 +1,11 @@
 //! Deterministic showcase state factory with two fully isolated workspaces for offline
 //! verification, interactive integration tests, and offscreen gallery rendering.
 
+use std::collections::BTreeSet;
+
 use affine_client::{
     DirectKind, FolderForestCache, LinkGraph, NavHistory, NavTarget, Origin, Scope,
-    WeightedSearchEngine,
+    WeightedSearchEngine, WorkspaceSyncStatus,
 };
 use affine_store::workspace_db::FolderRow;
 use blocksuite_playground_doc::refs::{DocRefEdge, OutboundRefKind};
@@ -12,8 +14,8 @@ use ui_tokens::ThemeMode;
 
 use crate::{
     state::{
-        MobileAppState, MobileCollection, MobileDocRecord, MobileRoute, MobileSheet, MobileTab,
-        SettingsState, ThemePreference, WorkspaceData, WorkspaceSummary,
+        MobileAppState, MobileCollection, MobileDocBlock, MobileDocRecord, MobileRoute,
+        MobileSheet, MobileTab, SettingsState, ThemePreference, WorkspaceData, WorkspaceSummary,
     },
     strings::MobileLocale,
 };
@@ -25,7 +27,7 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
             id: "f-eng".into(),
             parent_id: None,
             data: match locale {
-                MobileLocale::En => "Engineering".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "Engineering".into(),
                 MobileLocale::ZhHans => "工程研发".into(),
                 MobileLocale::Ar => "الهندسة".into(),
             },
@@ -36,7 +38,7 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
             id: "f-mobile".into(),
             parent_id: Some("f-eng".into()),
             data: match locale {
-                MobileLocale::En => "Mobile Rust".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "Mobile Rust".into(),
                 MobileLocale::ZhHans => "移动端架构".into(),
                 MobileLocale::Ar => "تطبيق الجوال".into(),
             },
@@ -47,7 +49,7 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
             id: "f-product".into(),
             parent_id: None,
             data: match locale {
-                MobileLocale::En => "Product Specs".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "Product Specs".into(),
                 MobileLocale::ZhHans => "产品规范".into(),
                 MobileLocale::Ar => "مواصفات المنتج".into(),
             },
@@ -81,12 +83,14 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
         MobileDocRecord {
             id: "doc-arch".into(),
             title: match locale {
-                MobileLocale::En => "Mobile Shell & Breadcrumb Spec".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => {
+                    "Mobile Shell & Breadcrumb Spec".into()
+                }
                 MobileLocale::ZhHans => "移动外壳与面包屑规范".into(),
                 MobileLocale::Ar => "مواصفات واجهة الجوال ومسار التنقل".into(),
             },
             body_preview: match locale {
-                MobileLocale::En => "Pure Rust mobile shell with logical RTL geometry, 4-tier breadcrumb collapse, and deterministic frame replay.".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "Pure Rust mobile shell with logical RTL geometry, 4-tier breadcrumb collapse, and deterministic frame replay.".into(),
                 MobileLocale::ZhHans => "纯 Rust 移动外壳，采用逻辑 RTL 几何、四级窄屏面包屑折叠与多帧率确定性回放。".into(),
                 MobileLocale::Ar => "واجهة جوال بلغة Rust مع هندسة RTL منطقية وطي مسار التنقل وإعادة تشغيل حتمية.".into(),
             },
@@ -97,16 +101,24 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
             journal_date: None,
             clock: 3,
             outgoing_edges: Vec::new(),
+            blocks: vec![MobileDocBlock::Paragraph {
+                id: "b-arch-1".into(),
+                text: match locale {
+                    MobileLocale::En | MobileLocale::RtlFallback => "Pure Rust mobile shell with logical RTL geometry, 4-tier breadcrumb collapse, and deterministic frame replay.".into(),
+                    MobileLocale::ZhHans => "纯 Rust 移动外壳，采用逻辑 RTL 几何、四级窄屏面包屑折叠与多帧率确定性回放。".into(),
+                    MobileLocale::Ar => "واجهة جوال بلغة Rust مع هندسة RTL منطقية وطي مسار التنقل وإعادة تشغيل حتمية.".into(),
+                },
+            }],
         },
         MobileDocRecord {
             id: "doc-sync".into(),
             title: match locale {
-                MobileLocale::En => "Offline Sync Protocol v1".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "Offline Sync Protocol v1".into(),
                 MobileLocale::ZhHans => "离线同步协议 v1".into(),
                 MobileLocale::Ar => "بروتوكول المزامنة دون اتصال v1".into(),
             },
             body_preview: match locale {
-                MobileLocale::En => "SQLite 5-step shared storage and sans-I/O SpaceSync engine for zero-loss mobile upgrades.".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "SQLite 5-step shared storage and sans-I/O SpaceSync engine for zero-loss mobile upgrades.".into(),
                 MobileLocale::ZhHans => "SQLite 五步共库存储与无 I/O SpaceSync 引擎，保障零丢数据覆盖升级。".into(),
                 MobileLocale::Ar => "تخزين SQLite مشترك ومحرك SpaceSync لترقيات الجوال دون فقدان البيانات.".into(),
             },
@@ -122,12 +134,20 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
                 source_block_id: "b-sync-1".into(),
                 kind: OutboundRefKind::InlineMention,
             }],
+            blocks: vec![MobileDocBlock::Paragraph {
+                id: "b-sync-1".into(),
+                text: match locale {
+                    MobileLocale::En | MobileLocale::RtlFallback => "SQLite 5-step shared storage and sans-I/O SpaceSync engine for zero-loss mobile upgrades.".into(),
+                    MobileLocale::ZhHans => "SQLite 五步共库存储与无 I/O SpaceSync 引擎，保障零丢数据覆盖升级。".into(),
+                    MobileLocale::Ar => "تخزين SQLite مشترك ومحرك SpaceSync لترقيات الجوال دون فقدان البيانات.".into(),
+                },
+            }],
         },
         MobileDocRecord {
             id: "doc-journal".into(),
-            title: format!("Journal {today_date}"),
+            title: locale.strings().journal_title(locale, today_date),
             body_preview: match locale {
-                MobileLocale::En => "Completed S3-Shell breadcrumb layout, micro-icons, and accessibility landmarks.".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "Completed S3-Shell breadcrumb layout, micro-icons, and accessibility landmarks.".into(),
                 MobileLocale::ZhHans => "完成 S3-Shell 面包屑布局、烘焙微动效图标与生产无障碍地标。".into(),
                 MobileLocale::Ar => "اكتمل تخطيط مسار التنقل والأيقونات المتحركة وإمكانية الوصول.".into(),
             },
@@ -143,11 +163,12 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
                 source_block_id: "b-j-1".into(),
                 kind: OutboundRefKind::EmbedLinkedDoc,
             }],
+            blocks: Vec::new(),
         },
         MobileDocRecord {
             id: "doc-trash".into(),
             title: match locale {
-                MobileLocale::En => "Legacy Capacitor Notes".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "Legacy Capacitor Notes".into(),
                 MobileLocale::ZhHans => "旧版 Capacitor 备忘".into(),
                 MobileLocale::Ar => "ملاحظات Capacitor القديمة".into(),
             },
@@ -159,6 +180,7 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
             journal_date: None,
             clock: 1,
             outgoing_edges: Vec::new(),
+            blocks: Vec::new(),
         },
     ];
 
@@ -179,7 +201,7 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
         summary: WorkspaceSummary {
             id: "ws-mobile-rust".into(),
             name: match locale {
-                MobileLocale::En => "AFFiNE Core".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "AFFiNE Core".into(),
                 MobileLocale::ZhHans => "AFFiNE 核心研发".into(),
                 MobileLocale::Ar => "نواة AFFiNE".into(),
             },
@@ -196,7 +218,7 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
             MobileCollection {
                 id: "col-core".into(),
                 name: match locale {
-                    MobileLocale::En => "Core Architecture".into(),
+                    MobileLocale::En | MobileLocale::RtlFallback => "Core Architecture".into(),
                     MobileLocale::ZhHans => "核心架构".into(),
                     MobileLocale::Ar => "البنية الأساسية".into(),
                 },
@@ -205,7 +227,7 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
             MobileCollection {
                 id: "col-sync".into(),
                 name: match locale {
-                    MobileLocale::En => "Offline & Sync".into(),
+                    MobileLocale::En | MobileLocale::RtlFallback => "Offline & Sync".into(),
                     MobileLocale::ZhHans => "离线与同步".into(),
                     MobileLocale::Ar => "المزامنة دون اتصال".into(),
                 },
@@ -220,6 +242,9 @@ fn build_primary_workspace(locale: MobileLocale, today_date: &str) -> WorkspaceD
         workspace_index_seeded: true,
         history,
         next_doc_seq: 1,
+        sync_status: WorkspaceSyncStatus::Synced,
+        collapsed_folders: BTreeSet::new(),
+        doc_crdt_updates: std::collections::BTreeMap::new(),
     }
 }
 
@@ -230,7 +255,7 @@ fn build_personal_workspace(locale: MobileLocale) -> WorkspaceData {
             id: "f-reading".into(),
             parent_id: None,
             data: match locale {
-                MobileLocale::En => "Reading List".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "Reading List".into(),
                 MobileLocale::ZhHans => "阅读清单".into(),
                 MobileLocale::Ar => "قائمة القراءة".into(),
             },
@@ -249,7 +274,7 @@ fn build_personal_workspace(locale: MobileLocale) -> WorkspaceData {
         MobileDocRecord {
             id: "doc-personal-1".into(),
             title: match locale {
-                MobileLocale::En => "Weekend Field Notes".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "Weekend Field Notes".into(),
                 MobileLocale::ZhHans => "周末随笔记录".into(),
                 MobileLocale::Ar => "ملاحظات نهاية الأسبوع".into(),
             },
@@ -262,11 +287,12 @@ fn build_personal_workspace(locale: MobileLocale) -> WorkspaceData {
             journal_date: None,
             clock: 1,
             outgoing_edges: Vec::new(),
+            blocks: Vec::new(),
         },
         MobileDocRecord {
             id: "doc-personal-2".into(),
             title: match locale {
-                MobileLocale::En => "Travel Checklist".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "Travel Checklist".into(),
                 MobileLocale::ZhHans => "出行清单".into(),
                 MobileLocale::Ar => "قائمة السفر".into(),
             },
@@ -283,6 +309,7 @@ fn build_personal_workspace(locale: MobileLocale) -> WorkspaceData {
                 source_block_id: "b-p-1".into(),
                 kind: OutboundRefKind::InlineMention,
             }],
+            blocks: Vec::new(),
         },
     ];
     let mut link_graph = LinkGraph::new();
@@ -302,7 +329,7 @@ fn build_personal_workspace(locale: MobileLocale) -> WorkspaceData {
         summary: WorkspaceSummary {
             id: "ws-personal".into(),
             name: match locale {
-                MobileLocale::En => "Personal Notes".into(),
+                MobileLocale::En | MobileLocale::RtlFallback => "Personal Notes".into(),
                 MobileLocale::ZhHans => "个人笔记".into(),
                 MobileLocale::Ar => "ملاحظات شخصية".into(),
             },
@@ -325,6 +352,9 @@ fn build_personal_workspace(locale: MobileLocale) -> WorkspaceData {
         workspace_index_seeded: true,
         history,
         next_doc_seq: 1,
+        sync_status: WorkspaceSyncStatus::Offline,
+        collapsed_folders: BTreeSet::new(),
+        doc_crdt_updates: std::collections::BTreeMap::new(),
     }
 }
 
@@ -363,10 +393,15 @@ pub fn seed_showcase_state(
         page_overlay_active: false,
         explorer_scroll_y: 0.0,
         explorer_scroll_by_seq: std::collections::HashMap::new(),
+        home_scroll_y: 0.0,
+        search_scroll_y: 0.0,
+        settings_scroll_y: 0.0,
+        page_scroll_y: 0.0,
+        sheet_scroll_y: 0.0,
         today_date: today_date.to_string(),
         selected_journal_date: today_date.to_string(),
         search_query: match locale {
-            MobileLocale::En => "Sync".into(),
+            MobileLocale::En | MobileLocale::RtlFallback => "Sync".into(),
             MobileLocale::ZhHans => "同步".into(),
             MobileLocale::Ar => "المزامنة".into(),
         },
@@ -376,5 +411,6 @@ pub fn seed_showcase_state(
         settings,
         system_dark: matches!(theme, ThemeMode::Dark),
         font_scale: 1.0,
+        drawer_filter: String::new(),
     }
 }

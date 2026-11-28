@@ -4,8 +4,8 @@
 
 ## Scope and integration boundary
 
-- `affine-mobile` owns the interactive 4-TabBar product shell (`Home`, `Explorer`, `Journals`, `Search`), 10-group `Settings`, `Page` header (`Breadcrumb`, `Location & Trail` sheet, independent `Backlinks` pill/sheet), `MobileBackCoordinator`, and frame-1 `AccessibilityTree` publication.
-- Live `affine-store` workspace persistence and the full `S3-PageEditor` document canvas attach during the `S4/S5` host integration stages; `showcase::seed_showcase_state` supplies deterministic in-memory workspaces for offline harness verification and preview galleries.
+- `affine-mobile` owns the interactive 4-TabBar product shell (`Home`, `Explorer`, `Journals`, `Search`), 10-group `Settings`, `WorkspaceDrawer`, `Page` header (`Breadcrumb`, `DocActions` / `Location & Trail` sheets, independent `Backlinks` pill/sheet), embedded live `Entity<playground::PlaygroundView>` (`hide_chrome = true`, `WorkspaceDocDirectory` injection, `page_readonly` for trashed docs), `MobileBackCoordinator`, and frame-1 `AccessibilityTree` publication.
+- Live `affine-store` / `affine-client` SQLite WAL persistence and `SpaceSync` bridge attach via `workspace_bridge.rs`; `showcase::seed_showcase_state` supplies deterministic in-memory workspaces for offline harness verification and preview galleries.
 
 ## Domain boundaries and invariants
 

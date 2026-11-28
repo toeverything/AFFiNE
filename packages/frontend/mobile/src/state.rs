@@ -1,13 +1,16 @@
 //! Deterministic mobile shell application state, isolated multi-workspace data slices,
 //! 10-group settings, and `MobileBackCoordinator`.
 
-use std::{collections::BTreeMap, ops::Range};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    ops::Range,
+};
 
 use affine_client::{
-    BacklinksResult, BreadcrumbAction, BreadcrumbDerivation, DirectKind, DocMetaSnapshot,
-    FolderForestCache, FolderForestState, LinkGraph, LocationChoice, NavHistory, NavTarget, Origin,
-    Scope, SearchDocument, SearchHit, WeightedSearchEngine, WorkspaceBreadcrumbSnapshot,
-    nav::breadcrumb,
+    BacklinksResult, BlobUploadState, BreadcrumbAction, BreadcrumbDerivation, DirectKind,
+    DocMetaSnapshot, FolderForestCache, FolderForestState, LinkGraph, LocationChoice, NavHistory,
+    NavTarget, Origin, Scope, SearchDocument, SearchHit, WeightedSearchEngine,
+    WorkspaceBreadcrumbSnapshot, WorkspaceSyncStatus, nav::breadcrumb,
 };
 use affine_store::workspace_db::FolderRow;
 use blocksuite_playground_doc::refs::DocRefEdge;
@@ -61,12 +64,14 @@ pub enum MobileRoute {
     Settings,
 }
 
-/// Active modal bottom sheet presented above the mobile shell.
+/// Active modal bottom sheet or drawer presented above the mobile shell.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MobileSheet {
     None,
     WorkspaceSelector,
+    WorkspaceDrawer,
+    DocActions,
     LocationAndTrail,
     Backlinks,
     ConfirmDeleteDoc,
@@ -131,14 +136,11 @@ impl SettingsGroupId {
 
     pub const fn interaction(self) -> SettingRowInteraction {
         match self {
-            Self::Appearance | Self::Language => SettingRowInteraction::Cycle,
+            Self::Appearance | Self::Language | Self::Editor => SettingRowInteraction::Cycle,
             Self::SyncOffline | Self::Notifications => SettingRowInteraction::Toggle,
-            Self::Account
-            | Self::Workspace
-            | Self::Editor
-            | Self::Storage
-            | Self::Experimental
-            | Self::About => SettingRowInteraction::Info,
+            Self::Account | Self::Workspace | Self::Storage | Self::Experimental | Self::About => {
+                SettingRowInteraction::Info
+            }
         }
     }
 
@@ -229,12 +231,51 @@ pub struct WorkspaceData {
     pub workspace_index_seeded: bool,
     pub history: NavHistory,
     pub next_doc_seq: u64,
+    pub sync_status: WorkspaceSyncStatus,
+    pub collapsed_folders: BTreeSet<String>,
+    /// Authoritative Yjs V1 CRDT state bytes per document id (single persistence/reload source of truth).
+    pub doc_crdt_updates: std::collections::BTreeMap<String, Vec<u8>>,
 }
 
 impl WorkspaceData {
     /// Count of non-trashed documents in this workspace.
     pub fn active_doc_count(&self) -> usize {
         self.docs.iter().filter(|d| !d.trashed).count()
+    }
+}
+
+/// Typed document block rendered inside the mobile Page canvas and exported to accessibility.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum MobileDocBlock {
+    Paragraph {
+        id: String,
+        text: String,
+    },
+    Image {
+        id: String,
+        blob_key: String,
+        caption: String,
+        width: u32,
+        height: u32,
+        byte_size: usize,
+        mime_type: String,
+        upload_state: BlobUploadState,
+    },
+    Attachment {
+        id: String,
+        blob_key: String,
+        name: String,
+        mime_type: String,
+        byte_size: usize,
+        upload_state: BlobUploadState,
+    },
+}
+
+impl MobileDocBlock {
+    pub fn id(&self) -> &str {
+        match self {
+            Self::Paragraph { id, .. } | Self::Image { id, .. } | Self::Attachment { id, .. } => id,
+        }
     }
 }
 
@@ -251,6 +292,7 @@ pub struct MobileDocRecord {
     pub journal_date: Option<String>,
     pub clock: u64,
     pub outgoing_edges: Vec<DocRefEdge>,
+    pub blocks: Vec<MobileDocBlock>,
 }
 
 impl MobileDocRecord {
@@ -320,6 +362,11 @@ pub struct MobileAppState {
     pub page_overlay_active: bool,
     pub explorer_scroll_y: f32,
     pub explorer_scroll_by_seq: std::collections::HashMap<u64, f32>,
+    pub home_scroll_y: f32,
+    pub search_scroll_y: f32,
+    pub settings_scroll_y: f32,
+    pub page_scroll_y: f32,
+    pub sheet_scroll_y: f32,
     pub today_date: String,
     pub selected_journal_date: String,
     pub search_query: String,
@@ -329,6 +376,7 @@ pub struct MobileAppState {
     pub settings: SettingsState,
     pub system_dark: bool,
     pub font_scale: f32,
+    pub drawer_filter: String,
 }
 
 impl MobileAppState {
@@ -446,32 +494,24 @@ impl MobileAppState {
             MobileTab::Journals => MobileRoute::Journals,
             MobileTab::Search => MobileRoute::Search,
         };
-        let (already_same_root, at_single_root) = {
+        let already_same_root = {
             let ws = self.active_workspace();
-            let same = ws
-                .history
+            ws.history
                 .current()
-                .is_some_and(|e| e.target == target && e.scope == ws.scope);
-            let single = ws.history.len() <= 1
-                && ws.history.current().is_some_and(|e| {
-                    matches!(
-                        e.target,
-                        NavTarget::Home
-                            | NavTarget::AllDocs
-                            | NavTarget::Journals
-                            | NavTarget::Search
-                    )
-                });
-            (same, single)
+                .is_some_and(|e| e.target == target && e.scope == ws.scope)
+                && !ws.history.can_back()
         };
         if already_same_root {
             self.restore_current_explorer_scroll();
             return;
         }
-        if at_single_root {
-            self.active_workspace_mut().history = NavHistory::new();
-            self.explorer_scroll_by_seq.clear();
-        }
+        // Switching top-level root tabs resets the root history stack so platform Back
+        // cleanly yields to host exit instead of cycling across previously visited root tabs.
+        self.active_workspace_mut().history = NavHistory::new();
+        self.explorer_scroll_by_seq.clear();
+        self.home_scroll_y = 0.0;
+        self.search_scroll_y = 0.0;
+        self.settings_scroll_y = 0.0;
         let ws = self.active_workspace_mut();
         let scope = ws.scope.clone();
         ws.history
@@ -479,7 +519,31 @@ impl MobileAppState {
     }
 
     pub fn open_doc(&mut self, doc_id: &str, origin: Origin) {
+        self.page_scroll_y = 0.0;
         self.navigate_target(NavTarget::Doc(doc_id.to_string()), origin);
+    }
+
+    /// Millisecond workspace document switch: opens `doc_id` and dismisses the drawer if open.
+    pub fn open_document(&mut self, doc_id: &str, now_ms: f64) {
+        if self.active_sheet == MobileSheet::WorkspaceDrawer {
+            self.close_sheet(now_ms);
+        }
+        self.open_doc(doc_id, Origin::Direct(DirectKind::AllDocs));
+    }
+
+    /// Open the multi-document workspace drawer sheet.
+    pub fn open_workspace_drawer(&mut self, trigger_a11y_id: Option<&str>, now_ms: f64) {
+        self.open_sheet_from(MobileSheet::WorkspaceDrawer, trigger_a11y_id, now_ms);
+    }
+
+    /// Update the live document filter query inside the workspace drawer.
+    pub fn set_drawer_filter(&mut self, query: impl Into<String>) {
+        self.drawer_filter = query.into();
+    }
+
+    /// Update the active workspace's live sync status indicator.
+    pub fn set_sync_status(&mut self, status: WorkspaceSyncStatus) {
+        self.active_workspace_mut().sync_status = status;
     }
 
     pub fn open_settings(&mut self) {
@@ -498,6 +562,7 @@ impl MobileAppState {
     ) {
         self.active_sheet = sheet;
         self.closing_sheet = None;
+        self.sheet_scroll_y = 0.0;
         self.sheet_trigger_a11y_id = trigger_a11y_id.map(str::to_string);
         self.focused_a11y_id = Some("app.sheet.dialog".to_string());
         self.sheet_motion.open(now_ms);

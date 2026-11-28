@@ -8,6 +8,8 @@ pub enum MobileLocale {
     En,
     ZhHans,
     Ar,
+    /// RTL languages without a dedicated catalog (e.g. `fa`, `ur`): keep RTL layout with English copy.
+    RtlFallback,
 }
 
 impl MobileLocale {
@@ -18,6 +20,7 @@ impl MobileLocale {
             Self::En => "en",
             Self::ZhHans => "zh-Hans",
             Self::Ar => "ar",
+            Self::RtlFallback => "fa",
         }
     }
 
@@ -26,27 +29,31 @@ impl MobileLocale {
             Self::En => "English",
             Self::ZhHans => "简体中文",
             Self::Ar => "العربية",
+            Self::RtlFallback => "English (RTL)",
         }
     }
 
     pub const fn direction(self) -> Direction {
         match self {
-            Self::Ar => Direction::Rtl,
+            Self::Ar | Self::RtlFallback => Direction::Rtl,
             Self::En | Self::ZhHans => Direction::Ltr,
         }
     }
 
     pub fn parse(code: &str) -> Self {
-        match code.trim().to_ascii_lowercase().as_str() {
-            "zh" | "zh-hans" | "zh-cn" => Self::ZhHans,
-            "ar" | "fa" | "ur" => Self::Ar,
+        let lower = code.trim().to_ascii_lowercase();
+        let primary = lower.split(['-', '_']).next().unwrap_or("");
+        match primary {
+            "zh" => Self::ZhHans,
+            "ar" => Self::Ar,
+            "fa" | "ur" | "he" | "iw" => Self::RtlFallback,
             _ => Self::En,
         }
     }
 
     pub const fn strings(self) -> &'static MobileStrings {
         match self {
-            Self::En => &EN_STRINGS,
+            Self::En | Self::RtlFallback => &EN_STRINGS,
             Self::ZhHans => &ZH_STRINGS,
             Self::Ar => &AR_STRINGS,
         }
@@ -105,12 +112,50 @@ pub struct MobileStrings {
     pub theme_dark: &'static str,
     pub theme_system: &'static str,
     pub about_version_label: &'static str,
+    pub drawer_title: &'static str,
+    pub drawer_filter_placeholder: &'static str,
+    pub all_docs_heading: &'static str,
+    pub sync_synced: &'static str,
+    pub sync_syncing: &'static str,
+    pub sync_connecting: &'static str,
+    pub sync_offline: &'static str,
+    pub sync_auth_required: &'static str,
+    pub media_image_label: &'static str,
+    pub media_attachment_label: &'static str,
+    pub upload_queued: &'static str,
+    pub upload_uploaded: &'static str,
+    pub open_drawer_label: &'static str,
+    pub doc_actions_title: &'static str,
+    pub add_to_favorites: &'static str,
+    pub remove_from_favorites: &'static str,
+    pub move_to_trash: &'static str,
+    pub empty_list_label: &'static str,
+    pub empty_trash_label: &'static str,
+    pub no_locations_label: &'static str,
+    pub today_btn_label: &'static str,
+    pub sign_in_label: &'static str,
 }
 
 impl MobileStrings {
+    pub fn journal_title(&self, locale: MobileLocale, date: &str) -> String {
+        match locale {
+            MobileLocale::En | MobileLocale::RtlFallback => format!("Journal {date}"),
+            MobileLocale::ZhHans => format!("日记 {date}"),
+            MobileLocale::Ar => format!("يومية {date}"),
+        }
+    }
+
+    pub fn flags_count(&self, locale: MobileLocale, count: usize) -> String {
+        match locale {
+            MobileLocale::En | MobileLocale::RtlFallback => format!("{count} flags"),
+            MobileLocale::ZhHans => format!("{count} 项开关"),
+            MobileLocale::Ar => format!("{count} خيارات"),
+        }
+    }
+
     pub fn multi_location_label(&self, locale: MobileLocale, count: usize) -> String {
         match locale {
-            MobileLocale::En => format!("In {count} locations"),
+            MobileLocale::En | MobileLocale::RtlFallback => format!("In {count} locations"),
             MobileLocale::ZhHans => format!("位于 {count} 个位置"),
             MobileLocale::Ar => format!("في {count} مواقع"),
         }
@@ -123,7 +168,9 @@ impl MobileStrings {
         count: usize,
     ) -> String {
         match locale {
-            MobileLocale::En => format!("{owner_title} · In {count} locations"),
+            MobileLocale::En | MobileLocale::RtlFallback => {
+                format!("{owner_title} · In {count} locations")
+            }
             MobileLocale::ZhHans => format!("{owner_title} · 位于 {count} 个位置"),
             MobileLocale::Ar => format!("{owner_title} · في {count} مواقع"),
         }
@@ -137,7 +184,7 @@ impl MobileStrings {
     ) -> String {
         let short = truncate_display_width(owner_title, 28);
         match locale {
-            MobileLocale::En => format!("{short} · {count} places"),
+            MobileLocale::En | MobileLocale::RtlFallback => format!("{short} · {count} places"),
             MobileLocale::ZhHans => format!("{short} · {count} 处"),
             MobileLocale::Ar => format!("{short} · {count} مواقع"),
         }
@@ -150,9 +197,13 @@ impl MobileStrings {
         is_ready: bool,
     ) -> String {
         match (locale, is_ready) {
-            (MobileLocale::En, true) if count == 0 => self.backlinks_ready_zero.to_string(),
-            (MobileLocale::En, true) => format!("{count} Backlinks"),
-            (MobileLocale::En, false) => format!("At least {count} Backlinks (Indexing)"),
+            (MobileLocale::En | MobileLocale::RtlFallback, true) if count == 0 => {
+                self.backlinks_ready_zero.to_string()
+            }
+            (MobileLocale::En | MobileLocale::RtlFallback, true) => format!("{count} Backlinks"),
+            (MobileLocale::En | MobileLocale::RtlFallback, false) => {
+                format!("At least {count} Backlinks (Indexing)")
+            }
             (MobileLocale::ZhHans, true) if count == 0 => self.backlinks_ready_zero.to_string(),
             (MobileLocale::ZhHans, true) => format!("{count} 处反向链接"),
             (MobileLocale::ZhHans, false) => format!("已发现 {count} 处（索引中）"),
@@ -247,6 +298,28 @@ const EN_STRINGS: MobileStrings = MobileStrings {
     theme_dark: "Dark",
     theme_system: "System",
     about_version_label: "Version 0.27.5",
+    drawer_title: "Workspace",
+    drawer_filter_placeholder: "Filter documents…",
+    all_docs_heading: "All Docs",
+    sync_synced: "Synced",
+    sync_syncing: "Syncing",
+    sync_connecting: "Connecting",
+    sync_offline: "Offline",
+    sync_auth_required: "Sign in",
+    media_image_label: "Image",
+    media_attachment_label: "Attachment",
+    upload_queued: "Queued",
+    upload_uploaded: "Uploaded",
+    open_drawer_label: "Workspace Drawer",
+    doc_actions_title: "Document Actions",
+    add_to_favorites: "Add to Favorites",
+    remove_from_favorites: "Remove from Favorites",
+    move_to_trash: "Move to Trash",
+    empty_list_label: "No items yet",
+    empty_trash_label: "Trash is empty",
+    no_locations_label: "Not filed in any folder",
+    today_btn_label: "Today",
+    sign_in_label: "Sign in",
 };
 
 const ZH_STRINGS: MobileStrings = MobileStrings {
@@ -310,6 +383,28 @@ const ZH_STRINGS: MobileStrings = MobileStrings {
     theme_dark: "深色",
     theme_system: "跟随系统",
     about_version_label: "版本 0.27.5",
+    drawer_title: "工作区",
+    drawer_filter_placeholder: "筛选文档…",
+    all_docs_heading: "全部文档",
+    sync_synced: "已同步",
+    sync_syncing: "同步中",
+    sync_connecting: "连接中",
+    sync_offline: "离线",
+    sync_auth_required: "需登录",
+    media_image_label: "图片",
+    media_attachment_label: "附件",
+    upload_queued: "待上传",
+    upload_uploaded: "已上传",
+    open_drawer_label: "工作区抽屉",
+    doc_actions_title: "文档操作",
+    add_to_favorites: "加入收藏",
+    remove_from_favorites: "取消收藏",
+    move_to_trash: "移入回收站",
+    empty_list_label: "暂无内容",
+    empty_trash_label: "回收站为空",
+    no_locations_label: "尚未归入文件夹",
+    today_btn_label: "今天",
+    sign_in_label: "登录",
 };
 
 const AR_STRINGS: MobileStrings = MobileStrings {
@@ -373,4 +468,26 @@ const AR_STRINGS: MobileStrings = MobileStrings {
     theme_dark: "داكن",
     theme_system: "النظام",
     about_version_label: "الإصدار 0.27.5",
+    drawer_title: "مساحة العمل",
+    drawer_filter_placeholder: "تصفية المستندات…",
+    all_docs_heading: "جميع المستندات",
+    sync_synced: "تمت المزامنة",
+    sync_syncing: "جارٍ المزامنة",
+    sync_connecting: "جارٍ الاتصال",
+    sync_offline: "دون اتصال",
+    sync_auth_required: "تسجيل الدخول",
+    media_image_label: "صورة",
+    media_attachment_label: "مرفق",
+    upload_queued: "في الانتظار",
+    upload_uploaded: "تم الرفع",
+    open_drawer_label: "درج مساحة العمل",
+    doc_actions_title: "إجراءات المستند",
+    add_to_favorites: "إضافة إلى المفضلة",
+    remove_from_favorites: "إزالة من المفضلة",
+    move_to_trash: "نقل إلى المهملات",
+    empty_list_label: "لا توجد عناصر",
+    empty_trash_label: "المهملات فارغة",
+    no_locations_label: "غير مصنف في مجلد",
+    today_btn_label: "اليوم",
+    sign_in_label: "تسجيل الدخول",
 };

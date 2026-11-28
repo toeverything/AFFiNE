@@ -9,7 +9,7 @@ mod drag;
 pub use drag::SelectionEndpointAnchor;
 
 use crate::{
-    PlaygroundMode, PlaygroundView, TOPBAR_HEIGHT,
+    PlaygroundMode, PlaygroundView,
     block_flow::FlowRect,
     edgeless::{NOTE_CARD_PADDING, rotate_point_around},
 };
@@ -163,15 +163,15 @@ impl PlaygroundView {
     /// Visible editing band `[visible_top, visible_bottom]` excluding the top bar,
     /// docked software keyboard inset, and mobile `KeyboardToolbar`.
     fn visible_editing_band(&self, window: &Window) -> (f32, f32, f32) {
-        let vp = window.viewport_size();
-        let vw = f32::from(vp.width).max(self.window_size.0).max(1.0);
-        let vh = f32::from(vp.height).max(self.window_size.1).max(1.0);
+        let (origin, canvas_size) = self.canvas_rect(window);
+        let vw = f32::from(canvas_size.width).max(1.0);
+        let vis_top = f32::from(origin.y);
+        let vh = vis_top + f32::from(canvas_size.height).max(1.0);
         let bottom_inset = self
             .effective_ime_bottom(window)
             .max(self.ime_insets.last_bottom);
-        let avail_win_h = (vh - bottom_inset).max(TOPBAR_HEIGHT);
+        let avail_win_h = (vh - bottom_inset).max(vis_top);
         let toolbar_h = self.overlays.keyboard_toolbar_reserved_height(avail_win_h);
-        let vis_top = TOPBAR_HEIGHT;
         let vis_bottom = (vh - bottom_inset - toolbar_h).max(vis_top);
         (vw, vis_top, vis_bottom)
     }
@@ -334,7 +334,7 @@ impl PlaygroundView {
                 return out;
             };
             let pad = if is_note { NOTE_CARD_PADDING } else { 0.0 };
-            let vp = point(px(0.0), px(TOPBAR_HEIGHT));
+            let (vp, _) = self.canvas_rect(window);
             let to_screen = |r: FlowRect| {
                 let lx = item.rect.x + (r.x + pad) * item.scale;
                 let ly = item.rect.y + (r.y + pad) * item.scale;
@@ -612,7 +612,7 @@ mod tests {
                 let geom = page_geometry(390.0);
                 (
                     geom.column_x + block.x + 60.0,
-                    TOPBAR_HEIGHT + block.y + 12.0,
+                    crate::TOPBAR_HEIGHT + block.y + 12.0,
                 )
             })
             .unwrap()
@@ -765,7 +765,7 @@ mod tests {
                 let id1 = editable[1].block_id.clone();
                 let geom = page_geometry(390.0);
                 let p1_x = geom.column_x + editable[1].x + 40.0;
-                let p1_y = TOPBAR_HEIGHT + editable[1].y + 12.0;
+                let p1_y = crate::TOPBAR_HEIGHT + editable[1].y + 12.0;
 
                 v.select_document_range(
                     DocumentSelection {

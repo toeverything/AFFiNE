@@ -88,13 +88,26 @@ fn render_all_docs_root(
     let gap = if tight_portrait { 8.0 } else { 12.0 };
     let heading_h = 16.0;
 
+    let collapsed = state.active_workspace().collapsed_folders.clone();
     let forest_state = state.forest_state();
     let folder_items: Vec<(String, String, usize)> = match forest_state {
-        FolderForestState::Ready(forest) => forest
-            .dfs_folders()
-            .into_iter()
-            .map(|(f, depth)| (f.id.clone(), f.data.clone(), depth))
-            .collect(),
+        FolderForestState::Ready(forest) => {
+            let mut out = Vec::new();
+            let mut skip_above_depth: Option<usize> = None;
+            for (f, depth) in forest.dfs_folders() {
+                if let Some(d) = skip_above_depth {
+                    if depth > d {
+                        continue;
+                    }
+                    skip_above_depth = None;
+                }
+                out.push((f.id.clone(), f.data.clone(), depth));
+                if collapsed.contains(&f.id) {
+                    skip_above_depth = Some(depth);
+                }
+            }
+            out
+        }
         FolderForestState::Unresolved => Vec::new(),
     };
     let trash_count = state
@@ -536,7 +549,27 @@ fn render_folder_drilldown(
         row_idx += 1;
     }
 
-    let inner = div().w_full().p(px(16.0)).child(list).into_any_element();
+    let inner = if total_rows == 0 {
+        div()
+            .w_full()
+            .p(px(16.0))
+            .child(
+                div()
+                    .w_full()
+                    .p(px(16.0))
+                    .rounded(px(12.0))
+                    .bg(palette.bg_surface)
+                    .border_1()
+                    .border_color(palette.border)
+                    .text_size(px(13.0))
+                    .text_color(palette.text_secondary)
+                    .align_start_for(dir)
+                    .child(strings.empty_list_label),
+            )
+            .into_any_element()
+    } else {
+        div().w_full().p(px(16.0)).child(list).into_any_element()
+    };
     div()
         .size_full()
         .flex()
@@ -643,7 +676,23 @@ fn render_index_list(
     let scroll_y = state.explorer_scroll_y;
 
     let inner: ui::AnyElement = if items.is_empty() {
-        div().w_full().p(px(16.0)).into_any_element()
+        div()
+            .w_full()
+            .p(px(16.0))
+            .child(
+                div()
+                    .w_full()
+                    .p(px(16.0))
+                    .rounded(px(12.0))
+                    .bg(palette.bg_surface)
+                    .border_1()
+                    .border_color(palette.border)
+                    .text_size(px(13.0))
+                    .text_color(palette.text_secondary)
+                    .align_start_for(dir)
+                    .child(env.strings.empty_list_label),
+            )
+            .into_any_element()
     } else {
         let mut list = div()
             .w_full()
