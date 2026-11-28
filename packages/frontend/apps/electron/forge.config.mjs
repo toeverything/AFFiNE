@@ -361,6 +361,7 @@ export default {
     ],
     executableName: productName,
     ignore: [
+      /^\/out(?:\/|$)/,
       /\.map$/,
       /\/test($|\/)/,
       /\/scripts($|\/)/,
