@@ -8,8 +8,9 @@ use crate::{
 };
 
 use super::{
-    DatabaseHitKind, DatabaseHitTarget, InlineAxis, format_database_date, format_database_number,
-    format_database_progress, group_database_rows,
+    DatabaseAuthoringHit, DatabaseAuthoringHitKind, DatabaseHitKind, DatabaseHitTarget, InlineAxis,
+    cell_editor::is_editable_column_type,
+    format_database_date, format_database_number, format_database_progress, group_database_rows,
     render::{DatabasePrim, DbRenderCtx},
     resolve_tag_color,
 };
@@ -24,9 +25,18 @@ const PAD_X: f32 = 8.0;
 pub(super) fn render_kanban_view(
     ctx: &DbRenderCtx<'_>,
     top_y: f32,
-) -> (f32, f32, Vec<DatabasePrim>, Vec<DatabaseHitTarget>) {
+) -> (
+    f32,
+    f32,
+    Vec<DatabasePrim>,
+    Vec<DatabaseHitTarget>,
+    Vec<DatabaseAuthoringHit>,
+    Option<(f32, f32)>,
+) {
     let mut prims = Vec::new();
     let mut hits = Vec::new();
+    let mut authoring_hits = Vec::new();
+    let mut popover_anchor = None;
 
     // Resolve groupBy column (fallback to first `select` / `multi-select` / `checkbox` column).
     let fallback_group = ctx
@@ -69,7 +79,7 @@ pub(super) fn render_kanban_view(
             64.0,
             InlineAlign::Center,
         ));
-        return (64.0, 0.0, prims, hits);
+        return (64.0, 0.0, prims, hits, authoring_hits, popover_anchor);
     };
 
     let buckets = group_database_rows(
@@ -183,17 +193,25 @@ pub(super) fn render_kanban_view(
         let card_w = LANE_WIDTH - 2.0 * LANE_PAD;
         for row in &bucket.rows {
             enum KanbanProp {
-                Text(String),
+                Text {
+                    col_id: String,
+                    col_type: String,
+                    text: String,
+                },
                 Pill {
+                    col_id: String,
+                    col_type: String,
                     label: String,
                     bg: ui::Hsla,
                     ink: ui::Hsla,
                 },
                 Checkbox {
+                    col_id: String,
                     label: String,
                     checked: bool,
                 },
                 Progress {
+                    col_id: String,
                     ratio: f32,
                     label: String,
                 },
@@ -218,6 +236,8 @@ pub(super) fn render_kanban_view(
                                 });
                             let (bg, ink) = resolve_tag_color(clr, ctx.theme);
                             prop_lines.push(KanbanProp::Pill {
+                                col_id: col.id.clone(),
+                                col_type: col.column_type.clone(),
                                 label: lbl,
                                 bg,
                                 ink,
@@ -227,7 +247,11 @@ pub(super) fn render_kanban_view(
                     "progress" => {
                         if let Some(p) = val.as_i64() {
                             let (ratio, lbl) = format_database_progress(p);
-                            prop_lines.push(KanbanProp::Progress { ratio, label: lbl });
+                            prop_lines.push(KanbanProp::Progress {
+                                col_id: col.id.clone(),
+                                ratio,
+                                label: lbl,
+                            });
                         }
                     }
                     "number" => {
@@ -242,20 +266,26 @@ pub(super) fn render_kanban_view(
                                 .get("decimal")
                                 .and_then(serde_json::Value::as_u64)
                                 .map(|d| d as usize);
-                            prop_lines.push(KanbanProp::Text(format_database_number(n, fmt, dec)));
+                            prop_lines.push(KanbanProp::Text {
+                                col_id: col.id.clone(),
+                                col_type: col.column_type.clone(),
+                                text: format_database_number(n, fmt, dec),
+                            });
                         }
                     }
                     "date" => {
                         if let Some(ts) = val.as_i64() {
-                            prop_lines.push(KanbanProp::Text(format_database_date(
-                                ts,
-                                (ctx.offset_at_ms)(ts),
-                            )));
+                            prop_lines.push(KanbanProp::Text {
+                                col_id: col.id.clone(),
+                                col_type: col.column_type.clone(),
+                                text: format_database_date(ts, (ctx.offset_at_ms)(ts)),
+                            });
                         }
                     }
                     "checkbox" => {
                         let checked = val.as_bool().unwrap_or(false);
                         prop_lines.push(KanbanProp::Checkbox {
+                            col_id: col.id.clone(),
                             label: col.name.clone(),
                             checked,
                         });
@@ -264,7 +294,11 @@ pub(super) fn render_kanban_view(
                         if let Some(s) = val.as_str()
                             && !s.is_empty()
                         {
-                            prop_lines.push(KanbanProp::Text(s.to_string()));
+                            prop_lines.push(KanbanProp::Text {
+                                col_id: col.id.clone(),
+                                col_type: col.column_type.clone(),
+                                text: s.to_string(),
+                            });
                         }
                     }
                 }
@@ -303,8 +337,15 @@ pub(super) fn render_kanban_view(
             let inner_x = card_rect.x + CARD_PAD;
             let inner_w = (card_w - 2.0 * CARD_PAD).max(1.0);
             for prop in prop_lines {
+                let prop_rect = FlowRect::new(inner_x, py, inner_w, 20.0);
                 match prop {
-                    KanbanProp::Pill { label, bg, ink } => {
+                    KanbanProp::Pill {
+                        col_id,
+                        col_type,
+                        label,
+                        bg,
+                        ink,
+                    } => {
                         let style = InlineStyle::new(FONT_SANS, TYPOGRAPHY.font_xs_px, 500.0, ink);
                         let (_, layout) =
                             ctx.truncate_text(&label, style, (inner_w - 10.0).max(1.0), 18.0);
@@ -314,10 +355,19 @@ pub(super) fn render_kanban_view(
                         } else {
                             inner_x
                         };
+                        let is_editing = ctx
+                            .ui_state
+                            .authoring
+                            .active_cell
+                            .as_ref()
+                            .is_some_and(|e| e.row_id == row.row_id && e.column_id == col_id);
+                        if is_editing {
+                            popover_anchor = Some((px_pos, py + 20.0));
+                        }
                         prims.push(DatabasePrim::Quad {
                             rect: FlowRect::new(px_pos, py, pw, 18.0),
                             fill: Some(bg),
-                            border: None,
+                            border: is_editing.then_some(ctx.palette.brand),
                             radius: 4.0,
                             dashed: false,
                         });
@@ -327,8 +377,23 @@ pub(super) fn render_kanban_view(
                             layout,
                             clip: Some(FlowRect::new(px_pos + 3.0, py, (pw - 6.0).max(1.0), 18.0)),
                         });
+                        if !ctx.mobile_readonly {
+                            authoring_hits.push(DatabaseAuthoringHit {
+                                rect: prop_rect,
+                                kind: DatabaseAuthoringHitKind::EditCell {
+                                    row_id: row.row_id.clone(),
+                                    column_id: col_id,
+                                    col_type,
+                                },
+                                scrolls_x: true,
+                            });
+                        }
                     }
-                    KanbanProp::Checkbox { label, checked } => {
+                    KanbanProp::Checkbox {
+                        col_id,
+                        label,
+                        checked,
+                    } => {
                         let icon_name = if checked {
                             "CheckBoxCheckSolidIcon"
                         } else {
@@ -367,8 +432,30 @@ pub(super) fn render_kanban_view(
                             18.0,
                             align,
                         ));
+                        if !ctx.mobile_readonly {
+                            hits.push(DatabaseHitTarget {
+                                rect: prop_rect,
+                                kind: DatabaseHitKind::ToggleCheckbox {
+                                    row_id: row.row_id.clone(),
+                                    column_id: col_id,
+                                    current: checked,
+                                },
+                                scrolls_x: true,
+                            });
+                        }
                     }
-                    KanbanProp::Progress { ratio, label } => {
+                    KanbanProp::Progress {
+                        col_id,
+                        ratio,
+                        label,
+                    } => {
+                        let (ratio, label) = ctx
+                            .ui_state
+                            .authoring
+                            .progress_preview
+                            .as_ref()
+                            .filter(|p| p.row_id == row.row_id && p.column_id == col_id)
+                            .map_or((ratio, label), |p| format_database_progress(p.value));
                         let bar_w = (inner_w - 40.0).max(24.0);
                         let bar_y = py + 5.0;
                         prims.push(DatabasePrim::Quad {
@@ -401,8 +488,22 @@ pub(super) fn render_kanban_view(
                             18.0,
                             InlineAlign::Right,
                         ));
+                        if !ctx.mobile_readonly {
+                            authoring_hits.push(DatabaseAuthoringHit {
+                                rect: FlowRect::new(inner_x, py, bar_w, 18.0),
+                                kind: DatabaseAuthoringHitKind::SetProgress {
+                                    row_id: row.row_id.clone(),
+                                    column_id: col_id,
+                                },
+                                scrolls_x: true,
+                            });
+                        }
                     }
-                    KanbanProp::Text(text) => {
+                    KanbanProp::Text {
+                        col_id,
+                        col_type,
+                        text,
+                    } => {
                         prims.push(ctx.single_line_clipped(
                             &text,
                             InlineStyle::new(
@@ -417,6 +518,17 @@ pub(super) fn render_kanban_view(
                             18.0,
                             align,
                         ));
+                        if !ctx.mobile_readonly && is_editable_column_type(&col_type) {
+                            authoring_hits.push(DatabaseAuthoringHit {
+                                rect: prop_rect,
+                                kind: DatabaseAuthoringHitKind::EditCell {
+                                    row_id: row.row_id.clone(),
+                                    column_id: col_id,
+                                    col_type,
+                                },
+                                scrolls_x: true,
+                            });
+                        }
                     }
                 }
                 py += 22.0;
@@ -434,6 +546,42 @@ pub(super) fn render_kanban_view(
             cy += card_h + CARD_GAP;
         }
 
+        // Desktop "+ New record" footer button inside each Kanban lane.
+        if !ctx.mobile_readonly {
+            let add_rect = FlowRect::new(lane_x + LANE_PAD, cy, card_w, 26.0);
+            prims.push(DatabasePrim::Quad {
+                rect: add_rect,
+                fill: Some(ctx.palette.background.opacity(0.6)),
+                border: Some(ctx.palette.border),
+                radius: 5.0,
+                dashed: false,
+            });
+            prims.push(ctx.single_line_clipped(
+                "+ New record",
+                InlineStyle::new(
+                    FONT_SANS,
+                    TYPOGRAPHY.font_xs_px,
+                    500.0,
+                    ctx.palette.text_secondary,
+                ),
+                add_rect.x + 8.0,
+                add_rect.y,
+                (add_rect.w - 16.0).max(1.0),
+                26.0,
+                align,
+            ));
+            let opt_val = (bucket.key != super::group::UNGROUPS_KEY).then(|| bucket.key.clone());
+            authoring_hits.push(DatabaseAuthoringHit {
+                rect: add_rect,
+                kind: DatabaseAuthoringHitKind::KanbanAddRowInGroup {
+                    column_id: group_by.column_id.clone(),
+                    option_value: opt_val,
+                },
+                scrolls_x: true,
+            });
+            cy += 26.0 + CARD_GAP;
+        }
+
         let lane_h = (cy - top_y + LANE_PAD - CARD_GAP).max(110.0);
         if let Some(DatabasePrim::Quad { rect, .. }) = prims.get_mut(lane_start_idx) {
             rect.h = lane_h;
@@ -443,7 +591,14 @@ pub(super) fn render_kanban_view(
     }
 
     let max_scroll_x = (total_kanban_w + 2.0 * PAD_X - ctx.width).max(0.0).ceil();
-    (max_lane_h, max_scroll_x, prims, hits)
+    (
+        max_lane_h,
+        max_scroll_x,
+        prims,
+        hits,
+        authoring_hits,
+        popover_anchor,
+    )
 }
 
 pub(crate) fn kanban_visible_columns<'a>(

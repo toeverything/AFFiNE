@@ -29,6 +29,12 @@ impl EntityInputHandler for PlaygroundView {
             }
             return;
         }
+        if self.database_input.is_some() {
+            if let Some(text) = item.text() {
+                let _ = self.database_authoring_input_edit(w, cx, |buf| buf.replace(None, &text));
+            }
+            return;
+        }
         if self.mode == crate::PlaygroundMode::Page && self.page_readonly {
             return;
         }
@@ -68,6 +74,11 @@ impl EntityInputHandler for PlaygroundView {
             *adjusted = Some(covered);
             return Some(text);
         }
+        if let Some(db_in) = self.database_input.as_ref() {
+            let (text, covered) = db_in.input.text_for_range(range);
+            *adjusted = Some(covered);
+            return Some(text);
+        }
         let text = self.display_text()?;
         let index = TextBiIndex::new(&text);
         let start = index.utf16_to_utf8_clamped(range.start as u64);
@@ -91,6 +102,10 @@ impl EntityInputHandler for PlaygroundView {
         }
         if let Some(ed) = self.edgeless.authoring.label_editor() {
             let (range, reversed) = ed.shown_selection();
+            return Some(UTF16Selection { range, reversed });
+        }
+        if let Some(db_in) = self.database_input.as_ref() {
+            let (range, reversed) = db_in.input.shown_selection();
             return Some(UTF16Selection { range, reversed });
         }
         if let Some((_, r)) = self.composed_range()
@@ -123,6 +138,9 @@ impl EntityInputHandler for PlaygroundView {
         if let Some(ed) = self.edgeless.authoring.label_editor() {
             return Some(ed.display_text().encode_utf16().count());
         }
+        if let Some(db_in) = self.database_input.as_ref() {
+            return Some(db_in.input.display_text().encode_utf16().count());
+        }
         Some(self.display_text()?.encode_utf16().count())
     }
     fn set_selected_text_range(&mut self, r: Range<usize>, w: &mut Window, cx: &mut Context<Self>) {
@@ -140,6 +158,12 @@ impl EntityInputHandler for PlaygroundView {
         }
         if self
             .edgeless_label_input(w, cx, |ed| ed.select(r.clone()))
+            .is_some()
+        {
+            return;
+        }
+        if self
+            .database_authoring_input_edit(w, cx, |buf| buf.select(r.clone()))
             .is_some()
         {
             return;
@@ -165,6 +189,9 @@ impl EntityInputHandler for PlaygroundView {
         if let Some(ed) = self.edgeless.authoring.label_editor() {
             return ed.marked_range();
         }
+        if let Some(db_in) = self.database_input.as_ref() {
+            return db_in.input.marked_range();
+        }
         let (_, r) = self.composed_range()?;
         let start = r.start as usize;
         Some(start..start + self.editor.preedit.as_ref()?.text.encode_utf16().count())
@@ -182,6 +209,12 @@ impl EntityInputHandler for PlaygroundView {
         }
         if self
             .edgeless_label_edit(w, cx, crate::edgeless::EdgelessLabelEditor::unmark)
+            .is_some()
+        {
+            return;
+        }
+        if self
+            .database_authoring_input_edit(w, cx, |buf| buf.unmark())
             .is_some()
         {
             return;
@@ -221,6 +254,12 @@ impl EntityInputHandler for PlaygroundView {
         }
         if self
             .edgeless_label_edit(w, cx, |ed| ed.replace(r.clone(), text))
+            .is_some()
+        {
+            return;
+        }
+        if self
+            .database_authoring_input_edit(w, cx, |buf| buf.replace(r.clone(), text))
             .is_some()
         {
             return;
@@ -279,6 +318,12 @@ impl EntityInputHandler for PlaygroundView {
         }
         if self
             .edgeless_label_input(w, cx, |ed| ed.mark(r.clone(), text, selected.clone()))
+            .is_some()
+        {
+            return;
+        }
+        if self
+            .database_authoring_input_edit(w, cx, |buf| buf.mark(r.clone(), text, selected.clone()))
             .is_some()
         {
             return;
@@ -372,6 +417,9 @@ impl EntityInputHandler for PlaygroundView {
                 return self.table_cell_selection_bounds(r, &layout, w);
             }
             return vec![];
+        }
+        if let Some(bounds) = self.database_authoring_input_bounds(w) {
+            return vec![bounds];
         }
         if self.mode == crate::PlaygroundMode::Edgeless {
             if let Some(bounds) = self.edgeless_label_screen_bounds(w) {

@@ -653,6 +653,11 @@ impl PlaygroundView {
         if self.table_cell.is_some() {
             return;
         }
+        if self.database_authoring_key_down(e, w, cx) {
+            w.prevent_default();
+            cx.stop_propagation();
+            return;
+        }
         // Active whole-block selection intercepts navigation/edit/clipboard keys first.
         match self.handle_block_selection_key(e, w, cx) {
             Ok(true) => {

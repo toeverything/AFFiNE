@@ -1,4 +1,5 @@
 mod bench;
+mod database_authoring_evidence;
 mod demo;
 mod edgeless_evidence;
 mod embed_preview_evidence;
@@ -481,6 +482,12 @@ fn main() -> Result<()> {
             embed_preview_evidence::render_embed_preview_evidence(&PathBuf::from(
                 args.next()
                     .context("render-embed-preview-evidence requires an output directory")?,
+            ))
+        }
+        "render-db-authoring-evidence" => {
+            database_authoring_evidence::render_db_authoring_evidence(&PathBuf::from(
+                args.next()
+                    .context("render-db-authoring-evidence requires an output directory")?,
             ))
         }
         "record-edgeless-demo" => record_edgeless_demo(

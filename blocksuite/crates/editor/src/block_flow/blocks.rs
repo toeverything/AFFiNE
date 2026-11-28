@@ -702,6 +702,8 @@ impl FlowPass<'_> {
             self.window,
         );
         self.database_hits.insert(block_id.to_string(), output.hits);
+        self.database_authoring_hits
+            .insert(block_id.to_string(), output.authoring_hits);
         self.database_view_tabs_max_scroll.insert(
             block_id.to_string(),
             (output.view_tabs_scroll_px, output.view_tabs_max_scroll_px),

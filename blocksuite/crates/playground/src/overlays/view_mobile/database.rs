@@ -345,9 +345,13 @@ impl PlaygroundView {
         block_id: &str,
         local_x: f32,
         local_y: f32,
-        window: Option<&mut ui::Window>,
+        mut window: Option<&mut ui::Window>,
         cx: &mut Context<Self>,
     ) -> bool {
+        if self.try_click_database_authoring(block_id, local_x, local_y, window.as_deref_mut(), cx)
+        {
+            return true;
+        }
         let hits = self.flow.database_hits(block_id);
         if hits.is_empty() {
             return false;
@@ -433,12 +437,14 @@ impl PlaygroundView {
                 column_id,
                 current,
             } => {
-                if self.database_readonly || self.flow.database_state.mobile_readonly {
-                    self.flow
-                        .database_state
-                        .set_mobile_readonly_notice(block_id, true);
-                    self.env_rev += 1;
-                    cx.notify();
+                if self.is_database_write_readonly() {
+                    if self.database_readonly || self.flow.database_state.mobile_readonly {
+                        self.flow
+                            .database_state
+                            .set_mobile_readonly_notice(block_id, true);
+                        self.env_rev += 1;
+                        cx.notify();
+                    }
                     return true;
                 }
                 let now_ms = self.now_ms(cx) as u64;
@@ -451,12 +457,14 @@ impl PlaygroundView {
                 true
             }
             database::DatabaseHitKind::AddRow => {
-                if self.database_readonly || self.flow.database_state.mobile_readonly {
-                    self.flow
-                        .database_state
-                        .set_mobile_readonly_notice(block_id, true);
-                    self.env_rev += 1;
-                    cx.notify();
+                if self.is_database_write_readonly() {
+                    if self.database_readonly || self.flow.database_state.mobile_readonly {
+                        self.flow
+                            .database_state
+                            .set_mobile_readonly_notice(block_id, true);
+                        self.env_rev += 1;
+                        cx.notify();
+                    }
                     return true;
                 }
                 let before = self.selection_snapshot();

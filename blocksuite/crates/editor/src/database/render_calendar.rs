@@ -9,8 +9,8 @@ use crate::{
 };
 
 use super::{
-    CalendarEntry, DatabaseHitKind, DatabaseHitTarget, InlineAxis, create_calendar_month_layout,
-    isolate_ltr, local_day_index,
+    CalendarEntry, DatabaseAuthoringHit, DatabaseAuthoringHitKind, DatabaseHitKind,
+    DatabaseHitTarget, InlineAxis, create_calendar_month_layout, isolate_ltr, local_day_index,
     render::{DatabasePrim, DbRenderCtx},
     resolve_tag_accent, resolve_tag_color,
 };
@@ -69,9 +69,17 @@ pub fn resolve_calendar_display_month(
 pub(super) fn render_calendar_view(
     ctx: &DbRenderCtx<'_>,
     top_y: f32,
-) -> (f32, f32, Vec<DatabasePrim>, Vec<DatabaseHitTarget>) {
+) -> (
+    f32,
+    f32,
+    Vec<DatabasePrim>,
+    Vec<DatabaseHitTarget>,
+    Vec<DatabaseAuthoringHit>,
+    Option<(f32, f32)>,
+) {
     let mut prims = Vec::new();
     let mut hits = Vec::new();
+    let mut authoring_hits = Vec::new();
 
     // Resolve mapped start/end date columns.
     let start_col_id = ctx
@@ -120,7 +128,7 @@ pub(super) fn render_calendar_view(
             76.0,
             InlineAlign::Center,
         ));
-        return (76.0, 0.0, prims, hits);
+        return (76.0, 0.0, prims, hits, authoring_hits, None);
     };
 
     // Determine displayed month via the single authoritative resolver.
@@ -559,7 +567,7 @@ pub(super) fn render_calendar_view(
                 y += card_h + 6.0;
             }
         }
-        return (y - top_y, 0.0, prims, hits);
+        return (y - top_y, 0.0, prims, hits, authoring_hits, None);
     }
 
     // 3b. Desktop / Tablet full week rows, multi-day range segments, and single-day entries.
@@ -578,17 +586,36 @@ pub(super) fn render_calendar_view(
             let visual_col = axis.map_col_span(7, col_idx, 1);
             let cell_rect = FlowRect::new(PAD_X + visual_col as f32 * col_w, y, col_w, week_h);
             let is_today = day.day_index == today_day;
+            let is_drag_target = ctx
+                .ui_state
+                .authoring
+                .calendar_drag
+                .as_ref()
+                .is_some_and(|d| d.target_day == day.day_index);
             prims.push(DatabasePrim::Quad {
                 rect: cell_rect,
-                fill: Some(if day.in_month {
+                fill: Some(if is_drag_target {
+                    ctx.palette.brand.opacity(0.14)
+                } else if day.in_month {
                     ctx.palette.background
                 } else {
                     ctx.palette.background_secondary.opacity(0.45)
                 }),
-                border: Some(ctx.palette.border),
+                border: Some(if is_drag_target {
+                    ctx.palette.brand
+                } else {
+                    ctx.palette.border
+                }),
                 radius: 0.0,
                 dashed: false,
             });
+            super::calendar_edit::render_calendar_day_controls(
+                ctx,
+                cell_rect,
+                day.day_index,
+                &mut prims,
+                &mut authoring_hits,
+            );
             let day_label = isolate_ltr(&day.day.to_string());
             let day_ink = if is_today {
                 ctx.palette.on_accent
@@ -680,6 +707,15 @@ pub(super) fn render_calendar_view(
                         },
                         scrolls_x: false,
                     });
+                } else {
+                    authoring_hits.push(DatabaseAuthoringHit {
+                        rect: chip_rect,
+                        kind: DatabaseAuthoringHitKind::CalendarDragEventStart {
+                            row_id: entry.row_id.clone(),
+                            day_index: day.day_index,
+                        },
+                        scrolls_x: false,
+                    });
                 }
                 chip_y += EVENT_CHIP_HEIGHT + EVENT_CHIP_GAP;
             }
@@ -754,5 +790,5 @@ pub(super) fn render_calendar_view(
     }
 
     let max_scroll_x = (actual_grid_w + 2.0 * PAD_X - ctx.width).max(0.0).ceil();
-    (y - top_y, max_scroll_x, prims, hits)
+    (y - top_y, max_scroll_x, prims, hits, authoring_hits, None)
 }

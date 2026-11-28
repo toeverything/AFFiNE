@@ -1,8 +1,6 @@
 //! Table view renderer for `affine:database` (`0.27.5` `table/consts.ts` & `table-view-manager.ts`).
 
-use blocksuite_playground_doc::read::{
-    DatabaseCellValue, DatabaseColumn, DatabaseData, DatabaseRow, DatabaseView,
-};
+use blocksuite_playground_doc::read::{DatabaseCellValue, DatabaseColumn, DatabaseRow};
 
 use crate::{
     block_flow::{FlowRect, InlineAlign, InlineStyle},
@@ -10,46 +8,57 @@ use crate::{
 };
 
 use super::{
-    DatabaseHitKind, DatabaseHitTarget, InlineAxis, column_icon_name, format_database_created_time,
-    format_database_date, format_database_number, format_database_progress, group_database_rows,
-    isolate_ltr,
+    DatabaseAuthoringHit, DatabaseAuthoringHitKind, DatabaseHitKind, DatabaseHitTarget, InlineAxis,
+    cell_editor::is_editable_column_type,
+    column_icon_name,
+    column_ops::{MIN_COLUMN_WIDTH, ResolvedTableCol, resolve_visible_columns},
+    format_database_created_time, format_database_date, format_database_number,
+    format_database_progress, group_database_rows, isolate_ltr,
     render::{DatabasePrim, DbRenderCtx},
     resolve_tag_color,
 };
 
-const DEFAULT_COLUMN_WIDTH: f32 = 180.0;
-const TITLE_DEFAULT_WIDTH: f32 = 220.0;
-const MIN_COLUMN_WIDTH: f32 = 65.0;
 const HEADER_HEIGHT: f32 = 34.0;
 const ROW_HEIGHT: f32 = 34.0;
 const GROUP_HEADER_HEIGHT: f32 = 30.0;
 const PAD_X: f32 = 8.0;
 
-struct ResolvedTableCol<'a> {
-    id: String,
-    name: String,
-    col_type: String,
-    width: f32,
-    schema: Option<&'a DatabaseColumn>,
-}
-
 pub(super) fn render_table_view(
     ctx: &DbRenderCtx<'_>,
     top_y: f32,
-) -> (f32, f32, Vec<DatabasePrim>, Vec<DatabaseHitTarget>) {
-    let cols = resolve_visible_columns(ctx.view, ctx.data);
-    let total_table_w: f32 = cols.iter().map(|c| c.width).sum::<f32>().max(180.0);
+) -> (
+    f32,
+    f32,
+    Vec<DatabasePrim>,
+    Vec<DatabaseHitTarget>,
+    Vec<DatabaseAuthoringHit>,
+    Option<(f32, f32)>,
+) {
+    let mut cols = resolve_visible_columns(ctx.view, ctx.data);
+    if let Some(resize) = &ctx.ui_state.authoring.column_resize {
+        if let Some(col) = cols.iter_mut().find(|c| c.id == resize.column_id) {
+            col.width = (resize.preview_width_px as f32).max(MIN_COLUMN_WIDTH);
+        }
+    }
+    let add_col_w = if ctx.mobile_readonly {
+        0.0_f32
+    } else {
+        34.0_f32
+    };
+    let total_table_w: f32 = cols.iter().map(|c| c.width).sum::<f32>().max(180.0) + add_col_w;
     let inner_avail_w = (ctx.width - 2.0 * PAD_X).max(1.0);
     let start_x = if ctx.direction.is_rtl() && total_table_w < inner_avail_w {
         ctx.width - PAD_X - total_table_w
     } else {
         PAD_X
     };
-    let axis = InlineAxis::new(ctx.direction, total_table_w);
+    let axis = InlineAxis::new(ctx.direction, total_table_w - add_col_w);
     let ordered_col_indices = axis.order_indices(cols.len());
 
     let mut prims = Vec::new();
     let mut hits = Vec::new();
+    let mut authoring_hits = Vec::new();
+    let mut popover_anchor = None;
     let mut y = top_y;
 
     // 1. Table header row.
@@ -57,50 +66,105 @@ pub(super) fn render_table_view(
     for &c_idx in &ordered_col_indices {
         let col = &cols[c_idx];
         let cell_rect = FlowRect::new(col_x, y, col.width, HEADER_HEIGHT);
+        let menu_open = ctx
+            .ui_state
+            .authoring
+            .column_menu
+            .as_ref()
+            .is_some_and(|m| m.column_id == col.id);
         prims.push(DatabasePrim::Quad {
             rect: cell_rect,
+            fill: Some(if menu_open {
+                ctx.palette.hover
+            } else {
+                ctx.palette.background_secondary
+            }),
+            border: Some(if menu_open {
+                ctx.palette.brand
+            } else {
+                ctx.palette.border
+            }),
+            radius: 0.0,
+            dashed: false,
+        });
+        let (icon_x, text_x, align) = if ctx.direction.is_rtl() {
+            (
+                cell_rect.right() - 22.0,
+                cell_rect.x + 8.0,
+                InlineAlign::Right,
+            )
+        } else {
+            (cell_rect.x + 8.0, cell_rect.x + 26.0, InlineAlign::Left)
+        };
+        prims.push(DatabasePrim::Icon {
+            rect: FlowRect::new(icon_x, cell_rect.y + 10.0, 14.0, 14.0),
+            icon: IconPaint::named(column_icon_name(&col.col_type)),
+            color: if menu_open {
+                ctx.palette.brand
+            } else {
+                ctx.palette.icon
+            },
+        });
+        let ink = if menu_open {
+            ctx.palette.text_primary
+        } else {
+            ctx.palette.text_secondary
+        };
+        prims.push(ctx.single_line_clipped(
+            &col.name,
+            InlineStyle::new(FONT_SANS, TYPOGRAPHY.font_xs_px + 1.0, 500.0, ink),
+            text_x,
+            cell_rect.y,
+            (cell_rect.w - 34.0).max(1.0),
+            HEADER_HEIGHT,
+            align,
+        ));
+        if !ctx.mobile_readonly {
+            if menu_open {
+                popover_anchor = Some((cell_rect.x, cell_rect.bottom() + 2.0));
+            }
+            authoring_hits.push(DatabaseAuthoringHit {
+                rect: FlowRect::new(
+                    cell_rect.x + 4.0,
+                    cell_rect.y,
+                    (cell_rect.w - 8.0).max(1.0),
+                    HEADER_HEIGHT,
+                ),
+                kind: DatabaseAuthoringHitKind::OpenColumnMenu {
+                    column_id: col.id.clone(),
+                },
+                scrolls_x: true,
+            });
+            authoring_hits.push(DatabaseAuthoringHit {
+                rect: FlowRect::new(cell_rect.right() - 4.0, cell_rect.y, 8.0, HEADER_HEIGHT),
+                kind: DatabaseAuthoringHitKind::ResizeColumnHandle {
+                    column_id: col.id.clone(),
+                    current_width_px: col.width.round() as i32,
+                },
+                scrolls_x: true,
+            });
+        }
+        col_x += col.width;
+    }
+    if !ctx.mobile_readonly {
+        let add_col_rect = FlowRect::new(col_x, y, add_col_w, HEADER_HEIGHT);
+        prims.push(DatabasePrim::Quad {
+            rect: add_col_rect,
             fill: Some(ctx.palette.background_secondary),
             border: Some(ctx.palette.border),
             radius: 0.0,
             dashed: false,
         });
-        let icon_x = if ctx.direction.is_rtl() {
-            cell_rect.right() - 22.0
-        } else {
-            cell_rect.x + 8.0
-        };
         prims.push(DatabasePrim::Icon {
-            rect: FlowRect::new(icon_x, cell_rect.y + 10.0, 14.0, 14.0),
-            icon: IconPaint::named(column_icon_name(&col.col_type)),
+            rect: FlowRect::new(add_col_rect.x + 10.0, add_col_rect.y + 10.0, 14.0, 14.0),
+            icon: IconPaint::named("PlusIcon"),
             color: ctx.palette.icon,
         });
-        let text_x = if ctx.direction.is_rtl() {
-            cell_rect.x + 8.0
-        } else {
-            cell_rect.x + 26.0
-        };
-        let text_w = (cell_rect.w - 34.0).max(1.0);
-        let style = InlineStyle::new(
-            FONT_SANS,
-            TYPOGRAPHY.font_xs_px + 1.0,
-            500.0,
-            ctx.palette.text_secondary,
-        );
-        let align = if ctx.direction.is_rtl() {
-            InlineAlign::Right
-        } else {
-            InlineAlign::Left
-        };
-        prims.push(ctx.single_line_clipped(
-            &col.name,
-            style,
-            text_x,
-            cell_rect.y,
-            text_w,
-            HEADER_HEIGHT,
-            align,
-        ));
-        col_x += col.width;
+        authoring_hits.push(DatabaseAuthoringHit {
+            rect: add_col_rect,
+            kind: DatabaseAuthoringHitKind::AddColumn,
+            scrolls_x: true,
+        });
     }
     y += HEADER_HEIGHT;
 
@@ -194,6 +258,8 @@ pub(super) fn render_table_view(
                         y,
                         &mut prims,
                         &mut hits,
+                        &mut authoring_hits,
+                        &mut popover_anchor,
                     );
                     y += ROW_HEIGHT;
                 }
@@ -234,6 +300,8 @@ pub(super) fn render_table_view(
                 y,
                 &mut prims,
                 &mut hits,
+                &mut authoring_hits,
+                &mut popover_anchor,
             );
             y += ROW_HEIGHT;
         }
@@ -277,7 +345,14 @@ pub(super) fn render_table_view(
     }
 
     let max_scroll_x = (total_table_w + 2.0 * PAD_X - ctx.width).max(0.0).ceil();
-    (y - top_y, max_scroll_x, prims, hits)
+    (
+        y - top_y,
+        max_scroll_x,
+        prims,
+        hits,
+        authoring_hits,
+        popover_anchor,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -290,6 +365,8 @@ fn render_table_row(
     y: f32,
     prims: &mut Vec<DatabasePrim>,
     hits: &mut Vec<DatabaseHitTarget>,
+    authoring_hits: &mut Vec<DatabaseAuthoringHit>,
+    popover_anchor: &mut Option<(f32, f32)>,
 ) {
     let align = if ctx.direction.is_rtl() {
         InlineAlign::Right
@@ -300,15 +377,70 @@ fn render_table_row(
     for &c_idx in ordered_col_indices {
         let col = &cols[c_idx];
         let cell_rect = FlowRect::new(cell_x, y, col.width, ROW_HEIGHT);
+        let active_ed = ctx
+            .ui_state
+            .authoring
+            .active_cell
+            .as_ref()
+            .filter(|e| e.row_id == row.row_id && e.column_id == col.id);
+        let border_color = match active_ed {
+            Some(ed) if ed.error.is_some() => ctx
+                .theme
+                .css_var("--affine-v2-status-error")
+                .unwrap_or(ctx.palette.brand),
+            Some(_) => ctx.palette.brand,
+            None => ctx.palette.border,
+        };
         prims.push(DatabasePrim::Quad {
             rect: cell_rect,
             fill: Some(ctx.palette.background),
-            border: Some(ctx.palette.border),
+            border: Some(border_color),
             radius: 0.0,
             dashed: false,
         });
         let inner_x = cell_rect.x + 8.0;
         let inner_w = (cell_rect.w - 16.0).max(1.0);
+        if let Some(ed) = active_ed {
+            if matches!(col.col_type.as_str(), "select" | "multi-select") {
+                *popover_anchor = Some((cell_rect.x, cell_rect.bottom() + 2.0));
+            } else {
+                let draft_text = if let Some(err) = &ed.error {
+                    err.as_str()
+                } else {
+                    ed.draft.as_str()
+                };
+                let ink = if ed.error.is_some() {
+                    border_color
+                } else {
+                    ctx.palette.text_primary
+                };
+                prims.push(ctx.single_line_clipped(
+                    draft_text,
+                    InlineStyle::new(FONT_SANS, TYPOGRAPHY.font_sm_px, 400.0, ink),
+                    inner_x,
+                    cell_rect.y,
+                    inner_w,
+                    ROW_HEIGHT,
+                    align,
+                ));
+                cell_x += col.width;
+                continue;
+            }
+        }
+        if !ctx.mobile_readonly
+            && is_editable_column_type(&col.col_type)
+            && col.col_type != "checkbox"
+        {
+            authoring_hits.push(DatabaseAuthoringHit {
+                rect: cell_rect,
+                kind: DatabaseAuthoringHitKind::EditCell {
+                    row_id: row.row_id.clone(),
+                    column_id: col.id.clone(),
+                    col_type: col.col_type.clone(),
+                },
+                scrolls_x: true,
+            });
+        }
         let cell_val = ctx.data.cells.get(&(row.row_id.clone(), col.id.clone()));
 
         match col.col_type.as_str() {
@@ -332,13 +464,6 @@ fn render_table_row(
                     ROW_HEIGHT,
                     align,
                 ));
-                if ctx.mobile_readonly {
-                    hits.push(DatabaseHitTarget {
-                        rect: cell_rect,
-                        kind: DatabaseHitKind::CellReadOnly,
-                        scrolls_x: true,
-                    });
-                }
             }
             "select" | "multi-select" => {
                 let ids = cell_val
@@ -385,13 +510,6 @@ fn render_table_row(
                     });
                     px_cursor += pill_w + 4.0;
                 }
-                if ctx.mobile_readonly {
-                    hits.push(DatabaseHitTarget {
-                        rect: cell_rect,
-                        kind: DatabaseHitKind::CellReadOnly,
-                        scrolls_x: true,
-                    });
-                }
             }
             "checkbox" => {
                 let checked = cell_val
@@ -431,7 +549,16 @@ fn render_table_row(
                 });
             }
             "progress" => {
-                let raw = cell_val.and_then(DatabaseCellValue::as_i64).unwrap_or(0);
+                let raw = ctx
+                    .ui_state
+                    .authoring
+                    .progress_preview
+                    .as_ref()
+                    .filter(|p| p.row_id == row.row_id && p.column_id == col.id)
+                    .map_or_else(
+                        || cell_val.and_then(DatabaseCellValue::as_i64).unwrap_or(0),
+                        |p| p.value,
+                    );
                 let (ratio, label) = format_database_progress(raw);
                 let bar_w = (inner_w - 42.0).max(24.0);
                 let bar_y = cell_rect.y + 13.0;
@@ -465,10 +592,13 @@ fn render_table_row(
                     ROW_HEIGHT,
                     InlineAlign::Right,
                 ));
-                if ctx.mobile_readonly {
-                    hits.push(DatabaseHitTarget {
-                        rect: cell_rect,
-                        kind: DatabaseHitKind::CellReadOnly,
+                if !ctx.mobile_readonly {
+                    authoring_hits.push(DatabaseAuthoringHit {
+                        rect: FlowRect::new(inner_x, cell_rect.y + 4.0, bar_w, ROW_HEIGHT - 8.0),
+                        kind: DatabaseAuthoringHitKind::SetProgress {
+                            row_id: row.row_id.clone(),
+                            column_id: col.id.clone(),
+                        },
                         scrolls_x: true,
                     });
                 }
@@ -501,13 +631,6 @@ fn render_table_row(
                         InlineAlign::Right,
                     ));
                 }
-                if ctx.mobile_readonly {
-                    hits.push(DatabaseHitTarget {
-                        rect: cell_rect,
-                        kind: DatabaseHitKind::CellReadOnly,
-                        scrolls_x: true,
-                    });
-                }
             }
             "date" => {
                 if let Some(ts) = cell_val.and_then(DatabaseCellValue::as_i64) {
@@ -526,13 +649,6 @@ fn render_table_row(
                         ROW_HEIGHT,
                         align,
                     ));
-                }
-                if ctx.mobile_readonly {
-                    hits.push(DatabaseHitTarget {
-                        rect: cell_rect,
-                        kind: DatabaseHitKind::CellReadOnly,
-                        scrolls_x: true,
-                    });
                 }
             }
             "created-time" => {
@@ -569,13 +685,6 @@ fn render_table_row(
                         align,
                     ));
                 }
-                if ctx.mobile_readonly {
-                    hits.push(DatabaseHitTarget {
-                        rect: cell_rect,
-                        kind: DatabaseHitKind::CellReadOnly,
-                        scrolls_x: true,
-                    });
-                }
             }
             _ => {
                 let text = match cell_val {
@@ -604,14 +713,14 @@ fn render_table_row(
                         align,
                     ));
                 }
-                if ctx.mobile_readonly {
-                    hits.push(DatabaseHitTarget {
-                        rect: cell_rect,
-                        kind: DatabaseHitKind::CellReadOnly,
-                        scrolls_x: true,
-                    });
-                }
             }
+        }
+        if ctx.mobile_readonly && !matches!(col.col_type.as_str(), "checkbox" | "created-time") {
+            hits.push(DatabaseHitTarget {
+                rect: cell_rect,
+                kind: DatabaseHitKind::CellReadOnly,
+                scrolls_x: true,
+            });
         }
         cell_x += col.width;
     }
@@ -624,82 +733,6 @@ fn render_table_row(
             scrolls_x: true,
         });
     }
-}
-
-fn resolve_visible_columns<'a>(
-    view: &'a DatabaseView,
-    data: &'a DatabaseData,
-) -> Vec<ResolvedTableCol<'a>> {
-    let mut result = Vec::new();
-    let title_col_id = view
-        .header
-        .as_ref()
-        .and_then(|h| h.title_column.as_deref())
-        .or_else(|| {
-            data.columns
-                .iter()
-                .find(|c| c.column_type == "title")
-                .map(|c| c.id.as_str())
-        })
-        .unwrap_or("title");
-
-    // Always place the title column first if not explicitly hidden.
-    let title_view_col = view.columns.iter().find(|c| c.id == title_col_id);
-    if !title_view_col.is_some_and(|c| c.hide == Some(true)) {
-        let title_schema = data.columns.iter().find(|c| c.id == title_col_id);
-        let title_w = title_view_col
-            .and_then(|c| c.width)
-            .map_or(TITLE_DEFAULT_WIDTH, |w| (w as f32).max(MIN_COLUMN_WIDTH));
-        result.push(ResolvedTableCol {
-            id: title_col_id.to_string(),
-            name: title_schema
-                .map(|c| c.name.clone())
-                .filter(|n| !n.is_empty())
-                .unwrap_or_else(|| "Title".to_string()),
-            col_type: "title".to_string(),
-            width: title_w.round(),
-            schema: title_schema,
-        });
-    }
-
-    // Add ordered view columns, then any remaining schema columns.
-    let mut seen: Vec<String> = result.iter().map(|c| c.id.clone()).collect();
-    for vc in &view.columns {
-        if seen.contains(&vc.id) || vc.id == "type" {
-            continue;
-        }
-        seen.push(vc.id.clone());
-        if vc.hide == Some(true) {
-            continue;
-        }
-        let Some(schema) = data.columns.iter().find(|c| c.id == vc.id) else {
-            continue;
-        };
-        let w = vc
-            .width
-            .map_or(DEFAULT_COLUMN_WIDTH, |w| (w as f32).max(MIN_COLUMN_WIDTH));
-        result.push(ResolvedTableCol {
-            id: schema.id.clone(),
-            name: schema.name.clone(),
-            col_type: schema.column_type.clone(),
-            width: w.round(),
-            schema: Some(schema),
-        });
-    }
-    for schema in &data.columns {
-        if seen.contains(&schema.id) || schema.column_type == "title" {
-            continue;
-        }
-        seen.push(schema.id.clone());
-        result.push(ResolvedTableCol {
-            id: schema.id.clone(),
-            name: schema.name.clone(),
-            col_type: schema.column_type.clone(),
-            width: DEFAULT_COLUMN_WIDTH,
-            schema: Some(schema),
-        });
-    }
-    result
 }
 
 #[cfg(test)]

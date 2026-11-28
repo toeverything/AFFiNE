@@ -302,6 +302,7 @@ impl PlaygroundView {
                         (block.block_id.clone(), world_x - r.x, world_y - r.y)
                     })
             }) {
+                self.dismiss_all_database_authoring(Some(&block_id), cx);
                 let prev_sel = self.editor.selection.clone();
                 let consumed =
                     self.click_database_point(&block_id, local_x, local_y, Some(window), cx);
@@ -317,7 +318,7 @@ impl PlaygroundView {
                         self.block_selection_return_caret = None;
                         self.announce_selection(cx);
                         window.notify_text_selection_changed(&self.editor_focus);
-                    } else if !consumed {
+                    } else {
                         self.editor_focus.focus(window, cx);
                     }
                 }
@@ -325,6 +326,7 @@ impl PlaygroundView {
                 cx.notify();
                 return;
             }
+            self.dismiss_all_database_authoring(None, cx);
             // Clicking a non-editable block (Bookmark, Image, Divider, Database body, Table frame)
             // or its horizontal row band selects that whole block into `block_selection` instead
             // of snapping the caret to a distant editable block.
@@ -384,6 +386,9 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) {
         if self.mode == PlaygroundMode::Page {
+            if self.database_authoring_mouse_move(event, window, cx) {
+                return;
+            }
             if event.pressed_button != Some(MouseButton::Left) {
                 if self.scrollbar_drag.take().is_some() {
                     cx.notify();
@@ -427,6 +432,7 @@ impl PlaygroundView {
         if self.scrollbar_drag.take().is_some() {
             cx.notify();
         }
+        let _ = self.database_authoring_mouse_up(window, cx);
         if let Some(cell) = self.table_cell.as_mut() {
             cell.dragging = false;
         }

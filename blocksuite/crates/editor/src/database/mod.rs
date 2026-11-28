@@ -2,7 +2,13 @@
 //! `BidiIsolation::LtrIsolate`, query/filter/sort/group evaluation, DST-aware
 //! calendar month layout, and Page-mode Table / Kanban / Calendar renderers.
 
+mod authoring;
+mod authoring_dispatch;
 mod calendar;
+mod calendar_edit;
+mod cell_editor;
+mod column_ops;
+mod filter_sort_bar;
 mod format;
 mod group;
 mod query;
@@ -15,10 +21,34 @@ use std::collections::{BTreeSet, HashMap};
 
 use crate::block_flow::FlowRect;
 
+pub use authoring::{
+    ActiveCellEditor, ActiveToolbarPanel, AuthoringActionResult, CalendarDragState,
+    ColumnMenuState, ColumnResizePreview, DatabaseAuthoringHit, DatabaseAuthoringHitKind,
+    DatabaseAuthoringKey, DatabaseAuthoringState, FilterDraftState, ProgressScrubPreview,
+    commit_column_resize, handle_authoring_key,
+};
+pub use authoring_dispatch::handle_authoring_hit;
 pub use calendar::{
     CalendarDayLayout, CalendarEntry, CalendarMonthLayout, CalendarRangeSegment,
     CalendarVisibleRange, create_calendar_month_layout, days_from_civil,
     get_calendar_visible_month_range, local_day_index, weekday_from_days,
+};
+pub use calendar_edit::{
+    create_calendar_row_on_day, day_index_to_local_midnight_ms, reschedule_calendar_row_to_day,
+    resolve_calendar_date_columns,
+};
+pub use cell_editor::{
+    ParsedCellInput, initial_cell_draft, is_editable_column_type, next_editable_cell,
+    next_tag_color, normalize_url_input, parse_cell_draft, parse_date_input_ms,
+    progress_from_bar_x,
+};
+pub use column_ops::{
+    COLUMN_TYPES, TAG_COLOR_PALETTE, column_type_label, insert_column_relative,
+    make_new_column_spec,
+};
+pub use filter_sort_bar::{
+    FILTER_OPERATORS, FilterRuleItem, SortRuleItem, build_filter_json, build_group_by_for_column,
+    build_sort_json, filter_op_label, parse_filter_rules, parse_sort_rules,
 };
 pub use format::{
     BidiIsolation, column_icon_name, format_database_created_time, format_database_date,
@@ -115,6 +145,9 @@ pub struct DatabaseUiState {
     pub mobile_readonly_notice: bool,
     /// Group keys collapsed in Table view.
     pub collapsed_groups: BTreeSet<String>,
+    /// Transient desktop/writable authoring state (column menu, in-place cell editor, toolbar
+    /// panels, resize/reorder/calendar drag previews). Zero CRDT writeback until committed.
+    pub authoring: DatabaseAuthoringState,
 }
 
 /// Host-injected view-layer state for all `affine:database` blocks inside a [`crate::block_flow::BlockFlow`].
@@ -227,6 +260,15 @@ impl DatabaseFlowState {
             entry.collapsed_groups.insert(group_key.to_string());
         }
         self.revision = self.revision.wrapping_add(1);
+    }
+
+    pub fn authoring_mut(&mut self, block_id: &str) -> &mut DatabaseAuthoringState {
+        self.revision = self.revision.wrapping_add(1);
+        &mut self
+            .ui_states
+            .entry(block_id.to_string())
+            .or_default()
+            .authoring
     }
 }
 

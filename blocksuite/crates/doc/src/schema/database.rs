@@ -27,6 +27,24 @@ pub enum DatabaseCellSpec {
     Json(JsonValue),
 }
 
+impl DatabaseCellSpec {
+    /// Convert this typed cell value into its BlockSuite `0.27.5` `SessionValue` wire encoding.
+    pub fn into_session_value(self) -> SessionValue {
+        match self {
+            Self::RichText(s) => text_value(&s),
+            Self::Text(s) => SessionValue::Any(Any::String(s)),
+            Self::MultiSelect(items) => {
+                SessionValue::Any(Any::Array(items.into_iter().map(Any::String).collect()))
+            }
+            Self::Number(n) => SessionValue::Any(Any::Float64(n.into())),
+            Self::Integer(n) => SessionValue::Any(Any::BigInt64(n)),
+            Self::Bool(b) => SessionValue::Any(if b { Any::True } else { Any::False }),
+            Self::Null => SessionValue::Any(Any::Null),
+            Self::Json(v) => json_to_session_value(&v),
+        }
+    }
+}
+
 /// Specification for one view entry in `prop:views` of an `affine:database` block.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DatabaseViewSpec {
@@ -107,22 +125,7 @@ impl DatabaseSpec {
                 let cols: Vec<(String, SessionValue)> = row_cells
                     .into_iter()
                     .map(|(col_id, cell_spec)| {
-                        let value = match cell_spec {
-                            DatabaseCellSpec::RichText(s) => text_value(&s),
-                            DatabaseCellSpec::Text(s) => SessionValue::Any(Any::String(s)),
-                            DatabaseCellSpec::MultiSelect(items) => SessionValue::Any(Any::Array(
-                                items.into_iter().map(Any::String).collect(),
-                            )),
-                            DatabaseCellSpec::Number(n) => {
-                                SessionValue::Any(Any::Float64(n.into()))
-                            }
-                            DatabaseCellSpec::Integer(n) => SessionValue::Any(Any::BigInt64(n)),
-                            DatabaseCellSpec::Bool(b) => {
-                                SessionValue::Any(if b { Any::True } else { Any::False })
-                            }
-                            DatabaseCellSpec::Null => SessionValue::Any(Any::Null),
-                            DatabaseCellSpec::Json(v) => json_to_session_value(&v),
-                        };
+                        let value = cell_spec.into_session_value();
                         (
                             col_id.clone(),
                             SessionValue::Map(vec![

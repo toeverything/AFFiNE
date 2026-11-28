@@ -20,6 +20,7 @@ use super::*;
 pub struct BlockFlow {
     bodies: HashMap<String, (u64, Rc<BlockBody>)>,
     database_hits: HashMap<String, Vec<crate::database::DatabaseHitTarget>>,
+    database_authoring_hits: HashMap<String, Vec<crate::database::DatabaseAuthoringHit>>,
     database_view_tabs_max_scroll: HashMap<String, (i32, i32)>,
     pub database_state: crate::database::DatabaseFlowState,
     /// `affine:code` block ids currently toggled into visual preview mode (zero CRDT writeback).
@@ -42,6 +43,7 @@ pub(super) struct FlowPass<'a> {
     pub(super) next: HashMap<String, (u64, Rc<BlockBody>)>,
     pub(super) database_state: &'a crate::database::DatabaseFlowState,
     pub(super) database_hits: HashMap<String, Vec<crate::database::DatabaseHitTarget>>,
+    pub(super) database_authoring_hits: HashMap<String, Vec<crate::database::DatabaseAuthoringHit>>,
     pub(super) database_view_tabs_max_scroll: HashMap<String, (i32, i32)>,
     pub(super) code_preview_blocks: &'a BTreeSet<String>,
     pub(super) focused_table_block: Option<&'a str>,
@@ -64,6 +66,16 @@ impl BlockFlow {
     /// Clickable regions recorded for `block_id` during the latest layout pass.
     pub fn database_hits(&self, block_id: &str) -> &[crate::database::DatabaseHitTarget] {
         self.database_hits.get(block_id).map_or(&[], Vec::as_slice)
+    }
+
+    /// Desktop authoring hit targets recorded for `block_id` during the latest layout pass.
+    pub fn database_authoring_hits(
+        &self,
+        block_id: &str,
+    ) -> &[crate::database::DatabaseAuthoringHit] {
+        self.database_authoring_hits
+            .get(block_id)
+            .map_or(&[], Vec::as_slice)
     }
 
     /// Measured `(scroll_px, max_scroll_px)` of `block_id`'s touch view-tab strip.
@@ -109,6 +121,7 @@ impl BlockFlow {
             next: HashMap::new(),
             database_state: &self.database_state,
             database_hits: std::mem::take(&mut self.database_hits),
+            database_authoring_hits: std::mem::take(&mut self.database_authoring_hits),
             database_view_tabs_max_scroll: std::mem::take(&mut self.database_view_tabs_max_scroll),
             code_preview_blocks: &self.code_preview_blocks,
             focused_table_block: self.focused_table_block.as_deref(),
@@ -167,6 +180,7 @@ impl BlockFlow {
 
         self.bodies = pass.next;
         self.database_hits = pass.database_hits;
+        self.database_authoring_hits = pass.database_authoring_hits;
         self.database_view_tabs_max_scroll = pass.database_view_tabs_max_scroll;
         FlowLayout {
             blocks: pass.blocks,
@@ -211,6 +225,7 @@ impl BlockFlow {
             next: HashMap::new(),
             database_state: &self.database_state,
             database_hits: std::mem::take(&mut self.database_hits),
+            database_authoring_hits: std::mem::take(&mut self.database_authoring_hits),
             database_view_tabs_max_scroll: std::mem::take(&mut self.database_view_tabs_max_scroll),
             code_preview_blocks: &self.code_preview_blocks,
             focused_table_block: self.focused_table_block.as_deref(),
@@ -227,6 +242,7 @@ impl BlockFlow {
         pass.y += pass.pending_margin.take().unwrap_or(0.0);
         self.bodies = pass.next;
         self.database_hits = pass.database_hits;
+        self.database_authoring_hits = pass.database_authoring_hits;
         self.database_view_tabs_max_scroll = pass.database_view_tabs_max_scroll;
         FlowLayout {
             blocks: pass.blocks,

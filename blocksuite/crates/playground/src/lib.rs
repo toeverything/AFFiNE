@@ -9,6 +9,7 @@ pub use blocksuite_editor::{
     directory, rich_text, surface, theme,
 };
 mod chrome;
+mod database_authoring;
 mod doc_panel;
 pub mod edgeless;
 pub mod editor_session;
@@ -270,6 +271,8 @@ pub struct PlaygroundView {
     pub(crate) caret_active_since_ms: f64,
     pub(crate) caret_blink_task: Option<Task<()>>,
     pub(crate) scrollbar_drag: Option<overlays::ScrollbarDrag>,
+    pub(crate) database_drag: Option<database_authoring::DatabaseDragState>,
+    pub(crate) database_input: Option<database_authoring::DatabaseInputBuffer>,
     pub(crate) context_toast_timer: Option<Task<()>>,
     pub(crate) context_paste_task: Option<Task<()>>,
     pub(crate) context_menu_target: Option<overlays::ContextTargetSnapshot>,
@@ -430,6 +433,8 @@ impl PlaygroundView {
             caret_active_since_ms: 0.0,
             caret_blink_task: None,
             scrollbar_drag: None,
+            database_drag: None,
+            database_input: None,
             context_toast_timer: None,
             context_paste_task: None,
             context_menu_target: None,
@@ -639,6 +644,7 @@ impl PlaygroundView {
             if readonly {
                 self.overlays.set_keyboard_toolbar_visible(false);
                 self.overlays.close_keyboard_toolbar_panel();
+                self.dismiss_all_database_authoring(None, cx);
             }
             cx.notify();
         }

@@ -13,9 +13,9 @@ use crate::{
 };
 
 use super::{
-    DatabaseHitKind, DatabaseHitTarget, DatabaseUiState, InlineAxis,
-    MOBILE_DATABASE_READONLY_NOTICE, eval_database_filter, render_calendar, render_kanban,
-    render_table, sort_database_rows,
+    DatabaseAuthoringHit, DatabaseHitKind, DatabaseHitTarget, DatabaseUiState, InlineAxis,
+    MOBILE_DATABASE_READONLY_NOTICE, eval_database_filter, filter_sort_bar, render_calendar,
+    render_kanban, render_table, sort_database_rows,
 };
 
 /// Paint primitives emitted by the database renderer and converted into `block_flow::Prim`.
@@ -53,6 +53,7 @@ pub struct DatabaseLayoutOutput {
     pub prims: Vec<DatabasePrim>,
     pub code_scroll: Option<CodeScroll>,
     pub hits: Vec<DatabaseHitTarget>,
+    pub authoring_hits: Vec<DatabaseAuthoringHit>,
     pub view_tabs_scroll_px: i32,
     pub view_tabs_max_scroll_px: i32,
 }
@@ -694,16 +695,36 @@ pub fn layout_database_block(
         window,
     };
 
+    // 4b. Desktop/writable view control bar (Filter / Sort / Group by + active chips + open panel).
+    let mut authoring_hits = Vec::new();
+    let y =
+        filter_sort_bar::render_view_toolbar(&ctx, active_view, y, &mut prims, &mut authoring_hits);
+
     // 5. Render active view content starting at `y`.
     let content_top = y;
-    let (content_h, content_max_x, view_prims, view_hits) = match active_view.mode {
-        DatabaseViewMode::Table => render_table::render_table_view(&ctx, content_top),
-        DatabaseViewMode::Kanban => render_kanban::render_kanban_view(&ctx, content_top),
-        DatabaseViewMode::Calendar => render_calendar::render_calendar_view(&ctx, content_top),
-        DatabaseViewMode::Unknown(_) => render_table::render_table_view(&ctx, content_top),
-    };
+    let (content_h, content_max_x, view_prims, view_hits, view_auth_hits, popover_anchor) =
+        match active_view.mode {
+            DatabaseViewMode::Table => render_table::render_table_view(&ctx, content_top),
+            DatabaseViewMode::Kanban => render_kanban::render_kanban_view(&ctx, content_top),
+            DatabaseViewMode::Calendar => render_calendar::render_calendar_view(&ctx, content_top),
+            DatabaseViewMode::Unknown(_) => render_table::render_table_view(&ctx, content_top),
+        };
 
-    let total_height = (content_top + content_h + 10.0).ceil();
+    prims.extend(view_prims);
+    hits.extend(view_hits);
+    authoring_hits.extend(view_auth_hits);
+
+    // 6. Topmost floating popovers (column menu, select/multi-select picker).
+    let popover_bottom = super::authoring::render_active_popover(
+        &ctx,
+        content_top,
+        content_h,
+        popover_anchor,
+        &mut prims,
+        &mut authoring_hits,
+    );
+
+    let total_height = (popover_bottom + 10.0).ceil();
     // Outer database container card (`databaseBlockStyles`).
     prims.insert(
         0,
@@ -715,16 +736,15 @@ pub fn layout_database_block(
             dashed: false,
         },
     );
-    prims.extend(view_prims);
-    hits.extend(view_hits);
 
     let initial_x = if direction.is_rtl() && active_view.mode != DatabaseViewMode::Calendar {
         content_max_x
     } else {
         0.0
     };
+    let scroll_h = (popover_bottom - content_top).max(content_h);
     let code_scroll = (content_max_x > 0.0).then(|| CodeScroll {
-        area: FlowRect::new(8.0, content_top, (width - 16.0).max(1.0), content_h),
+        area: FlowRect::new(8.0, content_top, (width - 16.0).max(1.0), scroll_h),
         max_x: content_max_x,
         initial_x,
     });
@@ -761,6 +781,7 @@ pub fn layout_database_block(
         prims,
         code_scroll,
         hits,
+        authoring_hits,
         view_tabs_scroll_px,
         view_tabs_max_scroll_px,
     }
